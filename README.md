@@ -7,9 +7,4 @@ for perceptor (core), perceptor-convex, perceivers.
 
 ## Running
 
-### Note this is the first version of the installation component.  Overtime the amount of yml will be reduced to none, via interactive statements in the container itself!
-
-Create a configuration yml, like so:
-```
-protoform-bootstrap.sh
-```
+all-in-one-containerized-bootstrap.sh
