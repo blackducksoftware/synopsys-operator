@@ -7,4 +7,14 @@ for perceptor (core), perceptor-convex, perceivers.
 
 ## Running
 
-all-in-one-containerized-bootstrap.sh
+Make sure you have a kubectl client installed locally, which is configured and logged in.  
+
+Then...
+
+```
+git clone https://github.com/blackducksoftware/perceptor-protoform.git
+cd perceptor-protoform
+./all-in-one-containerized-bootstrap.sh
+```
+
+... Thats it!
