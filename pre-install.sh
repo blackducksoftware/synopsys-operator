@@ -30,7 +30,7 @@ cleanup() {
 	done
 }
 
-install() {
+install-rbac() {
 	SCC="add-scc-to-user"
 	ROLE="add-role-to-user"
 	CLUSTER="add-cluster-role-to-user"
@@ -78,16 +78,10 @@ install() {
 			oc policy $ROLE view system:serviceaccount::perceptor-scanner-sa
 	  popd
 	fi
-
-	# IMPORTANT: All the config for perceptor lives here !c
-	$KUBECTL create -f perceptor.cfg.yml --namespace=$NS
-
-	$KUBECTL exec -t -i $EXEC_POD_NAME /tmp/hydra
 }
 
 install-contrib() {
 	set -e
-
 	# Deploy a small, local prometheus.  It is only used for scraping perceptor.  Doesnt need fancy ACLs for
 	# cluster discovery etc.
 	pushd prometheus/
@@ -96,6 +90,5 @@ install-contrib() {
 }
 
 cleanup
-install
-echo "optional install components starting now..."
+install-rbac
 install-contrib
