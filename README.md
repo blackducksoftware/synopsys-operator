@@ -14,7 +14,16 @@ Then...
 ```
 git clone https://github.com/blackducksoftware/perceptor-protoform.git
 cd perceptor-protoform
-./all-in-one-containerized-bootstrap.sh
+
+# Sets up ACLS, you may need to modify this script.
+./pre-install.sh
+
+# Wrapper to the containerized installer.  No need to modify it.
+./install.sh
 ```
 
-... Thats it!
+... Thats it! Now check that your pods are running:
+
+```
+kubectl get pods -n bds-perceptor
+```
