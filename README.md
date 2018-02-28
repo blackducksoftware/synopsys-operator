@@ -20,6 +20,9 @@ cd perceptor-protoform
 
 # Wrapper to the containerized installer.  No need to modify it.
 ./install.sh
+
+# TODO , jay will delete this after he finishes viperizing things tonite.
+./post-hack.sh
 ```
 
 ... Thats it! Now check that your pods are running:
