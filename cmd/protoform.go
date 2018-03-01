@@ -101,7 +101,7 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 		addedMounts := map[string]string{}
 
 		for cfgMapName, cfgMapMount := range desc.configMapMounts {
-			log.Print("Adding mounts now.")
+			log.Print("Adding config mounts now.")
 			if addedMounts[cfgMapName] == "" {
 				addedMounts[cfgMapName] = cfgMapName
 				TheVolumes = append(TheVolumes,
@@ -127,7 +127,7 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 		// keep track of emptyDirs, only once, since it can be referenced in
 		// multiple pods
 		for emptyDirName, emptyDirMount := range desc.emptyDirMounts {
-			log.Print("Adding mounts now.")
+			log.Print("Adding empty mounts now.")
 			if addedMounts[emptyDirName] == "" {
 				addedMounts[emptyDirName] = emptyDirName
 				TheVolumes = append(TheVolumes,
