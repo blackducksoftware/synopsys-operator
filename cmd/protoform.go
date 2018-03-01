@@ -97,18 +97,26 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 	mounts := []v1.VolumeMount{}
 
 	for _, desc := range descriptions {
+
+		addedMounts := map[string]string{}
+
 		for cfgMapName, cfgMapMount := range desc.configMapMounts {
-			TheVolumes = append(TheVolumes,
-				v1.Volume{
-					Name: cfgMapName,
-					VolumeSource: v1.VolumeSource{
-						ConfigMap: &v1.ConfigMapVolumeSource{
-							LocalObjectReference: v1.LocalObjectReference{
-								Name: cfgMapName,
+			if addedMounts[cfgMapName] == "" {
+				TheVolumes = append(TheVolumes,
+					v1.Volume{
+						Name: cfgMapName,
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: cfgMapName,
+								},
 							},
 						},
-					},
-				})
+					})
+				addedMounts[cfgMapName] = cfgMapName
+			} else {
+				log.Print(fmt.Sprintf("Not adding volume, already added: %v", cfgMapName))
+			}
 			mounts = append(mounts, v1.VolumeMount{
 				Name:      cfgMapName,
 				MountPath: cfgMapMount,
@@ -117,7 +125,6 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 
 		// keep track of emptyDirs, only once, since it can be referenced in
 		// multiple pods
-		addedMounts := map[string]string{}
 		for emptyDirName, emptyDirMount := range desc.emptyDirMounts {
 			if addedMounts[emptyDirName] == "" {
 				TheVolumes = append(TheVolumes,
@@ -131,6 +138,7 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 							},
 						},
 					})
+				addedMounts[emptyDirName] = emptyDirName
 			} else {
 				log.Print(fmt.Sprintf("Not adding volume, already added: %v", emptyDirName))
 			}
@@ -228,7 +236,6 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 			},
 		})
 	}
-
 	return rc, services
 }
 
