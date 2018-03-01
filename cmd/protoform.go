@@ -22,6 +22,10 @@ under the License.
 package main
 
 import (
+	"encoding/json"
+	"log"
+	"os"
+
 	"k8s.io/api/core/v1"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
@@ -33,13 +37,30 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+func PrettyPrint(v interface{}) {
+	b, _ := json.MarshalIndent(v, "", "  ")
+	println(string(b))
+}
+
 type PerceptorRC struct {
-	configMap          string
-	configMapMountPath string
-	name               string
-	image              string
-	port               int32
-	cmd                []string
+
+	// TODO, could make these into arrays.
+	configMapMounts map[string]string
+	emptyDirMounts  map[string]string
+	name            string
+	image           string
+	port            int32
+	cmd             []string
+
+	// key:value = name:mountPath
+	emptyDirVolumeMounts map[string]string
+
+	// if true, then container is privileged /var/run/docker.sock.
+	dockerSocket bool
+
+	// Only needed for openshift.
+	serviceAccount     string
+	serviceAccountName string
 }
 
 // This function creates an RC and services that forward to it.
@@ -56,18 +77,70 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 	TheVolumes := []v1.Volume{}
 	TheContainers := []v1.Container{}
 
+	mounts := []v1.VolumeMount{}
+
 	for _, desc := range descriptions {
-		TheVolumes = append(TheVolumes,
-			v1.Volume{
-				Name: desc.configMap,
-				VolumeSource: v1.VolumeSource{
-					ConfigMap: &v1.ConfigMapVolumeSource{
-						LocalObjectReference: v1.LocalObjectReference{
-							Name: desc.configMap,
+		for cfgMapName, cfgMapMount := range desc.configMapMounts {
+			TheVolumes = append(TheVolumes,
+				v1.Volume{
+					Name: cfgMapName,
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: cfgMapName,
+							},
 						},
+					},
+				})
+			mounts = append(mounts, v1.VolumeMount{
+				Name:      cfgMapName,
+				MountPath: cfgMapMount,
+			})
+		}
+		for emptyDirName, emptyDirMount := range desc.emptyDirMounts {
+			TheVolumes = append(TheVolumes,
+				v1.Volume{
+					Name: emptyDirName,
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: emptyDirName,
+							},
+						},
+					},
+				})
+			mounts = append(mounts, v1.VolumeMount{
+				Name:      emptyDirName,
+				MountPath: emptyDirMount,
+			})
+		}
+
+		if desc.dockerSocket {
+			dockerSock := v1.VolumeMount{
+				Name:      "dir-docker-socket",
+				MountPath: "/var/run/docker.sock",
+			}
+			mounts = append(mounts, dockerSock)
+			TheVolumes = append(TheVolumes, v1.Volume{
+				Name: dockerSock.Name,
+				VolumeSource: v1.VolumeSource{
+					HostPath: &v1.HostPathVolumeSource{
+						Path: dockerSock.MountPath,
 					},
 				},
 			})
+		}
+
+		for name, _ := range desc.emptyDirVolumeMounts {
+			TheVolumes = append(TheVolumes, v1.Volume{
+				Name: name,
+				VolumeSource: v1.VolumeSource{
+					EmptyDir: &v1.EmptyDirVolumeSource{},
+				},
+			})
+		}
+
+		// Each RC has only one pod, but can have many containers.
 		TheContainers = append(TheContainers, v1.Container{
 			Name:            desc.name,
 			Image:           desc.image,
@@ -85,13 +158,12 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 					v1.ResourceMemory: defaultMem,
 				},
 			},
-			VolumeMounts: []v1.VolumeMount{
-				v1.VolumeMount{
-					Name:      desc.configMap,
-					MountPath: desc.configMapMountPath,
-				},
+			VolumeMounts: mounts,
+			SecurityContext: &v1.SecurityContext{
+				Privileged: &desc.dockerSocket,
 			},
 		})
+
 	}
 	rc := &v1.ReplicationController{
 		ObjectMeta: v1meta.ObjectMeta{
@@ -104,8 +176,9 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 					Labels: map[string]string{"name": descriptions[0].name},
 				},
 				Spec: v1.PodSpec{
-					Volumes:    TheVolumes,
-					Containers: TheContainers,
+					Volumes:            TheVolumes,
+					Containers:         TheContainers,
+					ServiceAccountName: descriptions[0].serviceAccountName,
 				},
 			},
 		},
@@ -134,111 +207,113 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 	return rc, services
 }
 
-func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset) {
+func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, svcAcct string, dryRun bool) {
 	// perceptor = only one container, very simple.
 	rcPCP, svcPCP := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
-			configMap:          "perceptor-config",
-			configMapMountPath: "/etc/perceptor",
-			name:               "perceptor",
-			image:              "gcr.io/gke-verification/blackducksoftware/perceptor:latest",
-			port:               3001,
-			cmd:                []string{"./perceptor"},
+			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
+			name:            "perceptor",
+			image:           "gcr.io/gke-verification/blackducksoftware/perceptor:latest",
+			port:            3001,
+			cmd:             []string{"./perceptor"},
 		},
 	})
 
 	// perceptorScan = only one container, but will be split into two later?
 	rcPCPScan, svcPCPScan := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
-			configMap:          "perceptor-scanner-config",
-			configMapMountPath: "/etc/perceptor_scanner",
-			name:               "perceptor-scanner",
-			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
-			port:               3003,
-			cmd:                []string{"./dependencies/perceptor-scanner"},
+			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
+			name:            "perceptor-scanner",
+			image:           "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
+			port:            3003,
+			cmd:             []string{"./dependencies/perceptor-scanner"},
 		},
 		PerceptorRC{
-			configMap:          "perceptor-imagefacade-config",
-			configMapMountPath: "/etc/perceptor_imagefacade",
-			name:               "perceptor-imagefacade",
-			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
-			port:               3004,
-			cmd:                []string{"./perceptor-imagefacade"},
+			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
+			name:            "perceptor-imagefacade",
+			image:           "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
+			port:            3004,
+			cmd:             []string{"./perceptor-imagefacade"},
 		},
 	})
 
 	// perceivers
 	rcPCVR, svcPCVR := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
-			configMap:          "kube-generic-perceiver-config",
-			configMapMountPath: "/etc/perceiver",
+			configMapMounts:    map[string]string{"kube-generic-perceiver-config": "/etc/perceiver"},
 			name:               "pod-perceiver",
 			image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:latest",
 			port:               4000,
 			cmd:                []string{},
+			serviceAccountName: svcAcct,
+			serviceAccount:     svcAcct,
 		},
 	})
 
 	rcPCVRo, svcPCVRo := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
-			configMap:          "openshift-perceiver-config",
-			configMapMountPath: "/etc/perceiver",
+			configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
 			name:               "image-perceiver",
 			image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:latest",
 			port:               4000,
 			cmd:                []string{},
+			serviceAccount:     svcAcct,
+			serviceAccountName: svcAcct,
 		},
 	})
 
-	// Now, create all the resources.  Note that we'll panic after creating ANY
-	// resource that fails.  Thats intentional.
-	_, err := clientset.Core().ReplicationControllers(namespace).Create(rcPCP)
-	if err != nil {
-		panic(err)
-	}
+	rcSCAN, svcSCAN := NewRcSvc([]PerceptorRC{
+		PerceptorRC{
+			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
+			emptyDirMounts: map[string]string{
+				"var-images": "/var/images",
+			},
+			name:         "image-perceiver",
+			image:        "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
+			dockerSocket: false,
+			port:         4000,
+			cmd:          []string{},
+		},
+		PerceptorRC{
+			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
+			emptyDirMounts: map[string]string{
+				"var-images": "/var/images",
+			},
+			name:         "perceptor-scanner",
+			image:        "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
+			dockerSocket: true,
+			port:         3003,
+			cmd:          []string{},
+		},
+	})
 
-	for _, svc := range svcPCP {
-		_, err = clientset.Core().Services(namespace).Create(svc)
-		if err != nil {
-			panic(err)
+	rcs := []*v1.ReplicationController{rcPCP, rcPCPScan, rcPCVR, rcPCVRo, rcSCAN}
+	svc := [][]*v1.Service{svcPCP, svcPCPScan, svcPCVR, svcPCVRo, svcSCAN}
+
+	for i, rc := range rcs {
+		// Now, create all the resources.  Note that we'll panic after creating ANY
+		// resource that fails.  Thats intentional.
+		PrettyPrint(rc)
+		if !dryRun {
+			_, err := clientset.Core().ReplicationControllers(namespace).Create(rc)
+			if err != nil {
+				panic(err)
+			}
+		}
+		for _, svcI := range svc[i] {
+			if dryRun {
+				PrettyPrint(svc)
+			} else {
+				_, err := clientset.Core().Services(namespace).Create(svcI)
+				if err != nil {
+					panic(err)
+				}
+			}
 		}
 	}
-
-	_, err = clientset.Core().ReplicationControllers(namespace).Create(rcPCPScan)
-	if err != nil {
-		panic(err)
-	}
-	for _, svc := range svcPCPScan {
-		_, err = clientset.Core().Services(namespace).Create(svc)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	_, err = clientset.Core().ReplicationControllers(namespace).Create(rcPCVR)
-	if err != nil {
-		panic(err)
-	}
-	for _, svc := range svcPCVR {
-		_, err = clientset.Core().Services(namespace).Create(svc)
-		if err != nil {
-			panic(err)
-		}
-	}
-	_, err = clientset.Core().ReplicationControllers(namespace).Create(rcPCVRo)
-	if err != nil {
-		panic(err)
-	}
-	for _, svc := range svcPCVRo {
-		_, err = clientset.Core().Services(namespace).Create(svc)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 }
 
-func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset) {
+func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, dryRun bool) {
 	viper.SetConfigName("protoform")
 	pc := &model.ProtoformConfig{}
 	err := viper.ReadInConfig()
@@ -274,6 +349,14 @@ func main() {
 		panic(err.Error())
 	}
 
-	CreateConfigMapsFromInput(namespace, clientset)
-	CreatePerceptorResources(namespace, clientset)
+	// TODO Viperize these env vars.
+
+	svcAcct := "openshift-perceiver"
+	if os.Getenv("SERVICE_ACCOUNT") == "" {
+		svcAcct = os.Getenv("SERVICE_ACCOUNT")
+		log.Print("modifying svc account:")
+		log.Print(svcAcct)
+	}
+	CreateConfigMapsFromInput(namespace, clientset, os.Getenv("DRY_RUN") == "true")
+	CreatePerceptorResources(namespace, clientset, svcAcct, os.Getenv("DRY_RUN") == "true")
 }
