@@ -1,12 +1,17 @@
 #!/bin/bash
 
+./pre-install.sh
+
 echo "Enter your password for the hub:"
 read -s HUB_PASSWORD
 echo "Done..."
+
+DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
+
 #
 # Note that in production, you will want to encrypt the password, rather then inject it as a yml parameter.
 # Instructions will be added shortly.
-# 
+#
 cat << EOF > config.yml
 apiVersion: v1
 kind: List
@@ -38,6 +43,14 @@ items:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
+    name: perceptor-imagefacade-config
+  data:
+    perceptor_imagefacade_conf.yaml: |
+    DockerUser: "admin"
+    DockerPassword: "$DOCKER_PASSWORD"
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
     name: kube-generic-perceiver-config
   data:
     perceiver.yaml: |
@@ -66,38 +79,29 @@ items:
       AnnotationIntervalSeconds: 30
       DumpIntervalMinutes: 30
 EOF
-kubectl create -f config.yml
+
+oc create -f config.yml
 
 echo "Your configuration is at config.yml, click enter to proceed installing, or edit it bbefore continuing"
-cat << EOF
+cat << EOF > protoform.yml
 apiVersion: v1
+kind: Pod
 metadata:
-  name: "bds-perceptor components"
-  resourceVersion: "0.0.1"
-apiVersion: v1
-  kind: Pod
-  metadata:
-    name: protoform
-  spec:
-    metadata:
-      labels:
-        name: protoform
-      containers:
-      - name: protoform
-        image: gcr.io/gke-verification/blackducksoftware/protoform:latest
-        imagePullPolicy: Always
-        command: ./protoform
-        ports:
-        - containerPort: 3001
-          protocol: TCP
-        volumeMounts:
-        - name: protoform
-          mountPath: /etc/protoform
-        volumes:
-          - name: protoform
-            configMap:
-              name: protoform
-        restartPolicy: Never
-        dnsPolicy: ClusterFirst
+  name: protoform
+spec:
+  containers:
+  - name: protoform
+    image: gcr.io/gke-verification/blackducksoftware/perceptor-protoform:latest
+    imagePullPolicy: Always
+    command: [ ./protoform ]
+    ports:
+    - containerPort: 3001
+      protocol: TCP
+  restartPolicy: Never
+  serviceAccountName: openshift-perceiver
+  serviceAccount: openshift-perceiver
 EOF
-kubectl create -f protoform.yml
+
+oc create -f protoform.yml
+
+./post-hack.sh

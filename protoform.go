@@ -1,17 +1,22 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright (C) 2018 Synopsys, Inc.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
 */
 
 package main
@@ -162,6 +167,14 @@ func main() {
 			port:               3003,
 			cmd:                []string{"./dependencies/perceptor-scanner"},
 		},
+		PerceptorRC{
+			configMap:          "perceptor-imagefacade-config",
+			configMapMountPath: "/etc/perceptor_imagefacade",
+			name:               "perceptor-imagefacade",
+			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
+			port:               3004,
+			cmd:                []string{"./perceptor-imagefacade"},
+		},
 	})
 
 	// perceivers
@@ -188,7 +201,7 @@ func main() {
 	})
 
 	_, err = clientset.Core().ReplicationControllers(namespace).Create(rcPCP)
-	if err!= nil {
+	if err != nil {
 		panic(err)
 	}
 
@@ -200,7 +213,7 @@ func main() {
 	}
 
 	_, err = clientset.Core().ReplicationControllers(namespace).Create(rcPCPScan)
-	if err!= nil {
+	if err != nil {
 		panic(err)
 	}
 	for _, svc := range svcPCPScan {
@@ -211,7 +224,7 @@ func main() {
 	}
 
 	_, err = clientset.Core().ReplicationControllers(namespace).Create(rcPCVR)
-	if err!= nil {
+	if err != nil {
 		panic(err)
 	}
 	for _, svc := range svcPCVR {
@@ -221,7 +234,7 @@ func main() {
 		}
 	}
 	_, err = clientset.Core().ReplicationControllers(namespace).Create(rcPCVRo)
-	if err!= nil {
+	if err != nil {
 		panic(err)
 	}
 	for _, svc := range svcPCVRo {

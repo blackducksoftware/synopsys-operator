@@ -46,37 +46,35 @@ install-rbac() {
 	KUBE_PERCEIVER="kube-generic-perceiver"
 	KUBE_PERCEIVER_SA="${NS_SA}:${KUBE_PERCEIVER}"
 
-	if [ "$KUBECTL" -eq "kubectl" ]; then
+	if [ "$KUBECTL" == "kubectl" ]; then
 		echo "Detected Kubernetes... setting up"
-	  kubectl create ns $NS
-	  kubectl create sa perceptor-scanner-sa -n $NS
-	  kubectl create sa kube-generic-perceiver -n $NS
+		kubectl create ns $NS
+		kubectl create sa perceptor-scanner-sa -n $NS
+		kubectl create sa kube-generic-perceiver -n $NS
   else
-	  set -e
+		set -e
 
-	  echo "Detected openshift... setting up "
-	  # Create the namespace to install all containers
-	  oc new-project $NS
+		echo "Detected openshift... setting up "
+		# Create the namespace to install all containers
+		oc new-project $NS
 
-	  pushd openshift/
-			# Create the openshift-perceiver service account
-			oc create serviceaccount openshift-perceiver -n $NS
+		# Create the openshift-perceiver service account
+		oc create serviceaccount openshift-perceiver -n $NS
 
-			# following allows us to write cluster level metadata for imagestreams
-			oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:openshift-perceiver
+		# following allows us to write cluster level metadata for imagestreams
+		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:openshift-perceiver
 
-			# Create the serviceaccount for perceptor-scanner to talk with Docker
-			oc create sa perceptor-scanner-sa -n $NS
+		# Create the serviceaccount for perceptor-scanner to talk with Docker
+		oc create sa perceptor-scanner-sa -n $NS
 
-			# allows launching of privileged containers for Docker machine access
-			oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
+		# allows launching of privileged containers for Docker machine access
+		oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
 
-			# following allows us to write cluster level metadata for imagestreams
-			oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-scanner-sa
+		# following allows us to write cluster level metadata for imagestreams
+		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-scanner-sa
 
-			# To pull or view all images
-			oc policy $ROLE view system:serviceaccount::perceptor-scanner-sa
-	  popd
+		# To pull or view all images
+		oc policy $ROLE view system:serviceaccount::perceptor-scanner-sa
 	fi
 }
 
@@ -84,9 +82,7 @@ install-contrib() {
 	set -e
 	# Deploy a small, local prometheus.  It is only used for scraping perceptor.  Doesnt need fancy ACLs for
 	# cluster discovery etc.
-	pushd prometheus/
-		$KUBECTL create -f prometheus-deployment.yaml --namespace=$NS
-	popd
+	$KUBECTL create -f prometheus-deployment.yaml --namespace=$NS
 }
 
 cleanup
