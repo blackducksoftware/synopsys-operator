@@ -145,8 +145,6 @@ items:
               limits:
                 cpu: 500m
             volumeMounts:
-#              - mountPath: /opt/blackduck/perceptor/logs
-#                name: dir-perceptor-log
               - mountPath: /var/images
                 name: var-images
               - name: perceptor-scanner-config
@@ -164,8 +162,6 @@ items:
               limits:
                 cpu: 500m
             volumeMounts:
-#              - mountPath: /opt/blackduck/perceptor/logs
-#                name: dir-perceptor-log
               - mountPath: /var/images
                 name: var-images
               - mountPath: /var/run/docker.sock
