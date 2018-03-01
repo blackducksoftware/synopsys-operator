@@ -10,6 +10,9 @@ import (
 // WARNING: If you add a config value, make sure to
 // add it to the parameterize function as well !
 type ProtoformConfig struct {
+
+	// CONTAINER CONFIGS
+	// These are sed replaced into the config maps for the containers.
 	PerceptorHost             string
 	PerceptorPort             int
 	AnnotationIntervalSeconds int
@@ -18,6 +21,16 @@ type ProtoformConfig struct {
 	HubUser                   string
 	HubUserPassword           string
 	HubPort                   int
+
+	// AUTH CONFIGS
+	// These are given to containers through secrets or other mechanisms.
+	// Not necessarily a one-to-one text replacement.
+	// TODO Lets try to have this injected on serviceaccount
+	// at pod startup, eventually Service accounts.
+	DockerPasswordOrToken string
+	DockerUsername        string
+
+	ServiceAccounts map[string]string
 }
 
 func (p *ProtoformConfig) parameterize(json string) string {

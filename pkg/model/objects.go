@@ -1,6 +1,7 @@
 package model
 
-// Prometheus
+// Unused attempt at moddeling configs individually as yaml structs
+// TODO Delete or use to replace JSON.
 type PromGlobal struct {
 	ScrapeInterval string `yaml:"scrape_interval"`
 }

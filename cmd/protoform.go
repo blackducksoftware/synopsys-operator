@@ -26,10 +26,10 @@ import (
 	"log"
 	"os"
 
-	"k8s.io/api/core/v1"
-
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/spf13/viper"
+	"k8s.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,14 +37,30 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var pc *model.ProtoformConfig
+
+// We don't dynamically reload.
+// If users want to dynamically reload,
+// they can update the individual perceptor containers configmaps.
+func init() {
+	log.Print("*************** [protoform] initializing viper ****************")
+	viper.SetConfigName("protoform")
+	pc := &model.ProtoformConfig{}
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	viper.Unmarshal(pc)
+	PrettyPrint(pc)
+	log.Print("*************** [protoform] done reading in viper ****************")
+}
+
 func PrettyPrint(v interface{}) {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	println(string(b))
 }
 
 type PerceptorRC struct {
-
-	// TODO, could make these into arrays.
 	configMapMounts map[string]string
 	emptyDirMounts  map[string]string
 	name            string
@@ -207,7 +223,9 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 	return rc, services
 }
 
-func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, svcAcct string, dryRun bool) {
+// perceptor, pod-perceiver, image-perceiver, pod-perceiver
+
+func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, dryRun bool) {
 	// perceptor = only one container, very simple.
 	rcPCP, svcPCP := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
@@ -219,24 +237,6 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		},
 	})
 
-	// perceptorScan = only one container, but will be split into two later?
-	rcPCPScan, svcPCPScan := NewRcSvc([]PerceptorRC{
-		PerceptorRC{
-			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
-			name:            "perceptor-scanner",
-			image:           "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
-			port:            3003,
-			cmd:             []string{"./dependencies/perceptor-scanner"},
-		},
-		PerceptorRC{
-			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
-			name:            "perceptor-imagefacade",
-			image:           "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
-			port:            3004,
-			cmd:             []string{"./perceptor-imagefacade"},
-		},
-	})
-
 	// perceivers
 	rcPCVR, svcPCVR := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
@@ -245,8 +245,8 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:latest",
 			port:               4000,
 			cmd:                []string{},
-			serviceAccountName: svcAcct,
-			serviceAccount:     svcAcct,
+			serviceAccountName: svcAcct["pod-perceiver"],
+			serviceAccount:     svcAcct["pod-perceiver"],
 		},
 	})
 
@@ -257,8 +257,8 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:latest",
 			port:               4000,
 			cmd:                []string{},
-			serviceAccount:     svcAcct,
-			serviceAccountName: svcAcct,
+			serviceAccount:     svcAcct["image-perceiver"],
+			serviceAccountName: svcAcct["image-perceiver"],
 		},
 	})
 
@@ -279,16 +279,18 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:         "perceptor-scanner",
-			image:        "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
-			dockerSocket: true,
-			port:         3003,
-			cmd:          []string{},
+			name:               "perceptor-scanner",
+			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
+			dockerSocket:       true,
+			port:               3003,
+			cmd:                []string{},
+			serviceAccount:     svcAcct["perceptor-scanner"],
+			serviceAccountName: svcAcct["perceptor-scanner"],
 		},
 	})
 
-	rcs := []*v1.ReplicationController{rcPCP, rcPCPScan, rcPCVR, rcPCVRo, rcSCAN}
-	svc := [][]*v1.Service{svcPCP, svcPCPScan, svcPCVR, svcPCVRo, svcSCAN}
+	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, rcSCAN}
+	svc := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
 
 	for i, rc := range rcs {
 		// Now, create all the resources.  Note that we'll panic after creating ANY
@@ -313,15 +315,23 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	}
 }
 
-func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, dryRun bool) {
-	viper.SetConfigName("protoform")
-	pc := &model.ProtoformConfig{}
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
-	}
-	viper.Unmarshal(pc)
+func sanityCheckServices(svcAccounts map[string]string) bool {
+	isValid := false
+	for cn, _ := range svcAccounts {
+		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner"} {
+			if cn == valid {
+				isValid = true
+			}
+		}
 
+		if isValid == true {
+			break
+		}
+	}
+	return isValid
+}
+
+func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, dryRun bool) {
 	configMaps := pc.ToConfigMap()
 
 	for _, configMap := range configMaps {
@@ -351,12 +361,19 @@ func main() {
 
 	// TODO Viperize these env vars.
 
-	svcAcct := "openshift-perceiver"
-	if os.Getenv("SERVICE_ACCOUNT") == "" {
-		svcAcct = os.Getenv("SERVICE_ACCOUNT")
-		log.Print("modifying svc account:")
-		log.Print(svcAcct)
+	svcAccounts := map[string]string{
+		// WARNINNG: These service accounts need to exist !
+		"pod-perceiver":     "openshift-perceiver",
+		"image-perceiver":   "openshift-perceiver",
+		"perceptor-scanner": "perceptor-scanner-sa",
 	}
+
+	isValid := sanityCheckServices(svcAccounts)
+
+	if isValid == false {
+		panic("Please set the service accounts correctly!")
+	}
+
 	CreateConfigMapsFromInput(namespace, clientset, os.Getenv("DRY_RUN") == "true")
-	CreatePerceptorResources(namespace, clientset, svcAcct, os.Getenv("DRY_RUN") == "true")
+	CreatePerceptorResources(namespace, clientset, svcAccounts, os.Getenv("DRY_RUN") == "true")
 }
