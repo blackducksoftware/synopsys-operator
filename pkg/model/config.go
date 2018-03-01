@@ -69,6 +69,8 @@ func (p *ProtoformConfig) parameterize(json string) string {
 	if p.DockerPasswordOrToken == "" {
 		panic("config failing: cannot continue without a Docker password!!!")
 	}
+
+	json = strings.Replace(json, "_10", p.DockerPasswordOrToken, n)
 	json = strings.Replace(json, "_1", p.PerceptorHost, n)
 	json = strings.Replace(json, "_2", strconv.Itoa(p.PerceptorPort), n)
 	json = strings.Replace(json, "_3", strconv.Itoa(p.AnnotationIntervalSeconds), n)
@@ -78,7 +80,6 @@ func (p *ProtoformConfig) parameterize(json string) string {
 	json = strings.Replace(json, "_7", p.HubUserPassword, n)
 	json = strings.Replace(json, "_8", strconv.Itoa(p.HubPort), n)
 	json = strings.Replace(json, "_9", p.DockerUsername, n)
-	json = strings.Replace(json, "_10", p.DockerPasswordOrToken, n)
 
 	return json
 }
@@ -102,36 +103,12 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// (I think)? Due to the fct that nested anonymous []string's seem to not be
 	// "a thing".
 	defaults := map[string]string{
-		"prometheus": `{
-			"global":{"scrape_interval":"5s"},
-			"scrape_configs":[
-				{"job_name":"perceptor-scrape",
-					"scrape_interval":"5s",
-					"static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003"]}
-					]}]
-		}`,
-		"perceptor-scanner-config": `{
-		  "HubHost": "_5",
-			"HubPort": "_8"
-		  "HubUser": "_6",
-		  "HubUserPassword": "_7"
-		}`,
-		"kube-generic-perceiver-config": `{
-			"PerceptorHost": "_1",
-			"PerceptorPort": "_2",
-			"AnnotationIntervalSeconds": "_3",
-			"DumpIntervalMinutes": "_4"
-		}`,
-		"openshift-perceiver-config": `{
-			"PerceptorHost": "_1",
-			"PerceptorPort": "_2",
-			"AnnotationIntervalSeconds": "_3",
-			"DumpIntervalMinutes": "_4"
-		}`,
-		"perceptor-imagefacade-config": `{
-			"DockerUser": "_9",
-			"DockerPassword": "_10"
-		}`,
+		"prometheus":                    `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003"]}]}]}`,
+		"perceptor-config":              `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7"}`,
+		"perceptor-scanner-config":      `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7"}`,
+		"kube-generic-perceiver-config": `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`,
+		"openshift-perceiver-config":    `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`,
+		"perceptor-imagefacade-config":  `{"DockerUser": "_9","DockerPassword": "_10"}`,
 	}
 
 	maps := make([]*v1.ConfigMap, len(configs))
