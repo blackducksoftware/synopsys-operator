@@ -25,7 +25,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/spf13/viper"
@@ -368,8 +367,8 @@ func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset
 
 // main installs prime
 func main() {
-	configPath := os.Args[1]
-	runProtoform(configPath)
+	//configPath := os.Args[1]
+	runProtoform("/etc/protoform/")
 }
 
 func runProtoform(configPath string) {
