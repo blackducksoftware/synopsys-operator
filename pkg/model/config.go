@@ -10,6 +10,8 @@ import (
 // WARNING: If you add a config value, make sure to
 // add it to the parameterize function as well !
 type ProtoformConfig struct {
+	// Dry run wont actually install, but will print the objects definitions out.
+	DryRun bool
 
 	// CONTAINER CONFIGS
 	// These are sed replaced into the config maps for the containers.

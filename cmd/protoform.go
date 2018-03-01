@@ -24,7 +24,6 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/spf13/viper"
@@ -316,19 +315,22 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 }
 
 func sanityCheckServices(svcAccounts map[string]string) bool {
-	isValid := false
-	for cn, _ := range svcAccounts {
+	isValid := func(cn string) bool {
 		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner"} {
 			if cn == valid {
-				isValid = true
+				return true
 			}
 		}
-
-		if isValid == true {
-			break
+		return false
+	}
+	for cn, _ := range svcAccounts {
+		if !isValid(cn) {
+			log.Print("[protoform] failed at verifiying that the container name for a svc account was valid!")
+			log.Fatalln(cn)
+			return false
 		}
 	}
-	return isValid
+	return true
 }
 
 func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, dryRun bool) {
@@ -360,20 +362,26 @@ func main() {
 	}
 
 	// TODO Viperize these env vars.
+	if pc.ServiceAccounts == nil {
+		log.Println("[viper] NO SERVICE ACCOUNTS FOUND.  USING DEFAULTS: MAKE SURE THESE EXIST!")
 
-	svcAccounts := map[string]string{
-		// WARNINNG: These service accounts need to exist !
-		"pod-perceiver":     "openshift-perceiver",
-		"image-perceiver":   "openshift-perceiver",
-		"perceptor-scanner": "perceptor-scanner-sa",
+		svcAccounts := map[string]string{
+			// WARNINNG: These service accounts need to exist !
+			"pod-perceiver":     "openshift-perceiver",
+			"image-perceiver":   "openshift-perceiver",
+			"perceptor-scanner": "perceptor-scanner-sa",
+		}
+		// TODO programmatically validate rather then sanity check.
+		PrettyPrint(svcAccounts)
+		pc.ServiceAccounts = svcAccounts
 	}
 
-	isValid := sanityCheckServices(svcAccounts)
-
+	isValid := sanityCheckServices(pc.ServiceAccounts)
 	if isValid == false {
 		panic("Please set the service accounts correctly!")
 	}
 
-	CreateConfigMapsFromInput(namespace, clientset, os.Getenv("DRY_RUN") == "true")
-	CreatePerceptorResources(namespace, clientset, svcAccounts, os.Getenv("DRY_RUN") == "true")
+	dryRun := pc.DryRun
+	CreateConfigMapsFromInput(namespace, clientset, dryRun)
+	CreatePerceptorResources(namespace, clientset, pc.ServiceAccounts, dryRun)
 }
