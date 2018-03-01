@@ -24,7 +24,10 @@ package main
 import (
 	"k8s.io/api/core/v1"
 
-	resource "k8s.io/apimachinery/pkg/api/resource"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -39,114 +42,101 @@ type PerceptorRC struct {
 	cmd                []string
 }
 
-// protoform is an experimental installer which bootstraps perceptor and the other
-// autobots.
-
-// main installs prime
-func main() {
-
-	namespace := "bds-perceptor"
-
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
+// This function creates an RC and services that forward to it.
+func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Service) {
 	defaultMem, err := resource.ParseQuantity("2Gi")
+	if err != nil {
+		panic(err)
+	}
 	defaultCPU, err := resource.ParseQuantity("500m")
-
-	// this function creates an RC and services that forward to it.
-	newRcSvc := func(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Service) {
-
-		TheVolumes := []v1.Volume{}
-		TheContainers := []v1.Container{}
-
-		for _, desc := range descriptions {
-			TheVolumes = append(TheVolumes,
-				v1.Volume{
-					Name: desc.configMap,
-					VolumeSource: v1.VolumeSource{
-						ConfigMap: &v1.ConfigMapVolumeSource{
-							LocalObjectReference: v1.LocalObjectReference{
-								Name: desc.configMap,
-							},
-						},
-					},
-				})
-			TheContainers = append(TheContainers, v1.Container{
-				Name:            desc.name,
-				Image:           desc.image,
-				ImagePullPolicy: "Always",
-				Command:         desc.cmd,
-				Ports: []v1.ContainerPort{
-					v1.ContainerPort{
-						ContainerPort: desc.port,
-						Protocol:      "TCP",
-					},
-				},
-				Resources: v1.ResourceRequirements{
-					Requests: v1.ResourceList{
-						v1.ResourceCPU:    defaultCPU,
-						v1.ResourceMemory: defaultMem,
-					},
-				},
-				VolumeMounts: []v1.VolumeMount{
-					v1.VolumeMount{
-						Name:      desc.configMap,
-						MountPath: desc.configMapMountPath,
-					},
-				},
-			})
-		}
-		rc := &v1.ReplicationController{
-			ObjectMeta: v1meta.ObjectMeta{
-				Name: descriptions[0].name,
-			},
-			Spec: v1.ReplicationControllerSpec{
-				Selector: map[string]string{"name": descriptions[0].name},
-				Template: &v1.PodTemplateSpec{
-					ObjectMeta: v1meta.ObjectMeta{
-						Labels: map[string]string{"name": descriptions[0].name},
-					},
-					Spec: v1.PodSpec{
-						Volumes:    TheVolumes,
-						Containers: TheContainers,
-					},
-				},
-			},
-		}
-
-		services := []*v1.Service{}
-		for _, desc := range descriptions {
-			services = append(services, &v1.Service{
-				ObjectMeta: v1meta.ObjectMeta{
-					Name: desc.name,
-				},
-				Spec: v1.ServiceSpec{
-					Ports: []v1.ServicePort{
-						v1.ServicePort{
-							Name: desc.name,
-							Port: desc.port,
-						},
-					},
-					Selector: map[string]string{
-						"name": desc.name,
-					},
-				},
-			})
-		}
-
-		return rc, services
+	if err != nil {
+		panic(err)
 	}
 
+	TheVolumes := []v1.Volume{}
+	TheContainers := []v1.Container{}
+
+	for _, desc := range descriptions {
+		TheVolumes = append(TheVolumes,
+			v1.Volume{
+				Name: desc.configMap,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: desc.configMap,
+						},
+					},
+				},
+			})
+		TheContainers = append(TheContainers, v1.Container{
+			Name:            desc.name,
+			Image:           desc.image,
+			ImagePullPolicy: "Always",
+			Command:         desc.cmd,
+			Ports: []v1.ContainerPort{
+				v1.ContainerPort{
+					ContainerPort: desc.port,
+					Protocol:      "TCP",
+				},
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceCPU:    defaultCPU,
+					v1.ResourceMemory: defaultMem,
+				},
+			},
+			VolumeMounts: []v1.VolumeMount{
+				v1.VolumeMount{
+					Name:      desc.configMap,
+					MountPath: desc.configMapMountPath,
+				},
+			},
+		})
+	}
+	rc := &v1.ReplicationController{
+		ObjectMeta: v1meta.ObjectMeta{
+			Name: descriptions[0].name,
+		},
+		Spec: v1.ReplicationControllerSpec{
+			Selector: map[string]string{"name": descriptions[0].name},
+			Template: &v1.PodTemplateSpec{
+				ObjectMeta: v1meta.ObjectMeta{
+					Labels: map[string]string{"name": descriptions[0].name},
+				},
+				Spec: v1.PodSpec{
+					Volumes:    TheVolumes,
+					Containers: TheContainers,
+				},
+			},
+		},
+	}
+
+	services := []*v1.Service{}
+	for _, desc := range descriptions {
+		services = append(services, &v1.Service{
+			ObjectMeta: v1meta.ObjectMeta{
+				Name: desc.name,
+			},
+			Spec: v1.ServiceSpec{
+				Ports: []v1.ServicePort{
+					v1.ServicePort{
+						Name: desc.name,
+						Port: desc.port,
+					},
+				},
+				Selector: map[string]string{
+					"name": desc.name,
+				},
+			},
+		})
+	}
+
+	return rc, services
+}
+
+func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset) {
 	// perceptor = only one container, very simple.
-	rcPCP, svcPCP := newRcSvc([]PerceptorRC{
+	rcPCP, svcPCP := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
 			configMap:          "perceptor-config",
 			configMapMountPath: "/etc/perceptor",
@@ -158,7 +148,7 @@ func main() {
 	})
 
 	// perceptorScan = only one container, but will be split into two later?
-	rcPCPScan, svcPCPScan := newRcSvc([]PerceptorRC{
+	rcPCPScan, svcPCPScan := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
 			configMap:          "perceptor-scanner-config",
 			configMapMountPath: "/etc/perceptor_scanner",
@@ -178,7 +168,7 @@ func main() {
 	})
 
 	// perceivers
-	rcPCVR, svcPCVR := newRcSvc([]PerceptorRC{
+	rcPCVR, svcPCVR := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
 			configMap:          "kube-generic-perceiver-config",
 			configMapMountPath: "/etc/perceiver",
@@ -189,7 +179,7 @@ func main() {
 		},
 	})
 
-	rcPCVRo, svcPCVRo := newRcSvc([]PerceptorRC{
+	rcPCVRo, svcPCVRo := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
 			configMap:          "openshift-perceiver-config",
 			configMapMountPath: "/etc/perceiver",
@@ -200,7 +190,9 @@ func main() {
 		},
 	})
 
-	_, err = clientset.Core().ReplicationControllers(namespace).Create(rcPCP)
+	// Now, create all the resources.  Note that we'll panic after creating ANY
+	// resource that fails.  Thats intentional.
+	_, err := clientset.Core().ReplicationControllers(namespace).Create(rcPCP)
 	if err != nil {
 		panic(err)
 	}
@@ -243,4 +235,45 @@ func main() {
 			panic(err)
 		}
 	}
+
+}
+
+func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset) {
+	viper.SetConfigName("protoform")
+	pc := &model.ProtoformConfig{}
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	viper.Unmarshal(pc)
+
+	configMaps := pc.ToConfigMap()
+
+	for _, configMap := range configMaps {
+		clientset.Core().ConfigMaps(namespace).Create(configMap)
+	}
+
+}
+
+// protoform is an experimental installer which bootstraps perceptor and the other
+// autobots.
+
+// main installs prime
+func main() {
+
+	namespace := "bds-perceptor"
+
+	// creates the in-cluster config
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	CreateConfigMapsFromInput(namespace, clientset)
+	CreatePerceptorResources(namespace, clientset)
 }
