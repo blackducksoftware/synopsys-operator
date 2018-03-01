@@ -114,13 +114,13 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 						},
 					})
 				addedMounts[cfgMapName] = cfgMapName
+				mounts = append(mounts, v1.VolumeMount{
+					Name:      cfgMapName,
+					MountPath: cfgMapMount,
+				})
 			} else {
 				log.Print(fmt.Sprintf("Not adding volume, already added: %v", cfgMapName))
 			}
-			mounts = append(mounts, v1.VolumeMount{
-				Name:      cfgMapName,
-				MountPath: cfgMapMount,
-			})
 		}
 
 		// keep track of emptyDirs, only once, since it can be referenced in
@@ -139,13 +139,13 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 						},
 					})
 				addedMounts[emptyDirName] = emptyDirName
+				mounts = append(mounts, v1.VolumeMount{
+					Name:      emptyDirName,
+					MountPath: emptyDirMount,
+				})
 			} else {
 				log.Print(fmt.Sprintf("Not adding volume, already added: %v", emptyDirName))
 			}
-			mounts = append(mounts, v1.VolumeMount{
-				Name:      emptyDirName,
-				MountPath: emptyDirMount,
-			})
 		}
 
 		if desc.dockerSocket {
