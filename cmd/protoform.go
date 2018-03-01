@@ -45,9 +45,11 @@ func readConfig(configPath string) *model.ProtoformConfig {
 	viper.SetConfigName("protoform")
 	viper.AddConfigPath(configPath)
 	pc := &model.ProtoformConfig{}
+	log.Print(configPath)
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(err)
+		log.Print(" ^^ Didnt see a config file ! Making a reasonable default.")
+		return nil
 	}
 	viper.Unmarshal(pc)
 	PrettyPrint(pc)
@@ -375,6 +377,9 @@ func runProtoform(configPath string) {
 	namespace := "bds-perceptor"
 	var clientset *kubernetes.Clientset
 	pc := readConfig(configPath)
+	if pc == nil {
+
+	}
 	if !pc.DryRun {
 		// creates the in-cluster config
 		config, err := rest.InClusterConfig()

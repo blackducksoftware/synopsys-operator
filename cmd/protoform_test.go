@@ -21,8 +21,16 @@ under the License.
 
 package main
 
-import "testing"
+import (
+	"testing"
 
-func TestProto(*testing.T) {
-	runProtoform("/etc/protoform")
+	"github.com/spf13/viper"
+)
+
+func TestProto(t *testing.T) {
+	viper.SetDefault("protoform", map[string]string{
+		"HubUserPassword": "ASDF",
+		"DryRun":          "true",
+	})
+	runProtoform("./")
 }
