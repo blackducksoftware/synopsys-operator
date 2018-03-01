@@ -23,6 +23,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
@@ -113,18 +114,26 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 				MountPath: cfgMapMount,
 			})
 		}
+
+		// keep track of emptyDirs, only once, since it can be referenced in
+		// multiple pods
+		addedMounts := map[string]string{}
 		for emptyDirName, emptyDirMount := range desc.emptyDirMounts {
-			TheVolumes = append(TheVolumes,
-				v1.Volume{
-					Name: emptyDirName,
-					VolumeSource: v1.VolumeSource{
-						ConfigMap: &v1.ConfigMapVolumeSource{
-							LocalObjectReference: v1.LocalObjectReference{
-								Name: emptyDirName,
+			if addedMounts[emptyDirName] == "" {
+				TheVolumes = append(TheVolumes,
+					v1.Volume{
+						Name: emptyDirName,
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: emptyDirName,
+								},
 							},
 						},
-					},
-				})
+					})
+			} else {
+				log.Print(fmt.Sprintf("Not adding volume, already added: %v", emptyDirName))
+			}
 			mounts = append(mounts, v1.VolumeMount{
 				Name:      emptyDirName,
 				MountPath: emptyDirMount,
@@ -268,24 +277,24 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:         "image-perceiver",
-			image:        "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
-			dockerSocket: false,
-			port:         4000,
-			cmd:          []string{},
+			name:               "perceptor-image-facade",
+			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
+			dockerSocket:       false,
+			port:               4000,
+			cmd:                []string{},
+			serviceAccount:     svcAcct["perceptor-scanner"],
+			serviceAccountName: svcAcct["perceptor-scanner"],
 		},
 		PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:               "perceptor-scanner",
-			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
-			dockerSocket:       true,
-			port:               3003,
-			cmd:                []string{},
-			serviceAccount:     svcAcct["perceptor-scanner"],
-			serviceAccountName: svcAcct["perceptor-scanner"],
+			name:         "perceptor-scanner",
+			image:        "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
+			dockerSocket: true,
+			port:         3003,
+			cmd:          []string{},
 		},
 	})
 
@@ -317,7 +326,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 
 func sanityCheckServices(svcAccounts map[string]string) bool {
 	isValid := func(cn string) bool {
-		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner"} {
+		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner", "perceptor-image-facade"} {
 			if cn == valid {
 				return true
 			}
@@ -368,9 +377,9 @@ func main() {
 
 		svcAccounts := map[string]string{
 			// WARNINNG: These service accounts need to exist !
-			"pod-perceiver":     "openshift-perceiver",
-			"image-perceiver":   "openshift-perceiver",
-			"perceptor-scanner": "perceptor-scanner-sa",
+			"pod-perceiver":          "openshift-perceiver",
+			"image-perceiver":        "openshift-perceiver",
+			"perceptor-image-facade": "perceptor-scanner-sa",
 		}
 		// TODO programmatically validate rather then sanity check.
 		PrettyPrint(svcAccounts)
