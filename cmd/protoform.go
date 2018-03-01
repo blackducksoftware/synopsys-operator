@@ -37,16 +37,14 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var pc *model.ProtoformConfig
-
 // We don't dynamically reload.
 // If users want to dynamically reload,
 // they can update the individual perceptor containers configmaps.
-func init() {
+func readConfig() *model.ProtoformConfig {
 	log.Print("*************** [protoform] initializing viper ****************")
 	viper.SetConfigName("protoform")
 	viper.AddConfigPath("/etc/protoform/")
-	pc = &model.ProtoformConfig{}
+	pc := &model.ProtoformConfig{}
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
@@ -54,6 +52,7 @@ func init() {
 	viper.Unmarshal(pc)
 	PrettyPrint(pc)
 	log.Print("*************** [protoform] done reading in viper ****************")
+	return pc
 }
 
 func PrettyPrint(v interface{}) {
@@ -350,11 +349,9 @@ func sanityCheckServices(svcAccounts map[string]string) bool {
 	return true
 }
 
-func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, dryRun bool) {
-	configMaps := pc.ToConfigMap()
-
+func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, configMaps []*v1.ConfigMap, dryRun bool) {
 	for _, configMap := range configMaps {
-		if !pc.DryRun {
+		if !dryRun {
 			clientset.Core().ConfigMaps(namespace).Create(configMap)
 		}
 	}
@@ -369,6 +366,7 @@ func main() {
 
 	namespace := "bds-perceptor"
 	var clientset *kubernetes.Clientset
+	pc := readConfig()
 	if !pc.DryRun {
 		// creates the in-cluster config
 		config, err := rest.InClusterConfig()
@@ -393,7 +391,7 @@ func main() {
 			"image-perceiver":        "openshift-perceiver",
 			"perceptor-image-facade": "perceptor-scanner-sa",
 		}
-		// TODO programmatically validate rather then sanity check.
+		// TODO programatically validate rather then sanity check.
 		PrettyPrint(svcAccounts)
 		pc.ServiceAccounts = svcAccounts
 	}
@@ -404,6 +402,6 @@ func main() {
 	}
 
 	dryRun := pc.DryRun
-	CreateConfigMapsFromInput(namespace, clientset, dryRun)
+	CreateConfigMapsFromInput(namespace, clientset, pc.ToConfigMap(), pc.DryRun)
 	CreatePerceptorResources(namespace, clientset, pc.ServiceAccounts, dryRun)
 }
