@@ -72,6 +72,7 @@ items:
       HubHost: "$HUB_HOST"
       HubUser: "sysadmin"
       HubUserPassword: "$HUB_PASSWORD"
+      ConcurrentScanLimit: 2
 - apiVersion: v1
   kind: ConfigMap
   metadata:
