@@ -23,10 +23,6 @@ package main
 
 import "testing"
 
-// protoform is an experimental installer which bootstraps perceptor and the other
-// autobots.
-
-// main installs prime
 func TestProto(*testing.T) {
 	runProtoform("/etc/protoform")
 }

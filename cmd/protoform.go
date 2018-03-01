@@ -352,11 +352,15 @@ func sanityCheckServices(svcAccounts map[string]string) bool {
 
 func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, configMaps []*v1.ConfigMap, dryRun bool) {
 	for _, configMap := range configMaps {
+		log.Println("*********************************************")
+		log.Println("Creating config maps:", configMap)
 		if !dryRun {
+			log.Println("creating config map.")
 			clientset.Core().ConfigMaps(namespace).Create(configMap)
+		} else {
+			PrettyPrint(configMap)
 		}
 	}
-
 }
 
 // protoform is an experimental installer which bootstraps perceptor and the other
@@ -406,7 +410,8 @@ func runProtoform(configPath string) {
 		panic("Please set the service accounts correctly!")
 	}
 
-	dryRun := pc.DryRun
+	log.Println("Creating config maps : Dry Run ")
+
 	CreateConfigMapsFromInput(namespace, clientset, pc.ToConfigMap(), pc.DryRun)
-	CreatePerceptorResources(namespace, clientset, pc.ServiceAccounts, dryRun)
+	CreatePerceptorResources(namespace, clientset, pc.ServiceAccounts, pc.DryRun)
 }
