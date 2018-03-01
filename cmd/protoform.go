@@ -276,7 +276,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 
 	rcSCAN, svcSCAN := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
-			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
+			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
