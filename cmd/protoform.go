@@ -93,12 +93,10 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 
 	TheVolumes := []v1.Volume{}
 	TheContainers := []v1.Container{}
-
 	mounts := []v1.VolumeMount{}
+	addedMounts := map[string]string{}
 
 	for _, desc := range descriptions {
-
-		addedMounts := map[string]string{}
 
 		for cfgMapName, cfgMapMount := range desc.configMapMounts {
 			log.Print("Adding config mounts now.")
@@ -134,11 +132,7 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 					v1.Volume{
 						Name: emptyDirName,
 						VolumeSource: v1.VolumeSource{
-							ConfigMap: &v1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{
-									Name: emptyDirName,
-								},
-							},
+							EmptyDir: &v1.EmptyDirVolumeSource{},
 						},
 					})
 				mounts = append(mounts, v1.VolumeMount{
@@ -244,42 +238,43 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 // perceptor, pod-perceiver, image-perceiver, pod-perceiver
 
 func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, dryRun bool) {
-	// perceptor = only one container, very simple.
-	rcPCP, svcPCP := NewRcSvc([]PerceptorRC{
-		PerceptorRC{
-			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
-			name:            "perceptor",
-			image:           "gcr.io/gke-verification/blackducksoftware/perceptor:latest",
-			port:            3001,
-			cmd:             []string{"./perceptor"},
-		},
-	})
+	/**
+		// perceptor = only one container, very simple.
+		rcPCP, svcPCP := NewRcSvc([]PerceptorRC{
+			PerceptorRC{
+				configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
+				name:            "perceptor",
+				image:           "gcr.io/gke-verification/blackducksoftware/perceptor:latest",
+				port:            3001,
+				cmd:             []string{"./perceptor"},
+			},
+		})
 
-	// perceivers
-	rcPCVR, svcPCVR := NewRcSvc([]PerceptorRC{
-		PerceptorRC{
-			configMapMounts:    map[string]string{"kube-generic-perceiver-config": "/etc/perceiver"},
-			name:               "pod-perceiver",
-			image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:latest",
-			port:               4000,
-			cmd:                []string{},
-			serviceAccountName: svcAcct["pod-perceiver"],
-			serviceAccount:     svcAcct["pod-perceiver"],
-		},
-	})
+		// perceivers
+		rcPCVR, svcPCVR := NewRcSvc([]PerceptorRC{
+			PerceptorRC{
+				configMapMounts:    map[string]string{"kube-generic-perceiver-config": "/etc/perceiver"},
+				name:               "pod-perceiver",
+				image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:latest",
+				port:               4000,
+				cmd:                []string{},
+				serviceAccountName: svcAcct["pod-perceiver"],
+				serviceAccount:     svcAcct["pod-perceiver"],
+			},
+		})
 
-	rcPCVRo, svcPCVRo := NewRcSvc([]PerceptorRC{
-		PerceptorRC{
-			configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
-			name:               "image-perceiver",
-			image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:latest",
-			port:               4000,
-			cmd:                []string{},
-			serviceAccount:     svcAcct["image-perceiver"],
-			serviceAccountName: svcAcct["image-perceiver"],
-		},
-	})
-
+		rcPCVRo, svcPCVRo := NewRcSvc([]PerceptorRC{
+			PerceptorRC{
+				configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
+				name:               "image-perceiver",
+				image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:latest",
+				port:               4000,
+				cmd:                []string{},
+				serviceAccount:     svcAcct["image-perceiver"],
+				serviceAccountName: svcAcct["image-perceiver"],
+			},
+		})
+	**/
 	rcSCAN, svcSCAN := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
@@ -307,8 +302,10 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		},
 	})
 
-	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, rcSCAN}
-	svc := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
+	rcs := []*v1.ReplicationController{rcSCAN}
+	svc := [][]*v1.Service{svcSCAN}
+	//	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, rcSCAN}
+	//	svc := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
 
 	for i, rc := range rcs {
 		// Now, create all the resources.  Note that we'll panic after creating ANY
@@ -322,7 +319,8 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		}
 		for _, svcI := range svc[i] {
 			if dryRun {
-				PrettyPrint(svc)
+				// service dont really need much debug...
+				//PrettyPrint(svc)
 			} else {
 				_, err := clientset.Core().Services(namespace).Create(svcI)
 				if err != nil {
@@ -356,7 +354,9 @@ func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset
 	configMaps := pc.ToConfigMap()
 
 	for _, configMap := range configMaps {
-		clientset.Core().ConfigMaps(namespace).Create(configMap)
+		if !pc.DryRun {
+			clientset.Core().ConfigMaps(namespace).Create(configMap)
+		}
 	}
 
 }
@@ -368,16 +368,19 @@ func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset
 func main() {
 
 	namespace := "bds-perceptor"
-
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
+	var clientset *kubernetes.Clientset
+	if !pc.DryRun {
+		// creates the in-cluster config
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			panic(err.Error())
+		} else {
+			// creates the clientset
+			clientset, err = kubernetes.NewForConfig(config)
+			if err != nil {
+				panic(err.Error())
+			}
+		}
 	}
 
 	// TODO Viperize these env vars.
