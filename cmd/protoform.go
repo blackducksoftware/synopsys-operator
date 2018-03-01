@@ -45,7 +45,7 @@ func init() {
 	log.Print("*************** [protoform] initializing viper ****************")
 	viper.SetConfigName("protoform")
 	viper.AddConfigPath("/etc/protoform/")
-	pc := &model.ProtoformConfig{}
+	pc = &model.ProtoformConfig{}
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
