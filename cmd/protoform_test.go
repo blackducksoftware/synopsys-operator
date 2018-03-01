@@ -28,5 +28,5 @@ import "testing"
 
 // main installs prime
 func TestProto(*testing.T) {
-	main()
+	runProtoform("/etc/protoform")
 }

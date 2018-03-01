@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/spf13/viper"
@@ -40,10 +41,10 @@ import (
 // We don't dynamically reload.
 // If users want to dynamically reload,
 // they can update the individual perceptor containers configmaps.
-func readConfig() *model.ProtoformConfig {
+func readConfig(configPath string) *model.ProtoformConfig {
 	log.Print("*************** [protoform] initializing viper ****************")
 	viper.SetConfigName("protoform")
-	viper.AddConfigPath("/etc/protoform/")
+	viper.AddConfigPath(configPath)
 	pc := &model.ProtoformConfig{}
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -363,10 +364,14 @@ func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset
 
 // main installs prime
 func main() {
+	configPath := os.Args[1]
+	runProtoform(configPath)
+}
 
+func runProtoform(configPath string) {
 	namespace := "bds-perceptor"
 	var clientset *kubernetes.Clientset
-	pc := readConfig()
+	pc := readConfig(configPath)
 	if !pc.DryRun {
 		// creates the in-cluster config
 		config, err := rest.InClusterConfig()
