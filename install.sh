@@ -104,4 +104,4 @@ EOF
 
 oc create -f protoform.yml
 
-./post-hack.sh
+#./post-hack.sh
