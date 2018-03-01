@@ -2,9 +2,13 @@
 
 ./pre-install.sh
 
-echo "Enter your password for the hub:"
+echo "Enter your host for the hub:"
+read HUB_HOST
+
+echo "Enter your hub password:"
 read -s HUB_PASSWORD
-echo "Done..."
+
+echo "Done!"
 
 DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
 
@@ -37,7 +41,7 @@ items:
     name: perceptor-scanner-config
   data:
     perceptor_scanner_conf.yaml: |
-      HubHost: "34.227.106.252.xip.io"
+      HubHost: "$HUB_HOST"
       HubUser: "sysadmin"
       HubUserPassword: "$HUB_PASSWORD"
 - apiVersion: v1
@@ -65,7 +69,7 @@ items:
     name: perceptor-config
   data:
     perceptor_conf.yaml: |
-      HubHost: "34.227.106.252.xip.io"
+      HubHost: "$HUB_HOST"
       HubUser: "sysadmin"
       HubUserPassword: "$HUB_PASSWORD"
 - apiVersion: v1
