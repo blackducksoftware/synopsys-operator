@@ -59,8 +59,6 @@ install-rbac() {
 		oc new-project $NS
 
 		oc create serviceaccount perceptor-protoform-sa -n $NS
-		# allows launching of privileged containers for Docker machine access
-		oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-protoform-sa
 		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-protoform-sa
 
 		# Create the openshift-perceiver service account

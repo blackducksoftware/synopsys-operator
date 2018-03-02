@@ -70,8 +70,6 @@ spec:
     image: gcr.io/gke-verification/blackducksoftware/perceptor-protoform:latest
     imagePullPolicy: Always
     command: [ ./protoform ]
-    securityContext:
-      privileged: true
     ports:
     - containerPort: 3001
       protocol: TCP
