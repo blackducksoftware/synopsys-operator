@@ -73,9 +73,6 @@ type PerceptorRC struct {
 	// key:value = name:mountPath
 	emptyDirVolumeMounts map[string]string
 
-	// if true, then container is privileged /var/run/docker.sock.
-	needsDockerSocket bool
-
 	// Only needed for openshift.
 	serviceAccount     string
 	serviceAccountName string
@@ -145,22 +142,6 @@ func NewRcSvc(podName string, descriptions []PerceptorRC) (*v1.ReplicationContro
 			}
 		}
 
-		if desc.needsDockerSocket {
-			dockerSock := v1.VolumeMount{
-				Name:      "dir-docker-socket",
-				MountPath: "/var/run/docker.sock",
-			}
-			mounts = append(mounts, dockerSock)
-			TheVolumes = append(TheVolumes, v1.Volume{
-				Name: dockerSock.Name,
-				VolumeSource: v1.VolumeSource{
-					HostPath: &v1.HostPathVolumeSource{
-						Path: dockerSock.MountPath,
-					},
-				},
-			})
-		}
-
 		for name, _ := range desc.emptyDirVolumeMounts {
 			TheVolumes = append(TheVolumes, v1.Volume{
 				Name: name,
@@ -189,9 +170,6 @@ func NewRcSvc(podName string, descriptions []PerceptorRC) (*v1.ReplicationContro
 				},
 			},
 			VolumeMounts: mounts,
-			SecurityContext: &v1.SecurityContext{
-				Privileged: &desc.needsDockerSocket,
-			},
 		})
 
 	}
