@@ -46,6 +46,12 @@ func TestProto(t *testing.T) {
 		t.Fail()
 	}
 
+	scanner_svc := rcsArray[3].Spec.Template.Spec.ServiceAccountName
+	if scanner_svc == "" {
+		t.Log("scanner svc ==> ( %v ) EMPTY !", scanner_svc)
+		t.Fail()
+	}
+
 	s0 := rcsArray[3].Spec.Template.Spec.Containers[0].Name
 	s := rcsArray[3].Spec.Template.Spec.Containers[0].VolumeMounts[1].Name
 	if s != "var-images" {

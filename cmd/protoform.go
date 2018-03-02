@@ -244,7 +244,9 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 
 func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, dryRun bool) []*v1.ReplicationController {
 
-	// perceptor = only one container, very simple.
+	// WARNING: THE SERVICE ACCOUNT IN THE FIRST CONTAINER IS USED FOR THE GLOBAL SVC ACCOUNT FOR ALL PODS !!!!!!!!!!!!!
+	// MAKE SURE IF YOU NEED A SVC ACCOUNT THAT ITS IN THE FIRST CONTAINER...
+
 	rcPCP, svcPCP := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
@@ -286,11 +288,13 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:         "perceptor-scanner",
-			image:        "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
-			dockerSocket: false,
-			port:         3003,
-			cmd:          []string{},
+			name:               "perceptor-scanner",
+			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
+			dockerSocket:       false,
+			port:               3003,
+			cmd:                []string{},
+			serviceAccount:     svcAcct["perceptor-image-facade"],
+			serviceAccountName: svcAcct["perceptor-image-facade"],
 		},
 		&PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
@@ -311,6 +315,8 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	// svc := [][]*v1.Service{svcSCAN}
 	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, rcSCAN}
 	svc := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
+
+	// TODO MAKE SURE WE VERIFY THAT SERVICE ACCOUNTS ARE EQUAL
 
 	for i, rc := range rcs {
 		// Now, create all the resources.  Note that we'll panic after creating ANY
@@ -423,4 +429,5 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 
 	CreateConfigMapsFromInput(namespace, clientset, pc.ToConfigMap(), pc.DryRun)
 	return CreatePerceptorResources(namespace, clientset, pc.ServiceAccounts, pc.DryRun)
+
 }
