@@ -28,7 +28,7 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PerceptorScannerPod struct {
+type PerceptorScanner struct {
 	PodName               string
 	ScannerImage          string
 	ScannerPort           int32
@@ -50,9 +50,12 @@ type PerceptorScannerPod struct {
 
 	DockerSocketName string
 	DockerSocketPath string
+
+	ImagesMountName string
+	ImagesMountPath string
 }
 
-func NewPerceptorScannerPod(serviceAccountName string) *PerceptorScannerPod {
+func NewPerceptorScanner(serviceAccountName string) *PerceptorScanner {
 	defaultMem, err := resource.ParseQuantity("2Gi")
 	if err != nil {
 		panic(err)
@@ -61,7 +64,7 @@ func NewPerceptorScannerPod(serviceAccountName string) *PerceptorScannerPod {
 	if err != nil {
 		panic(err)
 	}
-	return &PerceptorScannerPod{
+	return &PerceptorScanner{
 		PodName:               "perceptor-scanner",
 		ScannerImage:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
 		ScannerPort:           3003,
@@ -83,10 +86,13 @@ func NewPerceptorScannerPod(serviceAccountName string) *PerceptorScannerPod {
 
 		DockerSocketName: "dir-docker-socket",
 		DockerSocketPath: "/var/run/docker.sock",
+
+		ImagesMountName: "var-images",
+		ImagesMountPath: "/var/images",
 	}
 }
 
-func (psp *PerceptorScannerPod) scannerContainer() *v1.Container {
+func (psp *PerceptorScanner) scannerContainer() *v1.Container {
 	return &v1.Container{
 		Name:            "perceptor-scanner",
 		Image:           psp.ScannerImage,
@@ -106,8 +112,8 @@ func (psp *PerceptorScannerPod) scannerContainer() *v1.Container {
 		},
 		VolumeMounts: []v1.VolumeMount{
 			v1.VolumeMount{
-				Name:      "var-images",
-				MountPath: "/var/images",
+				Name:      psp.ImagesMountName,
+				MountPath: psp.ImagesMountPath,
 			},
 			v1.VolumeMount{
 				Name:      psp.ScannerConfigMapName,
@@ -117,7 +123,7 @@ func (psp *PerceptorScannerPod) scannerContainer() *v1.Container {
 	}
 }
 
-func (psp *PerceptorScannerPod) imageFacadeContainer() *v1.Container {
+func (psp *PerceptorScanner) imageFacadeContainer() *v1.Container {
 	privileged := true
 	return &v1.Container{
 		Name:            "perceptor-imagefacade",
@@ -138,8 +144,8 @@ func (psp *PerceptorScannerPod) imageFacadeContainer() *v1.Container {
 		},
 		VolumeMounts: []v1.VolumeMount{
 			v1.VolumeMount{
-				Name:      "var-images",
-				MountPath: "/var/images",
+				Name:      psp.ImagesMountName,
+				MountPath: psp.ImagesMountPath,
 			},
 			v1.VolumeMount{
 				Name:      psp.ImageFacadeConfigMapName,
@@ -154,7 +160,7 @@ func (psp *PerceptorScannerPod) imageFacadeContainer() *v1.Container {
 	}
 }
 
-func (psp *PerceptorScannerPod) ReplicationController() *v1.ReplicationController {
+func (psp *PerceptorScanner) ReplicationController() *v1.ReplicationController {
 	return &v1.ReplicationController{
 		ObjectMeta: v1meta.ObjectMeta{Name: psp.PodName},
 		Spec: v1.ReplicationControllerSpec{
@@ -181,7 +187,7 @@ func (psp *PerceptorScannerPod) ReplicationController() *v1.ReplicationControlle
 							},
 						},
 						v1.Volume{
-							Name:         "var-images",
+							Name:         psp.ImagesMountName,
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
 						v1.Volume{
@@ -197,7 +203,7 @@ func (psp *PerceptorScannerPod) ReplicationController() *v1.ReplicationControlle
 				}}}}
 }
 
-func (psp *PerceptorScannerPod) ScannerService() *v1.Service {
+func (psp *PerceptorScanner) ScannerService() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
 			Name: psp.ScannerServiceName,
@@ -212,7 +218,7 @@ func (psp *PerceptorScannerPod) ScannerService() *v1.Service {
 			Selector: map[string]string{"name": psp.ScannerServiceName}}}
 }
 
-func (psp *PerceptorScannerPod) ImageFacadeService() *v1.Service {
+func (psp *PerceptorScanner) ImageFacadeService() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
 			Name: psp.ImageFacadeServiceName,
