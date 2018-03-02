@@ -276,35 +276,10 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		},
 	})
 
-	scannerReplicationController, svcSCAN := NewRcSvc("perceptor-scanner", []PerceptorRC{
-		PerceptorRC{
-			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
-			emptyDirMounts: map[string]string{
-				"var-images": "/var/images",
-			},
-			name:               "perceptor-image-facade",
-			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
-			needsDockerSocket:  true,
-			port:               4000,
-			cmd:                []string{},
-			serviceAccount:     svcAcct["perceptor-image-facade"],
-			serviceAccountName: svcAcct["perceptor-image-facade"],
-		},
-		PerceptorRC{
-			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
-			emptyDirMounts: map[string]string{
-				"var-images": "/var/images",
-			},
-			name:              "perceptor-scanner",
-			image:             "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
-			needsDockerSocket: false,
-			port:              3003,
-			cmd:               []string{},
-		},
-	})
+	perceptorScanner := NewPerceptorScannerPod(svcAcct["perceptor-image-facade"])
 
-	replicationControllers := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, scannerReplicationController}
-	services := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
+	replicationControllers := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, perceptorScanner.ReplicationController()}
+	services := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, []*v1.Service{perceptorScanner.ScannerService(), perceptorScanner.ImageFacadeService()}}
 
 	for i, rc := range replicationControllers {
 		// Now, create all the resources.  Note that we'll panic after creating ANY
