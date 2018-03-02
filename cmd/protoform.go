@@ -69,6 +69,7 @@ type PerceptorRC struct {
 	image           string
 	port            int32
 	cmd             []string
+	replicas        int32
 
 	// key:value = name:mountPath
 	emptyDirVolumeMounts map[string]string
@@ -199,11 +200,13 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 
 		log.Print(fmt.Sprintf("privileged = %v %v %v", desc.name, desc.dockerSocket, *container.SecurityContext.Privileged))
 	}
+
 	rc := &v1.ReplicationController{
 		ObjectMeta: v1meta.ObjectMeta{
 			Name: descriptions[0].name,
 		},
 		Spec: v1.ReplicationControllerSpec{
+			Replicas: &descriptions[0].replicas,
 			Selector: map[string]string{"name": descriptions[0].name},
 			Template: &v1.PodTemplateSpec{
 				ObjectMeta: v1meta.ObjectMeta{
@@ -249,6 +252,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 
 	rcPCP, svcPCP := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
+			replicas:        1,
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
 			name:            "perceptor",
 			image:           "gcr.io/gke-verification/blackducksoftware/perceptor:master",
@@ -260,6 +264,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	// perceivers
 	rcPCVR, svcPCVR := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
+			replicas:           1,
 			configMapMounts:    map[string]string{"kube-generic-perceiver-config": "/etc/perceiver"},
 			name:               "pod-perceiver",
 			image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:master",
@@ -272,6 +277,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 
 	rcPCVRo, svcPCVRo := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
+			replicas:           1,
 			configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
 			name:               "image-perceiver",
 			image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:master",
@@ -284,6 +290,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 
 	rcSCAN, svcSCAN := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
+			replicas:        2,
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
