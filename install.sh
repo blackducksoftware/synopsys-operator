@@ -18,7 +18,7 @@ echo "============================================"
 read -p "Hub server host (e.g. hub.mydomain.com): " hubHost
 read -p "Hub server port [$DEF_HUBPORT]: " hubPort
 read -p "Hub user name [$DEF_HUBUSER]: " hubUser
-read -sp "Hub user password : " hubPassword
+read -sp "Hub user password: " hubPassword
 echo " "
 read -p "Maximum concurrent scans [$CONCURRENT_SCAN]: " noOfConcurrentScan
 
@@ -52,7 +52,7 @@ EOF
 
 oc create -f config.yml
 
-echo "Your configuration is at config.yml, click ENTER to proceed installing, or edit it before continuing"
+echo "Your configuration is at config.yml -- hit return to proceed installing, or edit it before continuing"
 read -s
 
 cat << EOF > protoform.yml

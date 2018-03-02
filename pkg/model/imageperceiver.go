@@ -40,7 +40,7 @@ type ImagePerceiver struct {
 	ServiceAccountName string
 }
 
-func NewImagePerceiver(serviceAccountName string) *ImagePerceiver {
+func NewImagePerceiver(replicaCount int32, serviceAccountName string) *ImagePerceiver {
 	memory, err := resource.ParseQuantity("2Gi")
 	if err != nil {
 		panic(err)
@@ -58,7 +58,7 @@ func NewImagePerceiver(serviceAccountName string) *ImagePerceiver {
 		Memory:             memory,
 		ConfigMapName:      "openshift-perceiver-config",
 		ConfigMapMount:     "/etc/perceiver",
-		ReplicaCount:       1,
+		ReplicaCount:       replicaCount,
 		ServiceName:        "image-perceiver",
 		ServiceAccountName: serviceAccountName,
 	}

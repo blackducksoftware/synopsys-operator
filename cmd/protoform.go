@@ -60,6 +60,8 @@ func PrettyPrint(v interface{}) {
 
 func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, serviceAccounts map[string]string, dryRun bool) {
 
+	imagePerceiverReplicaCount := 0
+
 	perceptor := model.NewPerceptorCore()
 	podPerceiver := model.NewPodPerceiver(serviceAccounts["pod-perceiver"])
 	imagePerceiver := model.NewImagePerceiver(serviceAccounts["image-perceiver"])
@@ -68,7 +70,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	replicationControllers := []*v1.ReplicationController{
 		perceptor.ReplicationController(),
 		podPerceiver.ReplicationController(),
-		imagePerceiver.ReplicationController(),
+		imagePerceiver.ReplicationController(imagePerceiverReplicaCount),
 		perceptorScanner.ReplicationController()}
 	services := []*v1.Service{
 		perceptor.Service(),
