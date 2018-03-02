@@ -74,7 +74,7 @@ type PerceptorRC struct {
 	emptyDirVolumeMounts map[string]string
 
 	// if true, then container is privileged /var/run/docker.sock.
-	dockerSocket bool
+	needsDockerSocket bool
 
 	// Only needed for openshift.
 	serviceAccount     string
@@ -145,7 +145,7 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 			}
 		}
 
-		if desc.dockerSocket {
+		if desc.needsDockerSocket {
 			dockerSock := v1.VolumeMount{
 				Name:      "dir-docker-socket",
 				MountPath: "/var/run/docker.sock",
@@ -190,7 +190,7 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 			},
 			VolumeMounts: mounts,
 			SecurityContext: &v1.SecurityContext{
-				Privileged: &desc.dockerSocket,
+				Privileged: &desc.needsDockerSocket,
 			},
 		})
 
@@ -284,7 +284,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			},
 			name:               "perceptor-image-facade",
 			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
-			dockerSocket:       false,
+			needsDockerSocket:  true,
 			port:               4000,
 			cmd:                []string{},
 			serviceAccount:     svcAcct["perceptor-image-facade"],
@@ -295,11 +295,11 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:         "perceptor-scanner",
-			image:        "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
-			dockerSocket: true,
-			port:         3003,
-			cmd:          []string{},
+			name:              "perceptor-scanner",
+			image:             "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
+			needsDockerSocket: false,
+			port:              3003,
+			cmd:               []string{},
 		},
 	})
 
