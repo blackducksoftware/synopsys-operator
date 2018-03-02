@@ -108,7 +108,7 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// (I think)? Due to the fct that nested anonymous []string's seem to not be
 	// "a thing".
 	defaults := map[string]string{
-		"prometheus":                    `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003"]}]}]}`,
+		"prometheus":                    `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003","perceptor-imagefacade:4000"]}]}]}`,
 		"perceptor-config":              `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","ConcurrentScanLimit": "_11"}`,
 		"perceptor-scanner-config":      `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7"}`,
 		"kube-generic-perceiver-config": `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`,
