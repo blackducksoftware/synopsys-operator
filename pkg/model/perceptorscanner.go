@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package main
+package model
 
 import (
 	"k8s.io/api/core/v1"

@@ -254,7 +254,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		},
 	})
 
-	perceptorScanner := NewPerceptorScannerPod(svcAcct["perceptor-image-facade"])
+	perceptorScanner := model.NewPerceptorScannerPod(svcAcct["perceptor-image-facade"])
 
 	replicationControllers := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, perceptorScanner.ReplicationController()}
 	services := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, []*v1.Service{perceptorScanner.ScannerService(), perceptorScanner.ImageFacadeService()}}
