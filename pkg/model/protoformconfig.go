@@ -154,7 +154,7 @@ func (pc *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	pc.fillInDefaultValues()
 
 	return []*v1.ConfigMap{
-		makeConfigMap("prometheus", "prometheus.yml", `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003","perceptor-imagefacade:4000"]}]}]}`),
+		makeConfigMap("prometheus", "prometheus.yml", `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003","perceptor-imagefacade:3004"]}]}]}`),
 		makeConfigMap("perceptor-scanner-config", "perceptor_scanner_conf.yaml", pc.PerceptorScannerConfig()),
 		makeConfigMap("kube-generic-perceiver-config", "perceiver.yaml", pc.PodPerceiverConfig()),
 		makeConfigMap("perceptor-config", "perceptor_conf.yaml", pc.PerceptorConfig()),

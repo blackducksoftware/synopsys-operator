@@ -55,32 +55,4 @@ oc create -f config.yml
 echo "Your configuration is at config.yml -- hit return to proceed installing, or edit it before continuing"
 read -s
 
-cat << EOF > protoform.yml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: protoform
-spec:
-  volumes:
-  - name: viper-input
-    configMap:
-      name: viper-input
-  containers:
-  - name: protoform
-    image: gcr.io/gke-verification/blackducksoftware/perceptor-protoform:latest
-    imagePullPolicy: Always
-    command: [ ./protoform ]
-    ports:
-    - containerPort: 3001
-      protocol: TCP
-    volumeMounts:
-    - name: viper-input
-      mountPath: /etc/protoform/
-  restartPolicy: Never
-  serviceAccountName: perceptor-protoform-sa
-  serviceAccount: perceptor-protoform-sa
-EOF
-
 oc create -f protoform.yml
-
-#./post-hack.sh
