@@ -70,6 +70,8 @@ spec:
     image: gcr.io/gke-verification/blackducksoftware/perceptor-protoform:latest
     imagePullPolicy: Always
     command: [ ./protoform ]
+    securityContext:
+      privileged: true
     ports:
     - containerPort: 3001
       protocol: TCP
@@ -77,8 +79,8 @@ spec:
     - name: viper-input
       mountPath: /etc/protoform/
   restartPolicy: Never
-  serviceAccountName: openshift-perceiver
-  serviceAccount: openshift-perceiver
+  serviceAccountName: perceptor-protoform-sa
+  serviceAccount: perceptor-protoform-sa
 EOF
 
 oc create -f protoform.yml
