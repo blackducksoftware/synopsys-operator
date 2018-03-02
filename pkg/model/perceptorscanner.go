@@ -181,14 +181,6 @@ func (psp *PerceptorScannerPod) ReplicationController() *v1.ReplicationControlle
 							},
 						},
 						v1.Volume{
-							Name: psp.ImageFacadeConfigMapName,
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{Name: psp.ImageFacadeConfigMapName},
-								},
-							},
-						},
-						v1.Volume{
 							Name:         "var-images",
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
