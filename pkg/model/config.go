@@ -1,6 +1,7 @@
 package model
 
 import (
+	"log"
 	"strconv"
 	"strings"
 
@@ -68,7 +69,7 @@ func (p *ProtoformConfig) parameterize(json string) string {
 		p.DockerUsername = "admin"
 	}
 	if p.DockerPasswordOrToken == "" {
-		panic("config failing: cannot continue without a Docker password!!!")
+		log.Printf("config ERROR : cannot continue without a Docker password!!!")
 	}
 	if p.ConcurrentScanLimit == 0 {
 		p.ConcurrentScanLimit = 2

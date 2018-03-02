@@ -32,5 +32,24 @@ func TestProto(t *testing.T) {
 		"HubUserPassword": "ASDF",
 		"DryRun":          "true",
 	})
-	runProtoform("./")
+	rcsArray := runProtoform("./")
+
+	// Image facade needs to be privileged !
+	if *rcsArray[3].Spec.Template.Spec.Containers[1].SecurityContext.Privileged == false {
+		t.Log("%v %v", rcsArray[3].Spec.Template.Spec.Containers[0].Name, *rcsArray[3].Spec.Template.Spec.Containers[0].SecurityContext.Privileged)
+		t.Fail()
+	}
+
+	// The scanner needs to be UNPRIVILEGED
+	if *rcsArray[3].Spec.Template.Spec.Containers[0].SecurityContext.Privileged == true {
+		t.Log("%v %v", rcsArray[3].Spec.Template.Spec.Containers[0].Name, *rcsArray[3].Spec.Template.Spec.Containers[0].SecurityContext.Privileged)
+		t.Fail()
+	}
+
+	s0 := rcsArray[3].Spec.Template.Spec.Containers[0].Name
+	s := rcsArray[3].Spec.Template.Spec.Containers[0].VolumeMounts[1].Name
+	if s != "var-images" {
+		t.Log("%v %v", s0, s)
+		t.Fail()
+	}
 }
