@@ -1,99 +1,70 @@
 #!/bin/bash
 
-./pre-install.sh
+if env | grep -q SKIP_PREINSTALL ; then
+  echo "skipping preinstall"
+else
+  ./pre-install.sh
+fi
 
-echo "Enter your host for the hub:"
-read HUB_HOST
+CONCURRENT_SCAN=2
+DEF_HUBPORT=443
+DEF_HUBUSER="sysadmin"
 
-echo "Enter your hub password:"
-read -s HUB_PASSWORD
+clear
+echo " "
+echo "============================================"
+echo "Black Duck Hub Configuration Information"
+echo "============================================"
+read -p "Hub server host (e.g. hub.mydomain.com): " hubHost
+read -p "Hub server port [$DEF_HUBPORT]: " hubPort
+read -p "Hub user name [$DEF_HUBUSER]: " hubUser
+read -sp "Hub user password : " hubPassword
+echo " "
+read -p "Maximum concurrent scans [$CONCURRENT_SCAN]: " noOfConcurrentScan
 
-echo "Done!"
+#apply defaults
+hubPort="${hubPort:-$DEF_HUBPORT}"
+hubUser="${hubUser:-$DEF_HUBUSER}"
+noOfConcurrentScan="${noOfConcurrentScan:-$CONCURRENT_SCAN}"
 
 DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
 
-#
-# Note that in production, you will want to encrypt the password, rather then inject it as a yml parameter.
-# Instructions will be added shortly.
-#
 cat << EOF > config.yml
 apiVersion: v1
 kind: List
 metadata:
-  name: perceptor-configs
+  name: viper-input
 items:
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    name: prometheus
+    name: viper-input
   data:
-    prometheus.yml: |
-      global:
-        scrape_interval: 5s
-      scrape_configs:
-      - job_name: 'perceptor-scrape'
-        scrape_interval: 5s
-        static_configs:
-        - targets: ['perceptor:3001', 'perceptor-scanner:3003'] # TODO Add perciever metrics here...
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: perceptor-scanner-config
-  data:
-    perceptor_scanner_conf.yaml: |
-      HubHost: "$HUB_HOST"
-      HubUser: "sysadmin"
-      HubUserPassword: "$HUB_PASSWORD"
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: perceptor-imagefacade-config
-  data:
-    perceptor_imagefacade_conf.yaml: |
-    DockerUser: "admin"
-    DockerPassword: "$DOCKER_PASSWORD"
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: kube-generic-perceiver-config
-  data:
-    perceiver.yaml: |
-      PerceptorHost: "perceptor"
-      PerceptorPort: 3001
-      AnnotationIntervalSeconds: 30
-      DumpIntervalMinutes: 30
-# TODO Replace w/ Secret creation.
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: perceptor-config
-  data:
-    perceptor_conf.yaml: |
-      HubHost: "$HUB_HOST"
-      HubUser: "sysadmin"
-      HubUserPassword: "$HUB_PASSWORD"
-      ConcurrentScanLimit: 2
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: openshift-perceiver-config
-  data:
-    perceiver.yaml: |
-      PerceptorHost: "perceptor"
-      PerceptorPort: 3001
-      AnnotationIntervalSeconds: 30
-      DumpIntervalMinutes: 30
+    protoform.yaml: |
+      DockerPasswordOrToken: "$DOCKER_PASSWORD"
+      HubHost: "$hubHost"
+      HubPort: "$hubPort"
+      HubUser: "$hubUser"
+      HubUserPassword: "$hubPassword"
+      ConcurrentScanLimit: "$noOfConcurrentScan"
+      DockerUsername: "admin"
 EOF
 
 oc create -f config.yml
 
-echo "Your configuration is at config.yml, click enter to proceed installing, or edit it bbefore continuing"
+echo "Your configuration is at config.yml, click ENTER to proceed installing, or edit it before continuing"
+read -s
+
 cat << EOF > protoform.yml
 apiVersion: v1
 kind: Pod
 metadata:
   name: protoform
 spec:
+  volumes:
+  - name: viper-input
+    configMap:
+      name: viper-input
   containers:
   - name: protoform
     image: gcr.io/gke-verification/blackducksoftware/perceptor-protoform:latest
@@ -102,6 +73,9 @@ spec:
     ports:
     - containerPort: 3001
       protocol: TCP
+    volumeMounts:
+    - name: viper-input
+      mountPath: /etc/protoform/
   restartPolicy: Never
   serviceAccountName: openshift-perceiver
   serviceAccount: openshift-perceiver

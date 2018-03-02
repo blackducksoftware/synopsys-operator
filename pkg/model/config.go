@@ -24,6 +24,7 @@ type ProtoformConfig struct {
 	HubUser                   string
 	HubUserPassword           string
 	HubPort                   int
+	ConcurrentScanLimit       int
 
 	// AUTH CONFIGS
 	// These are given to containers through secrets or other mechanisms.
@@ -69,7 +70,11 @@ func (p *ProtoformConfig) parameterize(json string) string {
 	if p.DockerPasswordOrToken == "" {
 		panic("config failing: cannot continue without a Docker password!!!")
 	}
+	if p.ConcurrentScanLimit == 0 {
+		p.ConcurrentScanLimit = 2
+	}
 
+	json = strings.Replace(json, "_11", strconv.Itoa(p.ConcurrentScanLimit), n)
 	json = strings.Replace(json, "_10", p.DockerPasswordOrToken, n)
 	json = strings.Replace(json, "_1", p.PerceptorHost, n)
 	json = strings.Replace(json, "_2", strconv.Itoa(p.PerceptorPort), n)
@@ -104,7 +109,7 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// "a thing".
 	defaults := map[string]string{
 		"prometheus":                    `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003"]}]}]}`,
-		"perceptor-config":              `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7"}`,
+		"perceptor-config":              `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","ConcurrentScanLimit": "_11"}`,
 		"perceptor-scanner-config":      `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7"}`,
 		"kube-generic-perceiver-config": `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`,
 		"openshift-perceiver-config":    `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`,
