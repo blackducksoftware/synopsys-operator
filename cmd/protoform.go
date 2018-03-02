@@ -82,7 +82,7 @@ type PerceptorRC struct {
 }
 
 // This function creates an RC and services that forward to it.
-func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Service) {
+func NewRcSvc(podName string, descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Service) {
 	defaultMem, err := resource.ParseQuantity("2Gi")
 	if err != nil {
 		panic(err)
@@ -197,13 +197,13 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 	}
 	rc := &v1.ReplicationController{
 		ObjectMeta: v1meta.ObjectMeta{
-			Name: descriptions[0].name,
+			Name: podName,
 		},
 		Spec: v1.ReplicationControllerSpec{
-			Selector: map[string]string{"name": descriptions[0].name},
+			Selector: map[string]string{"name": podName},
 			Template: &v1.PodTemplateSpec{
 				ObjectMeta: v1meta.ObjectMeta{
-					Labels: map[string]string{"name": descriptions[0].name},
+					Labels: map[string]string{"name": podName},
 				},
 				Spec: v1.PodSpec{
 					Volumes:            TheVolumes,
@@ -241,7 +241,7 @@ func NewRcSvc(descriptions []PerceptorRC) (*v1.ReplicationController, []*v1.Serv
 func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, dryRun bool) {
 
 	// perceptor = only one container, very simple.
-	rcPCP, svcPCP := NewRcSvc([]PerceptorRC{
+	rcPCP, svcPCP := NewRcSvc("perceptor", []PerceptorRC{
 		PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
 			name:            "perceptor",
@@ -252,7 +252,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	})
 
 	// perceivers
-	rcPCVR, svcPCVR := NewRcSvc([]PerceptorRC{
+	rcPCVR, svcPCVR := NewRcSvc("pod-perceiver", []PerceptorRC{
 		PerceptorRC{
 			configMapMounts:    map[string]string{"kube-generic-perceiver-config": "/etc/perceiver"},
 			name:               "pod-perceiver",
@@ -264,7 +264,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		},
 	})
 
-	rcPCVRo, svcPCVRo := NewRcSvc([]PerceptorRC{
+	rcPCVRo, svcPCVRo := NewRcSvc("image-perceiver", []PerceptorRC{
 		PerceptorRC{
 			configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
 			name:               "image-perceiver",
@@ -276,7 +276,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		},
 	})
 
-	scannerReplicationController, svcSCAN := NewRcSvc([]PerceptorRC{
+	scannerReplicationController, svcSCAN := NewRcSvc("perceptor-scanner", []PerceptorRC{
 		PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
 			emptyDirMounts: map[string]string{
