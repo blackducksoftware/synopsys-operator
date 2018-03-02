@@ -276,7 +276,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		},
 	})
 
-	rcSCAN, svcSCAN := NewRcSvc([]PerceptorRC{
+	scannerReplicationController, svcSCAN := NewRcSvc([]PerceptorRC{
 		PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
 			emptyDirMounts: map[string]string{
@@ -303,12 +303,10 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		},
 	})
 
-	// rcs := []*v1.ReplicationController{rcSCAN}
-	// svc := [][]*v1.Service{svcSCAN}
-	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, rcSCAN}
-	svc := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
+	replicationControllers := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, scannerReplicationController}
+	services := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
 
-	for i, rc := range rcs {
+	for i, rc := range replicationControllers {
 		// Now, create all the resources.  Note that we'll panic after creating ANY
 		// resource that fails.  Thats intentional.
 		PrettyPrint(rc)
@@ -318,7 +316,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 				panic(err)
 			}
 		}
-		for _, svcI := range svc[i] {
+		for _, svcI := range services[i] {
 			if dryRun {
 				// service dont really need much debug...
 				//PrettyPrint(svc)
