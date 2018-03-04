@@ -1,58 +1,105 @@
 #!/bin/bash
 
-if env | grep -q SKIP_PREINSTALL ; then
-  echo "skipping preinstall"
-else
-  ./pre-install.sh
-fi
+set +x
+NS=bds-perceptor
+KUBECTL="kubectl"
 
-CONCURRENT_SCAN=2
-DEF_HUBPORT=443
-DEF_HUBUSER="sysadmin"
+function is_openshift {
+	if `which oc` ; then
+		# oc version
+		return 0
+	else
+		return 1
+	fi
+	return 1
+}
 
-clear
-echo " "
-echo "============================================"
-echo "Black Duck Hub Configuration Information"
-echo "============================================"
-read -p "Hub server host (e.g. hub.mydomain.com): " hubHost
-read -p "Hub server port [$DEF_HUBPORT]: " hubPort
-read -p "Hub user name [$DEF_HUBUSER]: " hubUser
-read -sp "Hub user password: " hubPassword
-echo " "
-read -p "Maximum concurrent scans [$CONCURRENT_SCAN]: " noOfConcurrentScan
+cleanup() {
+	is_openshift
+	if ! $(exit $?); then
+		echo "assuming kube"
+		KUBECTL="kubectl"
+	else
+		KUBECTL="oc"
+	fi
+	$KUBECTL delete ns $NS
+	while $KUBECTL get ns | grep -q $NS ; do
+	  echo "Waiting for deletion...`$KUBECTL get ns | grep $NS` "
+	  sleep 1
+	done
+}
 
-#apply defaults
-hubPort="${hubPort:-$DEF_HUBPORT}"
-hubUser="${hubUser:-$DEF_HUBUSER}"
-noOfConcurrentScan="${noOfConcurrentScan:-$CONCURRENT_SCAN}"
+install-rbac() {
+	SCC="add-scc-to-user"
+	ROLE="add-role-to-user"
+	CLUSTER="add-cluster-role-to-user"
+	SYSTEM_SA="system:serviceaccount"
+
+	PERCEPTOR_SC="perceptor-scanner"
+	NS_SA="${SYSTEM_SA}:${NS}"
+	SCANNER_SA="${NS_SA}:${PERCEPTOR_SCANNER}"
+
+	OS_PERCEIVER="openshift-perceiver"
+	OS_PERCEIVER_SA="${NS_SA}:${OS_PERCEIVER}"
+
+	KUBE_PERCEIVER="kube-generic-perceiver"
+	KUBE_PERCEIVER_SA="${NS_SA}:${KUBE_PERCEIVER}"
+
+	if [ "$KUBECTL" == "kubectl" ]; then
+		echo "Detected Kubernetes... setting up"
+		kubectl create ns $NS
+		kubectl create sa perceptor-scanner-sa -n $NS
+		kubectl create sa kube-generic-perceiver -n $NS
+  else
+		set -e
+
+		echo "Detected openshift... setting up "
+		# Create the namespace to install all containers
+		oc new-project $NS
+
+		# Create the openshift-perceiver service account
+		oc create serviceaccount openshift-perceiver -n $NS
+
+		# following allows us to write cluster level metadata for imagestreams
+		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:openshift-perceiver
+
+		# Create the serviceaccount for perceptor-scanner to talk with Docker
+		oc create sa perceptor-scanner-sa -n $NS
+
+		# allows launching of privileged containers for Docker machine access
+		oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
+
+		# following allows us to write cluster level metadata for imagestreams
+		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-scanner-sa
+
+		# To pull or view all images
+		oc policy $ROLE view system:serviceaccount:$NS:perceptor-scanner-sa
+	fi
+}
+
+install-contrib() {
+	set -e
+	# Deploy a small, local prometheus.  It is only used for scraping perceptor.  Doesnt need fancy ACLs for
+	# cluster discovery etc.
+	$KUBECTL create -f prometheus-deployment.yaml --namespace=$NS
+}
+
+cleanup
+install-rbac
+install-contrib
+
+## finished initial set up, now run protoform
 
 DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
 
-cat << EOF > config.yml
-apiVersion: v1
-kind: List
-metadata:
-  name: viper-input
-items:
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: viper-input
-  data:
-    protoform.yaml: |
-      DockerPasswordOrToken: "$DOCKER_PASSWORD"
-      HubHost: "$hubHost"
-      HubPort: "$hubPort"
-      HubUser: "$hubUser"
-      HubUserPassword: "$hubPassword"
-      ConcurrentScanLimit: "$noOfConcurrentScan"
-      DockerUsername: "admin"
-EOF
-
 oc create -f config.yml
 
-echo "Your configuration is at config.yml -- hit return to proceed installing, or edit it before continuing"
-read -s
+cat << EOF > aux-config.json
+{
+  "Namespace": "$NS",
+  "DockerUsername": "admin",
+  "DockerPassword": "$DOCKER_PASSWORD"
+}
+EOF
 
-oc create -f protoform.yml
+go run ./cmd/protoform.go config.json aux-config.json

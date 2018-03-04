@@ -7,14 +7,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// WARNING: If you add a config value, make sure to
-// add it to the parameterize function as well !
 type ProtoformConfig struct {
-	// Dry run wont actually install, but will print the objects definitions out.
-	DryRun bool
+	// general protoform config
+	MasterURL      string
+	KubeConfigPath string
 
-	// CONTAINER CONFIGS
-	// These are sed replaced into the config maps for the containers.
+	// perceptor config
 	PerceptorHost             string
 	PerceptorPort             int
 	AnnotationIntervalSeconds int
@@ -25,54 +23,9 @@ type ProtoformConfig struct {
 	HubPort                   int
 	ConcurrentScanLimit       int
 
-	// AUTH CONFIGS
-	// These are given to containers through secrets or other mechanisms.
-	// Not necessarily a one-to-one text replacement.
-	// TODO Lets try to have this injected on serviceaccount
-	// at pod startup, eventually Service accounts.
-	DockerPasswordOrToken string
-	DockerUsername        string
-
-	ServiceAccounts map[string]string
-
 	UseMockPerceptorMode bool
-}
 
-func (p *ProtoformConfig) fillInDefaultValues() {
-	if p.PerceptorHost == "" {
-		p.PerceptorHost = "perceptor"
-	}
-	if p.PerceptorPort == 0 {
-		p.PerceptorPort = 3001
-	}
-	if p.AnnotationIntervalSeconds == 0 {
-		p.AnnotationIntervalSeconds = 30
-	}
-	if p.DumpIntervalMinutes == 0 {
-		p.DumpIntervalMinutes = 30
-	}
-	if p.HubHost == "" {
-		// meaningless default unless your in same namespace as hub.
-		p.HubHost = "nginx-webapp-logstash"
-	}
-	if p.HubUser == "" {
-		p.HubUser = "sysadmin"
-	}
-	if p.HubUserPassword == "" {
-		panic("config failing: cannot continue without a hub password!!!")
-	}
-	if p.HubPort == 0 {
-		p.HubPort = 443
-	}
-	if p.DockerUsername == "" {
-		p.DockerUsername = "admin"
-	}
-	if p.DockerPasswordOrToken == "" {
-		panic("config failing: cannot continue without a Docker password!!!")
-	}
-	if p.ConcurrentScanLimit == 0 {
-		p.ConcurrentScanLimit = 2
-	}
+	AuxConfig *AuxiliaryConfig
 }
 
 func (pc *ProtoformConfig) PerceptorConfig() string {
@@ -130,8 +83,8 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() string {
 
 func (pc *ProtoformConfig) PerceptorImagefacadeConfig() string {
 	jsonBytes, err := json.Marshal(PerceptorImagefacadeConfig{
-		Dockerpassword: pc.DockerPasswordOrToken,
-		Dockerusername: pc.DockerUsername,
+		Dockerpassword: pc.AuxConfig.DockerPassword,
+		Dockerusername: pc.AuxConfig.DockerUsername,
 	})
 	if err != nil {
 		panic(err)
@@ -150,9 +103,7 @@ func makeConfigMap(name string, filename string, contents string) *v1.ConfigMap 
 	}
 }
 
-func (pc *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
-	pc.fillInDefaultValues()
-
+func (pc *ProtoformConfig) ToConfigMaps() []*v1.ConfigMap {
 	return []*v1.ConfigMap{
 		makeConfigMap("prometheus", "prometheus.yml", `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003","perceptor-imagefacade:3004"]}]}]}`),
 		makeConfigMap("perceptor-scanner-config", "perceptor_scanner_conf.yaml", pc.PerceptorScannerConfig()),

@@ -23,34 +23,39 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/spf13/viper"
 	"k8s.io/api/core/v1"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-// We don't dynamically reload.
-// If users want to dynamically reload,
-// they can update the individual perceptor containers configmaps.
 func readConfig(configPath string) *model.ProtoformConfig {
-	log.Print("*************** [protoform] initializing viper ****************")
-	viper.SetConfigName("protoform")
-	viper.AddConfigPath(configPath)
+	viper.SetConfigFile(configPath)
 	pc := &model.ProtoformConfig{}
-	log.Print(configPath)
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Print("Didn't see a config file!  Using reasonable defaults")
-		return nil
+		panic(err)
 	}
 	viper.Unmarshal(pc)
 	PrettyPrint(pc)
-	log.Print("*************** [protoform] done reading in viper ****************")
 	return pc
+}
+
+func readAuxiliaryConfig(auxConfigPath string) *model.AuxiliaryConfig {
+	viper.SetConfigFile(auxConfigPath)
+	aux := &model.AuxiliaryConfig{}
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	viper.Unmarshal(aux)
+	PrettyPrint(aux)
+	return aux
 }
 
 func PrettyPrint(v interface{}) {
@@ -58,7 +63,7 @@ func PrettyPrint(v interface{}) {
 	println(string(b))
 }
 
-func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, serviceAccounts map[string]string, dryRun bool) {
+func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, serviceAccounts map[string]string) {
 
 	imagePerceiverReplicaCount := int32(0)
 
@@ -81,83 +86,60 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 
 	for _, rc := range replicationControllers {
 		PrettyPrint(rc)
-		if !dryRun {
-			_, err := clientset.Core().ReplicationControllers(namespace).Create(rc)
-			if err != nil {
-				panic(err)
-			}
+		_, err := clientset.Core().ReplicationControllers(namespace).Create(rc)
+		if err != nil {
+			panic(err)
 		}
 	}
 	for _, service := range services {
-		if dryRun {
-			// service dont really need much debug...
-			//PrettyPrint(svc)
-		} else {
-			_, err := clientset.Core().Services(namespace).Create(service)
-			if err != nil {
-				panic(err)
-			}
+		_, err := clientset.Core().Services(namespace).Create(service)
+		if err != nil {
+			panic(err)
 		}
 	}
 }
 
-func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, configMaps []*v1.ConfigMap, dryRun bool) {
+func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, configMaps []*v1.ConfigMap) {
 	for _, configMap := range configMaps {
-		log.Println("*********************************************")
-		log.Println("Creating config maps:", configMap)
-		if !dryRun {
-			log.Println("creating config map.")
-			clientset.Core().ConfigMaps(namespace).Create(configMap)
-		} else {
-			PrettyPrint(configMap)
-		}
+		clientset.Core().ConfigMaps(namespace).Create(configMap)
 	}
 }
 
-// protoform is an experimental installer which bootstraps perceptor and the other
-// autobots.
-
-// main installs prime
 func main() {
-	//configPath := os.Args[1]
-	runProtoform("/etc/protoform/")
+	configPath := os.Args[1]
+	auxConfigPath := os.Args[2]
+	config := readConfig(configPath)
+	if config == nil {
+		panic("didn't find config")
+	}
+	auxConfig := readAuxiliaryConfig(auxConfigPath)
+	if auxConfig == nil {
+		panic("didn't find auxconfig")
+	}
+	config.AuxConfig = auxConfig
+	fmt.Printf("config: %+v\n", config)
+	runProtoform(config)
 }
 
-func runProtoform(configPath string) {
-	namespace := "bds-perceptor"
-	var clientset *kubernetes.Clientset
-	pc := readConfig(configPath)
-	if pc == nil {
-		log.Println("didn't find a config")
+func runProtoform(config *model.ProtoformConfig) {
+	kubeConfig, err := clientcmd.BuildConfigFromFlags(config.MasterURL, config.KubeConfigPath)
+	//		kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err)
 	}
-	if !pc.DryRun {
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			panic(err)
-		}
-		clientset, err = kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err)
-		}
+	clientset, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		panic(err)
 	}
 
-	// TODO Viperize these env vars.
-	if pc.ServiceAccounts == nil {
-		log.Println("[viper] NO SERVICE ACCOUNTS FOUND.  USING DEFAULTS: MAKE SURE THESE EXIST!")
-
-		svcAccounts := map[string]string{
-			// WARNINNG: These service accounts need to exist !
-			"pod-perceiver":          "openshift-perceiver",
-			"image-perceiver":        "openshift-perceiver",
-			"perceptor-image-facade": "perceptor-scanner-sa",
-		}
-		// TODO programatically validate rather then sanity check.
-		PrettyPrint(svcAccounts)
-		pc.ServiceAccounts = svcAccounts
+	// TODO do something intelligent with service account names -- inject from install.sh or something
+	serviceAccounts := map[string]string{
+		// WARNINNG: These service accounts need to exist !
+		"pod-perceiver":          "openshift-perceiver",
+		"image-perceiver":        "openshift-perceiver",
+		"perceptor-image-facade": "perceptor-scanner-sa",
 	}
 
-	log.Println("Creating config maps : Dry Run ")
-
-	CreateConfigMapsFromInput(namespace, clientset, pc.ToConfigMap(), pc.DryRun)
-	CreatePerceptorResources(namespace, clientset, pc.ServiceAccounts, pc.DryRun)
+	CreateConfigMapsFromInput(config.AuxConfig.Namespace, clientset, config.ToConfigMaps())
+	CreatePerceptorResources(config.AuxConfig.Namespace, clientset, serviceAccounts)
 }

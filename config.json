@@ -1,0 +1,17 @@
+{
+  "MasterURL": "https://54.67.89.98.xip.io:8443",
+  "KubeConfigPath": "/Users/mfenwick/.kube/config",
+
+  "PerceptorHost": "perceptor",
+  "PerceptorPort": 3001,
+  "AnnotationIntervalSeconds": 30,
+  "DumpIntervalMinutes": 30,
+
+  "HubHost": "the-hub-hub.54.67.89.98.xip.io",
+  "HubPort": 443,
+  "HubUser": "sysadmin",
+  "HubUserPassword": "blackduck",
+  "ConcurrentScanLimit": 2,
+
+  "UseMockPerceptorMode": false
+}

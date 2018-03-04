@@ -23,14 +23,12 @@ package main
 
 import (
 	"testing"
-
-	"github.com/spf13/viper"
 )
 
 func TestProto(t *testing.T) {
-	viper.SetDefault("protoform", map[string]string{
-		"HubUserPassword": "ASDF",
-		"DryRun":          "true",
-	})
-	runProtoform("./")
+	// viper.SetDefault("protoform", map[string]string{
+	// 	"HubUserPassword": "ASDF",
+	// 	"DryRun":          "true",
+	// })
+	// runProtoform("", "", "./")
 }
