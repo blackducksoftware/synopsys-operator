@@ -131,3 +131,29 @@ func (prom *Prometheus) Service() *v1.Service {
 			},
 			Selector: map[string]string{"name": prom.ServiceName}}}
 }
+
+func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
+	jsonString := `
+  {
+    "global": {
+      "scrape_interval": "5s"
+    },
+    "scrape_configs": [
+      {
+        "job_name": "perceptor-scrape",
+        "scrape_interval": "5s",
+        "static_configs": [
+          {
+            "targets": [
+              "perceptor:3001",
+              "perceptor-scanner:3003",
+              "perceptor-imagefacade:3004"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  `
+	return MakeConfigMap("prometheus", "prometheus.yml", jsonString)
+}

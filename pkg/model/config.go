@@ -33,3 +33,6 @@ type PerceptorImagefacadeConfig struct {
 	Dockerusername string
 	Dockerpassword string
 }
+
+type PifTesterConfig struct {
+}

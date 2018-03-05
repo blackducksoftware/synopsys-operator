@@ -85,8 +85,6 @@ install-rbac
 
 DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
 
-oc create -f config.yml
-
 cat << EOF > aux-config.json
 {
   "Namespace": "$NS",
@@ -95,4 +93,4 @@ cat << EOF > aux-config.json
 }
 EOF
 
-go run ./cmd/protoform.go config.json aux-config.json
+go run ./piftestermain.go ./config.json aux-config.json

@@ -76,7 +76,7 @@ func NewPerceptorScanner(serviceAccountName string) *PerceptorScanner {
 		ScannerReplicaCount:   2,
 
 		ImageFacadeImage:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
-		ImageFacadePort:               4000,
+		ImageFacadePort:               3004,
 		ImageFacadeCPU:                defaultCPU,
 		ImageFacadeMemory:             defaultMem,
 		ImageFacadeConfigMapName:      "perceptor-imagefacade-config",
@@ -231,4 +231,41 @@ func (psp *PerceptorScanner) ImageFacadeService() *v1.Service {
 				},
 			},
 			Selector: map[string]string{"name": psp.ImageFacadeServiceName}}}
+}
+
+// just for testing:
+
+func (psp *PerceptorScanner) ImageFacadeReplicationController() *v1.ReplicationController {
+	replicaCount := int32(1)
+	return &v1.ReplicationController{
+		ObjectMeta: v1meta.ObjectMeta{Name: psp.PodName},
+		Spec: v1.ReplicationControllerSpec{
+			Replicas: &replicaCount,
+			Selector: map[string]string{"name": "perceptor-imagefacade"},
+			Template: &v1.PodTemplateSpec{
+				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": "perceptor-imagefacade"}},
+				Spec: v1.PodSpec{
+					Volumes: []v1.Volume{
+						v1.Volume{
+							Name: psp.ImageFacadeConfigMapName,
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{Name: psp.ImageFacadeConfigMapName},
+								},
+							},
+						},
+						v1.Volume{
+							Name:         psp.ImagesMountName,
+							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+						},
+						v1.Volume{
+							Name: psp.DockerSocketName,
+							VolumeSource: v1.VolumeSource{
+								HostPath: &v1.HostPathVolumeSource{Path: psp.DockerSocketPath},
+							},
+						},
+					},
+					Containers:         []v1.Container{*psp.imageFacadeContainer()},
+					ServiceAccountName: psp.ImageFacadeServiceAccountName,
+				}}}}
 }

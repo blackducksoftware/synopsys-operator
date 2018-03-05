@@ -27,7 +27,7 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PerceptorCore struct {
+type PifTester struct {
 	PodName        string
 	Image          string
 	Port           int32
@@ -39,7 +39,7 @@ type PerceptorCore struct {
 	ServiceName    string
 }
 
-func NewPerceptorCore() *PerceptorCore {
+func NewPifTester() *PifTester {
 	memory, err := resource.ParseQuantity("2Gi")
 	if err != nil {
 		panic(err)
@@ -49,22 +49,22 @@ func NewPerceptorCore() *PerceptorCore {
 		panic(err)
 	}
 
-	return &PerceptorCore{
-		PodName:        "perceptor",
-		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor:latest",
-		Port:           3001,
+	return &PifTester{
+		PodName:        "piftester",
+		Image:          "mfenwickbd/piftester:latest", //gcr.io/gke-verification/blackducksoftware/piftester:latest",
+		Port:           3005,
 		CPU:            cpu,
 		Memory:         memory,
-		ConfigMapName:  "perceptor-config",
-		ConfigMapMount: "/etc/perceptor",
+		ConfigMapName:  "piftester-config",
+		ConfigMapMount: "/etc/piftester",
 		ReplicaCount:   1,
-		ServiceName:    "perceptor",
+		ServiceName:    "piftester",
 	}
 }
 
-func (pc *PerceptorCore) container() *v1.Container {
+func (pc *PifTester) container() *v1.Container {
 	return &v1.Container{
-		Name:            "perceptor",
+		Name:            "piftester",
 		Image:           pc.Image,
 		ImagePullPolicy: "Always",
 		Command:         []string{},
@@ -89,7 +89,7 @@ func (pc *PerceptorCore) container() *v1.Container {
 	}
 }
 
-func (pc *PerceptorCore) ReplicationController() *v1.ReplicationController {
+func (pc *PifTester) ReplicationController() *v1.ReplicationController {
 	return &v1.ReplicationController{
 		ObjectMeta: v1meta.ObjectMeta{Name: pc.PodName},
 		Spec: v1.ReplicationControllerSpec{
@@ -109,11 +109,10 @@ func (pc *PerceptorCore) ReplicationController() *v1.ReplicationController {
 						},
 					},
 					Containers: []v1.Container{*pc.container()},
-					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
 				}}}}
 }
 
-func (pc *PerceptorCore) Service() *v1.Service {
+func (pc *PifTester) Service() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
 			Name: pc.ServiceName,
