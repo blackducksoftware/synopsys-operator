@@ -49,7 +49,7 @@ type PerceptorScanner struct {
 	ImagesMountPath string
 }
 
-func NewPerceptorScanner(serviceAccountName string) *PerceptorScanner {
+func NewPerceptorScanner() *PerceptorScanner {
 	memory, err := resource.ParseQuantity("2Gi")
 	if err != nil {
 		panic(err)
