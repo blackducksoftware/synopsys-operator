@@ -34,7 +34,6 @@ type PerceptorImagefacadeConfigMap struct {
 }
 
 type PerceptorImagefacade struct {
-	PodName            string
 	Image              string
 	Port               int32
 	CPU                resource.Quantity
@@ -43,6 +42,8 @@ type PerceptorImagefacade struct {
 	ConfigMapMount     string
 	ServiceAccountName string
 	ServiceName        string
+
+	PodName string
 
 	DockerSocketName string
 	DockerSocketPath string
@@ -61,7 +62,6 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 		panic(err)
 	}
 	return &PerceptorImagefacade{
-		PodName:            "perceptor-imagefacade",
 		Image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
 		Port:               3004,
 		CPU:                defaultCPU,
@@ -72,6 +72,8 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 		ServiceName:        "perceptor-imagefacade",
 
 		// Must fill these out before using this object
+		PodName: "",
+
 		DockerSocketName: "",
 		DockerSocketPath: "",
 
@@ -129,7 +131,7 @@ func (pif *PerceptorImagefacade) Service() *v1.Service {
 					Port: pif.Port,
 				},
 			},
-			Selector: map[string]string{"name": pif.ServiceName}}}
+			Selector: map[string]string{"name": pif.PodName}}}
 }
 
 func (pif *PerceptorImagefacade) ReplicationController() *v1.ReplicationController {
@@ -138,9 +140,9 @@ func (pif *PerceptorImagefacade) ReplicationController() *v1.ReplicationControll
 		ObjectMeta: v1meta.ObjectMeta{Name: pif.PodName},
 		Spec: v1.ReplicationControllerSpec{
 			Replicas: &replicaCount,
-			Selector: map[string]string{"name": "perceptor-imagefacade"},
+			Selector: map[string]string{"name": pif.PodName},
 			Template: &v1.PodTemplateSpec{
-				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": "perceptor-imagefacade"}},
+				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pif.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
 						v1.Volume{

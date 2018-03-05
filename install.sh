@@ -85,8 +85,6 @@ install-rbac
 
 DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
 
-oc create -f config.yml
-
 cat << EOF > aux-config.json
 {
   "Namespace": "$NS",

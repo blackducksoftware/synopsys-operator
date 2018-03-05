@@ -85,7 +85,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		podPerceiver.Service(),
 		imagePerceiver.Service(),
 		perceptorScanner.Service(),
-		perceptorScanner.Service(),
+		perceptorImagefacade.Service(),
 	}
 	configMaps := []*v1.ConfigMap{
 		prometheus.ConfigMap(),

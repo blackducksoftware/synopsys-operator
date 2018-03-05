@@ -61,11 +61,15 @@ func NewScanner(perceptorScanner *PerceptorScanner, perceptorImagefacade *Percep
 	perceptorScanner.ImagesMountName = scanner.ImagesMountName
 	perceptorScanner.ImagesMountPath = scanner.ImagesMountPath
 
+	perceptorScanner.PodName = scanner.PodName
+
 	perceptorImagefacade.ImagesMountName = scanner.ImagesMountName
 	perceptorImagefacade.ImagesMountPath = scanner.ImagesMountPath
 
 	perceptorImagefacade.DockerSocketName = scanner.DockerSocketName
 	perceptorImagefacade.DockerSocketPath = scanner.DockerSocketPath
+
+	perceptorImagefacade.PodName = scanner.PodName
 
 	return scanner
 }

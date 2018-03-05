@@ -36,7 +36,6 @@ type PerceptorScannerConfigMap struct {
 }
 
 type PerceptorScanner struct {
-	PodName        string
 	Image          string
 	Port           int32
 	CPU            resource.Quantity
@@ -44,6 +43,8 @@ type PerceptorScanner struct {
 	ConfigMapName  string
 	ConfigMapMount string
 	ServiceName    string
+
+	PodName string
 
 	ImagesMountName string
 	ImagesMountPath string
@@ -59,7 +60,6 @@ func NewPerceptorScanner() *PerceptorScanner {
 		panic(err)
 	}
 	return &PerceptorScanner{
-		PodName:        "perceptor-scanner",
 		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
 		Port:           3003,
 		CPU:            cpu,
@@ -69,6 +69,8 @@ func NewPerceptorScanner() *PerceptorScanner {
 		ServiceName:    "perceptor-scanner",
 
 		// Must fill these out before use
+		PodName: "",
+
 		ImagesMountName: "",
 		ImagesMountPath: "",
 	}

@@ -63,6 +63,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, serviceAccounts["image-perceiver"])
 	pifTester := model.NewPifTester()
 	perceptorImagefacade := model.NewPerceptorImagefacade(serviceAccounts["perceptor-image-facade"])
+	perceptorImagefacade.PodName = "perceptor-imagefacade"
 
 	replicationControllers := []*v1.ReplicationController{
 		podPerceiver.ReplicationController(),
