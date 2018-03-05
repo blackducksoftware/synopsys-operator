@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"encoding/json"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,8 +45,10 @@ type PerceptorCore struct {
 	Memory         resource.Quantity
 	ConfigMapName  string
 	ConfigMapMount string
+	ConfigMapPath  string
 	ReplicaCount   int32
 	ServiceName    string
+	Config         PerceptorConfigMap
 }
 
 func NewPerceptorCore() *PerceptorCore {
@@ -65,12 +69,13 @@ func NewPerceptorCore() *PerceptorCore {
 		Memory:         memory,
 		ConfigMapName:  "perceptor-config",
 		ConfigMapMount: "/etc/perceptor",
+		ConfigMapPath:  "perceptor_conf.yaml",
 		ReplicaCount:   1,
 		ServiceName:    "perceptor",
 	}
 }
 
-func (pc *PerceptorCore) container() *v1.Container {
+func (pc *PerceptorCore) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "perceptor",
 		Image:           pc.Image,
@@ -116,7 +121,7 @@ func (pc *PerceptorCore) ReplicationController() *v1.ReplicationController {
 							},
 						},
 					},
-					Containers: []v1.Container{*pc.container()},
+					Containers: []v1.Container{*pc.Container()},
 					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
 				}}}}
 }
@@ -134,4 +139,19 @@ func (pc *PerceptorCore) Service() *v1.Service {
 				},
 			},
 			Selector: map[string]string{"name": pc.ServiceName}}}
+}
+
+func (pc *PerceptorCore) ConfigMapString() *v1.ConfigMap {
+	config := pc.Config
+	jsonBytes, err := json.Marshal(PerceptorConfigMap{
+		ConcurrentScanLimit: config.ConcurrentScanLimit,
+		HubHost:             config.HubHost,
+		HubUser:             config.HubUser,
+		HubUserPassword:     config.HubUserPassword,
+		UseMockMode:         config.UseMockMode,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
 }

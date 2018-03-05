@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"encoding/json"
+
 	"k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -40,6 +42,7 @@ type PerceptorImagefacade struct {
 	Memory             resource.Quantity
 	ConfigMapName      string
 	ConfigMapMount     string
+	ConfigMapPath      string
 	ServiceAccountName string
 	ServiceName        string
 
@@ -50,6 +53,8 @@ type PerceptorImagefacade struct {
 
 	ImagesMountName string
 	ImagesMountPath string
+
+	Config PerceptorImagefacadeConfigMap
 }
 
 func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
@@ -68,6 +73,7 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 		Memory:             defaultMem,
 		ConfigMapName:      "perceptor-imagefacade-config",
 		ConfigMapMount:     "/etc/perceptor_imagefacade",
+		ConfigMapPath:      "perceptor_imagefacade_conf.yaml",
 		ServiceAccountName: serviceAccountName,
 		ServiceName:        "perceptor-imagefacade",
 
@@ -167,4 +173,19 @@ func (pif *PerceptorImagefacade) ReplicationController() *v1.ReplicationControll
 					Containers:         []v1.Container{*pif.Container()},
 					ServiceAccountName: pif.ServiceAccountName,
 				}}}}
+}
+
+func (pc *PerceptorCore) ConfigMapString() *v1.ConfigMap {
+	config := pc.Config
+	jsonBytes, err := json.Marshal(PerceptorConfigMap{
+		ConcurrentScanLimit: config.ConcurrentScanLimit,
+		HubHost:             config.HubHost,
+		HubUser:             config.HubUser,
+		HubUserPassword:     config.HubUserPassword,
+		UseMockMode:         config.UseMockMode,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
 }

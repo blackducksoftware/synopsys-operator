@@ -48,20 +48,6 @@ type ProtoformConfig struct {
 	AuxConfig *AuxiliaryConfig
 }
 
-func (pc *ProtoformConfig) PerceptorConfig() string {
-	jsonBytes, err := json.Marshal(PerceptorConfigMap{
-		ConcurrentScanLimit: pc.ConcurrentScanLimit,
-		HubHost:             pc.HubHost,
-		HubUser:             pc.HubUser,
-		HubUserPassword:     pc.HubUserPassword,
-		UseMockMode:         pc.UseMockPerceptorMode,
-	})
-	if err != nil {
-		panic(err)
-	}
-	return string(jsonBytes)
-}
-
 func (pc *ProtoformConfig) PodPerceiverConfig() string {
 	jsonBytes, err := json.Marshal(PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
@@ -116,7 +102,6 @@ func (pc *ProtoformConfig) ToConfigMaps() []*v1.ConfigMap {
 	return []*v1.ConfigMap{
 		MakeConfigMap("perceptor-scanner-config", "perceptor_scanner_conf.yaml", pc.PerceptorScannerConfig()),
 		MakeConfigMap("kube-generic-perceiver-config", "perceiver.yaml", pc.PodPerceiverConfig()),
-		MakeConfigMap("perceptor-config", "perceptor_conf.yaml", pc.PerceptorConfig()),
 		MakeConfigMap("openshift-perceiver-config", "perceiver.yaml", pc.ImagePerceiverConfig()),
 		MakeConfigMap("perceptor-imagefacade-config", "perceptor_imagefacade_conf.yaml", pc.PerceptorImagefacadeConfig()),
 	}
