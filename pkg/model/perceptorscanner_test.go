@@ -28,8 +28,8 @@ import (
 )
 
 func TestImageFacadeContainer(t *testing.T) {
-	ps := NewPerceptorScanner("abc")
-	ifCont := ps.ReplicationController() // ps.imageFacadeContainer()
+	sc := NewScanner(nil, nil)
+	ifCont := sc.ReplicationController() // ps.imageFacadeContainer()
 	jsonBytes, err := json.MarshalIndent(ifCont, "", "  ")
 	if err != nil {
 		panic(err)

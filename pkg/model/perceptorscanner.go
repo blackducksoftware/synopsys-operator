@@ -44,7 +44,6 @@ type PerceptorScanner struct {
 	ConfigMapName  string
 	ConfigMapMount string
 	ServiceName    string
-	ReplicaCount   int32
 
 	ImagesMountName string
 	ImagesMountPath string
@@ -68,10 +67,10 @@ func NewPerceptorScanner(serviceAccountName string) *PerceptorScanner {
 		ConfigMapName:  "perceptor-scanner-config",
 		ConfigMapMount: "/etc/perceptor_scanner",
 		ServiceName:    "perceptor-scanner",
-		ReplicaCount:   2,
 
-		ImagesMountName: "var-images",
-		ImagesMountPath: "/var/images",
+		// Must fill these out before use
+		ImagesMountName: "",
+		ImagesMountPath: "",
 	}
 }
 

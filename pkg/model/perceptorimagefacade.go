@@ -71,11 +71,12 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 		ServiceAccountName: serviceAccountName,
 		ServiceName:        "perceptor-imagefacade",
 
-		DockerSocketName: "dir-docker-socket",
-		DockerSocketPath: "/var/run/docker.sock",
+		// Must fill these out before using this object
+		DockerSocketName: "",
+		DockerSocketPath: "",
 
-		ImagesMountName: "var-images",
-		ImagesMountPath: "/var/images",
+		ImagesMountName: "",
+		ImagesMountPath: "",
 	}
 }
 
