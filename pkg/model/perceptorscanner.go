@@ -35,91 +35,63 @@ type PerceptorScannerConfigMap struct {
 	HubUserPassword string
 }
 
-type PerceptorImagefacadeConfigMap struct {
-	Dockerusername string
-	Dockerpassword string
-}
-
 type PerceptorScanner struct {
-	PodName               string
-	ScannerImage          string
-	ScannerPort           int32
-	ScannerCPU            resource.Quantity
-	ScannerMemory         resource.Quantity
-	ScannerConfigMapName  string
-	ScannerConfigMapMount string
-	ScannerServiceName    string
-	ScannerReplicaCount   int32
+	Image          string
+	Port           int32
+	CPU            resource.Quantity
+	Memory         resource.Quantity
+	ConfigMapName  string
+	ConfigMapMount string
+	ServiceName    string
 
-	ImageFacadeImage              string
-	ImageFacadePort               int32
-	ImageFacadeCPU                resource.Quantity
-	ImageFacadeMemory             resource.Quantity
-	ImageFacadeConfigMapName      string
-	ImageFacadeConfigMapMount     string
-	ImageFacadeServiceAccountName string
-	ImageFacadeServiceName        string
-
-	DockerSocketName string
-	DockerSocketPath string
+	PodName string
 
 	ImagesMountName string
 	ImagesMountPath string
 }
 
-func NewPerceptorScanner(serviceAccountName string) *PerceptorScanner {
-	defaultMem, err := resource.ParseQuantity("2Gi")
+func NewPerceptorScanner() *PerceptorScanner {
+	memory, err := resource.ParseQuantity("2Gi")
 	if err != nil {
 		panic(err)
 	}
-	defaultCPU, err := resource.ParseQuantity("500m")
+	cpu, err := resource.ParseQuantity("500m")
 	if err != nil {
 		panic(err)
 	}
 	return &PerceptorScanner{
-		PodName:               "perceptor-scanner",
-		ScannerImage:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
-		ScannerPort:           3003,
-		ScannerCPU:            defaultCPU,
-		ScannerMemory:         defaultMem,
-		ScannerConfigMapName:  "perceptor-scanner-config",
-		ScannerConfigMapMount: "/etc/perceptor_scanner",
-		ScannerServiceName:    "perceptor-scanner",
-		ScannerReplicaCount:   2,
+		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
+		Port:           3003,
+		CPU:            cpu,
+		Memory:         memory,
+		ConfigMapName:  "perceptor-scanner-config",
+		ConfigMapMount: "/etc/perceptor_scanner",
+		ServiceName:    "perceptor-scanner",
 
-		ImageFacadeImage:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
-		ImageFacadePort:               3004,
-		ImageFacadeCPU:                defaultCPU,
-		ImageFacadeMemory:             defaultMem,
-		ImageFacadeConfigMapName:      "perceptor-imagefacade-config",
-		ImageFacadeConfigMapMount:     "/etc/perceptor_imagefacade",
-		ImageFacadeServiceAccountName: serviceAccountName,
-		ImageFacadeServiceName:        "perceptor-imagefacade",
+		// Must fill these out before use
+		PodName: "",
 
-		DockerSocketName: "dir-docker-socket",
-		DockerSocketPath: "/var/run/docker.sock",
-
-		ImagesMountName: "var-images",
-		ImagesMountPath: "/var/images",
+		ImagesMountName: "",
+		ImagesMountPath: "",
 	}
 }
 
-func (psp *PerceptorScanner) scannerContainer() *v1.Container {
+func (psp *PerceptorScanner) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "perceptor-scanner",
-		Image:           psp.ScannerImage,
+		Image:           psp.Image,
 		ImagePullPolicy: "Always",
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				ContainerPort: psp.ScannerPort,
+				ContainerPort: psp.Port,
 				Protocol:      "TCP",
 			},
 		},
 		Resources: v1.ResourceRequirements{
 			Requests: v1.ResourceList{
-				v1.ResourceCPU:    psp.ScannerCPU,
-				v1.ResourceMemory: psp.ScannerMemory,
+				v1.ResourceCPU:    psp.CPU,
+				v1.ResourceMemory: psp.Memory,
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
@@ -128,156 +100,24 @@ func (psp *PerceptorScanner) scannerContainer() *v1.Container {
 				MountPath: psp.ImagesMountPath,
 			},
 			v1.VolumeMount{
-				Name:      psp.ScannerConfigMapName,
-				MountPath: psp.ScannerConfigMapMount,
+				Name:      psp.ConfigMapName,
+				MountPath: psp.ConfigMapMount,
 			},
 		},
 	}
 }
 
-func (psp *PerceptorScanner) imageFacadeContainer() *v1.Container {
-	privileged := true
-	return &v1.Container{
-		Name:            "perceptor-imagefacade",
-		Image:           psp.ImageFacadeImage,
-		ImagePullPolicy: "Always",
-		Command:         []string{},
-		Ports: []v1.ContainerPort{
-			v1.ContainerPort{
-				ContainerPort: psp.ImageFacadePort,
-				Protocol:      "TCP",
-			},
-		},
-		Resources: v1.ResourceRequirements{
-			Requests: v1.ResourceList{
-				v1.ResourceCPU:    psp.ImageFacadeCPU,
-				v1.ResourceMemory: psp.ImageFacadeMemory,
-			},
-		},
-		VolumeMounts: []v1.VolumeMount{
-			v1.VolumeMount{
-				Name:      psp.ImagesMountName,
-				MountPath: psp.ImagesMountPath,
-			},
-			v1.VolumeMount{
-				Name:      psp.ImageFacadeConfigMapName,
-				MountPath: psp.ImageFacadeConfigMapMount,
-			},
-			v1.VolumeMount{
-				Name:      psp.DockerSocketName,
-				MountPath: psp.DockerSocketPath,
-			},
-		},
-		SecurityContext: &v1.SecurityContext{Privileged: &privileged},
-	}
-}
-
-func (psp *PerceptorScanner) ReplicationController() *v1.ReplicationController {
-	return &v1.ReplicationController{
-		ObjectMeta: v1meta.ObjectMeta{Name: psp.PodName},
-		Spec: v1.ReplicationControllerSpec{
-			Replicas: &psp.ScannerReplicaCount,
-			Selector: map[string]string{"name": psp.PodName},
-			Template: &v1.PodTemplateSpec{
-				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": psp.PodName}},
-				Spec: v1.PodSpec{
-					Volumes: []v1.Volume{
-						v1.Volume{
-							Name: psp.ScannerConfigMapName,
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{Name: psp.ScannerConfigMapName},
-								},
-							},
-						},
-						v1.Volume{
-							Name: psp.ImageFacadeConfigMapName,
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{Name: psp.ImageFacadeConfigMapName},
-								},
-							},
-						},
-						v1.Volume{
-							Name:         psp.ImagesMountName,
-							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
-						},
-						v1.Volume{
-							Name: psp.DockerSocketName,
-							VolumeSource: v1.VolumeSource{
-								HostPath: &v1.HostPathVolumeSource{Path: psp.DockerSocketPath},
-							},
-						},
-					},
-					Containers:         []v1.Container{*psp.scannerContainer(), *psp.imageFacadeContainer()},
-					ServiceAccountName: psp.ImageFacadeServiceAccountName,
-					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
-				}}}}
-}
-
-func (psp *PerceptorScanner) ScannerService() *v1.Service {
+func (psp *PerceptorScanner) Service() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
-			Name: psp.ScannerServiceName,
+			Name: psp.ServiceName,
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
-					Name: psp.ScannerServiceName,
-					Port: psp.ScannerPort,
+					Name: psp.ServiceName,
+					Port: psp.Port,
 				},
 			},
-			Selector: map[string]string{"name": psp.ScannerServiceName}}}
-}
-
-func (psp *PerceptorScanner) ImageFacadeService() *v1.Service {
-	return &v1.Service{
-		ObjectMeta: v1meta.ObjectMeta{
-			Name: psp.ImageFacadeServiceName,
-		},
-		Spec: v1.ServiceSpec{
-			Ports: []v1.ServicePort{
-				v1.ServicePort{
-					Name: psp.ImageFacadeServiceName,
-					Port: psp.ImageFacadePort,
-				},
-			},
-			Selector: map[string]string{"name": psp.ImageFacadeServiceName}}}
-}
-
-// just for testing:
-
-func (psp *PerceptorScanner) ImageFacadeReplicationController() *v1.ReplicationController {
-	replicaCount := int32(1)
-	return &v1.ReplicationController{
-		ObjectMeta: v1meta.ObjectMeta{Name: psp.PodName},
-		Spec: v1.ReplicationControllerSpec{
-			Replicas: &replicaCount,
-			Selector: map[string]string{"name": "perceptor-imagefacade"},
-			Template: &v1.PodTemplateSpec{
-				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": "perceptor-imagefacade"}},
-				Spec: v1.PodSpec{
-					Volumes: []v1.Volume{
-						v1.Volume{
-							Name: psp.ImageFacadeConfigMapName,
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{Name: psp.ImageFacadeConfigMapName},
-								},
-							},
-						},
-						v1.Volume{
-							Name:         psp.ImagesMountName,
-							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
-						},
-						v1.Volume{
-							Name: psp.DockerSocketName,
-							VolumeSource: v1.VolumeSource{
-								HostPath: &v1.HostPathVolumeSource{Path: psp.DockerSocketPath},
-							},
-						},
-					},
-					Containers:         []v1.Container{*psp.imageFacadeContainer()},
-					ServiceAccountName: psp.ImageFacadeServiceAccountName,
-				}}}}
+			Selector: map[string]string{"name": psp.ServiceName}}}
 }

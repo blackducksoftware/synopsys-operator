@@ -62,19 +62,20 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	podPerceiver := model.NewPodPerceiver(serviceAccounts["pod-perceiver"])
 	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, serviceAccounts["image-perceiver"])
 	pifTester := model.NewPifTester()
-	perceptorScanner := model.NewPerceptorScanner(serviceAccounts["perceptor-image-facade"])
+	perceptorImagefacade := model.NewPerceptorImagefacade(serviceAccounts["perceptor-image-facade"])
+	perceptorImagefacade.PodName = "perceptor-imagefacade"
 
 	replicationControllers := []*v1.ReplicationController{
 		podPerceiver.ReplicationController(),
 		imagePerceiver.ReplicationController(),
 		pifTester.ReplicationController(),
-		perceptorScanner.ImageFacadeReplicationController(),
+		perceptorImagefacade.ReplicationController(),
 	}
 	services := []*v1.Service{
 		podPerceiver.Service(),
 		imagePerceiver.Service(),
 		pifTester.Service(),
-		perceptorScanner.ImageFacadeService(),
+		perceptorImagefacade.Service(),
 	}
 	configMaps := []*v1.ConfigMap{ /*prometheus.ConfigMap()*/ }
 
