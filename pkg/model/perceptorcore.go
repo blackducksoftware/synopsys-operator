@@ -51,7 +51,7 @@ func NewPerceptorCore() *PerceptorCore {
 
 	return &PerceptorCore{
 		PodName:        "perceptor",
-		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor:latest",
+		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor:master",
 		Port:           3001,
 		CPU:            cpu,
 		Memory:         memory,

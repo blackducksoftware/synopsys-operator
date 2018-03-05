@@ -66,7 +66,7 @@ func NewPerceptorScanner(serviceAccountName string) *PerceptorScanner {
 	}
 	return &PerceptorScanner{
 		PodName:               "perceptor-scanner",
-		ScannerImage:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:latest",
+		ScannerImage:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
 		ScannerPort:           3003,
 		ScannerCPU:            defaultCPU,
 		ScannerMemory:         defaultMem,
@@ -75,7 +75,7 @@ func NewPerceptorScanner(serviceAccountName string) *PerceptorScanner {
 		ScannerServiceName:    "perceptor-scanner",
 		ScannerReplicaCount:   2,
 
-		ImageFacadeImage:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:latest",
+		ImageFacadeImage:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
 		ImageFacadePort:               3004,
 		ImageFacadeCPU:                defaultCPU,
 		ImageFacadeMemory:             defaultMem,
