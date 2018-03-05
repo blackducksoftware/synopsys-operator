@@ -28,6 +28,18 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type PerceptorScannerConfigMap struct {
+	HubHost         string
+	HubPort         int
+	HubUser         string
+	HubUserPassword string
+}
+
+type PerceptorImagefacadeConfigMap struct {
+	Dockerusername string
+	Dockerpassword string
+}
+
 type PerceptorScanner struct {
 	PodName               string
 	ScannerImage          string

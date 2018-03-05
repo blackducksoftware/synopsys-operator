@@ -27,6 +27,13 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type PodPerceiverConfigMap struct {
+	PerceptorHost             string
+	PerceptorPort             int
+	AnnotationIntervalSeconds int
+	DumpIntervalMinutes       int
+}
+
 type PodPerceiver struct {
 	PodName            string
 	Image              string

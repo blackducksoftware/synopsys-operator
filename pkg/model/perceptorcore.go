@@ -27,6 +27,14 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type PerceptorConfigMap struct {
+	HubHost             string
+	HubUser             string
+	HubUserPassword     string
+	ConcurrentScanLimit int
+	UseMockMode         bool
+}
+
 type PerceptorCore struct {
 	PodName        string
 	Image          string

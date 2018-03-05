@@ -163,7 +163,7 @@ type PifConfig struct {
 }
 
 func (pc *PifConfig) PodPerceiverConfig() string {
-	jsonBytes, err := json.Marshal(model.PodPerceiverConfig{
+	jsonBytes, err := json.Marshal(model.PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
@@ -176,7 +176,7 @@ func (pc *PifConfig) PodPerceiverConfig() string {
 }
 
 func (pc *PifConfig) ImagePerceiverConfig() string {
-	jsonBytes, err := json.Marshal(model.ImagePerceiverConfig{
+	jsonBytes, err := json.Marshal(model.ImagePerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
@@ -189,7 +189,7 @@ func (pc *PifConfig) ImagePerceiverConfig() string {
 }
 
 func (pc *PifConfig) PerceptorImagefacadeConfig() string {
-	jsonBytes, err := json.Marshal(model.PerceptorImagefacadeConfig{
+	jsonBytes, err := json.Marshal(model.PerceptorImagefacadeConfigMap{
 		Dockerpassword: pc.AuxConfig.DockerPassword,
 		Dockerusername: pc.AuxConfig.DockerUsername,
 	})
@@ -200,7 +200,7 @@ func (pc *PifConfig) PerceptorImagefacadeConfig() string {
 }
 
 func (pc *PifConfig) PifTesterConfig() string {
-	jsonBytes, err := json.Marshal(model.PifTesterConfig{})
+	jsonBytes, err := json.Marshal(model.PifTesterConfigMap{})
 	if err != nil {
 		panic(err)
 	}

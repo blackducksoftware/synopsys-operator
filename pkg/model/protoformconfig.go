@@ -49,7 +49,7 @@ type ProtoformConfig struct {
 }
 
 func (pc *ProtoformConfig) PerceptorConfig() string {
-	jsonBytes, err := json.Marshal(PerceptorConfig{
+	jsonBytes, err := json.Marshal(PerceptorConfigMap{
 		ConcurrentScanLimit: pc.ConcurrentScanLimit,
 		HubHost:             pc.HubHost,
 		HubUser:             pc.HubUser,
@@ -63,7 +63,7 @@ func (pc *ProtoformConfig) PerceptorConfig() string {
 }
 
 func (pc *ProtoformConfig) PodPerceiverConfig() string {
-	jsonBytes, err := json.Marshal(PodPerceiverConfig{
+	jsonBytes, err := json.Marshal(PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
@@ -76,7 +76,7 @@ func (pc *ProtoformConfig) PodPerceiverConfig() string {
 }
 
 func (pc *ProtoformConfig) ImagePerceiverConfig() string {
-	jsonBytes, err := json.Marshal(ImagePerceiverConfig{
+	jsonBytes, err := json.Marshal(ImagePerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
@@ -89,7 +89,7 @@ func (pc *ProtoformConfig) ImagePerceiverConfig() string {
 }
 
 func (pc *ProtoformConfig) PerceptorScannerConfig() string {
-	jsonBytes, err := json.Marshal(PerceptorScannerConfig{
+	jsonBytes, err := json.Marshal(PerceptorScannerConfigMap{
 		HubHost:         pc.HubHost,
 		HubPort:         pc.HubPort,
 		HubUser:         pc.HubUser,
@@ -102,7 +102,7 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() string {
 }
 
 func (pc *ProtoformConfig) PerceptorImagefacadeConfig() string {
-	jsonBytes, err := json.Marshal(PerceptorImagefacadeConfig{
+	jsonBytes, err := json.Marshal(PerceptorImagefacadeConfigMap{
 		Dockerpassword: pc.AuxConfig.DockerPassword,
 		Dockerusername: pc.AuxConfig.DockerUsername,
 	})
