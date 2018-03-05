@@ -1,0 +1,129 @@
+/*
+Copyright (C) 2018 Synopsys, Inc.
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
+package model
+
+import (
+	"k8s.io/api/core/v1"
+
+	"k8s.io/apimachinery/pkg/api/resource"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+type Scanner struct {
+	PodName string
+
+	ScannerImage          string
+	ScannerPort           int32
+	ScannerCPU            resource.Quantity
+	ScannerMemory         resource.Quantity
+	ScannerConfigMapName  string
+	ScannerConfigMapMount string
+	ScannerServiceName    string
+	ScannerReplicaCount   int32
+
+	ImageFacadeImage              string
+	ImageFacadePort               int32
+	ImageFacadeCPU                resource.Quantity
+	ImageFacadeMemory             resource.Quantity
+	ImageFacadeConfigMapName      string
+	ImageFacadeConfigMapMount     string
+	ImageFacadeServiceAccountName string
+	ImageFacadeServiceName        string
+
+	DockerSocketName string
+	DockerSocketPath string
+
+	ImagesMountName string
+	ImagesMountPath string
+}
+
+func NewScanner(serviceAccountName string) *Scanner {
+	return &Scanner{
+		PodName:               "perceptor-scanner",
+		ScannerImage:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
+		ScannerPort:           3003,
+		ScannerCPU:            defaultCPU,
+		ScannerMemory:         defaultMem,
+		ScannerConfigMapName:  "perceptor-scanner-config",
+		ScannerConfigMapMount: "/etc/perceptor_scanner",
+		ScannerServiceName:    "perceptor-scanner",
+		ScannerReplicaCount:   2,
+
+		ImageFacadeImage:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
+		ImageFacadePort:               3004,
+		ImageFacadeCPU:                defaultCPU,
+		ImageFacadeMemory:             defaultMem,
+		ImageFacadeConfigMapName:      "perceptor-imagefacade-config",
+		ImageFacadeConfigMapMount:     "/etc/perceptor_imagefacade",
+		ImageFacadeServiceAccountName: serviceAccountName,
+		ImageFacadeServiceName:        "perceptor-imagefacade",
+
+		DockerSocketName: "dir-docker-socket",
+		DockerSocketPath: "/var/run/docker.sock",
+
+		ImagesMountName: "var-images",
+		ImagesMountPath: "/var/images",
+	}
+}
+
+func (psp *Scanner) ReplicationController() *v1.ReplicationController {
+	return &v1.ReplicationController{
+		ObjectMeta: v1meta.ObjectMeta{Name: psp.PodName},
+		Spec: v1.ReplicationControllerSpec{
+			Replicas: &psp.ScannerReplicaCount,
+			Selector: map[string]string{"name": psp.PodName},
+			Template: &v1.PodTemplateSpec{
+				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": psp.PodName}},
+				Spec: v1.PodSpec{
+					Volumes: []v1.Volume{
+						v1.Volume{
+							Name: psp.ScannerConfigMapName,
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{Name: psp.ScannerConfigMapName},
+								},
+							},
+						},
+						v1.Volume{
+							Name: psp.ImageFacadeConfigMapName,
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{Name: psp.ImageFacadeConfigMapName},
+								},
+							},
+						},
+						v1.Volume{
+							Name:         psp.ImagesMountName,
+							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+						},
+						v1.Volume{
+							Name: psp.DockerSocketName,
+							VolumeSource: v1.VolumeSource{
+								HostPath: &v1.HostPathVolumeSource{Path: psp.DockerSocketPath},
+							},
+						},
+					},
+					Containers:         []v1.Container{*psp.scannerContainer(), *psp.imageFacadeContainer()},
+					ServiceAccountName: psp.ImageFacadeServiceAccountName,
+					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
+				}}}}
+}
