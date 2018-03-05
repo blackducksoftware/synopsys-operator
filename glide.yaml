@@ -5,6 +5,7 @@ import:
 - package: k8s.io/api
   subpackages:
   - core/v1
+  - extensions/v1beta1
 - package: k8s.io/apimachinery
   subpackages:
   - pkg/api/resource
