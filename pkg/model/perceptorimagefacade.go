@@ -43,10 +43,10 @@ type PerceptorImagefacade struct {
 	ServiceAccountName string
 	ServiceName        string
 
-	PodName string
-
 	DockerSocketName string
 	DockerSocketPath string
+
+	PodName string
 
 	ImagesMountName string
 	ImagesMountPath string
@@ -71,14 +71,14 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 		ServiceAccountName: serviceAccountName,
 		ServiceName:        "perceptor-imagefacade",
 
+		DockerSocketName: "dir-docker-socket",
+		DockerSocketPath: "/var/run/docker.sock",
+
 		// Must fill these out before using this object
 		PodName: "",
 
-		DockerSocketName: "",
-		DockerSocketPath: "",
-
-		ImagesMountName: "",
-		ImagesMountPath: "",
+		ImagesMountName: "var-images",
+		ImagesMountPath: "/var/images",
 	}
 }
 
