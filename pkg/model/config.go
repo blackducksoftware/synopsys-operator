@@ -37,6 +37,7 @@ type ProtoformConfig struct {
 	DockerUsername        string
 
 	ServiceAccounts map[string]string
+	Openshift bool
 }
 
 func (p *ProtoformConfig) parameterize(json string) string {
@@ -114,10 +115,13 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 		"perceptor-config":              `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","ConcurrentScanLimit": "_11"}`,
 		"perceptor-scanner-config":      `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7"}`,
 		"kube-generic-perceiver-config": `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`,
-		"openshift-perceiver-config":    `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`,
 		"perceptor-imagefacade-config":  `{"DockerUser": "_9","DockerPassword": "_10"}`,
 	}
 
+	if p.Openshift {
+		defaults["openshift-perceiver-config"]=`{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`	
+	}
+	
 	maps := make([]*v1.ConfigMap, len(configs))
 	x := 0
 	for config, filename := range configs {
