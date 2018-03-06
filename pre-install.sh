@@ -23,11 +23,6 @@ cleanup() {
 	else
 		KUBECTL="oc"
 	fi
-	$KUBECTL delete ns $NS
-	while $KUBECTL get ns | grep -q $NS ; do
-	  echo "Waiting for deletion...`$KUBECTL get ns | grep $NS` "
-	  sleep 1
-	done
 }
 
 install-rbac() {
