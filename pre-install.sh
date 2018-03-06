@@ -38,7 +38,7 @@ function install-rbac() {
                 echo "Detected Kubernetes... setting up"
 
                 $KUBECTL create ns $NS
-                $KUBECTL create sa protoform -n $NS
+
                 $KUBECTL create sa perceptor-scanner-sa -n $NS
                 $KUBECTL create sa kube-generic-perceiver -n $NS
         else

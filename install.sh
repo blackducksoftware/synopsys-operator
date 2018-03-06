@@ -63,8 +63,8 @@ function setParams() {
   noOfConcurrentScan="${noOfConcurrentScan:-$CONCURRENT_SCAN}"
 
   DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
-  
-  if echo $KUBECTL | grep -q oc ; then 
+
+  if echo $KUBECTL | grep -q oc ; then
       export Openshift="true"
   else
       export Openshift="false"
@@ -120,8 +120,8 @@ function create_protoform() {
       - name: viper-input
         mountPath: /etc/protoform/
     restartPolicy: Never
-    serviceAccountName: protoform
-    serviceAccount: protoform
+    serviceAccountName: default
+    serviceAccount: default
 EOF
 }
 
