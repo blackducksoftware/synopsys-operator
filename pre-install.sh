@@ -21,7 +21,7 @@ function setclient() {
 function install-rbac() {
 
 # Kubeadm, or other more secure rbac implementations on kube clusters will need to set
-# these service accounts up.
+# these service accounts up.  This enables protoform to create replication controllers.
 cat << EOF > /tmp/protoform-rbac
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1

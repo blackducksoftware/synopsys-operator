@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/spf13/viper"
@@ -441,6 +442,19 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 	log.Println("Creating config maps : Dry Run ")
 
 	CreateConfigMapsFromInput(pc.Namespace, clientset, pc.ToConfigMap(), pc.DryRun)
-	return CreatePerceptorResources(pc.Openshift, pc.Namespace, clientset, pc.ServiceAccounts, pc.DryRun)
+	rcsCreated := CreatePerceptorResources(pc.Openshift, pc.Namespace, clientset, pc.ServiceAccounts, pc.DryRun)
 
+	log.Println("Entering pod listing loop!")
+
+	for {
+		if !pc.DryRun {
+			pods, _ := clientset.Core().Pods(pc.Namespace).List(v1meta.ListOptions{})
+			for _, pod := range pods.Items {
+				log.Println("Pod = %v", pod.Name)
+				time.Sleep(10 * time.Second)
+			}
+		}
+	}
+
+	return rcsCreated
 }
