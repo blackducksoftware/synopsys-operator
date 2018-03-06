@@ -10,7 +10,7 @@ fi
 
 function setclient() {
 	if [ -z "$KUBECTL" ]; then
-		KUBECTL="$OC"
+		export KUBECTL="$OC"
 	fi
 	if [[ $KUBECTL == "" ]]; then 
 		echo "EXITING: The Kubectl/OC client isn't set.  run this script with either $OC or $KUBECTL pointing to your openshift, kube client."
