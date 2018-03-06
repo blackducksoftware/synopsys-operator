@@ -2,7 +2,7 @@
 
 function setup() {
   # Skip pre-installation is a debugging feature.
-  if [[ env | grep -q SKIP_PREINSTALL ]] ; then
+  if env | grep -q "SKIP_PREINSTALL" ; then
     echo "skipping preinstall"
   else
     ./pre-install.sh
