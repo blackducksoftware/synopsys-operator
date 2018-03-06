@@ -19,6 +19,39 @@ function setclient() {
 }
 
 function install-rbac() {
+
+# Kubeadm, or other more secure rbac implementations on kube clusters will need to set
+# these service accounts up.
+cat << EOF > /tmp/protoform-rbac
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: protoform
+  namespace: ${NS}
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: protoform
+  namespace: ${NS}
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: protoform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: protoform
+  namespace: ${NS}
+EOF
         SCC="add-scc-to-user"
         ROLE="add-role-to-user"
         CLUSTER="add-cluster-role-to-user"
@@ -38,7 +71,6 @@ function install-rbac() {
                 echo "Detected Kubernetes... setting up"
 
                 $KUBECTL create ns $NS
-
                 $KUBECTL create sa perceptor-scanner-sa -n $NS
                 $KUBECTL create sa kube-generic-perceiver -n $NS
         else
