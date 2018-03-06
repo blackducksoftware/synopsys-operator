@@ -4,6 +4,7 @@
 set +x
 NS="$NAMESPACE"
 if [[ -z "${NAMESPACE}" ]]; then
+	echo "Namespace required"
 	exit 10
 fi
 
