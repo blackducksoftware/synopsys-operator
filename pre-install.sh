@@ -19,9 +19,25 @@ function setclient() {
 }
 
 function install-rbac() {
+        SCC="add-scc-to-user"
+        ROLE="add-role-to-user"
+        CLUSTER="add-cluster-role-to-user"
+        SYSTEM_SA="system:serviceaccount"
 
-# Kubeadm, or other more secure rbac implementations on kube clusters will need to set
-# these service accounts up.  This enables protoform to create replication controllers.
+        PERCEPTOR_SC="perceptor-scanner"
+        NS_SA="${SYSTEM_SA}:${NS}"
+        SCANNER_SA="${NS_SA}:${PERCEPTOR_SCANNER}"
+
+        OS_PERCEIVER="openshift-perceiver"
+        OS_PERCEIVER_SA="${NS_SA}:${OS_PERCEIVER}"
+
+        KUBE_PERCEIVER="kube-generic-perceiver"
+        KUBE_PERCEIVER_SA="${NS_SA}:${KUBE_PERCEIVER}"
+
+        if echo "$KUBECTL" | grep -q "kubectl" ; then
+                echo "Detected Kubernetes... setting up"
+                # Kubeadm, or other more secure rbac implementations on kube clusters will need to set
+                # these service accounts up.  This enables protoform to create replication controllers.
 cat << EOF > /tmp/protoform-rbac
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -52,23 +68,7 @@ subjects:
   name: protoform
   namespace: ${NS}
 EOF
-        SCC="add-scc-to-user"
-        ROLE="add-role-to-user"
-        CLUSTER="add-cluster-role-to-user"
-        SYSTEM_SA="system:serviceaccount"
-
-        PERCEPTOR_SC="perceptor-scanner"
-        NS_SA="${SYSTEM_SA}:${NS}"
-        SCANNER_SA="${NS_SA}:${PERCEPTOR_SCANNER}"
-
-        OS_PERCEIVER="openshift-perceiver"
-        OS_PERCEIVER_SA="${NS_SA}:${OS_PERCEIVER}"
-
-        KUBE_PERCEIVER="kube-generic-perceiver"
-        KUBE_PERCEIVER_SA="${NS_SA}:${KUBE_PERCEIVER}"
-
-        if echo "$KUBECTL" | grep -q "kubectl" ; then
-                echo "Detected Kubernetes... setting up"
+                $KUBECTL create -f /tmp/protoform-rbac $NS
 
                 $KUBECTL create ns $NS
                 $KUBECTL create sa perceptor-scanner-sa -n $NS
