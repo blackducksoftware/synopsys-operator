@@ -139,6 +139,6 @@ fi
 
 create_protoform
 
-echo "*********************** installing protoform now ****************************"
+echo " *********************** installing protoform now **************************** "
 $KUBECTL get ns
 $KUBECTL create -f protoform.yml -n $NAMESPACE
