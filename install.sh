@@ -9,6 +9,8 @@ function setup() {
   fi
 
   # Reasonable defaults for simple installations in a hub namespace.
+  # Note that concurrent scans is limited by hub bandwidth.
+  # Could be set via introspection at some point.
   export CONCURRENT_SCAN=2
   export DEF_HUBPORT=443
   export DEF_HUBUSER="sysadmin"
@@ -66,7 +68,7 @@ function create_config() {
         HubUserPassword: "$hubPassword"
         ConcurrentScanLimit: "$noOfConcurrentScan"
         DockerUsername: "admin"
-        Namespace: "namespace"
+        Namespace: "$namespace"
 EOF
 }
 
