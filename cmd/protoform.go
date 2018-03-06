@@ -245,7 +245,7 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 
 // perceptor, pod-perceiver, image-perceiver, pod-perceiver
 
-func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, dryRun bool) []*v1.ReplicationController {
+func CreatePerceptorResources(openshift bool, namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, dryRun bool) []*v1.ReplicationController {
 
 	// WARNING: THE SERVICE ACCOUNT IN THE FIRST CONTAINER IS USED FOR THE GLOBAL SVC ACCOUNT FOR ALL PODS !!!!!!!!!!!!!
 	// MAKE SURE IF YOU NEED A SVC ACCOUNT THAT ITS IN THE FIRST CONTAINER...
@@ -272,19 +272,6 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			cmd:                []string{},
 			serviceAccountName: svcAcct["pod-perceiver"],
 			serviceAccount:     svcAcct["pod-perceiver"],
-		},
-	})
-
-	rcPCVRo, svcPCVRo := NewRcSvc([]*PerceptorRC{
-		&PerceptorRC{
-			replicas:           1,
-			configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
-			name:               "image-perceiver",
-			image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:master",
-			port:               4000,
-			cmd:                []string{},
-			serviceAccount:     svcAcct["image-perceiver"],
-			serviceAccountName: svcAcct["image-perceiver"],
 		},
 	})
 
@@ -323,6 +310,26 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, rcSCAN}
 	svc := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
 
+	
+	// We dont create openshift perceivers if running kube... This needs to be avoided b/c the svc accounts
+	// won't exist.
+	if openshift {
+		rcOpenshift, svcOpenshift = NewRcSvc([]*PerceptorRC{
+				&PerceptorRC{
+					replicas:           1,
+					configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
+					name:               "image-perceiver",
+					image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:master",
+					port:               4000,
+					cmd:                []string{},
+					serviceAccount:     svcAcct["image-perceiver"],
+					serviceAccountName: svcAcct["image-perceiver"],
+				},
+		})
+		rcs = append(rcs,rcOpenshift)
+		svc = append(svc,svcOpenshift)
+	}
+
 	// TODO MAKE SURE WE VERIFY THAT SERVICE ACCOUNTS ARE EQUAL
 
 	for i, rc := range rcs {
@@ -347,6 +354,7 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			}
 		}
 	}
+
 	return rcs
 }
 
@@ -434,6 +442,6 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 	log.Println("Creating config maps : Dry Run ")
 
 	CreateConfigMapsFromInput(pc.Namespace, clientset, pc.ToConfigMap(), pc.DryRun)
-	return CreatePerceptorResources(pc.Namespace, clientset, pc.ServiceAccounts, pc.DryRun)
+	return CreatePerceptorResources(pc.Openshift, pc.Namespace, clientset, pc.ServiceAccounts, pc.DryRun)
 
 }
