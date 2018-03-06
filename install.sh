@@ -5,14 +5,17 @@ if [ -z $NAMESPACE ] ; then
    echo "EXITING: Need to specify the NAMESPACE env var."
    exit 1
 fi
+
 function setclient() {
-	if [ -z "$KUBECTL" ]; then
-		KUBECTL="$OC"
-	fi
-	if [[ $KUBECTL == "" ]]; then 
-		echo "EXITING: The Kubectl/OC client isn't set.  run this script with either $OC or $KUBECTL pointing to your openshift, kube client."
-		exit 1
-	fi
+        env | grep K
+        if [ -z "$KUBECTL" ]; then
+                echo "KUBECTL NOT SET... [ ${KUBECTL} ] setting it to '$OC'"
+                export KUBECTL="$OC"
+        fi
+        if [[ $KUBECTL == "" ]]; then
+                echo "[install.sh] EXITING: The Kubectl/OC client isn't set.  run this script with either $OC or $KUBECTL pointing to your openshift, kube client."
+                exit 1
+        fi
 }
 
 function setup() {
@@ -32,7 +35,7 @@ function setup() {
   export DEF_HUB_HOST="nginx-webapp-logstash"
 
   if [[ $AUTO_INSTALL == "true" ]]; then
-    echo "Attempting auto install."    
+    echo "Attempting auto install."
   else
     clear
     echo "============================================"
@@ -62,7 +65,7 @@ function setParams() {
   DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
 }
 
-function create_config() { 
+function create_config() {
   cat << EOF > config.yml
   apiVersion: v1
   kind: List
@@ -110,14 +113,13 @@ function create_protoform() {
       - name: viper-input
         mountPath: /etc/protoform/
     restartPolicy: Never
-    serviceAccountName: openshift-perceiver
-    serviceAccount: openshift-perceiver
+    serviceAccountName: protoform
+    serviceAccount: protoform
 EOF
 }
 
 setup
 setParams
-
 setclient
 
 create_config
@@ -128,6 +130,8 @@ if [[ "$AUTO_INSTALL" != "true" ]]; then
   read x
 fi
 
-
 create_protoform
+
+echo "*********************** installing protoform now ****************************"
+$KUBECTL get ns
 $KUBECTL create -f protoform.yml -n $NAMESPACE
