@@ -1,5 +1,20 @@
 #!/bin/bash
 
+### Duplicate function from pre-install.sh
+if [ -z $NAMESPACE ] ; then
+   echo "EXITING: Need to specify the NAMESPACE env var."
+   exit 1
+fi
+function setclient() {
+	if [ -z "$KUBECTL" ]; then
+		KUBECTL="$OC"
+	fi
+	if [[ $KUBECTL == "" ]]; then 
+		echo "EXITING: The Kubectl/OC client isn't set.  run this script with either $OC or $KUBECTL pointing to your openshift, kube client."
+		exit 1
+	fi
+}
+
 function setup() {
   # Skip pre-installation is a debugging feature.
   if [[ `env | grep -q "SKIP_PREINSTALL"` ]] ; then
@@ -103,7 +118,7 @@ EOF
 setup
 setParams
 create_config
-oc create -f config.yml
+$KUBECTL create -f config.yml -n $NAMESPACE
 
 if [[ "$AUTO_INSTALL" != "true" ]]; then
   echo "Your configuration is at config.yml, click ENTER to proceed installing, or edit it before continuing."
@@ -111,4 +126,4 @@ if [[ "$AUTO_INSTALL" != "true" ]]; then
 fi
 
 create_protoform
-oc create -f protoform.yml
+$KUBECTL create -f protoform.yml -n $NAMESPACE
