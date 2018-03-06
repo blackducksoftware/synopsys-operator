@@ -2,7 +2,7 @@
 
 function setup() {
   # Skip pre-installation is a debugging feature.
-  if [ env | grep -q "SKIP_PREINSTALL" ] ; then
+  if [[ `env | grep -q "SKIP_PREINSTALL"` ]] ; then
     echo "skipping preinstall"
   else
     ./pre-install.sh
@@ -19,7 +19,9 @@ function setup() {
   else
     clear
     echo "============================================"
-    echo "Black Duck Hub Configuration Information"
+    echo "Blackduck Hub Configuration Information"
+    echo "============================================"
+    echo "Interactive"
     echo "============================================"
     read -p "Hub server host (e.g. hub.mydomain.com): " hubHost
     read -p "Hub server port [$DEF_HUBPORT]: " hubPort
@@ -27,6 +29,7 @@ function setup() {
     read -sp "Hub user password : " hubPassword
     echo " "
     read -p "Maximum concurrent scans [$CONCURRENT_SCAN]: " noOfConcurrentScan
+    echo "============================================"
   fi
 }
 
