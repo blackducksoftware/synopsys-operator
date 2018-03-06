@@ -307,27 +307,26 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 
 	// rcs := []*v1.ReplicationController{rcSCAN}
 	// svc := [][]*v1.Service{svcSCAN}
-	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcPCVRo, rcSCAN}
-	svc := [][]*v1.Service{svcPCP, svcPCVR, svcPCVRo, svcSCAN}
+	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcSCAN} //rcPCVRo
+	svc := [][]*v1.Service{svcPCP, svcPCVR, svcSCAN}          //svcPCVRo
 
-	
 	// We dont create openshift perceivers if running kube... This needs to be avoided b/c the svc accounts
 	// won't exist.
 	if openshift {
-		rcOpenshift, svcOpenshift = NewRcSvc([]*PerceptorRC{
-				&PerceptorRC{
-					replicas:           1,
-					configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
-					name:               "image-perceiver",
-					image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:master",
-					port:               4000,
-					cmd:                []string{},
-					serviceAccount:     svcAcct["image-perceiver"],
-					serviceAccountName: svcAcct["image-perceiver"],
-				},
+		rcOpenshift, svcOpenshift := NewRcSvc([]*PerceptorRC{
+			&PerceptorRC{
+				replicas:           1,
+				configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
+				name:               "image-perceiver",
+				image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:master",
+				port:               4000,
+				cmd:                []string{},
+				serviceAccount:     svcAcct["image-perceiver"],
+				serviceAccountName: svcAcct["image-perceiver"],
+			},
 		})
-		rcs = append(rcs,rcOpenshift)
-		svc = append(svc,svcOpenshift)
+		rcs = append(rcs, rcOpenshift)
+		svc = append(svc, svcOpenshift)
 	}
 
 	// TODO MAKE SURE WE VERIFY THAT SERVICE ACCOUNTS ARE EQUAL
