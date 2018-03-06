@@ -392,7 +392,6 @@ func main() {
 }
 
 func runProtoform(configPath string) []*v1.ReplicationController {
-	namespace := "bds-perceptor"
 	var clientset *kubernetes.Clientset
 	pc := readConfig(configPath)
 	if pc == nil {
@@ -434,7 +433,7 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 
 	log.Println("Creating config maps : Dry Run ")
 
-	CreateConfigMapsFromInput(namespace, clientset, pc.ToConfigMap(), pc.DryRun)
-	return CreatePerceptorResources(namespace, clientset, pc.ServiceAccounts, pc.DryRun)
+	CreateConfigMapsFromInput(pc.Namespace, clientset, pc.ToConfigMap(), pc.DryRun)
+	return CreatePerceptorResources(pc.Namespace, clientset, pc.ServiceAccounts, pc.DryRun)
 
 }
