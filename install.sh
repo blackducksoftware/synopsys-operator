@@ -2,7 +2,7 @@
 
 function setup() {
   # Skip pre-installation is a debugging feature.
-  if env | grep -q "SKIP_PREINSTALL" ; then
+  if [ env | grep -q "SKIP_PREINSTALL" ] ; then
     echo "skipping preinstall"
   else
     ./pre-install.sh
@@ -64,7 +64,7 @@ function create_config() {
         ConcurrentScanLimit: "$noOfConcurrentScan"
         DockerUsername: "admin"
         Namespace: "namespace"
-  EOF
+EOF
 }
 
 function create_protoform() {
@@ -92,7 +92,7 @@ function create_protoform() {
     restartPolicy: Never
     serviceAccountName: openshift-perceiver
     serviceAccount: openshift-perceiver
-  EOF
+EOF
 }
 
 setup
