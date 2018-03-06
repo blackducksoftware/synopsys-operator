@@ -125,5 +125,6 @@ if [[ "$AUTO_INSTALL" != "true" ]]; then
   read x
 fi
 
+setclient
 create_protoform
 $KUBECTL create -f protoform.yml -n $NAMESPACE
