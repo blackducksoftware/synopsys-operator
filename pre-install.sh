@@ -2,7 +2,11 @@
 #!/bin/bash
 
 set +x
-NS=bds-perceptor
+NS="$NAMESPACE"
+if [[ -z "${NAMESPACE}" ]]; then
+	exit 10
+fi
+
 KUBECTL="kubectl"
 
 function is_openshift {
