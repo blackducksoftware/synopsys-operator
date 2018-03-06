@@ -63,6 +63,12 @@ function setParams() {
   noOfConcurrentScan="${noOfConcurrentScan:-$CONCURRENT_SCAN}"
 
   DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
+  
+  if echo $KUBECTL | grep -q oc ; then 
+      export Openshift="true"
+  else
+      export Openshift="false"
+  fi
 }
 
 function create_config() {
@@ -87,6 +93,7 @@ function create_config() {
         ConcurrentScanLimit: "$noOfConcurrentScan"
         DockerUsername: "admin"
         Namespace: "$namespace"
+        Openshift: "$Openshift"
 EOF
 }
 
