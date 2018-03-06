@@ -14,7 +14,7 @@ import (
 type ProtoformConfig struct {
 	// Dry run wont actually install, but will print the objects definitions out.
 	DryRun bool
-
+	
 	// CONTAINER CONFIGS
 	// These are sed replaced into the config maps for the containers.
 	PerceptorHost             string
@@ -26,7 +26,8 @@ type ProtoformConfig struct {
 	HubUserPassword           string
 	HubPort                   int
 	ConcurrentScanLimit       int
-
+	Namespace string
+	
 	// AUTH CONFIGS
 	// These are given to containers through secrets or other mechanisms.
 	// Not necessarily a one-to-one text replacement.
