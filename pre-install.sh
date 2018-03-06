@@ -8,25 +8,13 @@ if [[ -z "${NS}" ]]; then
 	exit 10
 fi
 
-KUBECTL="kubectl"
-
-function is_openshift {
-	if `which oc` ; then
-		oc version
-		return 0
-	else
-		return 1
+function setclient() {
+	if [ -z "$KUBECTL" ]; then
+		KUBECTL="$OC"
 	fi
-	return 1
-}
-
-function cleanup() {
-	is_openshift
-	if ! $(exit $?); then
-		echo "assuming kube"
-		KUBECTL="kubectl"
-	else
-		KUBECTL="oc"
+	if [[ $KUBECTL == "" ]]; then 
+		echo "EXITING: The Kubectl/OC client isn't set.  run this script with either $OC or $KUBECTL pointing to your openshift, kube client."
+		exit 1
 	fi
 }
 
@@ -83,6 +71,5 @@ function install-contrib() {
 	$KUBECTL create -f prometheus-deployment.yaml --namespace=$NS
 }
 
-cleanup
 install-rbac
 install-contrib
