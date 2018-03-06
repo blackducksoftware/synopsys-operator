@@ -120,8 +120,8 @@ function create_protoform() {
       - name: viper-input
         mountPath: /etc/protoform/
     restartPolicy: Never
-    serviceAccountName: default
-    serviceAccount: default
+    serviceAccountName: protoform
+    serviceAccount: protoform
 EOF
 }
 
