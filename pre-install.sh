@@ -20,7 +20,7 @@ function is_openshift {
 	return 1
 }
 
-cleanup() {
+function cleanup() {
 	is_openshift
 	if ! $(exit $?); then
 		echo "assuming kube"
@@ -30,7 +30,7 @@ cleanup() {
 	fi
 }
 
-install-rbac() {
+function install-rbac() {
 	SCC="add-scc-to-user"
 	ROLE="add-role-to-user"
 	CLUSTER="add-cluster-role-to-user"
@@ -48,12 +48,11 @@ install-rbac() {
 
 	if [ "$KUBECTL" == "kubectl" ]; then
 		echo "Detected Kubernetes... setting up"
+
 		kubectl create ns $NS
 		kubectl create sa perceptor-scanner-sa -n $NS
 		kubectl create sa kube-generic-perceiver -n $NS
-  else
-		set -e
-
+        else
 		echo "Detected openshift... setting up "
 		# Create the namespace to install all containers
 		oc new-project $NS
@@ -78,8 +77,7 @@ install-rbac() {
 	fi
 }
 
-install-contrib() {
-	set -e
+function install-contrib() {
 	# Deploy a small, local prometheus.  It is only used for scraping perceptor.  Doesnt need fancy ACLs for
 	# cluster discovery etc.
 	$KUBECTL create -f prometheus-deployment.yaml --namespace=$NS
