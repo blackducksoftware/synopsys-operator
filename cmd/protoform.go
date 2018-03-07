@@ -390,8 +390,9 @@ func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset
 	}
 }
 
+// GenerateContainerPaths creates paths with reasonable defaults.  TODO centralize this with the other defaults in config.go
 func GenerateContainerPaths(config *model.ProtoformConfig) map[string]string {
-	defaultVersion := "latest"
+	defaultVersion := "master"
 
 	registry := config.Registry
 	if len(registry) <= 0 {
