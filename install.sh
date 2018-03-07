@@ -61,11 +61,11 @@ function setParams() {
   hubUser="${hubUser:-$DEF_HUBUSER}"
   namespace="${namespace:-$NAMESPACE}"
   noOfConcurrentScan="${noOfConcurrentScan:-$CONCURRENT_SCAN}"
-
-  DOCKER_PASSWORD=$($OC sa get-token perceptor-scanner-sa)
+  DOCKER_PASSWORD=""
 
   if echo $KUBECTL | grep -q oc ; then
       export Openshift="true"
+      DOCKER_PASSWORD=$($OC sa get-token perceptor-scanner-sa)
   else
       export Openshift="false"
   fi
