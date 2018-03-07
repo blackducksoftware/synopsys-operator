@@ -62,21 +62,21 @@ EOF
 
                 $KUBECTL create ns $NS
                 $KUBECTL create sa perceptor-scanner-sa -n $NS
-                $KUBECTL create sa kube-generic-perceiver -n $NS
+                $KUBECTL create sa perceiver -n $NS
         else
                 echo "Detected openshift... setting up using $KUBECTL as oc client. "
                 # Create the namespace to install all containers
                 $KUBECTL new-project $NS
 
                 # Create the openshift-perceiver service account
-                $KUBECTL create serviceaccount openshift-perceiver -n $NS
+                $KUBECTL create serviceaccount perceiver -n $NS
 
                 # Protoform has its own SA.
                 $KUBECTL create serviceaccount protoform -n $NS
                 $KUBECTL adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:protoform
 
                 # following allows us to write cluster level metadata for imagestreams
-                $KUBECTL adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:openshift-perceiver
+                $KUBECTL adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceiver
 
                 # Create the serviceaccount for perceptor-scanner to talk with Docker
                 $KUBECTL create sa perceptor-scanner-sa -n $NS

@@ -467,8 +467,8 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 
 		svcAccounts := map[string]string{
 			// WARNINNG: These service accounts need to exist !
-			"pod-perceiver":          "openshift-perceiver",
-			"image-perceiver":        "openshift-perceiver",
+			"pod-perceiver":          "perceiver",
+			"image-perceiver":        "perceiver",
 			"perceptor-image-facade": "perceptor-scanner-sa",
 		}
 		// TODO programatically validate rather then sanity check.
@@ -494,7 +494,7 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 		for {
 			pods, _ := clientset.Core().Pods(pc.Namespace).List(v1meta.ListOptions{})
 			for _, pod := range pods.Items {
-				log.Println("Pod = %v", pod.Name)
+				log.Printf("Pod = %v", pod.Name)
 			}
 			time.Sleep(20 * time.Second)
 		}
