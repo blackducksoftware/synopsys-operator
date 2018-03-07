@@ -61,8 +61,8 @@ metadata:
   name: protoform
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
+  kind: Role
+  name: protoform
 subjects:
 - kind: ServiceAccount
   name: protoform
