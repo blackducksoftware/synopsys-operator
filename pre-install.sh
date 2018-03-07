@@ -58,9 +58,9 @@ metadata:
   name: protoform
   namespace: ${NS}
 EOF
-                $KUBECTL create -f  /tmp/protoform-rbac.yaml -n ${NS}
 
                 $KUBECTL create ns $NS
+                $KUBECTL create -f  /tmp/protoform-rbac.yaml -n ${NS}
                 $KUBECTL create sa perceptor-scanner-sa -n $NS
                 $KUBECTL create sa perceiver -n $NS
         else
