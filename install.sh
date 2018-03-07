@@ -202,7 +202,9 @@ done
 
 REGISTRY="${REGISTRY:-gcr.io}"
 IMAGE_PATH="${IMAGE_PATH:-gke-verification/blackducksoftware}"
-VERSION="${VERSION:-latest}"
+# Note : Someday, we may want to use latest.  For now, for dev purposes, master is a easy default since
+# it maps directly to the master branches for repos.
+VERSION="${VERSION:-master}"
 
 setclient
 setup
