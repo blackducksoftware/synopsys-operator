@@ -38,37 +38,27 @@ function install-rbac() {
                 echo "Detected Kubernetes... setting up"
                 # Kubeadm, or other more secure rbac implementations on kube clusters will need to set
                 # these service accounts up.  This enables protoform to create replication controllers.
-cat << EOF > /tmp/protoform-rbac
-kind: Role
+cat << EOF > /tmp/protoform-rbac.yaml
+kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: protoform
+subjects:
+- kind: ServiceAccount
+  name: protoform
   namespace: ${NS}
-rules:
-- apiGroups: ["*"]
-  resources: ["*"]
-  verbs: ["*"]
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: ""
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: protoform
   namespace: ${NS}
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: protoform
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: protoform
-subjects:
-- kind: ServiceAccount
-  name: protoform
-  namespace: ${NS}
 EOF
-                $KUBECTL create -f /tmp/protoform-rbac -n $NS
+                $KUBECTL create -f  /tmp/protoform-rbac.yaml -n ${NS}
 
                 $KUBECTL create ns $NS
                 $KUBECTL create sa perceptor-scanner-sa -n $NS
