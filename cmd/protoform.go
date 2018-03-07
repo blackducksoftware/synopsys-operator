@@ -492,12 +492,13 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 
 	// continually print out pod statuses .  can exit any time.  maybe use this as a stub for self testing.
 	if !pc.DryRun {
-		for {
+		for i := 0; i < 10; i++ {
 			pods, _ := clientset.Core().Pods(pc.Namespace).List(v1meta.ListOptions{})
 			for _, pod := range pods.Items {
-				log.Printf("Pod = %v", pod.Name)
+				log.Printf("Pod = %v -> %v", pod.Name, pod.Status.Phase)
 			}
-			time.Sleep(20 * time.Second)
+			log.Printf("***************")
+			time.Sleep(10 * time.Second)
 		}
 	}
 
