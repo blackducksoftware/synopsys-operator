@@ -85,11 +85,11 @@ type PerceptorRC struct {
 
 // This function creates an RC and services that forward to it.
 func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Service) {
-	defaultMem, err := resource.ParseQuantity("2Gi")
+	defaultMem, err := resource.ParseQuantity("1300Mi")
 	if err != nil {
 		panic(err)
 	}
-	defaultCPU, err := resource.ParseQuantity("500m")
+	defaultCPU, err := resource.ParseQuantity("300m")
 	if err != nil {
 		panic(err)
 	}
