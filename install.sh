@@ -62,7 +62,7 @@ function setParams() {
   namespace="${namespace:-$NAMESPACE}"
   noOfConcurrentScan="${noOfConcurrentScan:-$CONCURRENT_SCAN}"
 
-  DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
+  DOCKER_PASSWORD=$($OC sa get-token perceptor-scanner-sa)
 
   if echo $KUBECTL | grep -q oc ; then
       export Openshift="true"
@@ -94,6 +94,12 @@ function create_config() {
         DockerUsername: "admin"
         Namespace: "$namespace"
         Openshift: "$Openshift"
+        Registry: "$REGISTRY"
+        ImagePath: "$IMAGE_PATH"
+        PerceptorContainerVersion: "$PERCEPTOR_VERSION"
+        ScannerContainerVersion: "$PERCEPTOR_SCAN_VERSION"
+        PerceiverContainerVersion: "$PERCEIVER_VERSION"
+        ImageFacadeContainerVersion: "$PERCEPTOR_IF_VERSION"
 EOF
 }
 
@@ -110,7 +116,7 @@ function create_protoform() {
         name: viper-input
     containers:
     - name: protoform
-      image: gcr.io/gke-verification/blackducksoftware/perceptor-protoform:master
+      image: $REGISTRY/$IMAGE_PATH/perceptor-protoform:$VERSION
       imagePullPolicy: Always
       command: [ ./protoform ]
       ports:
@@ -124,6 +130,79 @@ function create_protoform() {
     serviceAccount: protoform
 EOF
 }
+
+for opt in "$@"
+do
+case $opt in
+  --registry)
+    REGISTRY="$2"
+    shift
+    shift
+    ;;
+  --registry=*)
+    REGISTRY="${opt#*=}"
+    shift
+    ;;
+  --imagepath)
+    IMAGE_PATH="$2"
+    shift
+    shift
+    ;;
+  --imagepath=*)
+    IMAGE_PATH="${opt#*=}"
+    shift
+    ;;
+  --version)
+    VERSION="$2"
+    shift
+    shift
+    ;;
+  --version=*)
+    VERSION="${opt#*=}"
+    shift
+    ;;
+  --perceptor-version)
+    PERCEPTOR_VERSION="$2"
+    shift
+    shift
+    ;;
+  --perceptor-version=*)
+    PERCEPTOR_VERSION="${opt#*=}"
+    shift
+    ;;
+  --perceiver-version)
+    PERCEIVER_VERSION="$2"
+    shift
+    shift
+    ;;
+  --perceiver-version=*)
+    PERCEIVER_VERSION="${opt#*=}"
+    shift
+    ;;
+  --perceptor-scan-version)
+    PERCEPTOR_SCAN_VERSION="$2"
+    shift
+    shift
+    ;;
+  --perceptor-scan-version=*)
+    PERCEPTOR_SCAN_VERSION="${opt#*=}"
+    shift
+    ;;
+  --perceptor-imagefacade)
+    PERCEPTOR_IF_VERSION="$2"
+    shift
+    shift
+    ;;
+  --perceptor-imagefacade=*)
+    PERCEPTOR_IF_VERSION="${opt#*=}"
+    shift
+    ;;
+esac
+done
+
+REGISTRY="${REGISTRY:-gcr.io}"
+IMAGE_PATH="${IMAGE_PATH:-gke-verification/blackducksoftware}"
+VERSION="${VERSION:-latest}"
 
 setup
 setParams

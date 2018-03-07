@@ -14,7 +14,7 @@ import (
 type ProtoformConfig struct {
 	// Dry run wont actually install, but will print the objects definitions out.
 	DryRun bool
-	
+
 	// CONTAINER CONFIGS
 	// These are sed replaced into the config maps for the containers.
 	PerceptorHost             string
@@ -26,8 +26,17 @@ type ProtoformConfig struct {
 	HubUserPassword           string
 	HubPort                   int
 	ConcurrentScanLimit       int
-	Namespace string
-	
+	Namespace                 string
+
+	// CONTAINER PULL CONFIG
+	// These are for defining docker registry and image location and versions
+	Registry                    string
+	ImagePath                   string
+	PerceptorContainerVersion   string
+	ScannerContainerVersion     string
+	PerceiverContainerVersion   string
+	ImageFacadeContainerVersion string
+
 	// AUTH CONFIGS
 	// These are given to containers through secrets or other mechanisms.
 	// Not necessarily a one-to-one text replacement.
@@ -37,7 +46,7 @@ type ProtoformConfig struct {
 	DockerUsername        string
 
 	ServiceAccounts map[string]string
-	Openshift bool
+	Openshift       bool
 }
 
 func (p *ProtoformConfig) parameterize(json string) string {
@@ -119,9 +128,9 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	}
 
 	if p.Openshift {
-		defaults["openshift-perceiver-config"]=`{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`	
+		defaults["openshift-perceiver-config"] = `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`
 	}
-	
+
 	maps := make([]*v1.ConfigMap, len(configs))
 	x := 0
 	for config, filename := range configs {

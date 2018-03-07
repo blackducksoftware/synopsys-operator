@@ -246,7 +246,7 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 
 // perceptor, pod-perceiver, image-perceiver, pod-perceiver
 
-func CreatePerceptorResources(openshift bool, namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, dryRun bool) []*v1.ReplicationController {
+func CreatePerceptorResources(openshift bool, namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, paths map[string]string, dryRun bool) []*v1.ReplicationController {
 
 	// WARNING: THE SERVICE ACCOUNT IN THE FIRST CONTAINER IS USED FOR THE GLOBAL SVC ACCOUNT FOR ALL PODS !!!!!!!!!!!!!
 	// MAKE SURE IF YOU NEED A SVC ACCOUNT THAT ITS IN THE FIRST CONTAINER...
@@ -256,7 +256,7 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 			replicas:        1,
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
 			name:            "perceptor",
-			image:           "gcr.io/gke-verification/blackducksoftware/perceptor:master",
+			image:           paths["perceptor"],
 			port:            3001,
 			cmd:             []string{"./perceptor"},
 		},
@@ -268,7 +268,7 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 			replicas:           1,
 			configMapMounts:    map[string]string{"kube-generic-perceiver-config": "/etc/perceiver"},
 			name:               "pod-perceiver",
-			image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:master",
+			image:              paths["pod-perceiver"],
 			port:               4000,
 			cmd:                []string{},
 			serviceAccountName: svcAcct["pod-perceiver"],
@@ -284,7 +284,7 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 				"var-images": "/var/images",
 			},
 			name:               "perceptor-scanner",
-			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
+			image:              paths["perceptor-scanner"],
 			dockerSocket:       false,
 			port:               3003,
 			cmd:                []string{},
@@ -297,7 +297,7 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 				"var-images": "/var/images",
 			},
 			name:               "perceptor-image-facade",
-			image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
+			image:              paths["perceptor-imagefacade"],
 			dockerSocket:       true,
 			port:               4000,
 			cmd:                []string{},
@@ -319,7 +319,7 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 				replicas:           1,
 				configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
 				name:               "image-perceiver",
-				image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:master",
+				image:              paths["image-perceiver"],
 				port:               4000,
 				cmd:                []string{},
 				serviceAccount:     svcAcct["image-perceiver"],
@@ -390,6 +390,48 @@ func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset
 	}
 }
 
+func GenerateContainerPaths(config *model.ProtoformConfig) map[string]string {
+	defaultVersion := "latest"
+
+	registry := config.Registry
+	if len(registry) <= 0 {
+		registry = "gcr.io"
+	}
+
+	path := config.ImagePath
+	if len(path) <= 0 {
+		path = "gke-verification/blackducksoftware"
+	}
+
+	pcv := config.PerceptorContainerVersion
+	if len(pcv) <= 0 {
+		pcv = defaultVersion
+	}
+
+	scv := config.ScannerContainerVersion
+	if len(scv) <= 0 {
+		scv = defaultVersion
+	}
+
+	perceivercv := config.PerceiverContainerVersion
+	if len(perceivercv) <= 0 {
+		perceivercv = defaultVersion
+	}
+
+	ifcv := config.ImageFacadeContainerVersion
+	if len(ifcv) <= 0 {
+		ifcv = defaultVersion
+	}
+
+	return map[string]string{
+		"perceptor":             fmt.Sprintf("%s/%s/perceptor:%s", registry, path, pcv),
+		"perceptor-scanner":     fmt.Sprintf("%s/%s/perceptor-scanner:%s", registry, path, scv),
+		"pod-perceiver":         fmt.Sprintf("%s/%s/pod-perceiver:%s", registry, path, perceivercv),
+		"image-perceiver":       fmt.Sprintf("%s/%s/image-perceiver:%s", registry, path, perceivercv),
+		"perceptor-imagefacade": fmt.Sprintf("%s/%s/perceptor-imagefacade:%s", registry, path, ifcv),
+	}
+}
+
 // protoform is an experimental installer which bootstraps perceptor and the other
 // autobots.
 
@@ -442,7 +484,8 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 	log.Println("Creating config maps : Dry Run ")
 
 	CreateConfigMapsFromInput(pc.Namespace, clientset, pc.ToConfigMap(), pc.DryRun)
-	rcsCreated := CreatePerceptorResources(pc.Openshift, pc.Namespace, clientset, pc.ServiceAccounts, pc.DryRun)
+	imagePaths := GenerateContainerPaths(pc)
+	rcsCreated := CreatePerceptorResources(pc.Openshift, pc.Namespace, clientset, pc.ServiceAccounts, imagePaths, pc.DryRun)
 
 	log.Println("Entering pod listing loop!")
 
