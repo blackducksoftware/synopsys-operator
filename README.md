@@ -1,15 +1,12 @@
 # NOTE we are moving components into this repository currently and it is under alot of flux !
 
-## Perceptor-protoform: a cloud native administration utility for your scanning platform.
+## Perceptor-protoform: a cloud native administration utility for the perceptor ecosystem components:
 
-Protoform is a cloud native installation utility for blackduck's distributed system framework for scanning platforms over time
-for perceptor (core), perceptor-convex, perceivers.
+- perceptor
+- perceivers (openshift, kube, ...)
+- perceptor-image-facade
+- perceptor-scan
 
-To run it: 
+To run it, clone this repo and simply run: `install.sh`
 
-install.sh
-
-## NOTE
-
-This is preliminary and has only been tested on openshift 3.6, althogh its predecessor was tested in kubernetes.
-if your planning to use it and have questions on current stability, file an issue !
+Note that you can easily run without cloning, just pull down `install.sh` and `pre-install.sh` into the same directory.
