@@ -68,7 +68,7 @@ subjects:
   name: protoform
   namespace: ${NS}
 EOF
-                $KUBECTL create -f /tmp/protoform-rbac $NS
+                $KUBECTL create -f /tmp/protoform-rbac -n $NS
 
                 $KUBECTL create ns $NS
                 $KUBECTL create sa perceptor-scanner-sa -n $NS
