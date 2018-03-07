@@ -35,6 +35,10 @@ func TestProto(t *testing.T) {
 	})
 	rcsArray := runProtoform("./")
 
+	for i, rcs := range rcsArray {
+		log.Printf("%v : %v", i, rcs.Name)
+	}
+
 	// Image facade needs to be privileged !
 	if *rcsArray[2].Spec.Template.Spec.Containers[1].SecurityContext.Privileged == false {
 		log.Printf("%v %v", rcsArray[3].Spec.Template.Spec.Containers[0].Name, *rcsArray[3].Spec.Template.Spec.Containers[0].SecurityContext.Privileged)
