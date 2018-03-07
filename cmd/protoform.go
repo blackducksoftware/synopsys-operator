@@ -447,8 +447,8 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 	log.Println("Entering pod listing loop!")
 
 	// continually print out pod statuses .  can exit any time.  maybe use this as a stub for self testing.
-	for {
-		if !pc.DryRun {
+	if !pc.DryRun {
+		for {
 			pods, _ := clientset.Core().Pods(pc.Namespace).List(v1meta.ListOptions{})
 			for _, pod := range pods.Items {
 				log.Println("Pod = %v", pod.Name)
