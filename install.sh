@@ -204,9 +204,9 @@ REGISTRY="${REGISTRY:-gcr.io}"
 IMAGE_PATH="${IMAGE_PATH:-gke-verification/blackducksoftware}"
 VERSION="${VERSION:-latest}"
 
+setclient
 setup
 setParams
-setclient
 
 create_config
 $KUBECTL create -f config.yml -n $NAMESPACE
