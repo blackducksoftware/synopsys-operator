@@ -4,6 +4,10 @@ set +x
 NS=bds-perceptor
 KUBECTL="kubectl"
 
+IMAGEFACADE_SA="imagefacade-sa"
+IMAGE_PERCEIVER_SA="image-perceiver-sa"
+POD_PERCEIVER_SA="pod-perceiver-sa"
+
 function is_openshift {
 	if `which oc` ; then
 		# oc version
@@ -30,50 +34,34 @@ cleanup() {
 }
 
 install-rbac() {
-	SCC="add-scc-to-user"
-	ROLE="add-role-to-user"
-	CLUSTER="add-cluster-role-to-user"
-	SYSTEM_SA="system:serviceaccount"
-
-	PERCEPTOR_SC="perceptor-scanner"
-	NS_SA="${SYSTEM_SA}:${NS}"
-	SCANNER_SA="${NS_SA}:${PERCEPTOR_SCANNER}"
-
-	OS_PERCEIVER="openshift-perceiver"
-	OS_PERCEIVER_SA="${NS_SA}:${OS_PERCEIVER}"
-
-	KUBE_PERCEIVER="kube-generic-perceiver"
-	KUBE_PERCEIVER_SA="${NS_SA}:${KUBE_PERCEIVER}"
-
 	if [ "$KUBECTL" == "kubectl" ]; then
 		echo "Detected Kubernetes... setting up"
 		kubectl create ns $NS
-		kubectl create sa perceptor-scanner-sa -n $NS
-		kubectl create sa kube-generic-perceiver -n $NS
+		kubectl create sa $IMAGEFACADE_SA -n $NS
+		kubectl create sa $POD_PERCEIVER_SA -n $NS
   else
 		set -e
 
 		echo "Detected openshift... setting up "
-		# Create the namespace to install all containers
 		oc new-project $NS
 
-		# Create the openshift-perceiver service account
-		oc create serviceaccount openshift-perceiver -n $NS
-
-		# following allows us to write cluster level metadata for imagestreams
-		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:openshift-perceiver
-
-		# Create the serviceaccount for perceptor-scanner to talk with Docker
-		oc create sa perceptor-scanner-sa -n $NS
-
+		oc create serviceaccount $IMAGEFACADE_SA -n $NS
 		# allows launching of privileged containers for Docker machine access
-		oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
+		oc adm policy add-scc-to-user privileged system:serviceaccount:$NS:$IMAGEFACADE_SA
+		# Allows pulling, viewing all images
+		oc policy add-role-to-user view system:serviceaccount:$NS:$IMAGEFACADE_SA
 
-		# following allows us to write cluster level metadata for imagestreams
-		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:kube-generic-perceiver
+		# allows pulling of images
+		oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$NS:$IMAGEFACADE_SA
+		# oc adm policy add-role-to-user system:image-puller sytem:serviceaccount:$NS:$IMAGEFACADE_SA
+		# oc adm policy add-role-to-user admin system:serviceaccount:$NS:$IMAGEFACADE_SA -n openshift
+		# oc adm policy add-role-to-user system:registry sytem:serviceaccount:$NS:$IMAGEFACADE_SA
 
-		# To pull or view all images
-		oc policy $ROLE view system:serviceaccount:$NS:perceptor-scanner-sa
+		oc create serviceaccount $POD_PERCEIVER_SA -n $NS
+		oc create serviceaccount $IMAGE_PERCEIVER_SA -n $NS
+		# allows writing of cluster level metadata for imagestreams
+		oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$NS:$POD_PERCEIVER_SA
+		oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$NS:$IMAGE_PERCEIVER_SA
 	fi
 }
 
@@ -83,13 +71,16 @@ install-rbac
 
 ## finished initial setup, now run protoform
 
-DOCKER_PASSWORD=$(oc sa get-token perceptor-scanner-sa)
+DOCKER_PASSWORD=$(oc sa get-token $IMAGEFACADE_SA)
 
 cat << EOF > aux-config.json
 {
   "Namespace": "$NS",
   "DockerUsername": "admin",
-  "DockerPassword": "$DOCKER_PASSWORD"
+  "DockerPassword": "$DOCKER_PASSWORD",
+	"PodPerceiverServiceAccountName": "$POD_PERCEIVER_SA",
+	"ImagePerceiverServiceAccountName": "$IMAGE_PERCEIVER_SA",
+	"ImageFacadeServiceAccountName": "$IMAGEFACADE_SA"
 }
 EOF
 

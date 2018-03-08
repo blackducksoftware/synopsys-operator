@@ -35,6 +35,10 @@ type AuxiliaryConfig struct {
 	// at pod startup, eventually Service accounts.
 	DockerPassword string
 	DockerUsername string
+
+	PodPerceiverServiceAccountName   string
+	ImagePerceiverServiceAccountName string
+	ImageFacadeServiceAccountName    string
 }
 
 func ReadAuxiliaryConfig(auxConfigPath string) *AuxiliaryConfig {

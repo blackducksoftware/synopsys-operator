@@ -22,6 +22,7 @@ under the License.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -33,19 +34,23 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func CreatePerceptorResources(config *pif.PifConfig, clientset *kubernetes.Clientset, serviceAccounts map[string]string) {
-	imagePerceiverReplicaCount := int32(1)
+func prettyPrint(v interface{}) {
+	bytes, _ := json.MarshalIndent(v, "", "  ")
+	println(string(bytes))
+}
 
-	podPerceiver := model.NewPodPerceiver(serviceAccounts["pod-perceiver"])
+func createResources(config *pif.PifConfig, clientset *kubernetes.Clientset) {
+	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
 	podPerceiver.Config = config.PodPerceiverConfig()
 
-	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, serviceAccounts["image-perceiver"])
+	imagePerceiverReplicaCount := int32(1)
+	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, config.AuxConfig.ImagePerceiverServiceAccountName)
 	imagePerceiver.Config = config.ImagePerceiverConfig()
 
 	pifTester := pif.NewPifTester()
 	pifTester.Config = config.PifTesterConfig()
 
-	perceptorImagefacade := model.NewPerceptorImagefacade(serviceAccounts["perceptor-image-facade"])
+	perceptorImagefacade := model.NewPerceptorImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
 	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
 	perceptorImagefacade.PodName = "perceptor-imagefacade"
 
@@ -69,23 +74,26 @@ func CreatePerceptorResources(config *pif.PifConfig, clientset *kubernetes.Clien
 	}
 
 	namespace := config.AuxConfig.Namespace
+	for _, configMap := range configMaps {
+		_, err := clientset.Core().ConfigMaps(namespace).Create(configMap)
+		if err != nil {
+			panic(err)
+		}
+		prettyPrint(configMap)
+	}
 	for _, rc := range replicationControllers {
 		_, err := clientset.Core().ReplicationControllers(namespace).Create(rc)
 		if err != nil {
 			panic(err)
 		}
+		prettyPrint(rc)
 	}
 	for _, service := range services {
 		_, err := clientset.Core().Services(namespace).Create(service)
 		if err != nil {
 			panic(err)
 		}
-	}
-	for _, configMap := range configMaps {
-		_, err := clientset.Core().ConfigMaps(namespace).Create(configMap)
-		if err != nil {
-			panic(err)
-		}
+		prettyPrint(service)
 	}
 }
 
@@ -101,7 +109,11 @@ func main() {
 		panic("didn't find auxconfig")
 	}
 	config.AuxConfig = auxConfig
-	fmt.Printf("config: %+v\n", config)
+	jsonBytes, err := json.Marshal(config)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("config: %s\n", string(jsonBytes))
 	runProtoform(config)
 }
 
@@ -116,13 +128,5 @@ func runProtoform(config *pif.PifConfig) {
 		panic(err)
 	}
 
-	// TODO do something intelligent with service account names -- inject from install.sh or something
-	serviceAccounts := map[string]string{
-		// WARNINNG: These service accounts need to exist !
-		"pod-perceiver":          "openshift-perceiver",
-		"image-perceiver":        "openshift-perceiver",
-		"perceptor-image-facade": "perceptor-scanner-sa",
-	}
-
-	CreatePerceptorResources(config, clientset, serviceAccounts)
+	createResources(config, clientset)
 }
