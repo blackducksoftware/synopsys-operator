@@ -1,30 +1,20 @@
-## Perceptor-protoform: a cloud native administration utility for your scanning platform.
+# NOTE we are moving components into this repository currently and it is under alot of flux !
 
-Protoform is a cloud native installation utility for blackduck's distributed system framework for scanning platforms over time
-for perceptor (core), perceptor-convex, perceivers.
+## Perceptor-protoform: a cloud native administration utility for the perceptor ecosystem components:
 
-## Running
+- perceptor
+- perceivers (openshift, kube, ...)
+- perceptor-image-facade
+- perceptor-scan
 
-Make sure you have a kubectl or oc client installed locally, which is configured and logged in.  
+To run it, clone this repo and simply run: `install.sh`
 
-Then...
+## Prerequisites
 
-```
-git clone https://github.com/blackducksoftware/perceptor-protoform.git
-cd perceptor-protoform
+The user running the installation should be able to create service accounts with in-cluster API RBAC capabilities, and launch pods within them.  Specifically, protoform assumes access to oadm (for openshift users) or the ability to define RBAC objects (for kubernetes users).  
 
-# Sets up ACLS, you may need to modify this script.
-./pre-install.sh
+Protoform will attempt to detect your cluster type, and bootstrap all necessary components as needed.  This is done via environment variables, but the implementation is highly fluid right now, and we are leaning towards command line options once basica hardening of the core functionality is done.
 
-# Wrapper to the containerized installer.  No need to modify it.
-./install.sh
+## Run without cloning the source
 
-# TODO , jay will delete this after he finishes viperizing things tonite.
-./post-hack.sh
-```
-
-... Thats it! Now check that your pods are running:
-
-```
-kubectl get pods -n bds-perceptor
-```
+Note that you can easily run without cloning, just pull down `install.sh` and `pre-install.sh` into the same directory.
