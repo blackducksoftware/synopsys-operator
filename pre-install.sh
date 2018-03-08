@@ -22,17 +22,6 @@ function install-rbac() {
         SCC="add-scc-to-user"
         ROLE="add-role-to-user"
         CLUSTER="add-cluster-role-to-user"
-        SYSTEM_SA="system:serviceaccount"
-
-        PERCEPTOR_SC="perceptor-scanner"
-        NS_SA="${SYSTEM_SA}:${NS}"
-        SCANNER_SA="${NS_SA}:${PERCEPTOR_SCANNER}"
-
-        OS_PERCEIVER="openshift-perceiver"
-        OS_PERCEIVER_SA="${NS_SA}:${OS_PERCEIVER}"
-
-        KUBE_PERCEIVER="kube-generic-perceiver"
-        KUBE_PERCEIVER_SA="${NS_SA}:${KUBE_PERCEIVER}"
 
         if echo "$KUBECTL" | grep -q "kubectl" ; then
                 echo "Detected Kubernetes... setting up"
@@ -84,11 +73,9 @@ EOF
                 # allows launching of privileged containers for Docker machine access
                 $KUBECTL adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
 
-                # following allows us to write cluster level metadata for imagestreams
+                # these allow us to pull images
                 $KUBECTL adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-scanner-sa
-
-                # To pull or view all images
-                $KUBECTL policy $ROLE view system:serviceaccount::perceptor-scanner-sa
+                $KUBECTL policy $ROLE view system:serviceaccount:$NS:perceptor-scanner-sa
         fi
 }
 
