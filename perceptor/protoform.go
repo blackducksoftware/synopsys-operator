@@ -39,21 +39,21 @@ func PrettyPrint(v interface{}) {
 	println(string(b))
 }
 
-func CreatePerceptorResources(config *model.ProtoformConfig, clientset *kubernetes.Clientset, serviceAccounts map[string]string) {
+func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernetes.Clientset) {
 	perceptor := model.NewPerceptorCore()
 	perceptor.Config = config.PerceptorConfig()
 
-	podPerceiver := model.NewPodPerceiver(serviceAccounts["pod-perceiver"])
+	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
 	podPerceiver.Config = config.PodPerceiverConfig()
 
 	imagePerceiverReplicaCount := int32(0)
-	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, serviceAccounts["image-perceiver"])
+	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, config.AuxConfig.ImagePerceiverServiceAccountName)
 	imagePerceiver.Config = config.ImagePerceiverConfig()
 
 	perceptorScanner := model.NewPerceptorScanner()
 	perceptorScanner.Config = config.PerceptorScannerConfig()
 
-	perceptorImagefacade := model.NewPerceptorImagefacade(serviceAccounts["perceptor-image-facade"])
+	perceptorImagefacade := model.NewPerceptorImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
 	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
 
 	prometheus := model.NewPrometheus()
@@ -149,13 +149,5 @@ func runProtoform(config *model.ProtoformConfig) {
 		panic(err)
 	}
 
-	// TODO do something intelligent with service account names -- inject from install.sh or something
-	serviceAccounts := map[string]string{
-		// WARNINNG: These service accounts need to exist !
-		"pod-perceiver":          "openshift-perceiver",
-		"image-perceiver":        "openshift-perceiver",
-		"perceptor-image-facade": "perceptor-scanner-sa",
-	}
-
-	CreatePerceptorResources(config, clientset, serviceAccounts)
+	createPerceptorResources(config, clientset)
 }

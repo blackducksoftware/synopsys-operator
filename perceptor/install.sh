@@ -37,12 +37,13 @@ install-rbac() {
 	if [ "$KUBECTL" == "kubectl" ]; then
 		echo "Detected Kubernetes... setting up"
 		kubectl create ns $NS
-		kubectl create sa $IMAGEFACADE_SA -n $NS
-		kubectl create sa $POD_PERCEIVER_SA -n $NS
+		kubectl create sa perceptor-scanner-sa -n $NS
+		kubectl create sa kube-generic-perceiver -n $NS
   else
 		set -e
 
 		echo "Detected openshift... setting up "
+
 		oc new-project $NS
 
 		oc create serviceaccount $IMAGEFACADE_SA -n $NS
@@ -50,12 +51,8 @@ install-rbac() {
 		oc adm policy add-scc-to-user privileged system:serviceaccount:$NS:$IMAGEFACADE_SA
 		# Allows pulling, viewing all images
 		oc policy add-role-to-user view system:serviceaccount:$NS:$IMAGEFACADE_SA
-
 		# allows pulling of images
 		oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:$NS:$IMAGEFACADE_SA
-		# oc adm policy add-role-to-user system:image-puller sytem:serviceaccount:$NS:$IMAGEFACADE_SA
-		# oc adm policy add-role-to-user admin system:serviceaccount:$NS:$IMAGEFACADE_SA -n openshift
-		# oc adm policy add-role-to-user system:registry sytem:serviceaccount:$NS:$IMAGEFACADE_SA
 
 		oc create serviceaccount $POD_PERCEIVER_SA -n $NS
 		oc create serviceaccount $IMAGE_PERCEIVER_SA -n $NS
@@ -69,7 +66,7 @@ cleanup
 install-rbac
 
 
-## finished initial setup, now run piftester
+## finished initial setup, now run protoform
 
 DOCKER_PASSWORD=$(oc sa get-token $IMAGEFACADE_SA)
 
@@ -84,4 +81,4 @@ cat << EOF > aux-config.json
 }
 EOF
 
-go run ./piftestermain.go ./config.json aux-config.json
+go run ./cmd/protoform.go config.json aux-config.json
