@@ -69,7 +69,7 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 		panic(err)
 	}
 	return &PerceptorImagefacade{
-		Image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:use-docker",
+		Image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
 		Port:               3004,
 		CPU:                defaultCPU,
 		Memory:             defaultMem,
