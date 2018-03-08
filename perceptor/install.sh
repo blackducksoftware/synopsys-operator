@@ -81,4 +81,4 @@ cat << EOF > aux-config.json
 }
 EOF
 
-go run ./cmd/protoform.go config.json aux-config.json
+go run ./protoform.go ./config.json aux-config.json
