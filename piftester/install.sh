@@ -70,7 +70,7 @@ install-rbac() {
 		oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
 
 		# following allows us to write cluster level metadata for imagestreams
-		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-scanner-sa
+		oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:kube-generic-perceiver
 
 		# To pull or view all images
 		oc policy $ROLE view system:serviceaccount:$NS:perceptor-scanner-sa

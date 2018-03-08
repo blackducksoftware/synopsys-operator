@@ -191,8 +191,9 @@ func (pc *PifConfig) ImagePerceiverConfig() string {
 
 func (pc *PifConfig) PerceptorImagefacadeConfig() string {
 	jsonBytes, err := json.Marshal(model.PerceptorImagefacadeConfigMap{
-		Dockerpassword: pc.AuxConfig.DockerPassword,
-		Dockerusername: pc.AuxConfig.DockerUsername,
+		DockerPassword:   pc.AuxConfig.DockerPassword,
+		DockerUser:       pc.AuxConfig.DockerUsername,
+		CreateImagesOnly: true,
 	})
 	if err != nil {
 		panic(err)

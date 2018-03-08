@@ -31,8 +31,9 @@ import (
 )
 
 type PerceptorImagefacadeConfigMap struct {
-	Dockerusername string
-	Dockerpassword string
+	DockerUser       string
+	DockerPassword   string
+	CreateImagesOnly bool
 }
 
 type PerceptorImagefacade struct {

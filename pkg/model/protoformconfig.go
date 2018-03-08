@@ -89,8 +89,9 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() string {
 
 func (pc *ProtoformConfig) PerceptorImagefacadeConfig() string {
 	jsonBytes, err := json.Marshal(PerceptorImagefacadeConfigMap{
-		Dockerpassword: pc.AuxConfig.DockerPassword,
-		Dockerusername: pc.AuxConfig.DockerUsername,
+		DockerPassword:   pc.AuxConfig.DockerPassword,
+		DockerUser:       pc.AuxConfig.DockerUsername,
+		CreateImagesOnly: true,
 	})
 	if err != nil {
 		panic(err)
