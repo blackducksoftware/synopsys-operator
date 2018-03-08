@@ -22,7 +22,7 @@ under the License.
 package pif
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
 	"github.com/spf13/viper"
 )
 

@@ -26,8 +26,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/pif"
+	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
+	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/pif"
 	"k8s.io/api/core/v1"
 
 	"k8s.io/client-go/kubernetes"
