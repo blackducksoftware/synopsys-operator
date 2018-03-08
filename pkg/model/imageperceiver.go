@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"encoding/json"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,13 +37,17 @@ type ImagePerceiverConfigMap struct {
 }
 
 type ImagePerceiver struct {
-	PodName            string
-	Image              string
-	Port               int32
-	CPU                resource.Quantity
-	Memory             resource.Quantity
-	ConfigMapName      string
-	ConfigMapMount     string
+	PodName string
+	Image   string
+	Port    int32
+	CPU     resource.Quantity
+	Memory  resource.Quantity
+
+	ConfigMapName  string
+	ConfigMapMount string
+	ConfigMapPath  string
+	Config         ImagePerceiverConfigMap
+
 	ReplicaCount       int32
 	ServiceName        string
 	ServiceAccountName string
@@ -65,6 +71,7 @@ func NewImagePerceiver(replicaCount int32, serviceAccountName string) *ImagePerc
 		Memory:             memory,
 		ConfigMapName:      "openshift-perceiver-config",
 		ConfigMapMount:     "/etc/perceiver",
+		ConfigMapPath:      "perceiver.yaml",
 		ReplicaCount:       replicaCount,
 		ServiceName:        "image-perceiver",
 		ServiceAccountName: serviceAccountName,
@@ -136,4 +143,12 @@ func (ip *ImagePerceiver) Service() *v1.Service {
 				},
 			},
 			Selector: map[string]string{"name": ip.ServiceName}}}
+}
+
+func (ip *ImagePerceiver) ConfigMap() *v1.ConfigMap {
+	jsonBytes, err := json.Marshal(ip.Config)
+	if err != nil {
+		panic(err)
+	}
+	return MakeConfigMap(ip.ConfigMapName, ip.ConfigMapPath, string(jsonBytes))
 }

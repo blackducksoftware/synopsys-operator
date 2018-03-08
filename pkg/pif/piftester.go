@@ -19,9 +19,12 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package model
+package pif
 
 import (
+	"encoding/json"
+
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,15 +34,19 @@ type PifTesterConfigMap struct {
 }
 
 type PifTester struct {
-	PodName        string
-	Image          string
-	Port           int32
-	CPU            resource.Quantity
-	Memory         resource.Quantity
+	PodName string
+	Image   string
+	Port    int32
+	CPU     resource.Quantity
+	Memory  resource.Quantity
+
 	ConfigMapName  string
 	ConfigMapMount string
-	ReplicaCount   int32
-	ServiceName    string
+	ConfigMapPath  string
+	Config         PifTesterConfigMap
+
+	ReplicaCount int32
+	ServiceName  string
 }
 
 func NewPifTester() *PifTester {
@@ -60,6 +67,7 @@ func NewPifTester() *PifTester {
 		Memory:         memory,
 		ConfigMapName:  "piftester-config",
 		ConfigMapMount: "/etc/piftester",
+		ConfigMapPath:  "piftester_conf.yaml",
 		ReplicaCount:   1,
 		ServiceName:    "piftester",
 	}
@@ -128,4 +136,12 @@ func (pc *PifTester) Service() *v1.Service {
 				},
 			},
 			Selector: map[string]string{"name": pc.ServiceName}}}
+}
+
+func (pc *PifTester) ConfigMap() *v1.ConfigMap {
+	jsonBytes, err := json.Marshal(pc.Config)
+	if err != nil {
+		panic(err)
+	}
+	return model.MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
 }

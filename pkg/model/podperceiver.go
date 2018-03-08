@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"encoding/json"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,13 +37,17 @@ type PodPerceiverConfigMap struct {
 }
 
 type PodPerceiver struct {
-	PodName            string
-	Image              string
-	Port               int32
-	CPU                resource.Quantity
-	Memory             resource.Quantity
-	ConfigMapName      string
-	ConfigMapMount     string
+	PodName string
+	Image   string
+	Port    int32
+	CPU     resource.Quantity
+	Memory  resource.Quantity
+
+	ConfigMapName  string
+	ConfigMapMount string
+	ConfigMapPath  string
+	Config         PodPerceiverConfigMap
+
 	ReplicaCount       int32
 	ServiceName        string
 	ServiceAccountName string
@@ -65,6 +71,7 @@ func NewPodPerceiver(serviceAccountName string) *PodPerceiver {
 		Memory:             memory,
 		ConfigMapName:      "kube-generic-perceiver-config",
 		ConfigMapMount:     "/etc/perceiver",
+		ConfigMapPath:      "perceiver.yaml",
 		ReplicaCount:       1,
 		ServiceName:        "kube-generic-perceiver",
 		ServiceAccountName: serviceAccountName,
@@ -136,4 +143,12 @@ func (pp *PodPerceiver) Service() *v1.Service {
 				},
 			},
 			Selector: map[string]string{"name": pp.ServiceName}}}
+}
+
+func (pp *PodPerceiver) ConfigMap() *v1.ConfigMap {
+	jsonBytes, err := json.Marshal(pp.Config)
+	if err != nil {
+		panic(err)
+	}
+	return MakeConfigMap(pp.ConfigMapName, pp.ConfigMapPath, string(jsonBytes))
 }

@@ -19,11 +19,14 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package model
+package pif
 
-import "github.com/spf13/viper"
+import (
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/spf13/viper"
+)
 
-type ProtoformConfig struct {
+type PifConfig struct {
 	// general protoform config
 	MasterURL      string
 	KubeConfigPath string
@@ -33,20 +36,16 @@ type ProtoformConfig struct {
 	PerceptorPort             int
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
-	HubHost                   string
-	HubUser                   string
-	HubUserPassword           string
-	HubPort                   int
-	ConcurrentScanLimit       int
 
-	UseMockPerceptorMode bool
+	// imagefacade config
+	CreateImagesOnly bool
 
-	AuxConfig *AuxiliaryConfig
+	AuxConfig *model.AuxiliaryConfig
 }
 
-func ReadProtoformConfig(configPath string) *ProtoformConfig {
+func ReadPifConfig(configPath string) *PifConfig {
 	viper.SetConfigFile(configPath)
-	pc := &ProtoformConfig{}
+	pc := &PifConfig{}
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
@@ -55,8 +54,8 @@ func ReadProtoformConfig(configPath string) *ProtoformConfig {
 	return pc
 }
 
-func (pc *ProtoformConfig) PodPerceiverConfig() PodPerceiverConfigMap {
-	return PodPerceiverConfigMap{
+func (pc *PifConfig) PodPerceiverConfig() model.PodPerceiverConfigMap {
+	return model.PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
@@ -64,8 +63,8 @@ func (pc *ProtoformConfig) PodPerceiverConfig() PodPerceiverConfigMap {
 	}
 }
 
-func (pc *ProtoformConfig) ImagePerceiverConfig() ImagePerceiverConfigMap {
-	return ImagePerceiverConfigMap{
+func (pc *PifConfig) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
+	return model.ImagePerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
@@ -73,29 +72,14 @@ func (pc *ProtoformConfig) ImagePerceiverConfig() ImagePerceiverConfigMap {
 	}
 }
 
-func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
-	return PerceptorScannerConfigMap{
-		HubHost:         pc.HubHost,
-		HubPort:         pc.HubPort,
-		HubUser:         pc.HubUser,
-		HubUserPassword: pc.HubUserPassword,
-	}
-}
-
-func (pc *ProtoformConfig) PerceptorImagefacadeConfig() PerceptorImagefacadeConfigMap {
-	return PerceptorImagefacadeConfigMap{
+func (pc *PifConfig) PerceptorImagefacadeConfig() model.PerceptorImagefacadeConfigMap {
+	return model.PerceptorImagefacadeConfigMap{
 		DockerPassword:   pc.AuxConfig.DockerPassword,
 		DockerUser:       pc.AuxConfig.DockerUsername,
-		CreateImagesOnly: false,
+		CreateImagesOnly: pc.CreateImagesOnly,
 	}
 }
 
-func (pc *ProtoformConfig) PerceptorConfig() PerceptorConfigMap {
-	return PerceptorConfigMap{
-		ConcurrentScanLimit: pc.ConcurrentScanLimit,
-		HubHost:             pc.HubHost,
-		HubUser:             pc.HubUser,
-		HubUserPassword:     pc.HubUserPassword,
-		UseMockMode:         pc.UseMockPerceptorMode,
-	}
+func (pc *PifConfig) PifTesterConfig() PifTesterConfigMap {
+	return PifTesterConfigMap{}
 }

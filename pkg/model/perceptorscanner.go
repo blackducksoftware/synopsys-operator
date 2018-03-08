@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"encoding/json"
+
 	"k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,13 +38,17 @@ type PerceptorScannerConfigMap struct {
 }
 
 type PerceptorScanner struct {
-	Image          string
-	Port           int32
-	CPU            resource.Quantity
-	Memory         resource.Quantity
+	Image  string
+	Port   int32
+	CPU    resource.Quantity
+	Memory resource.Quantity
+
 	ConfigMapName  string
 	ConfigMapMount string
-	ServiceName    string
+	ConfigMapPath  string
+	Config         PerceptorScannerConfigMap
+
+	ServiceName string
 
 	PodName string
 
@@ -66,6 +72,7 @@ func NewPerceptorScanner() *PerceptorScanner {
 		Memory:         memory,
 		ConfigMapName:  "perceptor-scanner-config",
 		ConfigMapMount: "/etc/perceptor_scanner",
+		ConfigMapPath:  "perceptor_scanner_conf.yaml",
 		ServiceName:    "perceptor-scanner",
 
 		// Must fill these out before use
@@ -120,4 +127,12 @@ func (psp *PerceptorScanner) Service() *v1.Service {
 				},
 			},
 			Selector: map[string]string{"name": psp.ServiceName}}}
+}
+
+func (psp *PerceptorScanner) ConfigMap() *v1.ConfigMap {
+	jsonBytes, err := json.Marshal(psp.Config)
+	if err != nil {
+		panic(err)
+	}
+	return MakeConfigMap(psp.ConfigMapName, psp.ConfigMapPath, string(jsonBytes))
 }

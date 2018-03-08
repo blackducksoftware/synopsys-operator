@@ -38,17 +38,19 @@ type PerceptorConfigMap struct {
 }
 
 type PerceptorCore struct {
-	PodName        string
-	Image          string
-	Port           int32
-	CPU            resource.Quantity
-	Memory         resource.Quantity
+	PodName string
+	Image   string
+	Port    int32
+	CPU     resource.Quantity
+	Memory  resource.Quantity
+
 	ConfigMapName  string
 	ConfigMapMount string
 	ConfigMapPath  string
-	ReplicaCount   int32
-	ServiceName    string
 	Config         PerceptorConfigMap
+
+	ReplicaCount int32
+	ServiceName  string
 }
 
 func NewPerceptorCore() *PerceptorCore {
@@ -141,15 +143,8 @@ func (pc *PerceptorCore) Service() *v1.Service {
 			Selector: map[string]string{"name": pc.ServiceName}}}
 }
 
-func (pc *PerceptorCore) ConfigMapString() *v1.ConfigMap {
-	config := pc.Config
-	jsonBytes, err := json.Marshal(PerceptorConfigMap{
-		ConcurrentScanLimit: config.ConcurrentScanLimit,
-		HubHost:             config.HubHost,
-		HubUser:             config.HubUser,
-		HubUserPassword:     config.HubUserPassword,
-		UseMockMode:         config.UseMockMode,
-	})
+func (pc *PerceptorCore) ConfigMap() *v1.ConfigMap {
+	jsonBytes, err := json.Marshal(pc.Config)
 	if err != nil {
 		panic(err)
 	}

@@ -37,13 +37,16 @@ type PerceptorImagefacadeConfigMap struct {
 }
 
 type PerceptorImagefacade struct {
-	Image              string
-	Port               int32
-	CPU                resource.Quantity
-	Memory             resource.Quantity
-	ConfigMapName      string
-	ConfigMapMount     string
-	ConfigMapPath      string
+	Image  string
+	Port   int32
+	CPU    resource.Quantity
+	Memory resource.Quantity
+
+	ConfigMapName  string
+	ConfigMapMount string
+	ConfigMapPath  string
+	Config         PerceptorImagefacadeConfigMap
+
 	ServiceAccountName string
 	ServiceName        string
 
@@ -54,8 +57,6 @@ type PerceptorImagefacade struct {
 
 	ImagesMountName string
 	ImagesMountPath string
-
-	Config PerceptorImagefacadeConfigMap
 }
 
 func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
@@ -68,7 +69,7 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 		panic(err)
 	}
 	return &PerceptorImagefacade{
-		Image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
+		Image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:use-docker",
 		Port:               3004,
 		CPU:                defaultCPU,
 		Memory:             defaultMem,
@@ -176,17 +177,10 @@ func (pif *PerceptorImagefacade) ReplicationController() *v1.ReplicationControll
 				}}}}
 }
 
-func (pc *PerceptorCore) ConfigMapString() *v1.ConfigMap {
-	config := pc.Config
-	jsonBytes, err := json.Marshal(PerceptorConfigMap{
-		ConcurrentScanLimit: config.ConcurrentScanLimit,
-		HubHost:             config.HubHost,
-		HubUser:             config.HubUser,
-		HubUserPassword:     config.HubUserPassword,
-		UseMockMode:         config.UseMockMode,
-	})
+func (pif *PerceptorImagefacade) ConfigMap() *v1.ConfigMap {
+	jsonBytes, err := json.Marshal(pif.Config)
 	if err != nil {
 		panic(err)
 	}
-	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pif.ConfigMapName, pif.ConfigMapPath, string(jsonBytes))
 }

@@ -27,52 +27,39 @@ import (
 	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
-	"github.com/spf13/viper"
 	"k8s.io/api/core/v1"
+	v1beta1 "k8s.io/api/extensions/v1beta1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
-
-func readConfig(configPath string) *model.ProtoformConfig {
-	viper.SetConfigFile(configPath)
-	pc := &model.ProtoformConfig{}
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
-	}
-	viper.Unmarshal(pc)
-	PrettyPrint(pc)
-	return pc
-}
-
-func readAuxiliaryConfig(auxConfigPath string) *model.AuxiliaryConfig {
-	viper.SetConfigFile(auxConfigPath)
-	aux := &model.AuxiliaryConfig{}
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
-	}
-	viper.Unmarshal(aux)
-	PrettyPrint(aux)
-	return aux
-}
 
 func PrettyPrint(v interface{}) {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	println(string(b))
 }
 
-func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, serviceAccounts map[string]string) {
-	imagePerceiverReplicaCount := int32(0)
-
+func CreatePerceptorResources(config *model.ProtoformConfig, clientset *kubernetes.Clientset, serviceAccounts map[string]string) {
 	perceptor := model.NewPerceptorCore()
+	perceptor.Config = config.PerceptorConfig()
+
 	podPerceiver := model.NewPodPerceiver(serviceAccounts["pod-perceiver"])
+	podPerceiver.Config = config.PodPerceiverConfig()
+
+	imagePerceiverReplicaCount := int32(0)
 	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, serviceAccounts["image-perceiver"])
+	imagePerceiver.Config = config.ImagePerceiverConfig()
+
 	perceptorScanner := model.NewPerceptorScanner()
+	perceptorScanner.Config = config.PerceptorScannerConfig()
+
 	perceptorImagefacade := model.NewPerceptorImagefacade(serviceAccounts["perceptor-image-facade"])
-	scanner := model.NewScanner(perceptorScanner, perceptorImagefacade)
+	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
+
 	prometheus := model.NewPrometheus()
+	//	prometheus.Config = config.PrometheusConfig() // TODO ?
+
+	scanner := model.NewScanner(perceptorScanner, perceptorImagefacade)
 
 	replicationControllers := []*v1.ReplicationController{
 		perceptor.ReplicationController(),
@@ -86,14 +73,24 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		imagePerceiver.Service(),
 		perceptorScanner.Service(),
 		perceptorImagefacade.Service(),
+		prometheus.Service(),
 	}
 	configMaps := []*v1.ConfigMap{
+		perceptor.ConfigMap(),
+		podPerceiver.ConfigMap(),
+		imagePerceiver.ConfigMap(),
+		perceptorScanner.ConfigMap(),
+		perceptorImagefacade.ConfigMap(),
 		prometheus.ConfigMap(),
 	}
+	deployments := []*v1beta1.Deployment{
+		prometheus.Deployment(),
+	}
 
-	for _, rc := range replicationControllers {
-		PrettyPrint(rc)
-		_, err := clientset.Core().ReplicationControllers(namespace).Create(rc)
+	namespace := config.AuxConfig.Namespace
+
+	for _, configMap := range configMaps {
+		_, err := clientset.Core().ConfigMaps(namespace).Create(configMap)
 		if err != nil {
 			panic(err)
 		}
@@ -104,15 +101,19 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 			panic(err)
 		}
 	}
-	for _, configMap := range configMaps {
-		_, err := clientset.Core().ConfigMaps(namespace).Create(configMap)
+	for _, rc := range replicationControllers {
+		PrettyPrint(rc)
+		_, err := clientset.Core().ReplicationControllers(namespace).Create(rc)
 		if err != nil {
 			panic(err)
 		}
 	}
-
-	clientset.Extensions().Deployments(namespace).Create(prometheus.Deployment())
-	clientset.Core().Services(namespace).Create(prometheus.Service())
+	for _, dep := range deployments {
+		_, err := clientset.Extensions().Deployments(namespace).Create(dep)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, configMaps []*v1.ConfigMap) {
@@ -124,11 +125,11 @@ func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset
 func main() {
 	configPath := os.Args[1]
 	auxConfigPath := os.Args[2]
-	config := readConfig(configPath)
+	config := model.ReadProtoformConfig(configPath)
 	if config == nil {
 		panic("didn't find config")
 	}
-	auxConfig := readAuxiliaryConfig(auxConfigPath)
+	auxConfig := model.ReadAuxiliaryConfig(auxConfigPath)
 	if auxConfig == nil {
 		panic("didn't find auxconfig")
 	}
@@ -156,6 +157,5 @@ func runProtoform(config *model.ProtoformConfig) {
 		"perceptor-image-facade": "perceptor-scanner-sa",
 	}
 
-	CreateConfigMapsFromInput(config.AuxConfig.Namespace, clientset, config.ToConfigMaps())
-	CreatePerceptorResources(config.AuxConfig.Namespace, clientset, serviceAccounts)
+	CreatePerceptorResources(config, clientset, serviceAccounts)
 }

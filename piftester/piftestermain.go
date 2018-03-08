@@ -22,47 +22,31 @@ under the License.
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
-	"github.com/spf13/viper"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/pif"
 	"k8s.io/api/core/v1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func readConfig(configPath string) *PifConfig {
-	viper.SetConfigFile(configPath)
-	pc := &PifConfig{}
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
-	}
-	viper.Unmarshal(pc)
-	return pc
-}
-
-func readAuxiliaryConfig(auxConfigPath string) *model.AuxiliaryConfig {
-	viper.SetConfigFile(auxConfigPath)
-	aux := &model.AuxiliaryConfig{}
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
-	}
-	viper.Unmarshal(aux)
-	return aux
-}
-
-func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset, serviceAccounts map[string]string) {
+func CreatePerceptorResources(config *pif.PifConfig, clientset *kubernetes.Clientset, serviceAccounts map[string]string) {
 	imagePerceiverReplicaCount := int32(1)
 
 	podPerceiver := model.NewPodPerceiver(serviceAccounts["pod-perceiver"])
+	podPerceiver.Config = config.PodPerceiverConfig()
+
 	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, serviceAccounts["image-perceiver"])
-	pifTester := model.NewPifTester()
+	imagePerceiver.Config = config.ImagePerceiverConfig()
+
+	pifTester := pif.NewPifTester()
+	pifTester.Config = config.PifTesterConfig()
+
 	perceptorImagefacade := model.NewPerceptorImagefacade(serviceAccounts["perceptor-image-facade"])
+	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
 	perceptorImagefacade.PodName = "perceptor-imagefacade"
 
 	replicationControllers := []*v1.ReplicationController{
@@ -77,8 +61,14 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 		pifTester.Service(),
 		perceptorImagefacade.Service(),
 	}
-	configMaps := []*v1.ConfigMap{ /*prometheus.ConfigMap()*/ }
+	configMaps := []*v1.ConfigMap{
+		podPerceiver.ConfigMap(),
+		imagePerceiver.ConfigMap(),
+		pifTester.ConfigMap(),
+		perceptorImagefacade.ConfigMap(),
+	}
 
+	namespace := config.AuxConfig.Namespace
 	for _, rc := range replicationControllers {
 		_, err := clientset.Core().ReplicationControllers(namespace).Create(rc)
 		if err != nil {
@@ -99,23 +89,14 @@ func CreatePerceptorResources(namespace string, clientset *kubernetes.Clientset,
 	}
 }
 
-func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, configMaps []*v1.ConfigMap) {
-	for _, configMap := range configMaps {
-		_, err := clientset.Core().ConfigMaps(namespace).Create(configMap)
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
 func main() {
 	configPath := os.Args[1]
 	auxConfigPath := os.Args[2]
-	config := readConfig(configPath)
+	config := pif.ReadPifConfig(configPath)
 	if config == nil {
 		panic("didn't find config")
 	}
-	auxConfig := readAuxiliaryConfig(auxConfigPath)
+	auxConfig := model.ReadAuxiliaryConfig(auxConfigPath)
 	if auxConfig == nil {
 		panic("didn't find auxconfig")
 	}
@@ -124,7 +105,7 @@ func main() {
 	runProtoform(config)
 }
 
-func runProtoform(config *PifConfig) {
+func runProtoform(config *pif.PifConfig) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags(config.MasterURL, config.KubeConfigPath)
 	//		kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -143,77 +124,5 @@ func runProtoform(config *PifConfig) {
 		"perceptor-image-facade": "perceptor-scanner-sa",
 	}
 
-	CreateConfigMapsFromInput(config.AuxConfig.Namespace, clientset, config.ToConfigMaps())
-	CreatePerceptorResources(config.AuxConfig.Namespace, clientset, serviceAccounts)
-}
-
-// move this elsewhere
-
-type PifConfig struct {
-	// general protoform config
-	MasterURL      string
-	KubeConfigPath string
-
-	// perceptor config
-	PerceptorHost             string
-	PerceptorPort             int
-	AnnotationIntervalSeconds int
-	DumpIntervalMinutes       int
-
-	AuxConfig *model.AuxiliaryConfig
-}
-
-func (pc *PifConfig) PodPerceiverConfig() string {
-	jsonBytes, err := json.Marshal(model.PodPerceiverConfigMap{
-		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
-		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
-		PerceptorHost:             pc.PerceptorHost,
-		PerceptorPort:             pc.PerceptorPort,
-	})
-	if err != nil {
-		panic(err)
-	}
-	return string(jsonBytes)
-}
-
-func (pc *PifConfig) ImagePerceiverConfig() string {
-	jsonBytes, err := json.Marshal(model.ImagePerceiverConfigMap{
-		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
-		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
-		PerceptorHost:             pc.PerceptorHost,
-		PerceptorPort:             pc.PerceptorPort,
-	})
-	if err != nil {
-		panic(err)
-	}
-	return string(jsonBytes)
-}
-
-func (pc *PifConfig) PerceptorImagefacadeConfig() string {
-	jsonBytes, err := json.Marshal(model.PerceptorImagefacadeConfigMap{
-		DockerPassword:   pc.AuxConfig.DockerPassword,
-		DockerUser:       pc.AuxConfig.DockerUsername,
-		CreateImagesOnly: true,
-	})
-	if err != nil {
-		panic(err)
-	}
-	return string(jsonBytes)
-}
-
-func (pc *PifConfig) PifTesterConfig() string {
-	jsonBytes, err := json.Marshal(model.PifTesterConfigMap{})
-	if err != nil {
-		panic(err)
-	}
-	return string(jsonBytes)
-}
-
-func (pc *PifConfig) ToConfigMaps() []*v1.ConfigMap {
-	return []*v1.ConfigMap{
-		model.MakeConfigMap("kube-generic-perceiver-config", "perceiver.yaml", pc.PodPerceiverConfig()),
-		model.MakeConfigMap("piftester-config", "piftester_conf.yaml", pc.PifTesterConfig()),
-		model.MakeConfigMap("openshift-perceiver-config", "perceiver.yaml", pc.ImagePerceiverConfig()),
-		model.MakeConfigMap("perceptor-imagefacade-config", "perceptor_imagefacade_conf.yaml", pc.PerceptorImagefacadeConfig()),
-	}
+	CreatePerceptorResources(config, clientset, serviceAccounts)
 }
