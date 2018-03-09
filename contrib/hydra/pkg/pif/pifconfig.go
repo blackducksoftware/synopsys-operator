@@ -31,14 +31,15 @@ type PifConfig struct {
 	MasterURL      string
 	KubeConfigPath string
 
-	// perceptor config
+	// perceivers config
 	PerceptorHost             string
-	PerceptorPort             int
+	PerceptorPort             int32
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
 
 	// imagefacade config
 	CreateImagesOnly bool
+	ImageFacadePort  int32
 
 	AuxConfig *model.AuxiliaryConfig
 }
@@ -60,6 +61,7 @@ func (pc *PifConfig) PodPerceiverConfig() model.PodPerceiverConfigMap {
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
 		PerceptorPort:             pc.PerceptorPort,
+		Port:                      4000,
 	}
 }
 
@@ -69,6 +71,7 @@ func (pc *PifConfig) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
 		PerceptorPort:             pc.PerceptorPort,
+		Port:                      4000,
 	}
 }
 
@@ -77,9 +80,13 @@ func (pc *PifConfig) PerceptorImagefacadeConfig() model.PerceptorImagefacadeConf
 		DockerPassword:   pc.AuxConfig.DockerPassword,
 		DockerUser:       pc.AuxConfig.DockerUsername,
 		CreateImagesOnly: pc.CreateImagesOnly,
+		Port:             pc.ImageFacadePort,
 	}
 }
 
 func (pc *PifConfig) PifTesterConfig() PifTesterConfigMap {
-	return PifTesterConfigMap{}
+	return PifTesterConfigMap{
+		Port:            pc.PerceptorPort,
+		ImageFacadePort: pc.ImageFacadePort,
+	}
 }

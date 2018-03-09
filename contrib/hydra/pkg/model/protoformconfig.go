@@ -29,17 +29,25 @@ type ProtoformConfig struct {
 	KubeConfigPath string
 
 	// perceptor config
-	PerceptorHost             string
-	PerceptorPort             int
-	AnnotationIntervalSeconds int
-	DumpIntervalMinutes       int
-	HubHost                   string
-	HubUser                   string
-	HubUserPassword           string
-	HubPort                   int
-	ConcurrentScanLimit       int
+	HubHost             string
+	HubUser             string
+	HubUserPassword     string
+	HubPort             int
+	ConcurrentScanLimit int
 
 	UseMockPerceptorMode bool
+
+	// Perceivers config
+	ImagePerceiverPort        int32
+	PodPerceiverPort          int32
+	PerceptorHost             string
+	PerceptorPort             int32
+	AnnotationIntervalSeconds int
+	DumpIntervalMinutes       int
+
+	// Scanner config
+	ScannerPort     int32
+	ImageFacadePort int32
 
 	AuxConfig *AuxiliaryConfig
 }
@@ -61,6 +69,7 @@ func (pc *ProtoformConfig) PodPerceiverConfig() PodPerceiverConfigMap {
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
 		PerceptorPort:             pc.PerceptorPort,
+		Port:                      pc.PodPerceiverPort,
 	}
 }
 
@@ -70,6 +79,7 @@ func (pc *ProtoformConfig) ImagePerceiverConfig() ImagePerceiverConfigMap {
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             pc.PerceptorHost,
 		PerceptorPort:             pc.PerceptorPort,
+		Port:                      pc.ImagePerceiverPort,
 	}
 }
 
@@ -79,6 +89,9 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
 		HubPort:         pc.HubPort,
 		HubUser:         pc.HubUser,
 		HubUserPassword: pc.HubUserPassword,
+		Port:            pc.ScannerPort,
+		PerceptorPort:   pc.PerceptorPort,
+		ImageFacadePort: pc.ImageFacadePort,
 	}
 }
 
@@ -87,6 +100,7 @@ func (pc *ProtoformConfig) PerceptorImagefacadeConfig() PerceptorImagefacadeConf
 		DockerPassword:   pc.AuxConfig.DockerPassword,
 		DockerUser:       pc.AuxConfig.DockerUsername,
 		CreateImagesOnly: false,
+		Port:             pc.ImageFacadePort,
 	}
 }
 
@@ -97,5 +111,6 @@ func (pc *ProtoformConfig) PerceptorConfig() PerceptorConfigMap {
 		HubUser:             pc.HubUser,
 		HubUserPassword:     pc.HubUserPassword,
 		UseMockMode:         pc.UseMockPerceptorMode,
+		Port:                pc.PerceptorPort,
 	}
 }

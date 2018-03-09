@@ -34,11 +34,11 @@ type PerceptorImagefacadeConfigMap struct {
 	DockerUser       string
 	DockerPassword   string
 	CreateImagesOnly bool
+	Port             int32
 }
 
 type PerceptorImagefacade struct {
 	Image  string
-	Port   int32
 	CPU    resource.Quantity
 	Memory resource.Quantity
 
@@ -70,7 +70,6 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 	}
 	return &PerceptorImagefacade{
 		Image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
-		Port:               3004,
 		CPU:                defaultCPU,
 		Memory:             defaultMem,
 		ConfigMapName:      "perceptor-imagefacade-config",
@@ -99,7 +98,7 @@ func (pif *PerceptorImagefacade) Container() *v1.Container {
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				ContainerPort: pif.Port,
+				ContainerPort: pif.Config.Port,
 				Protocol:      "TCP",
 			},
 		},
@@ -136,7 +135,7 @@ func (pif *PerceptorImagefacade) Service() *v1.Service {
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
 					Name: pif.ServiceName,
-					Port: pif.Port,
+					Port: pif.Config.Port,
 				},
 			},
 			Selector: map[string]string{"name": pif.PodName}}}

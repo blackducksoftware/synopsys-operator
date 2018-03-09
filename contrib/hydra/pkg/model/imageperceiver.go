@@ -31,15 +31,15 @@ import (
 
 type ImagePerceiverConfigMap struct {
 	PerceptorHost             string
-	PerceptorPort             int
+	PerceptorPort             int32
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
+	Port                      int32
 }
 
 type ImagePerceiver struct {
 	PodName string
 	Image   string
-	Port    int32
 	CPU     resource.Quantity
 	Memory  resource.Quantity
 
@@ -65,8 +65,7 @@ func NewImagePerceiver(replicaCount int32, serviceAccountName string) *ImagePerc
 
 	return &ImagePerceiver{
 		PodName:            "perceptor-image-perceiver",
-		Image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:latest",
-		Port:               4000,
+		Image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:master",
 		CPU:                cpu,
 		Memory:             memory,
 		ConfigMapName:      "openshift-perceiver-config",
@@ -86,7 +85,7 @@ func (ip *ImagePerceiver) container() *v1.Container {
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				ContainerPort: ip.Port,
+				ContainerPort: ip.Config.Port,
 				Protocol:      "TCP",
 			},
 		},
@@ -139,7 +138,7 @@ func (ip *ImagePerceiver) Service() *v1.Service {
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
 					Name: ip.ServiceName,
-					Port: ip.Port,
+					Port: ip.Config.Port,
 				},
 			},
 			Selector: map[string]string{"name": ip.ServiceName}}}

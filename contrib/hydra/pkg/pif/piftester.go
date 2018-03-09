@@ -31,12 +31,13 @@ import (
 )
 
 type PifTesterConfigMap struct {
+	Port            int32
+	ImageFacadePort int32
 }
 
 type PifTester struct {
 	PodName string
 	Image   string
-	Port    int32
 	CPU     resource.Quantity
 	Memory  resource.Quantity
 
@@ -62,7 +63,6 @@ func NewPifTester() *PifTester {
 	return &PifTester{
 		PodName:        "piftester",
 		Image:          "mfenwickbd/piftester:latest", //gcr.io/gke-verification/blackducksoftware/piftester:latest",
-		Port:           3005,
 		CPU:            cpu,
 		Memory:         memory,
 		ConfigMapName:  "piftester-config",
@@ -81,7 +81,7 @@ func (pc *PifTester) container() *v1.Container {
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				ContainerPort: pc.Port,
+				ContainerPort: pc.Config.Port,
 				Protocol:      "TCP",
 			},
 		},
@@ -132,7 +132,7 @@ func (pc *PifTester) Service() *v1.Service {
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
 					Name: pc.ServiceName,
-					Port: pc.Port,
+					Port: pc.Config.Port,
 				},
 			},
 			Selector: map[string]string{"name": pc.ServiceName}}}

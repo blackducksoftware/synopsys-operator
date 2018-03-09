@@ -7,5 +7,7 @@
   "AnnotationIntervalSeconds": 30,
   "DumpIntervalMinutes": 30,
 
+  "ImageFacadePort": 3116,
+
   "CreateImagesOnly": true
 }

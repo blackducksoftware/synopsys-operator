@@ -35,12 +35,12 @@ type PerceptorConfigMap struct {
 	HubUserPassword     string
 	ConcurrentScanLimit int
 	UseMockMode         bool
+	Port                int32
 }
 
 type PerceptorCore struct {
 	PodName string
 	Image   string
-	Port    int32
 	CPU     resource.Quantity
 	Memory  resource.Quantity
 
@@ -66,7 +66,6 @@ func NewPerceptorCore() *PerceptorCore {
 	return &PerceptorCore{
 		PodName:        "perceptor",
 		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor:master",
-		Port:           3001,
 		CPU:            cpu,
 		Memory:         memory,
 		ConfigMapName:  "perceptor-config",
@@ -85,7 +84,7 @@ func (pc *PerceptorCore) Container() *v1.Container {
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				ContainerPort: pc.Port,
+				ContainerPort: pc.Config.Port,
 				Protocol:      "TCP",
 			},
 		},
@@ -137,7 +136,7 @@ func (pc *PerceptorCore) Service() *v1.Service {
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
 					Name: pc.ServiceName,
-					Port: pc.Port,
+					Port: pc.Config.Port,
 				},
 			},
 			Selector: map[string]string{"name": pc.ServiceName}}}

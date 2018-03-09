@@ -31,15 +31,15 @@ import (
 
 type PodPerceiverConfigMap struct {
 	PerceptorHost             string
-	PerceptorPort             int
+	PerceptorPort             int32
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
+	Port                      int32
 }
 
 type PodPerceiver struct {
 	PodName string
 	Image   string
-	Port    int32
 	CPU     resource.Quantity
 	Memory  resource.Quantity
 
@@ -65,8 +65,7 @@ func NewPodPerceiver(serviceAccountName string) *PodPerceiver {
 
 	return &PodPerceiver{
 		PodName:            "perceptor-pod-perceiver",
-		Image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:latest",
-		Port:               4000,
+		Image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:master",
 		CPU:                cpu,
 		Memory:             memory,
 		ConfigMapName:      "kube-generic-perceiver-config",
@@ -86,7 +85,7 @@ func (pp *PodPerceiver) container() *v1.Container {
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				ContainerPort: pp.Port,
+				ContainerPort: pp.Config.Port,
 				Protocol:      "TCP",
 			},
 		},
@@ -139,7 +138,7 @@ func (pp *PodPerceiver) Service() *v1.Service {
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
 					Name: pp.ServiceName,
-					Port: pp.Port,
+					Port: pp.Config.Port,
 				},
 			},
 			Selector: map[string]string{"name": pp.ServiceName}}}

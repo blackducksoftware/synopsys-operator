@@ -35,11 +35,13 @@ type PerceptorScannerConfigMap struct {
 	HubPort         int
 	HubUser         string
 	HubUserPassword string
+	Port            int32
+	PerceptorPort   int32
+	ImageFacadePort int32
 }
 
 type PerceptorScanner struct {
 	Image  string
-	Port   int32
 	CPU    resource.Quantity
 	Memory resource.Quantity
 
@@ -67,7 +69,6 @@ func NewPerceptorScanner() *PerceptorScanner {
 	}
 	return &PerceptorScanner{
 		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
-		Port:           3003,
 		CPU:            cpu,
 		Memory:         memory,
 		ConfigMapName:  "perceptor-scanner-config",
@@ -91,7 +92,7 @@ func (psp *PerceptorScanner) Container() *v1.Container {
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				ContainerPort: psp.Port,
+				ContainerPort: psp.Config.Port,
 				Protocol:      "TCP",
 			},
 		},
@@ -123,7 +124,7 @@ func (psp *PerceptorScanner) Service() *v1.Service {
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
 					Name: psp.ServiceName,
-					Port: psp.Port,
+					Port: psp.Config.Port,
 				},
 			},
 			Selector: map[string]string{"name": psp.ServiceName}}}
