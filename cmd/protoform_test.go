@@ -24,15 +24,10 @@ package main
 import (
 	"log"
 	"testing"
-
-	"github.com/spf13/viper"
 )
 
 func TestProto(t *testing.T) {
-	viper.SetDefault("protoform", map[string]string{
-		"HubUserPassword": "ASDF",
-		"DryRun":          "true",
-	})
+
 	rcsArray := runProtoform("./")
 
 	for i, rcs := range rcsArray {

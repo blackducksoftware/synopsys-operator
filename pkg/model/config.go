@@ -19,6 +19,10 @@ type ProtoformConfig struct {
 	// These are sed replaced into the config maps for the containers.
 	PerceptorHost             string
 	PerceptorPort             int
+	ScannerPort               int
+	PerceiverPort             int
+	ImageFacadePort           int
+	PrivateRegistry           []string
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
 	HubHost                   string
@@ -27,6 +31,7 @@ type ProtoformConfig struct {
 	HubPort                   int
 	ConcurrentScanLimit       int
 	Namespace                 string
+	Defaultversion            string
 
 	// CONTAINER PULL CONFIG
 	// These are for defining docker registry and image location and versions
@@ -57,6 +62,15 @@ func (p *ProtoformConfig) parameterize(json string) string {
 	if p.PerceptorPort == 0 {
 		p.PerceptorPort = 3001
 	}
+	if p.PerceiverPort == 0 {
+		p.PerceiverPort = 3002
+	}
+	if p.ScannerPort == 0 {
+		p.ScannerPort = 3003
+	}
+	if p.ImageFacadePort == 0 {
+		p.ImageFacadePort = 3004
+	}
 	if p.AnnotationIntervalSeconds == 0 {
 		p.AnnotationIntervalSeconds = 30
 	}
@@ -85,7 +99,35 @@ func (p *ProtoformConfig) parameterize(json string) string {
 	if p.ConcurrentScanLimit == 0 {
 		p.ConcurrentScanLimit = 2
 	}
+	if p.PrivateRegistry == nil {
+		p.PrivateRegistry = []string{"docker-registry.default.svc:5000", "172.1.1.0:5000"}
+	}
+	if p.Defaultversion == "" {
+		p.Defaultversion = "master"
+	}
+	if p.Registry == "" {
+		p.Registry = "gcr.io"
+	}
+	if p.ImagePath == "" {
+		p.ImagePath = "gke-verification/blackducksoftware"
+	}
+	if p.PerceptorContainerVersion == "" {
+		p.PerceptorContainerVersion = p.Defaultversion
+	}
+	if p.ScannerContainerVersion == "" {
+		p.ScannerContainerVersion = p.Defaultversion
+	}
+	if p.PerceiverContainerVersion == "" {
+		p.PerceiverContainerVersion = p.Defaultversion
+	}
+	if p.ImageFacadeContainerVersion == "" {
+		p.ImageFacadeContainerVersion = p.Defaultversion
+	}
 
+	json = strings.Replace(json, "_15", strings.Join(p.PrivateRegistry, ","), n)
+	json = strings.Replace(json, "_14", strconv.Itoa(p.ImageFacadePort), n)
+	json = strings.Replace(json, "_13", strconv.Itoa(p.PerceiverPort), n)
+	json = strings.Replace(json, "_12", strconv.Itoa(p.ScannerPort), n)
 	json = strings.Replace(json, "_11", strconv.Itoa(p.ConcurrentScanLimit), n)
 	json = strings.Replace(json, "_10", p.DockerPasswordOrToken, n)
 	json = strings.Replace(json, "_1", p.PerceptorHost, n)
@@ -107,12 +149,11 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// TODO, parameterize prometheus
 	// strings.Replace(prometheus_t,
 	configs := map[string]string{
-		"prometheus":                    "prometheus.yml",
-		"perceptor-scanner-config":      "perceptor_scanner_conf.yaml",
-		"kube-generic-perceiver-config": "perceiver.yaml",
-		"perceptor-config":              "perceptor_conf.yaml",
-		"openshift-perceiver-config":    "perceiver.yaml",
-		"perceptor-imagefacade-config":  "perceptor_imagefacade_conf.yaml",
+		"prometheus":                   "prometheus.yml",
+		"perceptor-scanner-config":     "perceptor_scanner_conf.yaml",
+		"perceiver":                    "perceiver.yaml",
+		"perceptor-config":             "perceptor_conf.yaml",
+		"perceptor-imagefacade-config": "perceptor_imagefacade_conf.yaml",
 	}
 
 	// Sed replace these.  Fine grained control over the json default format
@@ -120,15 +161,11 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// (I think)? Due to the fct that nested anonymous []string's seem to not be
 	// "a thing".
 	defaults := map[string]string{
-		"prometheus":                    `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:3001","perceptor-scanner:3003"]}]}]}`,
-		"perceptor-config":              `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","ConcurrentScanLimit": "_11","Port":"_2"}`,
-		"perceptor-scanner-config":      `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7"}`,
-		"kube-generic-perceiver-config": `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`,
-		"perceptor-imagefacade-config":  `{"DockerUser": "_9","DockerPassword": "_10"}`,
-	}
-
-	if p.Openshift {
-		defaults["openshift-perceiver-config"] = `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4"}`
+		"prometheus":                   `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:_2","perceptor-scanner:_12","perceiver:_13","perceptor-imagefacade:_14"]}]}]}`,
+		"perceptor-config":             `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","ConcurrentScanLimit": "_11","Port": "_2"}`,
+		"perceptor-scanner-config":     `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","Port": "_12","PerceptorPort": "_2","ImageFacadePort": "_14","PrivateRegistry": "_15"}`,
+		"perceiver":                    `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4","Port": "_13"}`,
+		"perceptor-imagefacade-config": `{"DockerUser": "_9","DockerPassword": "_10","Port": "_14"}`,
 	}
 
 	maps := make([]*v1.ConfigMap, len(configs))

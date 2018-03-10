@@ -1,4 +1,5 @@
 {
   "HubUserPassword": "ASDF",
-  "DryRun":"true"
+  "DryRun":"true",
+  "Openshift": "true"
 }

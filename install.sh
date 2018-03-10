@@ -100,6 +100,7 @@ function create_config() {
         ScannerContainerVersion: "$PERCEPTOR_SCAN_VERSION"
         PerceiverContainerVersion: "$PERCEIVER_VERSION"
         ImageFacadeContainerVersion: "$PERCEPTOR_IF_VERSION"
+        Defaultversion: "$VERSION"
 EOF
 }
 
@@ -116,7 +117,7 @@ function create_protoform() {
         name: viper-input
     containers:
     - name: protoform
-      image: $REGISTRY/$IMAGE_PATH/perceptor-protoform:$VERSION
+      image: $REGISTRY/$IMAGE_PATH/perceptor-protoform:$PROTOFORM_VERSION
       imagePullPolicy: Always
       command: [ ./protoform ]
       ports:
@@ -159,6 +160,15 @@ case $opt in
     ;;
   --version=*)
     VERSION="${opt#*=}"
+    shift
+    ;;
+  --protoform-version)
+    PROTOFORM_VERSION="$2"
+    shift
+    shift
+    ;;
+  --protoform-version=*)
+    PROTOFORM_VERSION="${opt#*=}"
     shift
     ;;
   --perceptor-version)
@@ -205,6 +215,7 @@ IMAGE_PATH="${IMAGE_PATH:-gke-verification/blackducksoftware}"
 # Note : Someday, we may want to use latest.  For now, for dev purposes, master is a easy default since
 # it maps directly to the master branches for repos.
 VERSION="${VERSION:-master}"
+PROTOFORM_VERSION="${PROTOFORM_VERSION:-$VERSION}"
 
 setclient
 setup
