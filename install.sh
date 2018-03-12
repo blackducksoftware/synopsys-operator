@@ -102,7 +102,7 @@ function create_config() {
         ImageFacadeContainerVersion: "$PERCEPTOR_IF_VERSION"
         Defaultversion: "$VERSION"
         DefaultCPU: "300m"
-        DefaultMem: "1300mi"
+        DefaultMem: "1300Mi"
 EOF
 }
 
