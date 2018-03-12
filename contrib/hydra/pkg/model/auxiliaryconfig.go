@@ -33,8 +33,9 @@ type AuxiliaryConfig struct {
 	// Not necessarily a one-to-one text replacement.
 	// TODO Lets try to have this injected on serviceaccount
 	// at pod startup, eventually Service accounts.
-	DockerPassword string
-	DockerUsername string
+	DockerPassword           string
+	DockerUsername           string
+	InternalDockerRegistries []string
 
 	PodPerceiverServiceAccountName   string
 	ImagePerceiverServiceAccountName string

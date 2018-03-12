@@ -77,10 +77,11 @@ func (pc *PifConfig) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 
 func (pc *PifConfig) PerceptorImagefacadeConfig() model.PerceptorImagefacadeConfigMap {
 	return model.PerceptorImagefacadeConfigMap{
-		DockerPassword:   pc.AuxConfig.DockerPassword,
-		DockerUser:       pc.AuxConfig.DockerUsername,
-		CreateImagesOnly: pc.CreateImagesOnly,
-		Port:             pc.ImageFacadePort,
+		DockerPassword:           pc.AuxConfig.DockerPassword,
+		DockerUser:               pc.AuxConfig.DockerUsername,
+		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,
+		CreateImagesOnly:         pc.CreateImagesOnly,
+		Port:                     pc.ImageFacadePort,
 	}
 }
 

@@ -97,10 +97,11 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
 
 func (pc *ProtoformConfig) PerceptorImagefacadeConfig() PerceptorImagefacadeConfigMap {
 	return PerceptorImagefacadeConfigMap{
-		DockerPassword:   pc.AuxConfig.DockerPassword,
-		DockerUser:       pc.AuxConfig.DockerUsername,
-		CreateImagesOnly: false,
-		Port:             pc.ImageFacadePort,
+		DockerPassword:           pc.AuxConfig.DockerPassword,
+		DockerUser:               pc.AuxConfig.DockerUsername,
+		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,
+		CreateImagesOnly:         false,
+		Port:                     pc.ImageFacadePort,
 	}
 }
 
