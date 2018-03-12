@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"fmt"
+
 	"k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,21 +31,28 @@ import (
 )
 
 type Prometheus struct {
-	Name                string
-	Image               string
-	ReplicaCount        int32
-	DataVolumeName      string
-	DataVolumeMountPath string
-	ConfigMapName       string
-	ConfigMapSource     string
-	ConfigMapMountPath  string
-	ServiceName         string
-	Port                int32
+	Name                     string
+	PodName                  string
+	Image                    string
+	ReplicaCount             int32
+	DataVolumeName           string
+	DataVolumeMountPath      string
+	ConfigMapName            string
+	ConfigMapSource          string
+	ConfigMapMountPath       string
+	ServiceName              string
+	Port                     int32
+	PerceptorPort            int32
+	PerceptorScannerPort     int32
+	PerceptorImagefacadePort int32
+	ImagePerceiverPort       int32
+	PodPerceiverPort         int32
 }
 
 func NewPrometheus() *Prometheus {
 	return &Prometheus{
 		Name:                "prometheus",
+		PodName:             "prometheus-pod",
 		Image:               "prom/prometheus:v2.1.0",
 		ReplicaCount:        1,
 		DataVolumeName:      "data",
@@ -58,14 +67,16 @@ func NewPrometheus() *Prometheus {
 
 func (prom *Prometheus) Deployment() *v1beta1.Deployment {
 	return &v1beta1.Deployment{
-		ObjectMeta: v1meta.ObjectMeta{Name: prom.Name},
+		ObjectMeta: v1meta.ObjectMeta{Name: prom.PodName},
 		Spec: v1beta1.DeploymentSpec{
 			Replicas: &prom.ReplicaCount,
 			Selector: &v1meta.LabelSelector{
-				MatchLabels: map[string]string{"app": prom.Name},
+				MatchLabels: map[string]string{"app": prom.PodName},
 			},
 			Template: v1.PodTemplateSpec{
-				ObjectMeta: v1meta.ObjectMeta{Name: prom.Name, Labels: map[string]string{"app": prom.Name}},
+				ObjectMeta: v1meta.ObjectMeta{
+					Name:   prom.Name,
+					Labels: map[string]string{"app": prom.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
 						v1.Volume{
@@ -129,7 +140,7 @@ func (prom *Prometheus) Service() *v1.Service {
 					TargetPort: intstr.IntOrString{IntVal: prom.Port},
 				},
 			},
-			Selector: map[string]string{"name": prom.ServiceName}}}
+			Selector: map[string]string{"name": prom.PodName}}}
 }
 
 func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
@@ -145,9 +156,11 @@ func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
         "static_configs": [
           {
             "targets": [
-              "perceptor:3001",
-              "perceptor-scanner:3003",
-              "perceptor-imagefacade:3004"
+							"perceptor:%d",
+							"perceptor-scanner:%d",
+							"perceptor-imagefacade:%d",
+							"image-perceiver:%d",
+							"kube-generic-perceiver:%d"
             ]
           }
         ]
@@ -155,5 +168,11 @@ func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
     ]
   }
   `
-	return MakeConfigMap("prometheus", "prometheus.yml", jsonString)
+	paramString := fmt.Sprintf(jsonString,
+		prom.PerceptorPort,
+		prom.PerceptorScannerPort,
+		prom.PerceptorImagefacadePort,
+		prom.ImagePerceiverPort,
+		prom.PodPerceiverPort)
+	return MakeConfigMap("prometheus", "prometheus.yml", paramString)
 }

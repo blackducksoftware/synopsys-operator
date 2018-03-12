@@ -28,7 +28,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
 	"k8s.io/api/core/v1"
-	v1beta1 "k8s.io/api/extensions/v1beta1"
+	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -57,6 +57,11 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
 
 	prometheus := model.NewPrometheus()
+	prometheus.PerceptorPort = config.PerceptorPort
+	prometheus.PerceptorScannerPort = config.ScannerPort
+	prometheus.PerceptorImagefacadePort = config.ImageFacadePort
+	prometheus.ImagePerceiverPort = config.ImagePerceiverPort
+	prometheus.PodPerceiverPort = config.PodPerceiverPort
 	//	prometheus.Config = config.PrometheusConfig() // TODO ?
 
 	scanner := model.NewScanner(perceptorScanner, perceptorImagefacade)
@@ -73,7 +78,7 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 		imagePerceiver.Service(),
 		perceptorScanner.Service(),
 		perceptorImagefacade.Service(),
-		prometheus.Service(),
+		//		prometheus.Service(),
 	}
 	configMaps := []*v1.ConfigMap{
 		perceptor.ConfigMap(),
@@ -83,19 +88,21 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 		perceptorImagefacade.ConfigMap(),
 		prometheus.ConfigMap(),
 	}
-	deployments := []*v1beta1.Deployment{
-		prometheus.Deployment(),
-	}
+	// deployments := []*v1beta1.Deployment{
+	// 	prometheus.Deployment(),
+	// }
 
 	namespace := config.AuxConfig.Namespace
 
 	for _, configMap := range configMaps {
+		PrettyPrint(configMap)
 		_, err := clientset.Core().ConfigMaps(namespace).Create(configMap)
 		if err != nil {
 			panic(err)
 		}
 	}
 	for _, service := range services {
+		PrettyPrint(service)
 		_, err := clientset.Core().Services(namespace).Create(service)
 		if err != nil {
 			panic(err)
@@ -108,18 +115,13 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 			panic(err)
 		}
 	}
-	for _, dep := range deployments {
-		_, err := clientset.Extensions().Deployments(namespace).Create(dep)
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, configMaps []*v1.ConfigMap) {
-	for _, configMap := range configMaps {
-		clientset.Core().ConfigMaps(namespace).Create(configMap)
-	}
+	// for _, dep := range deployments {
+	// 	PrettyPrint(dep)
+	// 	_, err := clientset.Extensions().Deployments(namespace).Create(dep)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// }
 }
 
 func main() {
