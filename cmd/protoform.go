@@ -81,18 +81,13 @@ type PerceptorRC struct {
 	// Only needed for openshift.
 	serviceAccount     string
 	serviceAccountName string
+
+	memory resource.Quantity
+	cpu    resource.Quantity
 }
 
 // This function creates an RC and services that forward to it.
 func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Service) {
-	defaultMem, err := resource.ParseQuantity("1300Mi")
-	if err != nil {
-		panic(err)
-	}
-	defaultCPU, err := resource.ParseQuantity("300m")
-	if err != nil {
-		panic(err)
-	}
 
 	TheVolumes := []v1.Volume{}
 	TheContainers := []v1.Container{}
@@ -187,8 +182,8 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceCPU:    defaultCPU,
-					v1.ResourceMemory: defaultMem,
+					v1.ResourceCPU:    desc.cpu,
+					v1.ResourceMemory: desc.memory,
 				},
 			},
 			VolumeMounts: mounts,
@@ -250,6 +245,14 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 
 	// WARNING: THE SERVICE ACCOUNT IN THE FIRST CONTAINER IS USED FOR THE GLOBAL SVC ACCOUNT FOR ALL PODS !!!!!!!!!!!!!
 	// MAKE SURE IF YOU NEED A SVC ACCOUNT THAT ITS IN THE FIRST CONTAINER...
+	defaultMem, err := resource.ParseQuantity(pc.DefaultMem)
+	if err != nil {
+		panic(err)
+	}
+	defaultCPU, err := resource.ParseQuantity(pc.DefaultCPU)
+	if err != nil {
+		panic(err)
+	}
 
 	rcPCP, svcPCP := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
@@ -259,6 +262,8 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			image:           paths["perceptor"],
 			port:            int32(pc.PerceptorPort),
 			cmd:             []string{"./perceptor"},
+			cpu:             defaultCPU,
+			memory:          defaultMem,
 		},
 	})
 
@@ -273,6 +278,8 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			cmd:                []string{},
 			serviceAccountName: pc.ServiceAccounts["pod-perceiver"],
 			serviceAccount:     pc.ServiceAccounts["pod-perceiver"],
+			cpu:                defaultCPU,
+			memory:             defaultMem,
 		},
 	})
 
@@ -290,6 +297,8 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			cmd:                []string{},
 			serviceAccount:     pc.ServiceAccounts["perceptor-image-facade"],
 			serviceAccountName: pc.ServiceAccounts["perceptor-image-facade"],
+			cpu:                defaultCPU,
+			memory:             defaultMem,
 		},
 		&PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
@@ -303,6 +312,8 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			cmd:                []string{},
 			serviceAccount:     pc.ServiceAccounts["perceptor-image-facade"],
 			serviceAccountName: pc.ServiceAccounts["perceptor-image-facade"],
+			cpu:                defaultCPU,
+			memory:             defaultMem,
 		},
 	})
 

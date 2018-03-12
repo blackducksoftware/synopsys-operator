@@ -52,6 +52,10 @@ type ProtoformConfig struct {
 
 	ServiceAccounts map[string]string
 	Openshift       bool
+
+	// CPU and memory configurations
+	DefaultCPU string // Should be passed like: e.g. "300m"
+	DefaultMem string // Should be passed like: e.g "1300Mi"
 }
 
 func (p *ProtoformConfig) parameterize(json string) string {
