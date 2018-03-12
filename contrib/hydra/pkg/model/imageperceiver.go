@@ -141,7 +141,7 @@ func (ip *ImagePerceiver) Service() *v1.Service {
 					Port: ip.Config.Port,
 				},
 			},
-			Selector: map[string]string{"name": ip.ServiceName}}}
+			Selector: map[string]string{"name": ip.PodName}}}
 }
 
 func (ip *ImagePerceiver) ConfigMap() *v1.ConfigMap {

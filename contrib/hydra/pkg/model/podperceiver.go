@@ -141,7 +141,7 @@ func (pp *PodPerceiver) Service() *v1.Service {
 					Port: pp.Config.Port,
 				},
 			},
-			Selector: map[string]string{"name": pp.ServiceName}}}
+			Selector: map[string]string{"name": pp.PodName}}}
 }
 
 func (pp *PodPerceiver) ConfigMap() *v1.ConfigMap {
