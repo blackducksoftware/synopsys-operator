@@ -40,15 +40,17 @@ func prettyPrint(v interface{}) {
 }
 
 func createResources(config *pif.PifConfig, clientset *kubernetes.Clientset) {
+	pifTester := pif.NewPifTester()
+	pifTester.Config = config.PifTesterConfig()
+
 	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
 	podPerceiver.Config = config.PodPerceiverConfig()
+	podPerceiver.Config.PerceptorHost = pifTester.ServiceName
 
 	imagePerceiverReplicaCount := int32(1)
 	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, config.AuxConfig.ImagePerceiverServiceAccountName)
 	imagePerceiver.Config = config.ImagePerceiverConfig()
-
-	pifTester := pif.NewPifTester()
-	pifTester.Config = config.PifTesterConfig()
+	imagePerceiver.Config.PerceptorHost = pifTester.ServiceName
 
 	perceptorImagefacade := model.NewPerceptorImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
 	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()

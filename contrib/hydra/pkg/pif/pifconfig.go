@@ -32,7 +32,6 @@ type PifConfig struct {
 	KubeConfigPath string
 
 	// perceivers config
-	PerceptorHost             string
 	PerceptorPort             int32
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
@@ -59,7 +58,7 @@ func (pc *PifConfig) PodPerceiverConfig() model.PodPerceiverConfigMap {
 	return model.PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
-		PerceptorHost:             pc.PerceptorHost,
+		PerceptorHost:             "", // must be filled in elsewhere
 		PerceptorPort:             pc.PerceptorPort,
 		Port:                      4000,
 	}
@@ -69,7 +68,7 @@ func (pc *PifConfig) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 	return model.ImagePerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
-		PerceptorHost:             pc.PerceptorHost,
+		PerceptorHost:             "", // must be filled in elsewhere
 		PerceptorPort:             pc.PerceptorPort,
 		Port:                      4000,
 	}

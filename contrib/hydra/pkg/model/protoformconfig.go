@@ -40,7 +40,6 @@ type ProtoformConfig struct {
 	// Perceivers config
 	ImagePerceiverPort        int32
 	PodPerceiverPort          int32
-	PerceptorHost             string
 	PerceptorPort             int32
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
@@ -67,7 +66,7 @@ func (pc *ProtoformConfig) PodPerceiverConfig() PodPerceiverConfigMap {
 	return PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
-		PerceptorHost:             pc.PerceptorHost,
+		PerceptorHost:             "", // must be filled in elsewhere
 		PerceptorPort:             pc.PerceptorPort,
 		Port:                      pc.PodPerceiverPort,
 	}
@@ -77,7 +76,7 @@ func (pc *ProtoformConfig) ImagePerceiverConfig() ImagePerceiverConfigMap {
 	return ImagePerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
-		PerceptorHost:             pc.PerceptorHost,
+		PerceptorHost:             "", // must be filled in elsewhere
 		PerceptorPort:             pc.PerceptorPort,
 		Port:                      pc.ImagePerceiverPort,
 	}

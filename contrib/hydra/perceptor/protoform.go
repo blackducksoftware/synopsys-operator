@@ -45,10 +45,12 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 
 	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
 	podPerceiver.Config = config.PodPerceiverConfig()
+	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
 
 	imagePerceiverReplicaCount := int32(1)
 	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, config.AuxConfig.ImagePerceiverServiceAccountName)
 	imagePerceiver.Config = config.ImagePerceiverConfig()
+	imagePerceiver.Config.PerceptorHost = perceptor.ServiceName
 
 	perceptorScanner := model.NewPerceptorScanner()
 	perceptorScanner.Config = config.PerceptorScannerConfig()

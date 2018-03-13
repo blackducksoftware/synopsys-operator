@@ -2,7 +2,6 @@
   "MasterURL": "https://54.67.89.98.xip.io:8443",
   "KubeConfigPath": "/Users/mfenwick/.kube/config",
 
-  "PerceptorHost": "piftester",
   "PerceptorPort": 3005,
   "AnnotationIntervalSeconds": 30,
   "DumpIntervalMinutes": 30,
