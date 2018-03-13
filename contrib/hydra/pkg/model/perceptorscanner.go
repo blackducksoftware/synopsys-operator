@@ -31,13 +31,13 @@ import (
 )
 
 type PerceptorScannerConfigMap struct {
-	HubHost         string
-	HubPort         int
-	HubUser         string
-	HubUserPassword string
-	Port            int32
-	PerceptorPort   int32
-	ImageFacadePort int32
+	HubHost                 string
+	HubUser                 string
+	HubUserPassword         string
+	HubClientTimeoutSeconds int
+	Port                    int32
+	ImageFacadePort         int32
+	PerceptorPort           int32
 }
 
 type PerceptorScanner struct {

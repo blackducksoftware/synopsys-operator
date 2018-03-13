@@ -28,7 +28,7 @@ import (
 )
 
 func TestImageFacadeContainer(t *testing.T) {
-	sc := NewScanner(nil, nil)
+	sc := NewScanner(NewPerceptorScanner(), NewPerceptorImagefacade("abc"))
 	ifCont := sc.ReplicationController() // ps.imageFacadeContainer()
 	jsonBytes, err := json.MarshalIndent(ifCont, "", "  ")
 	if err != nil {

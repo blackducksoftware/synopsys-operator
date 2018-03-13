@@ -21,7 +21,9 @@ under the License.
 
 package model
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+)
 
 type ProtoformConfig struct {
 	// general protoform config
@@ -32,7 +34,6 @@ type ProtoformConfig struct {
 	HubHost             string
 	HubUser             string
 	HubUserPassword     string
-	HubPort             int
 	ConcurrentScanLimit int
 
 	UseMockPerceptorMode bool
@@ -84,13 +85,13 @@ func (pc *ProtoformConfig) ImagePerceiverConfig() ImagePerceiverConfigMap {
 
 func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
 	return PerceptorScannerConfigMap{
-		HubHost:         pc.HubHost,
-		HubPort:         pc.HubPort,
-		HubUser:         pc.HubUser,
-		HubUserPassword: pc.HubUserPassword,
-		Port:            pc.ScannerPort,
-		PerceptorPort:   pc.PerceptorPort,
-		ImageFacadePort: pc.ImageFacadePort,
+		HubHost:                 pc.HubHost,
+		HubUser:                 pc.HubUser,
+		HubUserPassword:         pc.HubUserPassword,
+		Port:                    pc.ScannerPort,
+		PerceptorPort:           pc.PerceptorPort,
+		ImageFacadePort:         pc.ImageFacadePort,
+		HubClientTimeoutSeconds: 60,
 	}
 }
 
