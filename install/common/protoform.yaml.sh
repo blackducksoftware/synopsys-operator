@@ -37,7 +37,7 @@ items:
   data:
     protoform.yaml: |
       DockerPasswordOrToken: "$_arg_scanned_registry_token"
-      HubHost: "$_arg_hub_host_port"
+      HubHost: "$_arg_hub_host"
       HubUser: "$_arg_hub_user"
       HubPort: "$_arg_hub_port"
       # TODO, inject as secret.
@@ -57,6 +57,6 @@ items:
       PerceiverContainerVersion: "$_arg_pcp_container_version"
       ImageFacadeContainerVersion: "$_arg_pcp_container_version"
 
-      DefaultCPU: "$_arg_pcp_default_cpu"
-      DefaultMem: "$_arg_pcp_default_memory"
+      DefaultCPU: "$_arg_pcp_container_default_cpu"
+      DefaultMem: "$_arg_pcp_container_default_memory"
 EOF
