@@ -21,4 +21,4 @@ oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
 
 # these allow us to pull images
 oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-scanner-sa
-oc policy $ROLE view system:serviceaccount:$NS:perceptor-scanner-sa
+oc policy $ROLE view system:serviceaccount::perceptor-scanner-sa
