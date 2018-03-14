@@ -1,5 +1,8 @@
 #!/bin/bash
-
+openshift="false"
+if [[ $_arg_openshift_perceiver == "on" ]] ; then
+  openshift="true"
+fi
 cat << EOF > protoform.yaml
 apiVersion: v1
 kind: Pod
@@ -45,7 +48,7 @@ items:
       ConcurrentScanLimit: "$_arg_hub_max_concurrent_scans"
       DockerUsername: "admin"
       Namespace: "$_arg_pcp_namespace"
-      Openshift: "false"
+      Openshift: "$openshift"
       Registry: "$_arg_scanned_registry"
       ImagePath: "$_arg_imagepath"
 
