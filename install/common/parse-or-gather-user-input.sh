@@ -2,7 +2,7 @@
 source `dirname ${BASH_SOURCE}`/args.sh "${@}"
 
 function prompt() {
-  if [[ $_arg_proto_prompty == "on" ]]; then
+  if [[ $_arg_proto_prompt == "on" ]]; then
     clear
     echo "============================================"
     echo "Blackduck Hub Configuration Information"

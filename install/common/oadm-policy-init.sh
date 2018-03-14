@@ -2,6 +2,7 @@
 export SCC="add-scc-to-user"
 export ROLE="add-role-to-user"
 export CLUSTER="add-cluster-role-to-user"
+NS=$_arg_pcp_namespace
 
 # Create the openshift-perceiver service account
 oc create serviceaccount perceiver -n $NS
