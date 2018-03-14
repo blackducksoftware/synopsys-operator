@@ -1,4 +1,9 @@
 {
   "HubUserPassword": "ASDF",
-  "DryRun":"true"
+  "DryRun":"true",
+  "Openshift": "true",
+  "DefaultCPU": "300m",
+  "DefaultMem": "1300Mi"
+
+
 }

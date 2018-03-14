@@ -81,18 +81,13 @@ type PerceptorRC struct {
 	// Only needed for openshift.
 	serviceAccount     string
 	serviceAccountName string
+
+	memory resource.Quantity
+	cpu    resource.Quantity
 }
 
 // This function creates an RC and services that forward to it.
 func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Service) {
-	defaultMem, err := resource.ParseQuantity("1300Mi")
-	if err != nil {
-		panic(err)
-	}
-	defaultCPU, err := resource.ParseQuantity("300m")
-	if err != nil {
-		panic(err)
-	}
 
 	TheVolumes := []v1.Volume{}
 	TheContainers := []v1.Container{}
@@ -187,8 +182,8 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceCPU:    defaultCPU,
-					v1.ResourceMemory: defaultMem,
+					v1.ResourceCPU:    desc.cpu,
+					v1.ResourceMemory: desc.memory,
 				},
 			},
 			VolumeMounts: mounts,
@@ -246,10 +241,18 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 
 // perceptor, pod-perceiver, image-perceiver, pod-perceiver
 
-func CreatePerceptorResources(openshift bool, namespace string, clientset *kubernetes.Clientset, svcAcct map[string]string, paths map[string]string, dryRun bool) []*v1.ReplicationController {
+func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]string, pc *model.ProtoformConfig) []*v1.ReplicationController {
 
 	// WARNING: THE SERVICE ACCOUNT IN THE FIRST CONTAINER IS USED FOR THE GLOBAL SVC ACCOUNT FOR ALL PODS !!!!!!!!!!!!!
 	// MAKE SURE IF YOU NEED A SVC ACCOUNT THAT ITS IN THE FIRST CONTAINER...
+	defaultMem, err := resource.ParseQuantity(pc.DefaultMem)
+	if err != nil {
+		panic(err)
+	}
+	defaultCPU, err := resource.ParseQuantity(pc.DefaultCPU)
+	if err != nil {
+		panic(err)
+	}
 
 	rcPCP, svcPCP := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
@@ -257,8 +260,10 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
 			name:            "perceptor",
 			image:           paths["perceptor"],
-			port:            3001,
+			port:            int32(pc.PerceptorPort),
 			cmd:             []string{"./perceptor"},
+			cpu:             defaultCPU,
+			memory:          defaultMem,
 		},
 	})
 
@@ -266,19 +271,21 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 	rcPCVR, svcPCVR := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
 			replicas:           1,
-			configMapMounts:    map[string]string{"kube-generic-perceiver-config": "/etc/perceiver"},
+			configMapMounts:    map[string]string{"perceiver": "/etc/perceiver"},
 			name:               "pod-perceiver",
 			image:              paths["pod-perceiver"],
-			port:               4000,
+			port:               int32(pc.PerceiverPort),
 			cmd:                []string{},
-			serviceAccountName: svcAcct["pod-perceiver"],
-			serviceAccount:     svcAcct["pod-perceiver"],
+			serviceAccountName: pc.ServiceAccounts["pod-perceiver"],
+			serviceAccount:     pc.ServiceAccounts["pod-perceiver"],
+			cpu:                defaultCPU,
+			memory:             defaultMem,
 		},
 	})
 
 	rcSCAN, svcSCAN := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
-			replicas:        2,
+			replicas:        int32(pc.ConcurrentScanLimit),
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
@@ -286,10 +293,12 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 			name:               "perceptor-scanner",
 			image:              paths["perceptor-scanner"],
 			dockerSocket:       false,
-			port:               3003,
+			port:               int32(pc.ScannerPort),
 			cmd:                []string{},
-			serviceAccount:     svcAcct["perceptor-image-facade"],
-			serviceAccountName: svcAcct["perceptor-image-facade"],
+			serviceAccount:     pc.ServiceAccounts["perceptor-image-facade"],
+			serviceAccountName: pc.ServiceAccounts["perceptor-image-facade"],
+			cpu:                defaultCPU,
+			memory:             defaultMem,
 		},
 		&PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
@@ -299,10 +308,12 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 			name:               "perceptor-image-facade",
 			image:              paths["perceptor-imagefacade"],
 			dockerSocket:       true,
-			port:               4000,
+			port:               int32(pc.ImageFacadePort),
 			cmd:                []string{},
-			serviceAccount:     svcAcct["perceptor-image-facade"],
-			serviceAccountName: svcAcct["perceptor-image-facade"],
+			serviceAccount:     pc.ServiceAccounts["perceptor-image-facade"],
+			serviceAccountName: pc.ServiceAccounts["perceptor-image-facade"],
+			cpu:                defaultCPU,
+			memory:             defaultMem,
 		},
 	})
 
@@ -313,17 +324,17 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 
 	// We dont create openshift perceivers if running kube... This needs to be avoided b/c the svc accounts
 	// won't exist.
-	if openshift {
+	if pc.Openshift {
 		rcOpenshift, svcOpenshift := NewRcSvc([]*PerceptorRC{
 			&PerceptorRC{
 				replicas:           1,
-				configMapMounts:    map[string]string{"openshift-perceiver-config": "/etc/perceiver"},
+				configMapMounts:    map[string]string{"perceiver": "/etc/perceiver"},
 				name:               "image-perceiver",
 				image:              paths["image-perceiver"],
-				port:               4000,
+				port:               int32(pc.PerceiverPort),
 				cmd:                []string{},
-				serviceAccount:     svcAcct["image-perceiver"],
-				serviceAccountName: svcAcct["image-perceiver"],
+				serviceAccount:     pc.ServiceAccounts["image-perceiver"],
+				serviceAccountName: pc.ServiceAccounts["image-perceiver"],
 			},
 		})
 		rcs = append(rcs, rcOpenshift)
@@ -336,18 +347,18 @@ func CreatePerceptorResources(openshift bool, namespace string, clientset *kuber
 		// Now, create all the resources.  Note that we'll panic after creating ANY
 		// resource that fails.  Thats intentional.
 		PrettyPrint(rc)
-		if !dryRun {
-			_, err := clientset.Core().ReplicationControllers(namespace).Create(rc)
+		if !pc.DryRun {
+			_, err := clientset.Core().ReplicationControllers(pc.Namespace).Create(rc)
 			if err != nil {
 				panic(err)
 			}
 		}
 		for _, svcI := range svc[i] {
-			if dryRun {
+			if pc.DryRun {
 				// service dont really need much debug...
 				//PrettyPrint(svc)
 			} else {
-				_, err := clientset.Core().Services(namespace).Create(svcI)
+				_, err := clientset.Core().Services(pc.Namespace).Create(svcI)
 				if err != nil {
 					panic(err)
 				}
@@ -377,59 +388,27 @@ func sanityCheckServices(svcAccounts map[string]string) bool {
 	return true
 }
 
-func CreateConfigMapsFromInput(namespace string, clientset *kubernetes.Clientset, configMaps []*v1.ConfigMap, dryRun bool) {
-	for _, configMap := range configMaps {
+func CreateConfigMapsFromInput(clientset *kubernetes.Clientset, pc *model.ProtoformConfig) {
+	for _, configMap := range pc.ToConfigMap() {
 		log.Println("*********************************************")
 		log.Println("Creating config maps:", configMap)
-		if !dryRun {
+		if !pc.DryRun {
 			log.Println("creating config map.")
-			clientset.Core().ConfigMaps(namespace).Create(configMap)
+			clientset.Core().ConfigMaps(pc.Namespace).Create(configMap)
 		} else {
 			PrettyPrint(configMap)
 		}
 	}
 }
 
-// GenerateContainerPaths creates paths with reasonable defaults.  TODO centralize this with the other defaults in config.go
+// GenerateContainerPaths creates paths with reasonable defaults.
 func GenerateContainerPaths(config *model.ProtoformConfig) map[string]string {
-	defaultVersion := "master"
-
-	registry := config.Registry
-	if len(registry) <= 0 {
-		registry = "gcr.io"
-	}
-
-	path := config.ImagePath
-	if len(path) <= 0 {
-		path = "gke-verification/blackducksoftware"
-	}
-
-	pcv := config.PerceptorContainerVersion
-	if len(pcv) <= 0 {
-		pcv = defaultVersion
-	}
-
-	scv := config.ScannerContainerVersion
-	if len(scv) <= 0 {
-		scv = defaultVersion
-	}
-
-	perceivercv := config.PerceiverContainerVersion
-	if len(perceivercv) <= 0 {
-		perceivercv = defaultVersion
-	}
-
-	ifcv := config.ImageFacadeContainerVersion
-	if len(ifcv) <= 0 {
-		ifcv = defaultVersion
-	}
-
 	return map[string]string{
-		"perceptor":             fmt.Sprintf("%s/%s/perceptor:%s", registry, path, pcv),
-		"perceptor-scanner":     fmt.Sprintf("%s/%s/perceptor-scanner:%s", registry, path, scv),
-		"pod-perceiver":         fmt.Sprintf("%s/%s/pod-perceiver:%s", registry, path, perceivercv),
-		"image-perceiver":       fmt.Sprintf("%s/%s/image-perceiver:%s", registry, path, perceivercv),
-		"perceptor-imagefacade": fmt.Sprintf("%s/%s/perceptor-imagefacade:%s", registry, path, ifcv),
+		"perceptor":             fmt.Sprintf("%s/%s/perceptor:%s", config.Registry, config.ImagePath, config.PerceptorContainerVersion),
+		"perceptor-scanner":     fmt.Sprintf("%s/%s/perceptor-scanner:%s", config.Registry, config.ImagePath, config.ScannerContainerVersion),
+		"pod-perceiver":         fmt.Sprintf("%s/%s/pod-perceiver:%s", config.Registry, config.ImagePath, config.PerceiverContainerVersion),
+		"image-perceiver":       fmt.Sprintf("%s/%s/image-perceiver:%s", config.Registry, config.ImagePath, config.PerceiverContainerVersion),
+		"perceptor-imagefacade": fmt.Sprintf("%s/%s/perceptor-imagefacade:%s", config.Registry, config.ImagePath, config.ImageFacadeContainerVersion),
 	}
 }
 
@@ -484,9 +463,9 @@ func runProtoform(configPath string) []*v1.ReplicationController {
 
 	log.Println("Creating config maps : Dry Run ")
 
-	CreateConfigMapsFromInput(pc.Namespace, clientset, pc.ToConfigMap(), pc.DryRun)
+	CreateConfigMapsFromInput(clientset, pc)
 	imagePaths := GenerateContainerPaths(pc)
-	rcsCreated := CreatePerceptorResources(pc.Openshift, pc.Namespace, clientset, pc.ServiceAccounts, imagePaths, pc.DryRun)
+	rcsCreated := CreatePerceptorResources(clientset, imagePaths, pc)
 
 	log.Println("Entering pod listing loop!")
 

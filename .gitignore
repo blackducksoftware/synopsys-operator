@@ -1,1 +1,2 @@
-config.yml
+install/kube1.6/protoform.yaml
+install/kube1.6/rbac.yaml
