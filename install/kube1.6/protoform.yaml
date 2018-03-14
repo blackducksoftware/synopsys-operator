@@ -1,6 +1,3 @@
-#!/bin/bash
-
-cat << EOF > protoform.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -12,7 +9,7 @@ spec:
       name: viper-input
   containers:
   - name: protoform
-    image: ${_arg_imagepath}/perceptor-protoform:${_arg_protoform_version}
+    image: /perceptor-protoform:
     imagePullPolicy: Always
     command: [ ./protoform ]
     ports:
@@ -36,24 +33,23 @@ items:
     name: viper-input
   data:
     protoform.yaml: |
-      DockerPasswordOrToken: "$_arg_scanned_registry_token"
-      HubHost: "$_arg_hub_host_port"
-      HubUser: "$_arg_hub_user"
-      HubPort: "$_arg_hub_port"
+      DockerPasswordOrToken: "master"
+      HubHost: ""
+      HubUser: "sysadmin"
+      HubPort: "8443"
       # TODO, inject as secret.
-      HubUserPassword: "$_arg_hub_password"
-      ConcurrentScanLimit: "$_arg_hub_max_concurrent_scans"
+      HubUserPassword: ""
+      ConcurrentScanLimit: "7"
       DockerUsername: "admin"
-      Namespace: "$_arg_pcp_namespace"
+      Namespace: "hub"
       Openshift: "false"
-      Registry: "$_arg_scanned_registry"
-      ImagePath: "$_arg_imagepath"
+      Registry: ""
+      ImagePath: ""
 
       # TODO: Assuming for now that we run the same version of everything
       # For the curated installers.  For developers ? You might want to
       # hard code one of these values if using this script for dev/test.
-      PerceptorContainerVersion: "$_arg_pcp_container_version"
-      ScannerContainerVersion: "$_arg_pcp_container_version"
-      PerceiverContainerVersion: "$_arg_pcp_container_version"
-      ImageFacadeContainerVersion: "$_arg_pcp_container_version"
-EOF
+      PerceptorContainerVersion: "master"
+      ScannerContainerVersion: "master"
+      PerceiverContainerVersion: "master"
+      ImageFacadeContainerVersion: "master"

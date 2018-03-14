@@ -1,8 +1,8 @@
-source ../create-install-files.sh "${@}"
+source ../common/parse-or-gather-user-input.sh "${@}"
 
-kubectl create ns $arg_pcp_namespace
+kubectl create ns $_arg_pcp_namespace
 
-source ../kube-rbac-sa-init.sh $arg_pcp_namespace
-
-kubectl create -f config.yml -n $NAMESPACE
-kubectl create -f proto.yml -n $NAMESPACE
+source ../common/rbac.yaml.sh $_arg_pcp_namespace
+set -x
+kubectl create -f protoform.yaml -n $_arg_pcp_namespace
+kubectl create -f rbac.yaml -n $_arg_pcp_namespace

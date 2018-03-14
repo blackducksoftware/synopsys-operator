@@ -1,5 +1,5 @@
 #!/bin/bash
-source ../create-install-files.sh "${@}"
+source ../parse-or-gather-user-input.sh "${@}"
 
 oc new-project $_arg_pcp_namespace
 
