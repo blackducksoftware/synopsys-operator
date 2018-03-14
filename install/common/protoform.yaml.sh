@@ -56,4 +56,7 @@ items:
       ScannerContainerVersion: "$_arg_pcp_container_version"
       PerceiverContainerVersion: "$_arg_pcp_container_version"
       ImageFacadeContainerVersion: "$_arg_pcp_container_version"
+
+      DefaultCPU: "$_arg_pcp_default_cpu"
+      DefaultMem: "$_arg_pcp_default_memory"
 EOF

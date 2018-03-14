@@ -61,16 +61,18 @@ begins_with_short_option()
 _arg_kube_perceiver="on"
 _arg_openshift_perceiver="off"
 _arg_scanned_registry=
-_arg_scanned_registry_token="master"
+_arg_scanned_registry_token=""
 _arg_pcp_container_registry="gcr.io/gke-verification/blackducksoftware"
 _arg_pcp_container_version="master"
 _arg_pcp_namespace="hub"
 _arg_hub_user="sysadmin"
 _arg_hub_password=""
 _arg_hub_host="nginx-webapp-logstash"
-_arg_hub_port="8443"
+_arg_hub_port="443"
 _arg_hub_max_concurrent_scans="7"
 _arg_proto_prompt="off"
+_arg_pcp_container_default_cpu="300m"
+_arg_pcp_container_default_memory="1300Mi"
 
 # Function that prints general usage of the script.
 # This is useful if users asks for it, or if there is an argument parsing error (unexpected / spurious arguments)
@@ -78,7 +80,7 @@ _arg_proto_prompt="off"
 print_help ()
 {
 	printf '%s\n' "The general script's help msg"
-	printf 'Usage: %s [-k|--(no-)kube-perceiver] [-o|--(no-)openshift-perceiver] [-p|--scanned-registry <arg>] [-t|--scanned-registry-token <arg>] [-c|--pcp-container-registry <arg>] [-v|--pcp-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-C|--hub-max-concurrent-scans <arg>] [-i|--(no-)proto-prompt] [-h|--help]\n' "$0"
+	printf 'Usage: %s [-k|--(no-)kube-perceiver] [-o|--(no-)openshift-perceiver] [-p|--scanned-registry <arg>] [-t|--scanned-registry-token <arg>] [-c|--pcp-container-registry <arg>] [-v|--pcp-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--pcp-container-default-cpu <arg>] [-m|--pcp-container-default-memory <arg>] [-i|--(no-)proto-prompt] [-h|--help]\n' "$0"
 	printf '\t%s\n' "-k,--kube-perceiver,--no-kube-perceiver: Wether the kube perceiver is enabled. (on by default)"
 	printf '\t%s\n' "-o,--openshift-perceiver,--no-openshift-perceiver: Wether the openshift perceiver is enabled. (off by default)"
 	printf '\t%s\n' "-p,--scanned-registry: A registry url you will need to pull from if private registries. (no default)"
@@ -91,6 +93,8 @@ print_help ()
 	printf '\t%s\n' "-H,--hub-host: hub hostname  (default: 'nginx-webapp-logstash')"
 	printf '\t%s\n' "-P,--hub-port: hub port  (default: '8443')"
 	printf '\t%s\n' "-C,--hub-max-concurrent-scans: maximum scans at a time for the hub (default: '7')"
+	printf '\t%s\n' "-u,--pcp-container-default-cpu: perceptor container default cpu (default: '300m')"
+	printf '\t%s\n' "-m,--pcp-container-default-memory: perceptor container default memory (default: '1300Mi')"
 	printf '\t%s\n' "-i,--proto-prompt,--no-proto-prompt: prompt for values rather then expecting them all at the command line (off by default)"
 	printf '\t%s\n' "-h,--help: Prints help"
 }
@@ -282,6 +286,34 @@ parse_commandline ()
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-C*)
 				_arg_hub_max_concurrent_scans="${_key##-C}"
+				;;
+			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
+			-u|--pcp-container-default-cpu)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_pcp_container_default_cpu="$2"
+				shift
+				;;
+			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
+			--pcp-container-default-cpu=*)
+				_arg_pcp_container_default_cpu="${_key##--pcp-container-default-cpu=}"
+				;;
+			# See the comment of option '-p' to see what's going on here - principle is the same.
+			-u*)
+				_arg_pcp_container_default_cpu="${_key##-C}"
+				;;
+			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
+			-m|--pcp-container-default-memory)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_pcp_container_default_memory="$2"
+				shift
+				;;
+			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
+			--pcp-container-default-memory=*)
+				_arg_pcp_container_default_memory="${_key##--pcp-container-default-memory=}"
+				;;
+			# See the comment of option '-p' to see what's going on here - principle is the same.
+			-m*)
+				_arg_pcp_container_default_memory="${_key##-C}"
 				;;
 			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
 			-i|--no-proto-prompt|--proto-prompt)
