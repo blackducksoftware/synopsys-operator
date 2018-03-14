@@ -12,7 +12,7 @@ spec:
       name: viper-input
   containers:
   - name: protoform
-    image: ${_arg_imagepath}/perceptor-protoform:${_arg_protoform_version}
+    image: ${_arg_pcp_container_registry}/perceptor-protoform:${_arg_pcp_container_version}
     imagePullPolicy: Always
     command: [ ./protoform ]
     ports:

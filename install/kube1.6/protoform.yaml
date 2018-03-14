@@ -9,7 +9,7 @@ spec:
       name: viper-input
   containers:
   - name: protoform
-    image: /perceptor-protoform:
+    image: gcr.io/gke-verification/blackducksoftware/perceptor-protoform:master
     imagePullPolicy: Always
     command: [ ./protoform ]
     ports:
