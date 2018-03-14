@@ -20,34 +20,4 @@ function prompt() {
   fi
 }
 
-function create_protoform() {
-cat << EOF > proto.yml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: protoform
-spec:
-  volumes:
-  - name: viper-input
-    configMap:
-      name: viper-input
-  containers:
-  - name: protoform
-    image: ${_arg_pcp_container_registry}/perceptor-protoform:${_arg_pcp_container_version}
-    imagePullPolicy: Always
-    command: [ ./protoform ]
-    ports:
-    - containerPort: 3001
-      protocol: TCP
-    volumeMounts:
-    - name: viper-input
-      mountPath: /etc/protoform/
-  restartPolicy: Never
-  serviceAccountName: protoform
-  serviceAccount: protoform
-EOF
-}
-
 prompt
-source `dirname ${BASH_SOURCE}`/protoform.yaml.sh
-source `dirname ${BASH_SOURCE}`/rbac.yaml.sh
