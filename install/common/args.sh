@@ -17,7 +17,8 @@
 # ARG_OPTIONAL_SINGLE([hub-host],[H],[hub hostname ],[nginx-webapp-logstash])
 # ARG_OPTIONAL_SINGLE([hub-port],[P],[hub port ],[8443])
 # ARG_OPTIONAL_SINGLE([hub-max-concurrent-scans],[C],[maximum scans at a time for the hub],[7])
-
+# ARG_OPTIONAL_SINGLE([pcp-container-default-cpu],[u],[perceptor container default cpu],[300m])
+# ARG_OPTIONAL_SINGLE([pcp-container-default-memory],[m],[perceptor container default memory],[1300Mi])
 # ARG_OPTIONAL_BOOLEAN([proto-prompt],[i],[prompt for values rather then expecting them all at the command line],[off])
 
 # ARG_HELP([The general script's help msg])
@@ -64,7 +65,7 @@ _arg_scanned_registry=
 _arg_scanned_registry_token=""
 _arg_pcp_container_registry="gcr.io/gke-verification/blackducksoftware"
 _arg_pcp_container_version="master"
-_arg_pcp_namespace="hub"
+_arg_pcp_namespace="bds-perceptor"
 _arg_hub_user="sysadmin"
 _arg_hub_password=""
 _arg_hub_host="nginx-webapp-logstash"
