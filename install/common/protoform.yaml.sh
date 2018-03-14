@@ -1,3 +1,6 @@
+#!/bin/bash
+
+cat << EOF > protoform.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -21,3 +24,4 @@ spec:
   restartPolicy: Never
   serviceAccountName: protoform
   serviceAccount: protoform
+EOF

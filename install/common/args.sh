@@ -1,8 +1,5 @@
 #!/bin/bash
 #
-# This is a rather minimal example Argbash potential
-# Example taken from http://argbash.readthedocs.io/en/stable/example.html
-#
 #
 # ARG_OPTIONAL_BOOLEAN([kube-perceiver],[k],[Wether the kube perceiver is enabled.],[on])
 # ARG_OPTIONAL_BOOLEAN([openshift-perceiver],[o],[Wether the openshift perceiver is enabled.],[off])
@@ -22,7 +19,6 @@
 # ARG_OPTIONAL_SINGLE([hub-max-concurrent-scans],[C],[maximum scans at a time for the hub],[7])
 
 # ARG_OPTIONAL_BOOLEAN([proto-prompt],[i],[prompt for values rather then expecting them all at the command line],[off])
-
 
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO()
