@@ -1,5 +1,8 @@
 #!/bin/bash
-
+openshift="false"
+if [[ $_arg_openshift_perceiver == "on" ]] ; then
+  openshift="true"
+fi
 cat << EOF > protoform.yaml
 apiVersion: v1
 kind: Pod
@@ -37,7 +40,7 @@ items:
   data:
     protoform.yaml: |
       DockerPasswordOrToken: "$_arg_scanned_registry_token"
-      HubHost: "$_arg_hub_host_port"
+      HubHost: "$_arg_hub_host"
       HubUser: "$_arg_hub_user"
       HubPort: "$_arg_hub_port"
       # TODO, inject as secret.
@@ -45,7 +48,7 @@ items:
       ConcurrentScanLimit: "$_arg_hub_max_concurrent_scans"
       DockerUsername: "admin"
       Namespace: "$_arg_pcp_namespace"
-      Openshift: "false"
+      Openshift: "$openshift"
       Registry: "$_arg_scanned_registry"
       ImagePath: "$_arg_imagepath"
 
@@ -56,4 +59,7 @@ items:
       ScannerContainerVersion: "$_arg_pcp_container_version"
       PerceiverContainerVersion: "$_arg_pcp_container_version"
       ImageFacadeContainerVersion: "$_arg_pcp_container_version"
+
+      DefaultCPU: "$_arg_pcp_container_default_cpu"
+      DefaultMem: "$_arg_pcp_container_default_memory"
 EOF

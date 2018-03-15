@@ -1,7 +1,7 @@
 #!/bin/bash
-export SCC="add-scc-to-user"
-export ROLE="add-role-to-user"
-export CLUSTER="add-cluster-role-to-user"
+SCC="add-scc-to-user"
+ROLE="add-role-to-user"
+CLUSTER="add-cluster-role-to-user"
 NS=$_arg_pcp_namespace
 
 # Create the openshift-perceiver service account
@@ -23,3 +23,5 @@ oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
 # these allow us to pull images
 oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-scanner-sa
 oc policy $ROLE view system:serviceaccount::perceptor-scanner-sa
+
+_arg_scanned_registry_token=$(oc sa get-token perceptor-scanner-sa)
