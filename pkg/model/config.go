@@ -1,8 +1,7 @@
 package model
 
 import (
-	"bytes"
-	"fmt"
+	"encoding/json"
 	"log"
 	"strconv"
 	"strings"
@@ -150,17 +149,8 @@ func (p *ProtoformConfig) parameterize(json string) string {
 }
 
 func generateStringFromStringArr(strArr []string) string {
-	buffer := bytes.NewBufferString("")
-	fmt.Fprint(buffer, "[")
-	for i, v := range strArr {
-		if i == 0 {
-			fmt.Fprint(buffer, "\"", v, "\"")
-		} else {
-			fmt.Fprint(buffer, ", \"", v, "\"")
-		}
-	}
-	fmt.Fprint(buffer, "]")
-	return buffer.String()
+	str, _ := json.Marshal(strArr)
+	return string(str)
 }
 
 // prometheus.yml
