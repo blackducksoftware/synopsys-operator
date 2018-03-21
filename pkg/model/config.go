@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"log"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ type ProtoformConfig struct {
 	ScannerPort               int
 	PerceiverPort             int
 	ImageFacadePort           int
-	PrivateRegistry           []string
+	InternalDockerRegistries  []string
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
 	HubHost                   string
@@ -101,10 +102,10 @@ func (p *ProtoformConfig) parameterize(json string) string {
 		log.Printf("config ERROR : cannot continue without a Docker password!!!")
 	}
 	if p.ConcurrentScanLimit == 0 {
-		p.ConcurrentScanLimit = 2
+		p.ConcurrentScanLimit = 7
 	}
-	if p.PrivateRegistry == nil {
-		p.PrivateRegistry = []string{"docker-registry.default.svc:5000", "172.1.1.0:5000"}
+	if p.InternalDockerRegistries == nil {
+		p.InternalDockerRegistries = []string{"docker-registry.default.svc:5000", "172.1.1.0:5000"}
 	}
 	if p.Defaultversion == "" {
 		p.Defaultversion = "master"
@@ -128,7 +129,7 @@ func (p *ProtoformConfig) parameterize(json string) string {
 		p.ImageFacadeContainerVersion = p.Defaultversion
 	}
 
-	json = strings.Replace(json, "_15", strings.Join(p.PrivateRegistry, ","), n)
+	json = strings.Replace(json, "_15", generateStringFromStringArr(p.InternalDockerRegistries), n)
 	json = strings.Replace(json, "_14", strconv.Itoa(p.ImageFacadePort), n)
 	json = strings.Replace(json, "_13", strconv.Itoa(p.PerceiverPort), n)
 	json = strings.Replace(json, "_12", strconv.Itoa(p.ScannerPort), n)
@@ -145,6 +146,11 @@ func (p *ProtoformConfig) parameterize(json string) string {
 	json = strings.Replace(json, "_9", p.DockerUsername, n)
 
 	return json
+}
+
+func generateStringFromStringArr(strArr []string) string {
+	str, _ := json.Marshal(strArr)
+	return string(str)
 }
 
 // prometheus.yml
@@ -165,11 +171,11 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// (I think)? Due to the fct that nested anonymous []string's seem to not be
 	// "a thing".
 	defaults := map[string]string{
-		"prometheus":                   `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:_2","perceptor-scanner:_12","perceiver:_13","perceptor-imagefacade:_14"]}]}]}`,
+		"prometheus":                   `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:_2","perceptor-scanner:_12","image-perceiver:_13","pod-perceiver:_13","perceptor-image-facade:_14"]}]}]}`,
 		"perceptor-config":             `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","ConcurrentScanLimit": "_11","Port": "_2"}`,
-		"perceptor-scanner-config":     `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","Port": "_12","PerceptorPort": "_2","ImageFacadePort": "_14","PrivateRegistry": "_15"}`,
+		"perceptor-scanner-config":     `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","Port": "_12","PerceptorPort": "_2","ImageFacadePort": "_14"}`,
 		"perceiver":                    `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4","Port": "_13"}`,
-		"perceptor-imagefacade-config": `{"DockerUser": "_9","DockerPassword": "_10","Port": "_14"}`,
+		"perceptor-imagefacade-config": `{"DockerUser": "_9","DockerPassword": "_10","Port": "_14","InternalDockerRegistries": _15}`,
 	}
 
 	maps := make([]*v1.ConfigMap, len(configs))

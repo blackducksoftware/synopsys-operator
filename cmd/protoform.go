@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
@@ -285,7 +286,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 
 	rcSCAN, svcSCAN := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
-			replicas:        int32(pc.ConcurrentScanLimit),
+			replicas:        int32(math.Ceil(float64(pc.ConcurrentScanLimit) / 2.0)),
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",

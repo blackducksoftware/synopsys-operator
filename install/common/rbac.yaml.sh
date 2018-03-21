@@ -16,6 +16,18 @@ roleRef:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  name: perceiver
+  namespace: ${_arg_pcp_namespace}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: perceptor-scanner-sa
+  namespace: ${_arg_pcp_namespace}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: protoform
   namespace: ${_arg_pcp_namespace}
 EOF
