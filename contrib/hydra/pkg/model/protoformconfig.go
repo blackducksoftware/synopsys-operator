@@ -46,8 +46,11 @@ type ProtoformConfig struct {
 	DumpIntervalMinutes       int
 
 	// Scanner config
-	ScannerPort     int32
-	ImageFacadePort int32
+	ScannerReplicationCount int32
+	ScannerPort             int32
+	ImageFacadePort         int32
+
+	LogLevel string
 
 	AuxConfig *AuxiliaryConfig
 }
@@ -113,5 +116,6 @@ func (pc *ProtoformConfig) PerceptorConfig() PerceptorConfigMap {
 		HubUserPassword:     pc.HubUserPassword,
 		UseMockMode:         pc.UseMockPerceptorMode,
 		Port:                pc.PerceptorPort,
+		LogLevel:            pc.LogLevel,
 	}
 }

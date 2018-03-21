@@ -61,6 +61,7 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	//	prometheus.Config = config.PrometheusConfig() // TODO ?
 
 	scanner := model.NewScanner(perceptorScanner, perceptorImagefacade)
+	scanner.ReplicaCount = config.ScannerReplicationCount
 
 	replicationControllers := []*v1.ReplicationController{
 		perceptor.ReplicationController(),

@@ -6,6 +6,7 @@
   "HubUser": "sysadmin",
   "HubUserPassword": "blackduck",
   "ConcurrentScanLimit": 2,
+  "ScannerReplicationCount": 1,
 
   "UseMockPerceptorMode": false,
 
@@ -15,5 +16,7 @@
   "AnnotationIntervalSeconds": 30,
   "DumpIntervalMinutes": 30,
   "ScannerPort": 3777,
-  "ImageFacadePort": 3931
+  "ImageFacadePort": 3931,
+
+  "LogLevel": "debug"
 }

@@ -38,3 +38,8 @@ EOF
 kubectl create -f ../../../prometheus-deployment.yaml --namespace=$NS
 
 go run ./protoform.go ./config.json aux-config.json
+
+# If running on minikube:
+# minikube service prometheus -n bds-perceptor --url
+# Otherwise:
+# kubectl expose service prometheus --name=prometheus-metrics --port=9090 --target-port=9090 --type=LoadBalancer -n bds-perceptor

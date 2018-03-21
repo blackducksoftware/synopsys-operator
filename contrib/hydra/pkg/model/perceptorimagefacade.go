@@ -61,11 +61,11 @@ type PerceptorImagefacade struct {
 }
 
 func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
-	defaultMem, err := resource.ParseQuantity("2Gi")
+	defaultMem, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
 	}
-	defaultCPU, err := resource.ParseQuantity("500m")
+	defaultCPU, err := resource.ParseQuantity("100m")
 	if err != nil {
 		panic(err)
 	}

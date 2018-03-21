@@ -54,11 +54,11 @@ type PodPerceiver struct {
 }
 
 func NewPodPerceiver(serviceAccountName string) *PodPerceiver {
-	memory, err := resource.ParseQuantity("2Gi")
+	memory, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
 	}
-	cpu, err := resource.ParseQuantity("500m")
+	cpu, err := resource.ParseQuantity("100m")
 	if err != nil {
 		panic(err)
 	}

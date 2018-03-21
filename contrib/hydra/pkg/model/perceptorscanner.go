@@ -59,7 +59,7 @@ type PerceptorScanner struct {
 }
 
 func NewPerceptorScanner() *PerceptorScanner {
-	memory, err := resource.ParseQuantity("2Gi")
+	memory, err := resource.ParseQuantity("1Gi")
 	if err != nil {
 		panic(err)
 	}

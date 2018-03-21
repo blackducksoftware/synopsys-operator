@@ -46,7 +46,7 @@ func NewScanner(perceptorScanner *PerceptorScanner, perceptorImagefacade *Percep
 	scanner := &Scanner{
 		PodName: "perceptor-scanner",
 
-		ReplicaCount: 2,
+		ReplicaCount: 0,
 
 		DockerSocketName: "dir-docker-socket",
 		DockerSocketPath: "/var/run/docker.sock",
