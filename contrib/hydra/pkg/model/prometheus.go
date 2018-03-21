@@ -22,6 +22,7 @@ under the License.
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"k8s.io/api/core/v1"
@@ -30,23 +31,24 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+type PrometheusTarget struct {
+	Host string
+	Port int32
+}
+
 type Prometheus struct {
-	Name                     string
-	PodName                  string
-	Image                    string
-	ReplicaCount             int32
-	DataVolumeName           string
-	DataVolumeMountPath      string
-	ConfigMapName            string
-	ConfigMapSource          string
-	ConfigMapMountPath       string
-	ServiceName              string
-	Port                     int32
-	PerceptorPort            int32
-	PerceptorScannerPort     int32
-	PerceptorImagefacadePort int32
-	ImagePerceiverPort       int32
-	PodPerceiverPort         int32
+	Name                string
+	PodName             string
+	Image               string
+	ReplicaCount        int32
+	DataVolumeName      string
+	DataVolumeMountPath string
+	ConfigMapName       string
+	ConfigMapSource     string
+	ConfigMapMountPath  string
+	ServiceName         string
+	Port                int32
+	Targets             []*PrometheusTarget
 }
 
 func NewPrometheus() *Prometheus {
@@ -63,6 +65,10 @@ func NewPrometheus() *Prometheus {
 		ServiceName:         "prometheus",
 		Port:                9090,
 	}
+}
+
+func (prom *Prometheus) AddTarget(target *PrometheusTarget) {
+	prom.Targets = append(prom.Targets, target)
 }
 
 func (prom *Prometheus) Deployment() *v1beta1.Deployment {
@@ -144,6 +150,14 @@ func (prom *Prometheus) Service() *v1.Service {
 }
 
 func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
+	targets := []string{}
+	for _, target := range prom.Targets {
+		targets = append(targets, fmt.Sprintf("%s:%d", target.Host, target.Port))
+	}
+	targetsBytes, err := json.Marshal(targets)
+	if err != nil {
+		panic(err)
+	}
 	jsonString := `
   {
     "global": {
@@ -155,24 +169,13 @@ func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
         "scrape_interval": "5s",
         "static_configs": [
           {
-            "targets": [
-							"perceptor:%d",
-							"perceptor-scanner:%d",
-							"perceptor-imagefacade:%d",
-							"image-perceiver:%d",
-							"kube-generic-perceiver:%d"
-            ]
+            "targets": %s
           }
         ]
       }
     ]
   }
   `
-	paramString := fmt.Sprintf(jsonString,
-		prom.PerceptorPort,
-		prom.PerceptorScannerPort,
-		prom.PerceptorImagefacadePort,
-		prom.ImagePerceiverPort,
-		prom.PodPerceiverPort)
+	paramString := fmt.Sprintf(jsonString, string(targetsBytes))
 	return MakeConfigMap("prometheus", "prometheus.yml", paramString)
 }

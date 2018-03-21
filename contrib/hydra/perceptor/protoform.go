@@ -47,11 +47,6 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	podPerceiver.Config = config.PodPerceiverConfig()
 	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
 
-	imagePerceiverReplicaCount := int32(1)
-	imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, config.AuxConfig.ImagePerceiverServiceAccountName)
-	imagePerceiver.Config = config.ImagePerceiverConfig()
-	imagePerceiver.Config.PerceptorHost = perceptor.ServiceName
-
 	perceptorScanner := model.NewPerceptorScanner()
 	perceptorScanner.Config = config.PerceptorScannerConfig()
 
@@ -59,11 +54,10 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
 
 	prometheus := model.NewPrometheus()
-	prometheus.PerceptorPort = config.PerceptorPort
-	prometheus.PerceptorScannerPort = config.ScannerPort
-	prometheus.PerceptorImagefacadePort = config.ImageFacadePort
-	prometheus.ImagePerceiverPort = config.ImagePerceiverPort
-	prometheus.PodPerceiverPort = config.PodPerceiverPort
+	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorScanner.ServiceName, Port: config.ScannerPort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorImagefacade.ServiceName, Port: config.ImageFacadePort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: podPerceiver.ServiceName, Port: config.PodPerceiverPort})
 	//	prometheus.Config = config.PrometheusConfig() // TODO ?
 
 	scanner := model.NewScanner(perceptorScanner, perceptorImagefacade)
@@ -71,13 +65,11 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	replicationControllers := []*v1.ReplicationController{
 		perceptor.ReplicationController(),
 		podPerceiver.ReplicationController(),
-		imagePerceiver.ReplicationController(),
 		scanner.ReplicationController(),
 	}
 	services := []*v1.Service{
 		perceptor.Service(),
 		podPerceiver.Service(),
-		imagePerceiver.Service(),
 		perceptorScanner.Service(),
 		perceptorImagefacade.Service(),
 		//		prometheus.Service(),
@@ -85,7 +77,6 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	configMaps := []*v1.ConfigMap{
 		perceptor.ConfigMap(),
 		podPerceiver.ConfigMap(),
-		imagePerceiver.ConfigMap(),
 		perceptorScanner.ConfigMap(),
 		perceptorImagefacade.ConfigMap(),
 		prometheus.ConfigMap(),
@@ -93,6 +84,19 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	// deployments := []*v1beta1.Deployment{
 	// 	prometheus.Deployment(),
 	// }
+
+	if config.AuxConfig.IsOpenshift {
+		imagePerceiverReplicaCount := int32(1)
+		imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, config.AuxConfig.ImagePerceiverServiceAccountName)
+		imagePerceiver.Config = config.ImagePerceiverConfig()
+		imagePerceiver.Config.PerceptorHost = perceptor.ServiceName
+
+		replicationControllers = append(replicationControllers, imagePerceiver.ReplicationController())
+		services = append(services, imagePerceiver.Service())
+		configMaps = append(configMaps, imagePerceiver.ConfigMap())
+
+		prometheus.AddTarget(&model.PrometheusTarget{Host: imagePerceiver.ServiceName, Port: config.ImagePerceiverPort})
+	}
 
 	namespace := config.AuxConfig.Namespace
 

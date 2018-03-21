@@ -28,6 +28,9 @@ import (
 type AuxiliaryConfig struct {
 	Namespace string
 
+	// true -> openshift; false -> kubernetes
+	IsOpenshift bool
+
 	// AUTH CONFIGS
 	// These are given to containers through secrets or other mechanisms.
 	// Not necessarily a one-to-one text replacement.
