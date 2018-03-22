@@ -36,8 +36,15 @@ type ProtoformConfig struct {
 
 	// CONTAINER PULL CONFIG
 	// These are for defining docker registry and image location and versions
-	Registry                    string
-	ImagePath                   string
+	Registry  string
+	ImagePath string
+
+	PerceptorImageName      string
+	ScannerImageName        string
+	PodPerceiverImageName   string
+	ImagePerceiverImageName string
+	ImageFacadeImageName    string
+
 	PerceptorContainerVersion   string
 	ScannerContainerVersion     string
 	PerceiverContainerVersion   string
@@ -57,6 +64,7 @@ type ProtoformConfig struct {
 	// CPU and memory configurations
 	DefaultCPU string // Should be passed like: e.g. "300m"
 	DefaultMem string // Should be passed like: e.g "1300Mi"
+	LogLevel   string
 }
 
 func (p *ProtoformConfig) parameterize(json string) string {
@@ -116,6 +124,21 @@ func (p *ProtoformConfig) parameterize(json string) string {
 	if p.ImagePath == "" {
 		p.ImagePath = "gke-verification/blackducksoftware"
 	}
+	if p.PerceptorImageName == "" {
+		p.PerceptorImageName = "perceptor"
+	}
+	if p.ScannerImageName == "" {
+		p.ScannerImageName = "perceptor-scanner"
+	}
+	if p.ImagePerceiverImageName == "" {
+		p.ImagePerceiverImageName = "image-perceiver"
+	}
+	if p.PodPerceiverImageName == "" {
+		p.PodPerceiverImageName = "pod-perceiver"
+	}
+	if p.ImageFacadeImageName == "" {
+		p.ImageFacadeImageName = "perceptor-imagefacade"
+	}
 	if p.PerceptorContainerVersion == "" {
 		p.PerceptorContainerVersion = p.Defaultversion
 	}
@@ -128,7 +151,11 @@ func (p *ProtoformConfig) parameterize(json string) string {
 	if p.ImageFacadeContainerVersion == "" {
 		p.ImageFacadeContainerVersion = p.Defaultversion
 	}
+	if p.LogLevel == "" {
+		p.LogLevel = "debug"
+	}
 
+	json = strings.Replace(json, "_16", p.LogLevel, n)
 	json = strings.Replace(json, "_15", generateStringFromStringArr(p.InternalDockerRegistries), n)
 	json = strings.Replace(json, "_14", strconv.Itoa(p.ImageFacadePort), n)
 	json = strings.Replace(json, "_13", strconv.Itoa(p.PerceiverPort), n)
@@ -172,10 +199,10 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// "a thing".
 	defaults := map[string]string{
 		"prometheus":                   `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:_2","perceptor-scanner:_12","image-perceiver:_13","pod-perceiver:_13","perceptor-image-facade:_14"]}]}]}`,
-		"perceptor-config":             `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","ConcurrentScanLimit": "_11","Port": "_2"}`,
-		"perceptor-scanner-config":     `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","Port": "_12","PerceptorPort": "_2","ImageFacadePort": "_14"}`,
-		"perceiver":                    `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4","Port": "_13"}`,
-		"perceptor-imagefacade-config": `{"DockerUser": "_9","DockerPassword": "_10","Port": "_14","InternalDockerRegistries": _15}`,
+		"perceptor-config":             `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","ConcurrentScanLimit": "_11","Port": "_2","LogLevel": "_16"}`,
+		"perceptor-scanner-config":     `{"HubHost": "_5","HubPort": "_8","HubUser": "_6","HubUserPassword": "_7","Port": "_12","PerceptorHost": "_1","PerceptorPort": "_2","ImageFacadePort": "_14","LogLevel": "_16"}`,
+		"perceiver":                    `{"PerceptorHost": "_1","PerceptorPort": "_2","AnnotationIntervalSeconds": "_3","DumpIntervalMinutes": "_4","Port": "_13","LogLevel": "_16"}`,
+		"perceptor-imagefacade-config": `{"DockerUser": "_9","DockerPassword": "_10","Port": "_14","InternalDockerRegistries": _15,"LogLevel": "_16"}`,
 	}
 
 	maps := make([]*v1.ConfigMap, len(configs))

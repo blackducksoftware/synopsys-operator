@@ -405,11 +405,11 @@ func CreateConfigMapsFromInput(clientset *kubernetes.Clientset, pc *model.Protof
 // GenerateContainerPaths creates paths with reasonable defaults.
 func GenerateContainerPaths(config *model.ProtoformConfig) map[string]string {
 	return map[string]string{
-		"perceptor":             fmt.Sprintf("%s/%s/perceptor:%s", config.Registry, config.ImagePath, config.PerceptorContainerVersion),
-		"perceptor-scanner":     fmt.Sprintf("%s/%s/perceptor-scanner:%s", config.Registry, config.ImagePath, config.ScannerContainerVersion),
-		"pod-perceiver":         fmt.Sprintf("%s/%s/pod-perceiver:%s", config.Registry, config.ImagePath, config.PerceiverContainerVersion),
-		"image-perceiver":       fmt.Sprintf("%s/%s/image-perceiver:%s", config.Registry, config.ImagePath, config.PerceiverContainerVersion),
-		"perceptor-imagefacade": fmt.Sprintf("%s/%s/perceptor-imagefacade:%s", config.Registry, config.ImagePath, config.ImageFacadeContainerVersion),
+		"perceptor":             fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.PerceptorImageName, config.PerceptorContainerVersion),
+		"perceptor-scanner":     fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ScannerImageName, config.ScannerContainerVersion),
+		"pod-perceiver":         fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.PodPerceiverImageName, config.PerceiverContainerVersion),
+		"image-perceiver":       fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ImagePerceiverImageName, config.PerceiverContainerVersion),
+		"perceptor-imagefacade": fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ImageFacadeImageName, config.ImageFacadeContainerVersion),
 	}
 }
 
