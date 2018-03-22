@@ -7,7 +7,7 @@
     },
     {
       "name": "pod-perceiver",
-      "image": "opssight-openstify-pod-perceiver-3.6",
+      "image": "opssight-openstift-pod-perceiver-3.6",
       "tag": "latest"
     },
     {
