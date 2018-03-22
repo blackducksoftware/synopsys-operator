@@ -3,6 +3,12 @@ openshift="false"
 if [[ $_arg_openshift_perceiver == "on" ]] ; then
   openshift="true"
 fi
+DEF_PERCEPTOR_PROTOFORM_IMAGE=perceptor-protoform
+DEF_PERCEPTOR_PROTOFORM_TAG=master
+
+perceptor_protoform_image=${perceptor_protoform_image:-$DEF_PERCEPTOR_PROTOFORM_IMAGE}
+perceptor_protoform_tag=${perceptor_protoform_tag:-$DEF_PERCEPTOR_PROTOFORM_TAG}
+
 cat << EOF > protoform.yaml
 apiVersion: v1
 kind: Pod
