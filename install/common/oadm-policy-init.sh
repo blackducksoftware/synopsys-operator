@@ -24,4 +24,4 @@ oc adm policy $SCC privileged system:serviceaccount:$NS:perceptor-scanner-sa
 oc adm policy $CLUSTER cluster-admin system:serviceaccount:$NS:perceptor-scanner-sa
 oc policy $ROLE view system:serviceaccount::perceptor-scanner-sa
 
-_arg_scanned_registry_token=$(oc sa get-token perceptor-scanner-sa)
+_arg_private_registry_token=$(oc sa get-token perceptor-scanner-sa)
