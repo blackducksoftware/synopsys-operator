@@ -15,7 +15,7 @@ spec:
       name: viper-input
   containers:
   - name: protoform
-    image: ${_arg_pcp_container_registry}/${perceptor_protoform_image}:${perceptor_protoform_tag}
+    image: ${_arg_container_registry}/${_arg_image_repository}/${perceptor_protoform_image}:${perceptor_protoform_tag}
     imagePullPolicy: Always
     command: [ ./protoform ]
     ports:
