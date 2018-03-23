@@ -53,6 +53,10 @@ func readConfig(configPath string) *model.ProtoformConfig {
 		log.Print(" ^^ Didnt see a config file ! Making a reasonable default.")
 		return nil
 	}
+
+	internalRegistry := viper.GetStringSlice("InternalDockerRegistries")
+	viper.Set("InternalDockerRegistries", internalRegistry)
+
 	viper.Unmarshal(pc)
 	PrettyPrint(pc)
 	log.Print("*************** [protoform] done reading in viper ****************")
