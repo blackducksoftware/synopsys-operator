@@ -49,6 +49,7 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 
 	perceptorScanner := model.NewPerceptorScanner()
 	perceptorScanner.Config = config.PerceptorScannerConfig()
+	perceptorScanner.Config.PerceptorHost = perceptor.ServiceName
 
 	perceptorImagefacade := model.NewPerceptorImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
 	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()

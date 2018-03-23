@@ -5,16 +5,17 @@
   "HubHost": "the-hub-hub.54.67.89.98.xip.io",
   "HubUser": "sysadmin",
   "HubUserPassword": "blackduck",
+  "HubPort": 443,
   "ConcurrentScanLimit": 2,
-  "ScannerReplicationCount": 1,
-
+  "PerceptorPort": 3001,
   "UseMockPerceptorMode": false,
 
   "ImagePerceiverPort": 4003,
   "PodPerceiverPort": 4008,
-  "PerceptorPort": 3001,
   "AnnotationIntervalSeconds": 30,
   "DumpIntervalMinutes": 30,
+
+  "ScannerReplicationCount": 1,
   "ScannerPort": 3777,
   "ImageFacadePort": 3931,
 

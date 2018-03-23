@@ -34,6 +34,7 @@ type PerceptorImagefacadeConfigMap struct {
 	DockerUser               string
 	DockerPassword           string
 	InternalDockerRegistries []string
+	LogLevel                 string
 	CreateImagesOnly         bool
 	Port                     int32
 }

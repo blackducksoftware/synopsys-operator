@@ -31,17 +31,17 @@ type ProtoformConfig struct {
 	KubeConfigPath string
 
 	// perceptor config
-	HubHost             string
-	HubUser             string
-	HubUserPassword     string
-	ConcurrentScanLimit int
-
+	HubHost              string
+	HubUser              string
+	HubUserPassword      string
+	HubPort              int32
+	ConcurrentScanLimit  int
+	PerceptorPort        int32
 	UseMockPerceptorMode bool
 
 	// Perceivers config
 	ImagePerceiverPort        int32
 	PodPerceiverPort          int32
-	PerceptorPort             int32
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
 
@@ -91,10 +91,13 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
 		HubHost:                 pc.HubHost,
 		HubUser:                 pc.HubUser,
 		HubUserPassword:         pc.HubUserPassword,
+		HubPort:                 pc.HubPort,
+		HubClientTimeoutSeconds: 60,
+		LogLevel:                pc.LogLevel,
 		Port:                    pc.ScannerPort,
+		PerceptorHost:           "", // must be filled in elsewhere
 		PerceptorPort:           pc.PerceptorPort,
 		ImageFacadePort:         pc.ImageFacadePort,
-		HubClientTimeoutSeconds: 60,
 	}
 }
 
@@ -105,6 +108,7 @@ func (pc *ProtoformConfig) PerceptorImagefacadeConfig() PerceptorImagefacadeConf
 		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,
 		CreateImagesOnly:         false,
 		Port:                     pc.ImageFacadePort,
+		LogLevel:                 pc.LogLevel,
 	}
 }
 

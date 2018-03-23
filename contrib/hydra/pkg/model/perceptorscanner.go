@@ -34,10 +34,17 @@ type PerceptorScannerConfigMap struct {
 	HubHost                 string
 	HubUser                 string
 	HubUserPassword         string
+	HubPort                 int32
 	HubClientTimeoutSeconds int
-	Port                    int32
-	ImageFacadePort         int32
-	PerceptorPort           int32
+
+	LogLevel string
+
+	Port int32
+
+	ImageFacadePort int32
+
+	PerceptorHost string
+	PerceptorPort int32
 }
 
 type PerceptorScanner struct {
