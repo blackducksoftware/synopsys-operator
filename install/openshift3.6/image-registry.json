@@ -1,0 +1,34 @@
+{
+  "pod": [
+    {
+      "name": "image-perceiver",
+      "image": "opssight-openshift-image-perceiver-3.6",
+      "tag": "latest"
+    },
+    {
+      "name": "pod-perceiver",
+      "image": "opssight-openshift-pod-perceiver-3.6",
+      "tag": "latest"
+    },
+    {
+      "name": "perceptor",
+      "image": "opssight-perceptor",
+      "tag": "latest"
+    },
+    {
+      "name": "perceptor-imagefacade",
+      "image": "opssight-perceptor-imagefacade",
+      "tag": "latest"
+    },
+    {
+      "name": "perceptor-scanner",
+      "image": "opssight-perceptor-scanner",
+      "tag": "latest"
+    },
+    {
+      "name": "perceptor-protoform",
+      "image": "opssight-perceptor-protoform",
+      "tag": "latest"
+    }
+  ]
+}

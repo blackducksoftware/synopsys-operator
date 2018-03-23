@@ -1,15 +1,18 @@
 #!/bin/bash
 #
 #
-# ARG_OPTIONAL_BOOLEAN([kube-perceiver],[k],[Wether the kube perceiver is enabled.],[on])
-# ARG_OPTIONAL_BOOLEAN([openshift-perceiver],[o],[Wether the openshift perceiver is enabled.],[off])
+# ARG_OPTIONAL_BOOLEAN([kube-perceiver],[k],[Whether the kube perceiver is enabled.],[on])
+# ARG_OPTIONAL_BOOLEAN([openshift-perceiver],[o],[Whether the openshift perceiver is enabled.],[off])
+# ARG_OPTIONAL_BOOLEAN([prometheus-metrics],[M],[Whether the prometheus metrics is enabled.],[off])
+# ARG_OPTIONAL_BOOLEAN([developer-mode],[d],[Whether the Developer mode is enabled.],[off])
 #
 
-# ARG_OPTIONAL_SINGLE([scanned-registry],[p],[A registry url you will need to pull from if private registries.],[])
-# ARG_OPTIONAL_SINGLE([scanned-registry-token],[t],[protoform version],[master])
+# ARG_OPTIONAL_SINGLE([private-registry],[p],[A private registry url you will need to pull images for scan.],["docker-registry.default.svc:5000"])
+# ARG_OPTIONAL_SINGLE([private-registry-token],[t],[A private registry token to have access to pull images],[perceptor-scanner-sa service account token])
 
-# ARG_OPTIONAL_SINGLE([pcp-container-registry],[c],[Base docker repo for the applicaition.],[gcr.io/gke-verification/blackducksoftware ])
-# ARG_OPTIONAL_SINGLE([pcp-container-version],[v],[perceptor version],[master])
+# ARG_OPTIONAL_SINGLE([container-registry],[c],[Base docker repo for the applicaition.],[gcr.io])
+# ARG_OPTIONAL_SINGLE([image-repository],[c],[Image repository for the applicaition.],[gke-verification/blackducksoftware])
+# ARG_OPTIONAL_SINGLE([default-container-version],[v],[Default container version],[master])
 # ARG_OPTIONAL_SINGLE([pcp-namespace],[n],[The namespace perceptor containers run in.],[nginx-webapp-logstash])
 
 # ARG_OPTIONAL_SINGLE([hub-user],[U],[hub user],[master])
@@ -17,8 +20,9 @@
 # ARG_OPTIONAL_SINGLE([hub-host],[H],[hub hostname ],[nginx-webapp-logstash])
 # ARG_OPTIONAL_SINGLE([hub-port],[P],[hub port ],[8443])
 # ARG_OPTIONAL_SINGLE([hub-max-concurrent-scans],[C],[maximum scans at a time for the hub],[7])
-# ARG_OPTIONAL_SINGLE([pcp-container-default-cpu],[u],[perceptor container default cpu],[300m])
-# ARG_OPTIONAL_SINGLE([pcp-container-default-memory],[m],[perceptor container default memory],[1300Mi])
+# ARG_OPTIONAL_SINGLE([container-default-cpu],[u],[All containers default cpu],[300m])
+# ARG_OPTIONAL_SINGLE([container-default-memory],[m],[All containers default memory],[1300Mi])
+# ARG_OPTIONAL_SINGLE([container-default-log-level],[m],[All containers default log level],[info])
 # ARG_OPTIONAL_BOOLEAN([proto-prompt],[i],[prompt for values rather then expecting them all at the command line],[off])
 
 # ARG_HELP([The general script's help msg])
@@ -56,15 +60,15 @@ begins_with_short_option()
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
 
-
-
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_kube_perceiver="on"
 _arg_openshift_perceiver="off"
-_arg_scanned_registry=
-_arg_scanned_registry_token=""
-_arg_pcp_container_registry="gcr.io/gke-verification/blackducksoftware"
-_arg_pcp_container_version="master"
+_arg_prometheus_metrics="off"
+_arg_private_registry=
+_arg_private_registry_token=""
+_arg_container_registry="gcr.io"
+_arg_image_repository="gke-verification/blackducksoftware"
+_arg_default_container_version="master"
 _arg_pcp_namespace="bds-perceptor"
 _arg_hub_user="sysadmin"
 _arg_hub_password=""
@@ -72,8 +76,10 @@ _arg_hub_host="nginx-webapp-logstash"
 _arg_hub_port="8443"
 _arg_hub_max_concurrent_scans="7"
 _arg_proto_prompt="off"
-_arg_pcp_container_default_cpu="300m"
-_arg_pcp_container_default_memory="1300Mi"
+_arg_container_default_cpu="300m"
+_arg_container_default_memory="1300Mi"
+_arg_container_default_log_level="info"
+_arg_developer_mode="off"
 
 # Function that prints general usage of the script.
 # This is useful if users asks for it, or if there is an argument parsing error (unexpected / spurious arguments)
@@ -81,21 +87,25 @@ _arg_pcp_container_default_memory="1300Mi"
 print_help ()
 {
 	printf '%s\n' "The general script's help msg"
-	printf 'Usage: %s [-k|--(no-)kube-perceiver] [-o|--(no-)openshift-perceiver] [-p|--scanned-registry <arg>] [-t|--scanned-registry-token <arg>] [-c|--pcp-container-registry <arg>] [-v|--pcp-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--pcp-container-default-cpu <arg>] [-m|--pcp-container-default-memory <arg>] [-i|--(no-)proto-prompt] [-h|--help]\n' "$0"
-	printf '\t%s\n' "-k,--kube-perceiver,--no-kube-perceiver: Wether the kube perceiver is enabled. (on by default)"
-	printf '\t%s\n' "-o,--openshift-perceiver,--no-openshift-perceiver: Wether the openshift perceiver is enabled. (off by default)"
-	printf '\t%s\n' "-p,--scanned-registry: A registry url you will need to pull from if private registries. (no default)"
-	printf '\t%s\n' "-t,--scanned-registry-token: protoform version (default: 'master')"
-	printf '\t%s\n' "-c,--pcp-container-registry: Base docker repo for the applicaition. (default: 'gcr.io/gke-verification/blackducksoftware ')"
-	printf '\t%s\n' "-v,--pcp-container-version: perceptor version (default: 'master')"
+	printf 'Usage: %s [-k|--(no-)kube-perceiver] [-o|--(no-)openshift-perceiver] [-M|--(no-)prometheus-metrics] [-p|--private-registry <arg>] [-t|--private-registry-token <arg>] [-c|--container-registry <arg>] [-v|--default-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--container-default-cpu <arg>] [-m|--container-default-memory <arg>] [-i|--(no-)proto-prompt] [-h|--help]\n' "$0"
+	printf '\t%s\n' "-k,--kube-perceiver,--no-kube-perceiver: Whether the kube perceiver is enabled. (on by default)"
+	printf '\t%s\n' "-o,--openshift-perceiver,--no-openshift-perceiver: Wehther the openshift perceiver is enabled. (off by default)"
+	printf '\t%s\n' "-M,--prometheus-metrics,--no-prometheus-metrics: Whether the prometheus metrics is enabled. (off by default)"
+	printf '\t%s\n' "-p,--private-registry: A private registry url you will need to pull images for scan. (default: [\"docker-registry.default.svc:5000\"]). eg. [\"docker-registry.default.svc:5000\", \"172.1.1.0:5000\"]"
+	printf '\t%s\n' "-t,--private-registry-token: A private registry token to have access to pull images  (default: 'perceptor-scanner-sa service account token')"
+	printf '\t%s\n' "-c,--container-registry: Base docker repo for the applicaition. (default: 'gcr.io')"
+	printf '\t%s\n' "-I,--image-repository: Image repository for the applicaition. (default: 'gke-verification/blackducksoftware ')"
+	printf '\t%s\n' "-v,--default-container-version: Default container version (default: 'master')"
 	printf '\t%s\n' "-n,--pcp-namespace: The namespace perceptor containers run in. (default: 'nginx-webapp-logstash')"
 	printf '\t%s\n' "-U,--hub-user: hub user (default: 'master')"
 	printf '\t%s\n' "-W,--hub-password: hub password (default: 'master')"
 	printf '\t%s\n' "-H,--hub-host: hub hostname  (default: 'nginx-webapp-logstash')"
 	printf '\t%s\n' "-P,--hub-port: hub port  (default: '8443')"
 	printf '\t%s\n' "-C,--hub-max-concurrent-scans: maximum scans at a time for the hub (default: '7')"
-	printf '\t%s\n' "-u,--pcp-container-default-cpu: perceptor container default cpu (default: '300m')"
-	printf '\t%s\n' "-m,--pcp-container-default-memory: perceptor container default memory (default: '1300Mi')"
+	printf '\t%s\n' "-u,--container-default-cpu: All container's default cpu (default: '300m')"
+	printf '\t%s\n' "-m,--container-default-memory: All container's default memory (default: '1300Mi')"
+	printf '\t%s\n' "-l,--container-default-log-level: All container's default log level (default: 'info')"
+	printf '\t%s\n' "-d,--developer-mode,--no-developer-mode: Whether the developer mode is enabled. (off by default)"
 	printf '\t%s\n' "-i,--proto-prompt,--no-proto-prompt: prompt for values rather then expecting them all at the command line (off by default)"
 	printf '\t%s\n' "-h,--help: Prints help"
 }
@@ -139,78 +149,106 @@ parse_commandline ()
 					begins_with_short_option "$_next" && shift && set -- "-o" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 				fi
 				;;
+			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
+			-M|--no-prometheus-metrics|--prometheus-metrics)
+				_arg_prometheus_metrics="on"
+				test "${1:0:5}" = "--no-" && _arg_prometheus_metrics="off"
+				;;
+			# See the comment of option '-k' to see what's going on here - principle is the same.
+			-M*)
+				_arg_prometheus_metrics="on"
+				_next="${_key##-o}"
+				if test -n "$_next" -a "$_next" != "$_key"
+				then
+					begins_with_short_option "$_next" && shift && set -- "-o" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
+				fi
+				;;
 			# We support whitespace as a delimiter between option argument and its value.
-			# Therefore, we expect the --scanned-registry or -p value.
-			# so we watch for --scanned-registry and -p.
+			# Therefore, we expect the --private-registry or -p value.
+			# so we watch for --private-registry and -p.
 			# Since we know that we got the long or short option,
 			# we just reach out for the next argument to get the value.
-			-p|--scanned-registry)
+			-p|--private-registry)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_scanned_registry="$2"
+				_arg_private_registry="$2"
 				shift
 				;;
 			# We support the = as a delimiter between option argument and its value.
-			# Therefore, we expect --scanned-registry=value, so we watch for --scanned-registry=*
-			# For whatever we get, we strip '--scanned-registry=' using the ${var##--scanned-registry=} notation
+			# Therefore, we expect --private-registry=value, so we watch for --private-registry=*
+			# For whatever we get, we strip '--private-registry=' using the ${var##--private-registry=} notation
 			# to get the argument value
-			--scanned-registry=*)
-				_arg_scanned_registry="${_key##--scanned-registry=}"
+			--private-registry=*)
+				_arg_private_registry="${_key##--private-registry=}"
 				;;
 			# We support getopts-style short arguments grouping,
 			# so as -p accepts value, we allow it to be appended to it, so we watch for -p*
 			# and we strip the leading -p from the argument string using the ${var##-p} notation.
 			-p*)
-				_arg_scanned_registry="${_key##-p}"
+				_arg_private_registry="${_key##-p}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
-			-t|--scanned-registry-token)
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-t|--private-registry-token)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_scanned_registry_token="$2"
+				_arg_private_registry_token="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
-			--scanned-registry-token=*)
-				_arg_scanned_registry_token="${_key##--scanned-registry-token=}"
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--private-registry-token=*)
+				_arg_private_registry_token="${_key##--private-registry-token=}"
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-t*)
-				_arg_scanned_registry_token="${_key##-t}"
+				_arg_private_registry_token="${_key##-t}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
-			-c|--pcp-container-registry)
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-c|--container-registry)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_pcp_container_registry="$2"
+				_arg_container_registry="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
-			--pcp-container-registry=*)
-				_arg_pcp_container_registry="${_key##--pcp-container-registry=}"
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--container-registry=*)
+				_arg_container_registry="${_key##--container-registry=}"
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-c*)
-				_arg_pcp_container_registry="${_key##-c}"
+				_arg_container_registry="${_key##-c}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
-			-v|--pcp-container-version)
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-I|--image-repository)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_pcp_container_version="$2"
+				_arg_image_repository="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
-			--pcp-container-version=*)
-				_arg_pcp_container_version="${_key##--pcp-container-version=}"
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--image-repository=*)
+				_arg_image_repository="${_key##--image-repository=}"
+				;;
+			# See the comment of option '-p' to see what's going on here - principle is the same.
+			-I*)
+				_arg_image_repository="${_key##-c}"
+				;;
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-v|--default-container-version)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_default_container_version="$2"
+				shift
+				;;
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--default-container-version=*)
+				_arg_default_container_version="${_key##--default-container-version=}"
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-v*)
-				_arg_pcp_container_version="${_key##-v}"
+				_arg_default_container_version="${_key##-v}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-n|--pcp-namespace)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_pcp_namespace="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
 			--pcp-namespace=*)
 				_arg_pcp_namespace="${_key##--pcp-namespace=}"
 				;;
@@ -218,13 +256,13 @@ parse_commandline ()
 			-n*)
 				_arg_pcp_namespace="${_key##-n}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-U|--hub-user)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_hub_user="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
 			--hub-user=*)
 				_arg_hub_user="${_key##--hub-user=}"
 				;;
@@ -232,13 +270,13 @@ parse_commandline ()
 			-U*)
 				_arg_hub_user="${_key##-U}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-W|--hub-password)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_hub_password="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
 			--hub-password=*)
 				_arg_hub_password="${_key##--hub-password=}"
 				;;
@@ -246,13 +284,13 @@ parse_commandline ()
 			-W*)
 				_arg_hub_password="${_key##-W}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-H|--hub-host)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_hub_host="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
 			--hub-host=*)
 				_arg_hub_host="${_key##--hub-host=}"
 				;;
@@ -260,13 +298,13 @@ parse_commandline ()
 			-H*)
 				_arg_hub_host="${_key##-H}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-P|--hub-port)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_hub_port="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
 			--hub-port=*)
 				_arg_hub_port="${_key##--hub-port=}"
 				;;
@@ -274,13 +312,13 @@ parse_commandline ()
 			-P*)
 				_arg_hub_port="${_key##-P}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-C|--hub-max-concurrent-scans)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_hub_max_concurrent_scans="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
 			--hub-max-concurrent-scans=*)
 				_arg_hub_max_concurrent_scans="${_key##--hub-max-concurrent-scans=}"
 				;;
@@ -288,33 +326,61 @@ parse_commandline ()
 			-C*)
 				_arg_hub_max_concurrent_scans="${_key##-C}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
-			-u|--pcp-container-default-cpu)
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-u|--container-default-cpu)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_pcp_container_default_cpu="$2"
+				_arg_container_default_cpu="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
-			--pcp-container-default-cpu=*)
-				_arg_pcp_container_default_cpu="${_key##--pcp-container-default-cpu=}"
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--container-default-cpu=*)
+				_arg_container_default_cpu="${_key##--container-default-cpu=}"
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-u*)
-				_arg_pcp_container_default_cpu="${_key##-C}"
+				_arg_container_default_cpu="${_key##-C}"
 				;;
-			# See the comment of option '--scanned-registry' to see what's going on here - principle is the same.
-			-m|--pcp-container-default-memory)
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-m|--container-default-memory)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_pcp_container_default_memory="$2"
+				_arg_container_default_memory="$2"
 				shift
 				;;
-			# See the comment of option '--scanned-registry=' to see what's going on here - principle is the same.
-			--pcp-container-default-memory=*)
-				_arg_pcp_container_default_memory="${_key##--pcp-container-default-memory=}"
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--container-default-memory=*)
+				_arg_container_default_memory="${_key##--container-default-memory=}"
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-m*)
-				_arg_pcp_container_default_memory="${_key##-C}"
+				_arg_container_default_memory="${_key##-C}"
+				;;
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-l|--container-default-log-level)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_container_default_log_level="$2"
+				shift
+				;;
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--container-default-log-level=*)
+				_arg_container_default_log_level="${_key##--container-default-log-level=}"
+				;;
+			# See the comment of option '-p' to see what's going on here - principle is the same.
+			-l*)
+				_arg_container_default_log_level="${_key##-C}"
+				;;
+			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
+			-d|--no-developer-mode|--developer-mode)
+				_arg_developer_mode="on"
+				test "${1:0:5}" = "--no-" && _arg_developer_mode="off"
+				;;
+			# See the comment of option '-k' to see what's going on here - principle is the same.
+			-d*)
+				_arg_developer_mode="on"
+				_next="${_key##-o}"
+				if test -n "$_next" -a "$_next" != "$_key"
+				then
+					begins_with_short_option "$_next" && shift && set -- "-o" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
+				fi
 				;;
 			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
 			-i|--no-proto-prompt|--proto-prompt)
