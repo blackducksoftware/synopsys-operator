@@ -35,7 +35,7 @@ cat << EOF > aux-config.json
 }
 EOF
 
-kubectl create -f ../../../prometheus-deployment.yaml --namespace=$NS
+kubectl create -f ../prometheus-deployment.yaml --namespace=$NS
 
 go run ./protoform.go ./config.json aux-config.json
 

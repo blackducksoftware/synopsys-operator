@@ -56,6 +56,6 @@ cat << EOF > aux-config.json
 }
 EOF
 
-oc create -f ../../../prometheus-deployment.yaml --namespace=$NS
+oc create -f ../prometheus-deployment.yaml --namespace=$NS
 
 go run ./protoform.go ./config.json aux-config.json
