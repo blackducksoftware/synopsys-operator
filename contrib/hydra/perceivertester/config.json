@@ -4,5 +4,7 @@
 
   "PerceptorPort": 3005,
   "AnnotationIntervalSeconds": 30,
-  "DumpIntervalMinutes": 30
+  "DumpIntervalMinutes": 30,
+
+  "LogLevel": "debug",
 }

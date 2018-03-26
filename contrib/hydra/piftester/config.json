@@ -6,6 +6,8 @@
   "AnnotationIntervalSeconds": 30,
   "DumpIntervalMinutes": 30,
 
+  "LogLevel": "debug",
+
   "ImageFacadePort": 3116,
 
   "CreateImagesOnly": true

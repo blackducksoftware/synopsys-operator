@@ -36,6 +36,8 @@ type PerceiverTesterConfig struct {
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
 
+	LogLevel string
+
 	AuxConfig *AuxiliaryConfig
 }
 
@@ -78,5 +80,6 @@ func (pc *PerceiverTesterConfig) PerceptorConfig() model.PerceptorConfigMap {
 		HubUserPassword:     "doesn't matter -- unused",
 		Port:                pc.PerceptorPort,
 		UseMockMode:         true,
+		LogLevel:            pc.LogLevel,
 	}
 }

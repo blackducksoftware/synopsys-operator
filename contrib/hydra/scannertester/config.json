@@ -6,6 +6,8 @@
   "HubUser": "sysadmin",
   "HubUserPassword": "blackduck",
 
+  "LogLevel": "debug",
+
   "PerceptorPort": 4945,
   "ImageFacadePort": 9876,
   "ScannerPort": 2345

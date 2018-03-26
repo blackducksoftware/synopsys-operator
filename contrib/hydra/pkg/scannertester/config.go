@@ -38,18 +38,20 @@ type Config struct {
 	ImageFacadePort int32
 	ScannerPort     int32
 
+	LogLevel string
+
 	AuxConfig *AuxiliaryConfig
 }
 
 func ReadConfig(configPath string) *Config {
 	viper.SetConfigFile(configPath)
-	pc := &Config{}
+	config := &Config{}
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
-	viper.Unmarshal(pc)
-	return pc
+	viper.Unmarshal(config)
+	return config
 }
 
 func (config *Config) PerceptorScannerConfig() model.PerceptorScannerConfigMap {
@@ -61,18 +63,20 @@ func (config *Config) PerceptorScannerConfig() model.PerceptorScannerConfigMap {
 		ImageFacadePort:         config.ImageFacadePort,
 		PerceptorPort:           config.PerceptorPort,
 		Port:                    config.ScannerPort,
+		LogLevel:                config.LogLevel,
 	}
 }
 
-func (pc *Config) MockImagefacadeConfig() model.MockImagefacadeConfigMap {
+func (config *Config) MockImagefacadeConfig() model.MockImagefacadeConfigMap {
 	return model.MockImagefacadeConfigMap{
-		Port: pc.ImageFacadePort,
+		Port: config.ImageFacadePort,
 	}
 }
 
-func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
+func (config *Config) PerceptorConfig() model.PerceptorConfigMap {
 	return model.PerceptorConfigMap{
-		Port:        pc.PerceptorPort,
+		Port:        config.PerceptorPort,
 		UseMockMode: true,
+		LogLevel:    config.LogLevel,
 	}
 }

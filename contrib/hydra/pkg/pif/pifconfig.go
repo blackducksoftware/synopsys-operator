@@ -40,6 +40,8 @@ type PifConfig struct {
 	CreateImagesOnly bool
 	ImageFacadePort  int32
 
+	LogLevel string
+
 	AuxConfig *model.AuxiliaryConfig
 }
 
@@ -81,6 +83,7 @@ func (pc *PifConfig) PerceptorImagefacadeConfig() model.PerceptorImagefacadeConf
 		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,
 		CreateImagesOnly:         pc.CreateImagesOnly,
 		Port:                     pc.ImageFacadePort,
+		LogLevel:                 pc.LogLevel,
 	}
 }
 
