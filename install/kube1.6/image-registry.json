@@ -2,27 +2,27 @@
   "pod": [
     {
       "name": "pod-perceiver",
-      "image": "opssight-kubernetes-pod-perceiver-1.6",
+      "image": "pod-perceiver",
       "tag": "latest"
     },
     {
       "name": "perceptor",
-      "image": "opssight-perceptor",
+      "image": "perceptor",
       "tag": "latest"
     },
     {
       "name": "perceptor-imagefacade",
-      "image": "opssight-perceptor-imagefacade",
+      "image": "perceptor-imagefacade",
       "tag": "latest"
     },
     {
       "name": "perceptor-scanner",
-      "image": "opssight-perceptor-scanner",
+      "image": "perceptor-scanner",
       "tag": "latest"
     },
     {
       "name": "perceptor-protoform",
-      "image": "opssight-perceptor-protoform",
+      "image": "perceptor-protoform",
       "tag": "latest"
     }
   ]
