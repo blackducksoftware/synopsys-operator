@@ -3,32 +3,32 @@
     {
       "name": "image-perceiver",
       "image": "image-perceiver",
-      "tag": "latest"
+      "tag": "master"
     },
     {
       "name": "pod-perceiver",
       "image": "pod-perceiver",
-      "tag": "latest"
+      "tag": "master"
     },
     {
       "name": "perceptor",
       "image": "perceptor",
-      "tag": "latest"
+      "tag": "master"
     },
     {
       "name": "perceptor-imagefacade",
       "image": "perceptor-imagefacade",
-      "tag": "latest"
+      "tag": "master"
     },
     {
       "name": "perceptor-scanner",
       "image": "perceptor-scanner",
-      "tag": "latest"
+      "tag": "master"
     },
     {
       "name": "perceptor-protoform",
       "image": "perceptor-protoform",
-      "tag": "latest"
+      "tag": "master"
     }
   ]
 }
