@@ -56,7 +56,7 @@ items:
       DockerUsername: "admin"
       Namespace: "$_arg_pcp_namespace"
       Openshift: "$openshift"
-      InternalDockerRegistries: "$_arg_private_registry"
+      InternalDockerRegistries: "${_arg_private_registry[@]}"
       DefaultCPU: "$_arg_container_default_cpu"
       DefaultMem: "$_arg_container_default_memory"
 

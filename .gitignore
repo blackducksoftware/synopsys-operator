@@ -1,3 +1,4 @@
 
 install/kube1.6/protoform.yaml
 install/kube1.6/rbac.yaml
+install/openshift3.6/protoform.yaml

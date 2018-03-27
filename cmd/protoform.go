@@ -53,6 +53,10 @@ func readConfig(configPath string) *model.ProtoformConfig {
 		log.Print(" ^^ Didnt see a config file ! Making a reasonable default.")
 		return nil
 	}
+
+	internalRegistry := viper.GetStringSlice("InternalDockerRegistries")
+	viper.Set("InternalDockerRegistries", internalRegistry)
+
 	viper.Unmarshal(pc)
 	PrettyPrint(pc)
 	log.Print("*************** [protoform] done reading in viper ****************")
@@ -232,7 +236,8 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 					},
 				},
 				Selector: map[string]string{
-					"name": desc.name,
+					// The POD name of the first container will be used as selector name for all containers
+					"name": descriptions[0].name,
 				},
 			},
 		})
@@ -357,7 +362,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		for _, svcI := range svc[i] {
 			if pc.DryRun {
 				// service dont really need much debug...
-				//PrettyPrint(svc)
+				// PrettyPrint(svcI)
 			} else {
 				_, err := clientset.Core().Services(pc.Namespace).Create(svcI)
 				if err != nil {
