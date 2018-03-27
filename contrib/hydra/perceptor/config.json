@@ -18,6 +18,7 @@
   "ScannerReplicationCount": 1,
   "ScannerPort": 3777,
   "ImageFacadePort": 3931,
+  "JavaMaxHeapSizeMBs": 2048,
 
   "LogLevel": "debug"
 }

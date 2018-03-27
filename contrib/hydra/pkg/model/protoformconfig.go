@@ -49,6 +49,7 @@ type ProtoformConfig struct {
 	ScannerReplicationCount int32
 	ScannerPort             int32
 	ImageFacadePort         int32
+	JavaMaxHeapSizeMBs      int
 
 	LogLevel string
 
@@ -93,6 +94,7 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
 		HubUserPassword:         pc.HubUserPassword,
 		HubPort:                 pc.HubPort,
 		HubClientTimeoutSeconds: 60,
+		JavaMaxHeapSizeMBs:      pc.JavaMaxHeapSizeMBs,
 		LogLevel:                pc.LogLevel,
 		Port:                    pc.ScannerPort,
 		PerceptorHost:           "", // must be filled in elsewhere

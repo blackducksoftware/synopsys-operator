@@ -5,9 +5,13 @@
   "HubHost": "the-hub-hub.54.67.89.98.xip.io",
   "HubUser": "sysadmin",
   "HubUserPassword": "blackduck",
+  "HubPort": 443,
+
+  "JavaMaxHeapSizeMBs": "2048",
 
   "LogLevel": "debug",
 
+  "PerceptorHost": "perceptor",
   "PerceptorPort": 4945,
   "ImageFacadePort": 9876,
   "ScannerPort": 2345

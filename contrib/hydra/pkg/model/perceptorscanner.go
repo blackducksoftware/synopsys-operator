@@ -37,9 +37,10 @@ type PerceptorScannerConfigMap struct {
 	HubPort                 int32
 	HubClientTimeoutSeconds int
 
-	LogLevel string
+	JavaMaxHeapSizeMBs int
 
-	Port int32
+	LogLevel string
+	Port     int32
 
 	ImageFacadePort int32
 
