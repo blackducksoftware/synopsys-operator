@@ -1,6 +1,6 @@
 #!/bin/bash
 openshift="false"
-if [[ $_arg_openshift_perceiver == "on" ]] ; then
+if [[ $_arg_image_perceiver == "on" ]] ; then
   openshift="true"
 fi
 DEF_PERCEPTOR_PROTOFORM_IMAGE=perceptor-protoform

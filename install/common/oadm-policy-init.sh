@@ -4,7 +4,7 @@ ROLE="add-role-to-user"
 CLUSTER="add-cluster-role-to-user"
 NS=$_arg_pcp_namespace
 
-# Create the openshift-perceiver service account
+# Create the perceiver service account
 oc create serviceaccount perceiver -n $NS
 
 # Protoform has its own SA.
