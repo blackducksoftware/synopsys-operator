@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 #
-# ARG_OPTIONAL_BOOLEAN([kube-perceiver],[k],[Whether the kube perceiver is enabled.],[on])
-# ARG_OPTIONAL_BOOLEAN([openshift-perceiver],[o],[Whether the openshift perceiver is enabled.],[off])
+# ARG_OPTIONAL_BOOLEAN([pod-perceiver],[k],[Whether the pod perceiver is enabled.],[on])
+# ARG_OPTIONAL_BOOLEAN([image-perceiver],[o],[Whether the image perceiver is enabled.],[off])
 # ARG_OPTIONAL_BOOLEAN([prometheus-metrics],[M],[Whether the prometheus metrics is enabled.],[off])
 # ARG_OPTIONAL_BOOLEAN([developer-mode],[d],[Whether the Developer mode is enabled.],[off])
 #
@@ -23,7 +23,7 @@
 # ARG_OPTIONAL_SINGLE([container-default-cpu],[u],[All containers default cpu],[300m])
 # ARG_OPTIONAL_SINGLE([container-default-memory],[m],[All containers default memory],[1300Mi])
 # ARG_OPTIONAL_SINGLE([container-default-log-level],[m],[All containers default log level],[info])
-# ARG_OPTIONAL_BOOLEAN([proto-prompt],[i],[prompt for values rather then expecting them all at the command line],[off])
+# ARG_OPTIONAL_BOOLEAN([interactive],[i],[prompt for values rather then expecting them all at the command line],[off])
 
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO()
@@ -61,8 +61,8 @@ begins_with_short_option()
 }
 
 # THE DEFAULTS INITIALIZATION - OPTIONALS
-_arg_kube_perceiver="on"
-_arg_openshift_perceiver="off"
+_arg_pod_perceiver="on"
+_arg_image_perceiver="off"
 _arg_prometheus_metrics="off"
 _arg_private_registry=
 _arg_private_registry_token=""
@@ -75,7 +75,7 @@ _arg_hub_password=""
 _arg_hub_host="nginx-webapp-logstash"
 _arg_hub_port="8443"
 _arg_hub_max_concurrent_scans="7"
-_arg_proto_prompt="off"
+_arg_prompt="off"
 _arg_container_default_cpu="300m"
 _arg_container_default_memory="1300Mi"
 _arg_container_default_log_level="info"
@@ -87,11 +87,11 @@ _arg_developer_mode="off"
 print_help ()
 {
 	printf '%s\n' "The general script's help msg"
-	printf 'Usage: %s [-k|--(no-)kube-perceiver] [-o|--(no-)openshift-perceiver] [-M|--(no-)prometheus-metrics] [-p|--private-registry <arg>] [-t|--private-registry-token <arg>] [-c|--container-registry <arg>] [-v|--default-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--container-default-cpu <arg>] [-m|--container-default-memory <arg>] [-i|--(no-)proto-prompt] [-h|--help]\n' "$0"
-	printf '\t%s\n' "-k,--kube-perceiver,--no-kube-perceiver: Whether the kube perceiver is enabled. (on by default)"
-	printf '\t%s\n' "-o,--openshift-perceiver,--no-openshift-perceiver: Wehther the openshift perceiver is enabled. (off by default)"
+	printf 'Usage: %s [-p|--(no-)pod-perceiver] [-i|--(no-)image-perceiver] [-M|--(no-)prometheus-metrics] [--private-registry <arg>] [-t|--private-registry-token <arg>] [-c|--container-registry <arg>] [-v|--default-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--container-default-cpu <arg>] [-m|--container-default-memory <arg>] [-i|--(no-)prompt] [-h|--help]\n' "$0"
+	printf '\t%s\n' "-p,--pod-perceiver,--no-pod-perceiver: Whether the pod perceiver is enabled. (on by default)"
+	printf '\t%s\n' "-i,--image-perceiver,--no-image-perceiver: Whether the image perceiver is enabled. (off by default)"
 	printf '\t%s\n' "-M,--prometheus-metrics,--no-prometheus-metrics: Whether the prometheus metrics is enabled. (off by default)"
-	printf '\t%s\n' "-p,--private-registry: A private registry url you will need to pull images for scan. (default: [\"docker-registry.default.svc:5000\"]). eg. [\"docker-registry.default.svc:5000\", \"172.1.1.0:5000\"]"
+	printf '\t%s\n' "--private-registry: A private registry url you will need to pull images for scan. (default: [\"docker-registry.default.svc:5000\"]). eg. [\"docker-registry.default.svc:5000\", \"172.1.1.0:5000\"]"
 	printf '\t%s\n' "-t,--private-registry-token: A private registry token to have access to pull images  (default: 'perceptor-scanner-sa service account token')"
 	printf '\t%s\n' "-c,--container-registry: Base docker repo for the applicaition. (default: 'gcr.io')"
 	printf '\t%s\n' "-I,--image-repository: Image repository for the applicaition. (default: 'gke-verification/blackducksoftware ')"
@@ -106,7 +106,7 @@ print_help ()
 	printf '\t%s\n' "-m,--container-default-memory: All container's default memory (default: '1300Mi')"
 	printf '\t%s\n' "-l,--container-default-log-level: All container's default log level (default: 'info')"
 	printf '\t%s\n' "-d,--developer-mode,--no-developer-mode: Whether the developer mode is enabled. (off by default)"
-	printf '\t%s\n' "-i,--proto-prompt,--no-proto-prompt: prompt for values rather then expecting them all at the command line (off by default)"
+	printf '\t%s\n' "--prompt,--no-prompt: prompt for values rather then expecting them all at the command line (off by default)"
 	printf '\t%s\n' "-h,--help: Prints help"
 }
 
@@ -117,39 +117,39 @@ parse_commandline ()
 	do
 		_key="$1"
 		case "$_key" in
-			# The kube-perceiver argurment doesn't accept a value,
-			# we expect the --kube-perceiver or -k, so we watch for them.
-			-k|--no-kube-perceiver|--kube-perceiver)
-				_arg_kube_perceiver="on"
-				test "${1:0:5}" = "--no-" && _arg_kube_perceiver="off"
+			# The pod-perceiver argurment doesn't accept a value,
+			# we expect the --pod-perceiver or -k, so we watch for them.
+			-k|--no-pod-perceiver|--pod-perceiver)
+				_arg_pod_perceiver="on"
+				test "${1:0:5}" = "--no-" && _arg_pod_perceiver="off"
 				;;
 			# We support getopts-style short arguments clustering,
 			# so as -k doesn't accept value, other short options may be appended to it, so we watch for -k*.
 			# After stripping the leading -k from the argument, we have to make sure
 			# that the first character that follows coresponds to a short option.
 			-k*)
-				_arg_kube_perceiver="on"
+				_arg_pod_perceiver="on"
 				_next="${_key##-k}"
 				if test -n "$_next" -a "$_next" != "$_key"
 				then
 					begins_with_short_option "$_next" && shift && set -- "-k" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 				fi
 				;;
-			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
-			-o|--no-openshift-perceiver|--openshift-perceiver)
-				_arg_openshift_perceiver="on"
-				test "${1:0:5}" = "--no-" && _arg_openshift_perceiver="off"
+			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
+			-i|--no-image-perceiver|--image-perceiver)
+				_arg_image_perceiver="on"
+				test "${1:0:5}" = "--no-" && _arg_image_perceiver="off"
 				;;
 			# See the comment of option '-k' to see what's going on here - principle is the same.
-			-o*)
-				_arg_openshift_perceiver="on"
+			-i*)
+				_arg_image_perceiver="on"
 				_next="${_key##-o}"
 				if test -n "$_next" -a "$_next" != "$_key"
 				then
 					begins_with_short_option "$_next" && shift && set -- "-o" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 				fi
 				;;
-			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
+			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
 			-M|--no-prometheus-metrics|--prometheus-metrics)
 				_arg_prometheus_metrics="on"
 				test "${1:0:5}" = "--no-" && _arg_prometheus_metrics="off"
@@ -164,11 +164,11 @@ parse_commandline ()
 				fi
 				;;
 			# We support whitespace as a delimiter between option argument and its value.
-			# Therefore, we expect the --private-registry or -p value.
-			# so we watch for --private-registry and -p.
+			# Therefore, we expect the --private-registry value.
+			# so we watch for --private-registry.
 			# Since we know that we got the long or short option,
 			# we just reach out for the next argument to get the value.
-			-p|--private-registry)
+			--private-registry)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_private_registry="$2"
 				shift
@@ -179,12 +179,6 @@ parse_commandline ()
 			# to get the argument value
 			--private-registry=*)
 				_arg_private_registry="${_key##--private-registry=}"
-				;;
-			# We support getopts-style short arguments grouping,
-			# so as -p accepts value, we allow it to be appended to it, so we watch for -p*
-			# and we strip the leading -p from the argument string using the ${var##-p} notation.
-			-p*)
-				_arg_private_registry="${_key##-p}"
 				;;
 			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-t|--private-registry-token)
@@ -368,7 +362,7 @@ parse_commandline ()
 			-l*)
 				_arg_container_default_log_level="${_key##-C}"
 				;;
-			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
+			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
 			-d|--no-developer-mode|--developer-mode)
 				_arg_developer_mode="on"
 				test "${1:0:5}" = "--no-" && _arg_developer_mode="off"
@@ -382,21 +376,12 @@ parse_commandline ()
 					begins_with_short_option "$_next" && shift && set -- "-o" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
 				fi
 				;;
-			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
-			-i|--no-proto-prompt|--proto-prompt)
-				_arg_proto_prompt="on"
-				test "${1:0:5}" = "--no-" && _arg_proto_prompt="off"
+			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
+			--no-prompt|--prompt)
+				_arg_prompt="on"
+				test "${1:0:5}" = "--no-" && _arg_prompt="off"
 				;;
-			# See the comment of option '-k' to see what's going on here - principle is the same.
-			-i*)
-				_arg_proto_prompt="on"
-				_next="${_key##-i}"
-				if test -n "$_next" -a "$_next" != "$_key"
-				then
-					begins_with_short_option "$_next" && shift && set -- "-i" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
-				fi
-				;;
-			# See the comment of option '--kube-perceiver' to see what's going on here - principle is the same.
+			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
 			-h|--help)
 				print_help
 				exit 0
