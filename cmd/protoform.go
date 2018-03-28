@@ -48,8 +48,8 @@ func readConfig(configPath string) *model.ProtoformConfig {
 
 	// these need to be set before we read in the config!
 	viper.SetEnvPrefix("PCP")
-	viper.BindEnv("HUB_USER_PASSWORD")
-	if viper.GetString("hub_user_password") == "" {
+	viper.BindEnv("HubUserPassword")
+	if viper.GetString("hubuserpassword") == "" {
 		viper.Debug()
 		panic("No hub database password secret supplied.  Please inject PCP_HUB_USER_PASSWORD as a secret and restart!")
 	}

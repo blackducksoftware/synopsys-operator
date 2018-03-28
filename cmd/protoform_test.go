@@ -28,7 +28,8 @@ import (
 )
 
 func TestProto(t *testing.T) {
-	os.Setenv("PCP_HUB_USER_PASSWORD", "example")
+	os.Setenv("PCP_HUBUSERPASSWORD", "example")
+
 	rcsArray := runProtoform("./")
 
 	for i, rcs := range rcsArray {

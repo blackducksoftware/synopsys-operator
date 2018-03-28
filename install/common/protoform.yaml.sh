@@ -27,7 +27,7 @@ spec:
   - name: protoform
     image: ${_arg_container_registry}/${_arg_image_repository}/${perceptor_protoform_image}:${perceptor_protoform_tag}
     env:
-    - name: PCP_HUB_USER_PASSWORD
+    - name: PCP_HUBUSERPASSWORD
       valueFrom:
         secretKeyRef:
           name: viper-secret
