@@ -51,7 +51,7 @@ func readConfig(configPath string) *model.ProtoformConfig {
 	viper.BindEnv("HubUserPassword")
 	if viper.GetString("hubuserpassword") == "" {
 		viper.Debug()
-		panic("No hub database password secret supplied.  Please inject PCP_HUB_USER_PASSWORD as a secret and restart!")
+		panic("No hub database password secret supplied.  Please inject PCP_HUBUSERPASSWORD as a secret and restart!")
 	}
 
 	viper.AddConfigPath(configPath)
