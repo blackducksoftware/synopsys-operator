@@ -58,6 +58,12 @@ func readConfig(configPath string) *model.ProtoformConfig {
 	internalRegistry := viper.GetStringSlice("InternalDockerRegistries")
 	viper.Set("InternalDockerRegistries", internalRegistry)
 
+	viper.SetEnvPrefix("PCP")
+	viper.BindEnv("HubUserPassword")
+	if viper.GetString("HubUserPassword") == "" {
+		panic("No hub database password secret supplied.  Please inject PCP_HUB_USER_PASSWORD as a secret and restart!")
+	}
+
 	viper.Unmarshal(pc)
 	PrettyPrint(pc)
 	log.Print("*************** [protoform] done reading in viper ****************")
