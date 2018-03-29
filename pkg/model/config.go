@@ -94,7 +94,7 @@ func (p *ProtoformConfig) setDefaultValues() {
 		p.HubClientTimeoutPerceptorSeconds = 5
 	}
 	if p.HubClientTimeoutScannerSeconds == 0 {
-		p.HubClientTimeoutScannerSeconds = 5
+		p.HubClientTimeoutScannerSeconds = 30
 	}
 	if p.HubHost == "" {
 		// meaningless default unless your in same namespace as hub.
