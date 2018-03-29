@@ -29,6 +29,7 @@ type ProtoformConfig struct {
 	HubUser                   string
 	HubUserPassword           string
 	HubPort                   int
+	HubClientTimeoutSeconds   int
 	ConcurrentScanLimit       int
 	Namespace                 string
 	Defaultversion            string
@@ -87,6 +88,9 @@ func (p *ProtoformConfig) setDefaultValues() {
 	}
 	if p.DumpIntervalMinutes == 0 {
 		p.DumpIntervalMinutes = 30
+	}
+	if p.HubClientTimeoutSeconds == 0 {
+		p.HubClientTimeoutSeconds = 5
 	}
 	if p.HubHost == "" {
 		// meaningless default unless your in same namespace as hub.
@@ -178,8 +182,8 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// "a thing".
 	defaults := map[string]string{
 		"prometheus":                   fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:`, p.PerceptorHost, `","perceptor-scanner:`, p.ScannerPort, `","image-perceiver:`, p.PerceiverPort, `","pod-perceiver:`, p.PerceiverPort, `","perceptor-image-facade:`, p.ImageFacadePort, `"]}]}]}`),
-		"perceptor-config":             fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","ConcurrentScanLimit": "`, p.ConcurrentScanLimit, `","Port": "`, p.PerceptorPort, `","LogLevel": "`, p.LogLevel, `"}`),
-		"perceptor-scanner-config":     fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`),
+		"perceptor-config":             fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutSeconds, `","ConcurrentScanLimit": "`, p.ConcurrentScanLimit, `","Port": "`, p.PerceptorPort, `","LogLevel": "`, p.LogLevel, `"}`),
+		"perceptor-scanner-config":     fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutSeconds, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`),
 		"perceiver":                    fmt.Sprint(`{"PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","AnnotationIntervalSeconds": "`, p.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, p.DumpIntervalMinutes, `","Port": "`, p.PerceiverPort, `","LogLevel": "`, p.LogLevel, `"}`),
 		"perceptor-imagefacade-config": fmt.Sprint(`{"DockerUser": "`, p.DockerUsername, `","DockerPassword": "`, p.DockerPasswordOrToken, `","Port": "`, p.ImageFacadePort, `","InternalDockerRegistries": `, generateStringFromStringArr(p.InternalDockerRegistries), `,"LogLevel": "`, p.LogLevel, `"}`),
 	}
