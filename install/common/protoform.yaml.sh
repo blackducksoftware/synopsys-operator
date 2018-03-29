@@ -1,13 +1,17 @@
 #!/bin/bash
+
 openshift="false"
 if [[ $_arg_image_perceiver == "on" ]] ; then
   openshift="true"
 fi
+
 DEF_PERCEPTOR_PROTOFORM_IMAGE=perceptor-protoform
 DEF_PERCEPTOR_PROTOFORM_TAG=master
 
 perceptor_protoform_image=${perceptor_protoform_image:-$DEF_PERCEPTOR_PROTOFORM_IMAGE}
 perceptor_protoform_tag=${perceptor_protoform_tag:-$DEF_PERCEPTOR_PROTOFORM_TAG}
+
+hubUserPassword=$(echo -n "$_arg_hub_password" | base64)
 
 cat << EOF > protoform.yaml
 apiVersion: v1
@@ -22,6 +26,12 @@ spec:
   containers:
   - name: protoform
     image: ${_arg_container_registry}/${_arg_image_repository}/${perceptor_protoform_image}:${perceptor_protoform_tag}
+    env:
+    - name: PCP_HUBUSERPASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: viper-secret
+          key: HubUserPassword
     imagePullPolicy: Always
     command: [ ./protoform ]
     ports:
@@ -37,8 +47,15 @@ spec:
 apiVersion: v1
 kind: List
 metadata:
-  name: viper-input
+  name: viper-inputs
 items:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: viper-secret
+  type: Opaque
+  data:
+    HubUserPassword: "$hubUserPassword"
 - apiVersion: v1
   kind: ConfigMap
   metadata:
@@ -49,14 +66,14 @@ items:
       HubHost: "$_arg_hub_host"
       HubUser: "$_arg_hub_user"
       HubPort: "$_arg_hub_port"
-      # TODO, inject as secret.
-      HubUserPassword: "$_arg_hub_password"
+      HubClientTimeoutPerceptorSeconds: "$_arg_hub_client_timeout_perceptor_seconds"
+      HubClientTimeoutScannerSeconds: "$_arg_hub_client_timeout_scanner_seconds"
       ConcurrentScanLimit: "$_arg_hub_max_concurrent_scans"
       # TODO, the Docker username is hardcoded, it is not required as of now.
       DockerUsername: "admin"
       Namespace: "$_arg_pcp_namespace"
       Openshift: "$openshift"
-      InternalDockerRegistries: "$_arg_private_registry"
+      InternalDockerRegistries: "${_arg_private_registry[@]}"
       DefaultCPU: "$_arg_container_default_cpu"
       DefaultMem: "$_arg_container_default_memory"
 

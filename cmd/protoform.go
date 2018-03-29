@@ -45,7 +45,17 @@ import (
 func readConfig(configPath string) *model.ProtoformConfig {
 	log.Print("*************** [protoform] initializing viper ****************")
 	viper.SetConfigName("protoform")
+
+	// these need to be set before we read in the config!
+	viper.SetEnvPrefix("PCP")
+	viper.BindEnv("HubUserPassword")
+	if viper.GetString("hubuserpassword") == "" {
+		viper.Debug()
+		panic("No hub database password secret supplied.  Please inject PCP_HUBUSERPASSWORD as a secret and restart!")
+	}
+
 	viper.AddConfigPath(configPath)
+
 	pc := &model.ProtoformConfig{}
 	log.Print(configPath)
 	err := viper.ReadInConfig()
@@ -53,6 +63,10 @@ func readConfig(configPath string) *model.ProtoformConfig {
 		log.Print(" ^^ Didnt see a config file ! Making a reasonable default.")
 		return nil
 	}
+
+	internalRegistry := viper.GetStringSlice("InternalDockerRegistries")
+	viper.Set("InternalDockerRegistries", internalRegistry)
+
 	viper.Unmarshal(pc)
 	PrettyPrint(pc)
 	log.Print("*************** [protoform] done reading in viper ****************")
@@ -64,6 +78,12 @@ func PrettyPrint(v interface{}) {
 	println(string(b))
 }
 
+type EnvSecret struct {
+	EnvName       string
+	SecretName    string
+	KeyFromSecret string
+}
+
 type PerceptorRC struct {
 	configMapMounts map[string]string
 	emptyDirMounts  map[string]string
@@ -72,6 +92,7 @@ type PerceptorRC struct {
 	port            int32
 	cmd             []string
 	replicas        int32
+	env             []EnvSecret
 
 	// key:value = name:mountPath
 	emptyDirVolumeMounts map[string]string
@@ -170,11 +191,27 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 			})
 		}
 
+		envVar := []v1.EnvVar{}
+		for _, env := range desc.env {
+			envVar = append(envVar, v1.EnvVar{
+				Name: env.EnvName,
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: env.SecretName,
+						},
+						Key: env.KeyFromSecret,
+					},
+				},
+			})
+		}
+
 		container := v1.Container{
 			Name:            desc.name,
 			Image:           desc.image,
 			ImagePullPolicy: "Always",
 			Command:         desc.cmd,
+			Env:             envVar,
 			Ports: []v1.ContainerPort{
 				v1.ContainerPort{
 					ContainerPort: desc.port,
@@ -232,7 +269,8 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 					},
 				},
 				Selector: map[string]string{
-					"name": desc.name,
+					// The POD name of the first container will be used as selector name for all containers
+					"name": descriptions[0].name,
 				},
 			},
 		})
@@ -259,12 +297,19 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		&PerceptorRC{
 			replicas:        1,
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
-			name:            "perceptor",
-			image:           paths["perceptor"],
-			port:            int32(pc.PerceptorPort),
-			cmd:             []string{"./perceptor"},
-			cpu:             defaultCPU,
-			memory:          defaultMem,
+			env: []EnvSecret{
+				{
+					EnvName:       "PCP_HUBUSERPASSWORD",
+					SecretName:    "viper-secret",
+					KeyFromSecret: "HubUserPassword",
+				},
+			},
+			name:   "perceptor",
+			image:  paths["perceptor"],
+			port:   int32(pc.PerceptorPort),
+			cmd:    []string{"./perceptor"},
+			cpu:    defaultCPU,
+			memory: defaultMem,
 		},
 	})
 
@@ -288,6 +333,13 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		&PerceptorRC{
 			replicas:        int32(math.Ceil(float64(pc.ConcurrentScanLimit) / 2.0)),
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
+			env: []EnvSecret{
+				{
+					EnvName:       "PCP_HUBUSERPASSWORD",
+					SecretName:    "viper-secret",
+					KeyFromSecret: "HubUserPassword",
+				},
+			},
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
@@ -357,7 +409,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		for _, svcI := range svc[i] {
 			if pc.DryRun {
 				// service dont really need much debug...
-				//PrettyPrint(svc)
+				// PrettyPrint(svcI)
 			} else {
 				_, err := clientset.Core().Services(pc.Namespace).Create(svcI)
 				if err != nil {

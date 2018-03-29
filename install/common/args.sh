@@ -11,7 +11,7 @@
 # ARG_OPTIONAL_SINGLE([private-registry-token],[t],[A private registry token to have access to pull images],[perceptor-scanner-sa service account token])
 
 # ARG_OPTIONAL_SINGLE([container-registry],[c],[Base docker repo for the applicaition.],[gcr.io])
-# ARG_OPTIONAL_SINGLE([image-repository],[c],[Image repository for the applicaition.],[gke-verification/blackducksoftware])
+# ARG_OPTIONAL_SINGLE([image-repository],[I],[Image repository for the applicaition.],[gke-verification/blackducksoftware])
 # ARG_OPTIONAL_SINGLE([default-container-version],[v],[Default container version],[master])
 # ARG_OPTIONAL_SINGLE([pcp-namespace],[n],[The namespace perceptor containers run in.],[nginx-webapp-logstash])
 
@@ -19,11 +19,13 @@
 # ARG_OPTIONAL_SINGLE([hub-password],[W],[hub password],[master])
 # ARG_OPTIONAL_SINGLE([hub-host],[H],[hub hostname ],[nginx-webapp-logstash])
 # ARG_OPTIONAL_SINGLE([hub-port],[P],[hub port ],[8443])
+# ARG_OPTIONAL_SINGLE([hub-client-timeout-perceptor-seconds],[T],[hub client timeout for perceptor in seconds ],[5])
+# ARG_OPTIONAL_SINGLE([hub-client-timeout-scanner-seconds],[T],[hub client timeout for perceptor scanner in seconds ],[5])
 # ARG_OPTIONAL_SINGLE([hub-max-concurrent-scans],[C],[maximum scans at a time for the hub],[7])
 # ARG_OPTIONAL_SINGLE([container-default-cpu],[u],[All containers default cpu],[300m])
 # ARG_OPTIONAL_SINGLE([container-default-memory],[m],[All containers default memory],[1300Mi])
-# ARG_OPTIONAL_SINGLE([container-default-log-level],[m],[All containers default log level],[info])
-# ARG_OPTIONAL_BOOLEAN([interactive],[i],[prompt for values rather then expecting them all at the command line],[off])
+# ARG_OPTIONAL_SINGLE([container-default-log-level],[l],[All containers default log level],[info])
+# ARG_OPTIONAL_SINGLE([prompt],[--prompt],[prompt for values rather then expecting them all at the command line],[off])
 
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO()
@@ -74,6 +76,8 @@ _arg_hub_user="sysadmin"
 _arg_hub_password=""
 _arg_hub_host="nginx-webapp-logstash"
 _arg_hub_port="8443"
+_arg_hub_client_timeout_perceptor_seconds="5"
+_arg_hub_client_timeout_scanner_seconds="30"
 _arg_hub_max_concurrent_scans="7"
 _arg_prompt="off"
 _arg_container_default_cpu="300m"
@@ -87,7 +91,7 @@ _arg_developer_mode="off"
 print_help ()
 {
 	printf '%s\n' "The general script's help msg"
-	printf 'Usage: %s [-p|--(no-)pod-perceiver] [-i|--(no-)image-perceiver] [-M|--(no-)prometheus-metrics] [--private-registry <arg>] [-t|--private-registry-token <arg>] [-c|--container-registry <arg>] [-v|--default-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--container-default-cpu <arg>] [-m|--container-default-memory <arg>] [-i|--(no-)prompt] [-h|--help]\n' "$0"
+	printf 'Usage: %s [-p|--(no-)pod-perceiver] [-i|--(no-)image-perceiver] [-M|--(no-)prometheus-metrics] [--private-registry <arg>] [-t|--private-registry-token <arg>] [-c|--container-registry <arg>] [-I|--image-repository <arg>] [-v|--default-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-T|--hub-client-timeout-perceptor-seconds <arg>] [-s|--hub-client-timeout-scanner-seconds <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--container-default-cpu <arg>] [-m|--container-default-memory <arg>] [-l|--container-default-log-level <arg>] [-d|--developer-mode <arg>] [--(no-)prompt] [-h|--help]\n' "$0"
 	printf '\t%s\n' "-p,--pod-perceiver,--no-pod-perceiver: Whether the pod perceiver is enabled. (on by default)"
 	printf '\t%s\n' "-i,--image-perceiver,--no-image-perceiver: Whether the image perceiver is enabled. (off by default)"
 	printf '\t%s\n' "-M,--prometheus-metrics,--no-prometheus-metrics: Whether the prometheus metrics is enabled. (off by default)"
@@ -96,11 +100,13 @@ print_help ()
 	printf '\t%s\n' "-c,--container-registry: Base docker repo for the applicaition. (default: 'gcr.io')"
 	printf '\t%s\n' "-I,--image-repository: Image repository for the applicaition. (default: 'gke-verification/blackducksoftware ')"
 	printf '\t%s\n' "-v,--default-container-version: Default container version (default: 'master')"
-	printf '\t%s\n' "-n,--pcp-namespace: The namespace perceptor containers run in. (default: 'nginx-webapp-logstash')"
+	printf '\t%s\n' "-n,--pcp-namespace: The namespace perceptor containers run in. (default: 'bds-perceptor')"
 	printf '\t%s\n' "-U,--hub-user: hub user (default: 'master')"
 	printf '\t%s\n' "-W,--hub-password: hub password (default: 'master')"
 	printf '\t%s\n' "-H,--hub-host: hub hostname  (default: 'nginx-webapp-logstash')"
 	printf '\t%s\n' "-P,--hub-port: hub port  (default: '8443')"
+	printf '\t%s\n' "-T,--hub-client-timeout-perceptor-seconds: hub client timeout for perceptor in seconds  (default: '5')"
+	printf '\t%s\n' "-s,--hub-client-timeout-scanner-seconds: hub client timeout for perceptor scanner in seconds  (default: '30')"
 	printf '\t%s\n' "-C,--hub-max-concurrent-scans: maximum scans at a time for the hub (default: '7')"
 	printf '\t%s\n' "-u,--container-default-cpu: All container's default cpu (default: '300m')"
 	printf '\t%s\n' "-m,--container-default-memory: All container's default memory (default: '1300Mi')"
@@ -143,7 +149,7 @@ parse_commandline ()
 			# See the comment of option '-k' to see what's going on here - principle is the same.
 			-i*)
 				_arg_image_perceiver="on"
-				_next="${_key##-o}"
+				_next="${_key##-i}"
 				if test -n "$_next" -a "$_next" != "$_key"
 				then
 					begins_with_short_option "$_next" && shift && set -- "-o" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
@@ -157,7 +163,7 @@ parse_commandline ()
 			# See the comment of option '-k' to see what's going on here - principle is the same.
 			-M*)
 				_arg_prometheus_metrics="on"
-				_next="${_key##-o}"
+				_next="${_key##-M}"
 				if test -n "$_next" -a "$_next" != "$_key"
 				then
 					begins_with_short_option "$_next" && shift && set -- "-o" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
@@ -220,7 +226,7 @@ parse_commandline ()
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-I*)
-				_arg_image_repository="${_key##-c}"
+				_arg_image_repository="${_key##-I}"
 				;;
 			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-v|--default-container-version)
@@ -307,6 +313,34 @@ parse_commandline ()
 				_arg_hub_port="${_key##-P}"
 				;;
 			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-T|--hub-client-timeout-perceptor-seconds)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_hub_client_timeout_perceptor_seconds="$2"
+				shift
+				;;
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--hub-client-timeout-perceptor-seconds=*)
+				_arg_hub_client_timeout_perceptor-seconds="${_key##--hub-client-timeout-perceptor-seconds=}"
+				;;
+			# See the comment of option '-p' to see what's going on here - principle is the same.
+			-T*)
+				_arg_hub_client_timeout_perceptor_seconds="${_key##-T}"
+				;;
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-s|--hub-client-timeout-scanner-seconds)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_hub_client_timeout_scanner_seconds="$2"
+				shift
+				;;
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--hub-client-timeout-scanner-seconds=*)
+				_arg_hub_client_timeout_scanner_seconds="${_key##--hub-client-timeout-scanner-seconds=}"
+				;;
+			# See the comment of option '-p' to see what's going on here - principle is the same.
+			-s*)
+				_arg_hub_client_timeout_scanner_seconds="${_key##-s}"
+				;;
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-C|--hub-max-concurrent-scans)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_hub_max_concurrent_scans="$2"
@@ -332,7 +366,7 @@ parse_commandline ()
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-u*)
-				_arg_container_default_cpu="${_key##-C}"
+				_arg_container_default_cpu="${_key##-u}"
 				;;
 			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-m|--container-default-memory)
@@ -346,7 +380,7 @@ parse_commandline ()
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-m*)
-				_arg_container_default_memory="${_key##-C}"
+				_arg_container_default_memory="${_key##-m}"
 				;;
 			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-l|--container-default-log-level)
@@ -360,7 +394,7 @@ parse_commandline ()
 				;;
 			# See the comment of option '-p' to see what's going on here - principle is the same.
 			-l*)
-				_arg_container_default_log_level="${_key##-C}"
+				_arg_container_default_log_level="${_key##-l}"
 				;;
 			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
 			-d|--no-developer-mode|--developer-mode)
@@ -370,7 +404,7 @@ parse_commandline ()
 			# See the comment of option '-k' to see what's going on here - principle is the same.
 			-d*)
 				_arg_developer_mode="on"
-				_next="${_key##-o}"
+				_next="${_key##-d}"
 				if test -n "$_next" -a "$_next" != "$_key"
 				then
 					begins_with_short_option "$_next" && shift && set -- "-o" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
