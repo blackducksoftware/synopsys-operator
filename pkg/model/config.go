@@ -17,21 +17,23 @@ type ProtoformConfig struct {
 
 	// CONTAINER CONFIGS
 	// These are sed replaced into the config maps for the containers.
-	PerceptorHost             string
-	PerceptorPort             int
-	ScannerPort               int
-	PerceiverPort             int
-	ImageFacadePort           int
-	InternalDockerRegistries  []string
-	AnnotationIntervalSeconds int
-	DumpIntervalMinutes       int
-	HubHost                   string
-	HubUser                   string
-	HubUserPassword           string
-	HubPort                   int
-	ConcurrentScanLimit       int
-	Namespace                 string
-	Defaultversion            string
+	PerceptorHost                    string
+	PerceptorPort                    int
+	ScannerPort                      int
+	PerceiverPort                    int
+	ImageFacadePort                  int
+	InternalDockerRegistries         []string
+	AnnotationIntervalSeconds        int
+	DumpIntervalMinutes              int
+	HubHost                          string
+	HubUser                          string
+	HubUserPassword                  string
+	HubPort                          int
+	HubClientTimeoutPerceptorSeconds int
+	HubClientTimeoutScannerSeconds   int
+	ConcurrentScanLimit              int
+	Namespace                        string
+	Defaultversion                   string
 
 	// CONTAINER PULL CONFIG
 	// These are for defining docker registry and image location and versions
@@ -87,6 +89,12 @@ func (p *ProtoformConfig) setDefaultValues() {
 	}
 	if p.DumpIntervalMinutes == 0 {
 		p.DumpIntervalMinutes = 30
+	}
+	if p.HubClientTimeoutPerceptorSeconds == 0 {
+		p.HubClientTimeoutPerceptorSeconds = 5
+	}
+	if p.HubClientTimeoutScannerSeconds == 0 {
+		p.HubClientTimeoutScannerSeconds = 30
 	}
 	if p.HubHost == "" {
 		// meaningless default unless your in same namespace as hub.
@@ -178,8 +186,8 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// "a thing".
 	defaults := map[string]string{
 		"prometheus":                   fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:`, p.PerceptorHost, `","perceptor-scanner:`, p.ScannerPort, `","image-perceiver:`, p.PerceiverPort, `","pod-perceiver:`, p.PerceiverPort, `","perceptor-image-facade:`, p.ImageFacadePort, `"]}]}]}`),
-		"perceptor-config":             fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPassword": "`, p.HubUserPassword, `","ConcurrentScanLimit": "`, p.ConcurrentScanLimit, `","Port": "`, p.PerceptorPort, `","LogLevel": "`, p.LogLevel, `"}`),
-		"perceptor-scanner-config":     fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPassword": "`, p.HubUserPassword, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`),
+		"perceptor-config":             fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutPerceptorSeconds, `","ConcurrentScanLimit": "`, p.ConcurrentScanLimit, `","Port": "`, p.PerceptorPort, `","LogLevel": "`, p.LogLevel, `"}`),
+		"perceptor-scanner-config":     fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`),
 		"perceiver":                    fmt.Sprint(`{"PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","AnnotationIntervalSeconds": "`, p.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, p.DumpIntervalMinutes, `","Port": "`, p.PerceiverPort, `","LogLevel": "`, p.LogLevel, `"}`),
 		"perceptor-imagefacade-config": fmt.Sprint(`{"DockerUser": "`, p.DockerUsername, `","DockerPassword": "`, p.DockerPasswordOrToken, `","Port": "`, p.ImageFacadePort, `","InternalDockerRegistries": `, generateStringFromStringArr(p.InternalDockerRegistries), `,"LogLevel": "`, p.LogLevel, `"}`),
 	}

@@ -78,6 +78,12 @@ func PrettyPrint(v interface{}) {
 	println(string(b))
 }
 
+type EnvSecret struct {
+	EnvName       string
+	SecretName    string
+	KeyFromSecret string
+}
+
 type PerceptorRC struct {
 	configMapMounts map[string]string
 	emptyDirMounts  map[string]string
@@ -86,6 +92,7 @@ type PerceptorRC struct {
 	port            int32
 	cmd             []string
 	replicas        int32
+	env             []EnvSecret
 
 	// key:value = name:mountPath
 	emptyDirVolumeMounts map[string]string
@@ -184,11 +191,27 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 			})
 		}
 
+		envVar := []v1.EnvVar{}
+		for _, env := range desc.env {
+			envVar = append(envVar, v1.EnvVar{
+				Name: env.EnvName,
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: env.SecretName,
+						},
+						Key: env.KeyFromSecret,
+					},
+				},
+			})
+		}
+
 		container := v1.Container{
 			Name:            desc.name,
 			Image:           desc.image,
 			ImagePullPolicy: "Always",
 			Command:         desc.cmd,
+			Env:             envVar,
 			Ports: []v1.ContainerPort{
 				v1.ContainerPort{
 					ContainerPort: desc.port,
@@ -274,12 +297,19 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		&PerceptorRC{
 			replicas:        1,
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
-			name:            "perceptor",
-			image:           paths["perceptor"],
-			port:            int32(pc.PerceptorPort),
-			cmd:             []string{"./perceptor"},
-			cpu:             defaultCPU,
-			memory:          defaultMem,
+			env: []EnvSecret{
+				{
+					EnvName:       "PCP_HUBUSERPASSWORD",
+					SecretName:    "viper-secret",
+					KeyFromSecret: "HubUserPassword",
+				},
+			},
+			name:   "perceptor",
+			image:  paths["perceptor"],
+			port:   int32(pc.PerceptorPort),
+			cmd:    []string{"./perceptor"},
+			cpu:    defaultCPU,
+			memory: defaultMem,
 		},
 	})
 
@@ -303,6 +333,13 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		&PerceptorRC{
 			replicas:        int32(math.Ceil(float64(pc.ConcurrentScanLimit) / 2.0)),
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
+			env: []EnvSecret{
+				{
+					EnvName:       "PCP_HUBUSERPASSWORD",
+					SecretName:    "viper-secret",
+					KeyFromSecret: "HubUserPassword",
+				},
+			},
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
