@@ -26,8 +26,6 @@ import (
 	"k8s.io/api/core/v1"
 	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
-	b64 "encoding/base64"
-
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -109,8 +107,8 @@ func (kube *Kube) createResources() {
 				Name: config.HubPasswordSecretName,
 			},
 			Type: v1.SecretTypeOpaque,
-			Data: map[string][]byte{
-				config.HubPasswordSecretKey: []byte(b64.StdEncoding.EncodeToString([]byte(config.HubUserPassword))),
+			StringData: map[string]string{
+				config.HubPasswordSecretKey: config.HubUserPassword,
 			},
 		},
 	}
