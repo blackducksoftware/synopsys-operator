@@ -19,13 +19,14 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package model
+package standardperceptor
 
 import (
+	model "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
 	"github.com/spf13/viper"
 )
 
-type ProtoformConfig struct {
+type Config struct {
 	// general protoform config
 	MasterURL      string
 	KubeConfigPath string
@@ -60,9 +61,9 @@ type ProtoformConfig struct {
 	AuxConfig *AuxiliaryConfig
 }
 
-func ReadProtoformConfig(configPath string) *ProtoformConfig {
+func ReadConfig(configPath string) *Config {
 	viper.SetConfigFile(configPath)
-	pc := &ProtoformConfig{}
+	pc := &Config{}
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
@@ -71,8 +72,8 @@ func ReadProtoformConfig(configPath string) *ProtoformConfig {
 	return pc
 }
 
-func (pc *ProtoformConfig) PodPerceiverConfig() PodPerceiverConfigMap {
-	return PodPerceiverConfigMap{
+func (pc *Config) PodPerceiverConfig() model.PodPerceiverConfigMap {
+	return model.PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             "", // must be filled in elsewhere
@@ -81,8 +82,8 @@ func (pc *ProtoformConfig) PodPerceiverConfig() PodPerceiverConfigMap {
 	}
 }
 
-func (pc *ProtoformConfig) ImagePerceiverConfig() ImagePerceiverConfigMap {
-	return ImagePerceiverConfigMap{
+func (pc *Config) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
+	return model.ImagePerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             "", // must be filled in elsewhere
@@ -91,8 +92,8 @@ func (pc *ProtoformConfig) ImagePerceiverConfig() ImagePerceiverConfigMap {
 	}
 }
 
-func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
-	return PerceptorScannerConfigMap{
+func (pc *Config) PerceptorScannerConfig() model.PerceptorScannerConfigMap {
+	return model.PerceptorScannerConfigMap{
 		HubHost:                 pc.HubHost,
 		HubUser:                 pc.HubUser,
 		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
@@ -107,8 +108,8 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
 	}
 }
 
-func (pc *ProtoformConfig) PerceptorImagefacadeConfig() PerceptorImagefacadeConfigMap {
-	return PerceptorImagefacadeConfigMap{
+func (pc *Config) PerceptorImagefacadeConfig() model.PerceptorImagefacadeConfigMap {
+	return model.PerceptorImagefacadeConfigMap{
 		DockerPassword:           pc.AuxConfig.DockerPassword,
 		DockerUser:               pc.AuxConfig.DockerUsername,
 		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,
@@ -118,8 +119,8 @@ func (pc *ProtoformConfig) PerceptorImagefacadeConfig() PerceptorImagefacadeConf
 	}
 }
 
-func (pc *ProtoformConfig) PerceptorConfig() PerceptorConfigMap {
-	return PerceptorConfigMap{
+func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
+	return model.PerceptorConfigMap{
 		ConcurrentScanLimit:   pc.ConcurrentScanLimit,
 		HubHost:               pc.HubHost,
 		HubUser:               pc.HubUser,

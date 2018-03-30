@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package model
+package standardperceptor
 
 import (
 	"github.com/spf13/viper"

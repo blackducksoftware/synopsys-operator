@@ -74,12 +74,12 @@ func (pc *PerceiverTesterConfig) ImagePerceiverConfig() model.ImagePerceiverConf
 
 func (pc *PerceiverTesterConfig) PerceptorConfig() model.PerceptorConfigMap {
 	return model.PerceptorConfigMap{
-		ConcurrentScanLimit: 2,
-		HubHost:             "doesn't matter -- unused",
-		HubUser:             "doesn't matter -- unused",
-		HubUserPassword:     "doesn't matter -- unused",
-		Port:                pc.PerceptorPort,
-		UseMockMode:         true,
-		LogLevel:            pc.LogLevel,
+		ConcurrentScanLimit:   2,
+		HubHost:               "doesn't matter -- unused",
+		HubUser:               "doesn't matter -- unused",
+		HubUserPasswordEnvVar: "doesn't matter -- unused",
+		Port:        pc.PerceptorPort,
+		UseMockMode: true,
+		LogLevel:    pc.LogLevel,
 	}
 }

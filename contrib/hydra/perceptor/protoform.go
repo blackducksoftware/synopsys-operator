@@ -26,13 +26,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
 	"k8s.io/api/core/v1"
 	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
-	b64 "encoding/base64"
-
-	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	perceptor "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/standardperceptor"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -43,69 +40,23 @@ func PrettyPrint(v interface{}) {
 	println(string(b))
 }
 
-func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernetes.Clientset) {
-	perceptor := model.NewPerceptorCore()
-	perceptor.Config = config.PerceptorConfig()
-	perceptor.HubPasswordSecretName = config.HubPasswordSecretName
-	perceptor.HubPasswordSecretKey = config.HubPasswordSecretKey
-
-	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
-	podPerceiver.Config = config.PodPerceiverConfig()
-	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
-
-	perceptorScanner := model.NewPerceptorScanner()
-	perceptorScanner.Config = config.PerceptorScannerConfig()
-	perceptorScanner.Config.PerceptorHost = perceptor.ServiceName
-	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey
-	perceptorScanner.HubPasswordSecretName = config.HubPasswordSecretName
-
-	perceptorImagefacade := model.NewPerceptorImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
-	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
-
-	prometheus := model.NewPrometheus()
-	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorScanner.ServiceName, Port: config.ScannerPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorImagefacade.ServiceName, Port: config.ImageFacadePort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: podPerceiver.ServiceName, Port: config.PodPerceiverPort})
-	//	prometheus.Config = config.PrometheusConfig() // TODO ?
-
-	scanner := model.NewScanner(perceptorScanner, perceptorImagefacade)
-	scanner.ReplicaCount = config.ScannerReplicationCount
-
-	replicationControllers := []*v1.ReplicationController{
-		perceptor.ReplicationController(),
-		podPerceiver.ReplicationController(),
-		scanner.ReplicationController(),
-	}
-	services := []*v1.Service{
-		perceptor.Service(),
-		podPerceiver.Service(),
-		perceptorScanner.Service(),
-		perceptorImagefacade.Service(),
-		//		prometheus.Service(),
-	}
-	configMaps := []*v1.ConfigMap{
-		perceptor.ConfigMap(),
-		podPerceiver.ConfigMap(),
-		perceptorScanner.ConfigMap(),
-		perceptorImagefacade.ConfigMap(),
-		prometheus.ConfigMap(),
-	}
-	// deployments := []*v1beta1.Deployment{
-	// 	prometheus.Deployment(),
-	// }
-
+func createPerceptorResources(config *perceptor.Config, clientset *kubernetes.Clientset) {
+	var configMaps []*v1.ConfigMap
+	var services []*v1.Service
+	var secrets []*v1.Secret
+	var replicationControllers []*v1.ReplicationController
 	if config.AuxConfig.IsOpenshift {
-		imagePerceiverReplicaCount := int32(1)
-		imagePerceiver := model.NewImagePerceiver(imagePerceiverReplicaCount, config.AuxConfig.ImagePerceiverServiceAccountName)
-		imagePerceiver.Config = config.ImagePerceiverConfig()
-		imagePerceiver.Config.PerceptorHost = perceptor.ServiceName
-
-		replicationControllers = append(replicationControllers, imagePerceiver.ReplicationController())
-		services = append(services, imagePerceiver.Service())
-		configMaps = append(configMaps, imagePerceiver.ConfigMap())
-
-		prometheus.AddTarget(&model.PrometheusTarget{Host: imagePerceiver.ServiceName, Port: config.ImagePerceiverPort})
+		os := perceptor.NewOpenshift(config)
+		configMaps = os.ConfigMaps
+		services = os.Services
+		secrets = os.Secrets
+		replicationControllers = os.ReplicationControllers
+	} else {
+		kube := perceptor.NewKube(config)
+		configMaps = kube.ConfigMaps
+		services = kube.Services
+		secrets = kube.Secrets
+		replicationControllers = kube.ReplicationControllers
 	}
 
 	namespace := config.AuxConfig.Namespace
@@ -113,6 +64,13 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	for _, configMap := range configMaps {
 		PrettyPrint(configMap)
 		_, err := clientset.Core().ConfigMaps(namespace).Create(configMap)
+		if err != nil {
+			panic(err)
+		}
+	}
+	for _, secret := range secrets {
+		PrettyPrint(secret)
+		_, err := clientset.Core().Secrets(namespace).Create(secret)
 		if err != nil {
 			panic(err)
 		}
@@ -132,20 +90,6 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 		}
 	}
 
-	hubPasswordSecret := &v1.Secret{
-		ObjectMeta: v1meta.ObjectMeta{
-			Name: config.HubPasswordSecretName,
-		},
-		Type: v1.SecretTypeOpaque,
-		Data: map[string][]byte{
-			config.HubPasswordSecretKey: []byte(b64.StdEncoding.EncodeToString([]byte(config.HubUserPassword))),
-		},
-	}
-	_, err := clientset.Core().Secrets(namespace).Create(hubPasswordSecret)
-	if err != nil {
-		panic(err)
-	}
-
 	// for _, dep := range deployments {
 	// 	PrettyPrint(dep)
 	// 	_, err := clientset.Extensions().Deployments(namespace).Create(dep)
@@ -158,11 +102,11 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 func main() {
 	configPath := os.Args[1]
 	auxConfigPath := os.Args[2]
-	config := model.ReadProtoformConfig(configPath)
+	config := perceptor.ReadConfig(configPath)
 	if config == nil {
 		panic("didn't find config")
 	}
-	auxConfig := model.ReadAuxiliaryConfig(auxConfigPath)
+	auxConfig := perceptor.ReadAuxiliaryConfig(auxConfigPath)
 	if auxConfig == nil {
 		panic("didn't find auxconfig")
 	}
@@ -171,7 +115,7 @@ func main() {
 	runProtoform(config)
 }
 
-func runProtoform(config *model.ProtoformConfig) {
+func runProtoform(config *perceptor.Config) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags(config.MasterURL, config.KubeConfigPath)
 	//		kubeConfig, err := rest.InClusterConfig()
 	if err != nil {

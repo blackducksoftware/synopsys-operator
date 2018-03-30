@@ -106,7 +106,7 @@ func main() {
 	if config == nil {
 		panic("didn't find config")
 	}
-	auxConfig := model.ReadAuxiliaryConfig(auxConfigPath)
+	auxConfig := pif.ReadAuxiliaryConfig(auxConfigPath)
 	if auxConfig == nil {
 		panic("didn't find auxconfig")
 	}

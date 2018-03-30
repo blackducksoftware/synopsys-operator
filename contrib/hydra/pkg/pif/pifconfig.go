@@ -42,7 +42,7 @@ type PifConfig struct {
 
 	LogLevel string
 
-	AuxConfig *model.AuxiliaryConfig
+	AuxConfig *AuxiliaryConfig
 }
 
 func ReadPifConfig(configPath string) *PifConfig {
