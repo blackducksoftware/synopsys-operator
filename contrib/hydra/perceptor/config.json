@@ -6,6 +6,9 @@
   "HubUser": "sysadmin",
   "HubUserPassword": "blackduck",
   "HubPort": 443,
+  "HubPasswordSecretName": "hub-password",
+  "HubPasswordSecretKey": "hub-user-password",
+
   "ConcurrentScanLimit": 2,
   "PerceptorPort": 3001,
   "UseMockPerceptorMode": false,

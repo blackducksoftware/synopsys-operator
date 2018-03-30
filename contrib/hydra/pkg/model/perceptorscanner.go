@@ -33,7 +33,7 @@ import (
 type PerceptorScannerConfigMap struct {
 	HubHost                 string
 	HubUser                 string
-	HubUserPassword         string
+	HubUserPasswordEnvVar   string
 	HubPort                 int32
 	HubClientTimeoutSeconds int
 
@@ -61,6 +61,9 @@ type PerceptorScanner struct {
 	ServiceName string
 
 	PodName string
+
+	HubPasswordSecretName string
+	HubPasswordSecretKey  string
 
 	ImagesMountName string
 	ImagesMountPath string
@@ -98,6 +101,19 @@ func (psp *PerceptorScanner) Container() *v1.Container {
 		Image:           psp.Image,
 		ImagePullPolicy: "Always",
 		Command:         []string{},
+		Env: []v1.EnvVar{
+			v1.EnvVar{
+				Name: psp.Config.HubUserPasswordEnvVar,
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: psp.HubPasswordSecretName,
+						},
+						Key: psp.HubPasswordSecretKey,
+					},
+				},
+			},
+		},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
 				ContainerPort: psp.Config.Port,

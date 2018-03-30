@@ -30,13 +30,13 @@ import (
 )
 
 type PerceptorConfigMap struct {
-	HubHost             string
-	HubUser             string
-	HubUserPassword     string
-	ConcurrentScanLimit int
-	UseMockMode         bool
-	Port                int32
-	LogLevel            string
+	HubHost               string
+	HubUser               string
+	HubUserPasswordEnvVar string
+	ConcurrentScanLimit   int
+	UseMockMode           bool
+	Port                  int32
+	LogLevel              string
 }
 
 type PerceptorCore struct {
@@ -49,6 +49,9 @@ type PerceptorCore struct {
 	ConfigMapMount string
 	ConfigMapPath  string
 	Config         PerceptorConfigMap
+
+	HubPasswordSecretName string
+	HubPasswordSecretKey  string
 
 	ReplicaCount int32
 	ServiceName  string
@@ -82,7 +85,20 @@ func (pc *PerceptorCore) Container() *v1.Container {
 		Name:            "perceptor",
 		Image:           pc.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Env: []v1.EnvVar{
+			v1.EnvVar{
+				Name: pc.Config.HubUserPasswordEnvVar,
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: pc.HubPasswordSecretName,
+						},
+						Key: pc.HubPasswordSecretKey,
+					},
+				},
+			},
+		},
+		Command: []string{},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
 				ContainerPort: pc.Config.Port,

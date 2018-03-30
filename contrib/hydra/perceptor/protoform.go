@@ -30,6 +30,10 @@ import (
 	"k8s.io/api/core/v1"
 	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
+	b64 "encoding/base64"
+
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -42,6 +46,8 @@ func PrettyPrint(v interface{}) {
 func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernetes.Clientset) {
 	perceptor := model.NewPerceptorCore()
 	perceptor.Config = config.PerceptorConfig()
+	perceptor.HubPasswordSecretName = config.HubPasswordSecretName
+	perceptor.HubPasswordSecretKey = config.HubPasswordSecretKey
 
 	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
 	podPerceiver.Config = config.PodPerceiverConfig()
@@ -50,6 +56,8 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 	perceptorScanner := model.NewPerceptorScanner()
 	perceptorScanner.Config = config.PerceptorScannerConfig()
 	perceptorScanner.Config.PerceptorHost = perceptor.ServiceName
+	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey
+	perceptorScanner.HubPasswordSecretName = config.HubPasswordSecretName
 
 	perceptorImagefacade := model.NewPerceptorImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
 	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
@@ -123,6 +131,21 @@ func createPerceptorResources(config *model.ProtoformConfig, clientset *kubernet
 			panic(err)
 		}
 	}
+
+	hubPasswordSecret := &v1.Secret{
+		ObjectMeta: v1meta.ObjectMeta{
+			Name: config.HubPasswordSecretName,
+		},
+		Type: v1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			config.HubPasswordSecretKey: []byte(b64.StdEncoding.EncodeToString([]byte(config.HubUserPassword))),
+		},
+	}
+	_, err := clientset.Core().Secrets(namespace).Create(hubPasswordSecret)
+	if err != nil {
+		panic(err)
+	}
+
 	// for _, dep := range deployments {
 	// 	PrettyPrint(dep)
 	// 	_, err := clientset.Extensions().Deployments(namespace).Create(dep)

@@ -51,6 +51,10 @@ type ProtoformConfig struct {
 	ImageFacadePort         int32
 	JavaMaxHeapSizeMBs      int
 
+	// Secret config
+	HubPasswordSecretName string
+	HubPasswordSecretKey  string
+
 	LogLevel string
 
 	AuxConfig *AuxiliaryConfig
@@ -91,7 +95,7 @@ func (pc *ProtoformConfig) PerceptorScannerConfig() PerceptorScannerConfigMap {
 	return PerceptorScannerConfigMap{
 		HubHost:                 pc.HubHost,
 		HubUser:                 pc.HubUser,
-		HubUserPassword:         pc.HubUserPassword,
+		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
 		HubPort:                 pc.HubPort,
 		HubClientTimeoutSeconds: 60,
 		JavaMaxHeapSizeMBs:      pc.JavaMaxHeapSizeMBs,
@@ -116,12 +120,12 @@ func (pc *ProtoformConfig) PerceptorImagefacadeConfig() PerceptorImagefacadeConf
 
 func (pc *ProtoformConfig) PerceptorConfig() PerceptorConfigMap {
 	return PerceptorConfigMap{
-		ConcurrentScanLimit: pc.ConcurrentScanLimit,
-		HubHost:             pc.HubHost,
-		HubUser:             pc.HubUser,
-		HubUserPassword:     pc.HubUserPassword,
-		UseMockMode:         pc.UseMockPerceptorMode,
-		Port:                pc.PerceptorPort,
-		LogLevel:            pc.LogLevel,
+		ConcurrentScanLimit:   pc.ConcurrentScanLimit,
+		HubHost:               pc.HubHost,
+		HubUser:               pc.HubUser,
+		HubUserPasswordEnvVar: "PERCEPTOR_HUBUSERPASSWORD",
+		UseMockMode:           pc.UseMockPerceptorMode,
+		Port:                  pc.PerceptorPort,
+		LogLevel:              pc.LogLevel,
 	}
 }
