@@ -120,3 +120,19 @@ func (kube *Kube) createResources() {
 	kube.PodPerceiver = podPerceiver
 	kube.Prometheus = prometheus
 }
+
+func (kube *Kube) GetConfigMaps() []*v1.ConfigMap {
+	return kube.ConfigMaps
+}
+
+func (kube *Kube) GetServices() []*v1.Service {
+	return kube.Services
+}
+
+func (kube *Kube) GetSecrets() []*v1.Secret {
+	return kube.Secrets
+}
+
+func (kube *Kube) GetReplicationControllers() []*v1.ReplicationController {
+	return kube.ReplicationControllers
+}

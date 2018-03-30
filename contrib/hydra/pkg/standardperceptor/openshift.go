@@ -60,3 +60,19 @@ func (os *Openshift) createResources() {
 	os.Services = append(os.Kube.Services, imagePerceiver.Service())
 	os.Secrets = os.Kube.Secrets
 }
+
+func (os *Openshift) GetConfigMaps() []*v1.ConfigMap {
+	return os.ConfigMaps
+}
+
+func (os *Openshift) GetServices() []*v1.Service {
+	return os.Services
+}
+
+func (os *Openshift) GetSecrets() []*v1.Secret {
+	return os.Secrets
+}
+
+func (os *Openshift) GetReplicationControllers() []*v1.ReplicationController {
+	return os.ReplicationControllers
+}

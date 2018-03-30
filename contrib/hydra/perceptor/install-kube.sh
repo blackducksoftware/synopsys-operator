@@ -37,7 +37,7 @@ EOF
 
 kubectl create -f ../prometheus-deployment.yaml --namespace=$NS
 
-go run ./protoform.go ./config.json aux-config.json
+go run ./perceptor.go ./config.json aux-config.json
 
 # If running on minikube:
 # minikube service prometheus -n bds-perceptor --url
