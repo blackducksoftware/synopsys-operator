@@ -57,6 +57,8 @@ func readConfig(configPath string) *model.ProtoformConfig {
 	viper.AddConfigPath(configPath)
 
 	pc := &model.ProtoformConfig{}
+	pc.HubUserPasswordEnvVar = "PCP_HUBUSERPASSWORD"
+	pc.ViperSecret = "viper-secret"
 	log.Print(configPath)
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -299,8 +301,8 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
 			env: []EnvSecret{
 				{
-					EnvName:       "PCP_HUBUSERPASSWORD",
-					SecretName:    "viper-secret",
+					EnvName:       pc.HubUserPasswordEnvVar,
+					SecretName:    pc.ViperSecret,
 					KeyFromSecret: "HubUserPassword",
 				},
 			},
@@ -335,8 +337,8 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
 			env: []EnvSecret{
 				{
-					EnvName:       "PCP_HUBUSERPASSWORD",
-					SecretName:    "viper-secret",
+					EnvName:       pc.HubUserPasswordEnvVar,
+					SecretName:    pc.ViperSecret,
 					KeyFromSecret: "HubUserPassword",
 				},
 			},
