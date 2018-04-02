@@ -39,7 +39,7 @@ func prettyPrint(v interface{}) {
 	println(string(bytes))
 }
 
-func createResources(config *pif.PifConfig, clientset *kubernetes.Clientset) {
+func createResources(config *pif.Config, clientset *kubernetes.Clientset) {
 	pifTester := pif.NewPifTester()
 	pifTester.Config = config.PifTesterConfig()
 
@@ -53,7 +53,7 @@ func createResources(config *pif.PifConfig, clientset *kubernetes.Clientset) {
 	imagePerceiver.Config.PerceptorHost = pifTester.ServiceName
 
 	imageFacade := model.NewImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
-	imageFacade.Config = config.PerceptorImagefacadeConfig()
+	imageFacade.Config = config.ImagefacadeConfig()
 	imageFacade.PodName = "perceptor-imagefacade"
 
 	replicationControllers := []*v1.ReplicationController{
@@ -102,7 +102,7 @@ func createResources(config *pif.PifConfig, clientset *kubernetes.Clientset) {
 func main() {
 	configPath := os.Args[1]
 	auxConfigPath := os.Args[2]
-	config := pif.ReadPifConfig(configPath)
+	config := pif.ReadConfig(configPath)
 	if config == nil {
 		panic("didn't find config")
 	}
@@ -119,7 +119,7 @@ func main() {
 	runProtoform(config)
 }
 
-func runProtoform(config *pif.PifConfig) {
+func runProtoform(config *pif.Config) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags(config.MasterURL, config.KubeConfigPath)
 	//		kubeConfig, err := rest.InClusterConfig()
 	if err != nil {

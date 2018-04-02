@@ -26,7 +26,6 @@ import (
 
 	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
-	perceptor "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/standardperceptor"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/kubernetes"
@@ -38,28 +37,23 @@ func PrettyPrint(v interface{}) {
 }
 
 type Builder struct {
-	Config    *perceptor.Config
+	Namespace string
+	Resources Resources
 	Clientset *kubernetes.Clientset
 }
 
-func NewBuilder(config *perceptor.Config, clientset *kubernetes.Clientset) *Builder {
+func NewBuilder(namespace string, resources Resources, clientset *kubernetes.Clientset) *Builder {
 	return &Builder{
-		Config:    config,
+		Namespace: namespace,
+		Resources: resources,
 		Clientset: clientset,
 	}
 }
 
 func (b *Builder) CreateResources() {
-	config := b.Config
 	clientset := b.Clientset
-	var resources Resources
-	if config.AuxConfig.IsOpenshift {
-		resources = perceptor.NewOpenshift(config)
-	} else {
-		resources = perceptor.NewKube(config)
-	}
-
-	namespace := config.AuxConfig.Namespace
+	resources := b.Resources
+	namespace := b.Namespace
 
 	for _, configMap := range resources.GetConfigMaps() {
 		PrettyPrint(configMap)

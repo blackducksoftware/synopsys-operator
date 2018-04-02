@@ -48,7 +48,7 @@ func createResources(config *scannertester.Config, clientset *kubernetes.Clients
 	mockImagefacade.Config = config.MockImagefacadeConfig()
 
 	perceptorScanner := model.NewScanner()
-	perceptorScanner.Config = config.PerceptorScannerConfig()
+	perceptorScanner.Config = config.ScannerConfig()
 	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey
 	perceptorScanner.HubPasswordSecretName = config.HubPasswordSecretName
 

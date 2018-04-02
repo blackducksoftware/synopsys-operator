@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type PifConfig struct {
+type Config struct {
 	// general protoform config
 	MasterURL      string
 	KubeConfigPath string
@@ -45,9 +45,9 @@ type PifConfig struct {
 	AuxConfig *AuxiliaryConfig
 }
 
-func ReadPifConfig(configPath string) *PifConfig {
+func ReadConfig(configPath string) *Config {
 	viper.SetConfigFile(configPath)
-	pc := &PifConfig{}
+	pc := &Config{}
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
@@ -56,7 +56,7 @@ func ReadPifConfig(configPath string) *PifConfig {
 	return pc
 }
 
-func (pc *PifConfig) PodPerceiverConfig() model.PodPerceiverConfigMap {
+func (pc *Config) PodPerceiverConfig() model.PodPerceiverConfigMap {
 	return model.PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
@@ -66,7 +66,7 @@ func (pc *PifConfig) PodPerceiverConfig() model.PodPerceiverConfigMap {
 	}
 }
 
-func (pc *PifConfig) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
+func (pc *Config) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 	return model.ImagePerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
@@ -76,7 +76,7 @@ func (pc *PifConfig) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 	}
 }
 
-func (pc *PifConfig) PerceptorImagefacadeConfig() model.ImagefacadeConfigMap {
+func (pc *Config) ImagefacadeConfig() model.ImagefacadeConfigMap {
 	return model.ImagefacadeConfigMap{
 		DockerPassword:           pc.AuxConfig.DockerPassword,
 		DockerUser:               pc.AuxConfig.DockerUsername,
@@ -87,7 +87,7 @@ func (pc *PifConfig) PerceptorImagefacadeConfig() model.ImagefacadeConfigMap {
 	}
 }
 
-func (pc *PifConfig) PifTesterConfig() PifTesterConfigMap {
+func (pc *Config) PifTesterConfig() PifTesterConfigMap {
 	return PifTesterConfigMap{
 		Port:            pc.PerceptorPort,
 		ImageFacadePort: pc.ImageFacadePort,

@@ -62,7 +62,7 @@ func ReadConfig(configPath string) *Config {
 	return config
 }
 
-func (config *Config) PerceptorScannerConfig() model.ScannerConfigMap {
+func (config *Config) ScannerConfig() model.ScannerConfigMap {
 	return model.ScannerConfigMap{
 		HubClientTimeoutSeconds: 60,
 		HubHost:                 config.HubHost,

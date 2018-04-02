@@ -60,6 +60,15 @@ func runPerceptor(config *perceptor.Config) {
 	if err != nil {
 		panic(err)
 	}
-	builder := kubebuilder.NewBuilder(config, clientset)
+
+	var resources kubebuilder.Resources
+	if config.AuxConfig.IsOpenshift {
+		resources = perceptor.NewOpenshift(config)
+	} else {
+		resources = perceptor.NewKube(config)
+	}
+
+	namespace := config.AuxConfig.Namespace
+	builder := kubebuilder.NewBuilder(namespace, resources, clientset)
 	builder.CreateResources()
 }

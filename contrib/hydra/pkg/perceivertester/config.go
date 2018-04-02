@@ -53,6 +53,7 @@ func ReadPerceiverTesterConfig(configPath string) *PerceiverTesterConfig {
 }
 
 func (pc *PerceiverTesterConfig) PodPerceiverConfig() model.PodPerceiverConfigMap {
+	//	return model.NewPodPerceiverConfigMap("must set", pc.PerceptorPort, pc.AnnotationIntervalSeconds, pc.DumpIntervalMinutes, 4000)
 	return model.PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,

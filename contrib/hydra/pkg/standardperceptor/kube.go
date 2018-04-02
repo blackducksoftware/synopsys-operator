@@ -64,13 +64,13 @@ func (kube *Kube) createResources() {
 	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
 
 	perceptorScanner := model.NewScanner()
-	perceptorScanner.Config = config.PerceptorScannerConfig()
+	perceptorScanner.Config = config.ScannerConfig()
 	perceptorScanner.Config.PerceptorHost = perceptor.ServiceName
 	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey
 	perceptorScanner.HubPasswordSecretName = config.HubPasswordSecretName
 
 	imageFacade := model.NewImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
-	imageFacade.Config = config.PerceptorImagefacadeConfig()
+	imageFacade.Config = config.ImagefacadeConfig()
 
 	prometheus := model.NewPrometheus()
 	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})

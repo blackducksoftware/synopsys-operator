@@ -37,6 +37,16 @@ type PodPerceiverConfigMap struct {
 	Port                      int32
 }
 
+func NewPodPerceiverConfigMap(perceptorHost string, perceptorPort int32, annotationIntervalSeconds int, dumpIntervalMinutes int, port int32) *PodPerceiverConfigMap {
+	return &PodPerceiverConfigMap{
+		PerceptorHost:             perceptorHost,
+		PerceptorPort:             perceptorPort,
+		AnnotationIntervalSeconds: annotationIntervalSeconds,
+		DumpIntervalMinutes:       dumpIntervalMinutes,
+		Port:                      port,
+	}
+}
+
 type PodPerceiver struct {
 	PodName string
 	Image   string

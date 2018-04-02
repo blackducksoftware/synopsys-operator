@@ -34,6 +34,12 @@ type MockImagefacadeConfigMap struct {
 	Port int32
 }
 
+func NewMockImagefacadeConfigMap(port int32) *MockImagefacadeConfigMap {
+	return &MockImagefacadeConfigMap{
+		Port: port,
+	}
+}
+
 type MockImagefacade struct {
 	Image  string
 	CPU    resource.Quantity

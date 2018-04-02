@@ -39,6 +39,17 @@ type ImagefacadeConfigMap struct {
 	Port                     int32
 }
 
+func NewImagefacadeConfigMap(dockerUser string, dockerPassword string, internalDockerRegistries []string, logLevel string, createImagesOnly bool, port int32) *ImagefacadeConfigMap {
+	return &ImagefacadeConfigMap{
+		DockerUser:               dockerUser,
+		DockerPassword:           dockerPassword,
+		InternalDockerRegistries: internalDockerRegistries,
+		LogLevel:                 logLevel,
+		CreateImagesOnly:         createImagesOnly,
+		Port:                     port,
+	}
+}
+
 type Imagefacade struct {
 	Image  string
 	CPU    resource.Quantity
