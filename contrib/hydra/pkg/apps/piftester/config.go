@@ -66,7 +66,7 @@ func (pc *Config) PodPerceiverConfig() model.PodPerceiverConfigMap {
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             "", // must be filled in elsewhere
 		PerceptorPort:             pc.PifTesterPort,
-		Port:                      4000,
+		Port:                      pc.PodPerceiverPort,
 	}
 }
 
@@ -76,7 +76,7 @@ func (pc *Config) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             "", // must be filled in elsewhere
 		PerceptorPort:             pc.PifTesterPort,
-		Port:                      4000,
+		Port:                      pc.ImagePerceiverPort,
 	}
 }
 

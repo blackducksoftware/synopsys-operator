@@ -74,15 +74,15 @@ func NewPodPerceiver(serviceAccountName string) *PodPerceiver {
 	}
 
 	return &PodPerceiver{
-		PodName:            "perceptor-pod-perceiver",
+		PodName:            "pod-perceiver",
 		Image:              "gcr.io/gke-verification/blackducksoftware/pod-perceiver:master",
 		CPU:                cpu,
 		Memory:             memory,
-		ConfigMapName:      "kube-generic-perceiver-config",
+		ConfigMapName:      "perceiver",
 		ConfigMapMount:     "/etc/perceiver",
 		ConfigMapPath:      "perceiver.yaml",
 		ReplicaCount:       1,
-		ServiceName:        "kube-generic-perceiver",
+		ServiceName:        "pod-perceiver",
 		ServiceAccountName: serviceAccountName,
 	}
 }

@@ -74,11 +74,11 @@ func NewImagePerceiver(replicaCount int32, serviceAccountName string) *ImagePerc
 	}
 
 	return &ImagePerceiver{
-		PodName:            "perceptor-image-perceiver",
+		PodName:            "image-perceiver",
 		Image:              "gcr.io/gke-verification/blackducksoftware/image-perceiver:master",
 		CPU:                cpu,
 		Memory:             memory,
-		ConfigMapName:      "openshift-perceiver-config",
+		ConfigMapName:      "perceiver",
 		ConfigMapMount:     "/etc/perceiver",
 		ConfigMapPath:      "perceiver.yaml",
 		ReplicaCount:       replicaCount,

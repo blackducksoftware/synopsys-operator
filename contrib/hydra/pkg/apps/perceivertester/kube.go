@@ -55,6 +55,10 @@ func (kube *Kube) createResources() {
 	podPerceiver.Config = config.PodPerceiverConfig()
 	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
 
+	prometheus := model.NewPrometheus()
+	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: podPerceiver.ServiceName, Port: config.PodPerceiverPort})
+
 	kube.ReplicationControllers = []*v1.ReplicationController{
 		podPerceiver.ReplicationController(),
 		perceptor.ReplicationController(),
@@ -66,12 +70,9 @@ func (kube *Kube) createResources() {
 	kube.ConfigMaps = []*v1.ConfigMap{
 		podPerceiver.ConfigMap(),
 		perceptor.ConfigMap(),
+		prometheus.ConfigMap(),
 	}
 	kube.Secrets = []*v1.Secret{}
-
-	prometheus := model.NewPrometheus()
-	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: podPerceiver.ServiceName, Port: config.PodPerceiverPort})
 
 	kube.Perceptor = perceptor
 	kube.PodPerceiver = podPerceiver

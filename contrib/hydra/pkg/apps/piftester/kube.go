@@ -79,6 +79,7 @@ func (kube *Kube) createResources() {
 		podPerceiver.ConfigMap(),
 		pifTester.ConfigMap(),
 		imageFacade.ConfigMap(),
+		prometheus.ConfigMap(),
 	}
 	kube.Secrets = []*v1.Secret{}
 

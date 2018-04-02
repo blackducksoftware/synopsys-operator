@@ -39,4 +39,6 @@ cat << EOF > aux-config.json
 }
 EOF
 
+kubectl create -f ../prometheus-deployment.yaml --namespace=$NS
+
 go run ./perceivertester.go ./config.json aux-config.json

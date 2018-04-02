@@ -63,6 +63,11 @@ func (kube *Kube) createResources() {
 
 	scannerTester := model.NewScannerTester(scanner, mockImagefacade)
 
+	prometheus := model.NewPrometheus()
+	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: scanner.ServiceName, Port: config.ScannerPort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: mockImagefacade.ServiceName, Port: config.ImageFacadePort})
+
 	kube.ReplicationControllers = []*v1.ReplicationController{
 		perceptor.ReplicationController(),
 		scannerTester.ReplicationController(),
@@ -76,6 +81,7 @@ func (kube *Kube) createResources() {
 		perceptor.ConfigMap(),
 		scanner.ConfigMap(),
 		mockImagefacade.ConfigMap(),
+		prometheus.ConfigMap(),
 	}
 	kube.Secrets = []*v1.Secret{
 		&v1.Secret{
@@ -88,11 +94,6 @@ func (kube *Kube) createResources() {
 			},
 		},
 	}
-
-	prometheus := model.NewPrometheus()
-	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: scanner.ServiceName, Port: config.ScannerPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: mockImagefacade.ServiceName, Port: config.ImageFacadePort})
 
 	kube.Perceptor = perceptor
 	kube.MockImagefacade = mockImagefacade
