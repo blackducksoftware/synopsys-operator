@@ -318,8 +318,11 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 	// perceivers
 	rcPCVR, svcPCVR := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
-			replicas:           1,
-			configMapMounts:    map[string]string{"perceiver": "/etc/perceiver"},
+			replicas:        1,
+			configMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
+			emptyDirMounts: map[string]string{
+				"logs": "/tmp",
+			},
 			name:               "pod-perceiver",
 			image:              paths["pod-perceiver"],
 			port:               int32(pc.PerceiverPort),
@@ -382,8 +385,11 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 	if pc.Openshift {
 		rcOpenshift, svcOpenshift := NewRcSvc([]*PerceptorRC{
 			&PerceptorRC{
-				replicas:           1,
-				configMapMounts:    map[string]string{"perceiver": "/etc/perceiver"},
+				replicas:        1,
+				configMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
+				emptyDirMounts: map[string]string{
+					"logs": "/tmp",
+				},
 				name:               "image-perceiver",
 				image:              paths["image-perceiver"],
 				port:               int32(pc.PerceiverPort),
