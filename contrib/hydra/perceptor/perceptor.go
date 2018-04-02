@@ -27,8 +27,8 @@ import (
 
 	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
+	perceptor "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/apps/standardperceptor"
 	kubebuilder "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/kubebuilder"
-	perceptor "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/standardperceptor"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"

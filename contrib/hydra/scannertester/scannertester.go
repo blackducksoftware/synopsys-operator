@@ -26,8 +26,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/apps/scannertester"
 	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/scannertester"
 	"k8s.io/api/core/v1"
 
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +52,7 @@ func createResources(config *scannertester.Config, clientset *kubernetes.Clients
 	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey
 	perceptorScanner.HubPasswordSecretName = config.HubPasswordSecretName
 
-	scannerTester := scannertester.NewScannerTester(perceptorScanner, mockImagefacade)
+	scannerTester := model.NewScannerTester(perceptorScanner, mockImagefacade)
 
 	replicationControllers := []*v1.ReplicationController{
 		perceptor.ReplicationController(),

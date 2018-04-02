@@ -19,12 +19,11 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package pif
+package model
 
 import (
 	"encoding/json"
 
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -143,5 +142,5 @@ func (pc *PifTester) ConfigMap() *v1.ConfigMap {
 	if err != nil {
 		panic(err)
 	}
-	return model.MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
 }

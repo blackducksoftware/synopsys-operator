@@ -26,8 +26,8 @@ import (
 	"fmt"
 	"os"
 
+	piftester "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/apps/piftester"
 	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/pif"
 	"k8s.io/api/core/v1"
 
 	"k8s.io/client-go/kubernetes"
@@ -39,8 +39,8 @@ func prettyPrint(v interface{}) {
 	println(string(bytes))
 }
 
-func createResources(config *pif.Config, clientset *kubernetes.Clientset) {
-	pifTester := pif.NewPifTester()
+func createResources(config *piftester.Config, clientset *kubernetes.Clientset) {
+	pifTester := model.NewPifTester()
 	pifTester.Config = config.PifTesterConfig()
 
 	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
@@ -102,11 +102,11 @@ func createResources(config *pif.Config, clientset *kubernetes.Clientset) {
 func main() {
 	configPath := os.Args[1]
 	auxConfigPath := os.Args[2]
-	config := pif.ReadConfig(configPath)
+	config := piftester.ReadConfig(configPath)
 	if config == nil {
 		panic("didn't find config")
 	}
-	auxConfig := pif.ReadAuxiliaryConfig(auxConfigPath)
+	auxConfig := piftester.ReadAuxiliaryConfig(auxConfigPath)
 	if auxConfig == nil {
 		panic("didn't find auxconfig")
 	}
@@ -119,7 +119,7 @@ func main() {
 	runProtoform(config)
 }
 
-func runProtoform(config *pif.Config) {
+func runProtoform(config *piftester.Config) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags(config.MasterURL, config.KubeConfigPath)
 	//		kubeConfig, err := rest.InClusterConfig()
 	if err != nil {

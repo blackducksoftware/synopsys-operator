@@ -87,8 +87,8 @@ func (pc *Config) ImagefacadeConfig() model.ImagefacadeConfigMap {
 	}
 }
 
-func (pc *Config) PifTesterConfig() PifTesterConfigMap {
-	return PifTesterConfigMap{
+func (pc *Config) PifTesterConfig() model.PifTesterConfigMap {
+	return model.PifTesterConfigMap{
 		Port:            pc.PerceptorPort,
 		ImageFacadePort: pc.ImageFacadePort,
 	}

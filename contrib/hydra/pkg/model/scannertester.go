@@ -19,12 +19,11 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package scannertester
+package model
 
 import (
 	"k8s.io/api/core/v1"
 
-	model "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,11 +35,11 @@ type ScannerTester struct {
 	ImagesMountName string
 	ImagesMountPath string
 
-	Scanner     *model.Scanner
-	Imagefacade *model.MockImagefacade
+	Scanner     *Scanner
+	Imagefacade *MockImagefacade
 }
 
-func NewScannerTester(scanner *model.Scanner, imagefacade *model.MockImagefacade) *ScannerTester {
+func NewScannerTester(scanner *Scanner, imagefacade *MockImagefacade) *ScannerTester {
 	scannerTester := &ScannerTester{
 		PodName: "scanner-tester",
 
