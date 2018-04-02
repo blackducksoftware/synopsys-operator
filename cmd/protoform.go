@@ -306,9 +306,6 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 					KeyFromSecret: "HubUserPassword",
 				},
 			},
-			emptyDirMounts: map[string]string{
-				"logs": "/tmp",
-			},
 			name:   "perceptor",
 			image:  paths["perceptor"],
 			port:   int32(pc.PerceptorPort),
@@ -349,7 +346,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 				},
 			},
 			emptyDirMounts: map[string]string{
-				"var-images": "/var/images", "logs": "/tmp",
+				"var-images": "/var/images",
 			},
 			name:               "perceptor-scanner",
 			image:              paths["perceptor-scanner"],
@@ -364,7 +361,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		&PerceptorRC{
 			configMapMounts: map[string]string{"perceptor-imagefacade-config": "/etc/perceptor_imagefacade"},
 			emptyDirMounts: map[string]string{
-				"var-images": "/var/images", "logs": "/tmp",
+				"var-images": "/var/images",
 			},
 			name:               "perceptor-image-facade",
 			image:              paths["perceptor-imagefacade"],
