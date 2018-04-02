@@ -92,8 +92,8 @@ func (pc *Config) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 	}
 }
 
-func (pc *Config) PerceptorScannerConfig() model.PerceptorScannerConfigMap {
-	return model.PerceptorScannerConfigMap{
+func (pc *Config) PerceptorScannerConfig() model.ScannerConfigMap {
+	return model.ScannerConfigMap{
 		HubHost:                 pc.HubHost,
 		HubUser:                 pc.HubUser,
 		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
@@ -108,8 +108,8 @@ func (pc *Config) PerceptorScannerConfig() model.PerceptorScannerConfigMap {
 	}
 }
 
-func (pc *Config) PerceptorImagefacadeConfig() model.PerceptorImagefacadeConfigMap {
-	return model.PerceptorImagefacadeConfigMap{
+func (pc *Config) PerceptorImagefacadeConfig() model.ImagefacadeConfigMap {
+	return model.ImagefacadeConfigMap{
 		DockerPassword:           pc.AuxConfig.DockerPassword,
 		DockerUser:               pc.AuxConfig.DockerUsername,
 		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,

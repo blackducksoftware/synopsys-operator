@@ -42,6 +42,10 @@ type Config struct {
 	ImageFacadePort int32
 	ScannerPort     int32
 
+	// Secret config
+	HubPasswordSecretName string
+	HubPasswordSecretKey  string
+
 	LogLevel string
 
 	AuxConfig *AuxiliaryConfig
@@ -58,12 +62,12 @@ func ReadConfig(configPath string) *Config {
 	return config
 }
 
-func (config *Config) PerceptorScannerConfig() model.PerceptorScannerConfigMap {
-	return model.PerceptorScannerConfigMap{
+func (config *Config) PerceptorScannerConfig() model.ScannerConfigMap {
+	return model.ScannerConfigMap{
 		HubClientTimeoutSeconds: 60,
 		HubHost:                 config.HubHost,
 		HubUser:                 config.HubUser,
-		HubUserPassword:         config.HubUserPassword,
+		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
 		HubPort:                 config.HubPort,
 		JavaMaxHeapSizeMBs:      config.JavaMaxHeapSizeMBs,
 		ImageFacadePort:         config.ImageFacadePort,

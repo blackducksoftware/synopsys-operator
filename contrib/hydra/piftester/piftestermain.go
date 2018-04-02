@@ -52,27 +52,27 @@ func createResources(config *pif.PifConfig, clientset *kubernetes.Clientset) {
 	imagePerceiver.Config = config.ImagePerceiverConfig()
 	imagePerceiver.Config.PerceptorHost = pifTester.ServiceName
 
-	perceptorImagefacade := model.NewPerceptorImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
-	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
-	perceptorImagefacade.PodName = "perceptor-imagefacade"
+	imageFacade := model.NewImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
+	imageFacade.Config = config.PerceptorImagefacadeConfig()
+	imageFacade.PodName = "perceptor-imagefacade"
 
 	replicationControllers := []*v1.ReplicationController{
 		podPerceiver.ReplicationController(),
 		imagePerceiver.ReplicationController(),
 		pifTester.ReplicationController(),
-		perceptorImagefacade.ReplicationController(),
+		imageFacade.ReplicationController(),
 	}
 	services := []*v1.Service{
 		podPerceiver.Service(),
 		imagePerceiver.Service(),
 		pifTester.Service(),
-		perceptorImagefacade.Service(),
+		imageFacade.Service(),
 	}
 	configMaps := []*v1.ConfigMap{
 		podPerceiver.ConfigMap(),
 		imagePerceiver.ConfigMap(),
 		pifTester.ConfigMap(),
-		perceptorImagefacade.ConfigMap(),
+		imageFacade.ConfigMap(),
 	}
 
 	namespace := config.AuxConfig.Namespace

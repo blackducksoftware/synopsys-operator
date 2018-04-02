@@ -40,7 +40,7 @@ func prettyPrint(v interface{}) {
 }
 
 func createResources(config *perceivertester.PerceiverTesterConfig, clientset *kubernetes.Clientset) {
-	perceptor := model.NewPerceptorCore()
+	perceptor := model.NewPerceptor()
 	perceptor.Config = config.PerceptorConfig()
 
 	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)

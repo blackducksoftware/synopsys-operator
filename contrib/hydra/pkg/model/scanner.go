@@ -22,97 +22,142 @@ under the License.
 package model
 
 import (
+	"encoding/json"
+
 	"k8s.io/api/core/v1"
 
+	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type ScannerConfigMap struct {
+	HubHost                 string
+	HubUser                 string
+	HubUserPasswordEnvVar   string
+	HubPort                 int32
+	HubClientTimeoutSeconds int
+
+	JavaMaxHeapSizeMBs int
+
+	LogLevel string
+	Port     int32
+
+	ImageFacadePort int32
+
+	PerceptorHost string
+	PerceptorPort int32
+}
+
 type Scanner struct {
+	Image  string
+	CPU    resource.Quantity
+	Memory resource.Quantity
+
+	ConfigMapName  string
+	ConfigMapMount string
+	ConfigMapPath  string
+	Config         ScannerConfigMap
+
+	ServiceName string
+
 	PodName string
 
-	ReplicaCount int32
-
-	DockerSocketName string
-	DockerSocketPath string
+	HubPasswordSecretName string
+	HubPasswordSecretKey  string
 
 	ImagesMountName string
 	ImagesMountPath string
-
-	PerceptorScanner     *PerceptorScanner
-	PerceptorImagefacade *PerceptorImagefacade
 }
 
-func NewScanner(perceptorScanner *PerceptorScanner, perceptorImagefacade *PerceptorImagefacade) *Scanner {
-	scanner := &Scanner{
-		PodName: "perceptor-scanner",
-
-		ReplicaCount: 0,
-
-		DockerSocketName: "dir-docker-socket",
-		DockerSocketPath: "/var/run/docker.sock",
-
-		ImagesMountName: "var-images",
-		ImagesMountPath: "/var/images",
-
-		PerceptorScanner:     perceptorScanner,
-		PerceptorImagefacade: perceptorImagefacade,
+func NewScanner() *Scanner {
+	memory, err := resource.ParseQuantity("1Gi")
+	if err != nil {
+		panic(err)
 	}
+	cpu, err := resource.ParseQuantity("500m")
+	if err != nil {
+		panic(err)
+	}
+	return &Scanner{
+		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
+		CPU:            cpu,
+		Memory:         memory,
+		ConfigMapName:  "perceptor-scanner-config",
+		ConfigMapMount: "/etc/perceptor_scanner",
+		ConfigMapPath:  "perceptor_scanner_conf.yaml",
+		ServiceName:    "perceptor-scanner",
 
-	perceptorScanner.ImagesMountName = scanner.ImagesMountName
-	perceptorScanner.ImagesMountPath = scanner.ImagesMountPath
+		// Must fill these out before use
+		PodName: "",
 
-	perceptorScanner.PodName = scanner.PodName
-
-	perceptorImagefacade.ImagesMountName = scanner.ImagesMountName
-	perceptorImagefacade.ImagesMountPath = scanner.ImagesMountPath
-
-	perceptorImagefacade.DockerSocketName = scanner.DockerSocketName
-	perceptorImagefacade.DockerSocketPath = scanner.DockerSocketPath
-
-	perceptorImagefacade.PodName = scanner.PodName
-
-	return scanner
+		ImagesMountName: "",
+		ImagesMountPath: "",
+	}
 }
 
-func (sc *Scanner) ReplicationController() *v1.ReplicationController {
-	return &v1.ReplicationController{
-		ObjectMeta: v1meta.ObjectMeta{Name: sc.PodName},
-		Spec: v1.ReplicationControllerSpec{
-			Replicas: &sc.ReplicaCount,
-			Selector: map[string]string{"name": sc.PodName},
-			Template: &v1.PodTemplateSpec{
-				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": sc.PodName}},
-				Spec: v1.PodSpec{
-					Volumes: []v1.Volume{
-						v1.Volume{
-							Name: sc.PerceptorScanner.ConfigMapName,
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{Name: sc.PerceptorScanner.ConfigMapName},
-								},
-							},
+func (psp *Scanner) Container() *v1.Container {
+	return &v1.Container{
+		Name:            "perceptor-scanner",
+		Image:           psp.Image,
+		ImagePullPolicy: "Always",
+		Command:         []string{},
+		Env: []v1.EnvVar{
+			v1.EnvVar{
+				Name: psp.Config.HubUserPasswordEnvVar,
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: psp.HubPasswordSecretName,
 						},
-						v1.Volume{
-							Name: sc.PerceptorImagefacade.ConfigMapName,
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{Name: sc.PerceptorImagefacade.ConfigMapName},
-								},
-							},
-						},
-						v1.Volume{
-							Name:         sc.ImagesMountName,
-							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
-						},
-						v1.Volume{
-							Name: sc.DockerSocketName,
-							VolumeSource: v1.VolumeSource{
-								HostPath: &v1.HostPathVolumeSource{Path: sc.DockerSocketPath},
-							},
-						},
+						Key: psp.HubPasswordSecretKey,
 					},
-					Containers:         []v1.Container{*sc.PerceptorScanner.Container(), *sc.PerceptorImagefacade.Container()},
-					ServiceAccountName: sc.PerceptorImagefacade.ServiceAccountName,
-					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
-				}}}}
+				},
+			},
+		},
+		Ports: []v1.ContainerPort{
+			v1.ContainerPort{
+				ContainerPort: psp.Config.Port,
+				Protocol:      "TCP",
+			},
+		},
+		Resources: v1.ResourceRequirements{
+			Requests: v1.ResourceList{
+				v1.ResourceCPU:    psp.CPU,
+				v1.ResourceMemory: psp.Memory,
+			},
+		},
+		VolumeMounts: []v1.VolumeMount{
+			v1.VolumeMount{
+				Name:      psp.ImagesMountName,
+				MountPath: psp.ImagesMountPath,
+			},
+			v1.VolumeMount{
+				Name:      psp.ConfigMapName,
+				MountPath: psp.ConfigMapMount,
+			},
+		},
+	}
+}
+
+func (psp *Scanner) Service() *v1.Service {
+	return &v1.Service{
+		ObjectMeta: v1meta.ObjectMeta{
+			Name: psp.ServiceName,
+		},
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{
+				v1.ServicePort{
+					Name: psp.ServiceName,
+					Port: psp.Config.Port,
+				},
+			},
+			Selector: map[string]string{"name": psp.ServiceName}}}
+}
+
+func (psp *Scanner) ConfigMap() *v1.ConfigMap {
+	jsonBytes, err := json.Marshal(psp.Config)
+	if err != nil {
+		panic(err)
+	}
+	return MakeConfigMap(psp.ConfigMapName, psp.ConfigMapPath, string(jsonBytes))
 }

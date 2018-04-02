@@ -76,8 +76,8 @@ func (pc *PifConfig) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 	}
 }
 
-func (pc *PifConfig) PerceptorImagefacadeConfig() model.PerceptorImagefacadeConfigMap {
-	return model.PerceptorImagefacadeConfigMap{
+func (pc *PifConfig) PerceptorImagefacadeConfig() model.ImagefacadeConfigMap {
+	return model.ImagefacadeConfigMap{
 		DockerPassword:           pc.AuxConfig.DockerPassword,
 		DockerUser:               pc.AuxConfig.DockerUsername,
 		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,

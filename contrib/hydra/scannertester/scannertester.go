@@ -30,6 +30,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/scannertester"
 	"k8s.io/api/core/v1"
 
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -40,14 +41,16 @@ func prettyPrint(v interface{}) {
 }
 
 func createResources(config *scannertester.Config, clientset *kubernetes.Clientset) {
-	perceptor := model.NewPerceptorCore()
+	perceptor := model.NewPerceptor()
 	perceptor.Config = config.PerceptorConfig()
 
 	mockImagefacade := model.NewMockImagefacade()
 	mockImagefacade.Config = config.MockImagefacadeConfig()
 
-	perceptorScanner := model.NewPerceptorScanner()
+	perceptorScanner := model.NewScanner()
 	perceptorScanner.Config = config.PerceptorScannerConfig()
+	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey
+	perceptorScanner.HubPasswordSecretName = config.HubPasswordSecretName
 
 	scannerTester := scannertester.NewScannerTester(perceptorScanner, mockImagefacade)
 
@@ -87,6 +90,20 @@ func createResources(config *scannertester.Config, clientset *kubernetes.Clients
 			panic(err)
 		}
 		prettyPrint(service)
+	}
+
+	secret := &v1.Secret{
+		ObjectMeta: v1meta.ObjectMeta{
+			Name: config.HubPasswordSecretName,
+		},
+		Type: v1.SecretTypeOpaque,
+		StringData: map[string]string{
+			config.HubPasswordSecretKey: config.HubUserPassword,
+		},
+	}
+	_, err := clientset.Core().Secrets(namespace).Create(secret)
+	if err != nil {
+		panic(err)
 	}
 }
 

@@ -30,7 +30,7 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PerceptorImagefacadeConfigMap struct {
+type ImagefacadeConfigMap struct {
 	DockerUser               string
 	DockerPassword           string
 	InternalDockerRegistries []string
@@ -39,7 +39,7 @@ type PerceptorImagefacadeConfigMap struct {
 	Port                     int32
 }
 
-type PerceptorImagefacade struct {
+type Imagefacade struct {
 	Image  string
 	CPU    resource.Quantity
 	Memory resource.Quantity
@@ -47,7 +47,7 @@ type PerceptorImagefacade struct {
 	ConfigMapName  string
 	ConfigMapMount string
 	ConfigMapPath  string
-	Config         PerceptorImagefacadeConfigMap
+	Config         ImagefacadeConfigMap
 
 	ServiceAccountName string
 	ServiceName        string
@@ -61,7 +61,7 @@ type PerceptorImagefacade struct {
 	ImagesMountPath string
 }
 
-func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
+func NewImagefacade(serviceAccountName string) *Imagefacade {
 	defaultMem, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -70,7 +70,7 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 	if err != nil {
 		panic(err)
 	}
-	return &PerceptorImagefacade{
+	return &Imagefacade{
 		Image:              "gcr.io/gke-verification/blackducksoftware/perceptor-imagefacade:master",
 		CPU:                defaultCPU,
 		Memory:             defaultMem,
@@ -91,7 +91,7 @@ func NewPerceptorImagefacade(serviceAccountName string) *PerceptorImagefacade {
 	}
 }
 
-func (pif *PerceptorImagefacade) Container() *v1.Container {
+func (pif *Imagefacade) Container() *v1.Container {
 	privileged := true
 	return &v1.Container{
 		Name:            "perceptor-imagefacade",
@@ -128,7 +128,7 @@ func (pif *PerceptorImagefacade) Container() *v1.Container {
 	}
 }
 
-func (pif *PerceptorImagefacade) Service() *v1.Service {
+func (pif *Imagefacade) Service() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
 			Name: pif.ServiceName,
@@ -143,7 +143,7 @@ func (pif *PerceptorImagefacade) Service() *v1.Service {
 			Selector: map[string]string{"name": pif.PodName}}}
 }
 
-func (pif *PerceptorImagefacade) ReplicationController() *v1.ReplicationController {
+func (pif *Imagefacade) ReplicationController() *v1.ReplicationController {
 	replicaCount := int32(1)
 	return &v1.ReplicationController{
 		ObjectMeta: v1meta.ObjectMeta{Name: pif.PodName},
@@ -178,7 +178,7 @@ func (pif *PerceptorImagefacade) ReplicationController() *v1.ReplicationControll
 				}}}}
 }
 
-func (pif *PerceptorImagefacade) ConfigMap() *v1.ConfigMap {
+func (pif *Imagefacade) ConfigMap() *v1.ConfigMap {
 	jsonBytes, err := json.Marshal(pif.Config)
 	if err != nil {
 		panic(err)

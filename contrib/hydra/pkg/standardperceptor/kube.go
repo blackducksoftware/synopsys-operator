@@ -32,11 +32,11 @@ import (
 type Kube struct {
 	Config *Config
 	// model objects
-	Perceptor    *model.PerceptorCore
+	Perceptor    *model.Perceptor
 	PodPerceiver *model.PodPerceiver
-	Scanner      *model.PerceptorScanner
-	ImageFacade  *model.PerceptorImagefacade
-	ScannerPod   *model.Scanner
+	Scanner      *model.Scanner
+	ImageFacade  *model.Imagefacade
+	ScannerPod   *model.ScannerPod
 	Prometheus   *model.Prometheus
 	// kubernetes resources
 	ReplicationControllers []*v1.ReplicationController
@@ -54,7 +54,7 @@ func NewKube(config *Config) *Kube {
 func (kube *Kube) createResources() {
 	config := kube.Config
 
-	perceptor := model.NewPerceptorCore()
+	perceptor := model.NewPerceptor()
 	perceptor.Config = config.PerceptorConfig()
 	perceptor.HubPasswordSecretName = config.HubPasswordSecretName
 	perceptor.HubPasswordSecretKey = config.HubPasswordSecretKey
@@ -63,23 +63,23 @@ func (kube *Kube) createResources() {
 	podPerceiver.Config = config.PodPerceiverConfig()
 	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
 
-	perceptorScanner := model.NewPerceptorScanner()
+	perceptorScanner := model.NewScanner()
 	perceptorScanner.Config = config.PerceptorScannerConfig()
 	perceptorScanner.Config.PerceptorHost = perceptor.ServiceName
 	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey
 	perceptorScanner.HubPasswordSecretName = config.HubPasswordSecretName
 
-	perceptorImagefacade := model.NewPerceptorImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
-	perceptorImagefacade.Config = config.PerceptorImagefacadeConfig()
+	imageFacade := model.NewImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
+	imageFacade.Config = config.PerceptorImagefacadeConfig()
 
 	prometheus := model.NewPrometheus()
 	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
 	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorScanner.ServiceName, Port: config.ScannerPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorImagefacade.ServiceName, Port: config.ImageFacadePort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: imageFacade.ServiceName, Port: config.ImageFacadePort})
 	prometheus.AddTarget(&model.PrometheusTarget{Host: podPerceiver.ServiceName, Port: config.PodPerceiverPort})
 	//	prometheus.Config = config.PrometheusConfig() // TODO ?
 
-	scanner := model.NewScanner(perceptorScanner, perceptorImagefacade)
+	scanner := model.NewScannerPod(perceptorScanner, imageFacade)
 	scanner.ReplicaCount = config.ScannerReplicationCount
 
 	kube.ReplicationControllers = []*v1.ReplicationController{
@@ -91,14 +91,14 @@ func (kube *Kube) createResources() {
 		perceptor.Service(),
 		podPerceiver.Service(),
 		perceptorScanner.Service(),
-		perceptorImagefacade.Service(),
+		imageFacade.Service(),
 		//		prometheus.Service(),
 	}
 	kube.ConfigMaps = []*v1.ConfigMap{
 		perceptor.ConfigMap(),
 		podPerceiver.ConfigMap(),
 		perceptorScanner.ConfigMap(),
-		perceptorImagefacade.ConfigMap(),
+		imageFacade.ConfigMap(),
 		prometheus.ConfigMap(),
 	}
 	kube.Secrets = []*v1.Secret{
@@ -116,7 +116,7 @@ func (kube *Kube) createResources() {
 	kube.Perceptor = perceptor
 	kube.Scanner = perceptorScanner
 	kube.ScannerPod = scanner
-	kube.ImageFacade = perceptorImagefacade
+	kube.ImageFacade = imageFacade
 	kube.PodPerceiver = podPerceiver
 	kube.Prometheus = prometheus
 }

@@ -27,6 +27,7 @@ import (
 	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
 	perceptor "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/standardperceptor"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/kubernetes"
 )
@@ -64,6 +65,7 @@ func (b *Builder) CreateResources() {
 		PrettyPrint(configMap)
 		_, err := clientset.Core().ConfigMaps(namespace).Create(configMap)
 		if err != nil {
+			log.Errorf("unable to create configmap %+v", configMap)
 			panic(err)
 		}
 	}

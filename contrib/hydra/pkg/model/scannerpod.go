@@ -19,32 +19,37 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package scannertester
+package model
 
 import (
 	"k8s.io/api/core/v1"
 
-	model "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ScannerTester struct {
+type ScannerPod struct {
 	PodName string
 
 	ReplicaCount int32
 
+	DockerSocketName string
+	DockerSocketPath string
+
 	ImagesMountName string
 	ImagesMountPath string
 
-	Scanner     *model.Scanner
-	Imagefacade *model.MockImagefacade
+	Scanner     *Scanner
+	Imagefacade *Imagefacade
 }
 
-func NewScannerTester(scanner *model.Scanner, imagefacade *model.MockImagefacade) *ScannerTester {
-	scannerTester := &ScannerTester{
-		PodName: "scanner-tester",
+func NewScannerPod(scanner *Scanner, imagefacade *Imagefacade) *ScannerPod {
+	scannerPod := &ScannerPod{
+		PodName: "perceptor-scanner",
 
-		ReplicaCount: 1,
+		ReplicaCount: 0,
+
+		DockerSocketName: "dir-docker-socket",
+		DockerSocketPath: "/var/run/docker.sock",
 
 		ImagesMountName: "var-images",
 		ImagesMountPath: "/var/images",
@@ -53,20 +58,23 @@ func NewScannerTester(scanner *model.Scanner, imagefacade *model.MockImagefacade
 		Imagefacade: imagefacade,
 	}
 
-	scanner.ImagesMountName = scannerTester.ImagesMountName
-	scanner.ImagesMountPath = scannerTester.ImagesMountPath
+	scanner.ImagesMountName = scannerPod.ImagesMountName
+	scanner.ImagesMountPath = scannerPod.ImagesMountPath
 
-	scanner.PodName = scannerTester.PodName
+	scanner.PodName = scannerPod.PodName
 
-	imagefacade.ImagesMountName = scannerTester.ImagesMountName
-	imagefacade.ImagesMountPath = scannerTester.ImagesMountPath
+	imagefacade.ImagesMountName = scannerPod.ImagesMountName
+	imagefacade.ImagesMountPath = scannerPod.ImagesMountPath
 
-	imagefacade.PodName = scannerTester.PodName
+	imagefacade.DockerSocketName = scannerPod.DockerSocketName
+	imagefacade.DockerSocketPath = scannerPod.DockerSocketPath
 
-	return scannerTester
+	imagefacade.PodName = scannerPod.PodName
+
+	return scannerPod
 }
 
-func (sc *ScannerTester) ReplicationController() *v1.ReplicationController {
+func (sc *ScannerPod) ReplicationController() *v1.ReplicationController {
 	return &v1.ReplicationController{
 		ObjectMeta: v1meta.ObjectMeta{Name: sc.PodName},
 		Spec: v1.ReplicationControllerSpec{
@@ -96,7 +104,15 @@ func (sc *ScannerTester) ReplicationController() *v1.ReplicationController {
 							Name:         sc.ImagesMountName,
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
+						v1.Volume{
+							Name: sc.DockerSocketName,
+							VolumeSource: v1.VolumeSource{
+								HostPath: &v1.HostPathVolumeSource{Path: sc.DockerSocketPath},
+							},
+						},
 					},
-					Containers: []v1.Container{*sc.Scanner.Container(), *sc.Imagefacade.Container()},
+					Containers:         []v1.Container{*sc.Scanner.Container(), *sc.Imagefacade.Container()},
+					ServiceAccountName: sc.Imagefacade.ServiceAccountName,
+					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
 				}}}}
 }

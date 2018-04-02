@@ -39,7 +39,7 @@ type PerceptorConfigMap struct {
 	LogLevel              string
 }
 
-type PerceptorCore struct {
+type Perceptor struct {
 	PodName string
 	Image   string
 	CPU     resource.Quantity
@@ -57,7 +57,7 @@ type PerceptorCore struct {
 	ServiceName  string
 }
 
-func NewPerceptorCore() *PerceptorCore {
+func NewPerceptor() *Perceptor {
 	memory, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -67,7 +67,7 @@ func NewPerceptorCore() *PerceptorCore {
 		panic(err)
 	}
 
-	return &PerceptorCore{
+	return &Perceptor{
 		PodName:        "perceptor",
 		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor:master",
 		CPU:            cpu,
@@ -80,7 +80,7 @@ func NewPerceptorCore() *PerceptorCore {
 	}
 }
 
-func (pc *PerceptorCore) Container() *v1.Container {
+func (pc *Perceptor) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "perceptor",
 		Image:           pc.Image,
@@ -120,7 +120,7 @@ func (pc *PerceptorCore) Container() *v1.Container {
 	}
 }
 
-func (pc *PerceptorCore) ReplicationController() *v1.ReplicationController {
+func (pc *Perceptor) ReplicationController() *v1.ReplicationController {
 	return &v1.ReplicationController{
 		ObjectMeta: v1meta.ObjectMeta{Name: pc.PodName},
 		Spec: v1.ReplicationControllerSpec{
@@ -144,7 +144,7 @@ func (pc *PerceptorCore) ReplicationController() *v1.ReplicationController {
 				}}}}
 }
 
-func (pc *PerceptorCore) Service() *v1.Service {
+func (pc *Perceptor) Service() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
 			Name: pc.ServiceName,
@@ -159,7 +159,7 @@ func (pc *PerceptorCore) Service() *v1.Service {
 			Selector: map[string]string{"name": pc.ServiceName}}}
 }
 
-func (pc *PerceptorCore) ConfigMap() *v1.ConfigMap {
+func (pc *Perceptor) ConfigMap() *v1.ConfigMap {
 	jsonBytes, err := json.Marshal(pc.Config)
 	if err != nil {
 		panic(err)
