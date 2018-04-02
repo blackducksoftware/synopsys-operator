@@ -17,7 +17,8 @@ oc new-project $NS
 
 cat << EOF > aux-config.json
 {
-	"Namespace": "$NS"
+	"Namespace": "$NS",
+	"IsOpenshift": true
 }
 EOF
 

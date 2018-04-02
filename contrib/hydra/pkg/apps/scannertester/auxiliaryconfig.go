@@ -27,6 +27,8 @@ import (
 
 type AuxiliaryConfig struct {
 	Namespace string
+
+	IsOpenshift bool
 }
 
 func ReadAuxiliaryConfig(auxConfigPath string) *AuxiliaryConfig {

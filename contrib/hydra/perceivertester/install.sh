@@ -34,7 +34,8 @@ cat << EOF > aux-config.json
 {
 	"Namespace": "$NS",
 	"PodPerceiverServiceAccountName": "$POD_PERCEIVER_SA",
-	"ImagePerceiverServiceAccountName": "$IMAGE_PERCEIVER_SA"
+	"ImagePerceiverServiceAccountName": "$IMAGE_PERCEIVER_SA",
+	"IsOpenshift": true
 }
 EOF
 

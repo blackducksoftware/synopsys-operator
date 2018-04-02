@@ -26,24 +26,28 @@ import (
 	"github.com/spf13/viper"
 )
 
-type PerceiverTesterConfig struct {
+type Config struct {
 	// general protoform config
 	MasterURL      string
 	KubeConfigPath string
 
+	// Perceptor config
+	PerceptorPort int32
+
 	// perceivers config
-	PerceptorPort             int32
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
+	ImagePerceiverPort        int32
+	PodPerceiverPort          int32
 
 	LogLevel string
 
 	AuxConfig *AuxiliaryConfig
 }
 
-func ReadPerceiverTesterConfig(configPath string) *PerceiverTesterConfig {
+func ReadConfig(configPath string) *Config {
 	viper.SetConfigFile(configPath)
-	pc := &PerceiverTesterConfig{}
+	pc := &Config{}
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
@@ -52,7 +56,7 @@ func ReadPerceiverTesterConfig(configPath string) *PerceiverTesterConfig {
 	return pc
 }
 
-func (pc *PerceiverTesterConfig) PodPerceiverConfig() model.PodPerceiverConfigMap {
+func (pc *Config) PodPerceiverConfig() model.PodPerceiverConfigMap {
 	//	return model.NewPodPerceiverConfigMap("must set", pc.PerceptorPort, pc.AnnotationIntervalSeconds, pc.DumpIntervalMinutes, 4000)
 	return model.PodPerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
@@ -63,7 +67,7 @@ func (pc *PerceiverTesterConfig) PodPerceiverConfig() model.PodPerceiverConfigMa
 	}
 }
 
-func (pc *PerceiverTesterConfig) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
+func (pc *Config) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 	return model.ImagePerceiverConfigMap{
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
@@ -73,7 +77,7 @@ func (pc *PerceiverTesterConfig) ImagePerceiverConfig() model.ImagePerceiverConf
 	}
 }
 
-func (pc *PerceiverTesterConfig) PerceptorConfig() model.PerceptorConfigMap {
+func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 	return model.PerceptorConfigMap{
 		ConcurrentScanLimit:   2,
 		HubHost:               "doesn't matter -- unused",
