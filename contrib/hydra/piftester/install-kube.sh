@@ -34,4 +34,6 @@ cat << EOF > aux-config.json
 }
 EOF
 
-go run ./piftestermain.go ./config.json aux-config.json
+kubectl create -f ../prometheus-deployment.yaml --namespace=$NS
+
+go run ./piftester.go ./config.json aux-config.json

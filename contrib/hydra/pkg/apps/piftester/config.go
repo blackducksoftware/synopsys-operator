@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package pif
+package piftester
 
 import (
 	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
@@ -32,13 +32,17 @@ type Config struct {
 	KubeConfigPath string
 
 	// perceivers config
-	PerceptorPort             int32
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
+	PodPerceiverPort          int32
+	ImagePerceiverPort        int32
 
 	// imagefacade config
 	CreateImagesOnly bool
 	ImageFacadePort  int32
+
+	// PifTester config
+	PifTesterPort int32
 
 	LogLevel string
 
@@ -61,7 +65,7 @@ func (pc *Config) PodPerceiverConfig() model.PodPerceiverConfigMap {
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             "", // must be filled in elsewhere
-		PerceptorPort:             pc.PerceptorPort,
+		PerceptorPort:             pc.PifTesterPort,
 		Port:                      4000,
 	}
 }
@@ -71,7 +75,7 @@ func (pc *Config) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
 		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
 		PerceptorHost:             "", // must be filled in elsewhere
-		PerceptorPort:             pc.PerceptorPort,
+		PerceptorPort:             pc.PifTesterPort,
 		Port:                      4000,
 	}
 }
@@ -89,7 +93,7 @@ func (pc *Config) ImagefacadeConfig() model.ImagefacadeConfigMap {
 
 func (pc *Config) PifTesterConfig() model.PifTesterConfigMap {
 	return model.PifTesterConfigMap{
-		Port:            pc.PerceptorPort,
+		Port:            pc.PifTesterPort,
 		ImageFacadePort: pc.ImageFacadePort,
 	}
 }
