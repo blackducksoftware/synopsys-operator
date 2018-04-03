@@ -41,15 +41,18 @@ type Config struct {
 	UseMockPerceptorMode bool
 
 	// Perceivers config
-	ImagePerceiverPort        int32
-	PodPerceiverPort          int32
-	AnnotationIntervalSeconds int
-	DumpIntervalMinutes       int
+	ImagePerceiverPort           int32
+	PodPerceiverPort             int32
+	PodPerceiverReplicationCount int
+	AnnotationIntervalSeconds    int
+	DumpIntervalMinutes          int
 
 	// Scanner config
 	ScannerReplicationCount int32
 	ScannerPort             int32
 	ImageFacadePort         int32
+	ScannerMemory           string
+	JavaInitialHeapSizeMBs  int
 	JavaMaxHeapSizeMBs      int
 
 	// Secret config
@@ -99,6 +102,7 @@ func (pc *Config) ScannerConfig() model.ScannerConfigMap {
 		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
 		HubPort:                 pc.HubPort,
 		HubClientTimeoutSeconds: 60,
+		JavaInitialHeapSizeMBs:  pc.JavaInitialHeapSizeMBs,
 		JavaMaxHeapSizeMBs:      pc.JavaMaxHeapSizeMBs,
 		LogLevel:                pc.LogLevel,
 		Port:                    pc.ScannerPort,

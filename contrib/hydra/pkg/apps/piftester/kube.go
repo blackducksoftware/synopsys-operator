@@ -52,7 +52,8 @@ func (kube *Kube) createResources() {
 	pifTester := model.NewPifTester()
 	pifTester.Config = config.PifTesterConfig()
 
-	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
+	podPerceiverReplicationCount := 1
+	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName, podPerceiverReplicationCount)
 	podPerceiver.Config = config.PodPerceiverConfig()
 	podPerceiver.Config.PerceptorHost = pifTester.ServiceName
 

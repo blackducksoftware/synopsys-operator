@@ -59,11 +59,11 @@ func (kube *Kube) createResources() {
 	perceptor.HubPasswordSecretName = config.HubPasswordSecretName
 	perceptor.HubPasswordSecretKey = config.HubPasswordSecretKey
 
-	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
+	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName, config.PodPerceiverReplicationCount)
 	podPerceiver.Config = config.PodPerceiverConfig()
 	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
 
-	perceptorScanner := model.NewScanner()
+	perceptorScanner := model.NewScanner(config.ScannerMemory)
 	perceptorScanner.Config = config.ScannerConfig()
 	perceptorScanner.Config.PerceptorHost = perceptor.ServiceName
 	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey

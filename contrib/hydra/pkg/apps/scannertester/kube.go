@@ -58,7 +58,7 @@ func (kube *Kube) createResources() {
 	mockImagefacade := model.NewMockImagefacade()
 	mockImagefacade.Config = config.MockImagefacadeConfig()
 
-	scanner := model.NewScanner()
+	scanner := model.NewScanner(config.ScannerMemory)
 	scanner.Config = config.ScannerConfig()
 	scanner.HubPasswordSecretKey = config.HubPasswordSecretKey
 	scanner.HubPasswordSecretName = config.HubPasswordSecretName

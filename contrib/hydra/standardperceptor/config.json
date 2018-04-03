@@ -1,8 +1,8 @@
 {
-  "MasterURL": "https://54.67.89.98.xip.io:8443",
+  "MasterURL": "https://192.168.99.100:8443",
   "KubeConfigPath": "/Users/mfenwick/.kube/config",
 
-  "HubHost": "the-hub-hub.54.67.89.98.xip.io",
+  "HubHost": "35.224.116.128",
   "HubUser": "sysadmin",
   "HubUserPassword": "blackduck",
   "HubPort": 443,
@@ -15,13 +15,16 @@
 
   "ImagePerceiverPort": 4003,
   "PodPerceiverPort": 4008,
+  "PodPerceiverReplicationCount": 0,
   "AnnotationIntervalSeconds": 30,
   "DumpIntervalMinutes": 30,
 
   "ScannerReplicationCount": 1,
   "ScannerPort": 3777,
+  "ScannerMemory": "512Mi",
   "ImageFacadePort": 3931,
-  "JavaMaxHeapSizeMBs": 2048,
+  "JavaInitialHeapSizeMBs": 64,
+  "JavaMaxHeapSizeMBs": 128,
 
   "LogLevel": "debug"
 }

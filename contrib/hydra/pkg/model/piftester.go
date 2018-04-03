@@ -62,7 +62,7 @@ func NewPifTester() *PifTester {
 
 	return &PifTester{
 		PodName:        "piftester",
-		Image:          "gcr.io/gke-verification/blackducksoftware/piftester:debug-logging",
+		Image:          "gcr.io/gke-verification/blackducksoftware/piftester:master",
 		CPU:            cpu,
 		Memory:         memory,
 		ConfigMapName:  "piftester-config",

@@ -63,7 +63,7 @@ type PodPerceiver struct {
 	ServiceAccountName string
 }
 
-func NewPodPerceiver(serviceAccountName string) *PodPerceiver {
+func NewPodPerceiver(serviceAccountName string, replicaCount int) *PodPerceiver {
 	memory, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -81,7 +81,7 @@ func NewPodPerceiver(serviceAccountName string) *PodPerceiver {
 		ConfigMapName:      "perceiver",
 		ConfigMapMount:     "/etc/perceiver",
 		ConfigMapPath:      "perceiver.yaml",
-		ReplicaCount:       1,
+		ReplicaCount:       int32(replicaCount),
 		ServiceName:        "pod-perceiver",
 		ServiceAccountName: serviceAccountName,
 	}

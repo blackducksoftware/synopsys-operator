@@ -23,7 +23,6 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"k8s.io/api/core/v1"
 
@@ -38,7 +37,8 @@ type ScannerConfigMap struct {
 	HubPort                 int32
 	HubClientTimeoutSeconds int
 
-	JavaMaxHeapSizeMBs int
+	JavaInitialHeapSizeMBs int
+	JavaMaxHeapSizeMBs     int
 
 	LogLevel string
 	Port     int32
@@ -49,13 +49,14 @@ type ScannerConfigMap struct {
 	PerceptorPort int32
 }
 
-func NewScannerConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar string, hubPort int32, hubClientTimeoutSeconds int, javaMaxHeapSizeMBs int, logLevel string, port int32, imageFacadePort int32, perceptorHost string, perceptorPort int32) *ScannerConfigMap {
+func NewScannerConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar string, hubPort int32, hubClientTimeoutSeconds int, javaInitialHeapSizeMBs int, javaMaxHeapSizeMBs int, logLevel string, port int32, imageFacadePort int32, perceptorHost string, perceptorPort int32) *ScannerConfigMap {
 	return &ScannerConfigMap{
 		HubHost:                 hubHost,
 		HubUser:                 hubUser,
 		HubUserPasswordEnvVar:   hubUserPasswordEnvVar,
 		HubPort:                 hubPort,
 		HubClientTimeoutSeconds: hubClientTimeoutSeconds,
+		JavaInitialHeapSizeMBs:  javaInitialHeapSizeMBs,
 		JavaMaxHeapSizeMBs:      javaMaxHeapSizeMBs,
 		LogLevel:                logLevel,
 		Port:                    port,
@@ -66,8 +67,9 @@ func NewScannerConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar s
 }
 
 type Scanner struct {
-	Image string
-	CPU   resource.Quantity
+	Image  string
+	Memory resource.Quantity
+	CPU    resource.Quantity
 
 	ConfigMapName  string
 	ConfigMapMount string
@@ -85,13 +87,19 @@ type Scanner struct {
 	ImagesMountPath string
 }
 
-func NewScanner() *Scanner {
+func NewScanner(memoryString string) *Scanner {
+	memory, err := resource.ParseQuantity(memoryString)
+	if err != nil {
+		panic(err)
+	}
 	cpu, err := resource.ParseQuantity("500m")
 	if err != nil {
 		panic(err)
 	}
+
 	return &Scanner{
 		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:jvm-heap",
+		Memory:         memory,
 		CPU:            cpu,
 		ConfigMapName:  "perceptor-scanner-config",
 		ConfigMapMount: "/etc/perceptor_scanner",
@@ -104,15 +112,6 @@ func NewScanner() *Scanner {
 		ImagesMountName: "",
 		ImagesMountPath: "",
 	}
-}
-
-func (psp *Scanner) Memory() resource.Quantity {
-	str := fmt.Sprintf("%dMi", psp.Config.JavaMaxHeapSizeMBs)
-	memory, err := resource.ParseQuantity(str)
-	if err != nil {
-		panic(err)
-	}
-	return memory
 }
 
 func (psp *Scanner) Container() *v1.Container {
@@ -143,7 +142,11 @@ func (psp *Scanner) Container() *v1.Container {
 		Resources: v1.ResourceRequirements{
 			Requests: v1.ResourceList{
 				v1.ResourceCPU:    psp.CPU,
-				v1.ResourceMemory: psp.Memory(),
+				v1.ResourceMemory: psp.Memory,
+			},
+			Limits: v1.ResourceList{
+				v1.ResourceCPU:    psp.CPU,
+				v1.ResourceMemory: psp.Memory,
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{

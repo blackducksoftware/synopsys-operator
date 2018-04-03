@@ -35,7 +35,9 @@ type Config struct {
 	HubUserPassword string
 	HubPort         int32
 
-	JavaMaxHeapSizeMBs int
+	ScannerMemory          string
+	JavaInitialHeapSizeMBs int
+	JavaMaxHeapSizeMBs     int
 
 	PerceptorHost   string
 	PerceptorPort   int32
@@ -69,6 +71,7 @@ func (config *Config) ScannerConfig() model.ScannerConfigMap {
 		HubUser:                 config.HubUser,
 		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
 		HubPort:                 config.HubPort,
+		JavaInitialHeapSizeMBs:  config.JavaInitialHeapSizeMBs,
 		JavaMaxHeapSizeMBs:      config.JavaMaxHeapSizeMBs,
 		ImageFacadePort:         config.ImageFacadePort,
 		PerceptorHost:           config.PerceptorHost,

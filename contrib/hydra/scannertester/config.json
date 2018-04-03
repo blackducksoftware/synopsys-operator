@@ -1,5 +1,5 @@
 {
-  "MasterURL": "https://54.67.89.98.xip.io:8443",
+  "MasterURL": "https://192.168.99.100:8443",
   "KubeConfigPath": "/Users/mfenwick/.kube/config",
 
   "HubHost": "the-hub-hub.54.67.89.98.xip.io",
@@ -9,7 +9,9 @@
   "HubPasswordSecretName": "hub-password",
   "HubPasswordSecretKey": "hub-user-password",
 
-  "JavaMaxHeapSizeMBs": 10,
+  "ScannerMemory": "100Mi",
+  "JavaInitialHeapSizeMBs": 10,
+  "JavaMaxHeapSizeMBs": 200,
 
   "LogLevel": "debug",
 

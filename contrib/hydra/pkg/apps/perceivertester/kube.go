@@ -51,7 +51,8 @@ func (kube *Kube) createResources() {
 	perceptor := model.NewPerceptor()
 	perceptor.Config = config.PerceptorConfig()
 
-	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName)
+	podPerceiverReplicaCount := 1
+	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName, podPerceiverReplicaCount)
 	podPerceiver.Config = config.PodPerceiverConfig()
 	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
 
