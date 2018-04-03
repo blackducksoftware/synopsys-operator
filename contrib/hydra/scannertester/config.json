@@ -9,7 +9,7 @@
   "HubPasswordSecretName": "hub-password",
   "HubPasswordSecretKey": "hub-user-password",
 
-  "JavaMaxHeapSizeMBs": "2048",
+  "JavaMaxHeapSizeMBs": 10,
 
   "LogLevel": "debug",
 

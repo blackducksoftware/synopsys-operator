@@ -64,7 +64,7 @@ func ReadConfig(configPath string) *Config {
 
 func (config *Config) ScannerConfig() model.ScannerConfigMap {
 	return model.ScannerConfigMap{
-		HubClientTimeoutSeconds: 60,
+		HubClientTimeoutSeconds: 120,
 		HubHost:                 config.HubHost,
 		HubUser:                 config.HubUser,
 		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
@@ -86,8 +86,9 @@ func (config *Config) MockImagefacadeConfig() model.MockImagefacadeConfigMap {
 
 func (config *Config) PerceptorConfig() model.PerceptorConfigMap {
 	return model.PerceptorConfigMap{
-		Port:        config.PerceptorPort,
-		UseMockMode: true,
-		LogLevel:    config.LogLevel,
+		Port:                  config.PerceptorPort,
+		UseMockMode:           true,
+		LogLevel:              config.LogLevel,
+		HubUserPasswordEnvVar: "SCANNER_HUBPASSWORD",
 	}
 }

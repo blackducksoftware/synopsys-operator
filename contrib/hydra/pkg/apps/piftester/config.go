@@ -95,5 +95,6 @@ func (pc *Config) PifTesterConfig() model.PifTesterConfigMap {
 	return model.PifTesterConfigMap{
 		Port:            pc.PifTesterPort,
 		ImageFacadePort: pc.ImageFacadePort,
+		LogLevel:        pc.LogLevel,
 	}
 }

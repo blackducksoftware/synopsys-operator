@@ -52,6 +52,8 @@ func (kube *Kube) createResources() {
 
 	perceptor := model.NewPerceptor()
 	perceptor.Config = config.PerceptorConfig()
+	perceptor.HubPasswordSecretName = config.HubPasswordSecretName
+	perceptor.HubPasswordSecretKey = config.HubPasswordSecretKey
 
 	mockImagefacade := model.NewMockImagefacade()
 	mockImagefacade.Config = config.MockImagefacadeConfig()

@@ -23,6 +23,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"k8s.io/api/core/v1"
 
@@ -65,9 +66,8 @@ func NewScannerConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar s
 }
 
 type Scanner struct {
-	Image  string
-	CPU    resource.Quantity
-	Memory resource.Quantity
+	Image string
+	CPU   resource.Quantity
 
 	ConfigMapName  string
 	ConfigMapMount string
@@ -86,18 +86,13 @@ type Scanner struct {
 }
 
 func NewScanner() *Scanner {
-	memory, err := resource.ParseQuantity("1Gi")
-	if err != nil {
-		panic(err)
-	}
 	cpu, err := resource.ParseQuantity("500m")
 	if err != nil {
 		panic(err)
 	}
 	return &Scanner{
-		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
+		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:jvm-heap",
 		CPU:            cpu,
-		Memory:         memory,
 		ConfigMapName:  "perceptor-scanner-config",
 		ConfigMapMount: "/etc/perceptor_scanner",
 		ConfigMapPath:  "perceptor_scanner_conf.yaml",
@@ -109,6 +104,15 @@ func NewScanner() *Scanner {
 		ImagesMountName: "",
 		ImagesMountPath: "",
 	}
+}
+
+func (psp *Scanner) Memory() resource.Quantity {
+	str := fmt.Sprintf("%dMi", psp.Config.JavaMaxHeapSizeMBs)
+	memory, err := resource.ParseQuantity(str)
+	if err != nil {
+		panic(err)
+	}
+	return memory
 }
 
 func (psp *Scanner) Container() *v1.Container {
@@ -139,7 +143,7 @@ func (psp *Scanner) Container() *v1.Container {
 		Resources: v1.ResourceRequirements{
 			Requests: v1.ResourceList{
 				v1.ResourceCPU:    psp.CPU,
-				v1.ResourceMemory: psp.Memory,
+				v1.ResourceMemory: psp.Memory(),
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{

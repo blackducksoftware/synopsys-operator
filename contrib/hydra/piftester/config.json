@@ -12,5 +12,5 @@
 
   "PifTesterPort": 3005,
 
-  "LogLevel": "info"
+  "LogLevel": "debug"
 }

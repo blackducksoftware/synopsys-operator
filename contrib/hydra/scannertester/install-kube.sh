@@ -17,6 +17,8 @@ cat << EOF > aux-config.json
 }
 EOF
 
+kubectl create ns $NS
+
 kubectl create -f ../prometheus-deployment.yaml --namespace=$NS
 
 go run ./scannertester.go ./config.json aux-config.json

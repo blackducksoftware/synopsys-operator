@@ -32,6 +32,7 @@ import (
 type PifTesterConfigMap struct {
 	Port            int32
 	ImageFacadePort int32
+	LogLevel        string
 }
 
 type PifTester struct {
@@ -61,7 +62,7 @@ func NewPifTester() *PifTester {
 
 	return &PifTester{
 		PodName:        "piftester",
-		Image:          "mfenwickbd/piftester:latest", //gcr.io/gke-verification/blackducksoftware/piftester:latest",
+		Image:          "gcr.io/gke-verification/blackducksoftware/piftester:debug-logging",
 		CPU:            cpu,
 		Memory:         memory,
 		ConfigMapName:  "piftester-config",
