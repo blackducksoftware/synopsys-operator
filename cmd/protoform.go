@@ -306,7 +306,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 					KeyFromSecret: "HubUserPassword",
 				},
 			},
-			name:   "perceptor",
+			name:   pc.PerceptorImageName,
 			image:  paths["perceptor"],
 			port:   int32(pc.PerceptorPort),
 			cmd:    []string{"./perceptor"},
@@ -323,7 +323,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			emptyDirMounts: map[string]string{
 				"logs": "/tmp",
 			},
-			name:               "pod-perceiver",
+			name:               pc.PodPerceiverImageName,
 			image:              paths["pod-perceiver"],
 			port:               int32(pc.PerceiverPort),
 			cmd:                []string{},
@@ -348,7 +348,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:               "perceptor-scanner",
+			name:               pc.ScannerImageName,
 			image:              paths["perceptor-scanner"],
 			dockerSocket:       false,
 			port:               int32(pc.ScannerPort),
@@ -363,7 +363,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:               "perceptor-image-facade",
+			name:               pc.ImageFacadeImageName,
 			image:              paths["perceptor-imagefacade"],
 			dockerSocket:       true,
 			port:               int32(pc.ImageFacadePort),
@@ -390,7 +390,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 				emptyDirMounts: map[string]string{
 					"logs": "/tmp",
 				},
-				name:               "image-perceiver",
+				name:               pc.ImagePerceiverImageName,
 				image:              paths["image-perceiver"],
 				port:               int32(pc.PerceiverPort),
 				cmd:                []string{},
