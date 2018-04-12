@@ -47,7 +47,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: perceiver
-  namespace: test-kipp-perceptor
+  namespace: ${_arg_pcp_namespace}
 roleRef:
   kind: ClusterRole
   name: all-permission-on-pod-for-perceiver
