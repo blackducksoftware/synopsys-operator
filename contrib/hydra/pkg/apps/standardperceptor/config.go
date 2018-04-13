@@ -55,6 +55,9 @@ type Config struct {
 	JavaInitialHeapSizeMBs  int
 	JavaMaxHeapSizeMBs      int
 
+	// Skyfire config
+	SkyfirePort int32
+
 	// Secret config
 	HubPasswordSecretName string
 	HubPasswordSecretKey  string
@@ -101,7 +104,7 @@ func (pc *Config) ScannerConfig() model.ScannerConfigMap {
 		HubUser:                 pc.HubUser,
 		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
 		HubPort:                 pc.HubPort,
-		HubClientTimeoutSeconds: 60,
+		HubClientTimeoutSeconds: 120,
 		JavaInitialHeapSizeMBs:  pc.JavaInitialHeapSizeMBs,
 		JavaMaxHeapSizeMBs:      pc.JavaMaxHeapSizeMBs,
 		LogLevel:                pc.LogLevel,
@@ -132,5 +135,20 @@ func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 		UseMockMode:           pc.UseMockPerceptorMode,
 		Port:                  pc.PerceptorPort,
 		LogLevel:              pc.LogLevel,
+	}
+}
+
+func (pc *Config) SkyfireConfig() model.SkyfireConfigMap {
+	return model.SkyfireConfigMap{
+		HubHost:     pc.HubHost,
+		HubUser:     pc.HubUser,
+		HubPassword: pc.HubUserPassword,
+		// TODO pc.HubPort ?
+		HipchatRoom:        "PushTesting",
+		LogLevel:           pc.LogLevel,
+		PerceptorHost:      "", // must be filled in elsewhere
+		PerceptorPort:      pc.PerceptorPort,
+		Port:               pc.SkyfirePort,
+		UseInClusterConfig: true,
 	}
 }

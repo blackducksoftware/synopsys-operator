@@ -38,6 +38,7 @@ type Kube struct {
 	ImageFacade  *model.Imagefacade
 	ScannerPod   *model.ScannerPod
 	Prometheus   *model.Prometheus
+	Skyfire      *model.Skyfire
 	// kubernetes resources
 	ReplicationControllers []*v1.ReplicationController
 	ConfigMaps             []*v1.ConfigMap
@@ -72,11 +73,16 @@ func (kube *Kube) createResources() {
 	imageFacade := model.NewImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
 	imageFacade.Config = config.ImagefacadeConfig()
 
+	skyfire := model.NewSkyfire()
+	skyfire.Config = config.SkyfireConfig()
+	skyfire.Config.PerceptorHost = perceptor.ServiceName
+
 	prometheus := model.NewPrometheus()
 	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
 	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorScanner.ServiceName, Port: config.ScannerPort})
 	prometheus.AddTarget(&model.PrometheusTarget{Host: imageFacade.ServiceName, Port: config.ImageFacadePort})
 	prometheus.AddTarget(&model.PrometheusTarget{Host: podPerceiver.ServiceName, Port: config.PodPerceiverPort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: skyfire.ServiceName, Port: config.SkyfirePort})
 	//	prometheus.Config = config.PrometheusConfig() // TODO ?
 
 	scanner := model.NewScannerPod(perceptorScanner, imageFacade)
@@ -86,12 +92,14 @@ func (kube *Kube) createResources() {
 		perceptor.ReplicationController(),
 		podPerceiver.ReplicationController(),
 		scanner.ReplicationController(),
+		skyfire.ReplicationController(),
 	}
 	kube.Services = []*v1.Service{
 		perceptor.Service(),
 		podPerceiver.Service(),
 		perceptorScanner.Service(),
 		imageFacade.Service(),
+		skyfire.Service(),
 		//		prometheus.Service(),
 	}
 	kube.ConfigMaps = []*v1.ConfigMap{
@@ -100,6 +108,7 @@ func (kube *Kube) createResources() {
 		perceptorScanner.ConfigMap(),
 		imageFacade.ConfigMap(),
 		prometheus.ConfigMap(),
+		skyfire.ConfigMap(),
 	}
 	kube.Secrets = []*v1.Secret{
 		&v1.Secret{
@@ -119,6 +128,7 @@ func (kube *Kube) createResources() {
 	kube.ImageFacade = imageFacade
 	kube.PodPerceiver = podPerceiver
 	kube.Prometheus = prometheus
+	kube.Skyfire = skyfire
 }
 
 func (kube *Kube) GetConfigMaps() []*v1.ConfigMap {

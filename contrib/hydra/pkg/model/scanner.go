@@ -98,7 +98,7 @@ func NewScanner(memoryString string) *Scanner {
 	}
 
 	return &Scanner{
-		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:jvm-heap",
+		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor-scanner:master",
 		Memory:         memory,
 		CPU:            cpu,
 		ConfigMapName:  "perceptor-scanner-config",

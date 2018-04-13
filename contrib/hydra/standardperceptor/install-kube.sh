@@ -40,6 +40,8 @@ kubectl create -f ../prometheus-deployment.yaml --namespace=$NS
 go run ./perceptor.go ./config.json aux-config.json
 
 # If running on minikube:
-# minikube service prometheus -n bds-perceptor --url
+#   minikube service prometheus -n bds-perceptor --url
+#   kubectl expose service perceptor --port=3001 --type=NodePort --name=perceptor-3 -n bds-perceptor
+#
 # Otherwise:
-# kubectl expose service prometheus --name=prometheus-metrics --port=9090 --target-port=9090 --type=LoadBalancer -n bds-perceptor
+#   kubectl expose service prometheus --name=prometheus-metrics --port=9090 --target-port=9090 --type=LoadBalancer -n bds-perceptor
