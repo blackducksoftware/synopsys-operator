@@ -206,7 +206,7 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 
 	if p.PerceptorSkyfire {
 		defaults["skyfire-config"] = fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, "3005", `","HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort,
-			`","LogLevel": "`, p.LogLevel, `","HipchatRoom": "`, "PushTesting", `"}`)
+			`","LogLevel": "`, p.LogLevel, `"}`)
 	}
 
 	maps := make([]*v1.ConfigMap, len(configs))
