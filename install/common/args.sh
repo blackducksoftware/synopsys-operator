@@ -5,6 +5,7 @@
 # ARG_OPTIONAL_BOOLEAN([image-perceiver],[o],[Whether the image perceiver is enabled.],[off])
 # ARG_OPTIONAL_BOOLEAN([prometheus-metrics],[M],[Whether the prometheus metrics is enabled.],[off])
 # ARG_OPTIONAL_BOOLEAN([developer-mode],[d],[Whether the Developer mode is enabled.],[off])
+# ARG_OPTIONAL_BOOLEAN([skyfire],[--skyfire],[Whether the Skyfire container to be installed.],[off])
 #
 
 # ARG_OPTIONAL_SINGLE([private-registry],[p],[A private registry url you will need to pull images for scan.],["docker-registry.default.svc:5000"])
@@ -82,8 +83,9 @@ _arg_hub_max_concurrent_scans="7"
 _arg_prompt="off"
 _arg_container_default_cpu="300m"
 _arg_container_default_memory="1300Mi"
-_arg_container_default_log_level="info"
+_arg_container_default_log_level="debug"
 _arg_developer_mode="off"
+_arg_skyfire="off"
 
 # Function that prints general usage of the script.
 # This is useful if users asks for it, or if there is an argument parsing error (unexpected / spurious arguments)
@@ -414,6 +416,11 @@ parse_commandline ()
 			--no-prompt|--prompt)
 				_arg_prompt="on"
 				test "${1:0:5}" = "--no-" && _arg_prompt="off"
+				;;
+			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
+			--no-skyfire|--skyfire)
+				_arg_skyfire="on"
+				test "${1:0:5}" = "--no-" && _arg_skyfire="off"
 				;;
 			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
 			-h|--help)

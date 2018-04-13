@@ -402,6 +402,33 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		svc = append(svc, svcOpenshift)
 	}
 
+	if pc.PerceptorSkyfire {
+		rcSkyfire, svcSkyfire := NewRcSvc([]*PerceptorRC{
+			&PerceptorRC{
+				replicas:        1,
+				configMapMounts: map[string]string{"skyfire": "/etc/skyfire"},
+				emptyDirMounts: map[string]string{
+					"logs": "/tmp",
+				},
+				env: []EnvSecret{
+					{
+						EnvName:       pc.HubUserPasswordEnvVar,
+						SecretName:    pc.ViperSecret,
+						KeyFromSecret: "HubUserPassword",
+					},
+				},
+				name:               "skyfire",
+				image:              "gcr.io/blackducksoftware/skyfire-daemon:master",
+				port:               3005,
+				cmd:                []string{},
+				serviceAccount:     pc.ServiceAccounts["image-perceiver"],
+				serviceAccountName: pc.ServiceAccounts["image-perceiver"],
+			},
+		})
+		rcs = append(rcs, rcSkyfire)
+		svc = append(svc, svcSkyfire)
+	}
+
 	// TODO MAKE SURE WE VERIFY THAT SERVICE ACCOUNTS ARE EQUAL
 
 	for i, rc := range rcs {

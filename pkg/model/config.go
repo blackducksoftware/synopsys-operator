@@ -74,6 +74,9 @@ type ProtoformConfig struct {
 
 	// Environment Variables
 	HubUserPasswordEnvVar string
+
+	// Automate test
+	PerceptorSkyfire bool
 }
 
 func (p *ProtoformConfig) setDefaultValues() {
@@ -186,6 +189,7 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 		"perceiver":                    "perceiver.yaml",
 		"perceptor-config":             "perceptor_conf.yaml",
 		"perceptor-imagefacade-config": "perceptor_imagefacade_conf.yaml",
+		"skyfire-config":               "skyfire_conf.yaml",
 	}
 
 	// Sed replace these.  Fine grained control over the json default format
@@ -198,6 +202,11 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 		"perceptor-scanner-config":     fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`),
 		"perceiver":                    fmt.Sprint(`{"PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","AnnotationIntervalSeconds": "`, p.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, p.DumpIntervalMinutes, `","Port": "`, p.PerceiverPort, `","LogLevel": "`, p.LogLevel, `"}`),
 		"perceptor-imagefacade-config": fmt.Sprint(`{"DockerUser": "`, p.DockerUsername, `","DockerPassword": "`, p.DockerPasswordOrToken, `","Port": "`, p.ImageFacadePort, `","InternalDockerRegistries": `, generateStringFromStringArr(p.InternalDockerRegistries), `,"LogLevel": "`, p.LogLevel, `"}`),
+	}
+
+	if p.PerceptorSkyfire {
+		defaults["skyfire-config"] = fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, "3005", `","HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort,
+			`","LogLevel": "`, p.LogLevel, `","HipchatRoom": "`, "PushTesting", `"}`)
 	}
 
 	maps := make([]*v1.ConfigMap, len(configs))
