@@ -17,7 +17,6 @@ type ProtoformConfig struct {
 
 	// CONTAINER CONFIGS
 	// These are sed replaced into the config maps for the containers.
-	PerceptorHost                    string
 	PerceptorPort                    int
 	ScannerPort                      int
 	PerceiverPort                    int
@@ -80,9 +79,6 @@ type ProtoformConfig struct {
 }
 
 func (p *ProtoformConfig) setDefaultValues() {
-	if p.PerceptorHost == "" {
-		p.PerceptorHost = "perceptor"
-	}
 	if p.PerceptorPort == 0 {
 		p.PerceptorPort = 3001
 	}
@@ -197,15 +193,15 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 	// (I think)? Due to the fct that nested anonymous []string's seem to not be
 	// "a thing".
 	defaults := map[string]string{
-		"prometheus":                   fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["perceptor:`, p.PerceptorPort, `","perceptor-scanner:`, p.ScannerPort, `","image-perceiver:`, p.PerceiverPort, `","pod-perceiver:`, p.PerceiverPort, `","perceptor-image-facade:`, p.ImageFacadePort, `"]}]}]}`),
+		"prometheus":                   fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["`, p.PerceptorImageName, `:`, p.PerceptorPort, `","`, p.ScannerImageName, `:`, p.ScannerPort, `","`, p.ImagePerceiverImageName, `:`, p.PerceiverPort, `","`, p.PodPerceiverImageName, `:`, p.PerceiverPort, `","`, p.ImageFacadeImageName, `:`, p.ImageFacadePort, `","skyfire:`, "3005", `"]}]}]}`),
 		"perceptor-config":             fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutPerceptorSeconds, `","ConcurrentScanLimit": "`, p.ConcurrentScanLimit, `","Port": "`, p.PerceptorPort, `","LogLevel": "`, p.LogLevel, `"}`),
-		"perceptor-scanner-config":     fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`),
-		"perceiver":                    fmt.Sprint(`{"PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","AnnotationIntervalSeconds": "`, p.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, p.DumpIntervalMinutes, `","Port": "`, p.PerceiverPort, `","LogLevel": "`, p.LogLevel, `"}`),
+		"perceptor-scanner-config":     fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`),
+		"perceiver":                    fmt.Sprint(`{"PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","AnnotationIntervalSeconds": "`, p.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, p.DumpIntervalMinutes, `","Port": "`, p.PerceiverPort, `","LogLevel": "`, p.LogLevel, `"}`),
 		"perceptor-imagefacade-config": fmt.Sprint(`{"DockerUser": "`, p.DockerUsername, `","DockerPassword": "`, p.DockerPasswordOrToken, `","Port": "`, p.ImageFacadePort, `","InternalDockerRegistries": `, generateStringFromStringArr(p.InternalDockerRegistries), `,"LogLevel": "`, p.LogLevel, `"}`),
 	}
 
 	if p.PerceptorSkyfire {
-		defaults["skyfire-config"] = fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, "3005", `","HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.PerceptorHost, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort,
+		defaults["skyfire-config"] = fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, "3005", `","HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadePort": "`, p.ImageFacadePort,
 			`","LogLevel": "`, p.LogLevel, `"}`)
 	}
 
