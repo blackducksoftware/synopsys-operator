@@ -84,7 +84,7 @@ _arg_hub_max_concurrent_scans="7"
 _arg_prompt="off"
 _arg_container_default_cpu="300m"
 _arg_container_default_memory="1300Mi"
-_arg_container_default_log_level="debug"
+_arg_container_default_log_level="info"
 _arg_developer_mode="off"
 _arg_skyfire="off"
 
