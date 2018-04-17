@@ -21,7 +21,7 @@
 # ARG_OPTIONAL_SINGLE([hub-host],[H],[hub hostname ],[nginx-webapp-logstash])
 # ARG_OPTIONAL_SINGLE([hub-port],[P],[hub port ],[8443])
 # ARG_OPTIONAL_SINGLE([hub-client-timeout-perceptor-seconds],[T],[hub client timeout for perceptor in seconds ],[5])
-# ARG_OPTIONAL_SINGLE([hub-client-timeout-scanner-seconds],[],[hub client timeout for perceptor scanner in seconds ],[120])
+# ARG_OPTIONAL_SINGLE([hub-client-timeout-scanner-seconds],[s],[hub client timeout for perceptor scanner in seconds ],[120])
 # ARG_OPTIONAL_SINGLE([hub-max-concurrent-scans],[C],[maximum scans at a time for the hub],[7])
 # ARG_OPTIONAL_SINGLE([container-default-cpu],[u],[All containers default cpu],[300m])
 # ARG_OPTIONAL_SINGLE([container-default-memory],[m],[All containers default memory],[1300Mi])
