@@ -7,14 +7,14 @@
 - perceptor-image-facade
 - perceptor-scan
 
-To run it, clone this repo and simply run: `install.sh`
+To run it, clone this repo and simply run: `install.sh --prompt`
 
 ## Tested Cluster Versions
 
-Protoform has been run agaginst he following clusters:
+Protoform has been run against the following clusters:
 
 - Kubernetes 1.9.1
-- Openshift Origin 3.7
+- Openshift Origin 3.6, 3.7 and 3.9
 
 ## Prerequisites
 
@@ -24,4 +24,4 @@ Protoform will attempt to detect your cluster type, and bootstrap all necessary 
 
 ## Run without cloning the source
 
-Note that you can easily run without cloning, just pull down `install.sh` and `pre-install.sh` into the same directory.
+Note that you can easily run without cloning, just pull down `install` directory.
