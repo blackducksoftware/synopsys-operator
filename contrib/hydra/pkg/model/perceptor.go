@@ -33,17 +33,19 @@ type PerceptorConfigMap struct {
 	HubHost               string
 	HubUser               string
 	HubUserPasswordEnvVar string
+	HubPort               int
 	ConcurrentScanLimit   int
 	UseMockMode           bool
 	Port                  int32
 	LogLevel              string
 }
 
-func NewPerceptorConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar string, concurrentScanLimit int, useMockMode bool, port int32, logLevel string) *PerceptorConfigMap {
+func NewPerceptorConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar string, hubPort int, concurrentScanLimit int, useMockMode bool, port int32, logLevel string) *PerceptorConfigMap {
 	return &PerceptorConfigMap{
 		HubHost:               hubHost,
 		HubUser:               hubUser,
 		HubUserPasswordEnvVar: hubUserPasswordEnvVar,
+		HubPort:               hubPort,
 		ConcurrentScanLimit:   concurrentScanLimit,
 		UseMockMode:           useMockMode,
 		Port:                  port,

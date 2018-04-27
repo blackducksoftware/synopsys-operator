@@ -132,6 +132,7 @@ func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 		HubHost:               pc.HubHost,
 		HubUser:               pc.HubUser,
 		HubUserPasswordEnvVar: "PERCEPTOR_HUBUSERPASSWORD",
+		HubPort:               int(pc.HubPort),
 		UseMockMode:           pc.UseMockPerceptorMode,
 		Port:                  pc.PerceptorPort,
 		LogLevel:              pc.LogLevel,
@@ -144,11 +145,13 @@ func (pc *Config) SkyfireConfig() model.SkyfireConfigMap {
 		HubUser:     pc.HubUser,
 		HubPassword: pc.HubUserPassword,
 		// TODO pc.HubPort ?
-		HipchatRoom:        "PushTesting",
-		LogLevel:           pc.LogLevel,
-		PerceptorHost:      "", // must be filled in elsewhere
-		PerceptorPort:      pc.PerceptorPort,
-		Port:               pc.SkyfirePort,
-		UseInClusterConfig: true,
+		KubeDumpIntervalSeconds:      15,
+		PerceptorDumpIntervalSeconds: 15,
+		HubDumpPauseSeconds:          30,
+		LogLevel:                     pc.LogLevel,
+		PerceptorHost:                "", // must be filled in elsewhere
+		PerceptorPort:                pc.PerceptorPort,
+		Port:                         pc.SkyfirePort,
+		UseInClusterConfig:           true,
 	}
 }

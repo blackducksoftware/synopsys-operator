@@ -36,6 +36,10 @@ type SkyfireConfigMap struct {
 	KubeConfigPath     string
 	LogLevel           string
 
+	KubeDumpIntervalSeconds      int
+	PerceptorDumpIntervalSeconds int
+	HubDumpPauseSeconds          int
+
 	Port int32
 
 	HubHost     string
@@ -44,11 +48,9 @@ type SkyfireConfigMap struct {
 
 	PerceptorHost string
 	PerceptorPort int32
-
-	HipchatRoom string
 }
 
-func NewSkyfireConfigMap(logLevel string, port int32, hubHost string, hubUser string, hubPassword string, perceptorHost string, perceptorPort int32, hipchatRoom string) *SkyfireConfigMap {
+func NewSkyfireConfigMap(logLevel string, port int32, hubHost string, hubUser string, hubPassword string, perceptorHost string, perceptorPort int32) *SkyfireConfigMap {
 	return &SkyfireConfigMap{
 		UseInClusterConfig: true,
 		LogLevel:           logLevel,
@@ -58,7 +60,6 @@ func NewSkyfireConfigMap(logLevel string, port int32, hubHost string, hubUser st
 		HubPassword:        hubPassword,
 		PerceptorHost:      perceptorHost,
 		PerceptorPort:      perceptorPort,
-		HipchatRoom:        hipchatRoom,
 	}
 }
 
@@ -92,7 +93,7 @@ func NewSkyfire() *Skyfire {
 
 	return &Skyfire{
 		PodName:        "skyfire",
-		Image:          "gcr.io/gke-verification/blackducksoftware/skyfire-daemon:master",
+		Image:          "gcr.io/gke-verification/blackducksoftware/skyfire:master",
 		CPU:            cpu,
 		Memory:         memory,
 		ConfigMapName:  "skyfire-config",
@@ -125,7 +126,7 @@ func (pc *Skyfire) Container() *v1.Container {
 		// 		},
 		// 	},
 		// },
-		Command: []string{"./daemon", pc.FullConfigMapPath()},
+		Command: []string{"./skyfire", pc.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
 				ContainerPort: pc.Config.Port,
