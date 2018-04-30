@@ -57,6 +57,8 @@ func readConfig(configPath string) *model.ProtoformConfig {
 	viper.AddConfigPath(configPath)
 
 	pc := &model.ProtoformConfig{}
+	pc.HubUserPasswordEnvVar = "PCP_HUBUSERPASSWORD"
+	pc.ViperSecret = "viper-secret"
 	log.Print(configPath)
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -299,12 +301,12 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			configMapMounts: map[string]string{"perceptor-config": "/etc/perceptor"},
 			env: []EnvSecret{
 				{
-					EnvName:       "PCP_HUBUSERPASSWORD",
-					SecretName:    "viper-secret",
+					EnvName:       pc.HubUserPasswordEnvVar,
+					SecretName:    pc.ViperSecret,
 					KeyFromSecret: "HubUserPassword",
 				},
 			},
-			name:   "perceptor",
+			name:   pc.PerceptorImageName,
 			image:  paths["perceptor"],
 			port:   int32(pc.PerceptorPort),
 			cmd:    []string{"./perceptor"},
@@ -316,9 +318,12 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 	// perceivers
 	rcPCVR, svcPCVR := NewRcSvc([]*PerceptorRC{
 		&PerceptorRC{
-			replicas:           1,
-			configMapMounts:    map[string]string{"perceiver": "/etc/perceiver"},
-			name:               "pod-perceiver",
+			replicas:        1,
+			configMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
+			emptyDirMounts: map[string]string{
+				"logs": "/tmp",
+			},
+			name:               pc.PodPerceiverImageName,
 			image:              paths["pod-perceiver"],
 			port:               int32(pc.PerceiverPort),
 			cmd:                []string{},
@@ -335,15 +340,15 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			configMapMounts: map[string]string{"perceptor-scanner-config": "/etc/perceptor_scanner"},
 			env: []EnvSecret{
 				{
-					EnvName:       "PCP_HUBUSERPASSWORD",
-					SecretName:    "viper-secret",
+					EnvName:       pc.HubUserPasswordEnvVar,
+					SecretName:    pc.ViperSecret,
 					KeyFromSecret: "HubUserPassword",
 				},
 			},
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:               "perceptor-scanner",
+			name:               pc.ScannerImageName,
 			image:              paths["perceptor-scanner"],
 			dockerSocket:       false,
 			port:               int32(pc.ScannerPort),
@@ -358,7 +363,7 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 			emptyDirMounts: map[string]string{
 				"var-images": "/var/images",
 			},
-			name:               "perceptor-image-facade",
+			name:               pc.ImageFacadeImageName,
 			image:              paths["perceptor-imagefacade"],
 			dockerSocket:       true,
 			port:               int32(pc.ImageFacadePort),
@@ -380,9 +385,12 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 	if pc.Openshift {
 		rcOpenshift, svcOpenshift := NewRcSvc([]*PerceptorRC{
 			&PerceptorRC{
-				replicas:           1,
-				configMapMounts:    map[string]string{"perceiver": "/etc/perceiver"},
-				name:               "image-perceiver",
+				replicas:        1,
+				configMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
+				emptyDirMounts: map[string]string{
+					"logs": "/tmp",
+				},
+				name:               pc.ImagePerceiverImageName,
 				image:              paths["image-perceiver"],
 				port:               int32(pc.PerceiverPort),
 				cmd:                []string{},
@@ -392,6 +400,33 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		})
 		rcs = append(rcs, rcOpenshift)
 		svc = append(svc, svcOpenshift)
+	}
+
+	if pc.PerceptorSkyfire {
+		rcSkyfire, svcSkyfire := NewRcSvc([]*PerceptorRC{
+			&PerceptorRC{
+				replicas:        1,
+				configMapMounts: map[string]string{"skyfire": "/etc/skyfire"},
+				emptyDirMounts: map[string]string{
+					"logs": "/tmp",
+				},
+				env: []EnvSecret{
+					{
+						EnvName:       pc.HubUserPasswordEnvVar,
+						SecretName:    pc.ViperSecret,
+						KeyFromSecret: "HubUserPassword",
+					},
+				},
+				name:               "skyfire",
+				image:              "gcr.io/blackducksoftware/skyfire-daemon:master",
+				port:               3005,
+				cmd:                []string{},
+				serviceAccount:     pc.ServiceAccounts["image-perceiver"],
+				serviceAccountName: pc.ServiceAccounts["image-perceiver"],
+			},
+		})
+		rcs = append(rcs, rcSkyfire)
+		svc = append(svc, svcSkyfire)
 	}
 
 	// TODO MAKE SURE WE VERIFY THAT SERVICE ACCOUNTS ARE EQUAL
