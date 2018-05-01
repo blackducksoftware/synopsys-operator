@@ -30,7 +30,9 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/spf13/viper"
-	"k8s.io/api/core/v1"
+
+	"github.com/koki/short/converter/converters"
+	"github.com/koki/short/types"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -111,35 +113,29 @@ type PerceptorRC struct {
 }
 
 // This function creates an RC and services that forward to it.
-func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Service) {
+func NewRcSvc(descriptions []*PerceptorRC) (*types.ReplicationController, []*types.Service) {
 
-	TheVolumes := []v1.Volume{}
-	TheContainers := []v1.Container{}
+	TheVolumes := map[string]types.Volume{}
+	TheContainers := []types.Container{}
 	addedMounts := map[string]string{}
 
 	for _, desc := range descriptions {
-		mounts := []v1.VolumeMount{}
+		mounts := []types.VolumeMount{}
 
 		for cfgMapName, cfgMapMount := range desc.configMapMounts {
 			log.Print("Adding config mounts now.")
 			if addedMounts[cfgMapName] == "" {
 				addedMounts[cfgMapName] = cfgMapName
-				TheVolumes = append(TheVolumes,
-					v1.Volume{
+				TheVolumes[cfgMapName] = types.Volume{
+					ConfigMap: &types.ConfigMapVolume{
 						Name: cfgMapName,
-						VolumeSource: v1.VolumeSource{
-							ConfigMap: &v1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{
-									Name: cfgMapName,
-								},
-							},
-						},
-					})
+					},
+				}
 			} else {
 				log.Print(fmt.Sprintf("Not adding volume, already added: %v", cfgMapName))
 			}
-			mounts = append(mounts, v1.VolumeMount{
-				Name:      cfgMapName,
+			mounts = append(mounts, types.VolumeMount{
+				Store:     cfgMapName,
 				MountPath: cfgMapMount,
 			})
 
@@ -151,129 +147,107 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 			log.Print("Adding empty mounts now.")
 			if addedMounts[emptyDirName] == "" {
 				addedMounts[emptyDirName] = emptyDirName
-				TheVolumes = append(TheVolumes,
-					v1.Volume{
-						Name: emptyDirName,
-						VolumeSource: v1.VolumeSource{
-							EmptyDir: &v1.EmptyDirVolumeSource{},
-						},
-					})
+				TheVolumes[emptyDirName] = types.Volume{
+					EmptyDir: &types.EmptyDirVolume{
+						Medium: types.StorageMediumDefault,
+					},
+				}
 			} else {
 				log.Print(fmt.Sprintf("Not adding volume, already added: %v", emptyDirName))
 			}
-			mounts = append(mounts, v1.VolumeMount{
-				Name:      emptyDirName,
+			mounts = append(mounts, types.VolumeMount{
+				Store:     emptyDirName,
 				MountPath: emptyDirMount,
 			})
 
 		}
 
 		if desc.dockerSocket {
-			dockerSock := v1.VolumeMount{
-				Name:      "dir-docker-socket",
+			dockerSock := types.VolumeMount{
+				Store:     "dir-docker-socket",
 				MountPath: "/var/run/docker.sock",
 			}
 			mounts = append(mounts, dockerSock)
-			TheVolumes = append(TheVolumes, v1.Volume{
-				Name: dockerSock.Name,
-				VolumeSource: v1.VolumeSource{
-					HostPath: &v1.HostPathVolumeSource{
-						Path: dockerSock.MountPath,
-					},
+			TheVolumes[dockerSock.Store] = types.Volume{
+				HostPath: &types.HostPathVolume{
+					Path: dockerSock.MountPath,
 				},
-			})
+			}
 		}
 
-		for name, _ := range desc.emptyDirVolumeMounts {
-			TheVolumes = append(TheVolumes, v1.Volume{
-				Name: name,
-				VolumeSource: v1.VolumeSource{
-					EmptyDir: &v1.EmptyDirVolumeSource{},
+		for name := range desc.emptyDirVolumeMounts {
+			TheVolumes[name] = types.Volume{
+				EmptyDir: &types.EmptyDirVolume{
+					Medium: types.StorageMediumDefault,
 				},
-			})
+			}
 		}
 
-		envVar := []v1.EnvVar{}
+		envVar := []types.Env{}
 		for _, env := range desc.env {
-			envVar = append(envVar, v1.EnvVar{
-				Name: env.EnvName,
-				ValueFrom: &v1.EnvVarSource{
-					SecretKeyRef: &v1.SecretKeySelector{
-						LocalObjectReference: v1.LocalObjectReference{
-							Name: env.SecretName,
-						},
-						Key: env.KeyFromSecret,
-					},
-				},
-			})
+			new, err := types.NewEnvFromSecret(env.EnvName, env.SecretName, env.KeyFromSecret)
+			if err != nil {
+				panic(err)
+			}
+			envVar = append(envVar, new)
 		}
 
-		container := v1.Container{
-			Name:            desc.name,
-			Image:           desc.image,
-			ImagePullPolicy: "Always",
-			Command:         desc.cmd,
-			Env:             envVar,
-			Ports: []v1.ContainerPort{
-				v1.ContainerPort{
-					ContainerPort: desc.port,
-					Protocol:      "TCP",
+		container := types.Container{
+			Name:    desc.name,
+			Image:   desc.image,
+			Pull:    types.PullAlways,
+			Command: desc.cmd,
+			Env:     envVar,
+			Expose: []types.Port{
+				{
+					ContainerPort: fmt.Sprintf("%d", desc.port),
+					Protocol:      types.ProtocolTCP,
 				},
 			},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceCPU:    desc.cpu,
-					v1.ResourceMemory: desc.memory,
-				},
+			CPU: &types.CPU{
+				Min: desc.cpu.String(),
+			},
+			Mem: &types.Mem{
+				Min: desc.memory.String(),
 			},
 			VolumeMounts: mounts,
-			SecurityContext: &v1.SecurityContext{
-				Privileged: &desc.dockerSocket,
-			},
+			Privileged:   &desc.dockerSocket,
 		}
 		// Each RC has only one pod, but can have many containers.
 		TheContainers = append(TheContainers, container)
 
-		log.Print(fmt.Sprintf("privileged = %v %v %v", desc.name, desc.dockerSocket, *container.SecurityContext.Privileged))
+		log.Print(fmt.Sprintf("privileged = %v %v %v", desc.name, desc.dockerSocket, *container.Privileged))
 	}
 
-	rc := &v1.ReplicationController{
-		ObjectMeta: v1meta.ObjectMeta{
-			Name: descriptions[0].name,
+	rc := &types.ReplicationController{
+		Name:     descriptions[0].name,
+		Replicas: &descriptions[0].replicas,
+		Selector: map[string]string{"name": descriptions[0].name},
+		TemplateMetadata: &types.PodTemplateMeta{
+			Labels: map[string]string{"name": descriptions[0].name},
 		},
-		Spec: v1.ReplicationControllerSpec{
-			Replicas: &descriptions[0].replicas,
-			Selector: map[string]string{"name": descriptions[0].name},
-			Template: &v1.PodTemplateSpec{
-				ObjectMeta: v1meta.ObjectMeta{
-					Labels: map[string]string{"name": descriptions[0].name},
-				},
-				Spec: v1.PodSpec{
-					Volumes:            TheVolumes,
-					Containers:         TheContainers,
-					ServiceAccountName: descriptions[0].serviceAccountName,
-				},
-			},
+		PodTemplate: types.PodTemplate{
+			Volumes:    TheVolumes,
+			Containers: TheContainers,
+			Account:    descriptions[0].serviceAccountName,
 		},
 	}
 
-	services := []*v1.Service{}
+	services := []*types.Service{}
 	for _, desc := range descriptions {
-		services = append(services, &v1.Service{
-			ObjectMeta: v1meta.ObjectMeta{
-				Name: desc.name,
-			},
-			Spec: v1.ServiceSpec{
-				Ports: []v1.ServicePort{
-					v1.ServicePort{
-						Name: desc.name,
-						Port: desc.port,
+		services = append(services, &types.Service{
+			Name: desc.name,
+			Ports: []types.NamedServicePort{
+				{
+					Name: desc.name,
+					Port: types.ServicePort{
+						Expose: desc.port,
 					},
 				},
-				Selector: map[string]string{
-					// The POD name of the first container will be used as selector name for all containers
-					"name": descriptions[0].name,
-				},
+			},
+			Selector: map[string]string{
+				// The POD name of the first container will be used as selector name for all containers
+				"name": descriptions[0].name,
 			},
 		})
 	}
@@ -282,7 +256,7 @@ func NewRcSvc(descriptions []*PerceptorRC) (*v1.ReplicationController, []*v1.Ser
 
 // perceptor, pod-perceiver, image-perceiver, pod-perceiver
 
-func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]string, pc *model.ProtoformConfig) []*v1.ReplicationController {
+func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]string, pc *model.ProtoformConfig) []*types.ReplicationController {
 
 	// WARNING: THE SERVICE ACCOUNT IN THE FIRST CONTAINER IS USED FOR THE GLOBAL SVC ACCOUNT FOR ALL PODS !!!!!!!!!!!!!
 	// MAKE SURE IF YOU NEED A SVC ACCOUNT THAT ITS IN THE FIRST CONTAINER...
@@ -375,10 +349,8 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 		},
 	})
 
-	// rcs := []*v1.ReplicationController{rcSCAN}
-	// svc := [][]*v1.Service{svcSCAN}
-	rcs := []*v1.ReplicationController{rcPCP, rcPCVR, rcSCAN} //rcPCVRo
-	svc := [][]*v1.Service{svcPCP, svcPCVR, svcSCAN}          //svcPCVRo
+	rcs := []*types.ReplicationController{rcPCP, rcPCVR, rcSCAN} //rcPCVRo
+	svc := [][]*types.Service{svcPCP, svcPCVR, svcSCAN}          //svcPCVRo
 
 	// We dont create openshift perceivers if running kube... This needs to be avoided b/c the svc accounts
 	// won't exist.
@@ -431,9 +403,14 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 
 	// TODO MAKE SURE WE VERIFY THAT SERVICE ACCOUNTS ARE EQUAL
 
-	for i, rc := range rcs {
+	for i, krc := range rcs {
 		// Now, create all the resources.  Note that we'll panic after creating ANY
 		// resource that fails.  Thats intentional.
+		wrapper := &types.ReplicationControllerWrapper{ReplicationController: *krc}
+		rc, err := converters.Convert_Koki_ReplicationController_to_Kube_v1_ReplicationController(wrapper)
+		if err != nil {
+			panic(err)
+		}
 		PrettyPrint(rc)
 		if !pc.DryRun {
 			_, err := clientset.Core().ReplicationControllers(pc.Namespace).Create(rc)
@@ -441,7 +418,12 @@ func CreatePerceptorResources(clientset *kubernetes.Clientset, paths map[string]
 				panic(err)
 			}
 		}
-		for _, svcI := range svc[i] {
+		for _, ksvcI := range svc[i] {
+			sWrapper := &types.ServiceWrapper{Service: *ksvcI}
+			svcI, err := converters.Convert_Koki_Service_To_Kube_v1_Service(sWrapper)
+			if err != nil {
+				panic(err)
+			}
 			if pc.DryRun {
 				// service dont really need much debug...
 				// PrettyPrint(svcI)
@@ -466,7 +448,7 @@ func sanityCheckServices(svcAccounts map[string]string) bool {
 		}
 		return false
 	}
-	for cn, _ := range svcAccounts {
+	for cn := range svcAccounts {
 		if !isValid(cn) {
 			log.Print("[protoform] failed at verifiying that the container name for a svc account was valid!")
 			log.Fatalln(cn)
@@ -477,12 +459,20 @@ func sanityCheckServices(svcAccounts map[string]string) bool {
 }
 
 func CreateConfigMapsFromInput(clientset *kubernetes.Clientset, pc *model.ProtoformConfig) {
-	for _, configMap := range pc.ToConfigMap() {
+	for _, kconfigMap := range pc.ToConfigMap() {
+		wrapper := &types.ConfigMapWrapper{ConfigMap: *kconfigMap}
+		configMap, err := converters.Convert_Koki_ConfigMap_to_Kube_v1_ConfigMap(wrapper)
+		if err != nil {
+			panic(err)
+		}
 		log.Println("*********************************************")
 		log.Println("Creating config maps:", configMap)
 		if !pc.DryRun {
 			log.Println("creating config map.")
-			clientset.Core().ConfigMaps(pc.Namespace).Create(configMap)
+			_, err := clientset.Core().ConfigMaps(pc.Namespace).Create(configMap)
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			PrettyPrint(configMap)
 		}
@@ -505,11 +495,10 @@ func GenerateContainerPaths(config *model.ProtoformConfig) map[string]string {
 
 // main installs prime
 func main() {
-	//configPath := os.Args[1]
 	runProtoform("/etc/protoform/")
 }
 
-func runProtoform(configPath string) []*v1.ReplicationController {
+func runProtoform(configPath string) []*types.ReplicationController {
 	var clientset *kubernetes.Clientset
 	pc := readConfig(configPath)
 	if pc == nil {

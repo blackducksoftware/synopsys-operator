@@ -37,25 +37,25 @@ func TestProto(t *testing.T) {
 	}
 
 	// Image facade needs to be privileged !
-	if *rcsArray[2].Spec.Template.Spec.Containers[1].SecurityContext.Privileged == false {
-		log.Printf("%v %v", rcsArray[3].Spec.Template.Spec.Containers[0].Name, *rcsArray[3].Spec.Template.Spec.Containers[0].SecurityContext.Privileged)
+	if *rcsArray[2].PodTemplate.Containers[1].Privileged == false {
+		log.Printf("%v %v", rcsArray[3].PodTemplate.Containers[0].Name, *rcsArray[3].PodTemplate.Containers[0].Privileged)
 		t.Fail()
 	}
 
 	// The scanner needs to be UNPRIVILEGED
-	if *rcsArray[2].Spec.Template.Spec.Containers[0].SecurityContext.Privileged == true {
-		log.Printf("%v %v", rcsArray[3].Spec.Template.Spec.Containers[0].Name, *rcsArray[3].Spec.Template.Spec.Containers[0].SecurityContext.Privileged)
+	if *rcsArray[2].PodTemplate.Containers[0].Privileged == true {
+		log.Printf("%v %v", rcsArray[3].PodTemplate.Containers[0].Name, *rcsArray[3].PodTemplate.Containers[0].Privileged)
 		t.Fail()
 	}
 
-	scanner_svc := rcsArray[2].Spec.Template.Spec.ServiceAccountName
-	if scanner_svc == "" {
-		log.Printf("scanner svc ==> ( %v ) EMPTY !", scanner_svc)
+	scannerSvc := rcsArray[2].PodTemplate.Account
+	if scannerSvc == "" {
+		log.Printf("scanner svc ==> ( %v ) EMPTY !", scannerSvc)
 		t.Fail()
 	}
 
-	s0 := rcsArray[2].Spec.Template.Spec.Containers[0].Name
-	s := rcsArray[2].Spec.Template.Spec.Containers[0].VolumeMounts[1].Name
+	s0 := rcsArray[2].PodTemplate.Containers[0].Name
+	s := rcsArray[2].PodTemplate.Containers[0].VolumeMounts[1].Store
 	if s != "var-images" {
 		log.Printf("%v %v", s0, s)
 		t.Fail()

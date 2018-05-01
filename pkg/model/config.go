@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/koki/short/types"
 )
 
 // WARNING: If you add a config value, make sure to
@@ -175,7 +174,7 @@ func generateStringFromStringArr(strArr []string) string {
 }
 
 // prometheus.yml
-func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
+func (p *ProtoformConfig) ToConfigMap() []*types.ConfigMap {
 	p.setDefaultValues()
 	// TODO, parameterize prometheus
 	// strings.Replace(prometheus_t,
@@ -205,14 +204,12 @@ func (p *ProtoformConfig) ToConfigMap() []*v1.ConfigMap {
 			`","LogLevel": "`, p.LogLevel, `"}`)
 	}
 
-	maps := make([]*v1.ConfigMap, len(configs))
+	maps := make([]*types.ConfigMap, len(configs))
 	x := 0
 	for config, filename := range configs {
 		contents := defaults[config]
-		maps[x] = &v1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: config,
-			},
+		maps[x] = &types.ConfigMap{
+			Name: config,
 			Data: map[string]string{
 				filename: contents,
 			},
