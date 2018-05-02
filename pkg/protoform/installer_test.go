@@ -19,10 +19,9 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package main
+package protoform
 
 import (
-	"log"
 	"os"
 	"testing"
 )
@@ -30,34 +29,37 @@ import (
 func TestProto(t *testing.T) {
 	os.Setenv("PCP_HUBUSERPASSWORD", "example")
 
-	rcsArray := runProtoform("./")
+	d := NewDefaultsObj()
+	d.DefaultCPU = "300m"
+	d.DefaultMem = "1300Mi"
+
+	installer := NewInstaller(d, "/etc/protoform")
+	installer.init()
+	rcsArray := installer.replicationControllers
 
 	for i, rcs := range rcsArray {
-		log.Printf("%v : %v", i, rcs.Name)
+		t.Logf("%v : %v", i, rcs.Name)
 	}
 
 	// Image facade needs to be privileged !
 	if *rcsArray[2].PodTemplate.Containers[1].Privileged == false {
-		log.Printf("%v %v", rcsArray[3].PodTemplate.Containers[0].Name, *rcsArray[3].PodTemplate.Containers[0].Privileged)
-		t.Fail()
+		t.Errorf("%v %v", rcsArray[2].PodTemplate.Containers[1].Name, *rcsArray[2].PodTemplate.Containers[1].Privileged)
 	}
 
 	// The scanner needs to be UNPRIVILEGED
 	if *rcsArray[2].PodTemplate.Containers[0].Privileged == true {
-		log.Printf("%v %v", rcsArray[3].PodTemplate.Containers[0].Name, *rcsArray[3].PodTemplate.Containers[0].Privileged)
-		t.Fail()
+		t.Errorf("%v %v", rcsArray[2].PodTemplate.Containers[0].Name, *rcsArray[2].PodTemplate.Containers[0].Privileged)
 	}
 
+	t.Logf("template: %v ", rcsArray[2].PodTemplate)
 	scannerSvc := rcsArray[2].PodTemplate.Account
 	if scannerSvc == "" {
-		log.Printf("scanner svc ==> ( %v ) EMPTY !", scannerSvc)
-		t.Fail()
+		t.Errorf("scanner svc ==> ( %v ) EMPTY !", scannerSvc)
 	}
 
 	s0 := rcsArray[2].PodTemplate.Containers[0].Name
 	s := rcsArray[2].PodTemplate.Containers[0].VolumeMounts[1].Store
 	if s != "var-images" {
-		log.Printf("%v %v", s0, s)
-		t.Fail()
+		t.Errorf("%v %v", s0, s)
 	}
 }
