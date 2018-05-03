@@ -46,3 +46,4 @@ go run ./perceptor.go ./config.json aux-config.json
 #
 # Otherwise:
 #   kubectl expose service prometheus --name=prometheus-metrics --port=9090 --target-port=9090 --type=LoadBalancer -n bds-perceptor
+#   kubectl expose service perceptor --name=perceptor-exposed --port=3001 --target-port=3001 --type=LoadBalancer -n bds-perceptor
