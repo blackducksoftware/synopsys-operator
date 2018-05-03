@@ -1,4 +1,4 @@
-package: github.com/blackducksoftware/perceptor-protoform
+package: github.com/blackducksoftware/perceptor-protoform/contrib/hydra
 import:
 - package: github.com/spf13/viper
   version: v1.0.0
@@ -10,6 +10,8 @@ import:
   subpackages:
   - pkg/api/resource
   - pkg/apis/meta/v1
+- package: github.com/sirupsen/logrus
+  version: v1.0.4
 - package: k8s.io/client-go
   version: v6.0.0
   subpackages:
