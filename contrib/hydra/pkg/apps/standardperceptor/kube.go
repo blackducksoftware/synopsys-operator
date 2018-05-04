@@ -23,8 +23,8 @@ package standardperceptor
 
 import (
 	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
+	v1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
-	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,6 +44,7 @@ type Kube struct {
 	ConfigMaps             []*v1.ConfigMap
 	Services               []*v1.Service
 	Secrets                []*v1.Secret
+	Deployments            []*v1beta1.Deployment
 }
 
 func NewKube(config *Config) *Kube {
@@ -93,7 +94,7 @@ func (kube *Kube) createResources() {
 		perceptorScanner.Service(),
 		imageFacade.Service(),
 		skyfire.Service(),
-		//		prometheus.Service(),
+		prometheus.Service(),
 	}
 	kube.ConfigMaps = []*v1.ConfigMap{
 		perceptor.ConfigMap(),
@@ -113,6 +114,9 @@ func (kube *Kube) createResources() {
 				config.HubPasswordSecretKey: config.Hub.Password,
 			},
 		},
+	}
+	kube.Deployments = []*v1beta1.Deployment{
+		prometheus.Deployment(),
 	}
 
 	kube.Perceptor = perceptor
@@ -138,4 +142,8 @@ func (kube *Kube) GetSecrets() []*v1.Secret {
 
 func (kube *Kube) GetReplicationControllers() []*v1.ReplicationController {
 	return kube.ReplicationControllers
+}
+
+func (kube *Kube) GetDeployments() []*v1beta1.Deployment {
+	return kube.Deployments
 }

@@ -25,17 +25,11 @@ kubectl create sa $POD_PERCEIVER_SA -n $NS
 cat << EOF > aux-config.json
 {
 	"Namespace": "$NS",
-	"DockerUsername": "TODO -- REMOVE",
-	"DockerPassword": "TODO -- REMOVE",
 	"PodPerceiverServiceAccountName": "$POD_PERCEIVER_SA",
-	"ImagePerceiverServiceAccountName": "TODO -- REMOVE",
 	"ImageFacadeServiceAccountName": "$IMAGEFACADE_SA",
-	"InternalDockerRegistries": [],
 	"IsKube": true
 }
 EOF
-
-kubectl create -f ../prometheus-deployment.yaml --namespace=$NS
 
 go run ./perceptor.go ./config.json aux-config.json
 

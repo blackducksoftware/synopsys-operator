@@ -25,7 +25,8 @@ import (
 	"fmt"
 
 	"k8s.io/api/core/v1"
-	v1beta1 "k8s.io/api/extensions/v1beta1"
+	//	v1beta1 "k8s.io/api/extensions/v1beta1"
+	v1beta1 "k8s.io/api/apps/v1beta1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -53,7 +54,7 @@ type Prometheus struct {
 func NewPrometheus() *Prometheus {
 	return &Prometheus{
 		Name:                "prometheus",
-		PodName:             "prometheus-pod",
+		PodName:             "prometheus",
 		Image:               "prom/prometheus:v2.1.0",
 		ReplicaCount:        1,
 		DataVolumeName:      "data",
@@ -145,7 +146,7 @@ func (prom *Prometheus) Service() *v1.Service {
 					TargetPort: intstr.IntOrString{IntVal: prom.Port},
 				},
 			},
-			Selector: map[string]string{"name": prom.PodName}}}
+			Selector: map[string]string{"app": prom.PodName}}}
 }
 
 func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
