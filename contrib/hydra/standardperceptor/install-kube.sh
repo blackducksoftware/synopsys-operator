@@ -11,7 +11,7 @@ POD_PERCEIVER_SA="pod-perceiver-sa"
 kubectl delete ns $NS
 while kubectl get ns | grep -q $NS ; do
   echo "Waiting for deletion...`kubectl get ns | grep $NS` "
-  sleep 1
+  sleep 2
 done
 
 
