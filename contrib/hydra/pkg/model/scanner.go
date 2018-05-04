@@ -22,8 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
-
 	"k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -181,9 +179,5 @@ func (psp *Scanner) Service() *v1.Service {
 }
 
 func (psp *Scanner) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(psp.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(psp.ConfigMapName, psp.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(psp.ConfigMapName, psp.ConfigMapPath, psp.Config)
 }

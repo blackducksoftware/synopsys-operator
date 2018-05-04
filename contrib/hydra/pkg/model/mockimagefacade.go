@@ -22,8 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
-
 	"k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -131,9 +129,5 @@ func (mif *MockImagefacade) Service() *v1.Service {
 }
 
 func (mif *MockImagefacade) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(mif.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(mif.ConfigMapName, mif.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(mif.ConfigMapName, mif.ConfigMapPath, mif.Config)
 }

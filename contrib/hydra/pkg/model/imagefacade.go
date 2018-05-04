@@ -22,8 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
-
 	"k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -190,9 +188,5 @@ func (pif *Imagefacade) ReplicationController() *v1.ReplicationController {
 }
 
 func (pif *Imagefacade) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(pif.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(pif.ConfigMapName, pif.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pif.ConfigMapName, pif.ConfigMapPath, pif.Config)
 }

@@ -22,7 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"k8s.io/api/core/v1"
@@ -154,28 +153,21 @@ func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
 	for _, target := range prom.Targets {
 		targets = append(targets, fmt.Sprintf("%s:%d", target.Host, target.Port))
 	}
-	targetsBytes, err := json.Marshal(targets)
-	if err != nil {
-		panic(err)
+	params := map[string]interface{}{
+		"global": map[string]string{
+			"scrape_interval": "5s",
+		},
+		"scrape_configs": []map[string]interface{}{
+			{
+				"job_name":        "perceptor-scrape",
+				"scrape_interval": "5s",
+				"static_configs": []map[string]interface{}{
+					{
+						"targets": targets,
+					},
+				},
+			},
+		},
 	}
-	jsonString := `
-  {
-    "global": {
-      "scrape_interval": "5s"
-    },
-    "scrape_configs": [
-      {
-        "job_name": "perceptor-scrape",
-        "scrape_interval": "5s",
-        "static_configs": [
-          {
-            "targets": %s
-          }
-        ]
-      }
-    ]
-  }
-  `
-	paramString := fmt.Sprintf(jsonString, string(targetsBytes))
-	return MakeConfigMap("prometheus", "prometheus.yml", paramString)
+	return MakeConfigMap("prometheus", "prometheus.yml", params)
 }

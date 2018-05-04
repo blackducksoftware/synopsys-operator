@@ -22,7 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"k8s.io/api/core/v1"
@@ -188,9 +187,5 @@ func (pc *Skyfire) Service() *v1.Service {
 }
 
 func (pc *Skyfire) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(pc.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, pc.Config)
 }

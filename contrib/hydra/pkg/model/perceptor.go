@@ -22,8 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
-
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -176,9 +174,5 @@ func (pc *Perceptor) Service() *v1.Service {
 }
 
 func (pc *Perceptor) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(pc.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, pc.Config)
 }
