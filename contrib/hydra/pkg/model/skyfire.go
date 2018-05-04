@@ -97,7 +97,7 @@ func NewSkyfire() *Skyfire {
 		CPU:            cpu,
 		Memory:         memory,
 		ConfigMapName:  "skyfire-config",
-		ConfigMapMount: "/etc/perceptor",
+		ConfigMapMount: "/etc/skyfire",
 		ConfigMapPath:  "skyfire_conf.yaml",
 		ReplicaCount:   1,
 		ServiceName:    "skyfire",

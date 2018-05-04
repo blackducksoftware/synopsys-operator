@@ -1,32 +1,56 @@
 {
-  "MasterURL": "https://192.168.99.100:8443",
-  "KubeConfigPath": "/Users/mfenwick/.kube/config",
+  "MasterURL": "",
+  "KubeConfigPath": "",
 
-  "HubHost": "35.224.116.128",
-  "HubUser": "sysadmin",
-  "HubUserPassword": "blackduck",
-  "HubPort": 443,
+  "Hub": {
+    "Host": "",
+    "User": "sysadmin",
+    "Password": "duck",
+    "Port": 443
+  },
+
+  "Perceptor": {
+    "ConcurrentScanLimit": 2,
+    "ServiceName": "my-perceptor-service",
+    "Port": 3001,
+    "UseMockMode": false
+  },
+
+  "ImagePerceiver": {
+    "Port": 4003,
+    "AnnotationIntervalSeconds": 30,
+    "DumpIntervalMinutes": 30
+  },
+
+  "PodPerceiver": {
+    "Port": 4008,
+    "ReplicationCount": 1,
+    "AnnotationIntervalSeconds": 30,
+    "DumpIntervalMinutes": 30
+  },
+
+  "ScannerPod": {
+    "Name": "my-first-scanner-pod",
+    "ReplicationCount": 1
+  },
+
+  "Scanner": {
+    "Port": 3777,
+    "Memory": "2Gi",
+    "JavaInitialHeapSizeMBs": 64,
+    "JavaMaxHeapSizeMBs": 1024
+  },
+
+  "ImageFacade": {
+    "Port": 3931
+  },
+
+  "Skyfire": {
+    "Port": 3187
+  },
+
   "HubPasswordSecretName": "hub-password",
   "HubPasswordSecretKey": "hub-user-password",
-
-  "ConcurrentScanLimit": 2,
-  "PerceptorPort": 3001,
-  "UseMockPerceptorMode": false,
-
-  "ImagePerceiverPort": 4003,
-  "PodPerceiverPort": 4008,
-  "PodPerceiverReplicationCount": 1,
-  "AnnotationIntervalSeconds": 30,
-  "DumpIntervalMinutes": 30,
-
-  "ScannerReplicationCount": 1,
-  "ScannerPort": 3777,
-  "ScannerMemory": "2Gi",
-  "ImageFacadePort": 3931,
-  "JavaInitialHeapSizeMBs": 64,
-  "JavaMaxHeapSizeMBs": 1024,
-
-  "SkyfirePort": 3187,
 
   "LogLevel": "debug"
 }

@@ -87,7 +87,7 @@ type Scanner struct {
 	ImagesMountPath string
 }
 
-func NewScanner(memoryString string) *Scanner {
+func NewScanner(memoryString string, podName string, hubPasswordSecretName string, hubPasswordSecretKey string) *Scanner {
 	memory, err := resource.ParseQuantity(memoryString)
 	if err != nil {
 		panic(err)
@@ -106,9 +106,12 @@ func NewScanner(memoryString string) *Scanner {
 		ConfigMapPath:  "perceptor_scanner_conf.yaml",
 		ServiceName:    "perceptor-scanner",
 
-		// Must fill these out before use
-		PodName: "",
+		PodName: podName,
 
+		HubPasswordSecretName: hubPasswordSecretName,
+		HubPasswordSecretKey:  hubPasswordSecretKey,
+
+		// Must fill these out before use
 		ImagesMountName: "",
 		ImagesMountPath: "",
 	}
@@ -174,7 +177,7 @@ func (psp *Scanner) Service() *v1.Service {
 					Port: psp.Config.Port,
 				},
 			},
-			Selector: map[string]string{"name": psp.ServiceName}}}
+			Selector: map[string]string{"name": psp.PodName}}}
 }
 
 func (psp *Scanner) ConfigMap() *v1.ConfigMap {

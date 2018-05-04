@@ -53,7 +53,7 @@ func (os *Openshift) createResources() {
 	imagePerceiver.Config.PerceptorHost = os.Kube.Perceptor.ServiceName
 
 	// TODO ensure that this target actually gets added to the prometheus config
-	os.Kube.Prometheus.AddTarget(&model.PrometheusTarget{Host: imagePerceiver.ServiceName, Port: os.Config.ImagePerceiverPort})
+	os.Kube.Prometheus.AddTarget(&model.PrometheusTarget{Host: imagePerceiver.ServiceName, Port: os.Config.ImagePerceiver.Port})
 
 	os.ReplicationControllers = append(os.Kube.ReplicationControllers, imagePerceiver.ReplicationController())
 	os.ConfigMaps = append(os.Kube.ConfigMaps, imagePerceiver.ConfigMap())

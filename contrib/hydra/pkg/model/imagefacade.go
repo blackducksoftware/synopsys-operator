@@ -72,7 +72,7 @@ type Imagefacade struct {
 	ImagesMountPath string
 }
 
-func NewImagefacade(serviceAccountName string) *Imagefacade {
+func NewImagefacade(serviceAccountName string, podName string) *Imagefacade {
 	defaultMem, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -94,9 +94,9 @@ func NewImagefacade(serviceAccountName string) *Imagefacade {
 		DockerSocketName: "dir-docker-socket",
 		DockerSocketPath: "/var/run/docker.sock",
 
-		// Must fill these out before using this object
-		PodName: "",
+		PodName: podName,
 
+		// Must fill these out before using this object
 		ImagesMountName: "var-images",
 		ImagesMountPath: "/var/images",
 	}

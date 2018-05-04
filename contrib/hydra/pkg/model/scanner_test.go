@@ -28,7 +28,7 @@ import (
 )
 
 func TestImageFacadeContainer(t *testing.T) {
-	sc := NewScannerPod(NewScanner("500Mi"), NewImagefacade("abc"))
+	sc := NewScannerPod(NewScanner("500Mi", "qqq", "abc", "def"), NewImagefacade("abc", "xyz"))
 	ifCont := sc.ReplicationController() // ps.imageFacadeContainer()
 	jsonBytes, err := json.MarshalIndent(ifCont, "", "  ")
 	if err != nil {

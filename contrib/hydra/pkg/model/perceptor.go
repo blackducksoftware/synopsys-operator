@@ -71,7 +71,7 @@ type Perceptor struct {
 	ServiceName  string
 }
 
-func NewPerceptor() *Perceptor {
+func NewPerceptor(serviceName string, hubPasswordSecretName string, hubPasswordSecretKey string) *Perceptor {
 	memory, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -82,15 +82,17 @@ func NewPerceptor() *Perceptor {
 	}
 
 	return &Perceptor{
-		PodName:        "perceptor",
-		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor:master",
-		CPU:            cpu,
-		Memory:         memory,
-		ConfigMapName:  "perceptor-config",
-		ConfigMapMount: "/etc/perceptor",
-		ConfigMapPath:  "perceptor_conf.yaml",
-		ReplicaCount:   1,
-		ServiceName:    "perceptor",
+		PodName:               "perceptor",
+		Image:                 "gcr.io/gke-verification/blackducksoftware/perceptor:master",
+		CPU:                   cpu,
+		Memory:                memory,
+		ConfigMapName:         "perceptor-config",
+		ConfigMapMount:        "/etc/perceptor",
+		ConfigMapPath:         "perceptor_conf.yaml",
+		HubPasswordSecretName: hubPasswordSecretName,
+		HubPasswordSecretKey:  hubPasswordSecretKey,
+		ReplicaCount:          1,
+		ServiceName:           serviceName,
 	}
 }
 
@@ -170,7 +172,7 @@ func (pc *Perceptor) Service() *v1.Service {
 					Port: pc.Config.Port,
 				},
 			},
-			Selector: map[string]string{"name": pc.ServiceName}}}
+			Selector: map[string]string{"name": pc.PodName}}}
 }
 
 func (pc *Perceptor) ConfigMap() *v1.ConfigMap {
