@@ -24,4 +24,9 @@ matrix:
   # tests pass on the stable versions of Go.
   fast_finish: true
   
-script: go build ./... && go test ./...
+before_script:
+- hack/verify-gofmt.sh
+- hack/verify-golint.sh
+- hack/verify-govet.sh
+
+script: go build ./cmd/... ./pkg/... && go test ./cmd/... ./pkg/...

@@ -9,7 +9,7 @@
 #
 
 # ARG_OPTIONAL_SINGLE([private-registry],[p],[A private registry url you will need to pull images for scan.],["docker-registry.default.svc:5000"])
-# ARG_OPTIONAL_SINGLE([private-registry-token],[t],[A private registry token to have access to pull images],[perceptor-scanner-sa service account token])
+# ARG_OPTIONAL_SINGLE([private-registry-token],[t],[A private registry token to have access to pull images],[perceptor-scanner service account token])
 
 # ARG_OPTIONAL_SINGLE([container-registry],[c],[Base docker repo for the applicaition.],[gcr.io])
 # ARG_OPTIONAL_SINGLE([image-repository],[I],[Image repository for the applicaition.],[gke-verification/blackducksoftware])
@@ -89,7 +89,7 @@ print_help ()
 	printf '\t%s\n' "-i,--image-perceiver,--no-image-perceiver: Whether the image perceiver is enabled. (off by default)"
 	printf '\t%s\n' "-M,--prometheus-metrics,--no-prometheus-metrics: Whether the prometheus metrics is enabled. (off by default)"
 	printf '\t%s\n' "--private-registry: A private registry url you will need to pull images for scan. (default: [\"docker-registry.default.svc:5000\"]). eg. [\"docker-registry.default.svc:5000\", \"172.1.1.0:5000\"]"
-	printf '\t%s\n' "-t,--private-registry-token: A private registry token to have access to pull images  (default: 'perceptor-scanner-sa service account token')"
+	printf '\t%s\n' "-t,--private-registry-token: A private registry token to have access to pull images  (default: 'perceptor-scanner service account token')"
 	printf '\t%s\n' "-c,--container-registry: Base docker repo for the applicaition. (default: 'gcr.io')"
 	printf '\t%s\n' "-I,--image-repository: Image repository for the applicaition. (default: 'gke-verification/blackducksoftware ')"
 	printf '\t%s\n' "-v,--default-container-version: Default container version (default: 'master')"

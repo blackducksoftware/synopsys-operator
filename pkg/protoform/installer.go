@@ -395,7 +395,7 @@ func (i *Installer) addPerceptorResources() {
 	}
 
 	i.addRcSvc([]*perceptorRC{
-		&perceptorRC{
+		{
 			Replicas:        1,
 			ConfigMapMounts: map[string]string{"perceptor": "/etc/perceptor"},
 			Env: []envSecret{
@@ -415,7 +415,7 @@ func (i *Installer) addPerceptorResources() {
 	})
 
 	i.addRcSvc([]*perceptorRC{
-		&perceptorRC{
+		{
 			Replicas:        1,
 			ConfigMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
 			EmptyDirMounts: map[string]string{
@@ -433,7 +433,7 @@ func (i *Installer) addPerceptorResources() {
 	})
 
 	i.addRcSvc([]*perceptorRC{
-		&perceptorRC{
+		{
 			Replicas:        int32(math.Ceil(float64(i.config.ConcurrentScanLimit) / 2.0)),
 			ConfigMapMounts: map[string]string{"perceptor-scanner": "/etc/perceptor_scanner"},
 			Env: []envSecret{
@@ -456,7 +456,7 @@ func (i *Installer) addPerceptorResources() {
 			CPU:                defaultCPU,
 			Memory:             defaultMem,
 		},
-		&perceptorRC{
+		{
 			ConfigMapMounts: map[string]string{"perceptor-imagefacade": "/etc/perceptor_imagefacade"},
 			EmptyDirMounts: map[string]string{
 				"var-images": "/var/images",
@@ -477,7 +477,7 @@ func (i *Installer) addPerceptorResources() {
 	// won't exist.
 	if i.config.Openshift {
 		i.addRcSvc([]*perceptorRC{
-			&perceptorRC{
+			{
 				Replicas:        1,
 				ConfigMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
 				EmptyDirMounts: map[string]string{
@@ -495,7 +495,7 @@ func (i *Installer) addPerceptorResources() {
 
 	if i.config.PerceptorSkyfire {
 		i.addRcSvc([]*perceptorRC{
-			&perceptorRC{
+			{
 				Replicas:        1,
 				ConfigMapMounts: map[string]string{"skyfire": "/etc/skyfire"},
 				EmptyDirMounts: map[string]string{
