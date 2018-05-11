@@ -121,7 +121,7 @@ func (psp *Scanner) Container() *v1.Container {
 		ImagePullPolicy: "Always",
 		Command:         []string{},
 		Env: []v1.EnvVar{
-			v1.EnvVar{
+			{
 				Name: psp.Config.HubUserPasswordEnvVar,
 				ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{
@@ -134,7 +134,7 @@ func (psp *Scanner) Container() *v1.Container {
 			},
 		},
 		Ports: []v1.ContainerPort{
-			v1.ContainerPort{
+			{
 				ContainerPort: psp.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -150,11 +150,11 @@ func (psp *Scanner) Container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			v1.VolumeMount{
+			{
 				Name:      psp.ImagesMountName,
 				MountPath: psp.ImagesMountPath,
 			},
-			v1.VolumeMount{
+			{
 				Name:      psp.ConfigMapName,
 				MountPath: psp.ConfigMapMount,
 			},
@@ -169,7 +169,7 @@ func (psp *Scanner) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				v1.ServicePort{
+				{
 					Name: psp.ServiceName,
 					Port: psp.Config.Port,
 				},

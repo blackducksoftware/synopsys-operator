@@ -110,7 +110,7 @@ func (pif *Imagefacade) Container() *v1.Container {
 		ImagePullPolicy: "Always",
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
-			v1.ContainerPort{
+			{
 				ContainerPort: pif.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -122,15 +122,15 @@ func (pif *Imagefacade) Container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			v1.VolumeMount{
+			{
 				Name:      pif.ImagesMountName,
 				MountPath: pif.ImagesMountPath,
 			},
-			v1.VolumeMount{
+			{
 				Name:      pif.ConfigMapName,
 				MountPath: pif.ConfigMapMount,
 			},
-			v1.VolumeMount{
+			{
 				Name:      pif.DockerSocketName,
 				MountPath: pif.DockerSocketPath,
 			},
@@ -146,7 +146,7 @@ func (pif *Imagefacade) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				v1.ServicePort{
+				{
 					Name: pif.ServiceName,
 					Port: pif.Config.Port,
 				},
@@ -165,7 +165,7 @@ func (pif *Imagefacade) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pif.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						v1.Volume{
+						{
 							Name: pif.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -173,11 +173,11 @@ func (pif *Imagefacade) ReplicationController() *v1.ReplicationController {
 								},
 							},
 						},
-						v1.Volume{
+						{
 							Name:         pif.ImagesMountName,
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
-						v1.Volume{
+						{
 							Name: pif.DockerSocketName,
 							VolumeSource: v1.VolumeSource{
 								HostPath: &v1.HostPathVolumeSource{Path: pif.DockerSocketPath},

@@ -23,6 +23,6 @@ ROOT=$(dirname "${BASH_SOURCE}")/..
 
 cd "${ROOT}"
 
-targets=$(go list -e ./... | egrep -v "/(vendor)/")
+targets=$(go list -e ./... | egrep -v "/(vendor)/" | egrep -v "/(contrib)/")
 
 go vet ${targets[@]}

@@ -94,7 +94,7 @@ func (ip *ImagePerceiver) container() *v1.Container {
 		ImagePullPolicy: "Always",
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
-			v1.ContainerPort{
+			{
 				ContainerPort: ip.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -106,7 +106,7 @@ func (ip *ImagePerceiver) container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			v1.VolumeMount{
+			{
 				Name:      ip.ConfigMapName,
 				MountPath: ip.ConfigMapMount,
 			},
@@ -124,7 +124,7 @@ func (ip *ImagePerceiver) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": ip.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						v1.Volume{
+						{
 							Name: ip.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -146,7 +146,7 @@ func (ip *ImagePerceiver) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				v1.ServicePort{
+				{
 					Name: ip.ServiceName,
 					Port: ip.Config.Port,
 				},

@@ -85,11 +85,11 @@ func (prom *Prometheus) Deployment() *v1beta1.Deployment {
 					Labels: map[string]string{"app": prom.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						v1.Volume{
+						{
 							Name:         prom.DataVolumeName,
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
-						v1.Volume{
+						{
 							Name: prom.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -112,17 +112,17 @@ func (prom *Prometheus) container() *v1.Container {
 			"--storage.tsdb.path=/tmp/data/",
 		},
 		Ports: []v1.ContainerPort{
-			v1.ContainerPort{
+			{
 				Name:          "web",
 				ContainerPort: prom.Port,
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			v1.VolumeMount{
+			{
 				Name:      prom.DataVolumeName,
 				MountPath: prom.DataVolumeMountPath,
 			},
-			v1.VolumeMount{
+			{
 				Name:      prom.ConfigMapName,
 				MountPath: prom.ConfigMapMountPath,
 			},
@@ -139,7 +139,7 @@ func (prom *Prometheus) Service() *v1.Service {
 		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeNodePort,
 			Ports: []v1.ServicePort{
-				v1.ServicePort{
+				{
 					Name:       prom.ServiceName,
 					Port:       prom.Port,
 					Protocol:   "TCP",

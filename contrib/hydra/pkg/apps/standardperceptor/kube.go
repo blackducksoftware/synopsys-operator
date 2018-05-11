@@ -111,7 +111,7 @@ func (kube *Kube) createResources() {
 		skyfire.ConfigMap(),
 	}
 	kube.Secrets = []*v1.Secret{
-		&v1.Secret{
+		{
 			ObjectMeta: v1meta.ObjectMeta{
 				Name: config.HubPasswordSecretName,
 			},

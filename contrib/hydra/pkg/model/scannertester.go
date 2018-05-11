@@ -75,7 +75,7 @@ func (sc *ScannerTester) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": sc.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						v1.Volume{
+						{
 							Name: sc.Scanner.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -83,7 +83,7 @@ func (sc *ScannerTester) ReplicationController() *v1.ReplicationController {
 								},
 							},
 						},
-						v1.Volume{
+						{
 							Name: sc.Imagefacade.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -91,7 +91,7 @@ func (sc *ScannerTester) ReplicationController() *v1.ReplicationController {
 								},
 							},
 						},
-						v1.Volume{
+						{
 							Name:         sc.ImagesMountName,
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
