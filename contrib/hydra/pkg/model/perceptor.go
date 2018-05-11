@@ -28,14 +28,15 @@ import (
 )
 
 type PerceptorConfigMap struct {
-	HubHost               string
-	HubUser               string
-	HubUserPasswordEnvVar string
-	HubPort               int
-	ConcurrentScanLimit   int
-	UseMockMode           bool
-	Port                  int32
-	LogLevel              string
+	HubHost                 string
+	HubUser                 string
+	HubUserPasswordEnvVar   string
+	HubClientTimeoutSeconds int
+	HubPort                 int
+	ConcurrentScanLimit     int
+	UseMockMode             bool
+	Port                    int32
+	LogLevel                string
 }
 
 func NewPerceptorConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar string, hubPort int, concurrentScanLimit int, useMockMode bool, port int32, logLevel string) *PerceptorConfigMap {
