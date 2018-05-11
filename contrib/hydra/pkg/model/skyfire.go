@@ -128,7 +128,7 @@ func (pc *Skyfire) Container() *v1.Container {
 		// },
 		Command: []string{"./skyfire", pc.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				ContainerPort: pc.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -140,7 +140,7 @@ func (pc *Skyfire) Container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      pc.ConfigMapName,
 				MountPath: pc.ConfigMapMount,
 			},
@@ -158,7 +158,7 @@ func (pc *Skyfire) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pc.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
+						v1.Volume{
 							Name: pc.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -179,7 +179,7 @@ func (pc *Skyfire) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name: pc.ServiceName,
 					Port: pc.Config.Port,
 				},
