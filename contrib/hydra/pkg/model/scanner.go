@@ -47,23 +47,6 @@ type ScannerConfigMap struct {
 	PerceptorPort int32
 }
 
-func NewScannerConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar string, hubPort int32, hubClientTimeoutSeconds int, javaInitialHeapSizeMBs int, javaMaxHeapSizeMBs int, logLevel string, port int32, imageFacadePort int32, perceptorHost string, perceptorPort int32) *ScannerConfigMap {
-	return &ScannerConfigMap{
-		HubHost:                 hubHost,
-		HubUser:                 hubUser,
-		HubUserPasswordEnvVar:   hubUserPasswordEnvVar,
-		HubPort:                 hubPort,
-		HubClientTimeoutSeconds: hubClientTimeoutSeconds,
-		JavaInitialHeapSizeMBs:  javaInitialHeapSizeMBs,
-		JavaMaxHeapSizeMBs:      javaMaxHeapSizeMBs,
-		LogLevel:                logLevel,
-		Port:                    port,
-		ImageFacadePort:         imageFacadePort,
-		PerceptorHost:           perceptorHost,
-		PerceptorPort:           perceptorPort,
-	}
-}
-
 type Scanner struct {
 	Image  string
 	Memory resource.Quantity
