@@ -81,10 +81,12 @@ type ProtoformDefaults struct {
 	ImagePerceiverImageName          string
 	PodPerceiverImageName            string
 	ImageFacadeImageName             string
+	SkyfireImageName                 string
 	PerceptorContainerVersion        string
 	ScannerContainerVersion          string
 	PerceiverContainerVersion        string
 	ImageFacadeContainerVersion      string
+	SkyfireContainerVersion          string
 	LogLevel                         string
 	Namespace                        string
 	DefaultCPU                       string // Should be passed like: e.g. "300m"

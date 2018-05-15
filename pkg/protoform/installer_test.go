@@ -23,6 +23,8 @@ package protoform
 
 import (
 	"os"
+	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -33,12 +35,71 @@ func TestProto(t *testing.T) {
 	d.DefaultCPU = "300m"
 	d.DefaultMem = "1300Mi"
 
-	installer := NewInstaller(d, "/etc/protoform")
+	installer := NewInstaller(d, "../../cmd/protoform.json")
 	installer.init()
+
 	rcsArray := installer.replicationControllers
 
-	for i, rcs := range rcsArray {
-		t.Logf("%v : %v", i, rcs.Name)
+	var imageRegexp = regexp.MustCompile("(.+)/(.+):(.+)")
+
+	args := map[string]string{
+		"perceptor":             "/etc/perceptor/perceptor.yaml",
+		"pod-perceiver":         "/etc/perceiver/perceiver.yaml",
+		"image-perceiver":       "/etc/perceiver/perceiver.yaml",
+		"perceptor-scanner":     "/etc/perceptor_scanner/perceptor_scanner.yaml",
+		"perceptor-imagefacade": "/etc/perceptor_imagefacade/perceptor_imagefacade.yaml",
+		"skyfire":               "/etc/skyfire/skyfire.yaml",
+	}
+
+	for _, rcs := range rcsArray {
+		for _, container := range rcs.Containers {
+
+			// verify the image name
+			match := imageRegexp.FindStringSubmatch(container.Image)
+			if len(match) != 4 {
+				t.Errorf("%s is not matching to the regex %s", container.Image, imageRegexp.String())
+			}
+
+			if match[1] == "" {
+				t.Errorf("Registry is not provided, input: %s", container.Image)
+			}
+
+			if match[2] == "" {
+				t.Errorf("Image name is not provided, input: %s", container.Image)
+			}
+
+			if match[3] == "" {
+				t.Errorf("version is not provided, input: %s", container.Image)
+			}
+
+			imageRepo := strings.SplitN(match[1], "/", 2)
+
+			if imageRepo[0] == "" {
+				t.Errorf("Registry is not provided, input: %s", container.Image)
+			}
+
+			if imageRepo[1] == "" {
+				t.Errorf("Image path is not provided, input: %s", container.Image)
+			}
+
+			// verify the args parameter in Replication Controller
+			arg := container.Args
+
+			if arg[0].String() != args[container.Name] {
+				t.Errorf("Arguments not matched for %s, Expected: %s, Actual: %s", container.Name, args[container.Name], arg[0].String())
+			}
+
+			// verify the default cpu parameters
+			if d.DefaultCPU != container.CPU.Min {
+				t.Errorf("Default CPU is not configured for %s, Expected: %s, Actual: %s", container.Name, d.DefaultCPU, container.CPU.Min)
+			}
+
+			// verify the default memory parameters
+			if d.DefaultMem != container.Mem.Min {
+				t.Errorf("Default memory is not configured for %s, Expected: %s, Actual: %s", container.Name, d.DefaultMem, container.Mem.Min)
+			}
+
+		}
 	}
 
 	// Image facade needs to be privileged !

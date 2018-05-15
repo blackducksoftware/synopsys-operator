@@ -1,8 +1,13 @@
 #!/bin/bash
 
 openshift="false"
-if [[ $_arg_image_perceiver == "on" ]] ; then
+if [[ "$_arg_image_perceiver" == "on" ]] ; then
   openshift="true"
+fi
+
+skyfire="false"
+if [[ "$_arg_skyfire" == "on" ]] ; then
+  skyfire="true"
 fi
 
 DEF_PERCEPTOR_PROTOFORM_IMAGE=perceptor-protoform
@@ -34,6 +39,7 @@ spec:
           key: HubUserPassword
     imagePullPolicy: Always
     command: [ ./protoform ]
+    args: [ "/etc/protoform/protoform.yaml" ]
     ports:
     - containerPort: 3001
       protocol: TCP
@@ -93,5 +99,5 @@ items:
       PerceiverContainerVersion: "$pod_perceiver_tag"
       ImageFacadeContainerVersion: "$perceptor_imagefacade_tag"
       LogLevel: "$_arg_container_default_log_level"
-      PerceptorSkyfire: "$_arg_skyfire"
+      PerceptorSkyfire: "$skyfire"
 EOF

@@ -39,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/koki/short/util/floatstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -86,6 +87,22 @@ func (i *Installer) setDefaults(defaults *api.ProtoformDefaults) {
 			}
 		}
 	}
+
+	if len(i.config.PerceptorContainerVersion) == 0 {
+		i.config.PerceptorContainerVersion = i.config.DefaultVersion
+	}
+	if len(i.config.ScannerContainerVersion) == 0 {
+		i.config.ScannerContainerVersion = i.config.DefaultVersion
+	}
+	if len(i.config.PerceiverContainerVersion) == 0 {
+		i.config.PerceiverContainerVersion = i.config.DefaultVersion
+	}
+	if len(i.config.ImageFacadeContainerVersion) == 0 {
+		i.config.ImageFacadeContainerVersion = i.config.DefaultVersion
+	}
+	if len(i.config.SkyfireContainerVersion) == 0 {
+		i.config.SkyfireContainerVersion = i.config.DefaultVersion
+	}
 }
 
 // We don't dynamically reload.
@@ -93,7 +110,7 @@ func (i *Installer) setDefaults(defaults *api.ProtoformDefaults) {
 // they can update the individual perceptor containers configmaps.
 func (i *Installer) readConfig(configPath string) {
 	log.Print("*************** [protoform] initializing  ****************")
-	viper.SetConfigName("protoform")
+	viper.SetConfigFile(configPath)
 
 	// these need to be set before we read in the config!
 	viper.SetEnvPrefix("PCP")
@@ -102,8 +119,6 @@ func (i *Installer) readConfig(configPath string) {
 		viper.Debug()
 		panic("No hub database password secret supplied.  Please inject PCP_HUBUSERPASSWORD as a secret and restart")
 	}
-
-	viper.AddConfigPath(configPath)
 
 	i.config.HubUserPasswordEnvVar = "PCP_HUBUSERPASSWORD"
 	i.config.ViperSecret = "viper-secret"
@@ -119,18 +134,6 @@ func (i *Installer) readConfig(configPath string) {
 	viper.Unmarshal(&i.config)
 	log.Print("*************** [protoform] done reading in config ****************")
 
-	if i.config.PerceptorContainerVersion == "" {
-		i.config.PerceiverContainerVersion = i.config.DefaultVersion
-	}
-	if i.config.ScannerContainerVersion == "" {
-		i.config.ScannerContainerVersion = i.config.DefaultVersion
-	}
-	if i.config.PerceiverContainerVersion == "" {
-		i.config.PerceiverContainerVersion = i.config.DefaultVersion
-	}
-	if i.config.ImageFacadeContainerVersion == "" {
-		i.config.ImageFacadeContainerVersion = i.config.DefaultVersion
-	}
 }
 
 // AddRC will add a replication controller to the list of replication controllers
@@ -337,6 +340,7 @@ func (i *Installer) addRcSvc(descriptions []*perceptorRC) {
 			Image:   desc.Image,
 			Pull:    types.PullAlways,
 			Command: desc.Cmd,
+			Args:    desc.Arg,
 			Env:     envVar,
 			Expose: []types.Port{
 				{
@@ -409,6 +413,7 @@ func (i *Installer) addPerceptorResources() {
 			Image:  paths["perceptor"],
 			Port:   int32(i.config.PerceptorPort),
 			Cmd:    []string{"./perceptor"},
+			Arg:    []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceptor/perceptor.yaml"}},
 			CPU:    defaultCPU,
 			Memory: defaultMem,
 		},
@@ -425,6 +430,7 @@ func (i *Installer) addPerceptorResources() {
 			Image:              paths["pod-perceiver"],
 			Port:               int32(i.config.PerceiverPort),
 			Cmd:                []string{},
+			Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceiver/perceiver.yaml"}},
 			ServiceAccountName: i.config.ServiceAccounts["pod-perceiver"],
 			ServiceAccount:     i.config.ServiceAccounts["pod-perceiver"],
 			CPU:                defaultCPU,
@@ -451,6 +457,7 @@ func (i *Installer) addPerceptorResources() {
 			DockerSocket:       false,
 			Port:               int32(i.config.ScannerPort),
 			Cmd:                []string{},
+			Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceptor_scanner/perceptor_scanner.yaml"}},
 			ServiceAccount:     i.config.ServiceAccounts["perceptor-image-facade"],
 			ServiceAccountName: i.config.ServiceAccounts["perceptor-image-facade"],
 			CPU:                defaultCPU,
@@ -466,6 +473,7 @@ func (i *Installer) addPerceptorResources() {
 			DockerSocket:       true,
 			Port:               int32(i.config.ImageFacadePort),
 			Cmd:                []string{},
+			Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceptor_imagefacade/perceptor_imagefacade.yaml"}},
 			ServiceAccount:     i.config.ServiceAccounts["perceptor-image-facade"],
 			ServiceAccountName: i.config.ServiceAccounts["perceptor-image-facade"],
 			CPU:                defaultCPU,
@@ -487,8 +495,11 @@ func (i *Installer) addPerceptorResources() {
 				Image:              paths["image-perceiver"],
 				Port:               int32(i.config.PerceiverPort),
 				Cmd:                []string{},
+				Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceiver/perceiver.yaml"}},
 				ServiceAccount:     i.config.ServiceAccounts["image-perceiver"],
 				ServiceAccountName: i.config.ServiceAccounts["image-perceiver"],
+				CPU:                defaultCPU,
+				Memory:             defaultMem,
 			},
 		})
 	}
@@ -508,17 +519,18 @@ func (i *Installer) addPerceptorResources() {
 						KeyFromSecret: "HubUserPassword",
 					},
 				},
-				Name:               "skyfire",
-				Image:              "gcr.io/blackducksoftware/skyfire-daemon:master",
+				Name:               i.config.SkyfireImageName,
+				Image:              paths["perceptor-skyfire"],
 				Port:               3005,
 				Cmd:                []string{},
+				Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/skyfire/skyfire.yaml"}},
 				ServiceAccount:     i.config.ServiceAccounts["image-perceiver"],
 				ServiceAccountName: i.config.ServiceAccounts["image-perceiver"],
+				CPU:                defaultCPU,
+				Memory:             defaultMem,
 			},
 		})
 	}
-
-	// TODO MAKE SURE WE VERIFY THAT SERVICE ACCOUNTS ARE EQUAL
 }
 
 func (i *Installer) deploy() {
@@ -618,6 +630,7 @@ func (i *Installer) generateContainerPaths() map[string]string {
 		"pod-perceiver":         fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.PodPerceiverImageName, config.PerceiverContainerVersion),
 		"image-perceiver":       fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ImagePerceiverImageName, config.PerceiverContainerVersion),
 		"perceptor-imagefacade": fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ImageFacadeImageName, config.ImageFacadeContainerVersion),
+		"perceptor-skyfire":     fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.SkyfireImageName, config.SkyfireContainerVersion),
 	}
 }
 
