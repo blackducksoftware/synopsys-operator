@@ -467,9 +467,8 @@ func (i *Installer) GenerateDefaultMemory(defaultMem string) (resource.Quantity,
 func (i *Installer) GenerateArg(stringVal string, floatval float64) floatstr.FloatOrString {
 	if len(stringVal) > 0 {
 		return floatstr.FloatOrString{Type: floatstr.String, StringVal: stringVal}
-	} else {
-		return floatstr.FloatOrString{Type: floatstr.Float, FloatVal: floatval}
 	}
+	return floatstr.FloatOrString{Type: floatstr.Float, FloatVal: floatval}
 }
 
 func (i *Installer) addPerceptorResources() {
