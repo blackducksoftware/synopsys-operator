@@ -453,16 +453,32 @@ func (i *Installer) createService(descriptions []*ReplicationController) {
 	}
 }
 
+func (i *Installer) GenerateDefaultCPU(defaultCPU string) (resource.Quantity, error) {
+	return resource.ParseQuantity(defaultCPU)
+}
+
+func (i *Installer) GenerateDefaultMemory(defaultMem string) (resource.Quantity, error) {
+	return resource.ParseQuantity(defaultMem)
+}
+
+func (i *Installer) GenerateArg(stringVal string, floatval float64) floatstr.FloatOrString {
+	if len(stringVal) > 0 {
+		return floatstr.FloatOrString{Type: floatstr.String, StringVal: stringVal}
+	} else {
+		return floatstr.FloatOrString{Type: floatstr.Float, FloatVal: floatval}
+	}
+}
+
 func (i *Installer) addPerceptorResources() {
 	paths := i.generateContainerPaths()
 
 	// WARNING: THE SERVICE ACCOUNT IN THE FIRST CONTAINER IS USED FOR THE GLOBAL SVC ACCOUNT FOR ALL PODS !!!!!!!!!!!!!
 	// MAKE SURE IF YOU NEED A SVC ACCOUNT THAT ITS IN THE FIRST CONTAINER...
-	defaultMem, err := resource.ParseQuantity(i.config.DefaultMem)
+	defaultMem, err := i.GenerateDefaultMemory(i.config.DefaultMem)
 	if err != nil {
 		panic(err)
 	}
-	defaultCPU, err := resource.ParseQuantity(i.config.DefaultCPU)
+	defaultCPU, err := i.GenerateDefaultCPU(i.config.DefaultCPU)
 	if err != nil {
 		panic(err)
 	}
@@ -482,7 +498,7 @@ func (i *Installer) addPerceptorResources() {
 			Image:  paths["perceptor"],
 			Port:   int32(i.config.PerceptorPort),
 			Cmd:    []string{"./perceptor"},
-			Arg:    []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceptor/perceptor.yaml"}},
+			Arg:    []floatstr.FloatOrString{i.GenerateArg("/etc/perceptor/perceptor.yaml", 0)},
 			CPU:    defaultCPU,
 			Memory: defaultMem,
 		},
@@ -499,7 +515,7 @@ func (i *Installer) addPerceptorResources() {
 			Image:              paths["pod-perceiver"],
 			Port:               int32(i.config.PerceiverPort),
 			Cmd:                []string{"./pod-perceiver"},
-			Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceiver/perceiver.yaml"}},
+			Arg:                []floatstr.FloatOrString{i.GenerateArg("/etc/perceiver/perceiver.yaml", 0)},
 			ServiceAccountName: i.config.ServiceAccounts["pod-perceiver"],
 			ServiceAccount:     i.config.ServiceAccounts["pod-perceiver"],
 			CPU:                defaultCPU,
@@ -526,7 +542,7 @@ func (i *Installer) addPerceptorResources() {
 			DockerSocket:       false,
 			Port:               int32(i.config.ScannerPort),
 			Cmd:                []string{"./perceptor-scanner"},
-			Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceptor_scanner/perceptor_scanner.yaml"}},
+			Arg:                []floatstr.FloatOrString{i.GenerateArg("/etc/perceptor_scanner/perceptor_scanner.yaml", 0)},
 			ServiceAccount:     i.config.ServiceAccounts["perceptor-image-facade"],
 			ServiceAccountName: i.config.ServiceAccounts["perceptor-image-facade"],
 			CPU:                defaultCPU,
@@ -542,7 +558,7 @@ func (i *Installer) addPerceptorResources() {
 			DockerSocket:       true,
 			Port:               int32(i.config.ImageFacadePort),
 			Cmd:                []string{"./perceptor-imagefacade"},
-			Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceptor_imagefacade/perceptor_imagefacade.yaml"}},
+			Arg:                []floatstr.FloatOrString{i.GenerateArg("/etc/perceptor_imagefacade/perceptor_imagefacade.yaml", 0)},
 			ServiceAccount:     i.config.ServiceAccounts["perceptor-image-facade"],
 			ServiceAccountName: i.config.ServiceAccounts["perceptor-image-facade"],
 			CPU:                defaultCPU,
@@ -564,7 +580,7 @@ func (i *Installer) addPerceptorResources() {
 				Image:              paths["image-perceiver"],
 				Port:               int32(i.config.PerceiverPort),
 				Cmd:                []string{"./image-perceiver"},
-				Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/perceiver/perceiver.yaml"}},
+				Arg:                []floatstr.FloatOrString{i.GenerateArg("/etc/perceiver/perceiver.yaml", 0)},
 				ServiceAccount:     i.config.ServiceAccounts["image-perceiver"],
 				ServiceAccountName: i.config.ServiceAccounts["image-perceiver"],
 				CPU:                defaultCPU,
@@ -592,7 +608,7 @@ func (i *Installer) addPerceptorResources() {
 				Image:              paths["perceptor-skyfire"],
 				Port:               3005,
 				Cmd:                []string{"./skyfire"},
-				Arg:                []floatstr.FloatOrString{{Type: floatstr.String, StringVal: "/etc/skyfire/skyfire.yaml"}},
+				Arg:                []floatstr.FloatOrString{i.GenerateArg("/etc/skyfire/skyfire.yaml", 0)},
 				ServiceAccount:     i.config.ServiceAccounts["image-perceiver"],
 				ServiceAccountName: i.config.ServiceAccounts["image-perceiver"],
 				CPU:                defaultCPU,
