@@ -181,7 +181,7 @@ func (i *Installer) addService(config api.ServiceConfig) {
 
 // AddConfigMap will add a config map to the list of
 // config maps to be deployed
-func (i *Installer) addConfigMap(conf api.ConfigMapConfig) {
+func (i *Installer) AddConfigMap(conf api.ConfigMapConfig) {
 	configMap := &types.ConfigMap{
 		Name:      conf.Name,
 		Namespace: conf.Namespace,
@@ -703,7 +703,7 @@ func (i *Installer) createConfigMaps() {
 			Namespace: i.config.Namespace,
 			Data:      v,
 		}
-		i.addConfigMap(mapConfig)
+		i.AddConfigMap(mapConfig)
 	}
 }
 
