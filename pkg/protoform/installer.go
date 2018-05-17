@@ -121,9 +121,9 @@ func (i *Installer) readConfig(configPath string) {
 
 }
 
-// AddRC will add a replication controller to the list of replication controllers
+// addRC will add a replication controller to the list of replication controllers
 // to be deployed
-func (i *Installer) AddRC(config api.ReplicationControllerConfig) {
+func (i *Installer) addRC(config api.ReplicationControllerConfig) {
 	newRc := &types.ReplicationController{
 		Name:     config.Name,
 		Replicas: &config.Replicas,
@@ -141,7 +141,7 @@ func (i *Installer) AddRC(config api.ReplicationControllerConfig) {
 }
 
 // AddPod will add a pod to the list of pods to be deployed
-func (i *Installer) AddPod(config api.PodConfig) {
+func (i *Installer) addPod(config api.PodConfig) {
 	newPod := &types.Pod{
 		PodTemplateMeta: types.PodTemplateMeta{
 			Name:   config.Name,
@@ -156,9 +156,9 @@ func (i *Installer) AddPod(config api.PodConfig) {
 	i.pods = append(i.pods, newPod)
 }
 
-// AddService will add a service to the list of services
+// addService will add a service to the list of services
 // to be deployed
-func (i *Installer) AddService(config api.ServiceConfig) {
+func (i *Installer) addService(config api.ServiceConfig) {
 	ports := []types.NamedServicePort{}
 	for k, v := range config.Ports {
 		newPort := types.NamedServicePort{
@@ -181,7 +181,7 @@ func (i *Installer) AddService(config api.ServiceConfig) {
 
 // AddConfigMap will add a config map to the list of
 // config maps to be deployed
-func (i *Installer) AddConfigMap(conf api.ConfigMapConfig) {
+func (i *Installer) addConfigMap(conf api.ConfigMapConfig) {
 	configMap := &types.ConfigMap{
 		Name:      conf.Name,
 		Namespace: conf.Namespace,
@@ -275,8 +275,8 @@ func (i *Installer) addDefaultServiceAccounts() {
 	}
 }
 
-// This function adds an RC and services that forward to it to installation set
-func (i *Installer) addRcSvc(descriptions []*perceptorRC) {
+// This function creates the volumes and containers that need to be used for adding RC or Pod
+func (i *Installer) createRcOrPod(descriptions []*perceptorRC) (map[string]types.Volume, []types.Container) {
 
 	TheVolumes := map[string]types.Volume{}
 	TheContainers := []types.Container{}
@@ -382,25 +382,74 @@ func (i *Installer) addRcSvc(descriptions []*perceptorRC) {
 
 		log.Print(fmt.Sprintf("privileged = %v %v %v", desc.Name, desc.DockerSocket, *container.Privileged))
 	}
+	return TheVolumes, TheContainers
+}
 
+// AddReplicationControllerAndService function adds RC and services that forward to it to installation set
+func (i *Installer) AddReplicationControllerAndService(descriptions []*perceptorRC) {
+	// Add replicationController
+	i.AddReplicationController(descriptions)
+	// Add service
+	i.AddService(descriptions)
+}
+
+// AddReplicationController function add a RC that forward to it to installation set
+func (i *Installer) AddReplicationController(descriptions []*perceptorRC) {
+	// Get the volumes and containers that will be used to create the replication contoller
+	volumes, containers := i.createRcOrPod(descriptions)
+	// Create the replication controller
+	i.createRC(descriptions, volumes, containers)
+}
+
+// AddPod function add a Pod that forward to it to installation set
+func (i *Installer) AddPod(descriptions []*perceptorRC) {
+	// Get the volumes and containers that will be used to create the pod
+	volumes, containers := i.createRcOrPod(descriptions)
+	// Create the pod
+	i.createPod(descriptions, volumes, containers)
+}
+
+// AddService function add a service that forward to it to installation set
+func (i *Installer) AddService(descriptions []*perceptorRC) {
+	// Create the service
+	i.createService(descriptions)
+}
+
+// This function creates the pod config and adds to the pod list that forward to it to installation set
+func (i *Installer) createPod(descriptions []*perceptorRC, volumes map[string]types.Volume, containers []types.Container) {
+	podCfg := api.PodConfig{
+		Name:           descriptions[0].Name,
+		Labels:         map[string]string{"name": descriptions[0].Name},
+		Vols:           volumes,
+		Containers:     containers,
+		ServiceAccount: descriptions[0].ServiceAccountName,
+	}
+	i.addPod(podCfg)
+}
+
+// This function creates the replication controller config and adds to the pod list that forward to it to installation set
+func (i *Installer) createRC(descriptions []*perceptorRC, volumes map[string]types.Volume, containers []types.Container) {
 	rcCfg := api.ReplicationControllerConfig{
 		Name:           descriptions[0].Name,
 		Replicas:       descriptions[0].Replicas,
 		Selector:       map[string]string{"name": descriptions[0].Name},
 		Labels:         map[string]string{"name": descriptions[0].Name},
-		Vols:           TheVolumes,
-		Containers:     TheContainers,
+		Vols:           volumes,
+		Containers:     containers,
 		ServiceAccount: descriptions[0].ServiceAccountName,
 	}
-	i.AddRC(rcCfg)
+	i.addRC(rcCfg)
+}
 
+// This function creates the service config and adds to the pod list that forward to it to installation set
+func (i *Installer) createService(descriptions []*perceptorRC) {
 	for _, desc := range descriptions {
 		serviceCfg := api.ServiceConfig{
 			Name:     desc.Name,
 			Ports:    map[string]int32{desc.Name: desc.Port},
 			Selector: map[string]string{"name": descriptions[0].Name},
 		}
-		i.AddService(serviceCfg)
+		i.addService(serviceCfg)
 	}
 }
 
@@ -418,7 +467,7 @@ func (i *Installer) addPerceptorResources() {
 		panic(err)
 	}
 
-	i.addRcSvc([]*perceptorRC{
+	i.AddReplicationControllerAndService([]*perceptorRC{
 		{
 			Replicas:        1,
 			ConfigMapMounts: map[string]string{"perceptor": "/etc/perceptor"},
@@ -439,7 +488,7 @@ func (i *Installer) addPerceptorResources() {
 		},
 	})
 
-	i.addRcSvc([]*perceptorRC{
+	i.AddReplicationControllerAndService([]*perceptorRC{
 		{
 			Replicas:        1,
 			ConfigMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
@@ -458,7 +507,7 @@ func (i *Installer) addPerceptorResources() {
 		},
 	})
 
-	i.addRcSvc([]*perceptorRC{
+	i.AddReplicationControllerAndService([]*perceptorRC{
 		{
 			Replicas:        int32(math.Ceil(float64(i.config.ConcurrentScanLimit) / 2.0)),
 			ConfigMapMounts: map[string]string{"perceptor-scanner": "/etc/perceptor_scanner"},
@@ -504,7 +553,7 @@ func (i *Installer) addPerceptorResources() {
 	// We dont create openshift perceivers if running kube... This needs to be avoided b/c the svc accounts
 	// won't exist.
 	if i.config.Openshift {
-		i.addRcSvc([]*perceptorRC{
+		i.AddReplicationControllerAndService([]*perceptorRC{
 			{
 				Replicas:        1,
 				ConfigMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
@@ -525,7 +574,7 @@ func (i *Installer) addPerceptorResources() {
 	}
 
 	if i.config.PerceptorSkyfire {
-		i.addRcSvc([]*perceptorRC{
+		i.AddReplicationControllerAndService([]*perceptorRC{
 			{
 				Replicas:        1,
 				ConfigMapMounts: map[string]string{"skyfire": "/etc/skyfire"},
@@ -654,7 +703,7 @@ func (i *Installer) createConfigMaps() {
 			Namespace: i.config.Namespace,
 			Data:      v,
 		}
-		i.AddConfigMap(mapConfig)
+		i.addConfigMap(mapConfig)
 	}
 }
 
