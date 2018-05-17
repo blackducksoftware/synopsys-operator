@@ -106,7 +106,7 @@ type envSecret struct {
 	KeyFromSecret string
 }
 
-type perceptorRC struct {
+type ReplicationController struct {
 	ConfigMapMounts map[string]string
 	EmptyDirMounts  map[string]string
 	Name            string
