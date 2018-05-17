@@ -453,14 +453,17 @@ func (i *Installer) createService(descriptions []*ReplicationController) {
 	}
 }
 
+// GenerateDefaultCPU function generates the default CPU
 func (i *Installer) GenerateDefaultCPU(defaultCPU string) (resource.Quantity, error) {
 	return resource.ParseQuantity(defaultCPU)
 }
 
+// GenerateDefaultMemory function generates the default memory
 func (i *Installer) GenerateDefaultMemory(defaultMem string) (resource.Quantity, error) {
 	return resource.ParseQuantity(defaultMem)
 }
 
+// GenerateArg function generates the argument that to be called
 func (i *Installer) GenerateArg(stringVal string, floatval float64) floatstr.FloatOrString {
 	if len(stringVal) > 0 {
 		return floatstr.FloatOrString{Type: floatstr.String, StringVal: stringVal}
