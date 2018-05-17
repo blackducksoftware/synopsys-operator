@@ -106,6 +106,7 @@ type envSecret struct {
 	KeyFromSecret string
 }
 
+// ReplicationController returns a replication controller or pod configuration. It will be used for the creation of replication controller or pod
 type ReplicationController struct {
 	ConfigMapMounts map[string]string
 	EmptyDirMounts  map[string]string
