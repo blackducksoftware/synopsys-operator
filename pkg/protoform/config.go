@@ -106,7 +106,8 @@ type envSecret struct {
 	KeyFromSecret string
 }
 
-type perceptorRC struct {
+// ReplicationController defines the replication controller or pod configuration. Those configurations will be used for the creation of replication controller or pod
+type ReplicationController struct {
 	ConfigMapMounts map[string]string
 	EmptyDirMounts  map[string]string
 	Name            string
