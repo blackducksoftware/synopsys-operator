@@ -37,6 +37,15 @@ type ReplicationControllerConfig struct {
 	ServiceAccount string
 }
 
+// PodConfig defines the configuration for a pod
+type PodConfig struct {
+	Name           string
+	Labels         map[string]string
+	Vols           map[string]types.Volume
+	Containers     []types.Container
+	ServiceAccount string
+}
+
 // ServiceConfig defines the configuration for a service
 type ServiceConfig struct {
 	Name     string

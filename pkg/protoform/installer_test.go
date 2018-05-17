@@ -24,7 +24,6 @@ package protoform
 import (
 	"os"
 	"regexp"
-	"strings"
 	"testing"
 )
 
@@ -37,7 +36,6 @@ func TestProto(t *testing.T) {
 
 	installer := NewInstaller(d, "../../cmd/protoform.json")
 	installer.init()
-
 	rcsArray := installer.replicationControllers
 
 	var imageRegexp = regexp.MustCompile("(.+)/(.+):(.+)")
@@ -54,32 +52,10 @@ func TestProto(t *testing.T) {
 	for _, rcs := range rcsArray {
 		for _, container := range rcs.Containers {
 
-			// verify the image name
+			// verify the image expressions
 			match := imageRegexp.FindStringSubmatch(container.Image)
 			if len(match) != 4 {
 				t.Errorf("%s is not matching to the regex %s", container.Image, imageRegexp.String())
-			}
-
-			if match[1] == "" {
-				t.Errorf("Registry is not provided, input: %s", container.Image)
-			}
-
-			if match[2] == "" {
-				t.Errorf("Image name is not provided, input: %s", container.Image)
-			}
-
-			if match[3] == "" {
-				t.Errorf("version is not provided, input: %s", container.Image)
-			}
-
-			imageRepo := strings.SplitN(match[1], "/", 2)
-
-			if imageRepo[0] == "" {
-				t.Errorf("Registry is not provided, input: %s", container.Image)
-			}
-
-			if imageRepo[1] == "" {
-				t.Errorf("Image path is not provided, input: %s", container.Image)
 			}
 
 			// verify the args parameter in Replication Controller

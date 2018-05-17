@@ -48,6 +48,7 @@ import (
 type Installer struct {
 	config                 protoformConfig
 	replicationControllers []*types.ReplicationController
+	pods                   []*types.Pod
 	configMaps             []*types.ConfigMap
 	services               []*types.Service
 
@@ -86,22 +87,6 @@ func (i *Installer) setDefaults(defaults *api.ProtoformDefaults) {
 				}
 			}
 		}
-	}
-
-	if len(i.config.PerceptorContainerVersion) == 0 {
-		i.config.PerceptorContainerVersion = i.config.DefaultVersion
-	}
-	if len(i.config.ScannerContainerVersion) == 0 {
-		i.config.ScannerContainerVersion = i.config.DefaultVersion
-	}
-	if len(i.config.PerceiverContainerVersion) == 0 {
-		i.config.PerceiverContainerVersion = i.config.DefaultVersion
-	}
-	if len(i.config.ImageFacadeContainerVersion) == 0 {
-		i.config.ImageFacadeContainerVersion = i.config.DefaultVersion
-	}
-	if len(i.config.SkyfireContainerVersion) == 0 {
-		i.config.SkyfireContainerVersion = i.config.DefaultVersion
 	}
 }
 
@@ -153,6 +138,22 @@ func (i *Installer) AddRC(config api.ReplicationControllerConfig) {
 		},
 	}
 	i.replicationControllers = append(i.replicationControllers, newRc)
+}
+
+// AddPod will add a pod to the list of pods to be deployed
+func (i *Installer) AddPod(config api.PodConfig) {
+	newPod := &types.Pod{
+		PodTemplateMeta: types.PodTemplateMeta{
+			Name:   config.Name,
+			Labels: config.Labels,
+		},
+		PodTemplate: types.PodTemplate{
+			Volumes:    config.Vols,
+			Containers: config.Containers,
+			Account:    config.ServiceAccount,
+		},
+	}
+	i.pods = append(i.pods, newPod)
 }
 
 // AddService will add a service to the list of services
@@ -234,8 +235,27 @@ func (i *Installer) init() {
 		panic("Please set the service accounts correctly!")
 	}
 
+	i.substituteDefaultImageVersion()
 	i.createConfigMaps()
 	i.addPerceptorResources()
+}
+
+func (i *Installer) substituteDefaultImageVersion() {
+	if len(i.config.PerceptorContainerVersion) == 0 {
+		i.config.PerceptorContainerVersion = i.config.DefaultVersion
+	}
+	if len(i.config.ScannerContainerVersion) == 0 {
+		i.config.ScannerContainerVersion = i.config.DefaultVersion
+	}
+	if len(i.config.PerceiverContainerVersion) == 0 {
+		i.config.PerceiverContainerVersion = i.config.DefaultVersion
+	}
+	if len(i.config.ImageFacadeContainerVersion) == 0 {
+		i.config.ImageFacadeContainerVersion = i.config.DefaultVersion
+	}
+	if len(i.config.SkyfireContainerVersion) == 0 {
+		i.config.SkyfireContainerVersion = i.config.DefaultVersion
+	}
 }
 
 func (i *Installer) addDefaultServiceAccounts() {
@@ -568,6 +588,22 @@ func (i *Installer) deploy() {
 		i.prettyPrint(rc)
 		if !i.config.DryRun {
 			_, err := i.client.Core().ReplicationControllers(i.config.Namespace).Create(rc)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// Deploy the pods
+	for _, kpod := range i.pods {
+		wrapper := &types.PodWrapper{Pod: *kpod}
+		pod, err := converters.Convert_Koki_Pod_to_Kube_v1_Pod(wrapper)
+		if err != nil {
+			panic(err)
+		}
+		i.prettyPrint(pod)
+		if !i.config.DryRun {
+			_, err := i.client.Core().Pods(i.config.Namespace).Create(pod)
 			if err != nil {
 				panic(err)
 			}
