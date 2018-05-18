@@ -210,7 +210,7 @@ func (i *Installer) Run() {
 	}
 
 	i.init()
-	i.deploy()
+	i.Deploy()
 	log.Println("Entering pod listing loop!")
 
 	// continually print out pod statuses .  can exit any time.  maybe use this as a stub for self testing.
