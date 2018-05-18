@@ -210,7 +210,7 @@ func (i *Installer) Run() {
 	}
 
 	i.init()
-	i.deploy()
+	i.Deploy()
 	log.Println("Entering pod listing loop!")
 
 	// continually print out pod statuses .  can exit any time.  maybe use this as a stub for self testing.
@@ -620,7 +620,8 @@ func (i *Installer) addPerceptorResources() {
 	}
 }
 
-func (i *Installer) deploy() {
+// Deploy function will create the config maps, replication controllers, pods and services that have been added to the global list
+func (i *Installer) Deploy() {
 	// Create all the resources.  Note that we'll panic after creating ANY
 	// resource that fails.  Thats intentional
 
