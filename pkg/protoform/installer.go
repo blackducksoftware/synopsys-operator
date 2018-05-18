@@ -620,7 +620,8 @@ func (i *Installer) addPerceptorResources() {
 	}
 }
 
-func (i *Installer) deploy() {
+// Deploy function will create the config maps, replication controllers, pods and services that have been added to the global list
+func (i *Installer) Deploy() {
 	// Create all the resources.  Note that we'll panic after creating ANY
 	// resource that fails.  Thats intentional
 
