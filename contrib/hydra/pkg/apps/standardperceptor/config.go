@@ -164,9 +164,9 @@ func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 
 func (pc *Config) SkyfireConfig() model.SkyfireConfigMap {
 	return model.SkyfireConfigMap{
-		HubHost:     pc.Hub.Host,
-		HubUser:     pc.Hub.User,
-		HubPassword: pc.Hub.Password,
+		HubHost:               pc.Hub.Host,
+		HubUser:               pc.Hub.User,
+		HubUserPasswordEnvVar: "PERCEPTOR_HUBUSERPASSWORD",
 		// TODO pc.HubPort ?
 		KubeDumpIntervalSeconds:      15,
 		PerceptorDumpIntervalSeconds: 15,

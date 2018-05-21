@@ -41,24 +41,24 @@ type SkyfireConfigMap struct {
 
 	Port int32
 
-	HubHost     string
-	HubUser     string
-	HubPassword string
+	HubHost               string
+	HubUser               string
+	HubUserPasswordEnvVar string
 
 	PerceptorHost string
 	PerceptorPort int32
 }
 
-func NewSkyfireConfigMap(logLevel string, port int32, hubHost string, hubUser string, hubPassword string, perceptorHost string, perceptorPort int32) *SkyfireConfigMap {
+func NewSkyfireConfigMap(logLevel string, port int32, hubHost string, hubUser string, hubUserPasswordEnvVar string, perceptorHost string, perceptorPort int32) *SkyfireConfigMap {
 	return &SkyfireConfigMap{
-		UseInClusterConfig: true,
-		LogLevel:           logLevel,
-		Port:               port,
-		HubHost:            hubHost,
-		HubUser:            hubUser,
-		HubPassword:        hubPassword,
-		PerceptorHost:      perceptorHost,
-		PerceptorPort:      perceptorPort,
+		UseInClusterConfig:    true,
+		LogLevel:              logLevel,
+		Port:                  port,
+		HubHost:               hubHost,
+		HubUser:               hubUser,
+		HubUserPasswordEnvVar: hubUserPasswordEnvVar,
+		PerceptorHost:         perceptorHost,
+		PerceptorPort:         perceptorPort,
 	}
 }
 
@@ -112,19 +112,19 @@ func (pc *Skyfire) Container() *v1.Container {
 		Name:            "skyfire",
 		Image:           pc.Image,
 		ImagePullPolicy: "Always",
-		// Env: []v1.EnvVar{
-		// 	v1.EnvVar{
-		// 		Name: pc.Config.HubUserPasswordEnvVar,
-		// 		ValueFrom: &v1.EnvVarSource{
-		// 			SecretKeyRef: &v1.SecretKeySelector{
-		// 				LocalObjectReference: v1.LocalObjectReference{
-		// 					Name: pc.HubPasswordSecretName,
-		// 				},
-		// 				Key: pc.HubPasswordSecretKey,
-		// 			},
-		// 		},
-		// 	},
-		// },
+		Env: []v1.EnvVar{
+			v1.EnvVar{
+				Name: pc.Config.HubUserPasswordEnvVar,
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: pc.HubPasswordSecretName,
+						},
+						Key: pc.HubPasswordSecretKey,
+					},
+				},
+			},
+		},
 		Command: []string{"./skyfire", pc.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
