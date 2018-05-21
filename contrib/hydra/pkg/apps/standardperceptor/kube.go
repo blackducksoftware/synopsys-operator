@@ -68,7 +68,7 @@ func (kube *Kube) createResources() {
 	imageFacade := model.NewImagefacade(config.AuxConfig.ImageFacadeServiceAccountName, config.ScannerPod.Name)
 	imageFacade.Config = config.ImagefacadeConfig()
 
-	skyfire := model.NewSkyfire()
+	skyfire := model.NewSkyfire(config.HubPasswordSecretName, config.HubPasswordSecretKey)
 	skyfire.Config = config.SkyfireConfig()
 
 	prometheus := model.NewPrometheus()

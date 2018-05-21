@@ -80,7 +80,7 @@ type Skyfire struct {
 	ServiceName  string
 }
 
-func NewSkyfire() *Skyfire {
+func NewSkyfire(hubPasswordSecretName string, hubPasswordSecretKey string) *Skyfire {
 	memory, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -91,15 +91,17 @@ func NewSkyfire() *Skyfire {
 	}
 
 	return &Skyfire{
-		PodName:        "skyfire",
-		Image:          "gcr.io/gke-verification/blackducksoftware/skyfire:master",
-		CPU:            cpu,
-		Memory:         memory,
-		ConfigMapName:  "skyfire-config",
-		ConfigMapMount: "/etc/skyfire",
-		ConfigMapPath:  "skyfire_conf.yaml",
-		ReplicaCount:   1,
-		ServiceName:    "skyfire",
+		PodName:               "skyfire",
+		Image:                 "gcr.io/gke-verification/blackducksoftware/skyfire:master",
+		CPU:                   cpu,
+		Memory:                memory,
+		ConfigMapName:         "skyfire-config",
+		ConfigMapMount:        "/etc/skyfire",
+		ConfigMapPath:         "skyfire_conf.yaml",
+		HubPasswordSecretName: hubPasswordSecretName,
+		HubPasswordSecretKey:  hubPasswordSecretKey,
+		ReplicaCount:          1,
+		ServiceName:           "skyfire",
 	}
 }
 
