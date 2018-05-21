@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"fmt"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,12 +87,16 @@ func NewImagePerceiver(replicaCount int32, serviceAccountName string) *ImagePerc
 	}
 }
 
-func (ip *ImagePerceiver) container() *v1.Container {
+func (ip *ImagePerceiver) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", ip.ConfigMapMount, ip.ConfigMapPath)
+}
+
+func (ip *ImagePerceiver) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "pod-perceiver",
 		Image:           ip.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Command:         []string{"./image-perceiver", ip.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
 				ContainerPort: ip.Config.Port,
@@ -131,7 +137,7 @@ func (ip *ImagePerceiver) ReplicationController() *v1.ReplicationController {
 							},
 						},
 					},
-					Containers:         []v1.Container{*ip.container()},
+					Containers:         []v1.Container{*ip.Container()},
 					ServiceAccountName: ip.ServiceAccountName,
 					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
 				}}}}

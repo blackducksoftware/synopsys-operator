@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"fmt"
+
 	"k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -98,12 +100,16 @@ func NewScanner(memoryString string, podName string, hubPasswordSecretName strin
 	}
 }
 
+func (psp *Scanner) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", psp.ConfigMapMount, psp.ConfigMapPath)
+}
+
 func (psp *Scanner) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "perceptor-scanner",
 		Image:           psp.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Command:         []string{"./perceptor-scanner", psp.FullConfigMapPath()},
 		Env: []v1.EnvVar{
 			v1.EnvVar{
 				Name: psp.Config.HubUserPasswordEnvVar,

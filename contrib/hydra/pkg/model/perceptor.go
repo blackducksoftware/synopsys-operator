@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"fmt"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,6 +84,10 @@ func NewPerceptor(serviceName string, hubPasswordSecretName string, hubPasswordS
 	}
 }
 
+func (pc *Perceptor) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", pc.ConfigMapMount, pc.ConfigMapPath)
+}
+
 func (pc *Perceptor) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "perceptor",
@@ -100,7 +106,7 @@ func (pc *Perceptor) Container() *v1.Container {
 				},
 			},
 		},
-		Command: []string{},
+		Command: []string{"./perceptor", pc.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
 				ContainerPort: pc.Config.Port,

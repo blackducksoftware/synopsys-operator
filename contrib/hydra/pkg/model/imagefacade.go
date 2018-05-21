@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"fmt"
+
 	"k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -100,13 +102,17 @@ func NewImagefacade(serviceAccountName string, podName string) *Imagefacade {
 	}
 }
 
+func (pif *Imagefacade) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", pif.ConfigMapMount, pif.ConfigMapPath)
+}
+
 func (pif *Imagefacade) Container() *v1.Container {
 	privileged := true
 	return &v1.Container{
 		Name:            "perceptor-imagefacade",
 		Image:           pif.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Command:         []string{"./perceptor-imagefacade", pif.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
 				ContainerPort: pif.Config.Port,

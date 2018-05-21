@@ -107,85 +107,85 @@ func (sf *Skyfire) FullConfigMapPath() string {
 	return fmt.Sprintf("%s/%s", sf.ConfigMapMount, sf.ConfigMapPath)
 }
 
-func (pc *Skyfire) Container() *v1.Container {
+func (sf *Skyfire) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "skyfire",
-		Image:           pc.Image,
+		Image:           sf.Image,
 		ImagePullPolicy: "Always",
 		Env: []v1.EnvVar{
 			v1.EnvVar{
-				Name: pc.Config.HubUserPasswordEnvVar,
+				Name: sf.Config.HubUserPasswordEnvVar,
 				ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{
 						LocalObjectReference: v1.LocalObjectReference{
-							Name: pc.HubPasswordSecretName,
+							Name: sf.HubPasswordSecretName,
 						},
-						Key: pc.HubPasswordSecretKey,
+						Key: sf.HubPasswordSecretKey,
 					},
 				},
 			},
 		},
-		Command: []string{"./skyfire", pc.FullConfigMapPath()},
+		Command: []string{"./skyfire", sf.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				ContainerPort: pc.Config.Port,
+				ContainerPort: sf.Config.Port,
 				Protocol:      "TCP",
 			},
 		},
 		Resources: v1.ResourceRequirements{
 			Requests: v1.ResourceList{
-				v1.ResourceCPU:    pc.CPU,
-				v1.ResourceMemory: pc.Memory,
+				v1.ResourceCPU:    sf.CPU,
+				v1.ResourceMemory: sf.Memory,
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
 			v1.VolumeMount{
-				Name:      pc.ConfigMapName,
-				MountPath: pc.ConfigMapMount,
+				Name:      sf.ConfigMapName,
+				MountPath: sf.ConfigMapMount,
 			},
 		},
 	}
 }
 
-func (pc *Skyfire) ReplicationController() *v1.ReplicationController {
+func (sf *Skyfire) ReplicationController() *v1.ReplicationController {
 	return &v1.ReplicationController{
-		ObjectMeta: v1meta.ObjectMeta{Name: pc.PodName},
+		ObjectMeta: v1meta.ObjectMeta{Name: sf.PodName},
 		Spec: v1.ReplicationControllerSpec{
-			Replicas: &pc.ReplicaCount,
-			Selector: map[string]string{"name": pc.PodName},
+			Replicas: &sf.ReplicaCount,
+			Selector: map[string]string{"name": sf.PodName},
 			Template: &v1.PodTemplateSpec{
-				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pc.PodName}},
+				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": sf.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
 						v1.Volume{
-							Name: pc.ConfigMapName,
+							Name: sf.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{Name: pc.ConfigMapName},
+									LocalObjectReference: v1.LocalObjectReference{Name: sf.ConfigMapName},
 								},
 							},
 						},
 					},
-					Containers: []v1.Container{*pc.Container()},
+					Containers: []v1.Container{*sf.Container()},
 					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
 				}}}}
 }
 
-func (pc *Skyfire) Service() *v1.Service {
+func (sf *Skyfire) Service() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
-			Name: pc.ServiceName,
+			Name: sf.ServiceName,
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
-					Name: pc.ServiceName,
-					Port: pc.Config.Port,
+					Name: sf.ServiceName,
+					Port: sf.Config.Port,
 				},
 			},
-			Selector: map[string]string{"name": pc.ServiceName}}}
+			Selector: map[string]string{"name": sf.ServiceName}}}
 }
 
-func (pc *Skyfire) ConfigMap() *v1.ConfigMap {
-	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, pc.Config)
+func (sf *Skyfire) ConfigMap() *v1.ConfigMap {
+	return MakeConfigMap(sf.ConfigMapName, sf.ConfigMapPath, sf.Config)
 }

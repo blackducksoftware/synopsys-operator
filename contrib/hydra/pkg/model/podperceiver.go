@@ -22,6 +22,8 @@ under the License.
 package model
 
 import (
+	"fmt"
+
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,12 +87,16 @@ func NewPodPerceiver(serviceAccountName string, replicaCount int) *PodPerceiver 
 	}
 }
 
+func (pp *PodPerceiver) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", pp.ConfigMapMount, pp.ConfigMapPath)
+}
+
 func (pp *PodPerceiver) container() *v1.Container {
 	return &v1.Container{
 		Name:            "pod-perceiver",
 		Image:           pp.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Command:         []string{"./pod-perceiver", pp.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
 				ContainerPort: pp.Config.Port,
