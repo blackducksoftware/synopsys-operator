@@ -204,7 +204,7 @@ func (i *Installer) Run() {
 		config, err := rest.InClusterConfig()
 		if err != nil {
 			log.Printf("Error getting in cluster config. Fallback to native config. Error message: %s", err)
-			config, err = NewKubeClientFromOutsideCluster()
+			config, err = newKubeClientFromOutsideCluster()
 		}
 
 		if err != nil {
@@ -753,7 +753,7 @@ func (i *Installer) prettyPrint(v interface{}) {
 	println(string(b))
 }
 
-func NewKubeClientFromOutsideCluster() (*rest.Config, error) {
+func newKubeClientFromOutsideCluster() (*rest.Config, error) {
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
