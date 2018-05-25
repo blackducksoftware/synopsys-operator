@@ -4,7 +4,7 @@ Copyright (C) 2018 Synopsys, Inc.
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
 distributed with this work for additional information
-regarding copyright ownershii. The ASF licenses this file
+regarding copyright ownership. The ASF licenses this file
 to you under the Apache License, Version 2.0 (the
 "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
@@ -18,14 +18,15 @@ KIND, either express or implied. See the License for the
 specific language governing permissions and limitations
 under the License.
 */
-
 package protoform
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"math"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -42,6 +43,8 @@ import (
 	"github.com/koki/short/util/floatstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
 
 // Installer handles deploying configured components to a cluster
@@ -200,6 +203,12 @@ func (i *Installer) Run() {
 		// creates the in-cluster config
 		config, err := rest.InClusterConfig()
 		if err != nil {
+			log.Printf("Error getting in cluster config. Fallback to native config. Error message: %s", err)
+			config, err = NewKubeClientFromOutsideCluster()
+		}
+
+		if err != nil {
+			log.Printf("Error creating default client config: %s", err)
 			panic(err.Error())
 		} else {
 			// creates the client
@@ -742,4 +751,21 @@ func (i *Installer) generateContainerPaths() map[string]string {
 func (i *Installer) prettyPrint(v interface{}) {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	println(string(b))
+}
+
+func NewKubeClientFromOutsideCluster() (*rest.Config, error) {
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		log.Printf("Error creating default client config: %s", err)
+		return nil, err
+	}
+	return config, err
 }
