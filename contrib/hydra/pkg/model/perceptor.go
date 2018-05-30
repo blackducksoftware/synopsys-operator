@@ -30,15 +30,15 @@ import (
 )
 
 type PerceptorConfigMap struct {
-	HubHost                 string
-	HubUser                 string
-	HubUserPasswordEnvVar   string
-	HubClientTimeoutSeconds int
-	HubPort                 int
-	ConcurrentScanLimit     int
-	UseMockMode             bool
-	Port                    int32
-	LogLevel                string
+	HubHost                      string
+	HubUser                      string
+	HubUserPasswordEnvVar        string
+	HubClientTimeoutMilliseconds int
+	HubPort                      int
+	ConcurrentScanLimit          int
+	UseMockMode                  bool
+	Port                         int32
+	LogLevel                     string
 }
 
 type Perceptor struct {
