@@ -36,13 +36,13 @@ import (
 
 	"github.com/koki/short/converter/converters"
 	"github.com/koki/short/types"
+	"github.com/koki/short/util/floatstr"
 
 	"github.com/spf13/viper"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/koki/short/util/floatstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -57,11 +57,15 @@ type Installer struct {
 	pods                   []*types.Pod
 	configMaps             []*types.ConfigMap
 	services               []*types.Service
+	serviceAccounts        []*types.ServiceAccount
+	deployments            []*types.Deployment
+	clusterRoles           []*types.ClusterRole
+	clusterRoleBindings    []*types.ClusterRoleBinding
 
 	client *kubernetes.Clientset
 }
 
-// NewInstaller creates a Installer object
+// NewInstaller creates an Installer object
 func NewInstaller(defaults *api.ProtoformDefaults, path string) *Installer {
 	i := Installer{}
 	i.readConfig(path)
@@ -113,7 +117,7 @@ func (i *Installer) readConfig(configPath string) {
 	}
 
 	i.Config.HubUserPasswordEnvVar = "PCP_HUBUSERPASSWORD"
-	i.Config.ViperSecret = "viper-secret"
+	i.Config.ViperSecret = "protoform"
 
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -155,6 +159,10 @@ func (i *Installer) addRC(config api.ReplicationControllerConfig) {
 
 // AddPod will add a pod to the list of pods to be deployed
 func (i *Installer) addPod(config api.PodConfig) {
+	i.pods = append(i.pods, i.generatePod(config))
+}
+
+func (i *Installer) generatePod(config api.PodConfig) *types.Pod {
 	newPod := &types.Pod{
 		PodTemplateMeta: types.PodTemplateMeta{
 			Name:   config.Name,
@@ -166,7 +174,7 @@ func (i *Installer) addPod(config api.PodConfig) {
 			Account:    config.ServiceAccount,
 		},
 	}
-	i.pods = append(i.pods, newPod)
+	return newPod
 }
 
 // addService will add a service to the list of services
@@ -182,11 +190,20 @@ func (i *Installer) addService(config api.ServiceConfig) {
 		}
 		ports = append(ports, newPort)
 	}
+	var ipType types.ClusterIPServiceType
+	if len(config.IPServiceType) > 0 {
+		ipType = config.IPServiceType
+	} else {
+		ipType = types.ClusterIPServiceTypeDefault
+	}
 
 	newSvc := &types.Service{
-		Name:     config.Name,
-		Ports:    ports,
-		Selector: config.Selector,
+		Name:        config.Name,
+		Ports:       ports,
+		Selector:    config.Selector,
+		Labels:      config.Labels,
+		Annotations: config.Annotations,
+		Type:        ipType,
 	}
 
 	i.services = append(i.services, newSvc)
@@ -206,24 +223,72 @@ func (i *Installer) AddConfigMap(conf api.ConfigMapConfig) {
 	i.configMaps = append(i.configMaps, configMap)
 }
 
+// AddServiceAccount will add a service account to the list
+// of service accounts to be deployed on the cluster
+func (i *Installer) AddServiceAccount(conf api.ServiceAccountConfig) {
+	sa := &types.ServiceAccount{
+		Name:      conf.Name,
+		Namespace: conf.Namespace,
+	}
+	i.serviceAccounts = append(i.serviceAccounts, sa)
+}
+
+// AddDeployment will add a deployment to the list of deployments
+// to be deployed on the cluster
+func (i *Installer) AddDeployment(conf api.DeploymentConfig) {
+	d := &types.Deployment{
+		Name:      conf.Name,
+		Namespace: conf.Namespace,
+		Replicas:  &conf.Replicas,
+		Selector:  &conf.Selector,
+	}
+	pod := i.generatePod(conf.Pod)
+	d.TemplateMetadata = &pod.PodTemplateMeta
+	d.PodTemplate = pod.PodTemplate
+	i.deployments = append(i.deployments, d)
+}
+
+// AddClusterRole will add a cluster role to the list of cluster
+// roles to be deployed on the cluster
+func (i *Installer) AddClusterRole(conf api.ClusterRoleConfig) {
+	cr := &types.ClusterRole{
+		Name:    conf.Name,
+		Version: conf.Version,
+		Rules:   conf.Rules,
+	}
+	i.clusterRoles = append(i.clusterRoles, cr)
+}
+
+// AddClusterRoleBinding will add a cluster role binding to the list of cluster
+// role bindings to be deployed on the cluster
+func (i *Installer) AddClusterRoleBinding(conf api.ClusterRoleBindingConfig) {
+	crb := &types.ClusterRoleBinding{
+		Name:     conf.Name,
+		Version:  conf.Version,
+		Subjects: conf.Subjects,
+		RoleRef:  conf.RoleRef,
+	}
+	i.clusterRoleBindings = append(i.clusterRoleBindings, crb)
+}
+
 // Run will start the installer
 func (i *Installer) Run() {
 	if !i.Config.DryRun {
 		// creates the in-cluster config
 		config, err := rest.InClusterConfig()
 		if err != nil {
-			log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s", err)
+			log.Infof("unable to get in cluster config: %v", err)
+			log.Infof("trying to use local config")
 			config, err = newKubeClientFromOutsideCluster()
-		}
-
-		if err != nil {
-			log.Panicf("error getting the default client config: %s", err.Error())
-		} else {
-			// creates the client
-			i.client, err = kubernetes.NewForConfig(config)
 			if err != nil {
-				log.Panicf("error creating the kubernetes client : %s", err.Error())
+				log.Errorf("unable to retrive the local config: %v", err)
+				log.Panicf("failed to find a valid cluster config")
 			}
+		}
+		// creates the client
+		i.client, err = kubernetes.NewForConfig(config)
+		if err != nil {
+			log.Panicf("error creating the kubernetes client: %v", err)
 		}
 	}
 
@@ -247,7 +312,7 @@ func (i *Installer) Run() {
 
 // AddPerceptorResources method is to support perceptor projects TODO: Remove perceptor specific code
 func (i *Installer) AddPerceptorResources() {
-	i.addDefaultServiceAccounts()
+	i.addServiceAccounts()
 	isValid := i.sanityCheckServices()
 	if isValid == false {
 		log.Panic("Please set the service accounts correctly!")
@@ -259,24 +324,24 @@ func (i *Installer) AddPerceptorResources() {
 }
 
 func (i *Installer) substituteDefaultImageVersion() {
-	if len(i.Config.PerceptorContainerVersion) == 0 {
-		i.Config.PerceptorContainerVersion = i.Config.DefaultVersion
+	if len(i.Config.PerceptorImageVersion) == 0 {
+		i.Config.PerceptorImageVersion = i.Config.DefaultVersion
 	}
-	if len(i.Config.ScannerContainerVersion) == 0 {
-		i.Config.ScannerContainerVersion = i.Config.DefaultVersion
+	if len(i.Config.ScannerImageVersion) == 0 {
+		i.Config.ScannerImageVersion = i.Config.DefaultVersion
 	}
-	if len(i.Config.PerceiverContainerVersion) == 0 {
-		i.Config.PerceiverContainerVersion = i.Config.DefaultVersion
+	if len(i.Config.PerceiverImageVersion) == 0 {
+		i.Config.PerceiverImageVersion = i.Config.DefaultVersion
 	}
-	if len(i.Config.ImageFacadeContainerVersion) == 0 {
-		i.Config.ImageFacadeContainerVersion = i.Config.DefaultVersion
+	if len(i.Config.ImageFacadeImageVersion) == 0 {
+		i.Config.ImageFacadeImageVersion = i.Config.DefaultVersion
 	}
-	if len(i.Config.SkyfireContainerVersion) == 0 {
-		i.Config.SkyfireContainerVersion = i.Config.DefaultVersion
+	if len(i.Config.SkyfireImageVersion) == 0 {
+		i.Config.SkyfireImageVersion = i.Config.DefaultVersion
 	}
 }
 
-func (i *Installer) addDefaultServiceAccounts() {
+func (i *Installer) addServiceAccounts() {
 	// TODO Viperize these env vars.
 	if len(i.Config.ServiceAccounts) == 0 {
 		log.Info("No service accounts exist.  Using defaults: make sure these are exist!")
@@ -291,6 +356,64 @@ func (i *Installer) addDefaultServiceAccounts() {
 		i.prettyPrint(svcAccounts)
 		i.Config.ServiceAccounts = svcAccounts
 	}
+
+	added := map[string]struct{}{}
+	for _, v := range i.Config.ServiceAccounts {
+		if _, ok := added[v]; !ok {
+			saConfig := api.ServiceAccountConfig{
+				Name:      v,
+				Namespace: i.Config.Namespace,
+			}
+			i.AddServiceAccount(saConfig)
+			added[v] = struct{}{}
+		}
+	}
+
+	i.AddClusterRole(api.ClusterRoleConfig{
+		Name:    "all-permissions-on-pods",
+		Version: "rbac.authorization.k8s.io/v1",
+		Rules: []types.PolicyRule{
+			{
+				APIGroups: []string{""},
+				Resources: []string{"pods"},
+				Verbs:     []string{"get", "watch", "list", "update"},
+			},
+		},
+	})
+
+	i.AddClusterRoleBinding(api.ClusterRoleBindingConfig{
+		Name:    "perceiver",
+		Version: "rbac.authorization.k8s.io/v1",
+		Subjects: []types.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      "perceiver",
+				Namespace: i.Config.Namespace,
+			},
+		},
+		RoleRef: types.RoleRef{
+			APIGroup: "",
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+		},
+	})
+
+	i.AddClusterRoleBinding(api.ClusterRoleBindingConfig{
+		Name:    "perceptor-scanner",
+		Version: "rbac.authorization.k8s.io/v1",
+		Subjects: []types.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      "perceptor-scanner",
+				Namespace: i.Config.Namespace,
+			},
+		},
+		RoleRef: types.RoleRef{
+			APIGroup: "",
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+		},
+	})
 }
 
 // This function creates the volumes and containers that need to be used for adding RC or Pod
@@ -463,9 +586,12 @@ func (i *Installer) createRC(descriptions []*ReplicationController, volumes map[
 func (i *Installer) createService(descriptions []*ReplicationController) {
 	for _, desc := range descriptions {
 		serviceCfg := api.ServiceConfig{
-			Name:     desc.Name,
-			Ports:    map[string]int32{desc.Name: desc.Port},
-			Selector: map[string]string{"name": descriptions[0].Name},
+			Name:          desc.Name,
+			Ports:         map[string]int32{desc.Name: desc.Port},
+			Selector:      desc.ServiceSelector,
+			Annotations:   desc.Annotations,
+			Labels:        desc.Labels,
+			IPServiceType: desc.ServiceType,
 		}
 		i.addService(serviceCfg)
 	}
@@ -514,34 +640,38 @@ func (i *Installer) addPerceptorResources() {
 					KeyFromSecret: "HubUserPassword",
 				},
 			},
-			Name:   i.Config.PerceptorImageName,
-			Image:  paths["perceptor"],
-			Port:   int32(i.Config.PerceptorPort),
-			Cmd:    []string{"./perceptor"},
-			Arg:    []floatstr.FloatOrString{i.GenerateArg("/etc/perceptor/perceptor.yaml", 0)},
-			CPU:    defaultCPU,
-			Memory: defaultMem,
+			Name:            i.Config.PerceptorImageName,
+			Image:           paths["perceptor"],
+			Port:            int32(i.Config.PerceptorPort),
+			Cmd:             []string{"./perceptor"},
+			Arg:             []floatstr.FloatOrString{i.GenerateArg("/etc/perceptor/perceptor.yaml", 0)},
+			CPU:             defaultCPU,
+			Memory:          defaultMem,
+			ServiceSelector: map[string]string{"name": i.Config.PerceptorImageName},
 		},
 	})
 
-	i.AddReplicationControllerAndService([]*ReplicationController{
-		{
-			Replicas:        1,
-			ConfigMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
-			EmptyDirMounts: map[string]string{
-				"logs": "/tmp",
+	if i.Config.PodPerceiver {
+		i.AddReplicationControllerAndService([]*ReplicationController{
+			{
+				Replicas:        1,
+				ConfigMapMounts: map[string]string{"perceiver": "/etc/perceiver"},
+				EmptyDirMounts: map[string]string{
+					"logs": "/tmp",
+				},
+				Name:               i.Config.PodPerceiverImageName,
+				Image:              paths["pod-perceiver"],
+				Port:               int32(i.Config.PerceiverPort),
+				Cmd:                []string{"./pod-perceiver"},
+				Arg:                []floatstr.FloatOrString{i.GenerateArg("/etc/perceiver/perceiver.yaml", 0)},
+				ServiceAccountName: i.Config.ServiceAccounts["pod-perceiver"],
+				ServiceAccount:     i.Config.ServiceAccounts["pod-perceiver"],
+				CPU:                defaultCPU,
+				Memory:             defaultMem,
+				ServiceSelector:    map[string]string{"name": i.Config.PodPerceiverImageName},
 			},
-			Name:               i.Config.PodPerceiverImageName,
-			Image:              paths["pod-perceiver"],
-			Port:               int32(i.Config.PerceiverPort),
-			Cmd:                []string{"./pod-perceiver"},
-			Arg:                []floatstr.FloatOrString{i.GenerateArg("/etc/perceiver/perceiver.yaml", 0)},
-			ServiceAccountName: i.Config.ServiceAccounts["pod-perceiver"],
-			ServiceAccount:     i.Config.ServiceAccounts["pod-perceiver"],
-			CPU:                defaultCPU,
-			Memory:             defaultMem,
-		},
-	})
+		})
+	}
 
 	i.AddReplicationControllerAndService([]*ReplicationController{
 		{
@@ -567,6 +697,7 @@ func (i *Installer) addPerceptorResources() {
 			ServiceAccountName: i.Config.ServiceAccounts["perceptor-image-facade"],
 			CPU:                defaultCPU,
 			Memory:             defaultMem,
+			ServiceSelector:    map[string]string{"name": i.Config.ScannerImageName},
 		},
 		{
 			ConfigMapMounts: map[string]string{"perceptor-imagefacade": "/etc/perceptor_imagefacade"},
@@ -583,12 +714,11 @@ func (i *Installer) addPerceptorResources() {
 			ServiceAccountName: i.Config.ServiceAccounts["perceptor-image-facade"],
 			CPU:                defaultCPU,
 			Memory:             defaultMem,
+			ServiceSelector:    map[string]string{"name": i.Config.ScannerImageName},
 		},
 	})
 
-	// We dont create openshift perceivers if running kube... This needs to be avoided b/c the svc accounts
-	// won't exist.
-	if i.Config.Openshift {
+	if i.Config.ImagePerceiver {
 		i.AddReplicationControllerAndService([]*ReplicationController{
 			{
 				Replicas:        1,
@@ -605,6 +735,7 @@ func (i *Installer) addPerceptorResources() {
 				ServiceAccountName: i.Config.ServiceAccounts["image-perceiver"],
 				CPU:                defaultCPU,
 				Memory:             defaultMem,
+				ServiceSelector:    map[string]string{"name": i.Config.ImagePerceiverImageName},
 			},
 		})
 	}
@@ -633,6 +764,77 @@ func (i *Installer) addPerceptorResources() {
 				ServiceAccountName: i.Config.ServiceAccounts["image-perceiver"],
 				CPU:                defaultCPU,
 				Memory:             defaultMem,
+				ServiceSelector:    map[string]string{"name": i.Config.SkyfireImageName},
+			},
+		})
+	}
+
+	if i.Config.Metrics {
+		i.AddDeployment(api.DeploymentConfig{
+			Name:     "prometheus",
+			Replicas: 1,
+			Selector: types.RSSelector{
+				Labels: map[string]string{"app": "prometheus"},
+			},
+			Pod: api.PodConfig{
+				Name:   "prometheus",
+				Labels: map[string]string{"app": "prometheus"},
+				Vols: map[string]types.Volume{
+					"data": {
+						EmptyDir: &types.EmptyDirVolume{},
+					},
+					"prometheus": {
+						ConfigMap: &types.ConfigMapVolume{
+							Name: "prometheus",
+						},
+					},
+				},
+				Containers: []types.Container{
+					{
+						Name:  "prometheus",
+						Image: "prom/prometheus:v2.1.0",
+						Args: []floatstr.FloatOrString{
+							{
+								Type:      floatstr.String,
+								StringVal: "--log.level=debug",
+							},
+							{
+								Type:      floatstr.String,
+								StringVal: "--config.file=/etc/prometheus/prometheus.yml",
+							},
+							{
+								Type:      floatstr.String,
+								StringVal: "--storage.tsdb.path=/tmp/data/",
+							},
+						},
+						Expose: []types.Port{
+							{
+								Name:          "web",
+								ContainerPort: "9090",
+							},
+						},
+						VolumeMounts: []types.VolumeMount{
+							{
+								Store:     "data",
+								MountPath: "/data",
+							},
+							{
+								Store:     "prometheus",
+								MountPath: "/etc/prometheus",
+							},
+						},
+					},
+				},
+			},
+		})
+		i.AddService([]*ReplicationController{
+			{
+				Name:            "prometheus",
+				Port:            9090,
+				Annotations:     map[string]string{"prometheus.io/scrape": "true"},
+				Labels:          map[string]string{"name": "prometheus"},
+				ServiceType:     types.ClusterIPServiceTypeNodePort,
+				ServiceSelector: map[string]string{"app": "prometheus"},
 			},
 		})
 	}
@@ -643,8 +845,67 @@ func (i *Installer) deploy() {
 	// Create all the resources.  Note that we'll panic after creating ANY
 	// resource that fails.  Thats intentional
 
-	// Create the configmaps first
-	log.Debug("Creating config maps : Dry Run ")
+	// Create the service accounts first
+	log.Println("Creating service accounts")
+	for _, kserviceAccount := range i.serviceAccounts {
+		wrapper := &types.ServiceAccountWrapper{ServiceAccount: *kserviceAccount}
+		serviceAccount, err := converters.Convert_Koki_ServiceAccount_to_Kube_ServiceAccount(wrapper)
+		if err != nil {
+			panic(err)
+		}
+		log.Debug("*********************************************")
+		log.Infof("Creating service account %s", serviceAccount.Name)
+		if !i.Config.DryRun {
+			_, err := i.client.Core().ServiceAccounts(i.Config.Namespace).Create(serviceAccount)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			i.prettyPrint(serviceAccount)
+		}
+	}
+
+	// Create cluster roles and cluster role bindings
+	log.Println("Creating cluster roles")
+	for _, clusterRole := range i.clusterRoles {
+		wrapper := &types.ClusterRoleWrapper{ClusterRole: *clusterRole}
+		crObj, err := converters.Convert_Koki_ClusterRole_to_Kube(wrapper)
+		if err != nil {
+			panic(err)
+		}
+		log.Debug("*********************************************")
+		log.Infof("Creating cluster role %s", crObj.Name)
+		if !i.Config.DryRun {
+			_, err := i.client.Rbac().ClusterRoles().Create(crObj)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			i.prettyPrint(crObj)
+		}
+	}
+
+	log.Println("Creating cluster role bindings")
+	for _, clusterRoleBinding := range i.clusterRoleBindings {
+		wrapper := &types.ClusterRoleBindingWrapper{ClusterRoleBinding: *clusterRoleBinding}
+		crbObj, err := converters.Convert_Koki_ClusterRoleBinding_to_Kube(wrapper)
+		if err != nil {
+			panic(err)
+		}
+		log.Debug("*********************************************")
+		log.Infof("Creating cluster role binding %s", crbObj.Name)
+		if !i.Config.DryRun {
+			_, err := i.client.Rbac().ClusterRoleBindings().Create(crbObj)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			i.prettyPrint(crbObj)
+		}
+	}
+
+	// Create the configmaps
+	log.Println("Creating config maps : Dry Run ")
 	for _, kconfigMap := range i.configMaps {
 		wrapper := &types.ConfigMapWrapper{ConfigMap: *kconfigMap}
 		configMap, err := converters.Convert_Koki_ConfigMap_to_Kube_v1_ConfigMap(wrapper)
@@ -701,6 +962,22 @@ func (i *Installer) deploy() {
 		}
 	}
 
+	// Deploy the deployments
+	for _, kdeploy := range i.deployments {
+		wrapper := &types.DeploymentWrapper{Deployment: *kdeploy}
+		deploy, err := converters.Convert_Koki_Deployment_to_Kube_apps_v1beta2_Deployment(wrapper)
+		if err != nil {
+			panic(err)
+		}
+		i.prettyPrint(deploy)
+		if !i.Config.DryRun {
+			_, err := i.client.AppsV1beta2().Deployments(i.Config.Namespace).Create(deploy)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
 	// Deploy the services
 	for _, ksvcI := range i.services {
 		sWrapper := &types.ServiceWrapper{Service: *ksvcI}
@@ -752,12 +1029,12 @@ func (i *Installer) createConfigMaps() {
 func (i *Installer) generateContainerPaths() map[string]string {
 	config := i.Config
 	return map[string]string{
-		"perceptor":             fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.PerceptorImageName, config.PerceptorContainerVersion),
-		"perceptor-scanner":     fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ScannerImageName, config.ScannerContainerVersion),
-		"pod-perceiver":         fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.PodPerceiverImageName, config.PerceiverContainerVersion),
-		"image-perceiver":       fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ImagePerceiverImageName, config.PerceiverContainerVersion),
-		"perceptor-imagefacade": fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ImageFacadeImageName, config.ImageFacadeContainerVersion),
-		"perceptor-skyfire":     fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.SkyfireImageName, config.SkyfireContainerVersion),
+		"perceptor":             fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.PerceptorImageName, config.PerceptorImageVersion),
+		"perceptor-scanner":     fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ScannerImageName, config.ScannerImageVersion),
+		"pod-perceiver":         fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.PodPerceiverImageName, config.PerceiverImageVersion),
+		"image-perceiver":       fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ImagePerceiverImageName, config.PerceiverImageVersion),
+		"perceptor-imagefacade": fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.ImageFacadeImageName, config.ImageFacadeImageVersion),
+		"perceptor-skyfire":     fmt.Sprintf("%s/%s/%s:%s", config.Registry, config.ImagePath, config.SkyfireImageName, config.SkyfireImageVersion),
 	}
 }
 

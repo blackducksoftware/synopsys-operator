@@ -34,7 +34,7 @@ func TestProto(t *testing.T) {
 	d.DefaultCPU = "300m"
 	d.DefaultMem = "1300Mi"
 
-	installer := NewInstaller(d, "../../cmd/protoform.json")
+	installer := NewInstaller(d, "../../cmd/protoform-installer/protoform.json")
 	installer.AddPerceptorResources()
 	rcsArray := installer.replicationControllers
 

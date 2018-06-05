@@ -55,7 +55,7 @@ func createDefaults() *api.ProtoformDefaults {
 	d.LogLevel = "info"
 	d.DefaultCPU = "300m"
 	d.DefaultMem = "1300Mi"
-	d.HubClientTimeoutPerceptorSeconds = 5
+	d.HubClientTimeoutPerceptorMilliseconds = 5000
 	d.HubClientTimeoutScannerSeconds = 120
 	d.ConcurrentScanLimit = 7
 

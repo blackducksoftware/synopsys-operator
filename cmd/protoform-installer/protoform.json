@@ -15,5 +15,6 @@
   "LogLevel": "info",
   "HubClientTimeoutPerceptorSeconds": 5,
   "HubClientTimeoutScannerSeconds": 120,
-  "ConcurrentScanLimit": 7
+  "ConcurrentScanLimit": 7,
+  "PodPerceiver": "true"
 }

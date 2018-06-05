@@ -1,8 +1,13 @@
 #!/bin/bash
 
-openshift="false"
+image_perceiver="false"
 if [[ "$_arg_image_perceiver" == "on" ]] ; then
-  openshift="true"
+  image_perceiver="true"
+fi
+
+pod_perceiver="true"
+if [[ "$_arg_pod_perceiver" == "off" ]] ; then
+  pod_perceiver="false"
 fi
 
 skyfire="false"
@@ -25,9 +30,9 @@ metadata:
   name: protoform
 spec:
   volumes:
-  - name: viper-input
+  - name: protoform
     configMap:
-      name: viper-input
+      name: protoform
   containers:
   - name: protoform
     image: ${_arg_container_registry}/${_arg_image_repository}/${perceptor_protoform_image}:${perceptor_protoform_tag}
@@ -35,7 +40,7 @@ spec:
     - name: PCP_HUBUSERPASSWORD
       valueFrom:
         secretKeyRef:
-          name: viper-secret
+          name: protoform
           key: HubUserPassword
     imagePullPolicy: Always
     command: [ ./protoform ]
@@ -44,7 +49,7 @@ spec:
     - containerPort: 3001
       protocol: TCP
     volumeMounts:
-    - name: viper-input
+    - name: protoform
       mountPath: /etc/protoform/
   restartPolicy: Never
   serviceAccountName: protoform
@@ -58,14 +63,14 @@ items:
 - apiVersion: v1
   kind: Secret
   metadata:
-    name: viper-secret
+    name: protoform
   type: Opaque
   data:
     HubUserPassword: "$hubUserPassword"
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    name: viper-input
+    name: protoform
   data:
     protoform.yaml: |
       DockerPasswordOrToken: "$_arg_private_registry_token"
@@ -78,7 +83,8 @@ items:
       # TODO, the Docker username is hardcoded, it is not required as of now.
       DockerUsername: "admin"
       Namespace: "$_arg_pcp_namespace"
-      Openshift: "$openshift"
+      ImagePerceiver: "$image_perceiver"
+      PodPerceiver: "$pod_perceiver"
       InternalDockerRegistries: "${_arg_private_registry[@]}"
       DefaultCPU: "$_arg_container_default_cpu"
       DefaultMem: "$_arg_container_default_memory"

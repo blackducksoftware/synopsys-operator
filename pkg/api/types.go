@@ -48,9 +48,12 @@ type PodConfig struct {
 
 // ServiceConfig defines the configuration for a service
 type ServiceConfig struct {
-	Name     string
-	Ports    map[string]int32
-	Selector map[string]string
+	Name          string
+	IPServiceType types.ClusterIPServiceType
+	Ports         map[string]int32
+	Selector      map[string]string
+	Annotations   map[string]string
+	Labels        map[string]string
 }
 
 // ConfigMapConfig defines the configuration for a config map
@@ -60,44 +63,78 @@ type ConfigMapConfig struct {
 	Data      map[string]string
 }
 
+// ServiceAccountConfig defines the configuration for a service account
+type ServiceAccountConfig struct {
+	Name      string
+	Namespace string
+}
+
+// DeploymentConfig defines the configuration for a deployment
+type DeploymentConfig struct {
+	Name      string
+	Namespace string
+	Replicas  int32
+	Selector  types.RSSelector
+	Pod       PodConfig
+}
+
+// ClusterRoleConfig defines the configuration for a cluster role
+type ClusterRoleConfig struct {
+	Version string
+	Name    string
+	Rules   []types.PolicyRule
+}
+
+// ClusterRoleBindingConfig defines the configuration for a cluster role binding
+type ClusterRoleBindingConfig struct {
+	Version  string
+	Name     string
+	Subjects []types.Subject
+	RoleRef  types.RoleRef
+}
+
 // ProtoformDefaults defines default values for Protoform.
 // These fields need to be named the same as those in
 // protoformConfig in order for defaults to be applied
 // properly.  A field that exists in ProtoformDefaults
 // but does not exist in protoformConfig will be ignored
 type ProtoformDefaults struct {
-	PerceptorPort                    int
-	PerceiverPort                    int
-	ScannerPort                      int
-	ImageFacadePort                  int
-	AnnotationIntervalSeconds        int
-	DumpIntervalMinutes              int
-	HubClientTimeoutPerceptorSeconds int
-	HubClientTimeoutScannerSeconds   int
-	HubHost                          string
-	HubUser                          string
-	HubUserPassword                  string
-	HubPort                          int
-	DockerUsername                   string
-	DockerPasswordOrToken            string
-	ConcurrentScanLimit              int
-	InternalDockerRegistries         []string
-	DefaultVersion                   string
-	Registry                         string
-	ImagePath                        string
-	PerceptorImageName               string
-	ScannerImageName                 string
-	ImagePerceiverImageName          string
-	PodPerceiverImageName            string
-	ImageFacadeImageName             string
-	SkyfireImageName                 string
-	PerceptorContainerVersion        string
-	ScannerContainerVersion          string
-	PerceiverContainerVersion        string
-	ImageFacadeContainerVersion      string
-	SkyfireContainerVersion          string
-	LogLevel                         string
-	Namespace                        string
-	DefaultCPU                       string // Should be passed like: e.g. "300m"
-	DefaultMem                       string // Should be passed like: e.g "1300Mi"
+	PerceptorPort                         int
+	PerceiverPort                         int
+	ScannerPort                           int
+	ImageFacadePort                       int
+	SkyfirePort                           int
+	AnnotationIntervalSeconds             int
+	DumpIntervalMinutes                   int
+	HubClientTimeoutPerceptorMilliseconds int
+	HubClientTimeoutScannerSeconds        int
+	HubHost                               string
+	HubUser                               string
+	HubUserPassword                       string
+	HubPort                               int
+	DockerUsername                        string
+	DockerPasswordOrToken                 string
+	ConcurrentScanLimit                   int
+	InternalDockerRegistries              []string
+	DefaultVersion                        string
+	Registry                              string
+	ImagePath                             string
+	PerceptorImageName                    string
+	ScannerImageName                      string
+	ImagePerceiverImageName               string
+	PodPerceiverImageName                 string
+	ImageFacadeImageName                  string
+	SkyfireImageName                      string
+	PerceptorImageVersion                 string
+	ScannerImageVersion                   string
+	PerceiverImageVersion                 string
+	ImageFacadeImageVersion               string
+	SkyfireImageVersion                   string
+	LogLevel                              string
+	Namespace                             string
+	DefaultCPU                            string // Should be passed like: e.g. "300m"
+	DefaultMem                            string // Should be passed like: e.g "1300Mi"
+	ImagePerceiver                        bool
+	PodPerceiver                          bool
+	Metrics                               bool
 }

@@ -26,12 +26,24 @@
 
 
 [[constraint]]
-  version = "0.5.0"
   name = "github.com/koki/short"
+  version = "0.5.1"
 
 [[constraint]]
   name = "github.com/spf13/viper"
   version = "1.0.2"
+
+[[override]]
+  name = "k8s.io/api"
+  branch = "master"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  branch = "master"
+
+[[override]]
+  name = "k8s.io/client-go"
+  branch = "master"
 
 [prune]
   go-tests = true
