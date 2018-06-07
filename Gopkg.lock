@@ -37,8 +37,14 @@
     "ptypes/duration",
     "ptypes/timestamp"
   ]
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
-  version = "v1.0.0"
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
+  version = "v1.1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/google/btree"
+  packages = ["."]
+  revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
 
 [[projects]]
   branch = "master"
@@ -53,8 +59,17 @@
     "compiler",
     "extensions"
   ]
-  revision = "ee43cbb60db7bd22502942cccbc39059117352ab"
-  version = "v0.1.0"
+  revision = "7c663266750e7d82587642f65e60bc4083f1f84e"
+  version = "v0.2.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gregjones/httpcache"
+  packages = [
+    ".",
+    "diskcache"
+  ]
+  revision = "9cad4c3443a7200dd6400aef47183728de563a38"
 
 [[projects]]
   branch = "master"
@@ -72,12 +87,6 @@
     "json/token"
   ]
   revision = "ef8a98b0bbce4a65b5aa4c368430a80ddc533168"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/howeyc/gopass"
-  packages = ["."]
-  revision = "bf9dde6d0d2c004a008c27aaee91170c786f6db8"
 
 [[projects]]
   name = "github.com/imdario/mergo"
@@ -98,7 +107,7 @@
     ".",
     "jsonutil"
   ]
-  revision = "421acd14c16a19b04e5e9f59c9ebf48adc159e93"
+  revision = "e521cbda08e38a4d446cf3df04f927a6da8c002d"
 
 [[projects]]
   name = "github.com/koki/short"
@@ -113,38 +122,38 @@
     "util/intbool",
     "yaml"
   ]
-  revision = "f54b64185a0d5bcf2e1fe5d55d4a33545914ad2b"
-  version = "0.5.0"
+  revision = "bfbff4b524887066ac9264d033f480660a3afbf5"
+  version = "0.5.1"
 
 [[projects]]
   branch = "master"
   name = "github.com/koki/structurederrors"
   packages = ["."]
-  revision = "5a728381eca193d3a3c364256d01295346519936"
+  revision = "6b997eb5e2cadc3ba8649b3c9958644057bf3ddf"
 
 [[projects]]
-  branch = "master"
   name = "github.com/kr/pretty"
   packages = ["."]
-  revision = "cfb55aafdaf3ec08f0db22699ab822c50091b1c4"
+  revision = "73f6ac0b30a98e433b289500d779f50c1a6f0712"
+  version = "v0.1.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/kr/text"
   packages = ["."]
-  revision = "7cafcd837844e784b526369c9bce262804aebc60"
+  revision = "e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f"
+  version = "v0.1.0"
 
 [[projects]]
   name = "github.com/magiconair/properties"
   packages = ["."]
-  revision = "c3beff4c2358b44d0493c7dda585e7db7ff28ae6"
-  version = "v1.7.6"
+  revision = "c2353362d570a7bfa228149c62842019201cfb71"
+  version = "v1.8.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
-  revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
+  revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -163,6 +172,18 @@
   packages = ["."]
   revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
   version = "v1.1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/petar/GoLLRB"
+  packages = ["llrb"]
+  revision = "53be0d36a84c2a886ca057d34b6aa4468df9ccb4"
+
+[[projects]]
+  name = "github.com/peterbourgon/diskv"
+  packages = ["."]
+  revision = "5f041e8faa004a95c88a202771f4cc3e991971e6"
+  version = "v2.0.1"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -194,8 +215,8 @@
 [[projects]]
   name = "github.com/spf13/pflag"
   packages = ["."]
-  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
-  version = "v1.0.0"
+  revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/spf13/viper"
@@ -207,19 +228,19 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "beb2a9779c3b677077c41673505f150149fce895"
+  revision = "ab813273cd59e1333f7ae7bff5d027d4aadf528c"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
+    "http/httpguts",
     "http2",
     "http2/hpack",
-    "idna",
-    "lex/httplex"
+    "idna"
   ]
-  revision = "61147c48b25b599e5b561d2e9c4f3e1ef489ca41"
+  revision = "89e543239a64caf31d3a6865872ea120b41446df"
 
 [[projects]]
   branch = "master"
@@ -228,7 +249,7 @@
     "unix",
     "windows"
   ]
-  revision = "3b87a42e500a6dc65dae1a55d0b641295971163e"
+  revision = "c11f84a56e43e20a78cee75a7c034031ecf57d1f"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -255,7 +276,7 @@
   branch = "master"
   name = "golang.org/x/time"
   packages = ["rate"]
-  revision = "26559e0f760e39c24d730d3224364aef164ee23f"
+  revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -297,12 +318,13 @@
     "rbac/v1alpha1",
     "rbac/v1beta1",
     "scheduling/v1alpha1",
+    "scheduling/v1beta1",
     "settings/v1alpha1",
     "storage/v1",
     "storage/v1alpha1",
     "storage/v1beta1"
   ]
-  revision = "8759fda11383a1087cf16b1500ce5804fa9f32e7"
+  revision = "d216743eed4c3242b85d094d2a589f41a793652d"
 
 [[projects]]
   branch = "master"
@@ -311,7 +333,7 @@
     "pkg/apis/apiextensions",
     "pkg/apis/apiextensions/v1beta1"
   ]
-  revision = "55ab5bb3c09921979dd8de9819970847bec703e3"
+  revision = "bd76ce7dd8e65e8c2197803a1e64869ca5905309"
 
 [[projects]]
   branch = "master"
@@ -353,9 +375,10 @@
     "pkg/watch",
     "third_party/forked/golang/reflect"
   ]
-  revision = "5d4f0da8e5fde7cbadf8ab3ce5cfb76f86dd854e"
+  revision = "94ebb086c69b9fec4ddbfb6a1433d28ecca9292b"
 
 [[projects]]
+  branch = "master"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -385,6 +408,7 @@
     "kubernetes/typed/rbac/v1alpha1",
     "kubernetes/typed/rbac/v1beta1",
     "kubernetes/typed/scheduling/v1alpha1",
+    "kubernetes/typed/scheduling/v1beta1",
     "kubernetes/typed/settings/v1alpha1",
     "kubernetes/typed/storage/v1",
     "kubernetes/typed/storage/v1alpha1",
@@ -408,8 +432,7 @@
     "util/homedir",
     "util/integer"
   ]
-  revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
-  version = "v7.0.0"
+  revision = "9a5fde770f6e71fdfaead48ebfac7a4c81632c15"
 
 [[projects]]
   branch = "master"
@@ -418,11 +441,11 @@
     "pkg/apis/apiregistration",
     "pkg/apis/apiregistration/v1beta1"
   ]
-  revision = "a0e9884615e8d8b2ee24a99b4ba70b9abe7ae050"
+  revision = "f6c5541911ede368888b3b4ab6ecafb6f66bfdd2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1d7f172b79758bc3c8b3db32c8af4b74521479b72fd3a16e1a0a03b0a8922031"
+  inputs-digest = "fd39857b4a10d9ef47f5ecc9e310eacc587e000d324805230b51e531516fbf8a"
   solver-name = "gps-cdcl"
   solver-version = 1

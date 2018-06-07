@@ -22,10 +22,13 @@ under the License.
 package protoform
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+
+	"github.com/koki/short/types"
 	"github.com/koki/short/util/floatstr"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -37,22 +40,23 @@ type protoformConfig struct {
 
 	// CONTAINER CONFIGS
 	// These are sed replaced into the config maps for the containers.
-	PerceptorPort                    int
-	ScannerPort                      int
-	PerceiverPort                    int
-	ImageFacadePort                  int
-	InternalDockerRegistries         []string
-	AnnotationIntervalSeconds        int
-	DumpIntervalMinutes              int
-	HubHost                          string
-	HubUser                          string
-	HubUserPassword                  string
-	HubPort                          int
-	HubClientTimeoutPerceptorSeconds int
-	HubClientTimeoutScannerSeconds   int
-	ConcurrentScanLimit              int
-	Namespace                        string
-	DefaultVersion                   string
+	PerceptorPort                         int
+	ScannerPort                           int
+	PerceiverPort                         int
+	ImageFacadePort                       int
+	SkyfirePort                           int
+	InternalDockerRegistries              []string
+	AnnotationIntervalSeconds             int
+	DumpIntervalMinutes                   int
+	HubHost                               string
+	HubUser                               string
+	HubUserPassword                       string
+	HubPort                               int
+	HubClientTimeoutPerceptorMilliseconds int
+	HubClientTimeoutScannerSeconds        int
+	ConcurrentScanLimit                   int
+	Namespace                             string
+	DefaultVersion                        string
 
 	// CONTAINER PULL CONFIG
 	// These are for defining docker registry and image location and versions
@@ -66,11 +70,11 @@ type protoformConfig struct {
 	ImageFacadeImageName    string
 	SkyfireImageName        string
 
-	PerceptorContainerVersion   string
-	ScannerContainerVersion     string
-	PerceiverContainerVersion   string
-	ImageFacadeContainerVersion string
-	SkyfireContainerVersion     string
+	PerceptorImageVersion   string
+	ScannerImageVersion     string
+	PerceiverImageVersion   string
+	ImageFacadeImageVersion string
+	SkyfireImageVersion     string
 
 	// AUTH CONFIGS
 	// These are given to containers through secrets or other mechanisms.
@@ -81,7 +85,9 @@ type protoformConfig struct {
 	DockerUsername        string
 
 	ServiceAccounts map[string]string
-	Openshift       bool
+	ImagePerceiver  bool
+	PodPerceiver    bool
+	Metrics         bool
 
 	// CPU and memory configurations
 	DefaultCPU string // Should be passed like: e.g. "300m"
@@ -117,6 +123,10 @@ type ReplicationController struct {
 	Arg             []floatstr.FloatOrString
 	Replicas        int32
 	Env             []envSecret
+	Annotations     map[string]string
+	Labels          map[string]string
+	ServiceType     types.ClusterIPServiceType
+	ServiceSelector map[string]string
 
 	// key:value = name:mountPath
 	EmptyDirVolumeMounts map[string]string
@@ -134,16 +144,17 @@ type ReplicationController struct {
 // NewDefaultsObj returns a ProtoformDefaults object with sane default for most options
 func NewDefaultsObj() *api.ProtoformDefaults {
 	return &api.ProtoformDefaults{
-		PerceptorPort:                    3001,
-		PerceiverPort:                    3002,
-		ScannerPort:                      3003,
-		ImageFacadePort:                  3004,
-		AnnotationIntervalSeconds:        30,
-		DumpIntervalMinutes:              30,
-		HubClientTimeoutPerceptorSeconds: 5,
-		HubClientTimeoutScannerSeconds:   30,
+		PerceptorPort:                         3001,
+		PerceiverPort:                         3002,
+		ScannerPort:                           3003,
+		ImageFacadePort:                       3004,
+		SkyfirePort:                           3005,
+		AnnotationIntervalSeconds:             30,
+		DumpIntervalMinutes:                   30,
+		HubClientTimeoutPerceptorMilliseconds: 5000,
+		HubClientTimeoutScannerSeconds:        30,
 		HubHost:                 "nginx-webapp-logstash",
-		HubPort:                 8443,
+		HubPort:                 443,
 		DockerUsername:          "admin",
 		ConcurrentScanLimit:     7,
 		DefaultVersion:          "master",
@@ -154,6 +165,7 @@ func NewDefaultsObj() *api.ProtoformDefaults {
 		ImageFacadeImageName:    "perceptor-imagefacade",
 		SkyfireImageName:        "skyfire",
 		LogLevel:                "debug",
+		PodPerceiver:            true,
 	}
 }
 
@@ -164,11 +176,30 @@ func generateStringFromStringArr(strArr []string) string {
 
 func (p *protoformConfig) toMap() map[string]map[string]string {
 	configs := map[string]map[string]string{
-		"prometheus":            {"prometheus.yml": fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["`, p.PerceptorImageName, `:`, p.PerceptorPort, `","`, p.ScannerImageName, `:`, p.ScannerPort, `","`, p.ImagePerceiverImageName, `:`, p.PerceiverPort, `","`, p.PodPerceiverImageName, `:`, p.PerceiverPort, `","`, p.ImageFacadeImageName, `:`, p.ImageFacadePort, `","skyfire:`, "3005", `"]}]}]}`)},
-		"perceptor":             {"perceptor.yaml": fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutPerceptorSeconds, `","ConcurrentScanLimit": "`, p.ConcurrentScanLimit, `","Port": "`, p.PerceptorPort, `","LogLevel": "`, p.LogLevel, `"}`)},
-		"perceiver":             {"perceiver.yaml": fmt.Sprint(`{"PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","AnnotationIntervalSeconds": "`, p.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, p.DumpIntervalMinutes, `","Port": "`, p.PerceiverPort, `","LogLevel": "`, p.LogLevel, `"}`)},
+		"perceptor":             {"perceptor.yaml": fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutMilliseconds": "`, p.HubClientTimeoutPerceptorMilliseconds, `","ConcurrentScanLimit": "`, p.ConcurrentScanLimit, `","Port": "`, p.PerceptorPort, `","LogLevel": "`, p.LogLevel, `"}`)},
 		"perceptor-scanner":     {"perceptor_scanner.yaml": fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadeHost": "`, p.ImageFacadeImageName, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`)},
 		"perceptor-imagefacade": {"perceptor_imagefacade.yaml": fmt.Sprint(`{"DockerUser": "`, p.DockerUsername, `","DockerPassword": "`, p.DockerPasswordOrToken, `","Port": "`, p.ImageFacadePort, `","InternalDockerRegistries": `, generateStringFromStringArr(p.InternalDockerRegistries), `,"LogLevel": "`, p.LogLevel, `"}`)},
+	}
+
+	if p.Metrics {
+		var promConfig bytes.Buffer
+		promConfig.WriteString(fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["`, p.PerceptorImageName, `:`, p.PerceptorPort, `","`, p.ScannerImageName, `:`, p.ScannerPort, `","`, p.ImageFacadeImageName, `:`, p.ImageFacadePort))
+		if p.ImagePerceiver {
+			promConfig.WriteString(fmt.Sprint(`","`, p.ImagePerceiverImageName, `:`, p.PerceiverPort))
+		}
+		if p.PodPerceiver {
+			promConfig.WriteString(fmt.Sprint(`","`, p.PodPerceiverImageName, `:`, p.PerceiverPort))
+		}
+		if p.PerceptorSkyfire {
+			promConfig.WriteString(fmt.Sprint(`","`, p.SkyfireImageName, `:`, p.SkyfirePort))
+
+		}
+		promConfig.WriteString(`"]}]}]}`)
+		configs["prometheus"] = map[string]string{"prometheus.yml": promConfig.String()}
+	}
+
+	if p.ImagePerceiver || p.PodPerceiver {
+		configs["perceiver"] = map[string]string{"perceiver.yaml": fmt.Sprint(`{"PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","AnnotationIntervalSeconds": "`, p.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, p.DumpIntervalMinutes, `","Port": "`, p.PerceiverPort, `","LogLevel": "`, p.LogLevel, `"}`)}
 	}
 
 	if p.PerceptorSkyfire {
