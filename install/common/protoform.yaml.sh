@@ -15,6 +15,11 @@ if [[ "$_arg_skyfire" == "on" ]] ; then
   skyfire="true"
 fi
 
+prometheus="false"
+if [[ "$_arg_prometheus_metrics" == "on" ]] ; then
+  prometheus="true"
+fi
+
 DEF_PERCEPTOR_PROTOFORM_IMAGE=perceptor-protoform
 DEF_PERCEPTOR_PROTOFORM_TAG=master
 
@@ -100,10 +105,13 @@ items:
       PodPerceiverImageName: "$pod_perceiver_image"
       ImagePerceiverImageName: "$image_perceiver_image"
       ImageFacadeImageName: "$perceptor_imagefacade_image"
-      PerceptorContainerVersion: "$perceptor_tag"
-      ScannerContainerVersion: "$perceptor_scanner_tag"
-      PerceiverContainerVersion: "$pod_perceiver_tag"
-      ImageFacadeContainerVersion: "$perceptor_imagefacade_tag"
+      SkyfireImageName: "perceptor_skyfire_image"
+      PerceptorImageVersion: "$perceptor_tag"
+      ScannerImageVersion: "$perceptor_scanner_tag"
+      PerceiverImageVersion: "$pod_perceiver_tag"
+      ImageFacadeImageVersion: "$perceptor_imagefacade_tag"
+      SkyfireImageVersion: "$perceptor_skyfire_tag"
       LogLevel: "$_arg_container_default_log_level"
+      Metrics: "$prometheus"
       PerceptorSkyfire: "$skyfire"
 EOF

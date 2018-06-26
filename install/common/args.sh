@@ -68,13 +68,27 @@ begins_with_short_option()
 _arg_pod_perceiver="on"
 _arg_image_perceiver="off"
 _arg_prometheus_metrics="off"
+_arg_private_registry=
+_arg_private_registry_token=""
 _arg_container_registry="gcr.io"
 _arg_image_repository="gke-verification/blackducksoftware"
 _arg_default_container_version="master"
 _arg_pcp_namespace="perceptor"
-_arg_private_registry=
-_arg_private_registry_token=""
+_arg_hub_user="sysadmin"
+_arg_hub_password=""
+# DOC : This is the default namespace since, if co-deploying with hub, it allows you to talk on internal service endpoints.
+_arg_hub_host="webserver"
+_arg_hub_port="443"
+# DOC: If your hub is on the same node, or network namespace ~ you can possibly reduce this to 30 seconds.
+_arg_hub_client_timeout_perceptor_seconds="5"
+_arg_hub_client_timeout_scanner_seconds="120"
+# DOC: This is conservative.  A large hub instance can handle 40 scans in parallel or more.
+_arg_hub_max_concurrent_scans="7"
 _arg_prompt="off"
+_arg_container_default_cpu="300m"
+# DOC: Significantly changing this parameter shouldn't be necessary, even for large images.
+_arg_container_default_memory="1300Mi"
+_arg_container_default_log_level="info"
 _arg_developer_mode="off"
 _arg_skyfire="off"
 
@@ -96,8 +110,8 @@ print_help ()
 	printf '\t%s\n' "-n,--pcp-namespace: The namespace perceptor containers run in. (default: 'bds-perceptor')"
 	printf '\t%s\n' "-U,--hub-user: hub user (default: 'sysadmin')"
 	printf '\t%s\n' "-W,--hub-password: hub password"
-	printf '\t%s\n' "-H,--hub-host: hub hostname  (default: 'nginx-webapp-logstash')"
-	printf '\t%s\n' "-P,--hub-port: hub port  (default: '8443')"
+	printf '\t%s\n' "-H,--hub-host: hub hostname  (default: 'webserver')"
+	printf '\t%s\n' "-P,--hub-port: hub port  (default: '443')"
 	printf '\t%s\n' "-T,--hub-client-timeout-perceptor-seconds: hub client timeout for perceptor in seconds  (default: '5')"
 	printf '\t%s\n' "-s,--hub-client-timeout-scanner-seconds: hub client timeout for perceptor scanner in seconds  (default: '30')"
 	printf '\t%s\n' "-C,--hub-max-concurrent-scans: maximum scans at a time for the hub (default: '7')"
@@ -105,6 +119,7 @@ print_help ()
 	printf '\t%s\n' "-m,--container-default-memory: All container's default memory (default: '1300Mi')"
 	printf '\t%s\n' "-l,--container-default-log-level: All container's default log level (default: 'info')"
 	printf '\t%s\n' "-d,--developer-mode,--no-developer-mode: Whether the developer mode is enabled. (off by default)"
+	printf '\t%s\n' "--skyfire,--no-skyfire: Whether the skyfire is enabled. (off by default)"
 	printf '\t%s\n' "--prompt,--no-prompt: prompt for values rather then expecting them all at the command line (off by default)"
 	printf '\t%s\n' "-h,--help: Prints help"
 }
