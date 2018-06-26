@@ -878,7 +878,7 @@ func (i *Installer) deploy() {
 		if !i.Config.DryRun {
 			_, err := i.client.Rbac().ClusterRoles().Create(crObj)
 			if err != nil {
-				panic(err)
+				log.Errorf("Unable to create the cluster role %s due to %+v", crObj.Name, err)
 			}
 		} else {
 			i.prettyPrint(crObj)
@@ -897,7 +897,7 @@ func (i *Installer) deploy() {
 		if !i.Config.DryRun {
 			_, err := i.client.Rbac().ClusterRoleBindings().Create(crbObj)
 			if err != nil {
-				panic(err)
+				log.Errorf("Unable to create the cluster role binding %s due to %+v", crbObj.Name, err)
 			}
 		} else {
 			i.prettyPrint(crbObj)
