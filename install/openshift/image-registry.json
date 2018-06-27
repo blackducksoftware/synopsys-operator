@@ -29,6 +29,11 @@
       "name": "perceptor-protoform",
       "image": "perceptor-protoform",
       "tag": "master"
+    },
+    {
+      "name": "perceptor-skyfire",
+      "image": "perceptor-skyfire",
+      "tag": "master"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 if [[ $_arg_developer_mode == "off" ]] ; then
   # Parse the JSON file on each platform version and assign the image name and tag name
-  for i in {1..6}
+  for i in {1..7}
   do
    name=$(cat "$1" | awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/\042'name'\042/){print $(i+1)}}}' | tr -d '"' | sed -n ${i}p | xargs)
    image=$(cat "$1" | awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/\042'image'\042/){print $(i+1)}}}' | tr -d '"' | sed -n ${i}p | xargs)
@@ -31,6 +31,10 @@ if [[ $_arg_developer_mode == "off" ]] ; then
      perceptor-protoform)
       perceptor_protoform_image="$image"
       perceptor_protoform_tag="$tag"
+      ;;
+     perceptor-skyfire)
+      perceptor_skyfire_image="$image"
+      perceptor_skyfire_tag="$tag"
       ;;
      *)
       Message="Ignore the pod:: $name."
