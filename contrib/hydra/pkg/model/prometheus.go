@@ -110,6 +110,7 @@ func (prom *Prometheus) container() *v1.Container {
 			"--log.level=debug",
 			"--config.file=/etc/prometheus/prometheus.yml",
 			"--storage.tsdb.path=/tmp/data/",
+			"--storage.tsdb.retention=120d",
 		},
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
