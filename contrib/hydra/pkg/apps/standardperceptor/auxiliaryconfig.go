@@ -22,6 +22,7 @@ under the License.
 package standardperceptor
 
 import (
+	model "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
 	"github.com/spf13/viper"
 )
 
@@ -32,13 +33,9 @@ type AuxiliaryConfig struct {
 	IsOpenshift bool
 
 	// AUTH CONFIGS
-	// These are given to containers through secrets or other mechanisms.
-	// Not necessarily a one-to-one text replacement.
 	// TODO Lets try to have this injected on serviceaccount
 	// at pod startup, eventually Service accounts.
-	DockerPassword           string
-	DockerUsername           string
-	InternalDockerRegistries []string
+	PrivateDockerRegistries []model.RegistryAuth
 
 	PodPerceiverServiceAccountName   string
 	ImagePerceiverServiceAccountName string

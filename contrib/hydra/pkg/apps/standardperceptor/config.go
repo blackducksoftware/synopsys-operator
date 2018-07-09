@@ -139,12 +139,10 @@ func (pc *Config) ScannerConfig() model.ScannerConfigMap {
 
 func (pc *Config) ImagefacadeConfig() model.ImagefacadeConfigMap {
 	return model.ImagefacadeConfigMap{
-		DockerPassword:           pc.AuxConfig.DockerPassword,
-		DockerUser:               pc.AuxConfig.DockerUsername,
-		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,
-		CreateImagesOnly:         false,
-		Port:                     pc.ImageFacade.Port,
-		LogLevel:                 pc.LogLevel,
+		PrivateDockerRegistries: pc.AuxConfig.PrivateDockerRegistries,
+		CreateImagesOnly:        false,
+		Port:                    pc.ImageFacade.Port,
+		LogLevel:                pc.LogLevel,
 	}
 }
 

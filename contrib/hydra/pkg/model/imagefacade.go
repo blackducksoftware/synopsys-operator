@@ -30,23 +30,25 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ImagefacadeConfigMap struct {
-	DockerUser               string
-	DockerPassword           string
-	InternalDockerRegistries []string
-	LogLevel                 string
-	CreateImagesOnly         bool
-	Port                     int32
+type RegistryAuth struct {
+	Url      string
+	User     string
+	Password string
 }
 
-func NewImagefacadeConfigMap(dockerUser string, dockerPassword string, internalDockerRegistries []string, logLevel string, createImagesOnly bool, port int32) *ImagefacadeConfigMap {
+type ImagefacadeConfigMap struct {
+	PrivateDockerRegistries []RegistryAuth
+	LogLevel                string
+	CreateImagesOnly        bool
+	Port                    int32
+}
+
+func NewImagefacadeConfigMap(privateDockerRegistries []RegistryAuth, logLevel string, createImagesOnly bool, port int32) *ImagefacadeConfigMap {
 	return &ImagefacadeConfigMap{
-		DockerUser:               dockerUser,
-		DockerPassword:           dockerPassword,
-		InternalDockerRegistries: internalDockerRegistries,
-		LogLevel:                 logLevel,
-		CreateImagesOnly:         createImagesOnly,
-		Port:                     port,
+		PrivateDockerRegistries: privateDockerRegistries,
+		LogLevel:                logLevel,
+		CreateImagesOnly:        createImagesOnly,
+		Port:                    port,
 	}
 }
 
