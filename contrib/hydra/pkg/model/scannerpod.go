@@ -36,7 +36,6 @@ type ScannerPod struct {
 	DockerSocketPath string
 
 	ImagesMountName string
-	ImagesMountPath string
 
 	Scanner     *Scanner
 	Imagefacade *Imagefacade
@@ -52,19 +51,16 @@ func NewScannerPod(scanner *Scanner, imagefacade *Imagefacade) *ScannerPod {
 		DockerSocketPath: "/var/run/docker.sock",
 
 		ImagesMountName: "var-images",
-		ImagesMountPath: "/var/images",
 
 		Scanner:     scanner,
 		Imagefacade: imagefacade,
 	}
 
 	scanner.ImagesMountName = scannerPod.ImagesMountName
-	scanner.ImagesMountPath = scannerPod.ImagesMountPath
 
 	scanner.PodName = scannerPod.PodName
 
 	imagefacade.ImagesMountName = scannerPod.ImagesMountName
-	imagefacade.ImagesMountPath = scannerPod.ImagesMountPath
 
 	imagefacade.DockerSocketName = scannerPod.DockerSocketName
 	imagefacade.DockerSocketPath = scannerPod.DockerSocketPath

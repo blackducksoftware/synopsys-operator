@@ -63,6 +63,7 @@ type Config struct {
 	ScannerPod struct {
 		Name             string
 		ReplicationCount int32
+		ImageDirectory   string
 	}
 
 	Scanner struct {
@@ -134,6 +135,7 @@ func (pc *Config) ScannerConfig() model.ScannerConfigMap {
 		PerceptorHost:           pc.Perceptor.ServiceName,
 		PerceptorPort:           pc.Perceptor.Port,
 		ImageFacadePort:         pc.ImageFacade.Port,
+		ImageDirectory:          pc.ScannerPod.ImageDirectory,
 	}
 }
 
@@ -143,6 +145,7 @@ func (pc *Config) ImagefacadeConfig() model.ImagefacadeConfigMap {
 		CreateImagesOnly:        false,
 		Port:                    pc.ImageFacade.Port,
 		LogLevel:                pc.LogLevel,
+		ImageDirectory:          pc.ScannerPod.ImageDirectory,
 	}
 }
 

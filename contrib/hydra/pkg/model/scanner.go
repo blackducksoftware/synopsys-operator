@@ -43,6 +43,8 @@ type ScannerConfigMap struct {
 	LogLevel string
 	Port     int32
 
+	ImageDirectory string
+
 	ImageFacadePort int32
 
 	PerceptorHost string
@@ -67,7 +69,6 @@ type Scanner struct {
 	HubPasswordSecretKey  string
 
 	ImagesMountName string
-	ImagesMountPath string
 }
 
 func NewScanner(memoryString string, podName string, hubPasswordSecretName string, hubPasswordSecretKey string) *Scanner {
@@ -96,7 +97,6 @@ func NewScanner(memoryString string, podName string, hubPasswordSecretName strin
 
 		// Must fill these out before use
 		ImagesMountName: "",
-		ImagesMountPath: "",
 	}
 }
 
@@ -142,7 +142,7 @@ func (psp *Scanner) Container() *v1.Container {
 		VolumeMounts: []v1.VolumeMount{
 			v1.VolumeMount{
 				Name:      psp.ImagesMountName,
-				MountPath: psp.ImagesMountPath,
+				MountPath: psp.Config.ImageDirectory,
 			},
 			v1.VolumeMount{
 				Name:      psp.ConfigMapName,

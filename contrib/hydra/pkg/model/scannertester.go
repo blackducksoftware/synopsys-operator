@@ -33,6 +33,7 @@ type ScannerTester struct {
 	ReplicaCount int32
 
 	ImagesMountName string
+	// TODO not sure if ImagesMountPath is still used
 	ImagesMountPath string
 
 	Scanner     *Scanner
@@ -53,12 +54,10 @@ func NewScannerTester(scanner *Scanner, imagefacade *MockImagefacade) *ScannerTe
 	}
 
 	scanner.ImagesMountName = scannerTester.ImagesMountName
-	scanner.ImagesMountPath = scannerTester.ImagesMountPath
 
 	scanner.PodName = scannerTester.PodName
 
 	imagefacade.ImagesMountName = scannerTester.ImagesMountName
-	imagefacade.ImagesMountPath = scannerTester.ImagesMountPath
 
 	imagefacade.PodName = scannerTester.PodName
 

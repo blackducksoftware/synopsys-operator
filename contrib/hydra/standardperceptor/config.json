@@ -32,7 +32,8 @@
 
   "ScannerPod": {
     "Name": "my-first-scanner-pod",
-    "ReplicationCount": 1
+    "ReplicationCount": 1,
+    "ImageDirectory": "/var/images"
   },
 
   "Scanner": {

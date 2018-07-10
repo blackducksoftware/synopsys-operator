@@ -41,16 +41,17 @@ type ImagefacadeConfigMap struct {
 	LogLevel                string
 	CreateImagesOnly        bool
 	Port                    int32
+	ImageDirectory          string
 }
 
-func NewImagefacadeConfigMap(privateDockerRegistries []RegistryAuth, logLevel string, createImagesOnly bool, port int32) *ImagefacadeConfigMap {
-	return &ImagefacadeConfigMap{
-		PrivateDockerRegistries: privateDockerRegistries,
-		LogLevel:                logLevel,
-		CreateImagesOnly:        createImagesOnly,
-		Port:                    port,
-	}
-}
+// func NewImagefacadeConfigMap(privateDockerRegistries []RegistryAuth, logLevel string, createImagesOnly bool, port int32) *ImagefacadeConfigMap {
+// 	return &ImagefacadeConfigMap{
+// 		PrivateDockerRegistries: privateDockerRegistries,
+// 		LogLevel:                logLevel,
+// 		CreateImagesOnly:        createImagesOnly,
+// 		Port:                    port,
+// 	}
+// }
 
 type Imagefacade struct {
 	Image  string
@@ -71,7 +72,7 @@ type Imagefacade struct {
 	PodName string
 
 	ImagesMountName string
-	ImagesMountPath string
+	// ImagesMountPath string
 }
 
 func NewImagefacade(serviceAccountName string, podName string) *Imagefacade {
@@ -100,7 +101,7 @@ func NewImagefacade(serviceAccountName string, podName string) *Imagefacade {
 
 		// Must fill these out before using this object
 		ImagesMountName: "var-images",
-		ImagesMountPath: "/var/images",
+		// ImagesMountPath: "/var/images",
 	}
 }
 
@@ -130,7 +131,7 @@ func (pif *Imagefacade) Container() *v1.Container {
 		VolumeMounts: []v1.VolumeMount{
 			v1.VolumeMount{
 				Name:      pif.ImagesMountName,
-				MountPath: pif.ImagesMountPath,
+				MountPath: pif.Config.ImageDirectory,
 			},
 			v1.VolumeMount{
 				Name:      pif.ConfigMapName,

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set +x
-NS=bds-perceptor
+NS=$1
 
 
 IMAGEFACADE_SA="imagefacade-sa"
