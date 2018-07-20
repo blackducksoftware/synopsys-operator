@@ -4,3 +4,4 @@ install/openshift/protoform.yaml
 .DS_Store
 cmd/protoform-bootstrapper/protoform-bootstrapper
 _output/protoform-bootstrapper
+cmd/hub-installer/hub-installer

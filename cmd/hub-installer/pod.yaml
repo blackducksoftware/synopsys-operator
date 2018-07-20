@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hub-installer
+spec:
+  containers:
+  - name: hub-installer
+    image: msenmurugan/hub-installer:latest
+    ports:
+    - containerPort: 8080
+    env:
+    - name: REGISTRATION_KEY
+      value: ${REGISTRATION_KEY}
+  restartPolicy: Never
