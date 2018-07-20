@@ -63,7 +63,7 @@ func (h *HubCreator) CreateHub(createHub *Hub) {
 	}
 
 	// Create the config-maps, secrets and postgres container
-	h.InitDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	h.init(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
 	time.Sleep(20 * time.Second)
@@ -209,7 +209,7 @@ func (h *HubCreator) createHubSecrets(namespace string, adminPassword string, us
 	return secrets
 }
 
-func (h *HubCreator) InitDeployer(deployer *horizon.Deployer, createHub *Hub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*api.EnvConfig) {
+func (h *HubCreator) init(deployer *horizon.Deployer, createHub *Hub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*api.EnvConfig) {
 
 	// Create a namespaces
 	deployer.AddNamespace(components.NewNamespace(api.NamespaceConfig{Name: createHub.Namespace}))
