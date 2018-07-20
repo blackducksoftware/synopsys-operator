@@ -51,46 +51,67 @@ func (h *HubCreator) CreateHub(createHub *Hub) {
 		log.Errorf("unable to create the horizon deployer due to %+v", err)
 	}
 
-	h.InitDeployer(deployer, createHub)
+	// Get Containers Flavor
+	hubContainerFlavor := GetHubContainersFlavor(createHub.Flavor)
+	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
+
+	// All ConfigMap environment variables
+	allConfigEnv := []*api.EnvConfig{
+		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-config"},
+		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-db-config"},
+		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-db-config-granular"},
+	}
+
+	// Create the config-maps, secrets and postgres container
+	h.InitDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
 	time.Sleep(20 * time.Second)
+	// Get all pods corresponding to the hub namespace
 	pods, err := h.getPods(createHub)
 	if err != nil {
 		log.Errorf("unable to list the pods in namespace %s due to %+v")
 		return
 	}
+	// Validate all pods are in running state
 	h.validatePods(pods)
+	// Initialize the hub database
 	InitDatabase(createHub.Namespace)
 
-	h.createHubDeployer(deployer, createHub)
+	// Create all hub deployments
+	h.createHubDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	log.Debugf("%+v", deployer)
+	// Deploy all hub containers
 	err = deployer.Run()
-
 	if err != nil {
 		log.Errorf("Deployments failed because %+v", err)
 	}
 	time.Sleep(10 * time.Second)
+	// Get all pods corresponding to the hub namespace
 	pods, err = h.getPods(createHub)
 	if err != nil {
 		log.Errorf("unable to list the pods in namespace %s due to %+v")
 		return
 	}
+	// Validate all pods are in running state
 	h.validatePods(pods)
 
+	// Filter the registration pod to auto register the hub using the registration key from the environment variable
 	registrationPod := FilterPodByNamePrefix(pods)
-
 	log.Infof("Registration pod: %+v", registrationPod)
 	registrationKey := os.Getenv("REGISTRATION_KEY")
 	log.Infof("Registration key: %s", registrationKey)
+
 	if registrationPod != nil {
 		for {
+			// Create the exec into kubernetes pod request
 			req := CreateExecContainerRequest(h.Client, registrationPod)
-
+			// Exec into the kubernetes pod and execute the commands
 			err = h.execContainer(req, []string{fmt.Sprintf("curl -k -X POST https://127.0.0.1:8443/registration/HubRegistration?action=activate\\&registrationid=%s", registrationKey)})
-
 			if err != nil {
 				log.Infof("error in Stream: %v", err)
 			} else {
+				// Hub created and auto registered. Exit!!!!
 				break
 			}
 			time.Sleep(10 * time.Second)
@@ -126,10 +147,7 @@ func (h *HubCreator) execContainer(request *rest.Request, command []string) erro
 func (h *HubCreator) createHubConfig(namespace string, hubversion string, hubContainerFlavor *HubContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
-	hubConfig := components.NewConfigMap(api.ConfigMapConfig{
-		Namespace: namespace,
-		Name:      "hub-config",
-	})
+	hubConfig := components.NewConfigMap(api.ConfigMapConfig{Namespace: namespace, Name: "hub-config"})
 	hubConfig.AddData(map[string]string{
 		"PUBLIC_HUB_WEBSERVER_HOST": "localhost",
 		"PUBLIC_HUB_WEBSERVER_PORT": "443",
@@ -142,10 +160,7 @@ func (h *HubCreator) createHubConfig(namespace string, hubversion string, hubCon
 
 	configMaps["hub-config"] = hubConfig
 
-	hubDbConfig := components.NewConfigMap(api.ConfigMapConfig{
-		Namespace: namespace,
-		Name:      "hub-db-config",
-	})
+	hubDbConfig := components.NewConfigMap(api.ConfigMapConfig{Namespace: namespace, Name: "hub-db-config"})
 	hubDbConfig.AddData(map[string]string{
 		"HUB_POSTGRES_ADMIN": "blackduck",
 		"HUB_POSTGRES_USER":  "blackduck_user",
@@ -155,10 +170,7 @@ func (h *HubCreator) createHubConfig(namespace string, hubversion string, hubCon
 
 	configMaps["hub-db-config"] = hubDbConfig
 
-	hubConfigResources := components.NewConfigMap(api.ConfigMapConfig{
-		Namespace: namespace,
-		Name:      "hub-config-resources",
-	})
+	hubConfigResources := components.NewConfigMap(api.ConfigMapConfig{Namespace: namespace, Name: "hub-config-resources"})
 	hubConfigResources.AddData(map[string]string{
 		"webapp-mem":    hubContainerFlavor.WebappHubMaxMemory,
 		"jobrunner-mem": hubContainerFlavor.JobRunnerHubMaxMemory,
@@ -167,10 +179,7 @@ func (h *HubCreator) createHubConfig(namespace string, hubversion string, hubCon
 
 	configMaps["hub-config-resources"] = hubConfigResources
 
-	hubDbConfigGranular := components.NewConfigMap(api.ConfigMapConfig{
-		Namespace: namespace,
-		Name:      "hub-db-config-granular",
-	})
+	hubDbConfigGranular := components.NewConfigMap(api.ConfigMapConfig{Namespace: namespace, Name: "hub-db-config-granular"})
 	hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 
 	configMaps["hub-db-config-granular"] = hubDbConfigGranular
@@ -179,35 +188,28 @@ func (h *HubCreator) createHubConfig(namespace string, hubversion string, hubCon
 
 func (h *HubCreator) createHubSecrets(namespace string, adminPassword string, userPassword string) []*components.Secret {
 	var secrets []*components.Secret
-	file, err := ReadFromFile(GCLOUD_AUTH_FILE_PATH)
+	// file, err := ReadFromFile(GCLOUD_AUTH_FILE_PATH)
+	//
+	// if err != nil {
+	// 	log.Errorf("Unable to read the file %s due to error: +%v", GCLOUD_AUTH_FILE_PATH, err)
+	// } else {
+	//
+	// 	gcloudAuthSecret := components.NewSecret(api.SecretConfig{
+	// 		Namespace: namespace,
+	// 		Name:      "hub-postgres-gcloud-instance-creds",
+	// 		Type:      api.SecretTypeOpaque,
+	// 	})
+	// 	gcloudAuthSecret.AddStringData(map[string]string{"credentials.json": string(file)})
+	// 	secrets = append(secrets, gcloudAuthSecret)
+	// }
 
-	if err != nil {
-		log.Errorf("Unable to read the file %s due to error: +%v", GCLOUD_AUTH_FILE_PATH, err)
-	} else {
-
-		gcloudAuthSecret := components.NewSecret(api.SecretConfig{
-			Namespace: namespace,
-			Name:      "hub-postgres-gcloud-instance-creds",
-			Type:      api.SecretTypeOpaque,
-		})
-		gcloudAuthSecret.AddStringData(map[string]string{"credentials.json": string(file)})
-		secrets = append(secrets, gcloudAuthSecret)
-	}
-
-	hubSecret := components.NewSecret(api.SecretConfig{
-		Namespace: namespace,
-		Name:      "db-creds",
-		Type:      api.SecretTypeOpaque,
-	})
+	hubSecret := components.NewSecret(api.SecretConfig{Namespace: namespace, Name: "db-creds", Type: api.SecretTypeOpaque})
 	hubSecret.AddStringData(map[string]string{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": adminPassword, "HUB_POSTGRES_USER_PASSWORD_FILE": userPassword})
 	secrets = append(secrets, hubSecret)
 	return secrets
 }
 
-func (h *HubCreator) InitDeployer(deployer *horizon.Deployer, createHub *Hub) {
-	// Get Containers Flavor
-	hubContainerFlavor := GetHubContainersFlavor(createHub.Flavor)
-	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
+func (h *HubCreator) InitDeployer(deployer *horizon.Deployer, createHub *Hub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*api.EnvConfig) {
 
 	// Create a namespaces
 	deployer.AddNamespace(components.NewNamespace(api.NamespaceConfig{Name: createHub.Namespace}))
@@ -224,13 +226,6 @@ func (h *HubCreator) InitDeployer(deployer *horizon.Deployer, createHub *Hub) {
 
 	for _, configMap := range configMaps {
 		deployer.AddConfigMap(configMap)
-	}
-
-	// All ConfigMap environment variables
-	allConfigEnv := []*api.EnvConfig{
-		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-config"},
-		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-db-config"},
-		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-db-config-granular"},
 	}
 
 	//Postgres
@@ -256,22 +251,11 @@ func (h *HubCreator) InitDeployer(deployer *horizon.Deployer, createHub *Hub) {
 
 // CreateHub will create an entire hub for you.  TODO add flavor parameters !
 // To create the returned hub, run 	CreateHub().Run().
-func (h *HubCreator) createHubDeployer(deployer *horizon.Deployer, createHub *Hub) {
-
-	// Get Containers Flavor
-	hubContainerFlavor := GetHubContainersFlavor(createHub.Flavor)
-	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
+func (h *HubCreator) createHubDeployer(deployer *horizon.Deployer, createHub *Hub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*api.EnvConfig) {
 
 	// Hub ConfigMap environment variables
 	hubConfigEnv := []*api.EnvConfig{
 		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-config"},
-	}
-
-	// All ConfigMap environment variables
-	allConfigEnv := []*api.EnvConfig{
-		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-config"},
-		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-db-config"},
-		&api.EnvConfig{Type: api.EnvFromConfigMap, FromName: "hub-db-config-granular"},
 	}
 
 	// Common DB secret volume
