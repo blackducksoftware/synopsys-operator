@@ -2,3 +2,5 @@ install/kube/protoform.yaml
 install/kube/rbac.yaml
 install/openshift/protoform.yaml
 .DS_Store
+cmd/protoform-bootstrapper/protoform-bootstrapper
+_output/protoform-bootstrapper

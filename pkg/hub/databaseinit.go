@@ -1,0 +1,156 @@
+/*
+Copyright (C) 2018 Synopsys, Inc.
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
+package hub
+
+import (
+	"database/sql"
+	"fmt"
+
+	log "github.com/sirupsen/logrus"
+
+	_ "github.com/lib/pq"
+)
+
+func InitDatabase(namespace string) {
+	databaseName := "postgres"
+	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", namespace)
+	db, err := OpenDatabaseConnection(hostName, databaseName, "postgres", "blackduck", "postgres")
+	defer db.Close()
+	log.Infof("Db: %+v, error: %+v\n", db, err)
+	if err != nil {
+		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
+	}
+	execPostGresDBStatements(db, "blackduck", "blackduck")
+
+	databaseName = "bds_hub"
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", "blackduck", "postgres")
+	defer db.Close()
+	log.Infof("Db: %+v, error: %+v\n", db, err)
+	if err != nil {
+		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
+	}
+	execBdsHubDBStatements(db)
+
+	databaseName = "bds_hub_report"
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", "blackduck", "postgres")
+	defer db.Close()
+	log.Infof("Db: %+v, error: %+v\n", db, err)
+	if err != nil {
+		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
+	}
+	execBdsHubReportDBStatements(db)
+
+	databaseName = "bdio"
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", "blackduck", "postgres")
+	defer db.Close()
+	log.Infof("Db: %+v, error: %+v\n", db, err)
+	if err != nil {
+		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
+	}
+	execBdioDBStatements(db)
+}
+
+func OpenDatabaseConnection(hostName string, dbName string, user string, password string, sqlType string) (*sql.DB, error) {
+	// Note that sslmode=disable is required it does not mean that the connection
+	// is unencrypted. All connections via the proxy are completely encrypted.
+	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable", hostName, dbName, user, password)
+
+	db, err := sql.Open(sqlType, dsn)
+	if err != nil {
+		fmt.Errorf("Error in opening the database connection due to %+v", err)
+	}
+	//defer db.Close()
+
+	return db, err
+}
+
+func execPostGresDBStatementsClone(db *sql.DB, admin_password string, user_password string) error {
+	var err error
+	(func() {
+		_, err = db.Exec(fmt.Sprintf("ALTER USER blackduck WITH password '%s';", admin_password))
+		if dispErr(err) {
+			return
+		}
+
+		_, err = db.Exec(fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", user_password))
+		if dispErr(err) {
+			return
+		}
+
+	})()
+
+	db.Close()
+	return err
+}
+
+func exec(db *sql.DB, statement string) {
+	_, err := db.Exec(statement)
+	if err != nil {
+		log.Errorf("unable to exec %s statment due to %+v", statement, err)
+	}
+}
+
+func execPostGresDBStatements(db *sql.DB, admin_password string, user_password string) {
+	exec(db, fmt.Sprintf("CREATE USER blackduck WITH password '%s';", admin_password))
+	exec(db, "GRANT blackduck TO postgres;")
+	exec(db, "CREATE DATABASE bds_hub owner blackduck;")
+	exec(db, "CREATE DATABASE bds_hub_report owner blackduck;")
+	exec(db, "CREATE DATABASE bdio owner blackduck;")
+	exec(db, "CREATE USER blackduck_user;")
+	exec(db, fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", user_password))
+	exec(db, "CREATE USER blackduck_reporter;")
+	// db.Close()
+}
+
+func execBdsHubDBStatements(db *sql.DB) {
+	exec(db, "CREATE EXTENSION pgcrypto;")
+	exec(db, "CREATE SCHEMA st AUTHORIZATION blackduck;")
+	exec(db, "GRANT USAGE ON SCHEMA st TO blackduck_user;")
+	exec(db, "GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA st TO blackduck_user;")
+	exec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA st to blackduck_user;")
+	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;")
+	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;")
+	// db.Close()
+}
+
+func execBdsHubReportDBStatements(db *sql.DB) {
+	exec(db, "CREATE EXTENSION pgcrypto;")
+	exec(db, "GRANT SELECT ON ALL TABLES IN SCHEMA public TO blackduck_reporter;")
+	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO blackduck_reporter;")
+	exec(db, "GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA public TO blackduck_user;")
+	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;")
+	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;")
+	// db.Close()
+}
+
+func execBdioDBStatements(db *sql.DB) {
+	exec(db, "CREATE EXTENSION pgcrypto;")
+	exec(db, "GRANT ALL PRIVILEGES ON DATABASE bdio TO blackduck_user;")
+	// db.Close()
+}
+
+func dispErr(err error) bool {
+	if err != nil {
+		return true
+	}
+	return false
+}

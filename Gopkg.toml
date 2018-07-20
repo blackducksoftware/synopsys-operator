@@ -24,26 +24,31 @@
 #   go-tests = true
 #   unused-packages = true
 
-
 [[constraint]]
-  name = "github.com/koki/short"
-  version = "0.5.1"
-
-[[constraint]]
-  name = "github.com/spf13/viper"
-  version = "1.0.2"
-
-[[override]]
-  name = "k8s.io/api"
   branch = "master"
+  name = "github.com/blackducksoftware/horizon"
 
-[[override]]
-  name = "k8s.io/apimachinery"
-  branch = "master"
-
-[[override]]
-  name = "k8s.io/client-go"
-  branch = "master"
+# [[constraint]]
+#   branch = "master"
+#   name = "github.com/koki/short"
+#   #version = "0.5.1"
+#
+# [[constraint]]
+#   name = "github.com/spf13/viper"
+#   version = "1.0.2"
+#
+# [[override]]
+#   name = "k8s.io/api"
+#   revision = "d216743eed4c3242b85d094d2a589f41a793652d"
+#
+# [[constraint]]
+#   name = "k8s.io/apimachinery"
+#   revision = "94ebb086c69b9fec4ddbfb6a1433d28ecca9292b"
+#
+# [[override]]
+#   name = "k8s.io/client-go"
+#   #branch = "master"
+#   revision = "7d04d0e2a0a1a4d4a1cd6baa432a2301492e4e65"
 
 [prune]
   go-tests = true

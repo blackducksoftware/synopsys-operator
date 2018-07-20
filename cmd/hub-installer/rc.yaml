@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: hub-installer
+spec:
+  replicas: 1
+  selector:
+    app: hub-installer
+  template:
+    metadata:
+      name: hub-installer
+      labels:
+        app: hub-installer
+    spec:
+      containers:
+      - name: hub-installer
+        image: msenmurugan/hub-installer:latest
+        ports:
+        - containerPort: 8080
