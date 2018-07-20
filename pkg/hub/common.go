@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -252,6 +253,26 @@ func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*v1.Namesp
 // DeleteNamespace will delete the namespace
 func DeleteNamespace(clientset *kubernetes.Clientset, namespace string) error {
 	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
+}
+
+// GetAllPodsForNamespace will get all the pods corresponding to a namespace
+func GetAllPodsForNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.PodList, error) {
+	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+}
+
+// ValidatePodsAreRunning will validate whether the pods are running
+func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodList) {
+	// Check whether all pods are running
+	for _, podList := range pods.Items {
+		for {
+			pod, _ := clientset.CoreV1().Pods(podList.Namespace).Get(podList.Name, metav1.GetOptions{})
+			if strings.EqualFold(string(pod.Status.Phase), "Running") {
+				break
+			}
+			log.Infof("pod %s is in %s status!!!", pod.Name, string(pod.Status.Phase))
+			time.Sleep(10 * time.Second)
+		}
+	}
 }
 
 // FilterPodByNamePrefix will filter the pod based on pod name prefix from a list a pods

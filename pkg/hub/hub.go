@@ -26,15 +26,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -68,13 +65,13 @@ func (h *HubCreator) CreateHub(createHub *Hub) {
 	err = deployer.Run()
 	time.Sleep(20 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err := h.getPods(createHub)
+	pods, err := GetAllPodsForNamespace(h.Client, createHub.Namespace)
 	if err != nil {
 		log.Errorf("unable to list the pods in namespace %s due to %+v")
 		return
 	}
 	// Validate all pods are in running state
-	h.validatePods(pods)
+	ValidatePodsAreRunning(h.Client, pods)
 	// Initialize the hub database
 	InitDatabase(createHub.Namespace)
 
@@ -88,13 +85,13 @@ func (h *HubCreator) CreateHub(createHub *Hub) {
 	}
 	time.Sleep(10 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err = h.getPods(createHub)
+	pods, err = GetAllPodsForNamespace(h.Client, createHub.Namespace)
 	if err != nil {
 		log.Errorf("unable to list the pods in namespace %s due to %+v")
 		return
 	}
 	// Validate all pods are in running state
-	h.validatePods(pods)
+	ValidatePodsAreRunning(h.Client, pods)
 
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
 	registrationPod := FilterPodByNamePrefix(pods)
@@ -504,25 +501,4 @@ func (h *HubCreator) createHubDeployer(deployer *horizon.Deployer, createHub *Hu
 	deployer.AddService(CreateService("scan", "hub-scan", createHub.Namespace, SCANNER_PORT, SCANNER_PORT, false))
 	deployer.AddService(CreateService("authentication", "hub-authentication", createHub.Namespace, AUTHENTICATION_PORT, AUTHENTICATION_PORT, false))
 	deployer.AddService(CreateService("registration", "registration", createHub.Namespace, REGISTRATION_PORT, REGISTRATION_PORT, false))
-}
-
-func (h *HubCreator) getPods(createHub *Hub) (*corev1.PodList, error) {
-	return h.Client.CoreV1().Pods(createHub.Namespace).List(metav1.ListOptions{})
-}
-
-func (h *HubCreator) validatePods(pods *corev1.PodList) {
-
-	log.Debugf("List of pods: %+v", pods)
-
-	// Check whether all pods are running
-	for _, podList := range pods.Items {
-		for {
-			pod, _ := h.Client.CoreV1().Pods(podList.Namespace).Get(podList.Name, metav1.GetOptions{})
-			if strings.EqualFold(string(pod.Status.Phase), "Running") {
-				break
-			}
-			log.Infof("pod %s is in %s status!!!", pod.Name, string(pod.Status.Phase))
-			time.Sleep(10 * time.Second)
-		}
-	}
 }
