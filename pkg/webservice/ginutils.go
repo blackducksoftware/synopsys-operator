@@ -19,44 +19,36 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package main
+package webservice
 
 import (
+	"bytes"
 	"fmt"
-	"os"
-	"time"
+	"io"
+	"io/ioutil"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/webservice"
-	log "github.com/sirupsen/logrus"
+	"github.com/gin-gonic/gin"
 )
 
-func main() {
-	configPath := os.Args[1]
-	runHubCreater(configPath)
+// gin utilities...
+
+func GinRequestLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		buf, _ := ioutil.ReadAll(c.Request.Body)
+		rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
+		rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf)) //We have to create a new Buffer, because rdr1 will be read.
+
+		fmt.Println(readBody(rdr1)) // Print request body
+
+		c.Request.Body = rdr2
+		c.Next()
+	}
 }
 
-func runHubCreater(configPath string) {
-	log.Infof("Config path: %s", configPath)
-	config, err := hub.GetConfig(configPath)
-	if err != nil {
-		log.Panicf("Unable to read the config file from %s", configPath)
-	}
-	log.Infof("Config : %v", config)
+func readBody(reader io.Reader) string {
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(reader)
 
-	level, err := config.GetLogLevel()
-	if err != nil {
-		log.SetLevel(level)
-	} else {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	go func() {
-		webservice.SetupHTTPServer()
-	}()
-	for {
-		fmt.Println("....hub installer heartbeat: still alive...")
-		time.Sleep(120 * time.Second)
-	}
-	return
+	s := buf.String()
+	return s
 }

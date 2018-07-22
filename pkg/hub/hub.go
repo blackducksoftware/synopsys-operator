@@ -31,19 +31,57 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-func NewHubInstaller(config *rest.Config, client *kubernetes.Clientset) *HubCreator {
-	return &HubCreator{Config: config, Client: client}
+type HubCreater struct {
+	Config *rest.Config
+	Client *kubernetes.Clientset
 }
 
-func (h *HubCreator) CreateHub(createHub *Hub) {
+func NewHubCreater() *HubCreater {
+	config, err := GetKubeConfig()
+
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Errorf("unable to get the kubernetes client due to %v", err)
+	}
+	return &HubCreater{Config: config, Client: client}
+}
+
+func (hc *HubCreater) DeleteHub(deleteHub *model.DeleteHubRequest) {
+	var err error
+	// Verify whether the namespace exist
+	_, err = GetNamespace(hc.Client, deleteHub.Namespace)
+	if err != nil {
+		log.Errorf("Unable to find the namespace %+v due to %+v", deleteHub.Namespace, err)
+	} else {
+		// Delete a namespace
+		err = DeleteNamespace(hc.Client, deleteHub.Namespace)
+		if err != nil {
+			log.Errorf("Unable to delete the namespace %+v due to %+v", deleteHub.Namespace, err)
+		}
+
+		for {
+			// Verify whether the namespace deleted
+			ns, err := GetNamespace(hc.Client, deleteHub.Namespace)
+			log.Infof("Namespace: %v, status: %v", deleteHub.Namespace, ns.Status)
+			time.Sleep(10 * time.Second)
+			if err != nil {
+				log.Infof("Deleted the namespace %+v", deleteHub.Namespace)
+				break
+			}
+		}
+	}
+}
+
+func (hc *HubCreater) CreateHub(createHub *model.CreateHub) {
 	// Create a horizon deployer for each hub
-	deployer, err := horizon.NewDeployer(h.Config)
+	deployer, err := horizon.NewDeployer(hc.Config)
 	if err != nil {
 		log.Errorf("unable to create the horizon deployer due to %+v", err)
 	}
@@ -60,23 +98,23 @@ func (h *HubCreator) CreateHub(createHub *Hub) {
 	}
 
 	// Create the config-maps, secrets and postgres container
-	h.init(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
 	time.Sleep(20 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err := GetAllPodsForNamespace(h.Client, createHub.Namespace)
+	pods, err := GetAllPodsForNamespace(hc.Client, createHub.Namespace)
 	if err != nil {
 		log.Errorf("unable to list the pods in namespace %s due to %+v")
 		return
 	}
 	// Validate all pods are in running state
-	ValidatePodsAreRunning(h.Client, pods)
+	ValidatePodsAreRunning(hc.Client, pods)
 	// Initialize the hub database
 	InitDatabase(createHub.Namespace)
 
 	// Create all hub deployments
-	h.createHubDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	hc.createHubDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	log.Debugf("%+v", deployer)
 	// Deploy all hub containers
 	err = deployer.Run()
@@ -85,13 +123,13 @@ func (h *HubCreator) CreateHub(createHub *Hub) {
 	}
 	time.Sleep(10 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err = GetAllPodsForNamespace(h.Client, createHub.Namespace)
+	pods, err = GetAllPodsForNamespace(hc.Client, createHub.Namespace)
 	if err != nil {
 		log.Errorf("unable to list the pods in namespace %s due to %+v")
 		return
 	}
 	// Validate all pods are in running state
-	ValidatePodsAreRunning(h.Client, pods)
+	ValidatePodsAreRunning(hc.Client, pods)
 
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
 	registrationPod := FilterPodByNamePrefix(pods)
@@ -102,9 +140,9 @@ func (h *HubCreator) CreateHub(createHub *Hub) {
 	if registrationPod != nil {
 		for {
 			// Create the exec into kubernetes pod request
-			req := CreateExecContainerRequest(h.Client, registrationPod)
+			req := CreateExecContainerRequest(hc.Client, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
-			err = h.execContainer(req, []string{fmt.Sprintf("curl -k -X POST https://127.0.0.1:8443/registration/HubRegistration?action=activate\\&registrationid=%s", registrationKey)})
+			err = hc.execContainer(req, []string{fmt.Sprintf("curl -k -X POST https://127.0.0.1:8443/registration/HubRegistration?action=activate\\&registrationid=%s", registrationKey)})
 			if err != nil {
 				log.Infof("error in Stream: %v", err)
 			} else {
@@ -114,16 +152,22 @@ func (h *HubCreator) CreateHub(createHub *Hub) {
 			time.Sleep(10 * time.Second)
 		}
 	}
+
+	ipAddress, err := hc.getLoadBalancerIpAddress(createHub.Namespace, "webserver-exp")
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Hub Ip address: %s", ipAddress)
 }
 
-func (h *HubCreator) execContainer(request *rest.Request, command []string) error {
+func (hc *HubCreater) execContainer(request *rest.Request, command []string) error {
 	var stdin io.Reader
 	stdin = NewStringReader(command)
 
-	log.Infof("Request URL: %+v, request: %+v", request.URL().String(), request)
+	log.Debugf("Request URL: %+v, request: %+v", request.URL().String(), request)
 
-	exec, err := remotecommand.NewSPDYExecutor(h.Config, "POST", request.URL())
-	log.Infof("exec: %+v, error: %+v", exec, err)
+	exec, err := remotecommand.NewSPDYExecutor(hc.Config, "POST", request.URL())
+	log.Debugf("exec: %+v, error: %+v", exec, err)
 	if err != nil {
 		log.Errorf("error while creating Executor: %v", err)
 	}
@@ -141,7 +185,7 @@ func (h *HubCreator) execContainer(request *rest.Request, command []string) erro
 }
 
 // CreateHubConfig will create the hub configMaps
-func (h *HubCreator) createHubConfig(namespace string, hubversion string, hubContainerFlavor *HubContainerFlavor) map[string]*components.ConfigMap {
+func (hc *HubCreater) createHubConfig(namespace string, hubversion string, hubContainerFlavor *HubContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
 	hubConfig := components.NewConfigMap(api.ConfigMapConfig{Namespace: namespace, Name: "hub-config"})
@@ -183,7 +227,7 @@ func (h *HubCreator) createHubConfig(namespace string, hubversion string, hubCon
 	return configMaps
 }
 
-func (h *HubCreator) createHubSecrets(namespace string, adminPassword string, userPassword string) []*components.Secret {
+func (hc *HubCreater) createHubSecrets(namespace string, adminPassword string, userPassword string) []*components.Secret {
 	var secrets []*components.Secret
 	// file, err := ReadFromFile(GCLOUD_AUTH_FILE_PATH)
 	//
@@ -206,20 +250,20 @@ func (h *HubCreator) createHubSecrets(namespace string, adminPassword string, us
 	return secrets
 }
 
-func (h *HubCreator) init(deployer *horizon.Deployer, createHub *Hub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*api.EnvConfig) {
+func (hc *HubCreater) init(deployer *horizon.Deployer, createHub *model.CreateHub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*api.EnvConfig) {
 
 	// Create a namespaces
 	deployer.AddNamespace(components.NewNamespace(api.NamespaceConfig{Name: createHub.Namespace}))
 
 	// Create a secret
-	secrets := h.createHubSecrets(createHub.Namespace, createHub.AdminPassword, createHub.UserPassword)
+	secrets := hc.createHubSecrets(createHub.Namespace, createHub.AdminPassword, createHub.UserPassword)
 
 	for _, secret := range secrets {
 		deployer.AddSecret(secret)
 	}
 
 	// Create ConfigMaps
-	configMaps := h.createHubConfig(createHub.Namespace, createHub.HubVersion, hubContainerFlavor)
+	configMaps := hc.createHubConfig(createHub.Namespace, createHub.HubVersion, hubContainerFlavor)
 
 	for _, configMap := range configMaps {
 		deployer.AddConfigMap(configMap)
@@ -248,7 +292,7 @@ func (h *HubCreator) init(deployer *horizon.Deployer, createHub *Hub, hubContain
 
 // CreateHub will create an entire hub for you.  TODO add flavor parameters !
 // To create the returned hub, run 	CreateHub().Run().
-func (h *HubCreator) createHubDeployer(deployer *horizon.Deployer, createHub *Hub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*api.EnvConfig) {
+func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *model.CreateHub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*api.EnvConfig) {
 
 	// Hub ConfigMap environment variables
 	hubConfigEnv := []*api.EnvConfig{
@@ -449,7 +493,7 @@ func (h *HubCreator) createHubDeployer(deployer *horizon.Deployer, createHub *Hu
 	hubAuth := CreateDeploymentFromContainer(&api.DeploymentConfig{Namespace: createHub.Namespace, Name: "hub-authentication", Replicas: 1},
 		[]*Container{hubAuthContainerConfig}, []*components.Volume{hubAuthEmptyDir, dbSecretVolume, hubPostgresSecretVolume, dbEmptyDir}, []*Container{},
 		[]api.AffinityConfig{})
-	// log.Infof("hubAuth : %v\n", hubAuth.GetObj())
+	// log.Infof("hubAuth : %v\n", hubAuthc.GetObj())
 	deployer.AddDeployment(hubAuth)
 
 	// webapp-logstash
@@ -487,7 +531,7 @@ func (h *HubCreator) createHubDeployer(deployer *horizon.Deployer, createHub *Hu
 	webappLogstash := CreateDeploymentFromContainer(&api.DeploymentConfig{Namespace: createHub.Namespace, Name: "webapp-logstash", Replicas: 1}, []*Container{webappContainerConfig, logstashContainerConfig},
 		[]*components.Volume{webappEmptyDir, logstashEmptyDir, dbSecretVolume, hubPostgresSecretVolume, dbEmptyDir}, []*Container{},
 		[]api.AffinityConfig{})
-	// log.Infof("webappLogstash : %v\n", webappLogstash.GetObj())
+	// log.Infof("webappLogstash : %v\n", webappLogstashc.GetObj())
 	deployer.AddDeployment(webappLogstash)
 
 	deployer.AddService(CreateService("cfssl", "cfssl", createHub.Namespace, CFSSL_PORT, CFSSL_PORT, false))
@@ -501,4 +545,22 @@ func (h *HubCreator) createHubDeployer(deployer *horizon.Deployer, createHub *Hu
 	deployer.AddService(CreateService("scan", "hub-scan", createHub.Namespace, SCANNER_PORT, SCANNER_PORT, false))
 	deployer.AddService(CreateService("authentication", "hub-authentication", createHub.Namespace, AUTHENTICATION_PORT, AUTHENTICATION_PORT, false))
 	deployer.AddService(CreateService("registration", "registration", createHub.Namespace, REGISTRATION_PORT, REGISTRATION_PORT, false))
+}
+
+func (hc *HubCreater) getLoadBalancerIpAddress(namespace string, serviceName string) (string, error) {
+	for i := 0; i < 60; i++ {
+		time.Sleep(10 * time.Second)
+		service, err := GetService(hc.Client, namespace, serviceName)
+		if err != nil {
+			return "", fmt.Errorf("unable to get service %s in %s namespace due to %s", serviceName, namespace, err.Error())
+		}
+
+		log.Debugf("Service: %v", service)
+
+		if len(service.Status.LoadBalancer.Ingress) > 0 {
+			ipAddress := service.Status.LoadBalancer.Ingress[0].IP
+			return ipAddress, nil
+		}
+	}
+	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
 }

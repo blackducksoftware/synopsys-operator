@@ -19,44 +19,46 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package main
+package hub
 
 import (
 	"fmt"
-	"os"
-	"time"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/webservice"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
-func main() {
-	configPath := os.Args[1]
-	runHubCreater(configPath)
+type Config struct {
+	DryRun   bool
+	LogLevel string
 }
 
-func runHubCreater(configPath string) {
-	log.Infof("Config path: %s", configPath)
-	config, err := hub.GetConfig(configPath)
-	if err != nil {
-		log.Panicf("Unable to read the config file from %s", configPath)
-	}
-	log.Infof("Config : %v", config)
+func (config *Config) GetLogLevel() (log.Level, error) {
+	return log.ParseLevel(config.LogLevel)
+}
 
-	level, err := config.GetLogLevel()
-	if err != nil {
-		log.SetLevel(level)
-	} else {
-		log.SetLevel(log.DebugLevel)
+func GetConfig(configPath string) (*Config, error) {
+	var config *Config
+
+	viper.SetEnvPrefix("APP_CONFIG")
+	viper.AutomaticEnv()
+
+	// Default values
+	viper.SetDefault("DryRun", false)
+	viper.SetDefault("LogLevel", "Info")
+
+	if len(configPath) > 0 {
+		viper.SetConfigFile(configPath)
+		err := viper.ReadInConfig()
+		if err != nil {
+			return nil, fmt.Errorf("oops ! Viper failed to read config file: %v", err)
+		}
 	}
 
-	go func() {
-		webservice.SetupHTTPServer()
-	}()
-	for {
-		fmt.Println("....hub installer heartbeat: still alive...")
-		time.Sleep(120 * time.Second)
+	err := viper.Unmarshal(&config)
+	if err != nil {
+		return nil, fmt.Errorf("oops ! failed to unmarshal config: %v", err)
 	}
-	return
+
+	return config, nil
 }

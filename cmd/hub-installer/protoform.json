@@ -1,3 +1,4 @@
 {
-  "DryRun":"true"
+  "DryRun":"true",
+  "LogLevel": "debug"
 }
