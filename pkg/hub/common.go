@@ -35,6 +35,7 @@ import (
 
 	kapi "github.com/blackducksoftware/horizon/pkg/api"
 	types "github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,13 +45,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
-
-type Container struct {
-	ContainerConfig *kapi.ContainerConfig
-	EnvConfigs      []*kapi.EnvConfig
-	VolumeMounts    []*kapi.VolumeMountConfig
-	PortConfig      *kapi.PortConfig
-}
 
 // createContainer will create the container
 func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volumeMounts []*kapi.VolumeMountConfig, port *kapi.PortConfig) *types.Container {
@@ -103,7 +97,7 @@ func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, e
 }
 
 // CreatePod will create the pod
-func CreatePod(name string, volumes []*types.Volume, containers []*Container, initContainers []*Container, affinityConfigs []kapi.AffinityConfig) *types.Pod {
+func CreatePod(name string, volumes []*types.Volume, containers []*api.Container, initContainers []*api.Container, affinityConfigs []kapi.AffinityConfig) *types.Pod {
 	pod := types.NewPod(kapi.PodConfig{
 		Name: name,
 	})
@@ -150,7 +144,7 @@ func CreateDeployment(deploymentConfig *kapi.DeploymentConfig, pod *types.Pod) *
 }
 
 // CreateDeploymentMultipleContainer will create a deployment with multiple containers inside a pod
-func CreateDeploymentFromContainer(deploymentConfig *kapi.DeploymentConfig, containers []*Container, volumes []*types.Volume, initContainers []*Container, affinityConfigs []kapi.AffinityConfig) *types.Deployment {
+func CreateDeploymentFromContainer(deploymentConfig *kapi.DeploymentConfig, containers []*api.Container, volumes []*types.Volume, initContainers []*api.Container, affinityConfigs []kapi.AffinityConfig) *types.Deployment {
 	pod := CreatePod(deploymentConfig.Name, volumes, containers, initContainers, affinityConfigs)
 	deployment := CreateDeployment(deploymentConfig, pod)
 	return deployment

@@ -58,10 +58,9 @@ type HubContainerFlavor struct {
 }
 
 func GetHubContainersFlavor(flavor string) *HubContainerFlavor {
-	var hubContainerFlavor *HubContainerFlavor
 	switch Flavor(strings.ToUpper(flavor)) {
 	case SMALL:
-		hubContainerFlavor = &HubContainerFlavor{
+		return &HubContainerFlavor{
 			WebserverMemoryLimit:       SMALL_WEBSERVER_MEMORY_LIMIT,
 			SolrMemoryLimit:            SMALL_SOLR_MEMORY_LIMIT,
 			WebappCpuLimit:             SMALL_WEBAPP_CPU_LIMIT,
@@ -84,7 +83,7 @@ func GetHubContainersFlavor(flavor string) *HubContainerFlavor {
 			PostgresCpuLimit:           SMALL_POSTGRES_CPU_LIMIT,
 		}
 	case MEDIUM:
-		hubContainerFlavor = &HubContainerFlavor{
+		return &HubContainerFlavor{
 			WebserverMemoryLimit:       MEDIUM_WEBSERVER_MEMORY_LIMIT,
 			SolrMemoryLimit:            MEDIUM_SOLR_MEMORY_LIMIT,
 			WebappCpuLimit:             MEDIUM_WEBAPP_CPU_LIMIT,
@@ -107,7 +106,7 @@ func GetHubContainersFlavor(flavor string) *HubContainerFlavor {
 			PostgresCpuLimit:           MEDIUM_POSTGRES_CPU_LIMIT,
 		}
 	case LARGE:
-		hubContainerFlavor = &HubContainerFlavor{
+		return &HubContainerFlavor{
 			WebserverMemoryLimit:       LARGE_WEBSERVER_MEMORY_LIMIT,
 			SolrMemoryLimit:            LARGE_SOLR_MEMORY_LIMIT,
 			WebappCpuLimit:             LARGE_WEBAPP_CPU_LIMIT,
@@ -130,7 +129,7 @@ func GetHubContainersFlavor(flavor string) *HubContainerFlavor {
 			PostgresCpuLimit:           LARGE_POSTGRES_CPU_LIMIT,
 		}
 	case OPSSIGHT:
-		hubContainerFlavor = &HubContainerFlavor{
+		return &HubContainerFlavor{
 			WebserverMemoryLimit:       OPSSIGHT_WEBSERVER_MEMORY_LIMIT,
 			SolrMemoryLimit:            OPSSIGHT_SOLR_MEMORY_LIMIT,
 			WebappCpuLimit:             OPSSIGHT_WEBAPP_CPU_LIMIT,
@@ -152,6 +151,7 @@ func GetHubContainersFlavor(flavor string) *HubContainerFlavor {
 			PostgresMemoryLimit:        OPSSIGHT_POSTGRES_MEMORY_LIMIT,
 			PostgresCpuLimit:           OPSSIGHT_POSTGRES_CPU_LIMIT,
 		}
+	default:
+		return nil
 	}
-	return hubContainerFlavor
 }

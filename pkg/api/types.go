@@ -22,6 +22,7 @@ under the License.
 package api
 
 import (
+	kapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/koki/short/types"
 )
 
@@ -91,6 +92,14 @@ type ClusterRoleBindingConfig struct {
 	Name     string
 	Subjects []types.Subject
 	RoleRef  types.RoleRef
+}
+
+// Container defines the configuration for a container
+type Container struct {
+	ContainerConfig *kapi.ContainerConfig
+	EnvConfigs      []*kapi.EnvConfig
+	VolumeMounts    []*kapi.VolumeMountConfig
+	PortConfig      *kapi.PortConfig
 }
 
 // ProtoformDefaults defines default values for Protoform.

@@ -21,6 +21,10 @@ under the License.
 
 package model
 
+type GetHubRequest struct {
+	Hubs map[string]*Hub `json:"hubs"`
+}
+
 type CreateHubRequest struct {
 	Namespace        string `json:"namespace"`
 	Flavor           string `json:"flavor"`
@@ -33,7 +37,7 @@ type CreateHubRequest struct {
 	IsRandomPassword bool   `json:"isRandomPassword"`
 }
 
-type CreateHub struct {
+type Hub struct {
 	Namespace        string `json:"namespace"`
 	DockerRegistry   string `json:"dockerRegistry"`
 	DockerRepo       string `json:"dockerRepo"`
@@ -44,6 +48,7 @@ type CreateHub struct {
 	PostgresPassword string `json:"postgresPassword"`
 	IsRandomPassword bool   `json:"isRandomPassword"`
 	Status           string `json:"status"`
+	IpAddress        string `json:"ipAddress"`
 }
 
 type DeleteHubRequest struct {

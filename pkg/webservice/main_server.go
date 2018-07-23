@@ -32,6 +32,7 @@ import (
 // all the core logic is here...
 
 func SetupHTTPServer() {
+	hubs := make(map[string]*model.Hub)
 	go func() {
 		// data, err := ioutil.ReadFile("/public/index.html")
 		// Set the router as the default one shipped with Gin
@@ -39,6 +40,10 @@ func SetupHTTPServer() {
 
 		// prints debug stuff out.
 		router.Use(GinRequestLogger())
+
+		router.GET("/hub", func(c *gin.Context) {
+			c.JSON(200, hubs)
+		})
 
 		router.POST("/hub", func(c *gin.Context) {
 			log.Debug("create hub request")
@@ -56,7 +61,7 @@ func SetupHTTPServer() {
 
 			log.Debug("...Attempting to get hub now [done]")
 
-			createHub := &model.CreateHub{
+			createHub := &model.Hub{
 				Namespace:        request.Namespace,
 				DockerRegistry:   request.DockerRegistry,
 				DockerRepo:       request.DockerRepo,
@@ -66,12 +71,18 @@ func SetupHTTPServer() {
 				UserPassword:     request.UserPassword,
 				PostgresPassword: request.PostgresPassword,
 				IsRandomPassword: request.IsRandomPassword,
+				Status:           "pending",
 			}
+			hubs[request.Namespace] = createHub
 
 			log.Debug("making a possibly blocking call to create hub now !!!")
 			go func() {
 				hubCreater := hub.NewHubCreater()
-				hubCreater.CreateHub(createHub)
+				err := hubCreater.CreateHub(createHub)
+				if err != nil {
+					createHub.Status = "error"
+				}
+				hubs[createHub.Namespace] = createHub
 			}()
 
 			c.JSON(200, "\"message\": \"Succeeded\"")
@@ -87,6 +98,7 @@ func SetupHTTPServer() {
 			go func() {
 				hubCreater := hub.NewHubCreater()
 				hubCreater.DeleteHub(request)
+				delete(hubs, request.Namespace)
 			}()
 
 			c.JSON(200, "\"message\": \"Succeeded\"")
