@@ -390,7 +390,6 @@
   revision = "d216743eed4c3242b85d094d2a589f41a793652d"
 
 [[projects]]
-  branch = "master"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -399,7 +398,7 @@
     "pkg/client/clientset/clientset/scheme",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
   ]
-  revision = "0f405100dbd50445fe5c6c821e972b9d46afd80e"
+  revision = "b5a9dfcf0afdc336c921e56e70166b5e291e77f5"
 
 [[projects]]
   name = "k8s.io/apimachinery"
@@ -506,6 +505,7 @@
     "util/integer"
   ]
   revision = "7d04d0e2a0a1a4d4a1cd6baa432a2301492e4e65"
+  version = "v8.0.0"
 
 [[projects]]
   name = "k8s.io/kube-aggregator"
@@ -513,11 +513,11 @@
     "pkg/apis/apiregistration",
     "pkg/apis/apiregistration/v1beta1"
   ]
-  revision = "29c7989121fc30258c674f31aff9bbd393dfab5e"
+  revision = "89512616b165a8d1280cf4b7dfdc266e96d8abe1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "83d9a16ce2aff87ccdce1b897397f9e7e010360e019565f9611e5a8ef3c658b7"
+  inputs-digest = "6075db293a25f84790bf5e5a026f0035c4247139bc1e26b6cb0d033faf633ece"
   solver-name = "gps-cdcl"
   solver-version = 1

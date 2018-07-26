@@ -97,9 +97,9 @@ func (hc *HubCreater) CreateHub(createHub *model.Hub) error {
 
 	// All ConfigMap environment variables
 	allConfigEnv := []*kapi.EnvConfig{
-		&kapi.EnvConfig{Type: kapi.EnvFromConfigMap, FromName: "hub-config"},
-		&kapi.EnvConfig{Type: kapi.EnvFromConfigMap, FromName: "hub-db-config"},
-		&kapi.EnvConfig{Type: kapi.EnvFromConfigMap, FromName: "hub-db-config-granular"},
+		{Type: kapi.EnvFromConfigMap, FromName: "hub-config"},
+		{Type: kapi.EnvFromConfigMap, FromName: "hub-db-config"},
+		{Type: kapi.EnvFromConfigMap, FromName: "hub-db-config-granular"},
 	}
 
 	// Create the config-maps, secrets and postgres container
@@ -286,7 +286,7 @@ func (hc *HubCreater) init(deployer *horizon.Deployer, createHub *model.Hub, hub
 		ContainerConfig: &kapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: kapi.PullAlways,
 			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCpuLimit, MaxCPU: ""},
 		EnvConfigs:   postgresEnvs,
-		VolumeMounts: []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "postgres-persistent-vol", MountPath: "/var/lib/pgsql/data", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "postgres-persistent-vol", MountPath: "/var/lib/pgsql/data", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: POSTGRES_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	postgres := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "postgres", Replicas: 1}, []*api.Container{postgresExternalContainerConfig},
@@ -302,7 +302,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 
 	// Hub ConfigMap environment variables
 	hubConfigEnv := []*kapi.EnvConfig{
-		&kapi.EnvConfig{Type: kapi.EnvFromConfigMap, FromName: "hub-config"},
+		{Type: kapi.EnvFromConfigMap, FromName: "hub-config"},
 	}
 
 	// Common DB secret volume
@@ -316,8 +316,8 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		VolumeName:      "db-passwords",
 		MapOrSecretName: "db-creds",
 		Items: map[string]kapi.KeyAndMode{
-			"HUB_POSTGRES_ADMIN_PASSWORD_FILE": kapi.KeyAndMode{KeyOrPath: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", Mode: 420},
-			"HUB_POSTGRES_USER_PASSWORD_FILE":  kapi.KeyAndMode{KeyOrPath: "HUB_POSTGRES_USER_PASSWORD_FILE", Mode: 420},
+			"HUB_POSTGRES_ADMIN_PASSWORD_FILE": {KeyOrPath: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", Mode: 420},
+			"HUB_POSTGRES_USER_PASSWORD_FILE":  {KeyOrPath: "HUB_POSTGRES_USER_PASSWORD_FILE", Mode: 420},
 		},
 		DefaultMode: 420,
 	})
@@ -331,7 +331,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		ContainerConfig: &kapi.ContainerConfig{Name: "cfssl", Image: fmt.Sprintf("%s/%s/hub-cfssl:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.CfsslMemoryLimit, MaxMem: hubContainerFlavor.CfsslMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
-		VolumeMounts: []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-cfssl", MountPath: "/etc/cfssl", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-cfssl", MountPath: "/etc/cfssl", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: CFSSL_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	// cfsslInitContainerConfig := &api.Container{
@@ -352,7 +352,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		ContainerConfig: &kapi.ContainerConfig{Name: "webserver", Image: fmt.Sprintf("%s/%s/hub-nginx:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.WebserverMemoryLimit, MaxMem: hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
-		VolumeMounts: []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: WEBSERVER_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	// webserverInitContainerConfig := &api.Container{
@@ -385,7 +385,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		ContainerConfig: &kapi.ContainerConfig{Name: "solr", Image: fmt.Sprintf("%s/%s/hub-solr:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.SolrMemoryLimit, MaxMem: hubContainerFlavor.SolrMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
-		VolumeMounts: []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-solr", MountPath: "/opt/blackduck/hub/solr/cores.data", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-solr", MountPath: "/opt/blackduck/hub/solr/cores.data", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: SOLR_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	// solrInitContainerConfig := &api.Container{
@@ -406,7 +406,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		ContainerConfig: &kapi.ContainerConfig{Name: "registration", Image: fmt.Sprintf("%s/%s/hub-registration:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.RegistrationMemoryLimit, MaxMem: hubContainerFlavor.RegistrationMemoryLimit, MinCPU: "1", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
-		VolumeMounts: []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: REGISTRATION_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	// registrationInitContainerConfig := &api.Container{
@@ -426,7 +426,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		ContainerConfig: &kapi.ContainerConfig{Name: "zookeeper", Image: fmt.Sprintf("%s/%s/hub-zookeeper:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: "1", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
-		VolumeMounts: []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-zookeeper", MountPath: "/opt/blackduck/hub/logs", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-zookeeper", MountPath: "/opt/blackduck/hub/logs", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: ZOOKEEPER_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	zookeeper := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "zookeeper", Replicas: 1},
@@ -441,7 +441,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		ContainerConfig: &kapi.ContainerConfig{Name: "jobrunner", Image: fmt.Sprintf("%s/%s/hub-jobrunner:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.JobRunnerMemoryLimit, MaxMem: hubContainerFlavor.JobRunnerMemoryLimit, MinCPU: "1", MaxCPU: "1"},
 		EnvConfigs:   jobRunnerEnvs,
-		VolumeMounts: []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: JOBRUNNER_PORT, Protocol: kapi.ProtocolTCP},
 	}
 
@@ -468,8 +468,8 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.ScanMemoryLimit, MaxMem: hubContainerFlavor.ScanMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: scannerEnvs,
 		VolumeMounts: []*kapi.VolumeMountConfig{
-			&kapi.VolumeMountConfig{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
-			&kapi.VolumeMountConfig{Name: "dir-scan", MountPath: "/opt/blackduck/hub/hub-scan/security", Propagation: kapi.MountPropagationBidirectional}},
+			{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
+			{Name: "dir-scan", MountPath: "/opt/blackduck/hub/hub-scan/security", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig: &kapi.PortConfig{ContainerPort: SCANNER_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	hubScan := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "hub-scan", Replicas: hubContainerFlavor.ScanReplicas},
@@ -487,8 +487,8 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: authEnvs,
 		VolumeMounts: []*kapi.VolumeMountConfig{
-			&kapi.VolumeMountConfig{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
-			&kapi.VolumeMountConfig{Name: "dir-authentication", MountPath: "/opt/blackduck/hub/hub-authentication/security", Propagation: kapi.MountPropagationBidirectional}},
+			{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
+			{Name: "dir-authentication", MountPath: "/opt/blackduck/hub/hub-authentication/security", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig: &kapi.PortConfig{ContainerPort: AUTHENTICATION_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	// hubAuthInitContainerConfig := &api.Container{
@@ -513,9 +513,9 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			MaxCPU: hubContainerFlavor.WebappCpuLimit},
 		EnvConfigs: webappEnvs,
 		VolumeMounts: []*kapi.VolumeMountConfig{
-			&kapi.VolumeMountConfig{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
-			&kapi.VolumeMountConfig{Name: "dir-webapp", MountPath: "/opt/blackduck/hub/hub-webapp/security", Propagation: kapi.MountPropagationBidirectional},
-			&kapi.VolumeMountConfig{Name: "dir-logstash", MountPath: "/opt/blackduck/hub/logs", Propagation: kapi.MountPropagationBidirectional}},
+			{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
+			{Name: "dir-webapp", MountPath: "/opt/blackduck/hub/hub-webapp/security", Propagation: kapi.MountPropagationBidirectional},
+			{Name: "dir-logstash", MountPath: "/opt/blackduck/hub/logs", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig: &kapi.PortConfig{ContainerPort: WEBAPP_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	// webappLogStashInitContainerConfig := &api.Container{
@@ -531,7 +531,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		ContainerConfig: &kapi.ContainerConfig{Name: "logstash", Image: fmt.Sprintf("%s/%s/hub-logstash:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.LogstashMemoryLimit, MaxMem: hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
-		VolumeMounts: []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-logstash", MountPath: "/var/lib/logstash/data", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-logstash", MountPath: "/var/lib/logstash/data", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: LOGSTASH_PORT, Protocol: kapi.ProtocolTCP},
 	}
 	webappLogstash := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "webapp-logstash", Replicas: 1}, []*api.Container{webappContainerConfig, logstashContainerConfig},
