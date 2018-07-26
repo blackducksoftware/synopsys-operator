@@ -37,9 +37,14 @@ func main() {
 
 func runProtoform(configPath string) {
 	defaults := createDefaults()
-	installer := protoform.NewInstaller(defaults, configPath)
+	installer, err := protoform.NewInstaller(defaults, configPath)
+	if err != nil {
+		panic(err)
+	}
 	installer.AddPerceptorResources()
 	installer.Run()
+	stopCh := make(chan struct{})
+	installer.StartControllers(stopCh)
 }
 
 func createDefaults() *api.ProtoformDefaults {

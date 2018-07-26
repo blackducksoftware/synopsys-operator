@@ -25,18 +25,33 @@ import (
 	"os"
 	"regexp"
 	"testing"
+
+	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
 func TestProto(t *testing.T) {
+	var rcsArray []*components.ReplicationController
+
 	os.Setenv("PCP_HUBUSERPASSWORD", "example")
 
 	d := NewDefaultsObj()
 	d.DefaultCPU = "300m"
 	d.DefaultMem = "1300Mi"
 
-	installer := NewInstaller(d, "../../cmd/protoform-installer/protoform.json")
+	installer, err := NewInstaller(d, "../../cmd/protoform-installer/protoform.json")
+	if err != nil {
+		t.Fatalf("failed to create installer: %v", err)
+	}
 	installer.AddPerceptorResources()
-	rcsArray := installer.replicationControllers
+	rcsArray = append(rcsArray, installer.PerceptorReplicationController())
+	rc, _ := installer.PodPerceiverReplicationController()
+	rcsArray = append(rcsArray, rc)
+	rc, _ = installer.ImagePerceiverReplicationController()
+	rcsArray = append(rcsArray, rc)
+	rc, _ = installer.ScannerReplicationController()
+	rcsArray = append(rcsArray, rc)
+	rc, _ = installer.PerceptorSkyfireReplicationController()
+	rcsArray = append(rcsArray, rc)
 
 	var imageRegexp = regexp.MustCompile("(.+)/(.+):(.+)")
 
@@ -50,7 +65,7 @@ func TestProto(t *testing.T) {
 	}
 
 	for _, rcs := range rcsArray {
-		for _, container := range rcs.Containers {
+		for _, container := range rcs.GetObj().Containers {
 
 			// verify the image expressions
 			match := imageRegexp.FindStringSubmatch(container.Image)
@@ -79,23 +94,23 @@ func TestProto(t *testing.T) {
 	}
 
 	// Image facade needs to be privileged !
-	if *rcsArray[2].PodTemplate.Containers[1].Privileged == false {
-		t.Errorf("%v %v", rcsArray[2].PodTemplate.Containers[1].Name, *rcsArray[2].PodTemplate.Containers[1].Privileged)
+	if *rcsArray[3].GetObj().PodTemplate.Containers[1].Privileged == false {
+		t.Errorf("%v %v", rcsArray[3].GetObj().PodTemplate.Containers[1].Name, *rcsArray[3].GetObj().PodTemplate.Containers[1].Privileged)
 	}
 
 	// The scanner needs to be UNPRIVILEGED
-	if *rcsArray[2].PodTemplate.Containers[0].Privileged == true {
-		t.Errorf("%v %v", rcsArray[2].PodTemplate.Containers[0].Name, *rcsArray[2].PodTemplate.Containers[0].Privileged)
+	if *rcsArray[3].GetObj().PodTemplate.Containers[0].Privileged == true {
+		t.Errorf("%v %v", rcsArray[3].GetObj().PodTemplate.Containers[0].Name, *rcsArray[3].GetObj().PodTemplate.Containers[0].Privileged)
 	}
 
-	t.Logf("template: %v ", rcsArray[2].PodTemplate)
-	scannerSvc := rcsArray[2].PodTemplate.Account
+	t.Logf("template: %v ", rcsArray[3].GetObj().PodTemplate)
+	scannerSvc := rcsArray[3].GetObj().PodTemplate.Account
 	if scannerSvc == "" {
 		t.Errorf("scanner svc ==> ( %v ) EMPTY !", scannerSvc)
 	}
 
-	s0 := rcsArray[2].PodTemplate.Containers[0].Name
-	s := rcsArray[2].PodTemplate.Containers[0].VolumeMounts[1].Store
+	s0 := rcsArray[3].GetObj().PodTemplate.Containers[0].Name
+	s := rcsArray[3].GetObj().PodTemplate.Containers[0].VolumeMounts[1].Store
 	if s != "var-images" {
 		t.Errorf("%v %v", s0, s)
 	}
