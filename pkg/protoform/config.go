@@ -22,16 +22,9 @@ under the License.
 package protoform
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
-
-	"github.com/koki/short/types"
-	"github.com/koki/short/util/floatstr"
-
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type protoformConfig struct {
@@ -106,41 +99,6 @@ type protoformConfig struct {
 	PerceptorSkyfire bool
 }
 
-type envSecret struct {
-	EnvName       string
-	SecretName    string
-	KeyFromSecret string
-}
-
-// ReplicationController defines the replication controller or pod configuration. Those configurations will be used for the creation of replication controller or pod
-type ReplicationController struct {
-	ConfigMapMounts map[string]string
-	EmptyDirMounts  map[string]string
-	Name            string
-	Image           string
-	Port            int32
-	Cmd             []string
-	Arg             []floatstr.FloatOrString
-	Replicas        int32
-	Env             []envSecret
-	Annotations     map[string]string
-	Labels          map[string]string
-	ServiceType     types.ClusterIPServiceType
-	ServiceSelector map[string]string
-
-	// key:value = name:mountPath
-	EmptyDirVolumeMounts map[string]string
-
-	// if true, then container is privileged /var/run/docker.sock.
-	DockerSocket bool
-
-	ServiceAccount     string
-	ServiceAccountName string
-
-	Memory resource.Quantity
-	CPU    resource.Quantity
-}
-
 // NewDefaultsObj returns a ProtoformDefaults object with sane default for most options
 func NewDefaultsObj() *api.ProtoformDefaults {
 	return &api.ProtoformDefaults{
@@ -172,39 +130,4 @@ func NewDefaultsObj() *api.ProtoformDefaults {
 func generateStringFromStringArr(strArr []string) string {
 	str, _ := json.Marshal(strArr)
 	return string(str)
-}
-
-func (p *protoformConfig) toMap() map[string]map[string]string {
-	configs := map[string]map[string]string{
-		"perceptor":             {"perceptor.yaml": fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutMilliseconds": "`, p.HubClientTimeoutPerceptorMilliseconds, `","ConcurrentScanLimit": "`, p.ConcurrentScanLimit, `","Port": "`, p.PerceptorPort, `","LogLevel": "`, p.LogLevel, `"}`)},
-		"perceptor-scanner":     {"perceptor_scanner.yaml": fmt.Sprint(`{"HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","Port": "`, p.ScannerPort, `","PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","ImageFacadeHost": "`, p.ImageFacadeImageName, `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`)},
-		"perceptor-imagefacade": {"perceptor_imagefacade.yaml": fmt.Sprint(`{"DockerUser": "`, p.DockerUsername, `","DockerPassword": "`, p.DockerPasswordOrToken, `","Port": "`, p.ImageFacadePort, `","InternalDockerRegistries": `, generateStringFromStringArr(p.InternalDockerRegistries), `,"LogLevel": "`, p.LogLevel, `"}`)},
-	}
-
-	if p.Metrics {
-		var promConfig bytes.Buffer
-		promConfig.WriteString(fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["`, p.PerceptorImageName, `:`, p.PerceptorPort, `","`, p.ScannerImageName, `:`, p.ScannerPort, `","`, p.ImageFacadeImageName, `:`, p.ImageFacadePort))
-		if p.ImagePerceiver {
-			promConfig.WriteString(fmt.Sprint(`","`, p.ImagePerceiverImageName, `:`, p.PerceiverPort))
-		}
-		if p.PodPerceiver {
-			promConfig.WriteString(fmt.Sprint(`","`, p.PodPerceiverImageName, `:`, p.PerceiverPort))
-		}
-		if p.PerceptorSkyfire {
-			promConfig.WriteString(fmt.Sprint(`","`, p.SkyfireImageName, `:`, p.SkyfirePort))
-
-		}
-		promConfig.WriteString(`"]}]}]}`)
-		configs["prometheus"] = map[string]string{"prometheus.yml": promConfig.String()}
-	}
-
-	if p.ImagePerceiver || p.PodPerceiver {
-		configs["perceiver"] = map[string]string{"perceiver.yaml": fmt.Sprint(`{"PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","AnnotationIntervalSeconds": "`, p.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, p.DumpIntervalMinutes, `","Port": "`, p.PerceiverPort, `","LogLevel": "`, p.LogLevel, `"}`)}
-	}
-
-	if p.PerceptorSkyfire {
-		configs["skyfire"] = map[string]string{"skyfire.yaml": fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, "3005", `","HubHost": "`, p.HubHost, `","HubPort": "`, p.HubPort, `","HubUser": "`, p.HubUser, `","HubUserPasswordEnvVar": "`, p.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.PerceptorImageName, `","PerceptorPort": "`, p.PerceptorPort, `","KubeDumpIntervalSeconds": "`, "15", `","PerceptorDumpIntervalSeconds": "`, "15", `","HubDumpPauseSeconds": "`, "30", `","ImageFacadePort": "`, p.ImageFacadePort, `","LogLevel": "`, p.LogLevel, `"}`)}
-	}
-
-	return configs
 }

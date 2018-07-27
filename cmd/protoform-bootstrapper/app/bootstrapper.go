@@ -27,18 +27,18 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/cmd/protoform-bootstrapper/app/options"
 
-	"github.com/koki/short/converter/converters"
-	"github.com/koki/short/types"
-	"github.com/koki/short/util/floatstr"
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/horizon/pkg/deployer"
 
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 // Bootstrapper defines how to bootstrap protoform
 type Bootstrapper struct {
-	opts   *options.BootstrapperOptions
-	client *kubernetes.Clientset
+	*deployer.Deployer
+	opts *options.BootstrapperOptions
+	//	client *kubernetes.Clientset
 }
 
 // NewBootstrapper creats a new Bootstrapper object
@@ -47,75 +47,73 @@ func NewBootstrapper(opts *options.BootstrapperOptions) (*Bootstrapper, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create config: %v", err)
 	}
-	c, err := kubernetes.NewForConfig(config)
+
+	d, err := deployer.NewDeployer(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create cluster client: %v", err)
+		return nil, fmt.Errorf("failed to create deployer: %v", err)
 	}
-	return &Bootstrapper{opts: opts, client: c}, nil
+
+	b := Bootstrapper{d, opts}
+	b.setup()
+	return &b, nil
 }
 
-// Run starts the bootstrapping process
-func (b *Bootstrapper) Run() error {
-	secretEnv, err := types.NewEnvFromSecret("PCP_HUBUSERPASSWORD", "protoform", "HubUserPassword")
-	if err != nil {
-		return fmt.Errorf("failed to create secret: %v", err)
+// Start begins the bootstrapping process
+func (b *Bootstrapper) setup() {
+	// Create the protoform container
+	containerConfig := horizonapi.ContainerConfig{
+		Name:       "protoform",
+		Image:      fmt.Sprintf("%s:%s", b.generateImageName(), b.opts.ProtoformImageVersion),
+		PullPolicy: horizonapi.PullAlways,
+		Command:    []string{"./protoform"},
+		Args:       []string{"/etc/protoform/protoform.yaml"},
 	}
+	container := components.NewContainer(containerConfig)
+	container.AddPort(horizonapi.PortConfig{
+		ContainerPort: "3001", // TODO: Use config
+		Protocol:      horizonapi.ProtocolTCP,
+	})
+	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+		Name:      "protoform",
+		MountPath: "/etc/protoform",
+	})
+	container.AddEnv(horizonapi.EnvConfig{
+		NameOrPrefix: "PCP_HUBUSERPASSWORD",
+		FromName:     "protoform",
+		KeyOrVal:     "HubUserPassword",
+		Type:         horizonapi.EnvFromSecret,
+	})
 
-	// Create the protoform pod
-	pod := types.Pod{
-		Version: "v1",
-		PodTemplateMeta: types.PodTemplateMeta{
-			Name: "protoform",
-		},
-		PodTemplate: types.PodTemplate{
-			RestartPolicy: types.RestartPolicyNever,
-			Account:       "protoform",
-			Volumes: map[string]types.Volume{
-				"protoform": {
-					ConfigMap: &types.ConfigMapVolume{
-						Name: "protoform",
-					},
-				},
-			},
-			Containers: []types.Container{
-				{
-					Name:  "protoform",
-					Image: fmt.Sprintf("%s:%s", b.generateImageName(), b.opts.ProtoformImageVersion),
-					Env: []types.Env{
-						secretEnv,
-					},
-					Pull:    types.PullAlways,
-					Command: []string{"./protoform"},
-					Args: []floatstr.FloatOrString{
-						{
-							Type:      floatstr.String,
-							StringVal: "/etc/protoform/protoform.yaml",
-						},
-					},
-					Expose: []types.Port{
-						{
-							ContainerPort: "3001", // TODO: Use config
-							Protocol:      types.ProtocolTCP,
-						},
-					},
-					VolumeMounts: []types.VolumeMount{
-						{
-							Store:     "protoform",
-							MountPath: "/etc/protoform",
-						},
-					},
-				},
-			},
-		},
+	// Create volumes for the pod
+	volConfig := horizonapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      "protoform",
+		MapOrSecretName: "protoform",
 	}
+	vol := components.NewConfigMapVolume(volConfig)
+
+	// Create the pod
+	pc := horizonapi.PodConfig{
+		APIVersion:     "v1",
+		Name:           "protoform",
+		Namespace:      b.opts.Namespace,
+		RestartPolicy:  horizonapi.RestartPolicyNever,
+		ServiceAccount: "protoform",
+	}
+	pod := components.NewPod(pc)
+	pod.AddContainer(container)
+	pod.AddVolume(vol)
+	b.AddPod(pod)
 
 	// Create the secret
-	secret := types.Secret{
-		Version:    "v1",
+	secretConfig := horizonapi.SecretConfig{
+		APIVersion: "v1",
 		Name:       "protoform",
-		Data:       map[string][]byte{"HubUserPassword": []byte(b.opts.HubUserPassword)},
-		SecretType: types.SecretTypeOpaque,
+		Namespace:  b.opts.Namespace,
+		Type:       horizonapi.SecretTypeOpaque,
 	}
+	secret := components.NewSecret(secretConfig)
+	secret.AddData(map[string][]byte{"HubUserPassword": []byte(b.opts.HubUserPassword)})
+	b.AddSecret(secret)
 
 	// Create protoform's configuration
 	protoformConfig := []string{fmt.Sprintf("%s: %s", "DockerPasswordOrToken", b.opts.DockerPasswordOrToken),
@@ -154,110 +152,45 @@ func (b *Bootstrapper) Run() error {
 		fmt.Sprintf("%s: %s", "LogLevel", b.opts.LogLevel),
 	}
 
-	configMap := types.ConfigMap{
-		Version: "v1",
-		Name:    "protoform",
-		Data:    map[string]string{"protoform.yaml": strings.Join(protoformConfig, "\n")},
+	cmConfig := horizonapi.ConfigMapConfig{
+		APIVersion: "v1",
+		Name:       "protoform",
+		Namespace:  b.opts.Namespace,
 	}
+	configMap := components.NewConfigMap(cmConfig)
+	configMap.AddData(map[string]string{"protoform.yaml": strings.Join(protoformConfig, "\n")})
+	b.AddConfigMap(configMap)
 
 	b.createDeps()
-
-	// Deploy the configmap to the cluster
-	cmWrapper := &types.ConfigMapWrapper{ConfigMap: configMap}
-	config, err := converters.Convert_Koki_ConfigMap_to_Kube_v1_ConfigMap(cmWrapper)
-	if err != nil {
-		return fmt.Errorf("failed to convert configmap: %v", err)
-	}
-	_, err = b.client.Core().ConfigMaps(b.opts.Namespace).Create(config)
-	if err != nil {
-		return fmt.Errorf("failed to submit configmap: %v", err)
-	}
-
-	// Deploy the secret to the cluster
-	sWrapper := &types.SecretWrapper{Secret: secret}
-	s, err := converters.Convert_Koki_Secret_to_Kube_v1_Secret(sWrapper)
-	if err != nil {
-		return fmt.Errorf("failed to convert secret: %v", err)
-	}
-	_, err = b.client.Core().Secrets(b.opts.Namespace).Create(s)
-	if err != nil {
-		return fmt.Errorf("failed to submit secret: %v", err)
-	}
-
-	// Finally deploy the pod to the cluster
-	podWrapper := &types.PodWrapper{Pod: pod}
-	protoformPod, err := converters.Convert_Koki_Pod_to_Kube_v1_Pod(podWrapper)
-	if err != nil {
-		return fmt.Errorf("failed to convert pod: %v", err)
-	}
-	_, err = b.client.Core().Pods(b.opts.Namespace).Create(protoformPod)
-	if err != nil {
-		return fmt.Errorf("failed to submit pod: %v", err)
-	}
-
-	return nil
 }
 
-func (b *Bootstrapper) createDeps() error {
-	protoformServiceAccount := types.ServiceAccount{
+func (b *Bootstrapper) createDeps() {
+	protoformServiceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		Name:      "protoform",
 		Namespace: b.opts.Namespace,
-	}
+	})
+	b.AddServiceAccount(protoformServiceAccount)
 
-	protoformNameSpace := types.Namespace{
+	protoformNameSpace := components.NewNamespace(horizonapi.NamespaceConfig{
 		Name: b.opts.Namespace,
-	}
+	})
+	b.AddNamespace(protoformNameSpace)
 
-	protoformSARoleBinding := types.ClusterRoleBinding{
-		Name:    "protoform",
-		Version: "rbac.authorization.k8s.io/v1",
-		Subjects: []types.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      "protoform",
-				Namespace: b.opts.Namespace,
-			},
-		},
-		RoleRef: types.RoleRef{
-			APIGroup: "",
-			Kind:     "ClusterRole",
-			Name:     "cluster-admin",
-		},
-	}
-
-	nsWrapper := &types.NamespaceWrapper{Namespace: protoformNameSpace}
-	nsObj, err := converters.Convert_Koki_Namespace_to_Kube_Namespace(nsWrapper)
-	if err != nil {
-		return fmt.Errorf("failed to create namespace: %v", err)
-	}
-
-	b.client.Core().Namespaces().Create(nsObj)
-	/* TODO: Print a warning?
-	if err != nil {
-
-	}
-	*/
-
-	saWrapper := &types.ServiceAccountWrapper{ServiceAccount: protoformServiceAccount}
-	saObj, err := converters.Convert_Koki_ServiceAccount_to_Kube_ServiceAccount(saWrapper)
-	if err != nil {
-		return fmt.Errorf("failed to convert protoform service account: %v", err)
-	}
-	_, err = b.client.Core().ServiceAccounts(b.opts.Namespace).Create(saObj)
-	if err != nil {
-		return fmt.Errorf("failed to create protoform service account: %v", err)
-	}
-
-	rbWrapper := &types.ClusterRoleBindingWrapper{ClusterRoleBinding: protoformSARoleBinding}
-	rbObject, err := converters.Convert_Koki_ClusterRoleBinding_to_Kube(rbWrapper)
-	if err != nil {
-		return fmt.Errorf("failed to convert protoform cluster role binding: %v", err)
-	}
-	_, err = b.client.Rbac().ClusterRoleBindings().Create(rbObject)
-	if err != nil {
-		return fmt.Errorf("failed to create protoform cluster role binding: %v", err)
-	}
-	return nil
+	protoformSARoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
+		Name:       "protoform",
+		APIVersion: "rbac.authorization.k8s.io/v1",
+	})
+	protoformSARoleBinding.AddSubject(horizonapi.SubjectConfig{
+		Kind:      "ServiceAccount",
+		Name:      "protoform",
+		Namespace: b.opts.Namespace,
+	})
+	protoformSARoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
+		APIGroup: "",
+		Kind:     "ClusterRole",
+		Name:     "cluster-admin",
+	})
+	b.AddClusterRoleBinding(protoformSARoleBinding)
 }
 
 func (b *Bootstrapper) generateImageName() string {
