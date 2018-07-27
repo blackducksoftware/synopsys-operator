@@ -44,14 +44,19 @@ func (v *Volume) GetObj() *types.Volume {
 
 // NewEmptyDirVolume creates an EmptyDir volume object
 func NewEmptyDirVolume(config api.EmptyDirVolumeConfig) (*Volume, error) {
-	size, err := resource.ParseQuantity(config.SizeLimit)
-	if err != nil {
-		return nil, fmt.Errorf("invalid size: %v", err)
+	var size *resource.Quantity
+
+	if len(config.SizeLimit) > 0 {
+		s, err := resource.ParseQuantity(config.SizeLimit)
+		if err != nil {
+			return nil, fmt.Errorf("invalid size: %v", err)
+		}
+		size = &s
 	}
 
 	v := &types.Volume{
 		EmptyDir: &types.EmptyDirVolume{
-			SizeLimit: &size,
+			SizeLimit: size,
 		},
 	}
 
@@ -91,6 +96,8 @@ func NewHostPathVolume(config api.HostPathVolumeConfig) *Volume {
 		v.HostPath.Type = types.HostPathCharDev
 	case api.HostPathBlockDev:
 		v.HostPath.Type = types.HostPathBlockDev
+	default:
+		v.HostPath.Type = types.HostPathUnset
 	}
 
 	return &Volume{Name: config.VolumeName, obj: v}
@@ -98,22 +105,14 @@ func NewHostPathVolume(config api.HostPathVolumeConfig) *Volume {
 
 // NewConfigMapVolume creates a ConfigMap volume object
 func NewConfigMapVolume(config api.ConfigMapOrSecretVolumeConfig) *Volume {
-	dfm := types.FileMode(config.DefaultMode)
-	items := map[string]types.KeyAndMode{}
-	for k, v := range config.Items {
-		fm := types.FileMode(v.Mode)
-		items[k] = types.KeyAndMode{
-			Key:  v.KeyOrPath,
-			Mode: &fm,
-		}
-	}
+	dfm, items := generateFileModeAndItems(config.DefaultMode, config.Items)
 
 	v := &types.Volume{
 		ConfigMap: &types.ConfigMapVolume{
 			Name:        config.MapOrSecretName,
-			DefaultMode: &dfm,
+			DefaultMode: dfm,
 			Items:       items,
-			Required:    &config.Required,
+			Required:    config.Required,
 		},
 	}
 
@@ -122,26 +121,42 @@ func NewConfigMapVolume(config api.ConfigMapOrSecretVolumeConfig) *Volume {
 
 // NewSecretVolume creates a Secret volume object
 func NewSecretVolume(config api.ConfigMapOrSecretVolumeConfig) *Volume {
-	dfm := types.FileMode(config.DefaultMode)
-	items := map[string]types.KeyAndMode{}
-	for k, v := range config.Items {
-		fm := types.FileMode(v.Mode)
-		items[k] = types.KeyAndMode{
-			Key:  v.KeyOrPath,
-			Mode: &fm,
-		}
-	}
+	dfm, items := generateFileModeAndItems(config.DefaultMode, config.Items)
 
 	v := &types.Volume{
 		Secret: &types.SecretVolume{
 			SecretName:  config.MapOrSecretName,
-			DefaultMode: &dfm,
+			DefaultMode: dfm,
 			Items:       items,
-			Required:    &config.Required,
+			Required:    config.Required,
 		},
 	}
 
 	return &Volume{Name: config.VolumeName, obj: v}
+}
+
+func generateFileModeAndItems(defaultMode *int32, items map[string]api.KeyAndMode) (*types.FileMode, map[string]types.KeyAndMode) {
+	var dfm *types.FileMode
+
+	if defaultMode != nil {
+		fm := types.FileMode(*defaultMode)
+		dfm = &fm
+	}
+
+	converted := map[string]types.KeyAndMode{}
+	for k, v := range items {
+		var fm *types.FileMode
+		if v.Mode != nil {
+			m := types.FileMode(*v.Mode)
+			fm = &m
+		}
+		converted[k] = types.KeyAndMode{
+			Key:  v.KeyOrPath,
+			Mode: fm,
+		}
+	}
+
+	return dfm, converted
 }
 
 // NewGCEPersistentDiskVolume creates a new GCE Persistent Disk volume object

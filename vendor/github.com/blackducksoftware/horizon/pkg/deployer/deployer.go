@@ -159,6 +159,11 @@ func (d *Deployer) AddServiceAccount(obj *components.ServiceAccount) {
 	d.serviceAccounts[obj.GetName()] = obj.GetObj()
 }
 
+// AddPod will add the provided pod to the pods that will be deployed
+func (d *Deployer) AddPod(obj *components.Pod) {
+	d.pods[obj.GetName()] = obj.GetObj()
+}
+
 // Run starts the deployer and deploys all components to the cluster
 func (d *Deployer) Run() error {
 	allErrs := map[util.ComponentType][]error{}
@@ -224,10 +229,14 @@ func (d *Deployer) StartControllers(stopCh chan struct{}) map[string][]error {
 
 	// Run the controllers if there are any configured
 	if len(d.controllers) > 0 {
+		resources := api.ControllerResources{
+			KubeClient:           d.client,
+			KubeExtensionsClient: d.apiextensions,
+		}
 		errCh := make(chan map[string]error)
 		for n, c := range d.controllers {
 			go func(name string, controller api.DeployerControllerInterface) {
-				err := controller.Run(stopCh)
+				err := controller.Run(resources, stopCh)
 				if err != nil {
 					errCh <- map[string]error{name: err}
 				}

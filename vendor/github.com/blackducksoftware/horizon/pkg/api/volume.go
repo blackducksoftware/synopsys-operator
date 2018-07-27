@@ -44,14 +44,14 @@ type ConfigMapOrSecretVolumeConfig struct {
 	VolumeName      string
 	MapOrSecretName string
 	Items           map[string]KeyAndMode
-	DefaultMode     int32
-	Required        bool
+	DefaultMode     *int32
+	Required        *bool
 }
 
 // KeyAndMode defines the key and file mode
 type KeyAndMode struct {
 	KeyOrPath string
-	Mode      int32
+	Mode      *int32
 }
 
 // HostPathVolumeConfig defines the configuration for a

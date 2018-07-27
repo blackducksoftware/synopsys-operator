@@ -27,7 +27,7 @@ type DeploymentConfig struct {
 	ClusterName             string
 	Name                    string
 	Namespace               string
-	Replicas                int32
+	Replicas                *int32
 	Recreate                bool
 	MaxUnavailable          string
 	MaxExtra                string

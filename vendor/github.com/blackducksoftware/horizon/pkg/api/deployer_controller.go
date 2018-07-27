@@ -21,7 +21,19 @@ under the License.
 
 package api
 
+import (
+	"k8s.io/client-go/kubernetes"
+
+	extensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+)
+
+// ControllerResources defines the resources the deployer will provide controllers
+type ControllerResources struct {
+	KubeClient           *kubernetes.Clientset
+	KubeExtensionsClient *extensionsclient.Clientset
+}
+
 // DeployerControllerInterface defines the interface for controllers
 type DeployerControllerInterface interface {
-	Run(chan struct{}) error
+	Run(ControllerResources, chan struct{}) error
 }

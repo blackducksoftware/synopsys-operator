@@ -43,7 +43,7 @@ func NewDeployment(config api.DeploymentConfig) *Deployment {
 		Cluster:                 config.ClusterName,
 		Name:                    config.Name,
 		Namespace:               config.Namespace,
-		Replicas:                &config.Replicas,
+		Replicas:                config.Replicas,
 		Recreate:                config.Recreate,
 		MinReadySeconds:         config.MinReadySeconds,
 		RevisionHistoryLimit:    config.RevisionHistoryLimit,
