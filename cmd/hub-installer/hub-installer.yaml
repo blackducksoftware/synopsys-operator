@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: List
+metadata:
+  name: hub-installer
+items:
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    name: hub-installer
+    labels:
+      name: hub-installer
+  spec:
+    replicas: 1
+    selector:
+      name: hub-installer
+    template:
+      metadata:
+        labels:
+          name: hub-installer
+      spec:
+        containers:
+        - name: hub-installer
+          image: msenmurugan/hub-installer:latest
+          ports:
+          - containerPort: 80
+          env:
+          - name: REGISTRATION_KEY
+            value: ${REGISTRATION_KEY}
+          volumeMounts:
+          - mountPath: /etc/hub-installer
+            name: hub-installer
+          args:
+          - /etc/hub-installer/config.json
+          command:
+          - ./hub
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: hub-installer
+          name: hub-installer
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: hub-installer
+  spec:
+    selector:
+      name: hub-installer
+    ports:
+      - protocol: TCP
+        port: 80
+        targetPort: 80
+        name: hub-installer
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: hub-installer
+  data:
+    config.json: '{"DryRun":false, "LogLevel":"info"}'
