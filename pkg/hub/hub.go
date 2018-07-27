@@ -39,25 +39,25 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-// HubCreater will store the configuration to create the Hub
-type HubCreater struct {
+// Creater will store the configuration to create the Hub
+type Creater struct {
 	Config *rest.Config
 	Client *kubernetes.Clientset
 }
 
-// NewHubCreater will instantiate the HubCreater
-func NewHubCreater() *HubCreater {
+// NewCreater will instantiate the Creater
+func NewCreater() *Creater {
 	config, err := GetKubeConfig()
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Errorf("unable to get the kubernetes client due to %v", err)
 	}
-	return &HubCreater{Config: config, Client: client}
+	return &Creater{Config: config, Client: client}
 }
 
 // DeleteHub will delete the Black Duck Hub
-func (hc *HubCreater) DeleteHub(deleteHub *model.DeleteHubRequest) {
+func (hc *Creater) DeleteHub(deleteHub *model.DeleteHubRequest) {
 	var err error
 	// Verify whether the namespace exist
 	_, err = GetNamespace(hc.Client, deleteHub.Namespace)
@@ -84,7 +84,7 @@ func (hc *HubCreater) DeleteHub(deleteHub *model.DeleteHubRequest) {
 }
 
 // CreateHub will create the Black Duck Hub
-func (hc *HubCreater) CreateHub(createHub *model.Hub) error {
+func (hc *Creater) CreateHub(createHub *model.Hub) error {
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.Config)
 	if err != nil {
@@ -170,7 +170,7 @@ func (hc *HubCreater) CreateHub(createHub *model.Hub) error {
 	return nil
 }
 
-func (hc *HubCreater) execContainer(request *rest.Request, command []string) error {
+func (hc *Creater) execContainer(request *rest.Request, command []string) error {
 	var stdin io.Reader
 	stdin = NewStringReader(command)
 
@@ -195,7 +195,7 @@ func (hc *HubCreater) execContainer(request *rest.Request, command []string) err
 }
 
 // CreateHubConfig will create the hub configMaps
-func (hc *HubCreater) createHubConfig(namespace string, hubversion string, hubContainerFlavor *ContainerFlavor) map[string]*components.ConfigMap {
+func (hc *Creater) createHubConfig(namespace string, hubversion string, hubContainerFlavor *ContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
 	hubConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "hub-config"})
@@ -237,7 +237,7 @@ func (hc *HubCreater) createHubConfig(namespace string, hubversion string, hubCo
 	return configMaps
 }
 
-func (hc *HubCreater) createHubSecrets(namespace string, adminPassword string, userPassword string) []*components.Secret {
+func (hc *Creater) createHubSecrets(namespace string, adminPassword string, userPassword string) []*components.Secret {
 	var secrets []*components.Secret
 	// file, err := ReadFromFile(GCLOUD_AUTH_FILE_PATH)
 	//
@@ -260,7 +260,7 @@ func (hc *HubCreater) createHubSecrets(namespace string, adminPassword string, u
 	return secrets
 }
 
-func (hc *HubCreater) init(deployer *horizon.Deployer, createHub *model.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
+func (hc *Creater) init(deployer *horizon.Deployer, createHub *model.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
 
 	// Create a namespaces
 	deployer.AddNamespace(components.NewNamespace(kapi.NamespaceConfig{Name: createHub.Namespace}))
@@ -302,7 +302,7 @@ func (hc *HubCreater) init(deployer *horizon.Deployer, createHub *model.Hub, hub
 
 // CreateHub will create an entire hub for you.  TODO add flavor parameters !
 // To create the returned hub, run 	CreateHub().Run().
-func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *model.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
+func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *model.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
 
 	// Hub ConfigMap environment variables
 	hubConfigEnv := []*kapi.EnvConfig{
@@ -557,7 +557,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 	deployer.AddService(CreateService("registration", "registration", createHub.Namespace, registrationPort, registrationPort, false))
 }
 
-func (hc *HubCreater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
+func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
 	for i := 0; i < 60; i++ {
 		time.Sleep(10 * time.Second)
 		service, err := GetService(hc.Client, namespace, serviceName)

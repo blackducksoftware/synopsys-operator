@@ -29,7 +29,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// all the core logic is here...
 // SetupHTTPServer will used to create all the http api
 func SetupHTTPServer() {
 	hubs := make(map[string]*model.Hub)
@@ -77,7 +76,7 @@ func SetupHTTPServer() {
 
 			log.Debug("making a possibly blocking call to create hub now !!!")
 			go func() {
-				hubCreater := hub.NewHubCreater()
+				hubCreater := hub.NewCreater()
 				err := hubCreater.CreateHub(createHub)
 				if err != nil {
 					createHub.Status = "error"
@@ -96,7 +95,7 @@ func SetupHTTPServer() {
 
 			// This is on the event loop.
 			go func() {
-				hubCreater := hub.NewHubCreater()
+				hubCreater := hub.NewCreater()
 				hubCreater.DeleteHub(request)
 				delete(hubs, request.Namespace)
 			}()

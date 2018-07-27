@@ -26,8 +26,6 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-
-	_ "github.com/lib/pq"
 )
 
 // InitDatabase will init the database
@@ -111,14 +109,14 @@ func exec(db *sql.DB, statement string) {
 	}
 }
 
-func execPostGresDBStatements(db *sql.DB, admin_password string, user_password string) {
-	exec(db, fmt.Sprintf("CREATE USER blackduck WITH password '%s';", admin_password))
+func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword string) {
+	exec(db, fmt.Sprintf("CREATE USER blackduck WITH password '%s';", adminPassword))
 	exec(db, "GRANT blackduck TO postgres;")
 	exec(db, "CREATE DATABASE bds_hub owner blackduck;")
 	exec(db, "CREATE DATABASE bds_hub_report owner blackduck;")
 	exec(db, "CREATE DATABASE bdio owner blackduck;")
 	exec(db, "CREATE USER blackduck_user;")
-	exec(db, fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", user_password))
+	exec(db, fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", userPassword))
 	exec(db, "CREATE USER blackduck_reporter;")
 	// db.Close()
 }

@@ -30,7 +30,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// gin utilities...
 // GinRequestLogger is used to log the GIN requests
 func GinRequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
