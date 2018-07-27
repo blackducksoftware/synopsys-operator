@@ -75,9 +75,6 @@ func OpenDatabaseConnection(hostName string, dbName string, user string, passwor
 	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable", hostName, dbName, user, password)
 
 	db, err := sql.Open(sqlType, dsn)
-	if err != nil {
-		fmt.Errorf("Error in opening the database connection due to %+v", err)
-	}
 	//defer db.Close()
 
 	return db, err

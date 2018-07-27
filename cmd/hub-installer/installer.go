@@ -58,5 +58,4 @@ func runHubCreater(configPath string) {
 		fmt.Println("....hub installer heartbeat: still alive...")
 		time.Sleep(120 * time.Second)
 	}
-	return
 }
