@@ -348,3 +348,9 @@ func GetKubeConfig() (*rest.Config, error) {
 func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*v1.Service, error) {
 	return clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 }
+
+// IntToInt32 will convert from int to int32
+func IntToInt32(i int) *int32 {
+	j := int32(i)
+	return &j
+}

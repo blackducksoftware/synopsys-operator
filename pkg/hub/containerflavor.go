@@ -46,10 +46,10 @@ type ContainerFlavor struct {
 	WebappCPULimit             string
 	WebappMemoryLimit          string
 	WebappHubMaxMemory         string
-	ScanReplicas               int32
+	ScanReplicas               *int32
 	ScanMemoryLimit            string
 	ScanHubMaxMemory           string
-	JobRunnerReplicas          int32
+	JobRunnerReplicas          *int32
 	JobRunnerMemoryLimit       string
 	JobRunnerHubMaxMemory      string
 	CfsslMemoryLimit           string
@@ -73,10 +73,10 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			WebappCPULimit:             smallWebappCPULimit,
 			WebappMemoryLimit:          smallWebappMemoryLimit,
 			WebappHubMaxMemory:         smallWebappHubMaxMemory,
-			ScanReplicas:               smallScanReplicas,
+			ScanReplicas:               IntToInt32(smallScanReplicas),
 			ScanMemoryLimit:            smallScanMemoryLimit,
 			ScanHubMaxMemory:           smallScanHubMaxMemory,
-			JobRunnerReplicas:          smallJobRunnerReplicas,
+			JobRunnerReplicas:          IntToInt32(smallJobRunnerReplicas),
 			JobRunnerMemoryLimit:       smallJobRunnerMemoryLimit,
 			JobRunnerHubMaxMemory:      smallJobRunnerHubMaxMemory,
 			CfsslMemoryLimit:           cfsslMemoryLimit,
@@ -96,10 +96,10 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			WebappCPULimit:             mediumWebappCPULimit,
 			WebappMemoryLimit:          mediumWebappMemoryLimit,
 			WebappHubMaxMemory:         mediumWebappHubMaxMemory,
-			ScanReplicas:               mediumScanReplicas,
+			ScanReplicas:               IntToInt32(mediumScanReplicas),
 			ScanMemoryLimit:            mediumScanMemoryLimit,
 			ScanHubMaxMemory:           mediumScanHubMaxMemory,
-			JobRunnerReplicas:          mediumJobRunnerReplicas,
+			JobRunnerReplicas:          IntToInt32(mediumJobRunnerReplicas),
 			JobRunnerMemoryLimit:       mediumJobRunnerMemoryLimit,
 			JobRunnerHubMaxMemory:      mediumJobRunnerHubMaxMemory,
 			CfsslMemoryLimit:           cfsslMemoryLimit,
@@ -119,10 +119,10 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			WebappCPULimit:             largeWebappCPULimit,
 			WebappMemoryLimit:          largeWebappMemoryLimit,
 			WebappHubMaxMemory:         largeWebappHubMaxMemory,
-			ScanReplicas:               largeScanReplicas,
+			ScanReplicas:               IntToInt32(largeScanReplicas),
 			ScanMemoryLimit:            largeScanMemoryLimit,
 			ScanHubMaxMemory:           largeScanHubMaxMemory,
-			JobRunnerReplicas:          largeJobRunnerReplicas,
+			JobRunnerReplicas:          IntToInt32(largeJobRunnerReplicas),
 			JobRunnerMemoryLimit:       largeJobRunnerMemoryLimit,
 			JobRunnerHubMaxMemory:      largeJobRunnerHubMaxMemory,
 			CfsslMemoryLimit:           cfsslMemoryLimit,
@@ -142,10 +142,10 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			WebappCPULimit:             opsSightWebappCPULimit,
 			WebappMemoryLimit:          opsSightWebappMemoryLimit,
 			WebappHubMaxMemory:         opsSightWebappHubMaxMemory,
-			ScanReplicas:               opsSightScanReplicas,
+			ScanReplicas:               IntToInt32(opsSightScanReplicas),
 			ScanMemoryLimit:            opsSightScanMemoryLimit,
 			ScanHubMaxMemory:           opsSightScanHubMaxMemory,
-			JobRunnerReplicas:          opsSightJobRunnerReplicas,
+			JobRunnerReplicas:          IntToInt32(opsSightJobRunnerReplicas),
 			JobRunnerMemoryLimit:       opsSightJobRunnerMemoryLimit,
 			JobRunnerHubMaxMemory:      opsSightJobRunnerHubMaxMemory,
 			CfsslMemoryLimit:           cfsslMemoryLimit,
