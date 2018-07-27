@@ -39,11 +39,13 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
+// HubCreater will store the configuration to create the Hub
 type HubCreater struct {
 	Config *rest.Config
 	Client *kubernetes.Clientset
 }
 
+// NewHubCreater will instantiate the HubCreater
 func NewHubCreater() *HubCreater {
 	config, err := GetKubeConfig()
 
@@ -54,6 +56,7 @@ func NewHubCreater() *HubCreater {
 	return &HubCreater{Config: config, Client: client}
 }
 
+// DeleteHub will delete the Black Duck Hub
 func (hc *HubCreater) DeleteHub(deleteHub *model.DeleteHubRequest) {
 	var err error
 	// Verify whether the namespace exist
@@ -80,6 +83,7 @@ func (hc *HubCreater) DeleteHub(deleteHub *model.DeleteHubRequest) {
 	}
 }
 
+// CreateHub will create the Black Duck Hub
 func (hc *HubCreater) CreateHub(createHub *model.Hub) error {
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.Config)
@@ -88,7 +92,7 @@ func (hc *HubCreater) CreateHub(createHub *model.Hub) error {
 	}
 
 	// Get Containers Flavor
-	hubContainerFlavor := GetHubContainersFlavor(createHub.Flavor)
+	hubContainerFlavor := GetContainersFlavor(createHub.Flavor)
 	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
 
 	if hubContainerFlavor == nil {
@@ -156,12 +160,12 @@ func (hc *HubCreater) CreateHub(createHub *model.Hub) error {
 		}
 	}
 
-	ipAddress, err := hc.getLoadBalancerIpAddress(createHub.Namespace, "webserver-exp")
+	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Namespace, "webserver-exp")
 	if err != nil {
 		return err
 	}
 	createHub.Status = "completed"
-	createHub.IpAddress = ipAddress
+	createHub.IPAddress = ipAddress
 	log.Infof("hub Ip address: %s", ipAddress)
 	return nil
 }
@@ -191,7 +195,7 @@ func (hc *HubCreater) execContainer(request *rest.Request, command []string) err
 }
 
 // CreateHubConfig will create the hub configMaps
-func (hc *HubCreater) createHubConfig(namespace string, hubversion string, hubContainerFlavor *HubContainerFlavor) map[string]*components.ConfigMap {
+func (hc *HubCreater) createHubConfig(namespace string, hubversion string, hubContainerFlavor *ContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
 	hubConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "hub-config"})
@@ -256,7 +260,7 @@ func (hc *HubCreater) createHubSecrets(namespace string, adminPassword string, u
 	return secrets
 }
 
-func (hc *HubCreater) init(deployer *horizon.Deployer, createHub *model.Hub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
+func (hc *HubCreater) init(deployer *horizon.Deployer, createHub *model.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
 
 	// Create a namespaces
 	deployer.AddNamespace(components.NewNamespace(kapi.NamespaceConfig{Name: createHub.Namespace}))
@@ -284,21 +288,21 @@ func (hc *HubCreater) init(deployer *horizon.Deployer, createHub *model.Hub, hub
 	postgresEmptyDir, _ := CreateEmptyDirVolume("postgres-persistent-vol", "1G")
 	postgresExternalContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: kapi.PullAlways,
-			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCpuLimit, MaxCPU: ""},
+			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: ""},
 		EnvConfigs:   postgresEnvs,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "postgres-persistent-vol", MountPath: "/var/lib/pgsql/data", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: POSTGRES_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: postgresPort, Protocol: kapi.ProtocolTCP},
 	}
 	postgres := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "postgres", Replicas: 1}, []*api.Container{postgresExternalContainerConfig},
 		[]*components.Volume{postgresEmptyDir}, []*api.Container{}, []kapi.AffinityConfig{})
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)
-	deployer.AddService(CreateService("postgres", "postgres", createHub.Namespace, POSTGRES_PORT, POSTGRES_PORT, false))
+	deployer.AddService(CreateService("postgres", "postgres", createHub.Namespace, postgresPort, postgresPort, false))
 }
 
 // CreateHub will create an entire hub for you.  TODO add flavor parameters !
 // To create the returned hub, run 	CreateHub().Run().
-func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *model.Hub, hubContainerFlavor *HubContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
+func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *model.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
 
 	// Hub ConfigMap environment variables
 	hubConfigEnv := []*kapi.EnvConfig{
@@ -332,7 +336,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.CfsslMemoryLimit, MaxMem: hubContainerFlavor.CfsslMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-cfssl", MountPath: "/etc/cfssl", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: CFSSL_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: cfsslPort, Protocol: kapi.ProtocolTCP},
 	}
 	// cfsslInitContainerConfig := &api.Container{
 	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"sh", "-c", "chmod -cR 777 /etc/cfssl"}},
@@ -353,7 +357,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.WebserverMemoryLimit, MaxMem: hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: WEBSERVER_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: webserverPort, Protocol: kapi.ProtocolTCP},
 	}
 	// webserverInitContainerConfig := &api.Container{
 	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/"}},
@@ -371,7 +375,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		ContainerConfig: &kapi.ContainerConfig{Name: "documentation", Image: fmt.Sprintf("%s/%s/hub-documentation:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.DocumentationMemoryLimit, MaxMem: hubContainerFlavor.DocumentationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: hubConfigEnv,
-		PortConfig: &kapi.PortConfig{ContainerPort: DOCUMENTATION_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig: &kapi.PortConfig{ContainerPort: documentationPort, Protocol: kapi.ProtocolTCP},
 	}
 	documentation := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "documentation", Replicas: 1},
 		[]*api.Container{documentationContainerConfig}, []*components.Volume{}, []*api.Container{}, []kapi.AffinityConfig{})
@@ -386,7 +390,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.SolrMemoryLimit, MaxMem: hubContainerFlavor.SolrMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-solr", MountPath: "/opt/blackduck/hub/solr/cores.data", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: SOLR_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: solrPort, Protocol: kapi.ProtocolTCP},
 	}
 	// solrInitContainerConfig := &api.Container{
 	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"chmod", "-cR", "777", "/opt/blackduck/hub/solr/cores.data"}},
@@ -407,7 +411,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.RegistrationMemoryLimit, MaxMem: hubContainerFlavor.RegistrationMemoryLimit, MinCPU: "1", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: REGISTRATION_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: registrationPort, Protocol: kapi.ProtocolTCP},
 	}
 	// registrationInitContainerConfig := &api.Container{
 	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"chmod", "-cR", "777", "/opt/blackduck/hub/hub-registration/config"}},
@@ -427,7 +431,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: "1", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-zookeeper", MountPath: "/opt/blackduck/hub/logs", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: ZOOKEEPER_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: zookeeperPort, Protocol: kapi.ProtocolTCP},
 	}
 	zookeeper := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "zookeeper", Replicas: 1},
 		[]*api.Container{zookeeperContainerConfig}, []*components.Volume{zookeeperEmptyDir}, []*api.Container{}, []kapi.AffinityConfig{})
@@ -442,7 +446,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.JobRunnerMemoryLimit, MaxMem: hubContainerFlavor.JobRunnerMemoryLimit, MinCPU: "1", MaxCPU: "1"},
 		EnvConfigs:   jobRunnerEnvs,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: JOBRUNNER_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: jobRunnerPort, Protocol: kapi.ProtocolTCP},
 	}
 
 	// cloudProxyContainerConfig := &api.Container{
@@ -470,7 +474,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		VolumeMounts: []*kapi.VolumeMountConfig{
 			{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
 			{Name: "dir-scan", MountPath: "/opt/blackduck/hub/hub-scan/security", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig: &kapi.PortConfig{ContainerPort: SCANNER_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig: &kapi.PortConfig{ContainerPort: scannerPort, Protocol: kapi.ProtocolTCP},
 	}
 	hubScan := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "hub-scan", Replicas: hubContainerFlavor.ScanReplicas},
 		[]*api.Container{hubScanContainerConfig}, []*components.Volume{hubScanEmptyDir, dbSecretVolume, hubPostgresSecretVolume, dbEmptyDir}, []*api.Container{}, []kapi.AffinityConfig{})
@@ -489,7 +493,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 		VolumeMounts: []*kapi.VolumeMountConfig{
 			{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
 			{Name: "dir-authentication", MountPath: "/opt/blackduck/hub/hub-authentication/security", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig: &kapi.PortConfig{ContainerPort: AUTHENTICATION_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig: &kapi.PortConfig{ContainerPort: authenticationPort, Protocol: kapi.ProtocolTCP},
 	}
 	// hubAuthInitContainerConfig := &api.Container{
 	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"chmod", "-cR", "777", "/opt/blackduck/hub/hub-authentication/security"}},
@@ -509,14 +513,14 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 	webappEmptyDir, _ := CreateEmptyDirVolume("dir-webapp", "1G")
 	webappContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "webapp", Image: fmt.Sprintf("%s/%s/hub-webapp:%s", createHub.DockerRegistry, createHub.DockerRepo, createHub.HubVersion),
-			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.WebappMemoryLimit, MaxMem: hubContainerFlavor.WebappMemoryLimit, MinCPU: hubContainerFlavor.WebappCpuLimit,
-			MaxCPU: hubContainerFlavor.WebappCpuLimit},
+			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.WebappMemoryLimit, MaxMem: hubContainerFlavor.WebappMemoryLimit, MinCPU: hubContainerFlavor.WebappCPULimit,
+			MaxCPU: hubContainerFlavor.WebappCPULimit},
 		EnvConfigs: webappEnvs,
 		VolumeMounts: []*kapi.VolumeMountConfig{
 			{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationBidirectional},
 			{Name: "dir-webapp", MountPath: "/opt/blackduck/hub/hub-webapp/security", Propagation: kapi.MountPropagationBidirectional},
 			{Name: "dir-logstash", MountPath: "/opt/blackduck/hub/logs", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig: &kapi.PortConfig{ContainerPort: WEBAPP_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig: &kapi.PortConfig{ContainerPort: webappPort, Protocol: kapi.ProtocolTCP},
 	}
 	// webappLogStashInitContainerConfig := &api.Container{
 	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/logstash/data && chmod -cR 777 /opt/blackduck/hub/"}},
@@ -532,7 +536,7 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.LogstashMemoryLimit, MaxMem: hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   hubConfigEnv,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-logstash", MountPath: "/var/lib/logstash/data", Propagation: kapi.MountPropagationBidirectional}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: LOGSTASH_PORT, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: logstashPort, Protocol: kapi.ProtocolTCP},
 	}
 	webappLogstash := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "webapp-logstash", Replicas: 1}, []*api.Container{webappContainerConfig, logstashContainerConfig},
 		[]*components.Volume{webappEmptyDir, logstashEmptyDir, dbSecretVolume, hubPostgresSecretVolume, dbEmptyDir}, []*api.Container{},
@@ -540,20 +544,20 @@ func (hc *HubCreater) createHubDeployer(deployer *horizon.Deployer, createHub *m
 	// log.Infof("webappLogstash : %v\n", webappLogstashc.GetObj())
 	deployer.AddDeployment(webappLogstash)
 
-	deployer.AddService(CreateService("cfssl", "cfssl", createHub.Namespace, CFSSL_PORT, CFSSL_PORT, false))
-	deployer.AddService(CreateService("zookeeper", "zookeeper", createHub.Namespace, ZOOKEEPER_PORT, ZOOKEEPER_PORT, false))
-	deployer.AddService(CreateService("webserver", "webserver", createHub.Namespace, "443", WEBSERVER_PORT, false))
-	deployer.AddService(CreateService("webserver-exp", "webserver", createHub.Namespace, "443", WEBSERVER_PORT, true))
-	deployer.AddService(CreateService("webapp", "webapp-logstash", createHub.Namespace, WEBAPP_PORT, WEBAPP_PORT, false))
-	deployer.AddService(CreateService("logstash", "webapp-logstash", createHub.Namespace, LOGSTASH_PORT, LOGSTASH_PORT, false))
-	deployer.AddService(CreateService("solr", "solr", createHub.Namespace, SOLR_PORT, SOLR_PORT, false))
-	deployer.AddService(CreateService("documentation", "documentation", createHub.Namespace, DOCUMENTATION_PORT, DOCUMENTATION_PORT, false))
-	deployer.AddService(CreateService("scan", "hub-scan", createHub.Namespace, SCANNER_PORT, SCANNER_PORT, false))
-	deployer.AddService(CreateService("authentication", "hub-authentication", createHub.Namespace, AUTHENTICATION_PORT, AUTHENTICATION_PORT, false))
-	deployer.AddService(CreateService("registration", "registration", createHub.Namespace, REGISTRATION_PORT, REGISTRATION_PORT, false))
+	deployer.AddService(CreateService("cfssl", "cfssl", createHub.Namespace, cfsslPort, cfsslPort, false))
+	deployer.AddService(CreateService("zookeeper", "zookeeper", createHub.Namespace, zookeeperPort, zookeeperPort, false))
+	deployer.AddService(CreateService("webserver", "webserver", createHub.Namespace, "443", webserverPort, false))
+	deployer.AddService(CreateService("webserver-exp", "webserver", createHub.Namespace, "443", webserverPort, true))
+	deployer.AddService(CreateService("webapp", "webapp-logstash", createHub.Namespace, webappPort, webappPort, false))
+	deployer.AddService(CreateService("logstash", "webapp-logstash", createHub.Namespace, logstashPort, logstashPort, false))
+	deployer.AddService(CreateService("solr", "solr", createHub.Namespace, solrPort, solrPort, false))
+	deployer.AddService(CreateService("documentation", "documentation", createHub.Namespace, documentationPort, documentationPort, false))
+	deployer.AddService(CreateService("scan", "hub-scan", createHub.Namespace, scannerPort, scannerPort, false))
+	deployer.AddService(CreateService("authentication", "hub-authentication", createHub.Namespace, authenticationPort, authenticationPort, false))
+	deployer.AddService(CreateService("registration", "registration", createHub.Namespace, registrationPort, registrationPort, false))
 }
 
-func (hc *HubCreater) getLoadBalancerIpAddress(namespace string, serviceName string) (string, error) {
+func (hc *HubCreater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
 	for i := 0; i < 60; i++ {
 		time.Sleep(10 * time.Second)
 		service, err := GetService(hc.Client, namespace, serviceName)

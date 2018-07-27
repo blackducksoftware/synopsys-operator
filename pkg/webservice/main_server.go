@@ -30,7 +30,7 @@ import (
 )
 
 // all the core logic is here...
-
+// SetupHTTPServer will used to create all the http api
 func SetupHTTPServer() {
 	hubs := make(map[string]*model.Hub)
 	go func() {

@@ -46,7 +46,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-// createContainer will create the container
+// CreateContainer will create the container
 func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volumeMounts []*kapi.VolumeMountConfig, port *kapi.PortConfig) *types.Container {
 
 	container := types.NewContainer(kapi.ContainerConfig{
@@ -86,7 +86,7 @@ func CreateGCEPersistentDiskVolume(volumeName string, diskName string, fsType st
 	return gcePersistentDiskVol
 }
 
-// CreateEmptyDir will create a empty directory for a pod
+// CreateEmptyDirVolume will create a empty directory for a pod
 func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, error) {
 	emptyDirVol, err := types.NewEmptyDirVolume(kapi.EmptyDirVolumeConfig{
 		VolumeName: volumeName,
@@ -143,7 +143,7 @@ func CreateDeployment(deploymentConfig *kapi.DeploymentConfig, pod *types.Pod) *
 	return deployment
 }
 
-// CreateDeploymentMultipleContainer will create a deployment with multiple containers inside a pod
+// CreateDeploymentFromContainer will create a deployment with multiple containers inside a pod
 func CreateDeploymentFromContainer(deploymentConfig *kapi.DeploymentConfig, containers []*api.Container, volumes []*types.Volume, initContainers []*api.Container, affinityConfigs []kapi.AffinityConfig) *types.Deployment {
 	pod := CreatePod(deploymentConfig.Name, volumes, containers, initContainers, affinityConfigs)
 	deployment := CreateDeployment(deploymentConfig, pod)
@@ -203,6 +203,7 @@ func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string
 	})
 }
 
+// ReadFromFile will read the file
 func ReadFromFile(filePath string) ([]byte, error) {
 	file, err := ioutil.ReadFile(filePath)
 

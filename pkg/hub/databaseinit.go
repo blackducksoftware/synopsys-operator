@@ -30,6 +30,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// InitDatabase will init the database
 func InitDatabase(namespace string) {
 	databaseName := "postgres"
 	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", namespace)
@@ -69,6 +70,7 @@ func InitDatabase(namespace string) {
 	execBdioDBStatements(db)
 }
 
+// OpenDatabaseConnection will open the database connection
 func OpenDatabaseConnection(hostName string, dbName string, user string, password string, sqlType string) (*sql.DB, error) {
 	// Note that sslmode=disable is required it does not mean that the connection
 	// is unencrypted. All connections via the proxy are completely encrypted.
@@ -83,15 +85,15 @@ func OpenDatabaseConnection(hostName string, dbName string, user string, passwor
 	return db, err
 }
 
-func execPostGresDBStatementsClone(db *sql.DB, admin_password string, user_password string) error {
+func execPostGresDBStatementsClone(db *sql.DB, adminPassword string, userPassword string) error {
 	var err error
 	(func() {
-		_, err = db.Exec(fmt.Sprintf("ALTER USER blackduck WITH password '%s';", admin_password))
+		_, err = db.Exec(fmt.Sprintf("ALTER USER blackduck WITH password '%s';", adminPassword))
 		if dispErr(err) {
 			return
 		}
 
-		_, err = db.Exec(fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", user_password))
+		_, err = db.Exec(fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", userPassword))
 		if dispErr(err) {
 			return
 		}

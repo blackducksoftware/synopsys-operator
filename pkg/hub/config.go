@@ -28,15 +28,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config type will used for protoform config
 type Config struct {
 	DryRun   bool
 	LogLevel string
 }
 
+// GetLogLevel will set the log level
 func (config *Config) GetLogLevel() (log.Level, error) {
 	return log.ParseLevel(config.LogLevel)
 }
 
+// GetConfig will read the config file and set in the Viper
 func GetConfig(configPath string) (*Config, error) {
 	var config *Config
 

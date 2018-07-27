@@ -21,10 +21,12 @@ under the License.
 
 package model
 
+// GetHubRequest will have the configuration to get the Black Duck Hub Model
 type GetHubRequest struct {
 	Hubs map[string]*Hub `json:"hubs"`
 }
 
+// CreateHubRequest will have the configuration to create the Black Duck Hub
 type CreateHubRequest struct {
 	Namespace        string `json:"namespace"`
 	Flavor           string `json:"flavor"`
@@ -37,6 +39,7 @@ type CreateHubRequest struct {
 	IsRandomPassword bool   `json:"isRandomPassword"`
 }
 
+// Hub will have the configuration relation to hold the Black Duck Hub details
 type Hub struct {
 	Namespace        string `json:"namespace"`
 	DockerRegistry   string `json:"dockerRegistry"`
@@ -48,9 +51,10 @@ type Hub struct {
 	PostgresPassword string `json:"postgresPassword"`
 	IsRandomPassword bool   `json:"isRandomPassword"`
 	Status           string `json:"status"`
-	IpAddress        string `json:"ipAddress"`
+	IPAddress        string `json:"ipAddress"`
 }
 
+// DeleteHubRequest will have the configuration to delete the Black Duck Hub
 type DeleteHubRequest struct {
 	Namespace string `json:"namespace"`
 }
