@@ -3,7 +3,7 @@
 - perceptor
 - perceivers (openshift, kube, ...)
 - perceptor-image-facade
-- perceptor-scan
+- perceptor-scanner
 
 # Quick start
 
