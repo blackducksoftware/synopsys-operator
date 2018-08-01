@@ -22,16 +22,16 @@ under the License.
 package webservice
 
 import (
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	gin "github.com/gin-gonic/gin"
-
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // SetupHTTPServer will used to create all the http api
-func SetupHTTPServer() {
-	hubs := make(map[string]*model.Hub)
+func SetupHTTPServer(hc *hub.Creater) {
 	go func() {
 		// data, err := ioutil.ReadFile("/public/index.html")
 		// Set the router as the default one shipped with Gin
@@ -40,65 +40,35 @@ func SetupHTTPServer() {
 		// prints debug stuff out.
 		router.Use(GinRequestLogger())
 
-		router.GET("/hub", func(c *gin.Context) {
-			c.JSON(200, hubs)
-		})
-
 		router.POST("/hub", func(c *gin.Context) {
 			log.Debug("create hub request")
-			request := &model.CreateHubRequest{}
-			if err := c.BindJSON(request); err != nil {
+			hubSpec := &v1.HubSpec{}
+			if err := c.BindJSON(hubSpec); err != nil {
 				log.Debugf("Fatal failure binding the incoming request ! %v", c.Request)
 			}
+			hubSpec.State = "pending"
 
-			// log.Debugf("[begin] Attempting to get hub now... chekcing if %v in %v", request.Namespace, cmc.GetModel())
-
-			// if _, ok := cmc.GetModel().Hubs[request.Namespace]; ok {
-			// 	c.JSON(500, fmt.Errorf("{\"message\":\"namespace %s already in use\"}", request.Namespace))
-			// 	return
-			// }
-
-			log.Debug("...Attempting to get hub now [done]")
-
-			createHub := &model.Hub{
-				Namespace:        request.Namespace,
-				DockerRegistry:   request.DockerRegistry,
-				DockerRepo:       request.DockerRepo,
-				HubVersion:       request.HubVersion,
-				Flavor:           request.Flavor,
-				AdminPassword:    request.AdminPassword,
-				UserPassword:     request.UserPassword,
-				PostgresPassword: request.PostgresPassword,
-				IsRandomPassword: request.IsRandomPassword,
-				Status:           "pending",
+			ns, err := hc.KubeClient.CoreV1().Namespaces().Create(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Namespace: hubSpec.Namespace, Name: hubSpec.Namespace}})
+			log.Debugf("created namespace: %+v", ns)
+			if err != nil {
+				log.Errorf("unable to create the namespace due to %+v", hubSpec.Namespace)
+				c.JSON(404, "\"message\": \"Failed to create the namespace\"")
 			}
-			hubs[request.Namespace] = createHub
-
-			log.Debug("making a possibly blocking call to create hub now !!!")
-			go func() {
-				hubCreater := hub.NewCreater()
-				err := hubCreater.CreateHub(createHub)
-				if err != nil {
-					createHub.Status = "error"
-				}
-				hubs[createHub.Namespace] = createHub
-			}()
+			hc.HubClient.SynopsysV1().Hubs(hubSpec.Namespace).Create(&v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hubSpec.Namespace}, Spec: *hubSpec})
 
 			c.JSON(200, "\"message\": \"Succeeded\"")
 		})
 
 		router.DELETE("/hub", func(c *gin.Context) {
-			var request *model.DeleteHubRequest = &model.DeleteHubRequest{}
+			var hubSpec string
+			if err := c.BindJSON(hubSpec); err != nil {
+				log.Debugf("Fatal failure binding the incoming request ! %v", c.Request)
+			}
 
-			c.BindJSON(request)
-			log.Debugf("delete hub request %v", request.Namespace)
+			log.Debugf("delete hub request %v", hubSpec)
 
 			// This is on the event loop.
-			go func() {
-				hubCreater := hub.NewCreater()
-				hubCreater.DeleteHub(request)
-				delete(hubs, request.Namespace)
-			}()
+			hc.HubClient.SynopsysV1().Hubs(hubSpec).Delete(hubSpec, &metav1.DeleteOptions{})
 
 			c.JSON(200, "\"message\": \"Succeeded\"")
 		})

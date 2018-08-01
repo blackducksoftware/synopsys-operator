@@ -22,40 +22,16 @@ under the License.
 package main
 
 import (
-	"fmt"
 	"os"
-	"time"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/webservice"
-	log "github.com/sirupsen/logrus"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/controller"
 )
 
 func main() {
 	configPath := os.Args[1]
-	runHubCreater(configPath)
+	runHubController(configPath)
 }
 
-func runHubCreater(configPath string) {
-	log.Infof("Config path: %s", configPath)
-	config, err := hub.GetConfig(configPath)
-	if err != nil {
-		log.Panicf("Unable to read the config file from %s", configPath)
-	}
-	log.Infof("Config : %v", config)
-
-	level, err := config.GetLogLevel()
-	if err != nil {
-		log.SetLevel(level)
-	} else {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	go func() {
-		webservice.SetupHTTPServer()
-	}()
-	for {
-		fmt.Println("....hub installer heartbeat: still alive...")
-		time.Sleep(120 * time.Second)
-	}
+func runHubController(configPath string) {
+	controller.RunHubController(configPath)
 }

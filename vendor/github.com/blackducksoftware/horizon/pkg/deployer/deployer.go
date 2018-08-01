@@ -32,10 +32,12 @@ import (
 	"github.com/koki/short/converter/converters"
 	shorttypes "github.com/koki/short/types"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"k8s.io/api/core/v1"
 
 	extensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -53,6 +55,7 @@ type Deployer struct {
 	clusterRoleBindings    map[string]*shorttypes.ClusterRoleBinding
 	crds                   map[string]*shorttypes.CustomResourceDefinition
 	namespaces             map[string]*shorttypes.Namespace
+	pvcs                   map[string]*shorttypes.PersistentVolumeClaim
 
 	controllers map[string]api.DeployerControllerInterface
 
@@ -89,6 +92,7 @@ func NewDeployer(kubeconfig *rest.Config) (*Deployer, error) {
 		crds:                make(map[string]*shorttypes.CustomResourceDefinition),
 		namespaces:          make(map[string]*shorttypes.Namespace),
 		controllers:         make(map[string]api.DeployerControllerInterface),
+		pvcs:                make(map[string]*shorttypes.PersistentVolumeClaim),
 	}
 	return &d, nil
 }
@@ -164,6 +168,12 @@ func (d *Deployer) AddPod(obj *components.Pod) {
 	d.pods[obj.GetName()] = obj.GetObj()
 }
 
+// AddPVC will add the provided persistent volume claim to the
+// persistent volume claims that will be deployed
+func (d *Deployer) AddPVC(obj *components.PersistentVolumeClaim) {
+	d.pvcs[obj.GetName()] = obj.GetObj()
+}
+
 // Run starts the deployer and deploys all components to the cluster
 func (d *Deployer) Run() error {
 	allErrs := map[util.ComponentType][]error{}
@@ -198,6 +208,11 @@ func (d *Deployer) Run() error {
 	err = d.deploySecrets()
 	if len(err) > 0 {
 		allErrs[util.SecretComponent] = err
+	}
+
+	err = d.deployPVCs()
+	if len(err) > 0 {
+		allErrs[util.PersistentVolumeClaimComponent] = err
 	}
 
 	err = d.deployReplicationControllers()
@@ -448,6 +463,30 @@ func (d *Deployer) deployNamespaces() []error {
 		}
 		log.Infof("Creating namespace %s", name)
 		_, err = d.client.Core().Namespaces().Create(ns)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func (d *Deployer) deployPVCs() []error {
+	errs := []error{}
+
+	for name, pvcObj := range d.pvcs {
+		wrapper := &shorttypes.PersistentVolumeClaimWrapper{PersistentVolumeClaim: *pvcObj}
+		pvc, err := converters.Convert_Koki_PVC_to_Kube_PVC(wrapper)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		log.Infof("Creating persistent volume claim %s", name)
+		p, ok := pvc.(*v1.PersistentVolumeClaim)
+		if !ok {
+			errs = append(errs, fmt.Errorf("failed to convert persistent volume claim %s", name))
+			continue
+		}
+		_, err = d.client.Core().PersistentVolumeClaims(p.Namespace).Create(p)
 		if err != nil {
 			errs = append(errs, err)
 		}

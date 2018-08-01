@@ -22,6 +22,8 @@ under the License.
 package hub
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"io"
@@ -77,7 +79,7 @@ func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volum
 
 // CreateGCEPersistentDiskVolume will create a GCE Persistent disk volume for a pod
 func CreateGCEPersistentDiskVolume(volumeName string, diskName string, fsType string) *types.Volume {
-	gcePersistentDiskVol := types.NewGCEPersistentDiskVolume(kapi.GCEPersistentDiskConfig{
+	gcePersistentDiskVol := types.NewGCEPersistentDiskVolume(kapi.GCEPersistentDiskVolumeConfig{
 		VolumeName: volumeName,
 		DiskName:   diskName,
 		FSType:     fsType,
@@ -353,4 +355,19 @@ func GetService(clientset *kubernetes.Clientset, namespace string, serviceName s
 func IntToInt32(i int) *int32 {
 	j := int32(i)
 	return &j
+}
+
+func getBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+// RandomString will generate the random string
+func RandomString(n int) (string, error) {
+	b, err := getBytes(n)
+	return base64.URLEncoding.EncodeToString(b), err
 }

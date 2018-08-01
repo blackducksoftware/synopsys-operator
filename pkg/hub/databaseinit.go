@@ -25,23 +25,26 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	// This is required to access the Postgres database
+	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
 // InitDatabase will init the database
-func InitDatabase(namespace string) {
+func InitDatabase(createHub *v1.Hub) {
 	databaseName := "postgres"
-	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", namespace)
-	db, err := OpenDatabaseConnection(hostName, databaseName, "postgres", "blackduck", "postgres")
+	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Name)
+	db, err := OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v\n", db, err)
 	if err != nil {
 		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
 	}
-	execPostGresDBStatements(db, "blackduck", "blackduck")
+	execPostGresDBStatements(db, createHub.Spec.AdminPassword, createHub.Spec.UserPassword)
 
 	databaseName = "bds_hub"
-	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", "blackduck", "postgres")
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v\n", db, err)
 	if err != nil {
@@ -50,7 +53,7 @@ func InitDatabase(namespace string) {
 	execBdsHubDBStatements(db)
 
 	databaseName = "bds_hub_report"
-	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", "blackduck", "postgres")
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v\n", db, err)
 	if err != nil {
@@ -59,7 +62,7 @@ func InitDatabase(namespace string) {
 	execBdsHubReportDBStatements(db)
 
 	databaseName = "bdio"
-	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", "blackduck", "postgres")
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v\n", db, err)
 	if err != nil {

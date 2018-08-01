@@ -160,12 +160,24 @@ func generateFileModeAndItems(defaultMode *int32, items map[string]api.KeyAndMod
 }
 
 // NewGCEPersistentDiskVolume creates a new GCE Persistent Disk volume object
-func NewGCEPersistentDiskVolume(config api.GCEPersistentDiskConfig) *Volume {
+func NewGCEPersistentDiskVolume(config api.GCEPersistentDiskVolumeConfig) *Volume {
 	v := &types.Volume{
 		GcePD: &types.GcePDVolume{
 			PDName:    config.DiskName,
 			FSType:    config.FSType,
 			Partition: config.Partition,
+			ReadOnly:  config.ReadOnly,
+		},
+	}
+
+	return &Volume{Name: config.VolumeName, obj: v}
+}
+
+// NewPVCVolume creates a new Persistent Volume Claim volume object
+func NewPVCVolume(config api.PVCVolumeConfig) *Volume {
+	v := &types.Volume{
+		PVC: &types.PVCVolume{
+			ClaimName: config.PVCName,
 			ReadOnly:  config.ReadOnly,
 		},
 	}

@@ -76,12 +76,19 @@ const (
 	HostPathBlockDev
 )
 
-// GCEPersistentDiskConfig defines the configuraton for a
+// GCEPersistentDiskVolumeConfig defines the configuraton for a
 // GCE Persistent Disk volume
-type GCEPersistentDiskConfig struct {
+type GCEPersistentDiskVolumeConfig struct {
 	VolumeName string
 	DiskName   string
 	FSType     string
 	Partition  int32
+	ReadOnly   bool
+}
+
+// PVCVolumeConfig defines the configuration for a persistent volume claim
+type PVCVolumeConfig struct {
+	VolumeName string
+	PVCName    string
 	ReadOnly   bool
 }

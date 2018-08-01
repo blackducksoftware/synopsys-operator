@@ -37,4 +37,5 @@ const (
 	CRDComponent                   ComponentType = "CustomResourceDefinition"
 	Controller                     ComponentType = "Controller"
 	NamespaceComponent             ComponentType = "Namespace"
+	PersistentVolumeClaimComponent ComponentType = "PersistentVolumeClaim"
 )

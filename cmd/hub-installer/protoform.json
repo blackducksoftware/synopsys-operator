@@ -1,4 +1,5 @@
 {
   "DryRun":"true",
-  "LogLevel": "debug"
+  "LogLevel": "debug",
+  "CrdNamespace": "deployer"
 }

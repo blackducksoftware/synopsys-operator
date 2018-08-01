@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package hub
+package controller
 
 import (
 	"fmt"
@@ -30,8 +30,9 @@ import (
 
 // Config type will used for protoform config
 type Config struct {
-	DryRun   bool
-	LogLevel string
+	DryRun       bool
+	LogLevel     string
+	CrdNamespace string
 }
 
 // GetLogLevel will set the log level
@@ -43,24 +44,16 @@ func (config *Config) GetLogLevel() (log.Level, error) {
 func GetConfig(configPath string) (*Config, error) {
 	var config *Config
 
-	viper.SetEnvPrefix("APP_CONFIG")
-	viper.AutomaticEnv()
+	viper.SetConfigFile(configPath)
 
-	// Default values
-	viper.SetDefault("DryRun", false)
-	viper.SetDefault("LogLevel", "Info")
-
-	if len(configPath) > 0 {
-		viper.SetConfigFile(configPath)
-		err := viper.ReadInConfig()
-		if err != nil {
-			return nil, fmt.Errorf("oops ! Viper failed to read config file: %v", err)
-		}
+	err := viper.ReadInConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	err := viper.Unmarshal(&config)
+	err = viper.Unmarshal(&config)
 	if err != nil {
-		return nil, fmt.Errorf("oops ! failed to unmarshal config: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
 	}
 
 	return config, nil

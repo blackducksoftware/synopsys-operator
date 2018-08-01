@@ -55,4 +55,4 @@ items:
   metadata:
     name: hub-installer
   data:
-    config.json: '{"DryRun":false, "LogLevel":"info"}'
+    config.json: '{"DryRun":false, "LogLevel":"debug", "CrdNamespace":"deployer"}'
