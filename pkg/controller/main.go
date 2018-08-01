@@ -27,23 +27,24 @@ import (
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/client/informers/externalversions/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
+	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/webservice"
 )
 
 // RunHubController will initialize the input config file, create the hub informers, initiantiate all rest api
 func RunHubController(configPath string) {
-	config, err := GetConfig(configPath)
+	config, err := model.GetConfig(configPath)
 	if err != nil {
 		log.Errorf("Failed to load configuration: %s", err.Error())
 		panic(err)
@@ -83,18 +84,17 @@ func RunHubController(configPath string) {
 	}
 
 	hc, err := hub.NewCreater(kubeConfig, clientset, hubResourceClient)
-	webservice.SetupHTTPServer(hc)
+	webservice.SetupHTTPServer(hc, config)
 
 	handler := HubHandler{
 		config:       kubeConfig,
 		clientset:    clientset,
 		hubClientset: hubResourceClient,
-		crdNamespace: config.CrdNamespace,
 	}
 
 	informer := hubinformerv1.NewHubInformer(
 		hubResourceClient,
-		config.CrdNamespace,
+		corev1.NamespaceDefault,
 		0,
 		cache.Indexers{},
 	)
@@ -116,7 +116,6 @@ func RunHubController(configPath string) {
 		clientset:    clientset,
 		informer:     informer,
 		hubclientset: hubResourceClient,
-		crdNamespace: config.CrdNamespace,
 	}
 
 	stopCh := make(chan struct{})

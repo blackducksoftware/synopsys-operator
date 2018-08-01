@@ -28,6 +28,7 @@ import (
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -110,5 +111,5 @@ func (h *HubHandler) ObjectUpdated(objOld *hubv1.Hub, objNew *hubv1.Hub) {
 }
 
 func (h *HubHandler) updateHubObject(obj *hubv1.Hub) (*hubv1.Hub, error) {
-	return h.hubClientset.SynopsysV1().Hubs(h.crdNamespace).Update(obj)
+	return h.hubClientset.SynopsysV1().Hubs(corev1.NamespaceDefault).Update(obj)
 }

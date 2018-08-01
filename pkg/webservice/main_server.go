@@ -22,8 +22,12 @@ under the License.
 package webservice
 
 import (
+	"strings"
+
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
+	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/gin-gonic/contrib/static"
 	gin "github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -31,14 +35,38 @@ import (
 )
 
 // SetupHTTPServer will used to create all the http api
-func SetupHTTPServer(hc *hub.Creater) {
+func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 	go func() {
 		// data, err := ioutil.ReadFile("/public/index.html")
 		// Set the router as the default one shipped with Gin
 		router := gin.Default()
+		// Serve frontend static files
+		router.Use(static.Serve("/", static.LocalFile("/views", true)))
 
 		// prints debug stuff out.
 		router.Use(GinRequestLogger())
+
+		router.GET("/api/sql-instances", func(c *gin.Context) {
+			keys := []string{"pvc-000", "pvc-001", "pvc-002"}
+			c.JSON(200, keys)
+		})
+
+		router.GET("/hub", func(c *gin.Context) {
+			log.Debug("get hub request")
+			hubs, err := hc.HubClient.SynopsysV1().Hubs(corev1.NamespaceDefault).List(metav1.ListOptions{})
+			if err != nil {
+				log.Errorf("unable to get the hub list due to %+v", err)
+				c.JSON(404, "\"message\": \"Failed to List the hub\"")
+			}
+
+			returnVal := make(map[string]*v1.Hub)
+
+			for _, v := range hubs.Items {
+				returnVal[v.Spec.Namespace] = &v
+			}
+
+			c.JSON(200, returnVal)
+		})
 
 		router.POST("/hub", func(c *gin.Context) {
 			log.Debug("create hub request")
@@ -48,10 +76,14 @@ func SetupHTTPServer(hc *hub.Creater) {
 			}
 			hubSpec.State = "pending"
 
+			if strings.EqualFold(hubSpec.PostgresPassword, "") {
+				hubSpec.PostgresPassword = "blackduck"
+			}
+
 			ns, err := hc.KubeClient.CoreV1().Namespaces().Create(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Namespace: hubSpec.Namespace, Name: hubSpec.Namespace}})
 			log.Debugf("created namespace: %+v", ns)
 			if err != nil {
-				log.Errorf("unable to create the namespace due to %+v", hubSpec.Namespace)
+				log.Errorf("unable to create the namespace due to %+v", err)
 				c.JSON(404, "\"message\": \"Failed to create the namespace\"")
 			}
 			hc.HubClient.SynopsysV1().Hubs(hubSpec.Namespace).Create(&v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hubSpec.Namespace}, Spec: *hubSpec})
