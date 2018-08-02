@@ -24,6 +24,7 @@ package hub
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	// This is required to access the Postgres database
@@ -37,7 +38,7 @@ func InitDatabase(createHub *v1.Hub) {
 	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Name)
 	db, err := OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
 	defer db.Close()
-	log.Infof("Db: %+v, error: %+v\n", db, err)
+	log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
 		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
 	}
@@ -46,7 +47,7 @@ func InitDatabase(createHub *v1.Hub) {
 	databaseName = "bds_hub"
 	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
 	defer db.Close()
-	log.Infof("Db: %+v, error: %+v\n", db, err)
+	log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
 		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
 	}
@@ -55,7 +56,7 @@ func InitDatabase(createHub *v1.Hub) {
 	databaseName = "bds_hub_report"
 	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
 	defer db.Close()
-	log.Infof("Db: %+v, error: %+v\n", db, err)
+	log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
 		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
 	}
@@ -64,7 +65,7 @@ func InitDatabase(createHub *v1.Hub) {
 	databaseName = "bdio"
 	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
 	defer db.Close()
-	log.Infof("Db: %+v, error: %+v\n", db, err)
+	log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
 		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
 	}
@@ -102,14 +103,22 @@ func execPostGresDBStatementsClone(db *sql.DB, adminPassword string, userPasswor
 	return err
 }
 
-func exec(db *sql.DB, statement string) {
+func exec(db *sql.DB, statement string) error {
 	_, err := db.Exec(statement)
 	if err != nil {
 		log.Errorf("unable to exec %s statment due to %+v", statement, err)
 	}
+	return err
 }
 
 func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword string) {
+	for {
+		err := exec(db, "SELECT 1")
+		if err == nil {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
 	exec(db, fmt.Sprintf("CREATE USER blackduck WITH password '%s';", adminPassword))
 	exec(db, "GRANT blackduck TO postgres;")
 	exec(db, "CREATE DATABASE bds_hub owner blackduck;")

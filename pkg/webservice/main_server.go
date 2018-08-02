@@ -59,12 +59,14 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 				c.JSON(404, "\"message\": \"Failed to List the hub\"")
 			}
 
-			returnVal := make(map[string]*v1.Hub)
+			log.Debugf("hubs: %+v", hubs)
+			returnVal := make(map[string]v1.Hub)
 
 			for _, v := range hubs.Items {
-				returnVal[v.Spec.Namespace] = &v
+				//l og.Debugf("hub %v: %+v", k, v)
+				returnVal[v.Spec.Namespace] = v
 			}
-
+			// log.Debugf("returnVal : %+v", returnVal)
 			c.JSON(200, returnVal)
 		})
 
@@ -74,13 +76,12 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 			if err := c.BindJSON(hubSpec); err != nil {
 				log.Debugf("Fatal failure binding the incoming request ! %v", c.Request)
 			}
-			hubSpec.State = "pending"
 
 			if strings.EqualFold(hubSpec.PostgresPassword, "") {
 				hubSpec.PostgresPassword = "blackduck"
 			}
 
-			ns, err := hc.KubeClient.CoreV1().Namespaces().Create(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Namespace: hubSpec.Namespace, Name: hubSpec.Namespace}})
+			ns, err := hub.CreateNamespace(hc.KubeClient, hubSpec.Namespace)
 			log.Debugf("created namespace: %+v", ns)
 			if err != nil {
 				log.Errorf("unable to create the namespace due to %+v", err)
@@ -106,6 +107,6 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 		})
 
 		// Start and run the server - blocking call, obviously :)
-		router.Run(":80")
+		router.Run(":8080")
 	}()
 }

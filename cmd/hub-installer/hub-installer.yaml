@@ -22,7 +22,7 @@ items:
         - name: hub-installer
           image: msenmurugan/hub-installer:latest
           ports:
-          - containerPort: 80
+          - containerPort: 8080
           env:
           - name: REGISTRATION_KEY
             value: ${REGISTRATION_KEY}
@@ -47,8 +47,8 @@ items:
       name: hub-installer
     ports:
       - protocol: TCP
-        port: 80
-        targetPort: 80
+        port: 8080
+        targetPort: 8080
         name: hub-installer
 - apiVersion: v1
   kind: ConfigMap

@@ -1,0 +1,16 @@
+apiVersion: synopsys.com/v1
+kind: Hub
+metadata:
+  clusterName: ""
+  name: crd-test
+spec:
+  dbPrototype: ""
+  dockerRegistry: gcr.io
+  dockerRepo: gke-verification/blackducksoftware
+  flavor: small
+  hubTimeout: "2"
+  hubVersion: 4.7.0
+  instanceName: ""
+  isRandomPassword: false
+  namespace: crd-test
+  postgresPassword: blackduck

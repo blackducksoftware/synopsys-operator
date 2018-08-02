@@ -45,14 +45,14 @@ type HubHandler struct {
 	config       *rest.Config
 	clientset    *kubernetes.Clientset
 	hubClientset *hubclientset.Clientset
-	crdNamespace string
 }
 
 // ObjectCreated will be called for create hub events
 func (h *HubHandler) ObjectCreated(obj *hubv1.Hub) {
 	log.Debugf("ObjectCreated: %+v", obj)
-	if strings.EqualFold(obj.Spec.State, "pending") {
+	if strings.EqualFold(obj.Spec.State, "") {
 		// Update status
+		obj.Spec.State = "pending"
 		obj.Status.State = "creating"
 		obj, err := h.updateHubObject(obj)
 		if err != nil {

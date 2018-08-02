@@ -241,7 +241,8 @@ func ReadFromFile(filePath string) ([]byte, error) {
 func CreateNamespace(clientset *kubernetes.Clientset, namespace string) (*v1.Namespace, error) {
 	return clientset.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace,
+			Namespace: namespace,
+			Name:      namespace,
 		},
 	})
 }

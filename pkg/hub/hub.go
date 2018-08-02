@@ -81,7 +81,7 @@ func (hc *Creater) DeleteHub(namespace string) {
 
 // CreateHub will create the Black Duck Hub
 func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
-	log.Debugf("Create Hub details for %s: %+v", createHub.Name, createHub)
+	log.Debugf("Create Hub details for %s: %+v", createHub.Spec.Namespace, createHub)
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.Config)
 	if err != nil {
@@ -115,11 +115,11 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 	hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
-	time.Sleep(20 * time.Second)
+	// time.Sleep(20 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err := GetAllPodsForNamespace(hc.KubeClient, createHub.Name)
+	pods, err := GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
 	if err != nil {
-		return "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Name, err)
+		return "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	// Validate all pods are in running state
 	ValidatePodsAreRunning(hc.KubeClient, pods)
@@ -137,9 +137,9 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 	}
 	time.Sleep(10 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err = GetAllPodsForNamespace(hc.KubeClient, createHub.Name)
+	pods, err = GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
 	if err != nil {
-		return "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Name, err)
+		return "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	// Validate all pods are in running state
 	ValidatePodsAreRunning(hc.KubeClient, pods)
@@ -166,7 +166,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 		}
 	}
 
-	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Name, "webserver-exp")
+	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-exp")
 	if err != nil {
 		return "", err
 	}
@@ -267,17 +267,21 @@ func (hc *Creater) createHubSecrets(namespace string, adminPassword string, user
 func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
 
 	// Create a namespaces
-	// deployer.AddNamespace(components.NewNamespace(kapi.NamespaceConfig{Name: createHub.Name}))
+	_, err := GetNamespace(hc.KubeClient, createHub.Spec.Namespace)
+	if err != nil {
+		log.Debugf("unable to find the namespace %s", createHub.Spec.Namespace)
+		deployer.AddNamespace(components.NewNamespace(kapi.NamespaceConfig{Name: createHub.Spec.Namespace}))
+	}
 
 	// Create a secret
-	secrets := hc.createHubSecrets(createHub.Name, createHub.Spec.AdminPassword, createHub.Spec.UserPassword)
+	secrets := hc.createHubSecrets(createHub.Spec.Namespace, createHub.Spec.AdminPassword, createHub.Spec.UserPassword)
 
 	for _, secret := range secrets {
 		deployer.AddSecret(secret)
 	}
 
 	// Create ConfigMaps
-	configMaps := hc.createHubConfig(createHub.Name, createHub.Spec.HubVersion, hubContainerFlavor)
+	configMaps := hc.createHubConfig(createHub.Spec.Namespace, createHub.Spec.HubVersion, hubContainerFlavor)
 
 	for _, configMap := range configMaps {
 		deployer.AddConfigMap(configMap)
@@ -297,11 +301,11 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "postgres-persistent-vol", MountPath: "/var/lib/pgsql/data", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: postgresPort, Protocol: kapi.ProtocolTCP},
 	}
-	postgres := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "postgres", Replicas: IntToInt32(1)}, []*api.Container{postgresExternalContainerConfig},
+	postgres := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "postgres", Replicas: IntToInt32(1)}, []*api.Container{postgresExternalContainerConfig},
 		[]*components.Volume{postgresEmptyDir}, []*api.Container{}, []kapi.AffinityConfig{})
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)
-	deployer.AddService(CreateService("postgres", "postgres", createHub.Name, postgresPort, postgresPort, false))
+	deployer.AddService(CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, false))
 }
 
 // CreateHub will create an entire hub for you.  TODO add flavor parameters !
@@ -333,7 +337,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	dbEmptyDir, _ := CreateEmptyDirVolume("cloudsql", "1G")
 
 	// cfssl
-	// cfsslGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-cfssl", fmt.Sprintf("%s-%s", "cfssl-disk", createHub.Name), "ext4")
+	// cfsslGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-cfssl", fmt.Sprintf("%s-%s", "cfssl-disk", createHub.Spec.Namespace), "ext4")
 	cfsslEmptyDir, _ := CreateEmptyDirVolume("dir-cfssl", "1G")
 	cfsslContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "cfssl", Image: fmt.Sprintf("%s/%s/hub-cfssl:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
@@ -347,14 +351,14 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-cfssl", MountPath: "/etc/cfssl", Propagation: kapi.MountPropagationBidirectional}},
 	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
 	// }
-	cfssl := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "cfssl", Replicas: IntToInt32(1)},
+	cfssl := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "cfssl", Replicas: IntToInt32(1)},
 		[]*api.Container{cfsslContainerConfig}, []*components.Volume{cfsslEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
 	// log.Infof("cfssl : %v\n", cfssl.GetObj())
 	deployer.AddDeployment(cfssl)
 
 	// webserver
-	// webServerGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webserver", fmt.Sprintf("%s-%s", "webserver-disk", createHub.Name), "ext4")
+	// webServerGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webserver", fmt.Sprintf("%s-%s", "webserver-disk", createHub.Spec.Namespace), "ext4")
 	webServerEmptyDir, _ := CreateEmptyDirVolume("dir-webserver", "1G")
 	webServerContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "webserver", Image: fmt.Sprintf("%s/%s/hub-nginx:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
@@ -368,7 +372,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security", Propagation: kapi.MountPropagationBidirectional}},
 	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
 	// }
-	webserver := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "webserver", Replicas: IntToInt32(1)},
+	webserver := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "webserver", Replicas: IntToInt32(1)},
 		[]*api.Container{webServerContainerConfig}, []*components.Volume{webServerEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
 	// log.Infof("webserver : %v\n", webserver.GetObj())
@@ -381,13 +385,13 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		EnvConfigs: hubConfigEnv,
 		PortConfig: &kapi.PortConfig{ContainerPort: documentationPort, Protocol: kapi.ProtocolTCP},
 	}
-	documentation := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "documentation", Replicas: IntToInt32(1)},
+	documentation := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "documentation", Replicas: IntToInt32(1)},
 		[]*api.Container{documentationContainerConfig}, []*components.Volume{}, []*api.Container{}, []kapi.AffinityConfig{})
 	// log.Infof("documentation : %v\n", documentation.GetObj())
 	deployer.AddDeployment(documentation)
 
 	// solr
-	// solrGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-solr", fmt.Sprintf("%s-%s", "solr-disk", createHub.Name), "ext4")
+	// solrGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-solr", fmt.Sprintf("%s-%s", "solr-disk", createHub.Spec.Namespace), "ext4")
 	solrEmptyDir, _ := CreateEmptyDirVolume("dir-solr", "1G")
 	solrContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "solr", Image: fmt.Sprintf("%s/%s/hub-solr:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
@@ -401,14 +405,14 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-solr", MountPath: "/opt/blackduck/hub/solr/cores.data", Propagation: kapi.MountPropagationBidirectional}},
 	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
 	// }
-	solr := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "solr", Replicas: IntToInt32(1)},
+	solr := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "solr", Replicas: IntToInt32(1)},
 		[]*api.Container{solrContainerConfig}, []*components.Volume{solrEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
 	// log.Infof("solr : %v\n", solr.GetObj())
 	deployer.AddDeployment(solr)
 
 	// registration
-	// registrationGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-registration", fmt.Sprintf("%s-%s", "registration-disk", createHub.Name), "ext4")
+	// registrationGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-registration", fmt.Sprintf("%s-%s", "registration-disk", createHub.Spec.Namespace), "ext4")
 	registrationEmptyDir, _ := CreateEmptyDirVolume("dir-registration", "1G")
 	registrationContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "registration", Image: fmt.Sprintf("%s/%s/hub-registration:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
@@ -422,7 +426,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config", Propagation: kapi.MountPropagationBidirectional}},
 	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
 	// }
-	registration := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "registration", Replicas: IntToInt32(1)},
+	registration := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "registration", Replicas: IntToInt32(1)},
 		[]*api.Container{registrationContainerConfig}, []*components.Volume{registrationEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
 	// log.Infof("registration : %v\n", registration.GetObj())
@@ -437,7 +441,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-zookeeper", MountPath: "/opt/blackduck/hub/logs", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: zookeeperPort, Protocol: kapi.ProtocolTCP},
 	}
-	zookeeper := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "zookeeper", Replicas: IntToInt32(1)},
+	zookeeper := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "zookeeper", Replicas: IntToInt32(1)},
 		[]*api.Container{zookeeperContainerConfig}, []*components.Volume{zookeeperEmptyDir}, []*api.Container{}, []kapi.AffinityConfig{})
 	// log.Infof("zookeeper : %v\n", zookeeper.GetObj())
 	deployer.AddDeployment(zookeeper)
@@ -461,7 +465,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// 	PortConfig: &kapi.PortConfig{ContainerPort: POSTGRES_PORT, Protocol: kapi.ProtocolTCP},
 	// }
 
-	jobRunner := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "jobrunner", Replicas: hubContainerFlavor.JobRunnerReplicas},
+	jobRunner := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "jobrunner", Replicas: hubContainerFlavor.JobRunnerReplicas},
 		[]*api.Container{jobRunnerContainerConfig}, []*components.Volume{dbSecretVolume, dbEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
 	// log.Infof("jobRunner : %v\n", jobRunner.GetObj())
@@ -480,7 +484,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 			{Name: "dir-scan", MountPath: "/opt/blackduck/hub/hub-scan/security", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig: &kapi.PortConfig{ContainerPort: scannerPort, Protocol: kapi.ProtocolTCP},
 	}
-	hubScan := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "hub-scan", Replicas: hubContainerFlavor.ScanReplicas},
+	hubScan := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "hub-scan", Replicas: hubContainerFlavor.ScanReplicas},
 		[]*api.Container{hubScanContainerConfig}, []*components.Volume{hubScanEmptyDir, dbSecretVolume, dbEmptyDir}, []*api.Container{}, []kapi.AffinityConfig{})
 	// log.Infof("hubScan : %v\n", hubScan.GetObj())
 	deployer.AddDeployment(hubScan)
@@ -488,7 +492,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// hub-authentication
 	authEnvs := allConfigEnv
 	authEnvs = append(authEnvs, &kapi.EnvConfig{Type: kapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: hubContainerFlavor.AuthenticationHubMaxMemory})
-	// hubAuthGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-authentication", fmt.Sprintf("%s-%s", "authentication-disk", createHub.Name), "ext4")
+	// hubAuthGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-authentication", fmt.Sprintf("%s-%s", "authentication-disk", createHub.Spec.Namespace), "ext4")
 	hubAuthEmptyDir, _ := CreateEmptyDirVolume("dir-authentication", "1G")
 	hubAuthContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "hub-authentication", Image: fmt.Sprintf("%s/%s/hub-authentication:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
@@ -504,7 +508,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-authentication", MountPath: "/opt/blackduck/hub/hub-authentication/security", Propagation: kapi.MountPropagationBidirectional}},
 	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
 	// }
-	hubAuth := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "hub-authentication", Replicas: IntToInt32(1)},
+	hubAuth := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "hub-authentication", Replicas: IntToInt32(1)},
 		[]*api.Container{hubAuthContainerConfig}, []*components.Volume{hubAuthEmptyDir, dbSecretVolume, dbEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
 	// log.Infof("hubAuth : %v\n", hubAuthc.GetObj())
@@ -513,7 +517,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// webapp-logstash
 	webappEnvs := allConfigEnv
 	webappEnvs = append(webappEnvs, &kapi.EnvConfig{Type: kapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "webapp-mem", FromName: "hub-config-resources"})
-	// webappGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webapp", fmt.Sprintf("%s-%s", "webapp-disk", createHub.Name), "ext4")
+	// webappGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webapp", fmt.Sprintf("%s-%s", "webapp-disk", createHub.Spec.Namespace), "ext4")
 	webappEmptyDir, _ := CreateEmptyDirVolume("dir-webapp", "1G")
 	webappContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "webapp", Image: fmt.Sprintf("%s/%s/hub-webapp:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
@@ -533,7 +537,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// 		&kapi.VolumeMountConfig{Name: "dir-logstash", MountPath: "/var/lib/logstash/data", Propagation: kapi.MountPropagationBidirectional}},
 	// 	PortConfig: &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
 	// }
-	// logStashGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-logstash", fmt.Sprintf("%s-%s", "logstash-disk", createHub.Name), "ext4")
+	// logStashGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-logstash", fmt.Sprintf("%s-%s", "logstash-disk", createHub.Spec.Namespace), "ext4")
 	logstashEmptyDir, _ := CreateEmptyDirVolume("dir-logstash", "1G")
 	logstashContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "logstash", Image: fmt.Sprintf("%s/%s/hub-logstash:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
@@ -542,23 +546,23 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-logstash", MountPath: "/var/lib/logstash/data", Propagation: kapi.MountPropagationBidirectional}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: logstashPort, Protocol: kapi.ProtocolTCP},
 	}
-	webappLogstash := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Name, Name: "webapp-logstash", Replicas: IntToInt32(1)}, []*api.Container{webappContainerConfig, logstashContainerConfig},
+	webappLogstash := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "webapp-logstash", Replicas: IntToInt32(1)}, []*api.Container{webappContainerConfig, logstashContainerConfig},
 		[]*components.Volume{webappEmptyDir, logstashEmptyDir, dbSecretVolume, dbEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
 	// log.Infof("webappLogstash : %v\n", webappLogstashc.GetObj())
 	deployer.AddDeployment(webappLogstash)
 
-	deployer.AddService(CreateService("cfssl", "cfssl", createHub.Name, cfsslPort, cfsslPort, false))
-	deployer.AddService(CreateService("zookeeper", "zookeeper", createHub.Name, zookeeperPort, zookeeperPort, false))
-	deployer.AddService(CreateService("webserver", "webserver", createHub.Name, "443", webserverPort, false))
-	deployer.AddService(CreateService("webserver-exp", "webserver", createHub.Name, "443", webserverPort, true))
-	deployer.AddService(CreateService("webapp", "webapp-logstash", createHub.Name, webappPort, webappPort, false))
-	deployer.AddService(CreateService("logstash", "webapp-logstash", createHub.Name, logstashPort, logstashPort, false))
-	deployer.AddService(CreateService("solr", "solr", createHub.Name, solrPort, solrPort, false))
-	deployer.AddService(CreateService("documentation", "documentation", createHub.Name, documentationPort, documentationPort, false))
-	deployer.AddService(CreateService("scan", "hub-scan", createHub.Name, scannerPort, scannerPort, false))
-	deployer.AddService(CreateService("authentication", "hub-authentication", createHub.Name, authenticationPort, authenticationPort, false))
-	deployer.AddService(CreateService("registration", "registration", createHub.Name, registrationPort, registrationPort, false))
+	deployer.AddService(CreateService("cfssl", "cfssl", createHub.Spec.Namespace, cfsslPort, cfsslPort, false))
+	deployer.AddService(CreateService("zookeeper", "zookeeper", createHub.Spec.Namespace, zookeeperPort, zookeeperPort, false))
+	deployer.AddService(CreateService("webserver", "webserver", createHub.Spec.Namespace, "443", webserverPort, false))
+	deployer.AddService(CreateService("webserver-exp", "webserver", createHub.Spec.Namespace, "443", webserverPort, true))
+	deployer.AddService(CreateService("webapp", "webapp-logstash", createHub.Spec.Namespace, webappPort, webappPort, false))
+	deployer.AddService(CreateService("logstash", "webapp-logstash", createHub.Spec.Namespace, logstashPort, logstashPort, false))
+	deployer.AddService(CreateService("solr", "solr", createHub.Spec.Namespace, solrPort, solrPort, false))
+	deployer.AddService(CreateService("documentation", "documentation", createHub.Spec.Namespace, documentationPort, documentationPort, false))
+	deployer.AddService(CreateService("scan", "hub-scan", createHub.Spec.Namespace, scannerPort, scannerPort, false))
+	deployer.AddService(CreateService("authentication", "hub-authentication", createHub.Spec.Namespace, authenticationPort, authenticationPort, false))
+	deployer.AddService(CreateService("registration", "registration", createHub.Spec.Namespace, registrationPort, registrationPort, false))
 }
 
 func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
