@@ -167,7 +167,7 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	perceptorContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:hub", PullPolicy: kapi.PullAlways},
 		EnvConfigs:      []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: "HUB_PASSWORD", KeyOrVal: "blackduck"}},
-		VolumeMounts:    []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationBidirectional}},
+		VolumeMounts:    []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationNone}},
 		PortConfig:      &kapi.PortConfig{ContainerPort: perceptorPort, Protocol: kapi.ProtocolTCP},
 	}
 	perceptorVolume := components.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{

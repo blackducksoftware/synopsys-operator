@@ -149,7 +149,7 @@ func CreateService(name string, label string, namespace string, port string, tar
 	}
 	// services w/ -exp are exposed
 	if exp {
-		svcConfig.IPServiceType = kapi.ClusterIPServiceTypeLoadBalancer
+		svcConfig.IPServiceType = kapi.ClusterIPServiceTypeNodePort
 	}
 	mySvc := types.NewService(svcConfig)
 	portVal, _ := strconv.Atoi(port)

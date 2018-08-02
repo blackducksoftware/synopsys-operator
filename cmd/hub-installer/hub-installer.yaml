@@ -38,7 +38,7 @@ items:
             defaultMode: 420
             name: hub-installer
           name: hub-installer
-       serviceAccount: hub-installer
+        serviceAccount: hub-installer
 - apiVersion: v1
   kind: Service
   metadata:
@@ -61,6 +61,7 @@ items:
   kind: ServiceAccount
   metadata:
     name: hub-installer
+    namespace: ${NAMESPACE}
 - kind: ClusterRoleBinding
   apiVersion: rbac.authorization.k8s.io/v1beta1
   metadata:
@@ -68,6 +69,7 @@ items:
   subjects:
   - kind: ServiceAccount
     name: hub-installer
+    namespace: ${NAMESPACE}
   roleRef:
     kind: ClusterRole
     name: cluster-admin
