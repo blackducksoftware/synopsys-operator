@@ -30,7 +30,6 @@ import (
 	"github.com/gin-gonic/contrib/static"
 	gin "github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -53,7 +52,7 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 
 		router.GET("/hub", func(c *gin.Context) {
 			log.Debug("get hub request")
-			hubs, err := hc.HubClient.SynopsysV1().Hubs(corev1.NamespaceDefault).List(metav1.ListOptions{})
+			hubs, err := hc.HubClient.SynopsysV1().Hubs(config.Namespace).List(metav1.ListOptions{})
 			if err != nil {
 				log.Errorf("unable to get the hub list due to %+v", err)
 				c.JSON(404, "\"message\": \"Failed to List the hub\"")

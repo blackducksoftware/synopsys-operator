@@ -38,6 +38,7 @@ items:
             defaultMode: 420
             name: hub-installer
           name: hub-installer
+       serviceAccount: hub-installer
 - apiVersion: v1
   kind: Service
   metadata:
@@ -55,4 +56,19 @@ items:
   metadata:
     name: hub-installer
   data:
-    config.json: '{"DryRun":false, "LogLevel":"debug"}'
+    config.json: '{"DryRun":false, "LogLevel":"debug", "Namespace": "default"}'
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: hub-installer
+- kind: ClusterRoleBinding
+  apiVersion: rbac.authorization.k8s.io/v1beta1
+  metadata:
+    name: protoform-admin
+  subjects:
+  - kind: ServiceAccount
+    name: hub-installer
+  roleRef:
+    kind: ClusterRole
+    name: cluster-admin
+    apiGroup: ""

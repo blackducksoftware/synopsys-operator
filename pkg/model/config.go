@@ -30,8 +30,9 @@ import (
 
 // Config type will used for protoform config
 type Config struct {
-	DryRun   bool
-	LogLevel string
+	DryRun    bool
+	LogLevel  string
+	Namespace string
 }
 
 // GetLogLevel will set the log level

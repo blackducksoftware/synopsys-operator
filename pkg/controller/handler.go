@@ -22,16 +22,22 @@ under the License.
 package controller
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"strings"
 
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+const perceptorSetHubsURL = "http://perceptor:3016/sethubs"
 
 // Handler will have the methods related to infromers callback
 type Handler interface {
@@ -45,6 +51,7 @@ type HubHandler struct {
 	config       *rest.Config
 	clientset    *kubernetes.Clientset
 	hubClientset *hubclientset.Clientset
+	namespace    string
 }
 
 // ObjectCreated will be called for create hub events
@@ -78,6 +85,7 @@ func (h *HubHandler) ObjectCreated(obj *hubv1.Hub) {
 		if err != nil {
 			log.Errorf("Couldn't update Hub object: %s", err.Error())
 		}
+		h.callPerceptor()
 	}
 }
 
@@ -90,6 +98,7 @@ func (h *HubHandler) ObjectDeleted(obj *hubv1.Hub) {
 		log.Errorf("unable to create the new hub creater for %s due to %+v", obj.Name, err)
 	}
 	hubCreator.DeleteHub(obj.Name)
+	h.callPerceptor()
 
 	//Set spec/state  and status/state to started
 	// obj.Spec.State = "deleted"
@@ -111,5 +120,52 @@ func (h *HubHandler) ObjectUpdated(objOld *hubv1.Hub, objNew *hubv1.Hub) {
 }
 
 func (h *HubHandler) updateHubObject(obj *hubv1.Hub) (*hubv1.Hub, error) {
-	return h.hubClientset.SynopsysV1().Hubs(corev1.NamespaceDefault).Update(obj)
+	return h.hubClientset.SynopsysV1().Hubs(h.namespace).Update(obj)
+}
+
+func (h *HubHandler) callPerceptor() {
+	hubUrls, err := h.getHubUrls()
+	if err != nil {
+		log.Errorf("unable to get the hub urls due to %+v", err)
+		return
+	}
+	err = h.addPerceptorEvents(perceptorSetHubsURL, hubUrls)
+	if err != nil {
+		log.Errorf("unable to update the hub urls in perceptor due to %+v", err)
+		return
+	}
+}
+
+// HubNamespaces will list the hub namespaces
+func (h *HubHandler) getHubUrls() ([]string, error) {
+	// 1. get Hub CDR list from default ns
+	hubList, err := h.hubClientset.SynopsysV1().Hubs(h.namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. extract the namespaces
+	hubUrls := []string{}
+	for _, hub := range hubList.Items {
+		if len(hub.Spec.Namespace) > 0 {
+			hubUrls = append(hubUrls, fmt.Sprintf("webserver.%s.svc", hub.Spec.Namespace))
+		}
+	}
+	return hubUrls, nil
+}
+
+func (h *HubHandler) addPerceptorEvents(dest string, obj interface{}) error {
+	jsonBytes, err := json.Marshal(obj)
+	if err != nil {
+		return fmt.Errorf("unable to serialize %v: %v", obj, err)
+	}
+	resp, err := http.Post(dest, "application/json", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return fmt.Errorf("unable to POST to %s: %v", dest, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("http POST request to %s failed with status code %d", dest, resp.StatusCode)
+	}
+	return nil
 }

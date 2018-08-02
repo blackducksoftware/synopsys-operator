@@ -115,6 +115,9 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 	hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
+	if err != nil {
+		log.Errorf("Deployments failed because %+v", err)
+	}
 	// time.Sleep(20 * time.Second)
 	// Get all pods corresponding to the hub namespace
 	pods, err := GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)

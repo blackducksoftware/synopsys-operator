@@ -27,13 +27,16 @@ import (
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	kapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
+	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/client/informers/externalversions/hub/v1"
@@ -41,6 +44,8 @@ import (
 	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/webservice"
 )
+
+const perceptorPort = "3016"
 
 // RunHubController will initialize the input config file, create the hub informers, initiantiate all rest api
 func RunHubController(configPath string) {
@@ -83,6 +88,8 @@ func RunHubController(configPath string) {
 		log.Panicf("Unable to create Hub informer client: %s", err.Error())
 	}
 
+	deploy(kubeConfig, config)
+
 	hc, err := hub.NewCreater(kubeConfig, clientset, hubResourceClient)
 	webservice.SetupHTTPServer(hc, config)
 
@@ -90,11 +97,12 @@ func RunHubController(configPath string) {
 		config:       kubeConfig,
 		clientset:    clientset,
 		hubClientset: hubResourceClient,
+		namespace:    config.Namespace,
 	}
 
 	informer := hubinformerv1.NewHubInformer(
 		hubResourceClient,
-		corev1.NamespaceDefault,
+		config.Namespace,
 		0,
 		cache.Indexers{},
 	)
@@ -116,6 +124,7 @@ func RunHubController(configPath string) {
 		clientset:    clientset,
 		informer:     informer,
 		hubclientset: hubResourceClient,
+		namespace:    config.Namespace,
 	}
 
 	stopCh := make(chan struct{})
@@ -127,16 +136,66 @@ func RunHubController(configPath string) {
 	<-stopCh
 }
 
+func deploy(kubeConfig *rest.Config, config *model.Config) {
+	deployer, err := horizon.NewDeployer(kubeConfig)
+	if err != nil {
+		log.Errorf("unable to create the deployer object due to %+v", err)
+	}
+
+	// Hub CRD
+	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(kapi.CRDConfig{
+		APIVersion: "apiextensions.k8s.io/v1beta1",
+		Name:       "hubs.synopsys.com",
+		Namespace:  config.Namespace,
+		Group:      "synopsys.com",
+		CRDVersion: "v1",
+		Kind:       "Hub",
+		Plural:     "hubs",
+		Singular:   "hub",
+		Scope:      kapi.CRDClusterScoped,
+	}))
+
+	// Perceptor configMap
+	perceptorConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: config.Namespace, Name: "hubfederator"})
+	perceptorConfig.AddData(map[string]string{"config.json": fmt.Sprint(`{"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseMinutes": 5}, "UseMockMode": false, "LogLevel": "debug", "Port": "3016"}`)})
+	deployer.AddConfigMap(perceptorConfig)
+
+	// Perceptor service
+	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, perceptorPort, perceptorPort, false))
+
+	// Perceptor deployment
+	perceptorContainerConfig := &api.Container{
+		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:hub", PullPolicy: kapi.PullAlways},
+		EnvConfigs:      []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: "HUB_PASSWORD", KeyOrVal: "blackduck"}},
+		VolumeMounts:    []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationBidirectional}},
+		PortConfig:      &kapi.PortConfig{ContainerPort: perceptorPort, Protocol: kapi.ProtocolTCP},
+	}
+	perceptorVolume := components.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      "hubfederator",
+		MapOrSecretName: "hubfederator",
+		DefaultMode:     hub.IntToInt32(420),
+	})
+	perceptor := hub.CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
+		[]*api.Container{perceptorContainerConfig}, []*components.Volume{perceptorVolume}, []*api.Container{}, []kapi.AffinityConfig{})
+	deployer.AddDeployment(perceptor)
+
+	err = deployer.Run()
+
+	if err != nil {
+		log.Errorf("unable to create the perceptor resources due to %+v", err)
+	}
+}
+
 func newKubeClientFromOutsideCluster() (*rest.Config, error) {
-	var kubeconfig *string
+	var kubeConfig *string
 	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		kubeConfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		kubeConfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
 	flag.Parse()
 
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
 	if err != nil {
 		log.Errorf("error creating default client config: %s", err)
 		return nil, err

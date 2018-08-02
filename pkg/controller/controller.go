@@ -26,7 +26,6 @@ import (
 
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -39,6 +38,7 @@ type Controller struct {
 	clientset    kubernetes.Interface
 	informer     cache.SharedIndexInformer
 	hubclientset *hubclientset.Clientset
+	namespace    string
 }
 
 // Run will be executed to create the informers or controllers
@@ -65,7 +65,7 @@ func (c *Controller) HasSynced() bool {
 // HubNamespaces will list the hub namespaces
 func (c *Controller) HubNamespaces() ([]string, error) {
 	// 1. get Hub CDR list from default ns
-	hubList, err := c.hubclientset.SynopsysV1().Hubs(corev1.NamespaceDefault).List(metav1.ListOptions{})
+	hubList, err := c.hubclientset.SynopsysV1().Hubs(c.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

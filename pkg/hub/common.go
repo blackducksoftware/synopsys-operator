@@ -51,18 +51,7 @@ import (
 // CreateContainer will create the container
 func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volumeMounts []*kapi.VolumeMountConfig, port *kapi.PortConfig) *types.Container {
 
-	container := types.NewContainer(kapi.ContainerConfig{
-		Name:       config.Name,
-		Image:      config.Image,
-		PullPolicy: config.PullPolicy,
-		MinCPU:     config.MinCPU,
-		MaxCPU:     config.MaxCPU,
-		MinMem:     config.MinMem,
-		MaxMem:     config.MaxMem,
-		Privileged: config.Privileged,
-		Command:    config.Command,
-		Args:       config.Args,
-	})
+	container := types.NewContainer(*config)
 
 	for _, env := range envs {
 		container.AddEnv(*env)
