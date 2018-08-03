@@ -56,7 +56,7 @@ items:
   metadata:
     name: hub-installer
   data:
-    config.json: '{"DryRun":false, "LogLevel":"debug", "Namespace": "default"}'
+    config.json: '{"DryRun":false, "LogLevel":"debug", "Namespace": "${NAMESPACE}"}'
 - apiVersion: v1
   kind: ServiceAccount
   metadata:

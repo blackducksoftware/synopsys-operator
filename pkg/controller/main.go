@@ -162,13 +162,15 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 
 	// Perceptor service
 	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, perceptorPort, perceptorPort, false))
+	deployer.AddService(hub.CreateService("hub-federator-exposed", "hub-federator", config.Namespace, perceptorPort, perceptorPort, true))
 
 	// Perceptor deployment
 	perceptorContainerConfig := &api.Container{
-		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:hub", PullPolicy: kapi.PullAlways},
-		EnvConfigs:      []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: "HUB_PASSWORD", KeyOrVal: "blackduck"}},
-		VolumeMounts:    []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationNone}},
-		PortConfig:      &kapi.PortConfig{ContainerPort: perceptorPort, Protocol: kapi.ProtocolTCP},
+		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:hub",
+			PullPolicy: kapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
+		EnvConfigs:   []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: "HUB_PASSWORD", KeyOrVal: "blackduck"}},
+		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationNone}},
+		PortConfig:   &kapi.PortConfig{ContainerPort: perceptorPort, Protocol: kapi.ProtocolTCP},
 	}
 	perceptorVolume := components.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "hubfederator",

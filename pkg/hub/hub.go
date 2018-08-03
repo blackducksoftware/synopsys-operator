@@ -169,12 +169,12 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 		}
 	}
 
-	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-exp")
-	if err != nil {
-		return "", err
-	}
-	log.Infof("hub Ip address: %s", ipAddress)
-	return ipAddress, nil
+	// ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-exp")
+	// if err != nil {
+	// 	return "", err
+	// }
+	// log.Infof("hub Ip address: %s", ipAddress)
+	return "", nil
 }
 
 func (hc *Creater) execContainer(request *rest.Request, command []string) error {
@@ -298,7 +298,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	postgresEnvs = append(postgresEnvs, &kapi.EnvConfig{Type: kapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_ADMIN_PASSWORD", KeyOrVal: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", FromName: "db-creds"})
 	postgresEmptyDir, _ := CreateEmptyDirVolume("postgres-persistent-vol", "1G")
 	postgresExternalContainerConfig := &api.Container{
-		ContainerConfig: &kapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: kapi.PullAlways,
+		ContainerConfig: &kapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: kapi.PullIfNotPresent,
 			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: ""},
 		EnvConfigs:   postgresEnvs,
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "postgres-persistent-vol", MountPath: "/var/lib/pgsql/data", Propagation: kapi.MountPropagationNone}},

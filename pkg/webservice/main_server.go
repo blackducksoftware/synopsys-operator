@@ -85,6 +85,7 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 			if err != nil {
 				log.Errorf("unable to create the namespace due to %+v", err)
 				c.JSON(404, "\"message\": \"Failed to create the namespace\"")
+				return
 			}
 			hc.HubClient.SynopsysV1().Hubs(hubSpec.Namespace).Create(&v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hubSpec.Namespace}, Spec: *hubSpec})
 
@@ -92,15 +93,16 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 		})
 
 		router.DELETE("/hub", func(c *gin.Context) {
-			var hubSpec string
+			hubSpec := &v1.HubSpec{}
 			if err := c.BindJSON(hubSpec); err != nil {
 				log.Debugf("Fatal failure binding the incoming request ! %v", c.Request)
+				return
 			}
 
-			log.Debugf("delete hub request %v", hubSpec)
+			log.Debugf("delete hub request %v", hubSpec.Namespace)
 
 			// This is on the event loop.
-			hc.HubClient.SynopsysV1().Hubs(hubSpec).Delete(hubSpec, &metav1.DeleteOptions{})
+			hc.HubClient.SynopsysV1().Hubs(hubSpec.Namespace).Delete(hubSpec.Namespace, &metav1.DeleteOptions{})
 
 			c.JSON(200, "\"message\": \"Succeeded\"")
 		})

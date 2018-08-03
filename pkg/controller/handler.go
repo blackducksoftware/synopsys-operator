@@ -23,10 +23,13 @@ package controller
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
@@ -37,7 +40,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const perceptorSetHubsURL = "http://perceptor:3016/sethubs"
+const perceptorSetHubsURL = "http://hub-federator:3016/sethubs"
 
 // Handler will have the methods related to infromers callback
 type Handler interface {
@@ -52,6 +55,11 @@ type HubHandler struct {
 	clientset    *kubernetes.Clientset
 	hubClientset *hubclientset.Clientset
 	namespace    string
+}
+
+// APISetHubsRequest to set the Hub urls for Perceptor
+type APISetHubsRequest struct {
+	HubURLs []string
 }
 
 // ObjectCreated will be called for create hub events
@@ -98,7 +106,7 @@ func (h *HubHandler) ObjectDeleted(obj *hubv1.Hub) {
 		log.Errorf("unable to create the new hub creater for %s due to %+v", obj.Name, err)
 	}
 	hubCreator.DeleteHub(obj.Name)
-	h.callPerceptor()
+	// h.callPerceptor()
 
 	//Set spec/state  and status/state to started
 	// obj.Spec.State = "deleted"
@@ -125,6 +133,7 @@ func (h *HubHandler) updateHubObject(obj *hubv1.Hub) (*hubv1.Hub, error) {
 
 func (h *HubHandler) callPerceptor() {
 	hubUrls, err := h.getHubUrls()
+	log.Debugf("hubUrls: %+v", hubUrls)
 	if err != nil {
 		log.Errorf("unable to get the hub urls due to %+v", err)
 		return
@@ -137,21 +146,51 @@ func (h *HubHandler) callPerceptor() {
 }
 
 // HubNamespaces will list the hub namespaces
-func (h *HubHandler) getHubUrls() ([]string, error) {
+func (h *HubHandler) getHubUrls() (*APISetHubsRequest, error) {
 	// 1. get Hub CDR list from default ns
 	hubList, err := h.hubClientset.SynopsysV1().Hubs(h.namespace).List(metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return &APISetHubsRequest{}, err
 	}
 
 	// 2. extract the namespaces
-	hubUrls := []string{}
+	hubURLs := []string{}
 	for _, hub := range hubList.Items {
 		if len(hub.Spec.Namespace) > 0 {
-			hubUrls = append(hubUrls, fmt.Sprintf("webserver.%s.svc", hub.Spec.Namespace))
+			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Spec.Namespace)
+			h.verifyHub(hubURL)
+			hubURLs = append(hubURLs, hubURL)
 		}
 	}
-	return hubUrls, nil
+
+	return &APISetHubsRequest{HubURLs: hubURLs}, nil
+}
+
+func (h *HubHandler) verifyHub(hubURL string) {
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	for {
+		resp, err := client.Get(fmt.Sprintf("https://%s:443/api/current-version", hubURL))
+		if err != nil {
+			log.Debugf("unable to talk with the hub %s", hubURL)
+			continue
+		}
+
+		_, err = ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		log.Debugf("hub response status for %s is %v", hubURL, resp.Status)
+
+		if resp.StatusCode == 200 {
+			break
+		}
+		time.Sleep(10 * time.Second)
+	}
 }
 
 func (h *HubHandler) addPerceptorEvents(dest string, obj interface{}) error {
@@ -159,7 +198,14 @@ func (h *HubHandler) addPerceptorEvents(dest string, obj interface{}) error {
 	if err != nil {
 		return fmt.Errorf("unable to serialize %v: %v", obj, err)
 	}
-	resp, err := http.Post(dest, "application/json", bytes.NewBuffer(jsonBytes))
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodPut, dest, bytes.NewBuffer(jsonBytes))
+	log.Debugf("hub req: %+v", req)
+	if err != nil {
+		return fmt.Errorf("unable to create the request due to %v", err)
+	}
+	resp, err := client.Do(req)
+	log.Debugf("hub resp: %+v", resp)
 	if err != nil {
 		return fmt.Errorf("unable to POST to %s: %v", dest, err)
 	}
