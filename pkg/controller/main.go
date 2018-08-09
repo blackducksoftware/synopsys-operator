@@ -157,7 +157,7 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 
 	// Perceptor configMap
 	perceptorConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: config.Namespace, Name: "hubfederator"})
-	perceptorConfig.AddData(map[string]string{"config.json": fmt.Sprint(`{"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseMinutes": 5}, "UseMockMode": false, "LogLevel": "debug", "Port": "3016"}`)})
+	perceptorConfig.AddData(map[string]string{"config.json": fmt.Sprint(`{"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "LogLevel": "debug", "Port": "3016"}`)})
 	deployer.AddConfigMap(perceptorConfig)
 
 	// Perceptor service

@@ -296,7 +296,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	postgresEnvs = append(postgresEnvs, &kapi.EnvConfig{Type: kapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_PASSWORD", KeyOrVal: "HUB_POSTGRES_USER_PASSWORD_FILE", FromName: "db-creds"})
 	postgresEnvs = append(postgresEnvs, &kapi.EnvConfig{Type: kapi.EnvVal, NameOrPrefix: "POSTGRESQL_DATABASE", KeyOrVal: "blackduck"})
 	postgresEnvs = append(postgresEnvs, &kapi.EnvConfig{Type: kapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_ADMIN_PASSWORD", KeyOrVal: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", FromName: "db-creds"})
-	postgresEmptyDir, _ := CreateEmptyDirVolume("postgres-persistent-vol", "1G")
+	postgresEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("postgres-persistent-vol")
 	postgresExternalContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: kapi.PullIfNotPresent,
 			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: ""},
@@ -337,11 +337,11 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		DefaultMode: IntToInt32(420),
 	})
 
-	dbEmptyDir, _ := CreateEmptyDirVolume("cloudsql", "1G")
+	dbEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("cloudsql")
 
 	// cfssl
 	// cfsslGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-cfssl", fmt.Sprintf("%s-%s", "cfssl-disk", createHub.Spec.Namespace), "ext4")
-	cfsslEmptyDir, _ := CreateEmptyDirVolume("dir-cfssl", "1G")
+	cfsslEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-cfssl")
 	cfsslContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "cfssl", Image: fmt.Sprintf("%s/%s/hub-cfssl:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.CfsslMemoryLimit, MaxMem: hubContainerFlavor.CfsslMemoryLimit, MinCPU: "", MaxCPU: ""},
@@ -362,7 +362,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 
 	// webserver
 	// webServerGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webserver", fmt.Sprintf("%s-%s", "webserver-disk", createHub.Spec.Namespace), "ext4")
-	webServerEmptyDir, _ := CreateEmptyDirVolume("dir-webserver", "1G")
+	webServerEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
 	webServerContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "webserver", Image: fmt.Sprintf("%s/%s/hub-nginx:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.WebserverMemoryLimit, MaxMem: hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
@@ -395,7 +395,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 
 	// solr
 	// solrGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-solr", fmt.Sprintf("%s-%s", "solr-disk", createHub.Spec.Namespace), "ext4")
-	solrEmptyDir, _ := CreateEmptyDirVolume("dir-solr", "1G")
+	solrEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-solr")
 	solrContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "solr", Image: fmt.Sprintf("%s/%s/hub-solr:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.SolrMemoryLimit, MaxMem: hubContainerFlavor.SolrMemoryLimit, MinCPU: "", MaxCPU: ""},
@@ -416,7 +416,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 
 	// registration
 	// registrationGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-registration", fmt.Sprintf("%s-%s", "registration-disk", createHub.Spec.Namespace), "ext4")
-	registrationEmptyDir, _ := CreateEmptyDirVolume("dir-registration", "1G")
+	registrationEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")
 	registrationContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "registration", Image: fmt.Sprintf("%s/%s/hub-registration:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.RegistrationMemoryLimit, MaxMem: hubContainerFlavor.RegistrationMemoryLimit, MinCPU: "1", MaxCPU: ""},
@@ -436,7 +436,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	deployer.AddDeployment(registration)
 
 	// zookeeper
-	zookeeperEmptyDir, _ := CreateEmptyDirVolume("dir-zookeeper", "1G")
+	zookeeperEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper")
 	zookeeperContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "zookeeper", Image: fmt.Sprintf("%s/%s/hub-zookeeper:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: "1", MaxCPU: ""},
@@ -477,7 +477,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// hub-scan
 	scannerEnvs := allConfigEnv
 	scannerEnvs = append(scannerEnvs, &kapi.EnvConfig{Type: kapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "scan-mem", FromName: "hub-config-resources"})
-	hubScanEmptyDir, _ := CreateEmptyDirVolume("dir-scan", "1G")
+	hubScanEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-scan")
 	hubScanContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "hub-scan", Image: fmt.Sprintf("%s/%s/hub-scan:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.ScanMemoryLimit, MaxMem: hubContainerFlavor.ScanMemoryLimit, MinCPU: "", MaxCPU: ""},
@@ -496,7 +496,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	authEnvs := allConfigEnv
 	authEnvs = append(authEnvs, &kapi.EnvConfig{Type: kapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: hubContainerFlavor.AuthenticationHubMaxMemory})
 	// hubAuthGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-authentication", fmt.Sprintf("%s-%s", "authentication-disk", createHub.Spec.Namespace), "ext4")
-	hubAuthEmptyDir, _ := CreateEmptyDirVolume("dir-authentication", "1G")
+	hubAuthEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")
 	hubAuthContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "hub-authentication", Image: fmt.Sprintf("%s/%s/hub-authentication:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
@@ -521,7 +521,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	webappEnvs := allConfigEnv
 	webappEnvs = append(webappEnvs, &kapi.EnvConfig{Type: kapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "webapp-mem", FromName: "hub-config-resources"})
 	// webappGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webapp", fmt.Sprintf("%s-%s", "webapp-disk", createHub.Spec.Namespace), "ext4")
-	webappEmptyDir, _ := CreateEmptyDirVolume("dir-webapp", "1G")
+	webappEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
 	webappContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "webapp", Image: fmt.Sprintf("%s/%s/hub-webapp:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.WebappMemoryLimit, MaxMem: hubContainerFlavor.WebappMemoryLimit, MinCPU: hubContainerFlavor.WebappCPULimit,
@@ -541,7 +541,7 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// 	PortConfig: &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
 	// }
 	// logStashGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-logstash", fmt.Sprintf("%s-%s", "logstash-disk", createHub.Spec.Namespace), "ext4")
-	logstashEmptyDir, _ := CreateEmptyDirVolume("dir-logstash", "1G")
+	logstashEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")
 	logstashContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "logstash", Image: fmt.Sprintf("%s/%s/hub-logstash:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.LogstashMemoryLimit, MaxMem: hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},

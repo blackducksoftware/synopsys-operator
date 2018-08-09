@@ -77,6 +77,15 @@ func CreateGCEPersistentDiskVolume(volumeName string, diskName string, fsType st
 	return gcePersistentDiskVol
 }
 
+// CreateEmptyDirVolumeWithoutSizeLimit will create a empty directory for a pod
+func CreateEmptyDirVolumeWithoutSizeLimit(volumeName string) (*types.Volume, error) {
+	emptyDirVol, err := types.NewEmptyDirVolume(kapi.EmptyDirVolumeConfig{
+		VolumeName: volumeName,
+	})
+
+	return emptyDirVol, err
+}
+
 // CreateEmptyDirVolume will create a empty directory for a pod
 func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, error) {
 	emptyDirVol, err := types.NewEmptyDirVolume(kapi.EmptyDirVolumeConfig{
