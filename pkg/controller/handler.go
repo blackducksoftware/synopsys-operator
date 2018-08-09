@@ -158,15 +158,17 @@ func (h *HubHandler) getHubUrls() (*APISetHubsRequest, error) {
 	for _, hub := range hubList.Items {
 		if len(hub.Spec.Namespace) > 0 {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Spec.Namespace)
-			h.verifyHub(hubURL)
-			hubURLs = append(hubURLs, hubURL)
+			status := h.verifyHub(hubURL)
+			if status {
+				hubURLs = append(hubURLs, hubURL)
+			}
 		}
 	}
 
 	return &APISetHubsRequest{HubURLs: hubURLs}, nil
 }
 
-func (h *HubHandler) verifyHub(hubURL string) {
+func (h *HubHandler) verifyHub(hubURL string) bool {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -175,7 +177,7 @@ func (h *HubHandler) verifyHub(hubURL string) {
 		},
 	}
 
-	for {
+	for i := 0; i < 60; i++ {
 		resp, err := client.Get(fmt.Sprintf("https://%s:443/api/current-version", hubURL))
 		if err != nil {
 			log.Debugf("unable to talk with the hub %s", hubURL)
@@ -187,10 +189,11 @@ func (h *HubHandler) verifyHub(hubURL string) {
 		log.Debugf("hub response status for %s is %v", hubURL, resp.Status)
 
 		if resp.StatusCode == 200 {
-			break
+			return true
 		}
 		time.Sleep(10 * time.Second)
 	}
+	return false
 }
 
 func (h *HubHandler) addPerceptorEvents(dest string, obj interface{}) error {
