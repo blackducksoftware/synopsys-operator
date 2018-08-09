@@ -8,3 +8,4 @@ cmd/hub-installer/hub-installer
 _output/hub-installer
 _output/protoform-installer
 cmd/protoform-installer/protoform-installer
+cmd/hub-installer/opssight-deployer
