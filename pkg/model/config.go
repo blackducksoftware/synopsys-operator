@@ -30,9 +30,27 @@ import (
 
 // Config type will used for protoform config
 type Config struct {
-	DryRun    bool
-	LogLevel  string
-	Namespace string
+	DryRun             bool
+	LogLevel           string
+	Namespace          string
+	Threadiness        int
+	HubFederatorConfig HubFederatorConfig
+}
+
+// HubFederatorConfig will have the configuration related to hub federator
+type HubFederatorConfig struct {
+	HubConfig   HubConfig
+	UseMockMode bool
+	Port        int
+}
+
+// HubConfig will have the configuration related to Hub
+type HubConfig struct {
+	User                         string
+	PasswordEnvVar               string
+	ClientTimeoutMilliseconds    int
+	Port                         int
+	FetchAllProjectsPauseSeconds int
 }
 
 // GetLogLevel will set the log level

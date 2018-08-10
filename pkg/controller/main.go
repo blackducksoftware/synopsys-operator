@@ -32,20 +32,18 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/client-go/util/workqueue"
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	kapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/client/informers/externalversions/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/webservice"
 )
-
-const perceptorPort = "3016"
 
 // RunHubController will initialize the input config file, create the hub informers, initiantiate all rest api
 func RunHubController(configPath string) {
@@ -66,6 +64,8 @@ func RunHubController(configPath string) {
 		panic(err)
 	}
 	log.SetLevel(level)
+
+	log.Debugf("config: %+v", config)
 
 	// creates the in-cluster config
 	kubeConfig, err := rest.InClusterConfig()
@@ -93,13 +93,6 @@ func RunHubController(configPath string) {
 	hc, err := hub.NewCreater(kubeConfig, clientset, hubResourceClient)
 	webservice.SetupHTTPServer(hc, config)
 
-	handler := HubHandler{
-		config:       kubeConfig,
-		clientset:    clientset,
-		hubClientset: hubResourceClient,
-		namespace:    config.Namespace,
-	}
-
 	informer := hubinformerv1.NewHubInformer(
 		hubResourceClient,
 		config.Namespace,
@@ -107,22 +100,57 @@ func RunHubController(configPath string) {
 		cache.Indexers{},
 	)
 
+	// create a new queue so that when the informer gets a resource that is either
+	// a result of listing or watching, we can add an idenfitying key to the queue
+	// so that it can be handled in the handler
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			handler.ObjectCreated(obj.(*hubv1.Hub))
+			// convert the resource object into a key (in this case
+			// we are just doing it in the format of 'namespace/name')
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			log.Infof("add hub: %s", key)
+			if err == nil {
+				// add the key to the queue for the handler to get
+				queue.Add(key)
+			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			handler.ObjectUpdated(oldObj.(*hubv1.Hub), newObj.(*hubv1.Hub))
+			key, err := cache.MetaNamespaceKeyFunc(newObj)
+			log.Infof("update hub: %s", key)
+			if err == nil {
+				queue.Add(key)
+			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			handler.ObjectDeleted(obj.(*hubv1.Hub))
+			// DeletionHandlingMetaNamsespaceKeyFunc is a helper function that allows
+			// us to check the DeletedFinalStateUnknown existence in the event that
+			// a resource was deleted but it is still contained in the index
+			//
+			// this then in turn calls MetaNamespaceKeyFunc
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			log.Infof("delete hub: %s: %+v", key, obj)
+
+			if err == nil {
+				queue.Add(key)
+			}
 		},
 	})
 
 	controller := Controller{
-		logger:       log.NewEntry(log.New()),
-		clientset:    clientset,
-		informer:     informer,
+		logger:    log.NewEntry(log.New()),
+		clientset: clientset,
+		queue:     queue,
+		informer:  informer,
+		handler: &HubHandler{
+			config:           kubeConfig,
+			clientset:        clientset,
+			hubClientset:     hubResourceClient,
+			namespace:        config.Namespace,
+			federatorBaseURL: fmt.Sprintf("http://hub-federator:%d", config.HubFederatorConfig.Port),
+			cmMutex:          make(chan bool, 1),
+		},
 		hubclientset: hubResourceClient,
 		namespace:    config.Namespace,
 	}
@@ -131,7 +159,7 @@ func RunHubController(configPath string) {
 
 	defer close(stopCh)
 
-	go controller.Run(stopCh)
+	go controller.Run(config.Threadiness, stopCh)
 
 	<-stopCh
 }
@@ -156,35 +184,39 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	}))
 
 	// Perceptor configMap
-	perceptorConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: config.Namespace, Name: "hubfederator"})
-	perceptorConfig.AddData(map[string]string{"config.json": fmt.Sprint(`{"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "LogLevel": "debug", "Port": "3016"}`)})
-	deployer.AddConfigMap(perceptorConfig)
+	hubFederatorConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: config.Namespace, Name: "hubfederator"})
+	hubFederatorConfig.AddData(map[string]string{"config.json": fmt.Sprint(`{"HubConfig": {"User": "`, config.HubFederatorConfig.HubConfig.User,
+		`", "PasswordEnvVar": "`, config.HubFederatorConfig.HubConfig.PasswordEnvVar,
+		`", "ClientTimeoutMilliseconds": `, config.HubFederatorConfig.HubConfig.ClientTimeoutMilliseconds,
+		`, "Port": `, config.HubFederatorConfig.HubConfig.Port, `, "FetchAllProjectsPauseSeconds": `, config.HubFederatorConfig.HubConfig.FetchAllProjectsPauseSeconds,
+		`}, "UseMockMode": `, config.HubFederatorConfig.UseMockMode, `, "LogLevel": "`, config.LogLevel, `", "Port": `, config.HubFederatorConfig.Port, `}`)})
+	deployer.AddConfigMap(hubFederatorConfig)
 
 	// Perceptor service
-	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, perceptorPort, perceptorPort, false))
-	deployer.AddService(hub.CreateService("hub-federator-exposed", "hub-federator", config.Namespace, perceptorPort, perceptorPort, true))
+	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), false))
+	deployer.AddService(hub.CreateService("hub-federator-exposed", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), true))
 
-	// Perceptor deployment
-	perceptorContainerConfig := &api.Container{
+	// Hub federator deployment
+	hubFederatorContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:hub",
 			PullPolicy: kapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
-		EnvConfigs:   []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: "HUB_PASSWORD", KeyOrVal: "blackduck"}},
+		EnvConfigs:   []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: "blackduck"}},
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationNone}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: perceptorPort, Protocol: kapi.ProtocolTCP},
+		PortConfig:   &kapi.PortConfig{ContainerPort: fmt.Sprint(config.HubFederatorConfig.Port), Protocol: kapi.ProtocolTCP},
 	}
-	perceptorVolume := components.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
+	hubFederatorVolume := components.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "hubfederator",
 		MapOrSecretName: "hubfederator",
 		DefaultMode:     hub.IntToInt32(420),
 	})
-	perceptor := hub.CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
-		[]*api.Container{perceptorContainerConfig}, []*components.Volume{perceptorVolume}, []*api.Container{}, []kapi.AffinityConfig{})
-	deployer.AddDeployment(perceptor)
+	hubFederator := hub.CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
+		[]*api.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*api.Container{}, []kapi.AffinityConfig{})
+	deployer.AddDeployment(hubFederator)
 
 	err = deployer.Run()
 
 	if err != nil {
-		log.Errorf("unable to create the perceptor resources due to %+v", err)
+		log.Errorf("unable to create the hub federator resources due to %+v", err)
 	}
 }
 

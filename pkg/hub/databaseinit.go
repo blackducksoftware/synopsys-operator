@@ -76,11 +76,11 @@ func InitDatabase(createHub *v1.Hub) {
 func OpenDatabaseConnection(hostName string, dbName string, user string, password string, sqlType string) (*sql.DB, error) {
 	// Note that sslmode=disable is required it does not mean that the connection
 	// is unencrypted. All connections via the proxy are completely encrypted.
+	log.Debug("attempting to open database connection")
 	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable", hostName, dbName, user, password)
-
 	db, err := sql.Open(sqlType, dsn)
 	//defer db.Close()
-
+	log.Debug("connected to database ")
 	return db, err
 }
 
@@ -113,13 +113,14 @@ func exec(db *sql.DB, statement string) error {
 
 func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword string) {
 	for {
+		log.Debug("executing SELECT 1")
 		err := exec(db, "SELECT 1")
 		if err == nil {
 			break
 		}
 		time.Sleep(5 * time.Second)
 	}
-	exec(db, fmt.Sprintf("CREATE USER blackduck WITH password '%s';", adminPassword))
+	exec(db, fmt.Sprintf("ALTER USER blackduck WITH password '%s';", adminPassword))
 	exec(db, "GRANT blackduck TO postgres;")
 	exec(db, "CREATE DATABASE bds_hub owner blackduck;")
 	exec(db, "CREATE DATABASE bds_hub_report owner blackduck;")

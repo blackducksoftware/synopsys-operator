@@ -31,7 +31,7 @@ import (
 	"strings"
 	"time"
 
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	log "github.com/sirupsen/logrus"
@@ -40,21 +40,21 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const perceptorSetHubsURL = "http://hub-federator:3016/sethubs"
-
-// Handler will have the methods related to infromers callback
+// Handler interface contains the methods that are required
 type Handler interface {
 	ObjectCreated(obj interface{})
-	ObjectDeleted(obj interface{})
+	ObjectDeleted(obj string)
 	ObjectUpdated(objOld, objNew interface{})
 }
 
 // HubHandler will store the configuration that is required to initiantiate the informers callback
 type HubHandler struct {
-	config       *rest.Config
-	clientset    *kubernetes.Clientset
-	hubClientset *hubclientset.Clientset
-	namespace    string
+	config           *rest.Config
+	clientset        *kubernetes.Clientset
+	hubClientset     *hubclientset.Clientset
+	namespace        string
+	federatorBaseURL string
+	cmMutex          chan bool
 }
 
 // APISetHubsRequest to set the Hub urls for Perceptor
@@ -63,50 +63,51 @@ type APISetHubsRequest struct {
 }
 
 // ObjectCreated will be called for create hub events
-func (h *HubHandler) ObjectCreated(obj *hubv1.Hub) {
+func (h *HubHandler) ObjectCreated(obj interface{}) {
 	log.Debugf("ObjectCreated: %+v", obj)
-	if strings.EqualFold(obj.Spec.State, "") {
+	hubv1 := obj.(*hub_v1.Hub)
+	if strings.EqualFold(hubv1.Spec.State, "") {
 		// Update status
-		obj.Spec.State = "pending"
-		obj.Status.State = "creating"
-		obj, err := h.updateHubObject(obj)
+		hubv1.Spec.State = "pending"
+		hubv1.Status.State = "creating"
+		hubv1, err := h.updateHubObject(hubv1)
 		if err != nil {
 			log.Errorf("Couldn't update Hub object: %s", err.Error())
 		}
 
 		hubCreator, err := hub.NewCreater(h.config, h.clientset, h.hubClientset)
 		if err != nil {
-			log.Errorf("unable to create the new hub creater for %s due to %+v", obj.Name, err)
+			log.Errorf("unable to create the new hub creater for %s due to %+v", hubv1.Name, err)
 		}
-		ip, err := hubCreator.CreateHub(obj)
+		ip, err := hubCreator.CreateHub(hubv1)
 
 		if err != nil {
 			//Set spec/state  and status/state to started
-			obj.Spec.State = "error"
-			obj.Status.State = "error"
+			hubv1.Spec.State = "error"
+			hubv1.Status.State = "error"
 		} else {
-			obj.Spec.State = "running"
-			obj.Status.State = "running"
+			hubv1.Spec.State = "running"
+			hubv1.Status.State = "running"
 		}
-		obj.Status.IP = ip
-		obj, err = h.updateHubObject(obj)
+		hubv1.Status.IP = ip
+		hubv1, err = h.updateHubObject(hubv1)
 		if err != nil {
 			log.Errorf("Couldn't update Hub object: %s", err.Error())
 		}
-		h.callPerceptor()
+		h.callHubFederator()
 	}
 }
 
 // ObjectDeleted will be called for delete hub events
-func (h *HubHandler) ObjectDeleted(obj *hubv1.Hub) {
-	log.Debugf("ObjectDeleted: %+v", obj)
+func (h *HubHandler) ObjectDeleted(name string) {
+	log.Debugf("ObjectDeleted: %+v", name)
 
 	hubCreator, err := hub.NewCreater(h.config, h.clientset, h.hubClientset)
 	if err != nil {
-		log.Errorf("unable to create the new hub creater for %s due to %+v", obj.Name, err)
+		log.Errorf("unable to create the new hub creater for %s due to %+v", name, err)
 	}
-	hubCreator.DeleteHub(obj.Name)
-	// h.callPerceptor()
+	hubCreator.DeleteHub(name)
+	h.callHubFederator()
 
 	//Set spec/state  and status/state to started
 	// obj.Spec.State = "deleted"
@@ -118,7 +119,7 @@ func (h *HubHandler) ObjectDeleted(obj *hubv1.Hub) {
 }
 
 // ObjectUpdated will be called for update hub events
-func (h *HubHandler) ObjectUpdated(objOld *hubv1.Hub, objNew *hubv1.Hub) {
+func (h *HubHandler) ObjectUpdated(objOld, objNew interface{}) {
 	//if strings.Compare(objOld.Spec.State, objNew.Spec.State) != 0 {
 	//	log.Infof("%s - Changing state [%s] -> [%s] | Current: [%s]", objNew.Name, objOld.Spec.State, objNew.Spec.State, objNew.Status.State )
 	//	// TO DO
@@ -127,18 +128,23 @@ func (h *HubHandler) ObjectUpdated(objOld *hubv1.Hub, objNew *hubv1.Hub) {
 	//}
 }
 
-func (h *HubHandler) updateHubObject(obj *hubv1.Hub) (*hubv1.Hub, error) {
+func (h *HubHandler) updateHubObject(obj *hub_v1.Hub) (*hub_v1.Hub, error) {
 	return h.hubClientset.SynopsysV1().Hubs(h.namespace).Update(obj)
 }
 
-func (h *HubHandler) callPerceptor() {
+func (h *HubHandler) callHubFederator() {
+	// IMPORTANT ! This will block.
+	h.cmMutex <- true
+	defer func() {
+		<-h.cmMutex
+	}()
 	hubUrls, err := h.getHubUrls()
 	log.Debugf("hubUrls: %+v", hubUrls)
 	if err != nil {
 		log.Errorf("unable to get the hub urls due to %+v", err)
 		return
 	}
-	err = h.addPerceptorEvents(perceptorSetHubsURL, hubUrls)
+	err = h.addPerceptorEvents(fmt.Sprintf("%s/sethubs", h.federatorBaseURL), hubUrls)
 	if err != nil {
 		log.Errorf("unable to update the hub urls in perceptor due to %+v", err)
 		return
@@ -181,6 +187,7 @@ func (h *HubHandler) verifyHub(hubURL string) bool {
 		resp, err := client.Get(fmt.Sprintf("https://%s:443/api/current-version", hubURL))
 		if err != nil {
 			log.Debugf("unable to talk with the hub %s", hubURL)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 

@@ -1,5 +1,17 @@
 {
-  "DryRun":"true",
+  "DryRun": true,
   "LogLevel": "debug",
-  "Namespace": "default"
+  "Namespace": "default",
+  "Threadiness": 5,
+  "HubFederatorConfig": {
+    "HubConfig": {
+      "HubUser": "sysadmin",
+      "HubPasswordEnvVar": "HUB_PASSWORD",
+      "HubClientTimeoutMilliseconds": 5000,
+      "HubPort": 443,
+      "FetchAllProjectsPauseSeconds": 60
+    },
+    "UseMockMode": false,
+    "HubFederatorPort": 3016
+  }
 }

@@ -269,7 +269,7 @@ func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodLis
 			if strings.EqualFold(string(pod.Status.Phase), "Running") {
 				break
 			}
-			log.Infof("pod %s is in %s status!!!", pod.Name, string(pod.Status.Phase))
+			log.Infof("pod %s is in %s status... waiting 10 seconds", pod.Name, string(pod.Status.Phase))
 			time.Sleep(10 * time.Second)
 		}
 	}

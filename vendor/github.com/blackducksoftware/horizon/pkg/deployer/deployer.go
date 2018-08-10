@@ -33,6 +33,7 @@ import (
 	shorttypes "github.com/koki/short/types"
 
 	"k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	extensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
@@ -487,6 +488,206 @@ func (d *Deployer) deployPVCs() []error {
 			continue
 		}
 		_, err = d.client.Core().PersistentVolumeClaims(p.Namespace).Create(p)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func (d *Deployer) Undeploy() error {
+	allErrs := map[util.ComponentType][]error{}
+
+	err := d.undeployServices()
+	if len(err) > 0 {
+		allErrs[util.ServiceComponent] = err
+	}
+
+	err = d.undeployDeployments()
+	if len(err) > 0 {
+		allErrs[util.DeploymentComponent] = err
+	}
+
+	err = d.undeployPods()
+	if len(err) > 0 {
+		allErrs[util.PodComponent] = err
+	}
+
+	err = d.undeployReplicationControllers()
+	if len(err) > 0 {
+		allErrs[util.ReplicationControllerComponent] = err
+	}
+
+	err = d.undeploySecrets()
+	if len(err) > 0 {
+		allErrs[util.SecretComponent] = err
+	}
+
+	err = d.undeployConfigMaps()
+	if len(err) > 0 {
+		allErrs[util.ConfigMapComponent] = err
+	}
+
+	errMap := d.undeployRBAC()
+	if len(errMap) > 0 {
+		for k, v := range errMap {
+			allErrs[k] = v
+		}
+	}
+
+	err = d.undeployServiceAccounts()
+	if len(err) > 0 {
+		allErrs[util.ServiceAccountComponent] = err
+	}
+
+	err = d.undeployCRDs()
+	if len(err) > 0 {
+		allErrs[util.CRDComponent] = err
+	}
+
+	err = d.undeployNamespaces()
+	if len(err) > 0 {
+		allErrs[util.NamespaceComponent] = err
+	}
+
+	return utilserror.NewDeployErrors(allErrs)
+}
+
+func (d *Deployer) undeployCRDs() []error {
+	errs := []error{}
+
+	for name := range d.crds {
+		log.Infof("Deleting custom defined resource %s", name)
+		err := d.apiextensions.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployServiceAccounts() []error {
+	errs := []error{}
+
+	for name, saObj := range d.serviceAccounts {
+		log.Infof("Deleting service account %s", name)
+		err := d.client.Core().ServiceAccounts(saObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployRBAC() map[util.ComponentType][]error {
+	errs := map[util.ComponentType][]error{}
+
+	for name := range d.clusterRoles {
+		log.Infof("Deleting cluster role %s", name)
+		err := d.client.Rbac().ClusterRoles().Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs[util.ClusterRoleComponent] = append(errs[util.ClusterRoleComponent], err)
+		}
+	}
+
+	for name := range d.clusterRoleBindings {
+		log.Infof("Deleting cluster role binding %s", name)
+		err := d.client.Rbac().ClusterRoleBindings().Delete(name,  &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs[util.ClusterRoleBindingComponent] = append(errs[util.ClusterRoleComponent], err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployConfigMaps() []error {
+	errs := []error{}
+
+	for name, cmObj := range d.configMaps {
+		log.Infof("Deleting config map %s", name)
+		err := d.client.Core().ConfigMaps(cmObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeploySecrets() []error {
+	errs := []error{}
+
+	for name, secretObj := range d.secrets {
+		log.Infof("Deleting secret %s", name)
+		err := d.client.Core().Secrets(secretObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployReplicationControllers() []error {
+	errs := []error{}
+
+	for name, rcObj := range d.replicationControllers {
+		log.Infof("Deleting replication controller %s", name)
+		err := d.client.Core().ReplicationControllers(rcObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployPods() []error {
+	errs := []error{}
+
+	for name, pObj := range d.pods {
+		log.Infof("Deleting pod %s", name)
+		err := d.client.Core().Pods(pObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployDeployments() []error {
+	errs := []error{}
+
+	for name, dObj := range d.deployments {
+		log.Infof("Deleting deployment %s", name)
+		propagationPolicy := meta_v1.DeletePropagationBackground
+		err := d.client.AppsV1beta2().Deployments(dObj.Namespace).Delete(name, &meta_v1.DeleteOptions{
+			PropagationPolicy: &propagationPolicy,
+		})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployServices() []error {
+	errs := []error{}
+
+	for name, svcObj := range d.services {
+		log.Infof("Deleting service %s", name)
+		err := d.client.Core().Services(svcObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployNamespaces() []error {
+	errs := []error{}
+
+	for name := range d.namespaces {
+		log.Infof("Deleting namespace %s", name)
+		err := d.client.Core().Namespaces().Delete(name, &meta_v1.DeleteOptions{})
 		if err != nil {
 			errs = append(errs, err)
 		}
