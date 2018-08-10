@@ -20,7 +20,7 @@ items:
       spec:
         containers:
         - name: hub-installer
-          image: msenmurugan/hub-installer:latest
+          image: gcr.io/gke-verification/blackducksoftware/hub-protoform:master
           imagePullPolicy: Always
           ports:
           - containerPort: 8080
