@@ -144,7 +144,7 @@ func (h *HubHandler) callHubFederator() {
 		log.Errorf("unable to get the hub urls due to %+v", err)
 		return
 	}
-	err = h.addPerceptorEvents(fmt.Sprintf("%s/sethubs", h.federatorBaseURL), hubUrls)
+	err = h.addHubFederatorEvents(fmt.Sprintf("%s/sethubs", h.federatorBaseURL), hubUrls)
 	if err != nil {
 		log.Errorf("unable to update the hub urls in perceptor due to %+v", err)
 		return
@@ -203,7 +203,7 @@ func (h *HubHandler) verifyHub(hubURL string) bool {
 	return false
 }
 
-func (h *HubHandler) addPerceptorEvents(dest string, obj interface{}) error {
+func (h *HubHandler) addHubFederatorEvents(dest string, obj interface{}) error {
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
 		return fmt.Errorf("unable to serialize %v: %v", obj, err)
