@@ -96,7 +96,7 @@ func NewBootstrapperOptions() *BootstrapperOptions {
 	viper.SetDefault("ClusterConfigFile", "$HOME/.kube/config")
 	viper.SetDefault("Namespace", "perceptor")
 	viper.SetDefault("HubPort", 443)
-	viper.SetDefault("HubHost", "nginx-webapp-logstash")
+	viper.SetDefault("HubHost", "webserver")
 	viper.SetDefault("ConcurrentScanLimit", 7)
 	viper.SetDefault("Interactive", false)
 	viper.SetDefault("HubClientTimeoutPerceptorMilliseconds", 5000)

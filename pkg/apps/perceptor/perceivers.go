@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package protoform
+package perceptor
 
 import (
 	"fmt"
@@ -28,11 +28,11 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-func (i *Installer) perceiverReplicationController(imageName string, replicas int32) *components.ReplicationController {
+func (p *App) perceiverReplicationController(imageName string, replicas int32) *components.ReplicationController {
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      imageName,
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
 	rc.AddLabelSelectors(map[string]string{"name": imageName})
 
@@ -40,11 +40,11 @@ func (i *Installer) perceiverReplicationController(imageName string, replicas in
 }
 
 // PodPerceiverReplicationController creates a replication controller for the pod perceiver
-func (i *Installer) PodPerceiverReplicationController() (*components.ReplicationController, error) {
-	name := i.Config.PodPerceiverImageName
-	rc := i.perceiverReplicationController(name, 1)
+func (p *App) PodPerceiverReplicationController() (*components.ReplicationController, error) {
+	name := p.config.PodPerceiverImageName
+	rc := p.perceiverReplicationController(name, 1)
 
-	pod, err := i.perceiverPod(name, i.Config.ServiceAccounts["pod-perceiver"], "./pod-perceiver")
+	pod, err := p.perceiverPod(name, p.config.ServiceAccounts["pod-perceiver"], fmt.Sprintf("./%s", name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pod perceiver pod: %v", err)
 	}
@@ -54,11 +54,11 @@ func (i *Installer) PodPerceiverReplicationController() (*components.Replication
 }
 
 // ImagePerceiverReplicationController creates a replication controller for the image perceiver
-func (i *Installer) ImagePerceiverReplicationController() (*components.ReplicationController, error) {
-	name := i.Config.ImagePerceiverImageName
-	rc := i.perceiverReplicationController(name, 1)
+func (p *App) ImagePerceiverReplicationController() (*components.ReplicationController, error) {
+	name := p.config.ImagePerceiverImageName
+	rc := p.perceiverReplicationController(name, 1)
 
-	pod, err := i.perceiverPod(name, i.Config.ServiceAccounts["image-perceiver"], "./image-perceiver")
+	pod, err := p.perceiverPod(name, p.config.ServiceAccounts["image-perceiver"], fmt.Sprintf("./%s", name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image perceiver pod: %v", err)
 	}
@@ -67,16 +67,16 @@ func (i *Installer) ImagePerceiverReplicationController() (*components.Replicati
 	return rc, nil
 }
 
-func (i *Installer) perceiverPod(imageName string, account string, cmd string) (*components.Pod, error) {
+func (p *App) perceiverPod(imageName string, account string, cmd string) (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name:           imageName,
 		ServiceAccount: account,
 	})
 
 	pod.AddLabels(map[string]string{"name": imageName})
-	pod.AddContainer(i.perceiverContainer(imageName, cmd))
+	pod.AddContainer(p.perceiverContainer(imageName, cmd))
 
-	vols, err := i.perceiverVolumes()
+	vols, err := p.perceiverVolumes()
 
 	if err != nil {
 		return nil, err
@@ -89,18 +89,18 @@ func (i *Installer) perceiverPod(imageName string, account string, cmd string) (
 	return pod, nil
 }
 
-func (i *Installer) perceiverContainer(imageName string, cmd string) *components.Container {
+func (p *App) perceiverContainer(imageName string, cmd string) *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    imageName,
-		Image:   fmt.Sprintf("%s/%s/%s:%s", i.Config.Registry, i.Config.ImagePath, imageName, i.Config.PerceiverImageVersion),
+		Image:   fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, imageName, p.config.PerceiverImageVersion),
 		Command: []string{cmd},
 		Args:    []string{"/etc/perceiver/perceiver.yaml"},
-		MinCPU:  i.Config.DefaultCPU,
-		MinMem:  i.Config.DefaultMem,
+		MinCPU:  p.config.DefaultCPU,
+		MinMem:  p.config.DefaultMem,
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", i.Config.PerceiverPort),
+		ContainerPort: fmt.Sprintf("%d", *p.config.PerceiverPort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -116,7 +116,7 @@ func (i *Installer) perceiverContainer(imageName string, cmd string) *components
 	return container
 }
 
-func (i *Installer) perceiverVolumes() ([]*components.Volume, error) {
+func (p *App) perceiverVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -137,15 +137,15 @@ func (i *Installer) perceiverVolumes() ([]*components.Volume, error) {
 	return vols, nil
 }
 
-func (i *Installer) perceiverService(imageName string) *components.Service {
+func (p *App) perceiverService(imageName string) *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      imageName,
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(i.Config.PerceiverPort),
-		TargetPort: fmt.Sprintf("%d", i.Config.PerceiverPort),
+		Port:       int32(*p.config.PerceiverPort),
+		TargetPort: fmt.Sprintf("%d", *p.config.PerceiverPort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
@@ -155,47 +155,47 @@ func (i *Installer) perceiverService(imageName string) *components.Service {
 }
 
 // PodPerceiverService creates a service for the pod perceiver
-func (i *Installer) PodPerceiverService() *components.Service {
-	return i.perceiverService(i.Config.PodPerceiverImageName)
+func (p *App) PodPerceiverService() *components.Service {
+	return p.perceiverService(p.config.PodPerceiverImageName)
 }
 
 // ImagePerceiverService creates a service for the image perceiver
-func (i *Installer) ImagePerceiverService() *components.Service {
-	return i.perceiverService(i.Config.ImagePerceiverImageName)
+func (p *App) ImagePerceiverService() *components.Service {
+	return p.perceiverService(p.config.ImagePerceiverImageName)
 }
 
 // PerceiverConfigMap creates a config map for perceivers
-func (i *Installer) PerceiverConfigMap() *components.ConfigMap {
+func (p *App) PerceiverConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceiver",
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceiver.yaml": fmt.Sprint(`{"PerceptorHost": "`, i.Config.PerceptorImageName, `","PerceptorPort": "`, i.Config.PerceptorPort, `","AnnotationIntervalSeconds": "`, i.Config.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, i.Config.DumpIntervalMinutes, `","Port": "`, i.Config.PerceiverPort, `","LogLevel": "`, i.Config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"perceiver.yaml": fmt.Sprint(`{"PerceptorHost": "`, p.config.PerceptorImageName, `","PerceptorPort": "`, *p.config.PerceptorPort, `","AnnotationIntervalSeconds": "`, *p.config.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, *p.config.DumpIntervalMinutes, `","Port": "`, *p.config.PerceiverPort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }
 
-func (i *Installer) perceiverServiceAccount(name string) *components.ServiceAccount {
+func (p *App) perceiverServiceAccount(name string) *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		Name:      name,
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
 
 	return serviceAccount
 }
 
 // PodPerceiverServiceAccount creates a service account for the pod perceiver
-func (i *Installer) PodPerceiverServiceAccount() *components.ServiceAccount {
-	return i.perceiverServiceAccount(i.Config.ServiceAccounts["pod-perceiver"])
+func (p *App) PodPerceiverServiceAccount() *components.ServiceAccount {
+	return p.perceiverServiceAccount(p.config.ServiceAccounts["pod-perceiver"])
 }
 
 // ImagePerceiverServiceAccount creates a service account for the image perceiver
-func (i *Installer) ImagePerceiverServiceAccount() *components.ServiceAccount {
-	return i.perceiverServiceAccount(i.Config.ServiceAccounts["image-perceiver"])
+func (p *App) ImagePerceiverServiceAccount() *components.ServiceAccount {
+	return p.perceiverServiceAccount(p.config.ServiceAccounts["image-perceiver"])
 }
 
 // PodPerceiverClusterRole creates a cluster role for the pod perceiver
-func (i *Installer) PodPerceiverClusterRole() *components.ClusterRole {
+func (p *App) PodPerceiverClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
 		Name:       "pod-perceiver",
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -210,7 +210,7 @@ func (i *Installer) PodPerceiverClusterRole() *components.ClusterRole {
 }
 
 // ImagePerceiverClusterRole creates a cluster role for the image perceiver
-func (i *Installer) ImagePerceiverClusterRole() *components.ClusterRole {
+func (p *App) ImagePerceiverClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
 		Name:       "image-perceiver",
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -225,15 +225,15 @@ func (i *Installer) ImagePerceiverClusterRole() *components.ClusterRole {
 }
 
 // PodPerceiverClusterRoleBinding creates a cluster role binding for the pod perceiver
-func (i *Installer) PodPerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
+func (p *App) PodPerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       "pod-perceiver",
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
 		Kind:      "ServiceAccount",
-		Name:      i.Config.ServiceAccounts["pod-perceiver"],
-		Namespace: i.Config.Namespace,
+		Name:      p.config.ServiceAccounts["pod-perceiver"],
+		Namespace: p.config.Namespace,
 	})
 	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
@@ -245,15 +245,15 @@ func (i *Installer) PodPerceiverClusterRoleBinding(clusterRole *components.Clust
 }
 
 // ImagePerceiverClusterRoleBinding creates a cluster role binding for the image perceiver
-func (i *Installer) ImagePerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
+func (p *App) ImagePerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       "image-perceiver",
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
 		Kind:      "ServiceAccount",
-		Name:      i.Config.ServiceAccounts["image-perceiver"],
-		Namespace: i.Config.Namespace,
+		Name:      p.config.ServiceAccounts["image-perceiver"],
+		Namespace: p.config.Namespace,
 	})
 	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",

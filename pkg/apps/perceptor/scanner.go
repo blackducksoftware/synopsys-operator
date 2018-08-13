@@ -4,7 +4,7 @@ Copyright (C) 2018 Synopsys, Inc.
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
 distributed with this work for additional information
-regarding copyright ownershii.Config. The ASF licenses this file
+regarding copyright ownership.config. The ASF licenses this file
 to you under the Apache License, Version 2.0 (the
 "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package protoform
+package perceptor
 
 import (
 	"fmt"
@@ -30,17 +30,17 @@ import (
 )
 
 // ScannerReplicationController creates a replication controller for the perceptor scanner
-func (i *Installer) ScannerReplicationController() (*components.ReplicationController, error) {
-	replicas := int32(math.Ceil(float64(i.Config.ConcurrentScanLimit) / 2.0))
+func (p *App) ScannerReplicationController() (*components.ReplicationController, error) {
+	replicas := int32(math.Ceil(float64(*p.config.ConcurrentScanLimit) / 2.0))
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      i.Config.ScannerImageName,
-		Namespace: i.Config.Namespace,
+		Name:      p.config.ScannerImageName,
+		Namespace: p.config.Namespace,
 	})
 
-	rc.AddLabelSelectors(map[string]string{"name": i.Config.ScannerImageName})
+	rc.AddLabelSelectors(map[string]string{"name": p.config.ScannerImageName})
 
-	pod, err := i.scannerPod()
+	pod, err := p.scannerPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create scanner pod: %v", err)
 	}
@@ -49,22 +49,22 @@ func (i *Installer) ScannerReplicationController() (*components.ReplicationContr
 	return rc, nil
 }
 
-func (i *Installer) scannerPod() (*components.Pod, error) {
+func (p *App) scannerPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name:           i.Config.ScannerImageName,
-		ServiceAccount: i.Config.ServiceAccounts["perceptor-image-facade"],
+		Name:           p.config.ScannerImageName,
+		ServiceAccount: p.config.ServiceAccounts["perceptor-image-facade"],
 	})
-	pod.AddLabels(map[string]string{"name": i.Config.ScannerImageName})
+	pod.AddLabels(map[string]string{"name": p.config.ScannerImageName})
 
-	pod.AddContainer(i.scannerContainer())
-	pod.AddContainer(i.imageFacadeContainer())
+	pod.AddContainer(p.scannerContainer())
+	pod.AddContainer(p.imageFacadeContainer())
 
-	vols, err := i.scannerVolumes()
+	vols, err := p.scannerVolumes()
 	if err != nil {
 		return nil, fmt.Errorf("error creating scanner volumes: %v", err)
 	}
 
-	newVols, err := i.imageFacadeVolumes()
+	newVols, err := p.imageFacadeVolumes()
 	if err != nil {
 		return nil, fmt.Errorf("error creating image facade volumes: %v", err)
 	}
@@ -75,20 +75,20 @@ func (i *Installer) scannerPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (i *Installer) scannerContainer() *components.Container {
+func (p *App) scannerContainer() *components.Container {
 	priv := false
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:       i.Config.ScannerImageName,
-		Image:      fmt.Sprintf("%s/%s/%s:%s", i.Config.Registry, i.Config.ImagePath, i.Config.ScannerImageName, i.Config.ScannerImageVersion),
-		Command:    []string{"./perceptor-scanner"},
+		Name:       p.config.ScannerImageName,
+		Image:      fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, p.config.ScannerImageName, p.config.ScannerImageVersion),
+		Command:    []string{fmt.Sprintf("./%s", p.config.ScannerImageName)},
 		Args:       []string{"/etc/perceptor_scanner/perceptor_scanner.yaml"},
-		MinCPU:     i.Config.DefaultCPU,
-		MinMem:     i.Config.DefaultMem,
+		MinCPU:     p.config.DefaultCPU,
+		MinMem:     p.config.DefaultMem,
 		Privileged: &priv,
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", i.Config.ScannerPort),
+		ContainerPort: fmt.Sprintf("%d", *p.config.ScannerPort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -102,29 +102,29 @@ func (i *Installer) scannerContainer() *components.Container {
 	})
 
 	container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: i.Config.HubUserPasswordEnvVar,
+		NameOrPrefix: p.config.HubUserPasswordEnvVar,
 		Type:         horizonapi.EnvFromSecret,
 		KeyOrVal:     "HubUserPassword",
-		FromName:     i.Config.ViperSecret,
+		FromName:     p.config.SecretName,
 	})
 
 	return container
 }
 
-func (i *Installer) imageFacadeContainer() *components.Container {
+func (p *App) imageFacadeContainer() *components.Container {
 	priv := true
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:       i.Config.ImageFacadeImageName,
-		Image:      fmt.Sprintf("%s/%s/%s:%s", i.Config.Registry, i.Config.ImagePath, i.Config.ImageFacadeImageName, i.Config.ImageFacadeImageVersion),
+		Name:       p.config.ImageFacadeImageName,
+		Image:      fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, p.config.ImageFacadeImageName, p.config.ImageFacadeImageVersion),
 		Command:    []string{"./perceptor-imagefacade"},
 		Args:       []string{"/etc/perceptor_imagefacade/perceptor_imagefacade.yaml"},
-		MinCPU:     i.Config.DefaultCPU,
-		MinMem:     i.Config.DefaultMem,
+		MinCPU:     p.config.DefaultCPU,
+		MinMem:     p.config.DefaultMem,
 		Privileged: &priv,
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", i.Config.ImageFacadePort),
+		ContainerPort: fmt.Sprintf("%d", *p.config.ImageFacadePort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -144,7 +144,7 @@ func (i *Installer) imageFacadeContainer() *components.Container {
 	return container
 }
 
-func (i *Installer) scannerVolumes() ([]*components.Volume, error) {
+func (p *App) scannerVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -165,7 +165,7 @@ func (i *Installer) scannerVolumes() ([]*components.Volume, error) {
 	return vols, nil
 }
 
-func (i *Installer) imageFacadeVolumes() ([]*components.Volume, error) {
+func (p *App) imageFacadeVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -192,16 +192,16 @@ func (i *Installer) imageFacadeVolumes() ([]*components.Volume, error) {
 }
 
 // ScannerService creates a service for perceptor scanner
-func (i *Installer) ScannerService() *components.Service {
+func (p *App) ScannerService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      i.Config.ScannerImageName,
-		Namespace: i.Config.Namespace,
+		Name:      p.config.ScannerImageName,
+		Namespace: p.config.Namespace,
 	})
-	service.AddSelectors(map[string]string{"name": i.Config.ScannerImageName})
+	service.AddSelectors(map[string]string{"name": p.config.ScannerImageName})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(i.Config.ScannerPort),
-		TargetPort: fmt.Sprintf("%d", i.Config.ScannerPort),
+		Port:       int32(*p.config.ScannerPort),
+		TargetPort: fmt.Sprintf("%d", *p.config.ScannerPort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
@@ -209,16 +209,16 @@ func (i *Installer) ScannerService() *components.Service {
 }
 
 // ImageFacadeService creates a service for perceptor image-facade
-func (i *Installer) ImageFacadeService() *components.Service {
+func (p *App) ImageFacadeService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      i.Config.ImageFacadeImageName,
-		Namespace: i.Config.Namespace,
+		Name:      p.config.ImageFacadeImageName,
+		Namespace: p.config.Namespace,
 	})
-	service.AddSelectors(map[string]string{"name": i.Config.ScannerImageName})
+	service.AddSelectors(map[string]string{"name": p.config.ScannerImageName})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(i.Config.ImageFacadePort),
-		TargetPort: fmt.Sprintf("%d", i.Config.ImageFacadePort),
+		Port:       int32(*p.config.ImageFacadePort),
+		TargetPort: fmt.Sprintf("%d", *p.config.ImageFacadePort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
@@ -226,39 +226,39 @@ func (i *Installer) ImageFacadeService() *components.Service {
 }
 
 // ScannerConfigMap creates a config map for the perceptor scanner
-func (i *Installer) ScannerConfigMap() *components.ConfigMap {
+func (p *App) ScannerConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor-scanner",
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceptor_scanner.yaml": fmt.Sprint(`{"HubHost": "`, i.Config.HubHost, `","HubPort": "`, i.Config.HubPort, `","HubUser": "`, i.Config.HubUser, `","HubUserPasswordEnvVar": "`, i.Config.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, i.Config.HubClientTimeoutScannerSeconds, `","Port": "`, i.Config.ScannerPort, `","PerceptorHost": "`, i.Config.PerceptorImageName, `","PerceptorPort": "`, i.Config.PerceptorPort, `","ImageFacadeHost": "`, i.Config.ImageFacadeImageName, `","ImageFacadePort": "`, i.Config.ImageFacadePort, `","LogLevel": "`, i.Config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"perceptor_scanner.yaml": fmt.Sprint(`{"HubHost": "`, p.config.HubHost, `","HubPort": "`, *p.config.HubPort, `","HubUser": "`, p.config.HubUser, `","HubUserPasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, *p.config.HubClientTimeoutScannerSeconds, `","Port": "`, *p.config.ScannerPort, `","PerceptorHost": "`, p.config.PerceptorImageName, `","PerceptorPort": "`, *p.config.PerceptorPort, `","ImageFacadeHost": "`, p.config.ImageFacadeImageName, `","ImageFacadePort": "`, *p.config.ImageFacadePort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }
 
 //ImageFacadeConfigMap creates a config map for the perceptor image-facade
-func (i *Installer) ImageFacadeConfigMap() *components.ConfigMap {
+func (p *App) ImageFacadeConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor-imagefacade",
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceptor_imagefacade.yaml": fmt.Sprint(`{"DockerUser": "`, i.Config.DockerUsername, `","DockerPassword": "`, i.Config.DockerPasswordOrToken, `","Port": "`, i.Config.ImageFacadePort, `","InternalDockerRegistries": `, generateStringFromStringArr(i.Config.InternalDockerRegistries), `,"LogLevel": "`, i.Config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"perceptor_imagefacade.yaml": fmt.Sprint(`{"DockerUser": "`, p.config.DockerUsername, `","DockerPassword": "`, p.config.DockerPasswordOrToken, `","Port": "`, *p.config.ImageFacadePort, `","InternalDockerRegistries": `, p.generateStringFromStringArr(p.config.InternalDockerRegistries), `,"LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }
 
 // ScannerServiceAccount creates a service account for the perceptor scanner
-func (i *Installer) ScannerServiceAccount() *components.ServiceAccount {
+func (p *App) ScannerServiceAccount() *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
-		Name:      i.Config.ServiceAccounts["perceptor-image-facade"],
-		Namespace: i.Config.Namespace,
+		Name:      p.config.ServiceAccounts["perceptor-image-facade"],
+		Namespace: p.config.Namespace,
 	})
 
 	return serviceAccount
 }
 
 // ScannerClusterRoleBinding creates a cluster role binding for the perceptor scanner
-func (i *Installer) ScannerClusterRoleBinding() *components.ClusterRoleBinding {
+func (p *App) ScannerClusterRoleBinding() *components.ClusterRoleBinding {
 	scannerCRB := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       "perceptor-scanner",
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -266,8 +266,8 @@ func (i *Installer) ScannerClusterRoleBinding() *components.ClusterRoleBinding {
 
 	scannerCRB.AddSubject(horizonapi.SubjectConfig{
 		Kind:      "ServiceAccount",
-		Name:      i.Config.ServiceAccounts["perceptor-image-facade"],
-		Namespace: i.Config.Namespace,
+		Name:      p.config.ServiceAccounts["perceptor-image-facade"],
+		Namespace: p.config.Namespace,
 	})
 	scannerCRB.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",

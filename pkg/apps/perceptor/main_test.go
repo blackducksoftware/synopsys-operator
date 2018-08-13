@@ -19,41 +19,51 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package protoform
+package perceptor
 
 import (
-	"os"
+	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-func TestProto(t *testing.T) {
-	var rcsArray []*components.ReplicationController
+func TestGenerateStringFromStringArr(t *testing.T) {
+	var strArr = []string{"example1", "example2"}
+	a := App{}
+	str := a.generateStringFromStringArr(strArr)
 
-	os.Setenv("PCP_HUBUSERPASSWORD", "example")
+	if str != "[\"example1\",\"example2\"]" {
+		fmt.Printf("The final string is %s", str)
+		t.Fail()
+	}
+}
 
-	d := NewDefaultsObj()
+func TestPerceptorContainers(t *testing.T) {
+	d := NewPerceptorAppDefaults()
+	d.Registry = "gcr.io"
+	d.ImagePath = "gke-verification/blackducksoftware"
+	d.Namespace = "perceptor"
+	d.DefaultVersion = "master"
 	d.DefaultCPU = "300m"
 	d.DefaultMem = "1300Mi"
 
-	installer, err := NewInstaller(d, "../../cmd/protoform-installer/protoform.json")
-	if err != nil {
-		t.Fatalf("failed to create installer: %v", err)
-	}
-	installer.AddPerceptorResources()
-	rcsArray = append(rcsArray, installer.PerceptorReplicationController())
-	rc, _ := installer.PodPerceiverReplicationController()
-	rcsArray = append(rcsArray, rc)
-	rc, _ = installer.ImagePerceiverReplicationController()
-	rcsArray = append(rcsArray, rc)
-	rc, _ = installer.ScannerReplicationController()
-	rcsArray = append(rcsArray, rc)
-	rc, _ = installer.PerceptorSkyfireReplicationController()
-	rcsArray = append(rcsArray, rc)
+	a, _ := NewApp(d)
+	a.configServiceAccounts()
+	a.substituteDefaultImageVersion()
 
-	var imageRegexp = regexp.MustCompile("(.+)/(.+):(.+)")
+	rcsArray := []*components.ReplicationController{}
+	rcsArray = append(rcsArray, a.PerceptorReplicationController())
+	rc, _ := a.PodPerceiverReplicationController()
+	rcsArray = append(rcsArray, rc)
+	rc, _ = a.ImagePerceiverReplicationController()
+	rcsArray = append(rcsArray, rc)
+	rc, _ = a.ScannerReplicationController()
+	rcsArray = append(rcsArray, rc)
+	rc, _ = a.PerceptorSkyfireReplicationController()
+	rcsArray = append(rcsArray, rc)
 
 	args := map[string]string{
 		"perceptor":             "/etc/perceptor/perceptor.yaml",
@@ -64,6 +74,7 @@ func TestProto(t *testing.T) {
 		"skyfire":               "/etc/skyfire/skyfire.yaml",
 	}
 
+	var imageRegexp = regexp.MustCompile("(.+)/(.+):(.+)")
 	for _, rcs := range rcsArray {
 		for _, container := range rcs.GetObj().Containers {
 
@@ -81,37 +92,16 @@ func TestProto(t *testing.T) {
 			}
 
 			// verify the default cpu parameters
-			if d.DefaultCPU != container.CPU.Min {
+			if strings.Compare(d.DefaultCPU, container.CPU.Min) != 0 {
 				t.Errorf("Default CPU is not configured for %s, Expected: %s, Actual: %s", container.Name, d.DefaultCPU, container.CPU.Min)
 			}
 
 			// verify the default memory parameters
-			if d.DefaultMem != container.Mem.Min {
+			if strings.Compare(d.DefaultMem, container.Mem.Min) != 0 {
 				t.Errorf("Default memory is not configured for %s, Expected: %s, Actual: %s", container.Name, d.DefaultMem, container.Mem.Min)
 			}
 
 		}
 	}
 
-	// Image facade needs to be privileged !
-	if *rcsArray[3].GetObj().PodTemplate.Containers[1].Privileged == false {
-		t.Errorf("%v %v", rcsArray[3].GetObj().PodTemplate.Containers[1].Name, *rcsArray[3].GetObj().PodTemplate.Containers[1].Privileged)
-	}
-
-	// The scanner needs to be UNPRIVILEGED
-	if *rcsArray[3].GetObj().PodTemplate.Containers[0].Privileged == true {
-		t.Errorf("%v %v", rcsArray[3].GetObj().PodTemplate.Containers[0].Name, *rcsArray[3].GetObj().PodTemplate.Containers[0].Privileged)
-	}
-
-	t.Logf("template: %v ", rcsArray[3].GetObj().PodTemplate)
-	scannerSvc := rcsArray[3].GetObj().PodTemplate.Account
-	if scannerSvc == "" {
-		t.Errorf("scanner svc ==> ( %v ) EMPTY !", scannerSvc)
-	}
-
-	s0 := rcsArray[3].GetObj().PodTemplate.Containers[0].Name
-	s := rcsArray[3].GetObj().PodTemplate.Containers[0].VolumeMounts[1].Store
-	if s != "var-images" {
-		t.Errorf("%v %v", s0, s)
-	}
 }

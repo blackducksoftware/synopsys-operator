@@ -22,7 +22,10 @@ under the License.
 package api
 
 import (
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
+
 	kapi "github.com/blackducksoftware/horizon/pkg/api"
+
 	"github.com/koki/short/types"
 )
 
@@ -102,48 +105,16 @@ type Container struct {
 	PortConfig      *kapi.PortConfig
 }
 
-// ProtoformDefaults defines default values for Protoform.
-// These fields need to be named the same as those in
-// protoformConfig in order for defaults to be applied
-// properly.  A field that exists in ProtoformDefaults
-// but does not exist in protoformConfig will be ignored
-type ProtoformDefaults struct {
-	PerceptorPort                         int
-	PerceiverPort                         int
-	ScannerPort                           int
-	ImageFacadePort                       int
-	SkyfirePort                           int
-	AnnotationIntervalSeconds             int
-	DumpIntervalMinutes                   int
-	HubClientTimeoutPerceptorMilliseconds int
-	HubClientTimeoutScannerSeconds        int
-	HubHost                               string
-	HubUser                               string
-	HubUserPassword                       string
-	HubPort                               int
-	DockerUsername                        string
-	DockerPasswordOrToken                 string
-	ConcurrentScanLimit                   int
-	InternalDockerRegistries              []string
-	DefaultVersion                        string
-	Registry                              string
-	ImagePath                             string
-	PerceptorImageName                    string
-	ScannerImageName                      string
-	ImagePerceiverImageName               string
-	PodPerceiverImageName                 string
-	ImageFacadeImageName                  string
-	SkyfireImageName                      string
-	PerceptorImageVersion                 string
-	ScannerImageVersion                   string
-	PerceiverImageVersion                 string
-	ImageFacadeImageVersion               string
-	SkyfireImageVersion                   string
-	LogLevel                              string
-	Namespace                             string
-	DefaultCPU                            string // Should be passed like: e.g. "300m"
-	DefaultMem                            string // Should be passed like: e.g "1300Mi"
-	ImagePerceiver                        bool
-	PodPerceiver                          bool
-	Metrics                               bool
+// ProtoformConfig defines the configuration for protoform
+type ProtoformConfig struct {
+	// Dry run wont actually install, but will print the objects definitions out.
+	DryRun bool `json:"dryRun,omitempty"`
+
+	// Viper secrets
+	ViperSecret string `json:"viperSecret,omitempty"`
+
+	// Log level
+	DefaultLogLevel string `json:"defaultLogLevel,omitempty"`
+
+	PerceptorConfig *perceptor.AppConfig `json:"perceptorConfig,omitempty"`
 }

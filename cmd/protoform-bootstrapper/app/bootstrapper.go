@@ -22,10 +22,15 @@ under the License.
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/ghodss/yaml"
+
 	"github.com/blackducksoftware/perceptor-protoform/cmd/protoform-bootstrapper/app/options"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -38,7 +43,6 @@ import (
 type Bootstrapper struct {
 	*deployer.Deployer
 	opts *options.BootstrapperOptions
-	//	client *kubernetes.Clientset
 }
 
 // NewBootstrapper creats a new Bootstrapper object
@@ -59,7 +63,7 @@ func NewBootstrapper(opts *options.BootstrapperOptions) (*Bootstrapper, error) {
 }
 
 // Start begins the bootstrapping process
-func (b *Bootstrapper) setup() {
+func (b *Bootstrapper) setup() error {
 	// Create the protoform container
 	containerConfig := horizonapi.ContainerConfig{
 		Name:       "protoform",
@@ -116,40 +120,53 @@ func (b *Bootstrapper) setup() {
 	b.AddSecret(secret)
 
 	// Create protoform's configuration
-	protoformConfig := []string{fmt.Sprintf("%s: %s", "DockerPasswordOrToken", b.opts.DockerPasswordOrToken),
-		fmt.Sprintf("%s: %s", "HubHost", b.opts.HubHost),
-		fmt.Sprintf("%s: %s", "HubUser", b.opts.HubUser),
-		fmt.Sprintf("%s: %d", "HubPort", b.opts.HubPort),
-		fmt.Sprintf("%s: %d", "HubClientTimeoutPerceptorMilliseconds", b.opts.HubClientTimeoutPerceptorMilliseconds),
-		fmt.Sprintf("%s: %d", "HubClientTimeoutScannerSeconds", b.opts.HubClientTimeoutScannerSeconds),
-		fmt.Sprintf("%s: %d", "ConcurrentScanLimit", b.opts.ConcurrentScanLimit),
-		fmt.Sprintf("%s: %s", "DockerUsername", "admin"),
-		fmt.Sprintf("%s: %s", "Namespace", b.opts.Namespace),
-		fmt.Sprintf("%s: %t", "ImagePerceiver", b.opts.AnnotateImages),
-		fmt.Sprintf("%s: %t", "PodPerceiver", b.opts.AnnotatePods),
-		fmt.Sprintf("%s: %v", "InternalDockerRegistries", b.opts.InternalDockerRegistries),
-		fmt.Sprintf("%s: %s", "DefaultCPU", b.opts.DefaultCPU),
-		fmt.Sprintf("%s: %s", "DefaultMem", b.opts.DefaultMem),
-		fmt.Sprintf("%s: %s", "Registry", b.opts.DefaultRegistry),
-		fmt.Sprintf("%s: %s", "ImagePath", b.opts.DefaultImagePath),
-		fmt.Sprintf("%s: %s", "Defaultversion", b.opts.DefaultImageVersion),
-		fmt.Sprintf("%s: %s", "PerceptorImageName", b.opts.PerceptorImage),
-		fmt.Sprintf("%s: %s", "ScannerImageName", b.opts.ScannerImage),
-		fmt.Sprintf("%s: %s", "PodPerceiverImageName", b.opts.PodPerceiverImage),
-		fmt.Sprintf("%s: %s", "ImagePerceiverImageName", b.opts.ImagePerceiverImage),
-		fmt.Sprintf("%s: %s", "ImageFacadeImageName", b.opts.ImageFacadeImage),
-		fmt.Sprintf("%s: %s", "SkyfireImageName", b.opts.SkyfireImage),
-		fmt.Sprintf("%s: %s", "PerceptorImageVersion", b.opts.PerceptorImageVersion),
-		fmt.Sprintf("%s: %s", "ScannerImageVersion", b.opts.ScannerImageVersion),
-		fmt.Sprintf("%s: %s", "PerceiverImageVersion", b.opts.PerceiverImageVersion),
-		fmt.Sprintf("%s: %s", "ImageFacadeImageVersion", b.opts.ImageFacadeImageVersion),
-		fmt.Sprintf("%s: %s", "SkyfireImageVersion", b.opts.SkyfireImageVersion),
-		fmt.Sprintf("%s: %s", "LogLevel", b.opts.LogLevel),
-		fmt.Sprintf("%s: %t", "Metrics", b.opts.EnableMetrics),
-		fmt.Sprintf("%s: %s", "Namespace", b.opts.Namespace),
-		fmt.Sprintf("%s: %s", "ViperSecret", "protoform"),
-		fmt.Sprintf("%s: %t", "PerceptorSkyfire", b.opts.EnableSkyfire),
-		fmt.Sprintf("%s: %s", "LogLevel", b.opts.LogLevel),
+	config := api.ProtoformConfig{
+		ViperSecret:     "protoform",
+		DefaultLogLevel: b.opts.LogLevel,
+	}
+
+	// Perceptor Config
+	config.PerceptorConfig = &perceptor.AppConfig{
+		DockerPasswordOrToken: b.opts.DockerPasswordOrToken,
+		HubHost:               b.opts.HubHost,
+		HubUser:               b.opts.HubUser,
+		HubPort:               &b.opts.HubPort,
+		HubClientTimeoutPerceptorMilliseconds: &b.opts.HubClientTimeoutPerceptorMilliseconds,
+		HubClientTimeoutScannerSeconds:        &b.opts.HubClientTimeoutScannerSeconds,
+		ConcurrentScanLimit:                   &b.opts.ConcurrentScanLimit,
+		DockerUsername:                        "admin",
+		Namespace:                             b.opts.Namespace,
+		ImagePerceiver:                        &b.opts.AnnotateImages,
+		PodPerceiver:                          &b.opts.AnnotatePods,
+		PerceptorSkyfire:                      &b.opts.EnableSkyfire,
+		Metrics:                               &b.opts.EnableMetrics,
+		InternalDockerRegistries:              b.opts.InternalDockerRegistries,
+		DefaultCPU:                            b.opts.DefaultCPU,
+		DefaultMem:                            b.opts.DefaultMem,
+		Registry:                              b.opts.DefaultRegistry,
+		ImagePath:                             b.opts.DefaultImagePath,
+		DefaultVersion:                        b.opts.DefaultImageVersion,
+		PerceptorImageName:                    b.opts.PerceptorImage,
+		ScannerImageName:                      b.opts.ScannerImage,
+		PodPerceiverImageName:                 b.opts.PodPerceiverImage,
+		ImagePerceiverImageName:               b.opts.ImagePerceiverImage,
+		ImageFacadeImageName:                  b.opts.ImageFacadeImage,
+		SkyfireImageName:                      b.opts.SkyfireImage,
+		PerceptorImageVersion:                 b.opts.PerceptorImageVersion,
+		ScannerImageVersion:                   b.opts.ScannerImageVersion,
+		PerceiverImageVersion:                 b.opts.PerceiverImageVersion,
+		ImageFacadeImageVersion:               b.opts.ImageFacadeImageVersion,
+		SkyfireImageVersion:                   b.opts.SkyfireImageVersion,
+		LogLevel:                              b.opts.LogLevel,
+		SecretName:                            "protoform",
+	}
+	jsonData, err := json.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal perceptor config: %v", err)
+	}
+	yamlOutput, err := yaml.JSONToYAML(jsonData)
+	if err != nil {
+		return fmt.Errorf("failed to convert json: %v", err)
 	}
 
 	cmConfig := horizonapi.ConfigMapConfig{
@@ -158,10 +175,12 @@ func (b *Bootstrapper) setup() {
 		Namespace:  b.opts.Namespace,
 	}
 	configMap := components.NewConfigMap(cmConfig)
-	configMap.AddData(map[string]string{"protoform.yaml": strings.Join(protoformConfig, "\n")})
+	configMap.AddData(map[string]string{"protoform.yaml": string(yamlOutput)})
 	b.AddConfigMap(configMap)
 
 	b.createDeps()
+
+	return nil
 }
 
 func (b *Bootstrapper) createDeps() {

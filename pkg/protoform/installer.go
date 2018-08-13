@@ -26,37 +26,49 @@ import (
 	"flag"
 	"fmt"
 	"path/filepath"
-	"reflect"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 
+	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
 
 	"github.com/spf13/viper"
 
+	"k8s.io/api/core/v1"
+
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 )
 
 // Installer handles deploying configured components to a cluster
 type Installer struct {
-	*deployer.Deployer
+	deployer *deployer.Deployer
 
-	// Config will have all viper inputs and default values
-	Config protoformConfig
+	config api.ProtoformConfig
+
+	appDefaults map[apps.AppType]interface{}
+	apps        []apps.AppInstallerInterface
+
+	osSecurityClient *securityclient.SecurityV1Client
 }
 
 // NewInstaller creates an Installer object
-func NewInstaller(defaults *api.ProtoformDefaults, path string) (*Installer, error) {
+func NewInstaller(path string) (*Installer, error) {
 	var i Installer
 	var config *rest.Config
 	var err error
 
 	pc := readConfig(path)
-	setDefaults(defaults, pc)
 
 	if !pc.DryRun {
 		// creates the in-cluster config
@@ -74,49 +86,39 @@ func NewInstaller(defaults *api.ProtoformDefaults, path string) (*Installer, err
 		config = &rest.Config{}
 	}
 
+	osClient, err := securityclient.NewForConfig(config)
+	if err != nil {
+		osClient = nil
+	}
+
 	d, err := deployer.NewDeployer(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create deployer: %v", err)
 	}
 
-	i = Installer{d, *pc}
+	i = Installer{
+		deployer:         d,
+		config:           *pc,
+		appDefaults:      make(map[apps.AppType]interface{}),
+		apps:             make([]apps.AppInstallerInterface, 0),
+		osSecurityClient: osClient,
+	}
 
-	i.prettyPrint(i.Config)
+	i.prettyPrint()
 
 	return &i, nil
 }
 
-func setDefaults(defaults *api.ProtoformDefaults, config *protoformConfig) {
-	configFields := reflect.ValueOf(config).Elem()
-	defaultFields := reflect.ValueOf(defaults).Elem()
-	for cnt := 0; cnt < configFields.NumField(); cnt++ {
-		fieldName := configFields.Type().Field(cnt).Name
-		field := configFields.Field(cnt)
-		defaultValue := defaultFields.FieldByName(fieldName)
-		if defaultValue.IsValid() {
-			switch configFields.Type().Field(cnt).Type.Kind().String() {
-			case "string":
-				if field.Len() == 0 {
-					field.Set(defaultValue)
-				}
-			case "slice":
-				if field.Len() == 0 {
-					field.Set(defaultValue)
-				}
-			case "int":
-				if field.Int() == 0 {
-					field.Set(defaultValue)
-				}
-			}
-		}
-	}
+// LoadAppDefault will store the defaults for the provided app
+func (i *Installer) LoadAppDefault(app apps.AppType, defaults interface{}) {
+	i.appDefaults[app] = defaults
 }
 
 // We don't dynamically reload.
 // If users want to dynamically reload,
 // they can update the individual perceptor containers configmaps.
-func readConfig(configPath string) *protoformConfig {
-	config := protoformConfig{}
+func readConfig(configPath string) *api.ProtoformConfig {
+	config := api.ProtoformConfig{}
 
 	log.Debug("*************** [protoform] initializing  ****************")
 	log.Infof("Config Path: %s", configPath)
@@ -130,172 +132,206 @@ func readConfig(configPath string) *protoformConfig {
 		log.Panic("no hub database password secret supplied.  Please inject PCP_HUBUSERPASSWORD as a secret and restart")
 	}
 
-	config.HubUserPasswordEnvVar = "PCP_HUBUSERPASSWORD"
-	config.ViperSecret = "protoform"
+	viper.SetDefault("ViperSecret", "protoform")
 
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Errorf("unable to read the config file! The input config file path is %s. Using defaults for everything", configPath)
 	}
 
-	internalRegistry := viper.GetStringSlice("InternalDockerRegistries")
-	viper.Set("InternalDockerRegistries", internalRegistry)
-
+	setViperAppStructs(&config)
 	viper.Unmarshal(&config)
 
 	// Set the Log level by reading the loglevel from config
-	log.Infof("Log level : %s", config.LogLevel)
-	level, _ := log.ParseLevel(config.LogLevel)
+	log.Infof("Log level : %s", config.DefaultLogLevel)
+	level, _ := log.ParseLevel(config.DefaultLogLevel)
 	log.SetLevel(level)
 
 	log.Debug("*************** [protoform] done reading in config ****************")
 	return &config
 }
 
-// AddPerceptorResources method is to support perceptor projects TODO: Remove perceptor specific code
-func (i *Installer) AddPerceptorResources() {
-	i.configServiceAccounts()
-	isValid := i.sanityCheckServices()
-	if isValid == false {
-		log.Panic("Please set the service accounts correctly!")
-	}
-
-	i.substituteDefaultImageVersion()
-	i.addPerceptorResources()
-}
-
-func (i *Installer) substituteDefaultImageVersion() {
-	if len(i.Config.PerceptorImageVersion) == 0 {
-		i.Config.PerceptorImageVersion = i.Config.DefaultVersion
-	}
-	if len(i.Config.ScannerImageVersion) == 0 {
-		i.Config.ScannerImageVersion = i.Config.DefaultVersion
-	}
-	if len(i.Config.PerceiverImageVersion) == 0 {
-		i.Config.PerceiverImageVersion = i.Config.DefaultVersion
-	}
-	if len(i.Config.ImageFacadeImageVersion) == 0 {
-		i.Config.ImageFacadeImageVersion = i.Config.DefaultVersion
-	}
-	if len(i.Config.SkyfireImageVersion) == 0 {
-		i.Config.SkyfireImageVersion = i.Config.DefaultVersion
+func setViperAppStructs(conf *api.ProtoformConfig) {
+	if viper.Get("PerceptorConfig") != nil {
+		conf.PerceptorConfig = &perceptor.AppConfig{}
 	}
 }
 
-func (i *Installer) configServiceAccounts() {
-	// TODO Viperize these env vars.
-	if len(i.Config.ServiceAccounts) == 0 {
-		log.Info("No service accounts exist.  Using defaults")
-
-		svcAccounts := map[string]string{
-			// WARNING: These service accounts need to exist !
-			"pod-perceiver":          "perceiver",
-			"image-perceiver":        "perceiver",
-			"perceptor-image-facade": "perceptor-scanner",
-		}
-		// TODO programatically validate rather then sanity check.
-		i.prettyPrint(svcAccounts)
-		i.Config.ServiceAccounts = svcAccounts
-	}
-}
-
-func (i *Installer) addPerceptorResources() {
-	// Add Perceptor
-	i.AddReplicationController(i.PerceptorReplicationController())
-	i.AddService(i.PerceptorService())
-	i.AddConfigMap(i.PerceptorConfigMap())
-
-	// Add Perceptor Scanner
-	rc, err := i.ScannerReplicationController()
+// Run will start the installer
+func (i *Installer) Run(stopCh chan struct{}) error {
+	err := i.createApps()
 	if err != nil {
-		panic(fmt.Errorf("failed to create scanner replication controller: %v", err))
-	}
-	i.AddReplicationController(rc)
-	i.AddService(i.ScannerService())
-	i.AddService(i.ImageFacadeService())
-	i.AddConfigMap(i.ScannerConfigMap())
-	i.AddConfigMap(i.ImageFacadeConfigMap())
-	i.AddServiceAccount(i.ScannerServiceAccount())
-	i.AddClusterRoleBinding(i.ScannerClusterRoleBinding())
-
-	if i.Config.PodPerceiver {
-		rc, err := i.PodPerceiverReplicationController()
-		if err != nil {
-			panic(fmt.Errorf("failed to create pod perceiver: %v", err))
-		}
-		i.AddReplicationController(rc)
-		i.AddService(i.PodPerceiverService())
-		i.AddConfigMap(i.PerceiverConfigMap())
-		i.AddServiceAccount(i.PodPerceiverServiceAccount())
-		cr := i.PodPerceiverClusterRole()
-		i.AddClusterRole(cr)
-		i.AddClusterRoleBinding(i.PodPerceiverClusterRoleBinding(cr))
+		return err
 	}
 
-	if i.Config.ImagePerceiver {
-		rc, err := i.ImagePerceiverReplicationController()
-		if err != nil {
-			panic(fmt.Errorf("failed to create image perceiver: %v", err))
-		}
-		i.AddReplicationController(rc)
-		i.AddService(i.ImagePerceiverService())
-		i.AddConfigMap(i.PerceiverConfigMap())
-		i.AddServiceAccount(i.ImagePerceiverServiceAccount())
-		cr := i.ImagePerceiverClusterRole()
-		i.AddClusterRole(cr)
-		i.AddClusterRoleBinding(i.ImagePerceiverClusterRoleBinding(cr))
+	err = i.preDeploy()
+	if err != nil {
+		return err
 	}
 
-	if i.Config.PerceptorSkyfire {
-		rc, err := i.PerceptorSkyfireReplicationController()
-		if err != nil {
-			panic(fmt.Errorf("failed to create skyfire: %v", err))
-		}
-		i.AddReplicationController(rc)
-		i.AddService(i.PerceptorSkyfireService())
-		i.AddConfigMap(i.PerceptorSkyfireConfigMap())
-		i.AddServiceAccount(i.PerceptorSkyfireServiceAccount())
-		cr := i.PerceptorSkyfireClusterRole()
-		i.AddClusterRole(cr)
-		i.AddClusterRoleBinding(i.PerceptorSkyfireClusterRoleBinding(cr))
+	err = i.deployer.Run()
+	if err != nil {
+		return err
 	}
 
-	if i.Config.Metrics {
-		dep, err := i.PerceptorMetricsDeployment()
-		if err != nil {
-			panic(fmt.Errorf("failed to create metrics: %v", err))
-		}
-		i.AddDeployment(dep)
-		i.AddService(i.PerceptorMetricsService())
-		i.AddConfigMap(i.PerceptorMetricsConfigMap())
+	err = i.postDeploy()
+	if err != nil {
+		return err
 	}
 
-	if !i.Config.DryRun {
-		i.AddController("Pod List Controller", NewPodListController(i.Config.Namespace))
-	}
+	i.deployer.StartControllers(stopCh)
 
+	return nil
 }
 
-func (i *Installer) sanityCheckServices() bool {
-	isValid := func(cn string) bool {
-		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner", "perceptor-image-facade"} {
-			if cn == valid {
-				return true
+func (i *Installer) createApps() error {
+	if i.config.PerceptorConfig != nil {
+		if len(i.config.PerceptorConfig.LogLevel) == 0 {
+			i.config.PerceptorConfig.LogLevel = i.config.DefaultLogLevel
+		}
+
+		// Remove this override once secrets are created by app
+		i.config.PerceptorConfig.SecretName = i.config.ViperSecret
+
+		p, err := perceptor.NewApp(i.appDefaults[apps.PerceptorApp])
+		if err != nil {
+			return fmt.Errorf("failed to load perceptor: %v", err)
+		}
+		err = p.Configure(i.config.PerceptorConfig)
+		if err != nil {
+			return fmt.Errorf("failed to configure perceptor: %v", err)
+		}
+		i.apps = append(i.apps, p)
+	}
+
+	if !i.config.DryRun {
+		i.deployer.AddController("Pod List Controller", NewPodListController(v1.NamespaceAll))
+	}
+
+	return nil
+}
+
+func (i *Installer) preDeploy() error {
+	for _, app := range i.apps {
+		appComponents, err := app.GetComponents()
+		if err != nil {
+			return err
+		}
+
+		if appComponents != nil {
+			i.addRCs(appComponents.ReplicationControllers)
+			i.addSvcs(appComponents.Services)
+			i.addCMs(appComponents.ConfigMaps)
+			i.addSAs(appComponents.ServiceAccounts)
+			i.addCRs(appComponents.ClusterRoles)
+			i.addCRBs(appComponents.ClusterRoleBindings)
+			i.addDeploys(appComponents.Deployments)
+		}
+	}
+	return nil
+}
+
+func (i *Installer) addRCs(list []*components.ReplicationController) {
+	if len(list) > 0 {
+		for _, rc := range list {
+			i.deployer.AddReplicationController(rc)
+		}
+	}
+}
+
+func (i *Installer) addSvcs(list []*components.Service) {
+	if len(list) > 0 {
+		for _, svc := range list {
+			i.deployer.AddService(svc)
+		}
+	}
+}
+
+func (i *Installer) addCMs(list []*components.ConfigMap) {
+	if len(list) > 0 {
+		for _, cm := range list {
+			i.deployer.AddConfigMap(cm)
+		}
+	}
+}
+
+func (i *Installer) addSAs(list []*components.ServiceAccount) {
+	if len(list) > 0 {
+		for _, sa := range list {
+			i.deployer.AddServiceAccount(sa)
+		}
+	}
+}
+
+func (i *Installer) addCRs(list []*components.ClusterRole) {
+	if len(list) > 0 {
+		for _, cr := range list {
+			i.deployer.AddClusterRole(cr)
+		}
+	}
+}
+
+func (i *Installer) addCRBs(list []*components.ClusterRoleBinding) {
+	if len(list) > 0 {
+		for _, crb := range list {
+			i.deployer.AddClusterRoleBinding(crb)
+		}
+	}
+}
+
+func (i *Installer) addDeploys(list []*components.Deployment) {
+	if len(list) > 0 {
+		for _, d := range list {
+			i.deployer.AddDeployment(d)
+		}
+	}
+}
+
+func (i *Installer) postDeploy() error {
+	if i.osSecurityClient != nil {
+		// Since there is a security client it means the cluster target is openshift
+		if i.config.PerceptorConfig != nil {
+			// Need to add the perceptor-scanner service account to the privelged scc
+			scc, err := i.osSecurityClient.SecurityContextConstraints().Get("privileged", meta_v1.GetOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to get scc privileged: %v", err)
+			}
+
+			var scannerAccount string
+			for _, o := range i.apps {
+				if p, ok := o.(*perceptor.App); ok {
+					s := p.ScannerServiceAccount()
+					scannerAccount = fmt.Sprintf("system:serviceaccount:%s:%s", p.GetNamespace(), s.GetName())
+					break
+				}
+			}
+
+			// Only add the service account if it isn't already in the list of users for the privileged scc
+			exists := false
+			for _, u := range scc.Users {
+				if strings.Compare(u, scannerAccount) == 0 {
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				scc.Users = append(scc.Users, scannerAccount)
+
+				_, err = i.osSecurityClient.SecurityContextConstraints().Update(scc)
+				if err != nil {
+					return fmt.Errorf("failed to update scc privileged: %v", err)
+				}
 			}
 		}
-		return false
 	}
-	for cn := range i.Config.ServiceAccounts {
-		if !isValid(cn) {
-			log.Panic("[protoform] failed at verifiying that the container name for a svc account was valid!")
-		}
-	}
-	return true
+
+	return nil
 }
 
-func (i *Installer) prettyPrint(v interface{}) {
-	b, _ := json.MarshalIndent(v, "", "  ")
-	println(string(b))
+func (i *Installer) prettyPrint() {
+	b, _ := json.MarshalIndent(i.config, "", "  ")
+	fmt.Println(string(b))
 }
 
 func newKubeConfigFromOutsideCluster() (*rest.Config, error) {

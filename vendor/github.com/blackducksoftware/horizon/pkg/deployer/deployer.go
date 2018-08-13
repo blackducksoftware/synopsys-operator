@@ -282,6 +282,7 @@ func (d *Deployer) deployCRDs() []error {
 		crd, err := converters.Convert_Koki_CRD_to_Kube(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 		log.Infof("Creating custom defined resource %s", name)
 		_, err = d.apiextensions.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
@@ -300,6 +301,7 @@ func (d *Deployer) deployServiceAccounts() []error {
 		sa, err := converters.Convert_Koki_ServiceAccount_to_Kube_ServiceAccount(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 		log.Infof("Creating service account %s", name)
 		_, err = d.client.Core().ServiceAccounts(sa.Namespace).Create(sa)
@@ -318,6 +320,7 @@ func (d *Deployer) deployRBAC() map[util.ComponentType][]error {
 		cr, err := converters.Convert_Koki_ClusterRole_to_Kube(wrapper)
 		if err != nil {
 			errs[util.ClusterRoleComponent] = append(errs[util.ClusterRoleComponent], err)
+			continue
 		}
 		log.Infof("Creating cluster role %s", name)
 		_, err = d.client.Rbac().ClusterRoles().Create(cr)
@@ -331,6 +334,7 @@ func (d *Deployer) deployRBAC() map[util.ComponentType][]error {
 		crb, err := converters.Convert_Koki_ClusterRoleBinding_to_Kube(wrapper)
 		if err != nil {
 			errs[util.ClusterRoleBindingComponent] = append(errs[util.ClusterRoleComponent], err)
+			continue
 		}
 		log.Infof("Creating cluster role binding %s", name)
 		_, err = d.client.Rbac().ClusterRoleBindings().Create(crb)
@@ -349,6 +353,7 @@ func (d *Deployer) deployConfigMaps() []error {
 		cm, err := converters.Convert_Koki_ConfigMap_to_Kube_v1_ConfigMap(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 		log.Infof("Creating config map %s", name)
 		_, err = d.client.Core().ConfigMaps(cm.Namespace).Create(cm)
@@ -367,6 +372,7 @@ func (d *Deployer) deploySecrets() []error {
 		secret, err := converters.Convert_Koki_Secret_to_Kube_v1_Secret(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 		log.Infof("Creating secret %s", name)
 		_, err = d.client.Core().Secrets(secret.Namespace).Create(secret)
@@ -385,6 +391,7 @@ func (d *Deployer) deployReplicationControllers() []error {
 		rc, err := converters.Convert_Koki_ReplicationController_to_Kube_v1_ReplicationController(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 
 		log.Infof("Creating replication controller %s", name)
@@ -404,6 +411,7 @@ func (d *Deployer) deployPods() []error {
 		pod, err := converters.Convert_Koki_Pod_to_Kube_v1_Pod(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 
 		log.Infof("Creating pod %s", name)
@@ -423,6 +431,7 @@ func (d *Deployer) deployDeployments() []error {
 		deploy, err := converters.Convert_Koki_Deployment_to_Kube_apps_v1beta2_Deployment(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 
 		log.Infof("Creating deployment %s", name)
@@ -442,6 +451,7 @@ func (d *Deployer) deployServices() []error {
 		svc, err := converters.Convert_Koki_Service_To_Kube_v1_Service(sWrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 
 		log.Infof("Creating service %s", name)
@@ -461,6 +471,7 @@ func (d *Deployer) deployNamespaces() []error {
 		ns, err := converters.Convert_Koki_Namespace_to_Kube_Namespace(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 		log.Infof("Creating namespace %s", name)
 		_, err = d.client.Core().Namespaces().Create(ns)
@@ -480,6 +491,7 @@ func (d *Deployer) deployPVCs() []error {
 		pvc, err := converters.Convert_Koki_PVC_to_Kube_PVC(wrapper)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 		log.Infof("Creating persistent volume claim %s", name)
 		p, ok := pvc.(*v1.PersistentVolumeClaim)

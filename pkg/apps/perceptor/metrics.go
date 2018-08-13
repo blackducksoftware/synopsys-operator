@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package protoform
+package perceptor
 
 import (
 	"bytes"
@@ -30,16 +30,16 @@ import (
 )
 
 // PerceptorMetricsDeployment creates a deployment for perceptor metrics
-func (i *Installer) PerceptorMetricsDeployment() (*components.Deployment, error) {
+func (p *App) PerceptorMetricsDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
 		Name:      "prometheus",
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
 	deployment.AddMatchLabelsSelectors(map[string]string{"app": "prometheus"})
 
-	pod, err := i.perceptorMetricsPod()
+	pod, err := p.perceptorMetricsPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metrics pod: %v", err)
 	}
@@ -48,15 +48,15 @@ func (i *Installer) PerceptorMetricsDeployment() (*components.Deployment, error)
 	return deployment, nil
 }
 
-func (i *Installer) perceptorMetricsPod() (*components.Pod, error) {
+func (p *App) perceptorMetricsPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "prometheus",
 	})
 	pod.AddLabels(map[string]string{"app": "prometheus"})
 
-	pod.AddContainer(i.perceptorMetricsContainer())
+	pod.AddContainer(p.perceptorMetricsContainer())
 
-	vols, err := i.perceptorMetricsVolumes()
+	vols, err := p.perceptorMetricsVolumes()
 	if err != nil {
 		return nil, fmt.Errorf("error creating metrics volumes: %v", err)
 	}
@@ -67,7 +67,7 @@ func (i *Installer) perceptorMetricsPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (i *Installer) perceptorMetricsContainer() *components.Container {
+func (p *App) perceptorMetricsContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  "prometheus",
 		Image: "prom/prometheus:v2.1.0",
@@ -92,7 +92,7 @@ func (i *Installer) perceptorMetricsContainer() *components.Container {
 	return container
 }
 
-func (i *Installer) perceptorMetricsVolumes() ([]*components.Volume, error) {
+func (p *App) perceptorMetricsVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "prometheus",
@@ -112,10 +112,10 @@ func (i *Installer) perceptorMetricsVolumes() ([]*components.Volume, error) {
 }
 
 // PerceptorMetricsService creates a service for perceptor metrics
-func (i *Installer) PerceptorMetricsService() *components.Service {
+func (p *App) PerceptorMetricsService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "prometheus",
-		Namespace:     i.Config.Namespace,
+		Namespace:     p.config.Namespace,
 		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
 	})
 
@@ -133,22 +133,22 @@ func (i *Installer) PerceptorMetricsService() *components.Service {
 }
 
 // PerceptorMetricsConfigMap creates a config map for perceptor metrics
-func (i *Installer) PerceptorMetricsConfigMap() *components.ConfigMap {
+func (p *App) PerceptorMetricsConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "prometheus",
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
 
 	var promConfig bytes.Buffer
-	promConfig.WriteString(fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["`, i.Config.PerceptorImageName, `:`, i.Config.PerceptorPort, `","`, i.Config.ScannerImageName, `:`, i.Config.ScannerPort, `","`, i.Config.ImageFacadeImageName, `:`, i.Config.ImageFacadePort))
-	if i.Config.ImagePerceiver {
-		promConfig.WriteString(fmt.Sprint(`","`, i.Config.ImagePerceiverImageName, `:`, i.Config.PerceiverPort))
+	promConfig.WriteString(fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["`, p.config.PerceptorImageName, `:`, *p.config.PerceptorPort, `","`, p.config.ScannerImageName, `:`, *p.config.ScannerPort, `","`, p.config.ImageFacadeImageName, `:`, *p.config.ImageFacadePort))
+	if p.config.ImagePerceiver != nil && *p.config.ImagePerceiver {
+		promConfig.WriteString(fmt.Sprint(`","`, p.config.ImagePerceiverImageName, `:`, *p.config.PerceiverPort))
 	}
-	if i.Config.PodPerceiver {
-		promConfig.WriteString(fmt.Sprint(`","`, i.Config.PodPerceiverImageName, `:`, i.Config.PerceiverPort))
+	if p.config.PodPerceiver != nil && *p.config.PodPerceiver {
+		promConfig.WriteString(fmt.Sprint(`","`, p.config.PodPerceiverImageName, `:`, *p.config.PerceiverPort))
 	}
-	if i.Config.PerceptorSkyfire {
-		promConfig.WriteString(fmt.Sprint(`","`, i.Config.SkyfireImageName, `:`, i.Config.SkyfirePort))
+	if p.config.PerceptorSkyfire != nil && *p.config.PerceptorSkyfire {
+		promConfig.WriteString(fmt.Sprint(`","`, p.config.SkyfireImageName, `:`, *p.config.SkyfirePort))
 
 	}
 	promConfig.WriteString(`"]}]}]}`)

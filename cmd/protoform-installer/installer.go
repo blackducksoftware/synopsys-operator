@@ -25,7 +25,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 )
 
@@ -36,22 +37,28 @@ func main() {
 }
 
 func runProtoform(configPath string) {
-	defaults := createDefaults()
-	installer, err := protoform.NewInstaller(defaults, configPath)
+	installer, err := protoform.NewInstaller(configPath)
 	if err != nil {
 		panic(err)
 	}
-	installer.AddPerceptorResources()
-	installer.Run()
+	installer.LoadAppDefault(apps.PerceptorApp, createPerceptorAppDefaults())
 	stopCh := make(chan struct{})
-	installer.StartControllers(stopCh)
+	err = installer.Run(stopCh)
+	if err != nil {
+		panic(err)
+	}
 }
 
-func createDefaults() *api.ProtoformDefaults {
-	d := protoform.NewDefaultsObj()
+func createPerceptorAppDefaults() *perceptor.AppConfig {
+	hubPort := 443
+	perceptorHubClientTimeout := 5000
+	scannerHubClientTimeout := 120
+	scanLimit := 7
+
+	d := perceptor.NewPerceptorAppDefaults()
 	d.HubUser = "sysadmin"
 	d.HubHost = "webserver"
-	d.HubPort = 443
+	d.HubPort = &hubPort
 	d.InternalDockerRegistries = []string{"docker-registry.default.svc:5000", "172.1.1.0:5000"}
 	d.DefaultVersion = "master"
 	d.Registry = "gcr.io"
@@ -60,9 +67,9 @@ func createDefaults() *api.ProtoformDefaults {
 	d.LogLevel = "info"
 	d.DefaultCPU = "300m"
 	d.DefaultMem = "1300Mi"
-	d.HubClientTimeoutPerceptorMilliseconds = 5000
-	d.HubClientTimeoutScannerSeconds = 120
-	d.ConcurrentScanLimit = 7
+	d.HubClientTimeoutPerceptorMilliseconds = &perceptorHubClientTimeout
+	d.HubClientTimeoutScannerSeconds = &scannerHubClientTimeout
+	d.ConcurrentScanLimit = &scanLimit
 
 	return d
 }

@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package protoform
+package perceptor
 
 import (
 	"fmt"
@@ -29,15 +29,15 @@ import (
 )
 
 // PerceptorSkyfireReplicationController creates a replication controller for perceptor skyfire
-func (i *Installer) PerceptorSkyfireReplicationController() (*components.ReplicationController, error) {
+func (p *App) PerceptorSkyfireReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      i.Config.SkyfireImageName,
-		Namespace: i.Config.Namespace,
+		Name:      p.config.SkyfireImageName,
+		Namespace: p.config.Namespace,
 	})
-	rc.AddLabelSelectors(map[string]string{"name": i.Config.SkyfireImageName})
-	pod, err := i.perceptorSkyfirePod()
+	rc.AddLabelSelectors(map[string]string{"name": p.config.SkyfireImageName})
+	pod, err := p.perceptorSkyfirePod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create skyfire volumes: %v", err)
 	}
@@ -46,16 +46,16 @@ func (i *Installer) PerceptorSkyfireReplicationController() (*components.Replica
 	return rc, nil
 }
 
-func (i *Installer) perceptorSkyfirePod() (*components.Pod, error) {
+func (p *App) perceptorSkyfirePod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name:           i.Config.SkyfireImageName,
-		ServiceAccount: i.Config.ServiceAccounts["image-perceiver"],
+		Name:           p.config.SkyfireImageName,
+		ServiceAccount: p.config.ServiceAccounts["skyfire"],
 	})
-	pod.AddLabels(map[string]string{"name": i.Config.SkyfireImageName})
+	pod.AddLabels(map[string]string{"name": p.config.SkyfireImageName})
 
-	pod.AddContainer(i.perceptorSkyfireContainer())
+	pod.AddContainer(p.perceptorSkyfireContainer())
 
-	vols, err := i.perceptorSkyfireVolumes()
+	vols, err := p.perceptorSkyfireVolumes()
 	if err != nil {
 		return nil, fmt.Errorf("error creating skyfire volumes: %v", err)
 	}
@@ -66,18 +66,18 @@ func (i *Installer) perceptorSkyfirePod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (i *Installer) perceptorSkyfireContainer() *components.Container {
+func (p *App) perceptorSkyfireContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:    i.Config.SkyfireImageName,
-		Image:   fmt.Sprintf("%s/%s/%s:%s", i.Config.Registry, i.Config.ImagePath, i.Config.SkyfireImageName, i.Config.SkyfireImageVersion),
-		Command: []string{"./skyfire"},
+		Name:    p.config.SkyfireImageName,
+		Image:   fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, p.config.SkyfireImageName, p.config.SkyfireImageVersion),
+		Command: []string{fmt.Sprintf("./%s", p.config.SkyfireImageName)},
 		Args:    []string{"/etc/skyfire/skyfire.yaml"},
-		MinCPU:  i.Config.DefaultCPU,
-		MinMem:  i.Config.DefaultMem,
+		MinCPU:  p.config.DefaultCPU,
+		MinMem:  p.config.DefaultMem,
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", i.Config.SkyfirePort),
+		ContainerPort: fmt.Sprintf("%d", *p.config.SkyfirePort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -91,16 +91,16 @@ func (i *Installer) perceptorSkyfireContainer() *components.Container {
 	})
 
 	container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: i.Config.HubUserPasswordEnvVar,
+		NameOrPrefix: p.config.HubUserPasswordEnvVar,
 		Type:         horizonapi.EnvFromSecret,
 		KeyOrVal:     "HubUserPassword",
-		FromName:     i.Config.ViperSecret,
+		FromName:     p.config.SecretName,
 	})
 
 	return container
 }
 
-func (i *Installer) perceptorSkyfireVolumes() ([]*components.Volume, error) {
+func (p *App) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -121,46 +121,46 @@ func (i *Installer) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 }
 
 // PerceptorSkyfireService creates a service for perceptor skyfire
-func (i *Installer) PerceptorSkyfireService() *components.Service {
+func (p *App) PerceptorSkyfireService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      i.Config.SkyfireImageName,
-		Namespace: i.Config.Namespace,
+		Name:      p.config.SkyfireImageName,
+		Namespace: p.config.Namespace,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(i.Config.SkyfirePort),
-		TargetPort: fmt.Sprintf("%d", i.Config.SkyfirePort),
+		Port:       int32(*p.config.SkyfirePort),
+		TargetPort: fmt.Sprintf("%d", *p.config.SkyfirePort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
-	service.AddSelectors(map[string]string{"name": i.Config.SkyfireImageName})
+	service.AddSelectors(map[string]string{"name": p.config.SkyfireImageName})
 
 	return service
 }
 
 // PerceptorSkyfireConfigMap creates a config map for perceptor skyfire
-func (i *Installer) PerceptorSkyfireConfigMap() *components.ConfigMap {
+func (p *App) PerceptorSkyfireConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "skyfire",
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"skyfire.yaml": fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, "3005", `","HubHost": "`, i.Config.HubHost, `","HubPort": "`, i.Config.HubPort, `","HubUser": "`, i.Config.HubUser, `","HubUserPasswordEnvVar": "`, i.Config.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, i.Config.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, i.Config.PerceptorImageName, `","PerceptorPort": "`, i.Config.PerceptorPort, `","KubeDumpIntervalSeconds": "`, "15", `","PerceptorDumpIntervalSeconds": "`, "15", `","HubDumpPauseSeconds": "`, "30", `","ImageFacadePort": "`, i.Config.ImageFacadePort, `","LogLevel": "`, i.Config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"skyfire.yaml": fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, *p.config.SkyfirePort, `","HubHost": "`, p.config.HubHost, `","HubPort": "`, *p.config.HubPort, `","HubUser": "`, p.config.HubUser, `","HubUserPasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, *p.config.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.config.PerceptorImageName, `","PerceptorPort": "`, *p.config.PerceptorPort, `","KubeDumpIntervalSeconds": "`, "15", `","PerceptorDumpIntervalSeconds": "`, "15", `","HubDumpPauseSeconds": "`, "30", `","ImageFacadePort": "`, *p.config.ImageFacadePort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }
 
 // PerceptorSkyfireServiceAccount creates a service account for perceptor skyfire
-func (i *Installer) PerceptorSkyfireServiceAccount() *components.ServiceAccount {
+func (p *App) PerceptorSkyfireServiceAccount() *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		Name:      "skyfire",
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
 
 	return serviceAccount
 }
 
 // PerceptorSkyfireClusterRole creates a cluster role for perceptor skyfire
-func (i *Installer) PerceptorSkyfireClusterRole() *components.ClusterRole {
+func (p *App) PerceptorSkyfireClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
 		Name:       "skyfire",
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -175,7 +175,7 @@ func (i *Installer) PerceptorSkyfireClusterRole() *components.ClusterRole {
 }
 
 // PerceptorSkyfireClusterRoleBinding creates a cluster role binding for perceptor skyfire
-func (i *Installer) PerceptorSkyfireClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
+func (p *App) PerceptorSkyfireClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       "skyfire",
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -183,7 +183,7 @@ func (i *Installer) PerceptorSkyfireClusterRoleBinding(clusterRole *components.C
 	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
 		Kind:      "ServiceAccount",
 		Name:      "skyfire",
-		Namespace: i.Config.Namespace,
+		Namespace: p.config.Namespace,
 	})
 	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
