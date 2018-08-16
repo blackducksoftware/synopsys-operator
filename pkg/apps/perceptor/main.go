@@ -37,7 +37,7 @@ type App struct {
 func NewApp(defaults interface{}) (*App, error) {
 	d, ok := defaults.(*AppConfig)
 	if !ok {
-		return nil, fmt.Errorf("failed to convert defaults")
+		return nil, fmt.Errorf("failed to convert perceptor defaults: %v", defaults)
 	}
 	p := App{config: d}
 
@@ -72,6 +72,7 @@ func (p *App) GetComponents() (*apps.ComponentList, error) {
 	components.ReplicationControllers = append(components.ReplicationControllers, p.PerceptorReplicationController())
 	components.Services = append(components.Services, p.PerceptorService())
 	components.ConfigMaps = append(components.ConfigMaps, p.PerceptorConfigMap())
+	components.Secrets = append(components.Secrets, p.PerceptorSecret())
 
 	// Add Perceptor Scanner
 	rc, err := p.ScannerReplicationController()

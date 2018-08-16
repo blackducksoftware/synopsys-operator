@@ -44,14 +44,16 @@ type ComponentList struct {
 	ClusterRoleBindings    []*components.ClusterRoleBinding
 	ClusterRoles           []*components.ClusterRole
 	Deployments            []*components.Deployment
+	Secrets                []*components.Secret
 }
 
 // AppType defines the type of application
-type AppType int
+type AppType string
 
 // Types of apps
 const (
-	PerceptorApp AppType = iota
+	Perceptor AppType = "perceptor"
+	Alert     AppType = "alert"
 )
 
 // MergeConfig will merge 2 configuation structs of the same type.

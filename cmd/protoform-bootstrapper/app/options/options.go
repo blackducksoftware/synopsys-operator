@@ -37,6 +37,17 @@ import (
 // BootstrapperOptions defines all the options that can
 // be used to configure a bootstrapper
 type BootstrapperOptions struct {
+	LogLevel            string
+	Interactive         bool
+	Namespace           string
+	DefaultCPU          string // Should be passed like: e.g. "300m"
+	DefaultMem          string // Should be passed like: e.g "1300Mi"
+	ClusterConfigFile   string
+	DefaultImageVersion string
+	DefaultRegistry     string
+	DefaultImagePath    string
+
+	// Perceptor
 	AnnotateImages                        bool
 	AnnotatePods                          bool
 	AnnotationIntervalSeconds             int
@@ -45,56 +56,50 @@ type BootstrapperOptions struct {
 	EnableSkyfire                         bool
 	HubClientTimeoutPerceptorMilliseconds int
 	HubClientTimeoutScannerSeconds        int
-	Interactive                           bool
-	LogLevel                              string
+	PerceptorImage                        string
+	ScannerImage                          string
+	ImagePerceiverImage                   string
+	PodPerceiverImage                     string
+	ImageFacadeImage                      string
+	SkyfireImage                          string
+	ProtoformImage                        string
+	PerceptorImageVersion                 string
+	ScannerImageVersion                   string
+	PerceiverImageVersion                 string
+	ImageFacadeImageVersion               string
+	SkyfireImageVersion                   string
+	ProtoformImageVersion                 string
+	ConcurrentScanLimit                   int
+	InternalDockerRegistries              []string
+	DockerUsername                        string
+	DockerPasswordOrToken                 string
+	PerceptorNamespace                    string
 
 	// Hub
-	HubHost             string
-	HubUser             string
-	HubUserPassword     string
-	HubPort             int
-	ConcurrentScanLimit int
+	HubHost         string
+	HubUser         string
+	HubUserPassword string
+	HubPort         int
 
-	// Docker registry
-	DockerUsername           string
-	DockerPasswordOrToken    string
-	InternalDockerRegistries []string
-	DefaultImageVersion      string
-	DefaultRegistry          string
-	DefaultImagePath         string
-
-	// Images
-	PerceptorImage      string
-	ScannerImage        string
-	ImagePerceiverImage string
-	PodPerceiverImage   string
-	ImageFacadeImage    string
-	SkyfireImage        string
-	ProtoformImage      string
-
-	// Image Versions
-	PerceptorImageVersion   string
-	ScannerImageVersion     string
-	PerceiverImageVersion   string
-	ImageFacadeImageVersion string
-	SkyfireImageVersion     string
-	ProtoformImageVersion   string
-
-	// Cluster information
-	Namespace         string
-	DefaultCPU        string // Should be passed like: e.g. "300m"
-	DefaultMem        string // Should be passed like: e.g "1300Mi"
-	ClusterConfigFile string
+	// Alert
+	AlertEnabled      bool
+	AlertRegistry     string
+	AlertImagePath    string
+	AlertImageName    string
+	AlertImageVersion string
+	CfsslImageName    string
+	CfsslImageVersion string
+	AlertNamespace    string
 }
 
 // NewBootstrapperOptions creates a BootstrapperOptions object
 // and sets configuation defaults
 func NewBootstrapperOptions() *BootstrapperOptions {
-	viper.SetDefault("AnnotatePods", true)
+	viper.SetDefault("AnnotatePods", false)
 	viper.SetDefault("AnnotateImages", false)
 	viper.SetDefault("EnableMetrics", true)
 	viper.SetDefault("ClusterConfigFile", "$HOME/.kube/config")
-	viper.SetDefault("Namespace", "perceptor")
+	viper.SetDefault("Namespace", "protoform")
 	viper.SetDefault("HubPort", 443)
 	viper.SetDefault("HubHost", "webserver")
 	viper.SetDefault("ConcurrentScanLimit", 7)
@@ -104,6 +109,7 @@ func NewBootstrapperOptions() *BootstrapperOptions {
 	viper.SetDefault("ProtoformImage", "perceptor-protoform")
 	viper.SetDefault("ProtoformImageVersion", "master")
 	viper.SetDefault("LogLevel", "info")
+	viper.SetDefault("AlertEnabled", false)
 	return &BootstrapperOptions{}
 }
 

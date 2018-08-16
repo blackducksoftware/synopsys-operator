@@ -30,6 +30,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/cmd/protoform-bootstrapper/app/options"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -123,43 +124,63 @@ func (b *Bootstrapper) setup() error {
 	config := api.ProtoformConfig{
 		ViperSecret:     "protoform",
 		DefaultLogLevel: b.opts.LogLevel,
+		Apps:            &api.ProtoformApps{},
 	}
 
 	// Perceptor Config
-	config.PerceptorConfig = &perceptor.AppConfig{
-		DockerPasswordOrToken: b.opts.DockerPasswordOrToken,
-		HubHost:               b.opts.HubHost,
-		HubUser:               b.opts.HubUser,
-		HubPort:               &b.opts.HubPort,
-		HubClientTimeoutPerceptorMilliseconds: &b.opts.HubClientTimeoutPerceptorMilliseconds,
-		HubClientTimeoutScannerSeconds:        &b.opts.HubClientTimeoutScannerSeconds,
-		ConcurrentScanLimit:                   &b.opts.ConcurrentScanLimit,
-		DockerUsername:                        "admin",
-		Namespace:                             b.opts.Namespace,
-		ImagePerceiver:                        &b.opts.AnnotateImages,
-		PodPerceiver:                          &b.opts.AnnotatePods,
-		PerceptorSkyfire:                      &b.opts.EnableSkyfire,
-		Metrics:                               &b.opts.EnableMetrics,
-		InternalDockerRegistries:              b.opts.InternalDockerRegistries,
-		DefaultCPU:                            b.opts.DefaultCPU,
-		DefaultMem:                            b.opts.DefaultMem,
-		Registry:                              b.opts.DefaultRegistry,
-		ImagePath:                             b.opts.DefaultImagePath,
-		DefaultVersion:                        b.opts.DefaultImageVersion,
-		PerceptorImageName:                    b.opts.PerceptorImage,
-		ScannerImageName:                      b.opts.ScannerImage,
-		PodPerceiverImageName:                 b.opts.PodPerceiverImage,
-		ImagePerceiverImageName:               b.opts.ImagePerceiverImage,
-		ImageFacadeImageName:                  b.opts.ImageFacadeImage,
-		SkyfireImageName:                      b.opts.SkyfireImage,
-		PerceptorImageVersion:                 b.opts.PerceptorImageVersion,
-		ScannerImageVersion:                   b.opts.ScannerImageVersion,
-		PerceiverImageVersion:                 b.opts.PerceiverImageVersion,
-		ImageFacadeImageVersion:               b.opts.ImageFacadeImageVersion,
-		SkyfireImageVersion:                   b.opts.SkyfireImageVersion,
-		LogLevel:                              b.opts.LogLevel,
-		SecretName:                            "protoform",
+	if b.opts.AnnotateImages || b.opts.AnnotatePods {
+		config.Apps.PerceptorConfig = &perceptor.AppConfig{
+			DockerPasswordOrToken: b.opts.DockerPasswordOrToken,
+			HubHost:               b.opts.HubHost,
+			HubUser:               b.opts.HubUser,
+			HubPort:               &b.opts.HubPort,
+			HubClientTimeoutPerceptorMilliseconds: &b.opts.HubClientTimeoutPerceptorMilliseconds,
+			HubClientTimeoutScannerSeconds:        &b.opts.HubClientTimeoutScannerSeconds,
+			ConcurrentScanLimit:                   &b.opts.ConcurrentScanLimit,
+			DockerUsername:                        "admin",
+			Namespace:                             b.opts.PerceptorNamespace,
+			ImagePerceiver:                        &b.opts.AnnotateImages,
+			PodPerceiver:                          &b.opts.AnnotatePods,
+			PerceptorSkyfire:                      &b.opts.EnableSkyfire,
+			Metrics:                               &b.opts.EnableMetrics,
+			InternalDockerRegistries:              b.opts.InternalDockerRegistries,
+			DefaultCPU:                            b.opts.DefaultCPU,
+			DefaultMem:                            b.opts.DefaultMem,
+			Registry:                              b.opts.DefaultRegistry,
+			ImagePath:                             b.opts.DefaultImagePath,
+			DefaultVersion:                        b.opts.DefaultImageVersion,
+			PerceptorImageName:                    b.opts.PerceptorImage,
+			ScannerImageName:                      b.opts.ScannerImage,
+			PodPerceiverImageName:                 b.opts.PodPerceiverImage,
+			ImagePerceiverImageName:               b.opts.ImagePerceiverImage,
+			ImageFacadeImageName:                  b.opts.ImageFacadeImage,
+			SkyfireImageName:                      b.opts.SkyfireImage,
+			PerceptorImageVersion:                 b.opts.PerceptorImageVersion,
+			ScannerImageVersion:                   b.opts.ScannerImageVersion,
+			PerceiverImageVersion:                 b.opts.PerceiverImageVersion,
+			ImageFacadeImageVersion:               b.opts.ImageFacadeImageVersion,
+			SkyfireImageVersion:                   b.opts.SkyfireImageVersion,
+			LogLevel:                              b.opts.LogLevel,
+			SecretName:                            "protoform",
+		}
 	}
+
+	// Alert Config
+	if b.opts.AlertEnabled {
+		config.Apps.AlertConfig = &alert.AppConfig{
+			HubHost:           b.opts.HubHost,
+			HubUser:           b.opts.HubUser,
+			HubPort:           &b.opts.HubPort,
+			Namespace:         b.opts.AlertNamespace,
+			Registry:          b.opts.AlertRegistry,
+			ImagePath:         b.opts.AlertImagePath,
+			AlertImageName:    b.opts.AlertImageName,
+			AlertImageVersion: b.opts.AlertImageVersion,
+			CfsslImageName:    b.opts.CfsslImageName,
+			CfsslImageVersion: b.opts.CfsslImageVersion,
+		}
+	}
+
 	jsonData, err := json.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("failed to marshal perceptor config: %v", err)

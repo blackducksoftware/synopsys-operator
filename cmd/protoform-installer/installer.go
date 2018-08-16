@@ -26,6 +26,7 @@ import (
 	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 )
@@ -41,7 +42,8 @@ func runProtoform(configPath string) {
 	if err != nil {
 		panic(err)
 	}
-	installer.LoadAppDefault(apps.PerceptorApp, createPerceptorAppDefaults())
+	installer.LoadAppDefault(apps.Perceptor, createPerceptorAppDefaults())
+	installer.LoadAppDefault(apps.Alert, createAlertAppDefaults())
 	stopCh := make(chan struct{})
 	err = installer.Run(stopCh)
 	if err != nil {
@@ -70,6 +72,19 @@ func createPerceptorAppDefaults() *perceptor.AppConfig {
 	d.HubClientTimeoutPerceptorMilliseconds = &perceptorHubClientTimeout
 	d.HubClientTimeoutScannerSeconds = &scannerHubClientTimeout
 	d.ConcurrentScanLimit = &scanLimit
+
+	return d
+}
+
+func createAlertAppDefaults() *alert.AppConfig {
+	d := alert.NewAppDefaults()
+	d.Registry = "docker.io"
+	d.ImagePath = "blackducksoftware"
+	d.AlertImageVersion = "master"
+	d.AlertImageName = "blackduck-alert"
+	d.CfsslImageVersion = "master"
+	d.CfsslImageName = "hub-cfssl"
+	d.Namespace = "alert"
 
 	return d
 }

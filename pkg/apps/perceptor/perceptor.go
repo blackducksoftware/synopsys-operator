@@ -117,3 +117,16 @@ func (p *App) PerceptorConfigMap() *components.ConfigMap {
 
 	return cm
 }
+
+// PerceptorSecret create a secret for perceptor
+func (p *App) PerceptorSecret() *components.Secret {
+	secretConfig := horizonapi.SecretConfig{
+		Name:      p.config.SecretName,
+		Namespace: p.config.Namespace,
+		Type:      horizonapi.SecretTypeOpaque,
+	}
+	secret := components.NewSecret(secretConfig)
+	secret.AddData(map[string][]byte{"HubUserPassword": []byte(p.config.HubUserPassword)})
+
+	return secret
+}

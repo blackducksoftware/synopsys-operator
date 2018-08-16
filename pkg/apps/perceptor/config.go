@@ -36,6 +36,7 @@ type AppConfig struct {
 	HubHost                               string   `json:"hubHost,omitempty"`
 	HubUser                               string   `json:"hubUser,omitempty"`
 	HubPort                               *int     `json:"hubPort,omitempty"`
+	HubUserPassword                       string   `json:"hubUserPassword,omitempty"`
 	HubClientTimeoutPerceptorMilliseconds *int     `json:"hubClientTimeoutPerceptorMilliseconds,omitempty"`
 	HubClientTimeoutScannerSeconds        *int     `json:"hubClientTimeoutScannerSeconds,omitempty"`
 	ConcurrentScanLimit                   *int     `json:"concurrentScanLimit,omitempty"`

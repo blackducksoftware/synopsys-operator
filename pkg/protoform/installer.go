@@ -32,14 +32,14 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
 
 	"github.com/spf13/viper"
-
-	"k8s.io/api/core/v1"
 
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -104,7 +104,7 @@ func NewInstaller(path string) (*Installer, error) {
 		osSecurityClient: osClient,
 	}
 
-	i.prettyPrint()
+	i.prettyPrint(i.config)
 
 	return &i, nil
 }
@@ -152,19 +152,27 @@ func readConfig(configPath string) *api.ProtoformConfig {
 }
 
 func setViperAppStructs(conf *api.ProtoformConfig) {
-	if viper.Get("PerceptorConfig") != nil {
-		conf.PerceptorConfig = &perceptor.AppConfig{}
+	if viper.Get("Apps") != nil {
+		conf.Apps = &api.ProtoformApps{}
+		if viper.Get("Apps.PerceptorConfig") != nil {
+			conf.Apps.PerceptorConfig = &perceptor.AppConfig{}
+		}
+		if viper.Get("Apps.AlertConfig") != nil {
+			conf.Apps.AlertConfig = &alert.AppConfig{}
+		}
 	}
 }
 
 // Run will start the installer
 func (i *Installer) Run(stopCh chan struct{}) error {
-	err := i.createApps()
-	if err != nil {
-		return err
+	if i.config.Apps != nil {
+		err := i.createApps()
+		if err != nil {
+			return err
+		}
 	}
 
-	err = i.preDeploy()
+	err := i.preDeploy()
 	if err != nil {
 		return err
 	}
@@ -185,30 +193,63 @@ func (i *Installer) Run(stopCh chan struct{}) error {
 }
 
 func (i *Installer) createApps() error {
-	if i.config.PerceptorConfig != nil {
-		if len(i.config.PerceptorConfig.LogLevel) == 0 {
-			i.config.PerceptorConfig.LogLevel = i.config.DefaultLogLevel
+	if i.config.Apps.PerceptorConfig != nil {
+		if len(i.config.Apps.PerceptorConfig.LogLevel) == 0 {
+			i.config.Apps.PerceptorConfig.LogLevel = i.config.DefaultLogLevel
 		}
 
 		// Remove this override once secrets are created by app
-		i.config.PerceptorConfig.SecretName = i.config.ViperSecret
+		i.config.Apps.PerceptorConfig.HubUserPassword = i.config.HubUserPassword
 
-		p, err := perceptor.NewApp(i.appDefaults[apps.PerceptorApp])
+		p, err := perceptor.NewApp(i.appDefaults[apps.Perceptor])
 		if err != nil {
 			return fmt.Errorf("failed to load perceptor: %v", err)
 		}
-		err = p.Configure(i.config.PerceptorConfig)
+		err = i.addApp(p, i.config.Apps.PerceptorConfig)
 		if err != nil {
-			return fmt.Errorf("failed to configure perceptor: %v", err)
+			return fmt.Errorf("failed to create perceptor app: %v", err)
 		}
-		i.apps = append(i.apps, p)
+	}
+
+	if i.config.Apps.AlertConfig != nil {
+		a, err := alert.NewApp(i.appDefaults[apps.Alert])
+		if err != nil {
+			return fmt.Errorf("failed to load alert: %v", err)
+		}
+		err = i.addApp(a, i.config.Apps.AlertConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create alert app: %v", err)
+		}
 	}
 
 	if !i.config.DryRun {
-		i.deployer.AddController("Pod List Controller", NewPodListController(v1.NamespaceAll))
+		namespaces := []string{}
+		for _, n := range i.apps {
+			namespaces = i.appendIfMissing(n.GetNamespace(), namespaces)
+		}
+		i.deployer.AddController("Pod List Controller", NewPodListController(namespaces))
 	}
 
 	return nil
+}
+
+func (i *Installer) addApp(app apps.AppInstallerInterface, config interface{}) error {
+	err := app.Configure(config)
+	if err != nil {
+		return fmt.Errorf("failed to configure app: %v", err)
+	}
+	i.apps = append(i.apps, app)
+
+	return nil
+}
+
+func (i *Installer) appendIfMissing(new string, list []string) []string {
+	for _, o := range list {
+		if strings.Compare(new, o) == 0 {
+			return list
+		}
+	}
+	return append(list, new)
 }
 
 func (i *Installer) preDeploy() error {
@@ -219,6 +260,7 @@ func (i *Installer) preDeploy() error {
 		}
 
 		if appComponents != nil {
+			i.addNS(app.GetNamespace())
 			i.addRCs(appComponents.ReplicationControllers)
 			i.addSvcs(appComponents.Services)
 			i.addCMs(appComponents.ConfigMaps)
@@ -226,9 +268,18 @@ func (i *Installer) preDeploy() error {
 			i.addCRs(appComponents.ClusterRoles)
 			i.addCRBs(appComponents.ClusterRoleBindings)
 			i.addDeploys(appComponents.Deployments)
+			i.addSecrets(appComponents.Secrets)
 		}
 	}
 	return nil
+}
+
+func (i *Installer) addNS(ns string) {
+	comp := components.NewNamespace(horizonapi.NamespaceConfig{
+		Name: ns,
+	})
+
+	i.deployer.AddNamespace(comp)
 }
 
 func (i *Installer) addRCs(list []*components.ReplicationController) {
@@ -287,10 +338,19 @@ func (i *Installer) addDeploys(list []*components.Deployment) {
 	}
 }
 
+func (i *Installer) addSecrets(list []*components.Secret) {
+	if len(list) > 0 {
+		for _, s := range list {
+			i.deployer.AddSecret(s)
+		}
+	}
+}
+
 func (i *Installer) postDeploy() error {
 	if i.osSecurityClient != nil {
 		// Since there is a security client it means the cluster target is openshift
-		if i.config.PerceptorConfig != nil {
+		// TODO this should be moved inside the perceptor app structure
+		if i.config.Apps.PerceptorConfig != nil {
 			// Need to add the perceptor-scanner service account to the privelged scc
 			scc, err := i.osSecurityClient.SecurityContextConstraints().Get("privileged", meta_v1.GetOptions{})
 			if err != nil {
@@ -329,8 +389,8 @@ func (i *Installer) postDeploy() error {
 	return nil
 }
 
-func (i *Installer) prettyPrint() {
-	b, _ := json.MarshalIndent(i.config, "", "  ")
+func (i *Installer) prettyPrint(v interface{}) {
+	b, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(b))
 }
 

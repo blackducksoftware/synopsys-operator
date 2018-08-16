@@ -22,6 +22,7 @@ under the License.
 package api
 
 import (
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 
 	kapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -110,11 +111,19 @@ type ProtoformConfig struct {
 	// Dry run wont actually install, but will print the objects definitions out.
 	DryRun bool `json:"dryRun,omitempty"`
 
+	HubUserPassword string `json:"hubUserPassword"`
+
 	// Viper secrets
 	ViperSecret string `json:"viperSecret,omitempty"`
 
 	// Log level
 	DefaultLogLevel string `json:"defaultLogLevel,omitempty"`
 
+	Apps *ProtoformApps `json:"apps,omitempty"`
+}
+
+// ProtoformApps defines the configuration for supported apps
+type ProtoformApps struct {
 	PerceptorConfig *perceptor.AppConfig `json:"perceptorConfig,omitempty"`
+	AlertConfig     *alert.AppConfig     `json:"alertConfig,omitempty"`
 }
