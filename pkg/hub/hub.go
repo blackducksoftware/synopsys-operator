@@ -35,6 +35,10 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	batchv1 "k8s.io/api/batch/v1"
+	v1beta1 "k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -148,7 +152,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 	ValidatePodsAreRunning(hc.KubeClient, pods)
 
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod := FilterPodByNamePrefix(pods)
+	registrationPod := FilterPodByNamePrefix(pods, "registration")
 	log.Debugf("registration pod: %+v", registrationPod)
 	registrationKey := os.Getenv("REGISTRATION_KEY")
 	log.Debugf("registration key: %s", registrationKey)
@@ -169,12 +173,63 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 		}
 	}
 
+	hc.postgresBackup(createHub)
+
 	// ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-exp")
 	// if err != nil {
 	// 	return "", err
 	// }
 	// log.Infof("hub Ip address: %s", ipAddress)
 	return "", nil
+}
+
+func (hc *Creater) postgresBackup(createHub *v1.Hub) {
+
+	_, err := hc.KubeClient.BatchV1beta1().CronJobs(createHub.Name).Create(&v1beta1.CronJob{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      createHub.Name,
+			Namespace: createHub.Namespace,
+		},
+		Spec: v1beta1.CronJobSpec{
+			Schedule: "0 */1 * * *",
+			// Schedule: "*/1 * * * *",
+			JobTemplate: v1beta1.JobTemplateSpec{
+				Spec: batchv1.JobSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Volumes: []corev1.Volume{{
+								Name: "postgres-persistent-vol",
+								VolumeSource: corev1.VolumeSource{
+									PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+										ClaimName: createHub.Name,
+									},
+								},
+							}},
+							Containers: []corev1.Container{{
+								Name:            "backup-postgres",
+								Image:           "postgres:9.6",
+								ImagePullPolicy: corev1.PullIfNotPresent,
+								Args:            []string{"bin/bash", "-c", fmt.Sprintf("pg_dumpall -w > /data/bds/backup/%s.sql", createHub.Name)},
+								VolumeMounts:    []corev1.VolumeMount{{Name: "postgres-persistent-vol", MountPath: "/data/bds/backup"}},
+								Env: []corev1.EnvVar{
+									{Name: "PGHOST", Value: fmt.Sprintf("postgres.%s.svc", createHub.Name)},
+									{Name: "PGPORT", Value: "5432"},
+									{Name: "PGUSER", Value: "postgres"},
+									{Name: "PGPASSWORD", Value: createHub.Spec.AdminPassword},
+								},
+							}},
+							RestartPolicy: corev1.RestartPolicyNever,
+						},
+					},
+				},
+			},
+			ConcurrencyPolicy: v1beta1.ForbidConcurrent,
+		},
+	})
+
+	if err != nil {
+		log.Errorf("failed to create the postgres cron job for %s due to %+v", createHub.Name, err)
+	}
 }
 
 func (hc *Creater) execContainer(request *rest.Request, command []string) error {
@@ -241,6 +296,33 @@ func (hc *Creater) createHubConfig(namespace string, hubversion string, hubConta
 	hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 
 	configMaps["hub-db-config-granular"] = hubDbConfigGranular
+
+	postgresBootstrap := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "postgres-bootstrap"})
+	postgresBootstrap.AddData(map[string]string{"pgbootstrap.sh": fmt.Sprintf(`#!/bin/bash
+		if [ -f /data/bds/backup/%s.sql ]; then
+			echo "backup data file found"
+			while true; do
+				if psql -c "SELECT 1" &>/dev/null; then
+					echo "Migrating the data"
+      		psql < /data/bds/backup/%s.sql
+      		exit 0
+    		else
+      		echo "unable to execute the SELECT 1"
+      		sleep 10
+    		fi
+  		done
+		fi`, namespace, namespace)})
+
+	configMaps["postgres-bootstrap"] = postgresBootstrap
+
+	postgresInit := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "postgres-init"})
+	postgresInit.AddData(map[string]string{"pginit.sh": `#!/bin/bash
+		echo "executing bds init script"
+    sh /usr/share/container-scripts/postgresql/pgbootstrap.sh &
+    run-postgresql`})
+
+	configMaps["postgres-init"] = postgresInit
+
 	return configMaps
 }
 
@@ -290,22 +372,51 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 		deployer.AddConfigMap(configMap)
 	}
 
-	//Postgres
+	storageClass := ""
+	// Postgres PVC
+	postgresPVC, err := components.NewPersistentVolumeClaim(kapi.PVCConfig{
+		Name:       createHub.Name,
+		Namespace:  createHub.Name,
+		VolumeName: createHub.Name,
+		Size:       "10Gi",
+		Class:      &storageClass,
+	})
+	if err != nil {
+		log.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Name, err)
+	} else {
+		postgresPVC.AddAccessMode(kapi.ReadWriteMany)
+		deployer.AddPVC(postgresPVC)
+		if err != nil {
+			log.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Name, err)
+		}
+	}
+
 	postgresEnvs := allConfigEnv
 	postgresEnvs = append(postgresEnvs, &kapi.EnvConfig{Type: kapi.EnvVal, NameOrPrefix: "POSTGRESQL_USER", KeyOrVal: "blackduck"})
 	postgresEnvs = append(postgresEnvs, &kapi.EnvConfig{Type: kapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_PASSWORD", KeyOrVal: "HUB_POSTGRES_USER_PASSWORD_FILE", FromName: "db-creds"})
 	postgresEnvs = append(postgresEnvs, &kapi.EnvConfig{Type: kapi.EnvVal, NameOrPrefix: "POSTGRESQL_DATABASE", KeyOrVal: "blackduck"})
 	postgresEnvs = append(postgresEnvs, &kapi.EnvConfig{Type: kapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_ADMIN_PASSWORD", KeyOrVal: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", FromName: "db-creds"})
 	postgresEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("postgres-persistent-vol")
+	postgresBackupDir, _ := CreatePersistentVolumeClaim("postgres-backup-vol", createHub.Name)
+	postgresInitConfigVol, _ := CreateConfigMapVolume("postgres-init-vol", "postgres-init", 0777)
+	postgresBootstrapConfigVol, _ := CreateConfigMapVolume("postgres-bootstrap-vol", "postgres-bootstrap", 0777)
 	postgresExternalContainerConfig := &api.Container{
-		ContainerConfig: &kapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: kapi.PullIfNotPresent,
-			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: ""},
-		EnvConfigs:   postgresEnvs,
-		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "postgres-persistent-vol", MountPath: "/var/lib/pgsql/data", Propagation: kapi.MountPropagationNone}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: postgresPort, Protocol: kapi.ProtocolTCP},
+		ContainerConfig: &kapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: kapi.PullAlways,
+			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: "",
+			Command: []string{"/usr/share/container-scripts/postgresql/pginit.sh"}},
+		EnvConfigs: postgresEnvs,
+		VolumeMounts: []*kapi.VolumeMountConfig{
+			{Name: "postgres-persistent-vol", MountPath: "/var/lib/pgsql/data", Propagation: kapi.MountPropagationNone},
+			{Name: "postgres-backup-vol", MountPath: "/data/bds/backup", Propagation: kapi.MountPropagationNone},
+			{Name: "postgres-bootstrap-vol:pgbootstrap.sh", MountPath: "/usr/share/container-scripts/postgresql/pgbootstrap.sh", Propagation: kapi.MountPropagationNone},
+			{Name: "postgres-init-vol:pginit.sh", MountPath: "/usr/share/container-scripts/postgresql/pginit.sh", Propagation: kapi.MountPropagationNone},
+		},
+		PortConfig: &kapi.PortConfig{ContainerPort: postgresPort, Protocol: kapi.ProtocolTCP},
 	}
-	postgres := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "postgres", Replicas: IntToInt32(1)}, []*api.Container{postgresExternalContainerConfig},
-		[]*components.Volume{postgresEmptyDir}, []*api.Container{}, []kapi.AffinityConfig{})
+
+	postgres := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "postgres", Replicas: IntToInt32(1)},
+		[]*api.Container{postgresExternalContainerConfig}, []*components.Volume{postgresEmptyDir, postgresBackupDir, postgresInitConfigVol, postgresBootstrapConfigVol},
+		[]*api.Container{}, []kapi.AffinityConfig{})
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)
 	deployer.AddService(CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, false))

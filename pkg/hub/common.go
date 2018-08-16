@@ -49,7 +49,7 @@ import (
 )
 
 // CreateContainer will create the container
-func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volumeMounts []*kapi.VolumeMountConfig, port *kapi.PortConfig) *types.Container {
+func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volumeMounts []*kapi.VolumeMountConfig, port *kapi.PortConfig, actionConfig *kapi.ActionConfig) *types.Container {
 
 	container := types.NewContainer(*config)
 
@@ -62,6 +62,9 @@ func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volum
 	}
 
 	container.AddPort(*port)
+	if actionConfig != nil {
+		container.AddPostStartAction(*actionConfig)
+	}
 
 	return container
 }
@@ -86,6 +89,16 @@ func CreateEmptyDirVolumeWithoutSizeLimit(volumeName string) (*types.Volume, err
 	return emptyDirVol, err
 }
 
+// CreatePersistentVolumeClaim will create a PVC claim for a pod
+func CreatePersistentVolumeClaim(volumeName string, pvcName string) (*types.Volume, error) {
+	pvcVol := types.NewPVCVolume(kapi.PVCVolumeConfig{
+		PVCName:    pvcName,
+		VolumeName: volumeName,
+	})
+
+	return pvcVol, nil
+}
+
 // CreateEmptyDirVolume will create a empty directory for a pod
 func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, error) {
 	emptyDirVol, err := types.NewEmptyDirVolume(kapi.EmptyDirVolumeConfig{
@@ -94,6 +107,17 @@ func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, e
 	})
 
 	return emptyDirVol, err
+}
+
+// CreateConfigMapVolume will mount the config map for a pod
+func CreateConfigMapVolume(volumeName string, mapOrSecretName string, defaultMode int) (*types.Volume, error) {
+	configMapVol := types.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      volumeName,
+		DefaultMode:     IntToInt32(defaultMode),
+		MapOrSecretName: mapOrSecretName,
+	})
+
+	return configMapVol, nil
 }
 
 // CreatePod will create the pod
@@ -116,12 +140,12 @@ func CreatePod(name string, volumes []*types.Volume, containers []*api.Container
 	}
 
 	for _, containerConfig := range containers {
-		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig)
+		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig, containerConfig.ActionConfig)
 		pod.AddContainer(container)
 	}
 
 	for _, initContainerConfig := range initContainers {
-		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts, initContainerConfig.PortConfig)
+		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts, initContainerConfig.PortConfig, initContainerConfig.ActionConfig)
 		err := pod.AddInitContainer(initContainer)
 		if err != nil {
 			log.Printf("failed to create the init container because %+v", err)
@@ -276,9 +300,9 @@ func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodLis
 }
 
 // FilterPodByNamePrefix will filter the pod based on pod name prefix from a list a pods
-func FilterPodByNamePrefix(pods *corev1.PodList) *corev1.Pod {
+func FilterPodByNamePrefix(pods *corev1.PodList, prefix string) *corev1.Pod {
 	for _, pod := range pods.Items {
-		if strings.HasPrefix(pod.Name, "registration") {
+		if strings.HasPrefix(pod.Name, prefix) {
 			return &pod
 		}
 	}
