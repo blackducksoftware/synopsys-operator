@@ -48,10 +48,12 @@ const InstanceTable = ({ instances, classes, handleDelete }) => {
                     <TableRow>
                         <TableCell>Namespace</TableCell>
                         <TableCell>Size</TableCell>
+                        <TableCell>Backup Interval</TableCell>
                         <TableCell>Hub Version</TableCell>
                         <TableCell>Database</TableCell>
+                        <TableCell>PVC Claim</TableCell>
                         <TableCell>IP Address</TableCell>
-                        <TableCell numeric>hubHealth</TableCell>
+                        <TableCell numeric>HubHealth</TableCell>
                         <TableCell numeric>TCP connect</TableCell>
                         <TableCell numeric></TableCell>
                     </TableRow>
@@ -88,8 +90,10 @@ const InstanceTable = ({ instances, classes, handleDelete }) => {
                             <TableRow key={instance.spec.namespace}>
                                 <TableCell>{instance.spec.namespace}</TableCell>
                                 <TableCell>{instance.spec.flavor}</TableCell>
+                                <TableCell>{instance.spec.backupInterval} {instance.spec.backupUnit}</TableCell>
                                 <TableCell>{instance.spec.hubVersion}</TableCell>
                                 <TableCell>{instance.spec.dbPrototype || 'empty'}</TableCell>
+                                <TableCell>{instance.spec.pvcStorageClass} - {instance.spec.pvcClaimSize}</TableCell>
                                 <TableCell>
                                     {instance.status.ip ? <span><a href={`https://${instance.status.fqdn}`} target='_blank'> {instance.status.fqdn} </a><br/> <a href={`https://${ip}`} target='_blank'>{instance.status.ip}</a></span> : instance.status.state}
                                 </TableCell>

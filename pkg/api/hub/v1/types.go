@@ -41,12 +41,15 @@ type Hub struct {
 type HubSpec struct {
 	Namespace        string `json:"namespace"`
 	Flavor           string `json:"flavor"`
-	HubTimeout       string `json:"hubTimeout"`
 	DockerRegistry   string `json:"dockerRegistry"`
 	DockerRepo       string `json:"dockerRepo"`
 	HubVersion       string `json:"hubVersion"`
 	DbPrototype      string `json:"dbPrototype"`
 	InstanceName     string `json:"instanceName"`
+	BackupInterval   string `json:"backupInterval"`
+	BackupUnit       string `json:"backupUnit"`
+	PVCStorageClass  string `json:"pvcStorageClass"`
+	PVCClaimSize     string `json:"pvcClaimSize"`
 	PostgresPassword string `json:"postgresPassword"`
 	AdminPassword    string `json:"adminPassword"`
 	UserPassword     string `json:"userPassword"`

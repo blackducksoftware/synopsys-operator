@@ -63,11 +63,14 @@ const styles = theme => ({
 const initialState = {
     namespace: '',
     flavor: 'small',
-    hubTimeout: '2',
+    backupInterval: '24',
+    backupUnit: 'Hour(s)',
     dockerRegistry: 'gcr.io',
     dockerRepo: 'gke-verification/blackducksoftware',
     hubVersion: '4.7.0',
     dbPrototype: 'empty',
+    pvcStorageClass: 'empty',
+    pvcClaimSize: '10Gi',
     status: 'pending',
     token: '',
     emptyFormFields: true
@@ -111,6 +114,7 @@ class StagingForm extends Component {
             token,
             emptyFormFields,
             dbPrototype,
+            // pvcStorageClass,
             ...formData
         } = this.state;
         const database = dbPrototype === 'empty' ? '' : dbPrototype;
@@ -122,7 +126,7 @@ class StagingForm extends Component {
                 'rgb-token': token
             },
             mode: 'same-origin',
-            body: JSON.stringify({ ...formData, dbPrototype: database }),
+            body: JSON.stringify({ ...formData, dbPrototype: database}),
         });
 
         if (response.status === 200) {
@@ -152,7 +156,7 @@ class StagingForm extends Component {
     emptyFormFields() {
         const {
             flavor,
-            hubTimeout,
+            backupUnit,
             status,
             emptyFormFields : emptyFields,
             ...textFields
@@ -168,7 +172,9 @@ class StagingForm extends Component {
             classes,
             invalidNamespace,
             kubeSizes,
-            dbInstances
+            backupUnits,
+            dbInstances,
+            pvcStorageClasses
         } = this.props;
         // const primary = deepPurple[200];
 
@@ -216,17 +222,6 @@ class StagingForm extends Component {
                             </RadioGroup>
                         </FormControl>
                     </div>
-                    <div className={classnames(classes.singleRowFields, classes.textField)}>
-                        <TextField
-                            id="hubVersion"
-                            name="hubVersion"
-                            label="Hub Version"
-                            className={classes.singleRowFieldRight}
-                            value={this.state.hubVersion}
-                            onChange={this.handleChange}
-                            margin="normal"
-                        />
-                    </div>
                     <TextField
                         id="dockerRegistry"
                         name="dockerRegistry"
@@ -242,6 +237,15 @@ class StagingForm extends Component {
                         label="Docker Repo"
                         className={classes.textField}
                         value={this.state.dockerRepo}
+                        onChange={this.handleChange}
+                        margin="normal"
+                    />
+                    <TextField
+                        id="hubVersion"
+                        name="hubVersion"
+                        label="Hub Version"
+                        className={classes.textField}
+                        value={this.state.hubVersion}
                         onChange={this.handleChange}
                         margin="normal"
                     />
@@ -268,6 +272,74 @@ class StagingForm extends Component {
                             );
                         })}
                     </TextField>
+                    <div className={classnames(classes.textField, classes.singleRowFields)}>
+                        <TextField
+                            id="backupInterval"
+                            name="backupInterval"
+                            label="Backup Interval"
+                            className={classes.singleRowFieldLeft}
+                            value={this.state.backupInterval}
+                            onChange={this.handleChange}
+                            margin="normal"
+                        />
+                        <TextField
+                            select
+                            id="backupUnit"
+                            name="backupUnit"
+                            label="Units"
+                            className={classes.singleRowFieldRight}
+                            value={this.state.backupUnit}
+                            onChange={this.handleChange}
+                            SelectProps={{
+                                MenuProps: {
+                                    className: classes.menu,
+                                },
+                            }}
+                            margin="normal"
+                        >
+                            {backupUnits.map((unit) => {
+                                return (
+                                    <MenuItem key={`backup-${unit}`} value={unit}>
+                                        {unit}
+                                    </MenuItem>
+                                );
+                            })}
+                        </TextField>
+                    </div>
+                    <div className={classnames(classes.singleRowFields, classes.textField)}>
+                        <TextField
+                            select
+                            id="pvcStorageClass"
+                            name="pvcStorageClass"
+                            label="PVC Storage Class"
+                            className={classes.singleRowFieldLeft}
+                            value={this.state.pvcStorageClass}
+                            onChange={this.handleChange}
+                            SelectProps={{
+                                MenuProps: {
+                                    className: classes.menu,
+                                },
+                            }}
+                            margin="normal"
+                        >
+                            {pvcStorageClasses.map((storageClass) => {
+                                return (
+                                    <MenuItem key={`storageClass-${storageClass}`} value={storageClass}>
+                                        {storageClass}
+                                    </MenuItem>
+                                );
+                            })}
+                        </TextField>
+                        <TextField
+                            id="pvcClaimSize"
+                            name="pvcClaimSize"
+                            label="PVC Claim Size"
+                            className={classes.singleRowFieldRight}
+                            value={this.state.pvcClaimSize}
+                            onChange={this.handleChange}
+                            margin="normal"
+                        />
+                    </div>
                     <TextField
                         id="token"
                         name="token"
@@ -299,6 +371,8 @@ export default withStyles(styles)(StagingForm);
 StagingForm.propTypes = {
     addInstance: PropTypes.func,
     dbInstances: PropTypes.arrayOf(PropTypes.string),
+    pvcStorageClasses: PropTypes.arrayOf(PropTypes.string),
+    backupUnits: PropTypes.arrayOf(PropTypes.string),
     invalidNamespace: PropTypes.bool,
     kubeSizes: PropTypes.arrayOf(PropTypes.string)
 }

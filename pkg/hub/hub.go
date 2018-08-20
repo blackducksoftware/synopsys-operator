@@ -26,6 +26,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	kapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -35,10 +37,6 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	batchv1 "k8s.io/api/batch/v1"
-	v1beta1 "k8s.io/api/batch/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -173,7 +171,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 		}
 	}
 
-	hc.postgresBackup(createHub)
+	// hc.postgresBackup(createHub)
 
 	// ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-exp")
 	// if err != nil {
@@ -181,55 +179,6 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 	// }
 	// log.Infof("hub Ip address: %s", ipAddress)
 	return "", nil
-}
-
-func (hc *Creater) postgresBackup(createHub *v1.Hub) {
-
-	_, err := hc.KubeClient.BatchV1beta1().CronJobs(createHub.Name).Create(&v1beta1.CronJob{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      createHub.Name,
-			Namespace: createHub.Namespace,
-		},
-		Spec: v1beta1.CronJobSpec{
-			Schedule: "0 */1 * * *",
-			// Schedule: "*/1 * * * *",
-			JobTemplate: v1beta1.JobTemplateSpec{
-				Spec: batchv1.JobSpec{
-					Template: corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Volumes: []corev1.Volume{{
-								Name: "postgres-persistent-vol",
-								VolumeSource: corev1.VolumeSource{
-									PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-										ClaimName: createHub.Name,
-									},
-								},
-							}},
-							Containers: []corev1.Container{{
-								Name:            "backup-postgres",
-								Image:           "postgres:9.6",
-								ImagePullPolicy: corev1.PullIfNotPresent,
-								Args:            []string{"bin/bash", "-c", fmt.Sprintf("pg_dumpall -w > /data/bds/backup/%s.sql", createHub.Name)},
-								VolumeMounts:    []corev1.VolumeMount{{Name: "postgres-persistent-vol", MountPath: "/data/bds/backup"}},
-								Env: []corev1.EnvVar{
-									{Name: "PGHOST", Value: fmt.Sprintf("postgres.%s.svc", createHub.Name)},
-									{Name: "PGPORT", Value: "5432"},
-									{Name: "PGUSER", Value: "postgres"},
-									{Name: "PGPASSWORD", Value: createHub.Spec.AdminPassword},
-								},
-							}},
-							RestartPolicy: corev1.RestartPolicyNever,
-						},
-					},
-				},
-			},
-			ConcurrencyPolicy: v1beta1.ForbidConcurrent,
-		},
-	})
-
-	if err != nil {
-		log.Errorf("failed to create the postgres cron job for %s due to %+v", createHub.Name, err)
-	}
 }
 
 func (hc *Creater) execContainer(request *rest.Request, command []string) error {
@@ -257,23 +206,23 @@ func (hc *Creater) execContainer(request *rest.Request, command []string) error 
 }
 
 // CreateHubConfig will create the hub configMaps
-func (hc *Creater) createHubConfig(namespace string, hubversion string, hubContainerFlavor *ContainerFlavor) map[string]*components.ConfigMap {
+func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *ContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
-	hubConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "hub-config"})
+	hubConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config"})
 	hubConfig.AddData(map[string]string{
 		"PUBLIC_HUB_WEBSERVER_HOST": "localhost",
 		"PUBLIC_HUB_WEBSERVER_PORT": "443",
 		"HUB_WEBSERVER_PORT":        "8443",
 		"IPV4_ONLY":                 "0",
 		"RUN_SECRETS_DIR":           "/tmp/secrets",
-		"HUB_VERSION":               hubversion,
+		"HUB_VERSION":               createHub.Spec.HubVersion,
 		"HUB_PROXY_NON_PROXY_HOSTS": "solr",
 	})
 
 	configMaps["hub-config"] = hubConfig
 
-	hubDbConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "hub-db-config"})
+	hubDbConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-db-config"})
 	hubDbConfig.AddData(map[string]string{
 		"HUB_POSTGRES_ADMIN": "blackduck",
 		"HUB_POSTGRES_USER":  "blackduck_user",
@@ -283,7 +232,7 @@ func (hc *Creater) createHubConfig(namespace string, hubversion string, hubConta
 
 	configMaps["hub-db-config"] = hubDbConfig
 
-	hubConfigResources := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "hub-config-resources"})
+	hubConfigResources := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config-resources"})
 	hubConfigResources.AddData(map[string]string{
 		"webapp-mem":    hubContainerFlavor.WebappHubMaxMemory,
 		"jobrunner-mem": hubContainerFlavor.JobRunnerHubMaxMemory,
@@ -292,12 +241,30 @@ func (hc *Creater) createHubConfig(namespace string, hubversion string, hubConta
 
 	configMaps["hub-config-resources"] = hubConfigResources
 
-	hubDbConfigGranular := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "hub-db-config-granular"})
+	hubDbConfigGranular := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-db-config-granular"})
 	hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 
 	configMaps["hub-db-config-granular"] = hubDbConfigGranular
 
-	postgresBootstrap := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "postgres-bootstrap"})
+	postgresBootstrap := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "postgres-bootstrap"})
+	var backupInSeconds int
+	switch createHub.Spec.BackupUnit {
+	case "Minute(s)":
+		backupInSeconds, _ = strconv.Atoi(createHub.Spec.BackupInterval)
+		backupInSeconds = backupInSeconds * 60
+	case "Hour(s)":
+		backupInSeconds, _ = strconv.Atoi(createHub.Spec.BackupInterval)
+		backupInSeconds = backupInSeconds * 60 * 60
+	case "Week(s)":
+		backupInSeconds, _ = strconv.Atoi(createHub.Spec.BackupInterval)
+		backupInSeconds = backupInSeconds * 60 * 60 * 7
+	default:
+		if strings.EqualFold(createHub.Spec.BackupInterval, "") {
+			backupInSeconds = 1
+		}
+		backupInSeconds = backupInSeconds * 60 * 60
+	}
+
 	postgresBootstrap.AddData(map[string]string{"pgbootstrap.sh": fmt.Sprintf(`#!/bin/bash
 		if [ -f /data/bds/backup/%s.sql ]; then
 			echo "backup data file found"
@@ -305,17 +272,23 @@ func (hc *Creater) createHubConfig(namespace string, hubversion string, hubConta
 				if psql -c "SELECT 1" &>/dev/null; then
 					echo "Migrating the data"
       		psql < /data/bds/backup/%s.sql
-      		exit 0
+      		break
     		else
       		echo "unable to execute the SELECT 1"
       		sleep 10
     		fi
   		done
-		fi`, namespace, namespace)})
+		fi;
+
+		while true; do
+		  echo "Dump the data"
+			sleep %d;
+			pg_dumpall -w > /data/bds/backup/%s.sql;
+		done`, createHub.Name, createHub.Name, backupInSeconds, createHub.Name)})
 
 	configMaps["postgres-bootstrap"] = postgresBootstrap
 
-	postgresInit := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: namespace, Name: "postgres-init"})
+	postgresInit := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "postgres-init"})
 	postgresInit.AddData(map[string]string{"pginit.sh": `#!/bin/bash
 		echo "executing bds init script"
     sh /usr/share/container-scripts/postgresql/pgbootstrap.sh &
@@ -328,21 +301,6 @@ func (hc *Creater) createHubConfig(namespace string, hubversion string, hubConta
 
 func (hc *Creater) createHubSecrets(namespace string, adminPassword string, userPassword string) []*components.Secret {
 	var secrets []*components.Secret
-	// file, err := ReadFromFile(GCLOUD_AUTH_FILE_PATH)
-	//
-	// if err != nil {
-	// 	log.Errorf("Unable to read the file %s due to error: +%v", GCLOUD_AUTH_FILE_PATH, err)
-	// } else {
-	//
-	// 	gcloudAuthSecret := components.NewSecret(kapi.SecretConfig{
-	// 		Namespace: namespace,
-	// 		Name:      "hub-postgres-gcloud-instance-creds",
-	// 		Type:      kapi.SecretTypeOpaque,
-	// 	})
-	// 	gcloudAuthSecret.AddStringData(map[string]string{"credentials.json": string(file)})
-	// 	secrets = append(secrets, gcloudAuthSecret)
-	// }
-
 	hubSecret := components.NewSecret(kapi.SecretConfig{Namespace: namespace, Name: "db-creds", Type: kapi.SecretTypeOpaque})
 	hubSecret.AddStringData(map[string]string{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": adminPassword, "HUB_POSTGRES_USER_PASSWORD_FILE": userPassword})
 	secrets = append(secrets, hubSecret)
@@ -366,25 +324,30 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	}
 
 	// Create ConfigMaps
-	configMaps := hc.createHubConfig(createHub.Spec.Namespace, createHub.Spec.HubVersion, hubContainerFlavor)
+	configMaps := hc.createHubConfig(createHub, hubContainerFlavor)
 
 	for _, configMap := range configMaps {
 		deployer.AddConfigMap(configMap)
 	}
 
-	storageClass := ""
+	var storageClass string
+	if strings.EqualFold(createHub.Spec.PVCStorageClass, "empty") {
+		storageClass = ""
+	} else {
+		storageClass = createHub.Spec.PVCStorageClass
+	}
 	// Postgres PVC
 	postgresPVC, err := components.NewPersistentVolumeClaim(kapi.PVCConfig{
-		Name:       createHub.Name,
-		Namespace:  createHub.Name,
-		VolumeName: createHub.Name,
-		Size:       "10Gi",
-		Class:      &storageClass,
+		Name:      createHub.Name,
+		Namespace: createHub.Name,
+		// VolumeName: createHub.Name,
+		Size:  createHub.Spec.PVCClaimSize,
+		Class: &storageClass,
 	})
 	if err != nil {
 		log.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Name, err)
 	} else {
-		postgresPVC.AddAccessMode(kapi.ReadWriteMany)
+		postgresPVC.AddAccessMode(kapi.ReadWriteOnce)
 		deployer.AddPVC(postgresPVC)
 		if err != nil {
 			log.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Name, err)
@@ -413,10 +376,17 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 		},
 		PortConfig: &kapi.PortConfig{ContainerPort: postgresPort, Protocol: kapi.ProtocolTCP},
 	}
+	postgresInitContainerConfig := &api.Container{
+		ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /data/bds/backup"}},
+		VolumeMounts: []*kapi.VolumeMountConfig{
+			{Name: "postgres-backup-vol", MountPath: "/data/bds/backup", Propagation: kapi.MountPropagationNone},
+		},
+		PortConfig: &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
+	}
 
 	postgres := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "postgres", Replicas: IntToInt32(1)},
 		[]*api.Container{postgresExternalContainerConfig}, []*components.Volume{postgresEmptyDir, postgresBackupDir, postgresInitConfigVol, postgresBootstrapConfigVol},
-		[]*api.Container{}, []kapi.AffinityConfig{})
+		[]*api.Container{postgresInitContainerConfig}, []kapi.AffinityConfig{})
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)
 	deployer.AddService(CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, false))
@@ -430,13 +400,6 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	hubConfigEnv := []*kapi.EnvConfig{
 		{Type: kapi.EnvFromConfigMap, FromName: "hub-config"},
 	}
-
-	// Common DB secret volume
-	// hubPostgresSecretVolume := components.NewSecretVolume(kapi.ConfigMapOrSecretVolumeConfig{
-	// 	VolumeName:      "hub-postgres-gcloud-instance-creds",
-	// 	MapOrSecretName: "hub-postgres-gcloud-instance-creds",
-	// 	DefaultMode:     IntToInt32(420),
-	// })
 
 	dbSecretVolume := components.NewSecretVolume(kapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "db-passwords",
@@ -460,11 +423,6 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-cfssl", MountPath: "/etc/cfssl", Propagation: kapi.MountPropagationNone}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: cfsslPort, Protocol: kapi.ProtocolTCP},
 	}
-	// cfsslInitContainerConfig := &api.Container{
-	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"sh", "-c", "chmod -cR 777 /etc/cfssl"}},
-	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-cfssl", MountPath: "/etc/cfssl", Propagation: kapi.MountPropagationNone}},
-	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
-	// }
 	cfssl := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "cfssl", Replicas: IntToInt32(1)},
 		[]*api.Container{cfsslContainerConfig}, []*components.Volume{cfsslEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
@@ -481,11 +439,6 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security", Propagation: kapi.MountPropagationNone}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: webserverPort, Protocol: kapi.ProtocolTCP},
 	}
-	// webserverInitContainerConfig := &api.Container{
-	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/"}},
-	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security", Propagation: kapi.MountPropagationNone}},
-	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
-	// }
 	webserver := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "webserver", Replicas: IntToInt32(1)},
 		[]*api.Container{webServerContainerConfig}, []*components.Volume{webServerEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
@@ -514,11 +467,6 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-solr", MountPath: "/opt/blackduck/hub/solr/cores.data", Propagation: kapi.MountPropagationNone}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: solrPort, Protocol: kapi.ProtocolTCP},
 	}
-	// solrInitContainerConfig := &api.Container{
-	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"chmod", "-cR", "777", "/opt/blackduck/hub/solr/cores.data"}},
-	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-solr", MountPath: "/opt/blackduck/hub/solr/cores.data", Propagation: kapi.MountPropagationNone}},
-	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
-	// }
 	solr := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "solr", Replicas: IntToInt32(1)},
 		[]*api.Container{solrContainerConfig}, []*components.Volume{solrEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
@@ -535,11 +483,6 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config", Propagation: kapi.MountPropagationNone}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: registrationPort, Protocol: kapi.ProtocolTCP},
 	}
-	// registrationInitContainerConfig := &api.Container{
-	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"chmod", "-cR", "777", "/opt/blackduck/hub/hub-registration/config"}},
-	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config", Propagation: kapi.MountPropagationNone}},
-	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
-	// }
 	registration := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "registration", Replicas: IntToInt32(1)},
 		[]*api.Container{registrationContainerConfig}, []*components.Volume{registrationEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
@@ -570,14 +513,6 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "db-passwords", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationNone}},
 		PortConfig:   &kapi.PortConfig{ContainerPort: jobRunnerPort, Protocol: kapi.ProtocolTCP},
 	}
-
-	// cloudProxyContainerConfig := &api.Container{
-	// 	ContainerConfig: &kapi.ContainerConfig{Name: "cloudsql-proxy", Image: "gcr.io/cloudsql-docker/gce-proxy:1.11", PullPolicy: kapi.PullAlways},
-	// 	VolumeMounts: []*kapi.VolumeMountConfig{
-	// 		&kapi.VolumeMountConfig{Name: "hub-postgres-gcloud-instance-creds", MountPath: "/secrets/cloudsql", Propagation: kapi.MountPropagationNone},
-	// 		&kapi.VolumeMountConfig{Name: "cloudsql", MountPath: "/cloudsql", Propagation: kapi.MountPropagationNone}},
-	// 	PortConfig: &kapi.PortConfig{ContainerPort: POSTGRES_PORT, Protocol: kapi.ProtocolTCP},
-	// }
 
 	jobRunner := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "jobrunner", Replicas: hubContainerFlavor.JobRunnerReplicas},
 		[]*api.Container{jobRunnerContainerConfig}, []*components.Volume{dbSecretVolume, dbEmptyDir}, []*api.Container{},
@@ -617,11 +552,6 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 			{Name: "dir-authentication", MountPath: "/opt/blackduck/hub/hub-authentication/security", Propagation: kapi.MountPropagationNone}},
 		PortConfig: &kapi.PortConfig{ContainerPort: authenticationPort, Protocol: kapi.ProtocolTCP},
 	}
-	// hubAuthInitContainerConfig := &api.Container{
-	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"chmod", "-cR", "777", "/opt/blackduck/hub/hub-authentication/security"}},
-	// 	VolumeMounts:    []*kapi.VolumeMountConfig{&kapi.VolumeMountConfig{Name: "dir-authentication", MountPath: "/opt/blackduck/hub/hub-authentication/security", Propagation: kapi.MountPropagationNone}},
-	// 	PortConfig:      &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
-	// }
 	hubAuth := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "hub-authentication", Replicas: IntToInt32(1)},
 		[]*api.Container{hubAuthContainerConfig}, []*components.Volume{hubAuthEmptyDir, dbSecretVolume, dbEmptyDir}, []*api.Container{},
 		[]kapi.AffinityConfig{})
@@ -644,14 +574,6 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 			{Name: "dir-logstash", MountPath: "/opt/blackduck/hub/logs", Propagation: kapi.MountPropagationNone}},
 		PortConfig: &kapi.PortConfig{ContainerPort: webappPort, Protocol: kapi.ProtocolTCP},
 	}
-	// webappLogStashInitContainerConfig := &api.Container{
-	// 	ContainerConfig: &kapi.ContainerConfig{Name: "alpine", Image: "alpine", PullPolicy: kapi.PullAlways, Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/logstash/data && chmod -cR 777 /opt/blackduck/hub/"}},
-	// 	VolumeMounts: []*kapi.VolumeMountConfig{
-	// 		&kapi.VolumeMountConfig{Name: "dir-webapp", MountPath: "/opt/blackduck/hub/hub-webapp/security", Propagation: kapi.MountPropagationNone},
-	// 		&kapi.VolumeMountConfig{Name: "dir-logstash", MountPath: "/var/lib/logstash/data", Propagation: kapi.MountPropagationNone}},
-	// 	PortConfig: &kapi.PortConfig{ContainerPort: "3001", Protocol: kapi.ProtocolTCP},
-	// }
-	// logStashGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-logstash", fmt.Sprintf("%s-%s", "logstash-disk", createHub.Spec.Namespace), "ext4")
 	logstashEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")
 	logstashContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "logstash", Image: fmt.Sprintf("%s/%s/hub-logstash:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),

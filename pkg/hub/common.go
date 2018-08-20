@@ -40,6 +40,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/api/storage/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -372,6 +373,11 @@ func GetKubeConfig() (*rest.Config, error) {
 // GetService will get the service information for the input service name inside the input namespace
 func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*v1.Service, error) {
 	return clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
+}
+
+// ListStorageClass will list all the storageClass in the cluster
+func ListStorageClass(clientset *kubernetes.Clientset) (*v1beta1.StorageClassList, error) {
+	return clientset.StorageV1beta1().StorageClasses().List(metav1.ListOptions{})
 }
 
 // IntToInt32 will convert from int to int32

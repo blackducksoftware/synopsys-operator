@@ -162,7 +162,7 @@ func (h *HubHandler) getHubUrls() (*APISetHubsRequest, error) {
 	// 2. extract the namespaces
 	hubURLs := []string{}
 	for _, hub := range hubList.Items {
-		if len(hub.Spec.Namespace) > 0 {
+		if len(hub.Spec.Namespace) > 0 && strings.EqualFold(hub.Spec.State, "running") {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Spec.Namespace)
 			status := h.verifyHub(hubURL)
 			if status {

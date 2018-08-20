@@ -7,9 +7,12 @@ spec:
   dbPrototype: ""
   dockerRegistry: gcr.io
   dockerRepo: gke-verification/blackducksoftware
-  flavor: small
-  hubTimeout: "2"
   hubVersion: 4.7.0
+  flavor: small
+  backupInterval: "1"
+  backupUnit: "Minute(s)"
+  pvcStorageClass: "standard"
+  pvcClaimSize: "10Gi"
   instanceName: ""
   isRandomPassword: false
   namespace: crd-test
