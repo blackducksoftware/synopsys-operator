@@ -13,6 +13,7 @@ spec:
   backupUnit: "Minute(s)"
   pvcStorageClass: "standard"
   pvcClaimSize: "10Gi"
+  pvcAccessMode: "ReadWriteMany"
   instanceName: ""
   isRandomPassword: false
   namespace: crd-test

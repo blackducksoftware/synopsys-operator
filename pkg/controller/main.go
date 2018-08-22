@@ -193,8 +193,9 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	deployer.AddConfigMap(hubFederatorConfig)
 
 	// Perceptor service
-	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), false))
-	deployer.AddService(hub.CreateService("hub-federator-exposed", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), true))
+	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(hub.CreateService("hub-federator-np", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), kapi.ClusterIPServiceTypeNodePort))
+	deployer.AddService(hub.CreateService("hub-federator-lb", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), kapi.ClusterIPServiceTypeLoadBalancer))
 
 	// Hub federator deployment
 	hubFederatorContainerConfig := &api.Container{

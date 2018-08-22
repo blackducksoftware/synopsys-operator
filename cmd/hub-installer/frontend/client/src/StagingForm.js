@@ -38,6 +38,18 @@ const styles = theme => ({
         marginLeft: theme.spacing.unit / 2,
         flex: 1
     },
+    singleRowThreeFieldLeft: {
+        marginRight: theme.spacing.unit / 3,
+        flex: 1
+    },
+    singleRowThreeFieldRight: {
+        marginLeft: theme.spacing.unit / 3,
+        flex: 1
+    },
+    singleRowThreeFieldMiddle: {
+        marginLeft: theme.spacing.unit / 3,
+        flex: 1
+    },
     menu: {
         width: 200,
     },
@@ -70,6 +82,7 @@ const initialState = {
     hubVersion: '4.7.0',
     dbPrototype: 'empty',
     pvcStorageClass: 'empty',
+    pvcAccessMode: 'ReadWriteMany',
     pvcClaimSize: '10Gi',
     status: 'pending',
     token: '',
@@ -157,6 +170,7 @@ class StagingForm extends Component {
         const {
             flavor,
             backupUnit,
+            pvcAccessMode,
             status,
             emptyFormFields : emptyFields,
             ...textFields
@@ -173,6 +187,7 @@ class StagingForm extends Component {
             invalidNamespace,
             kubeSizes,
             backupUnits,
+            pvcAccessModes,
             dbInstances,
             pvcStorageClasses
         } = this.props;
@@ -331,6 +346,30 @@ class StagingForm extends Component {
                             })}
                         </TextField>
                         <TextField
+                            select
+                            id="pvcAccessMode"
+                            name="pvcAccessMode"
+                            label="PVC Access Mode"
+                            className={classes.singleRowThreeFieldMiddle}
+                            value={this.state.pvcAccessMode}
+                            onChange={this.handleChange}
+                            SelectProps={{
+                                MenuProps: {
+                                    className: classes.menu,
+                                },
+                            }}
+                            margin="normal"
+                            helperText="For ReadWriteOnce, manual cloning of Postgres Database is required!"
+                        >
+                            {pvcAccessModes.map((accessMode) => {
+                                return (
+                                    <MenuItem key={`accessMode-${accessMode}`} value={accessMode}>
+                                        {accessMode}
+                                    </MenuItem>
+                                );
+                            })}
+                        </TextField>
+                        <TextField
                             id="pvcClaimSize"
                             name="pvcClaimSize"
                             label="PVC Claim Size"
@@ -373,6 +412,7 @@ StagingForm.propTypes = {
     dbInstances: PropTypes.arrayOf(PropTypes.string),
     pvcStorageClasses: PropTypes.arrayOf(PropTypes.string),
     backupUnits: PropTypes.arrayOf(PropTypes.string),
+    pvcAccessModes: PropTypes.arrayOf(PropTypes.string),
     invalidNamespace: PropTypes.bool,
     kubeSizes: PropTypes.arrayOf(PropTypes.string)
 }

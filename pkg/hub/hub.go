@@ -82,12 +82,12 @@ func (hc *Creater) DeleteHub(namespace string) {
 }
 
 // CreateHub will create the Black Duck Hub
-func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
+func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, error) {
 	log.Debugf("Create Hub details for %s: %+v", createHub.Spec.Namespace, createHub)
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.Config)
 	if err != nil {
-		return "", fmt.Errorf("unable to create the horizon deployer due to %+v", err)
+		return "", "", fmt.Errorf("unable to create the horizon deployer due to %+v", err)
 	}
 
 	// Get Containers Flavor
@@ -95,7 +95,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
 
 	if hubContainerFlavor == nil {
-		return "", fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) OpsSight, Actual: %s", createHub.Spec.Flavor)
+		return "", "", fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) OpsSight, Actual: %s", createHub.Spec.Flavor)
 	}
 
 	// All ConfigMap environment variables
@@ -118,13 +118,13 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("Deployments failed because %+v", err)
+		log.Errorf("deployments failed because %+v", err)
 	}
 	// time.Sleep(20 * time.Second)
 	// Get all pods corresponding to the hub namespace
 	pods, err := GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
 	if err != nil {
-		return "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
+		return "", "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	// Validate all pods are in running state
 	ValidatePodsAreRunning(hc.KubeClient, pods)
@@ -138,13 +138,14 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 	// Deploy all hub containers
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("Deployments failed because %+v", err)
+		log.Errorf("deployments failed because %+v", err)
+		return "", "", fmt.Errorf("unable to deploy the hub in %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	time.Sleep(10 * time.Second)
 	// Get all pods corresponding to the hub namespace
 	pods, err = GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
 	if err != nil {
-		return "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
+		return "", "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	// Validate all pods are in running state
 	ValidatePodsAreRunning(hc.KubeClient, pods)
@@ -171,14 +172,19 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, error) {
 		}
 	}
 
+	pvcVolumeName, err := hc.getPVCVolumeName(createHub.Spec.Namespace)
+	if err != nil {
+		return "", "", err
+	}
+
 	// hc.postgresBackup(createHub)
 
-	// ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-exp")
-	// if err != nil {
-	// 	return "", err
-	// }
-	// log.Infof("hub Ip address: %s", ipAddress)
-	return "", nil
+	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-lb")
+	if err != nil {
+		return "", "", err
+	}
+	log.Infof("hub Ip address: %s", ipAddress)
+	return ipAddress, pvcVolumeName, nil
 }
 
 func (hc *Creater) execContainer(request *rest.Request, command []string) error {
@@ -347,7 +353,12 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	if err != nil {
 		log.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Name, err)
 	} else {
-		postgresPVC.AddAccessMode(kapi.ReadWriteOnce)
+		switch createHub.Spec.PVCAccessMode {
+		case "ReadWriteOnce":
+			postgresPVC.AddAccessMode(kapi.ReadWriteOnce)
+		default:
+			postgresPVC.AddAccessMode(kapi.ReadWriteMany)
+		}
 		deployer.AddPVC(postgresPVC)
 		if err != nil {
 			log.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Name, err)
@@ -389,7 +400,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 		[]*api.Container{postgresInitContainerConfig}, []kapi.AffinityConfig{})
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)
-	deployer.AddService(CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, false))
+	deployer.AddService(CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, kapi.ClusterIPServiceTypeDefault))
 }
 
 // CreateHub will create an entire hub for you.  TODO add flavor parameters !
@@ -588,21 +599,41 @@ func (hc *Creater) createHubDeployer(deployer *horizon.Deployer, createHub *v1.H
 	// log.Infof("webappLogstash : %v\n", webappLogstashc.GetObj())
 	deployer.AddDeployment(webappLogstash)
 
-	deployer.AddService(CreateService("cfssl", "cfssl", createHub.Spec.Namespace, cfsslPort, cfsslPort, false))
-	deployer.AddService(CreateService("zookeeper", "zookeeper", createHub.Spec.Namespace, zookeeperPort, zookeeperPort, false))
-	deployer.AddService(CreateService("webserver", "webserver", createHub.Spec.Namespace, "443", webserverPort, false))
-	deployer.AddService(CreateService("webserver-exp", "webserver", createHub.Spec.Namespace, "443", webserverPort, true))
-	deployer.AddService(CreateService("webapp", "webapp-logstash", createHub.Spec.Namespace, webappPort, webappPort, false))
-	deployer.AddService(CreateService("logstash", "webapp-logstash", createHub.Spec.Namespace, logstashPort, logstashPort, false))
-	deployer.AddService(CreateService("solr", "solr", createHub.Spec.Namespace, solrPort, solrPort, false))
-	deployer.AddService(CreateService("documentation", "documentation", createHub.Spec.Namespace, documentationPort, documentationPort, false))
-	deployer.AddService(CreateService("scan", "hub-scan", createHub.Spec.Namespace, scannerPort, scannerPort, false))
-	deployer.AddService(CreateService("authentication", "hub-authentication", createHub.Spec.Namespace, authenticationPort, authenticationPort, false))
-	deployer.AddService(CreateService("registration", "registration", createHub.Spec.Namespace, registrationPort, registrationPort, false))
+	deployer.AddService(CreateService("cfssl", "cfssl", createHub.Spec.Namespace, cfsslPort, cfsslPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("zookeeper", "zookeeper", createHub.Spec.Namespace, zookeeperPort, zookeeperPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("webserver", "webserver", createHub.Spec.Namespace, "443", webserverPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("webserver-np", "webserver", createHub.Spec.Namespace, "443", webserverPort, kapi.ClusterIPServiceTypeNodePort))
+	deployer.AddService(CreateService("webserver-lb", "webserver", createHub.Spec.Namespace, "443", webserverPort, kapi.ClusterIPServiceTypeLoadBalancer))
+	deployer.AddService(CreateService("webapp", "webapp-logstash", createHub.Spec.Namespace, webappPort, webappPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("logstash", "webapp-logstash", createHub.Spec.Namespace, logstashPort, logstashPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("solr", "solr", createHub.Spec.Namespace, solrPort, solrPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("documentation", "documentation", createHub.Spec.Namespace, documentationPort, documentationPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("scan", "hub-scan", createHub.Spec.Namespace, scannerPort, scannerPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("authentication", "hub-authentication", createHub.Spec.Namespace, authenticationPort, authenticationPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("registration", "registration", createHub.Spec.Namespace, registrationPort, registrationPort, kapi.ClusterIPServiceTypeDefault))
+}
+
+func (hc *Creater) getPVCVolumeName(namespace string) (string, error) {
+	for i := 0; i < 60; i++ {
+		time.Sleep(10 * time.Second)
+		pvc, err := GetPVC(hc.KubeClient, namespace, namespace)
+		if err != nil {
+			return "", fmt.Errorf("unable to get pvc in %s namespace due to %s", namespace, err.Error())
+		}
+
+		log.Debugf("pvc: %v", pvc)
+
+		if strings.EqualFold(pvc.Spec.VolumeName, "") {
+			continue
+		} else {
+			return pvc.Spec.VolumeName, nil
+		}
+	}
+	return "", fmt.Errorf("timeout: unable to get pvc %s in %s namespace", namespace, namespace)
 }
 
 func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
-	for i := 0; i < 60; i++ {
+	for i := 0; i < 10; i++ {
 		time.Sleep(10 * time.Second)
 		service, err := GetService(hc.KubeClient, namespace, serviceName)
 		if err != nil {

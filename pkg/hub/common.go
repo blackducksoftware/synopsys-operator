@@ -38,6 +38,8 @@ import (
 	kapi "github.com/blackducksoftware/horizon/pkg/api"
 	types "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/api/storage/v1beta1"
@@ -176,15 +178,13 @@ func CreateDeploymentFromContainer(deploymentConfig *kapi.DeploymentConfig, cont
 }
 
 // CreateService will create the service
-func CreateService(name string, label string, namespace string, port string, target string, exp bool) *types.Service {
+func CreateService(name string, label string, namespace string, port string, target string, serviceType kapi.ClusterIPServiceType) *types.Service {
 	svcConfig := kapi.ServiceConfig{
-		Name:      name,
-		Namespace: namespace,
+		Name:          name,
+		Namespace:     namespace,
+		IPServiceType: serviceType,
 	}
-	// services w/ -exp are exposed
-	if exp {
-		svcConfig.IPServiceType = kapi.ClusterIPServiceTypeNodePort
-	}
+
 	mySvc := types.NewService(svcConfig)
 	portVal, _ := strconv.Atoi(port)
 	myPort := &kapi.ServicePortConfig{
@@ -378,6 +378,32 @@ func GetService(clientset *kubernetes.Clientset, namespace string, serviceName s
 // ListStorageClass will list all the storageClass in the cluster
 func ListStorageClass(clientset *kubernetes.Clientset) (*v1beta1.StorageClassList, error) {
 	return clientset.StorageV1beta1().StorageClasses().List(metav1.ListOptions{})
+}
+
+// GetPVC will get the PVC for the given name
+func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*v1.PersistentVolumeClaim, error) {
+	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+}
+
+// ListHubs will list all hubs in the cluster
+func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v1.HubList, error) {
+	return hubClientset.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
+}
+
+// ListHubPV will list all the persistent volumes attached to each hub in the cluster
+func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) ([]string, error) {
+	var pvList []string
+	hubs, err := ListHubs(hubClientset, namespace)
+	if err != nil {
+		log.Errorf("unable to list the hubs due to %+v", err)
+		return pvList, err
+	}
+	for _, hub := range hubs.Items {
+		if !strings.EqualFold(hub.Status.PVCVolumeName, "") {
+			pvList = append(pvList, fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName))
+		}
+	}
+	return pvList, nil
 }
 
 // IntToInt32 will convert from int to int32

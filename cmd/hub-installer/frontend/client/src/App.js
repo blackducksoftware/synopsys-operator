@@ -24,6 +24,10 @@ class App extends Component {
             instances: {},
             dbInstances: [],
             pvcStorageClasses: [],
+            pvcAccessModes: [
+                'ReadWriteMany',
+                'ReadWriteOnce'
+            ],
             invalidNamespace: false,
             toastMsgOpen: false,
             toastMsgText: '',
@@ -221,6 +225,7 @@ class App extends Component {
                     dbInstances={this.state.dbInstances}
                     pvcStorageClasses={this.state.pvcStorageClasses}
                     backupUnits={this.state.backupUnits}
+                    pvcAccessModes={this.state.pvcAccessModes}
                     setToastStatus={this.setToastStatus}
                 />
 

@@ -79,7 +79,7 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 		if err != nil {
 			log.Errorf("unable to create the new hub creater for %s due to %+v", hubv1.Name, err)
 		}
-		ip, err := hubCreator.CreateHub(hubv1)
+		ip, pvc, err := hubCreator.CreateHub(hubv1)
 
 		if err != nil {
 			//Set spec/state  and status/state to started
@@ -90,6 +90,7 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 			hubv1.Status.State = "running"
 		}
 		hubv1.Status.IP = ip
+		hubv1.Status.PVCVolumeName = pvc
 		hubv1, err = h.updateHubObject(hubv1)
 		if err != nil {
 			log.Errorf("Couldn't update Hub object: %s", err.Error())
