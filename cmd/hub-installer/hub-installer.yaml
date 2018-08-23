@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: List
 metadata:
-  name: hub-installer
+  name: hub-protoform
 items:
 - apiVersion: v1
   kind: ReplicationController
   metadata:
-    name: hub-installer
+    name: hub-protoform
     labels:
-      name: hub-installer
+      name: hub-protoform
   spec:
     replicas: 1
     selector:
-      name: hub-installer
+      name: hub-protoform
     template:
       metadata:
         labels:
-          name: hub-installer
+          name: hub-protoform
       spec:
         containers:
-        - name: hub-installer
+        - name: hub-protoform
           image: gcr.io/gke-verification/blackducksoftware/hub-protoform:master
           imagePullPolicy: Always
           ports:
@@ -28,40 +28,40 @@ items:
           - name: REGISTRATION_KEY
             value: ${REGISTRATION_KEY}
           volumeMounts:
-          - mountPath: /etc/hub-installer
-            name: hub-installer
+          - mountPath: /etc/hub-protoform
+            name: hub-protoform
           args:
-          - /etc/hub-installer/config.json
+          - /etc/hub-protoform/config.json
           command:
           - ./hub
         volumes:
         - configMap:
             defaultMode: 420
-            name: hub-installer
-          name: hub-installer
-        serviceAccount: hub-installer
+            name: hub-protoform
+          name: hub-protoform
+        serviceAccount: hub-protoform
 - apiVersion: v1
   kind: Service
   metadata:
-    name: hub-installer
+    name: hub-protoform
   spec:
     selector:
-      name: hub-installer
+      name: hub-protoform
     ports:
       - protocol: TCP
         port: 8080
         targetPort: 8080
-        name: hub-installer
+        name: hub-protoform
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    name: hub-installer
+    name: hub-protoform
   data:
     config.json: '{"DryRun": false,"LogLevel": "debug","Namespace": "${NAMESPACE}","Threadiness": 5,"HubFederatorConfig": {"HubConfig": {"User": "sysadmin","PasswordEnvVar": "HUB_PASSWORD","ClientTimeoutMilliseconds": 5000,"Port": 443,"FetchAllProjectsPauseSeconds": 60},"UseMockMode": false,"Port": 3016}}'
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
-    name: hub-installer
+    name: hub-protoform
     namespace: ${NAMESPACE}
 - kind: ClusterRoleBinding
   apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -69,7 +69,7 @@ items:
     name: protoform-admin
   subjects:
   - kind: ServiceAccount
-    name: hub-installer
+    name: hub-protoform
     namespace: ${NAMESPACE}
   roleRef:
     kind: ClusterRole
