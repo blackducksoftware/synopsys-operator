@@ -212,7 +212,7 @@ class App extends Component {
             <div className="App">
                 <header className="App-header">
                     <img src={bdsLogo} className="App-logo" alt="logo" />
-                    <h1 className="App-title">Welcome to Hub Federation.</h1>
+                    <h1 className="App-title">Blackduck Operator Console #scaneverything .</h1>
                 </header>
                 <StagingForm
                     kubeSizes={this.state.kubeSizes}
