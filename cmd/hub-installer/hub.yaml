@@ -4,14 +4,14 @@ metadata:
   clusterName: ""
   name: crd-test
 spec:
-  dbPrototype: ""
+  dbPrototype: "empty"
   dockerRegistry: gcr.io
   dockerRepo: gke-verification/blackducksoftware
   hubVersion: 4.7.0
   flavor: small
   backupInterval: "1"
   backupUnit: "Minute(s)"
-  pvcStorageClass: "standard"
+  pvcStorageClass: ""
   pvcClaimSize: "10Gi"
   pvcAccessMode: "ReadWriteMany"
   instanceName: ""
