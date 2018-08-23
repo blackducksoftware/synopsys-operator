@@ -63,7 +63,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	}
 	// Postgres PVC
 	postgresPVC, err := components.NewPersistentVolumeClaim(kapi.PVCConfig{
-		Name:      createHub.Name,
+		Name:      "hub-pvc",
 		Namespace: createHub.Name,
 		// VolumeName: createHub.Name,
 		Size:  createHub.Spec.PVCClaimSize,
