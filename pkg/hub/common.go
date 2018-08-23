@@ -38,8 +38,11 @@ import (
 	kapi "github.com/blackducksoftware/horizon/pkg/api"
 	types "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/api/storage/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -49,7 +52,7 @@ import (
 )
 
 // CreateContainer will create the container
-func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volumeMounts []*kapi.VolumeMountConfig, port *kapi.PortConfig) *types.Container {
+func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volumeMounts []*kapi.VolumeMountConfig, port *kapi.PortConfig, actionConfig *kapi.ActionConfig) *types.Container {
 
 	container := types.NewContainer(*config)
 
@@ -62,6 +65,9 @@ func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volum
 	}
 
 	container.AddPort(*port)
+	if actionConfig != nil {
+		container.AddPostStartAction(*actionConfig)
+	}
 
 	return container
 }
@@ -86,6 +92,16 @@ func CreateEmptyDirVolumeWithoutSizeLimit(volumeName string) (*types.Volume, err
 	return emptyDirVol, err
 }
 
+// CreatePersistentVolumeClaim will create a PVC claim for a pod
+func CreatePersistentVolumeClaim(volumeName string, pvcName string) (*types.Volume, error) {
+	pvcVol := types.NewPVCVolume(kapi.PVCVolumeConfig{
+		PVCName:    pvcName,
+		VolumeName: volumeName,
+	})
+
+	return pvcVol, nil
+}
+
 // CreateEmptyDirVolume will create a empty directory for a pod
 func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, error) {
 	emptyDirVol, err := types.NewEmptyDirVolume(kapi.EmptyDirVolumeConfig{
@@ -94,6 +110,17 @@ func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, e
 	})
 
 	return emptyDirVol, err
+}
+
+// CreateConfigMapVolume will mount the config map for a pod
+func CreateConfigMapVolume(volumeName string, mapOrSecretName string, defaultMode int) (*types.Volume, error) {
+	configMapVol := types.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      volumeName,
+		DefaultMode:     IntToInt32(defaultMode),
+		MapOrSecretName: mapOrSecretName,
+	})
+
+	return configMapVol, nil
 }
 
 // CreatePod will create the pod
@@ -116,12 +143,12 @@ func CreatePod(name string, volumes []*types.Volume, containers []*api.Container
 	}
 
 	for _, containerConfig := range containers {
-		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig)
+		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig, containerConfig.ActionConfig)
 		pod.AddContainer(container)
 	}
 
 	for _, initContainerConfig := range initContainers {
-		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts, initContainerConfig.PortConfig)
+		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts, initContainerConfig.PortConfig, initContainerConfig.ActionConfig)
 		err := pod.AddInitContainer(initContainer)
 		if err != nil {
 			log.Printf("failed to create the init container because %+v", err)
@@ -151,15 +178,13 @@ func CreateDeploymentFromContainer(deploymentConfig *kapi.DeploymentConfig, cont
 }
 
 // CreateService will create the service
-func CreateService(name string, label string, namespace string, port string, target string, exp bool) *types.Service {
+func CreateService(name string, label string, namespace string, port string, target string, serviceType kapi.ClusterIPServiceType) *types.Service {
 	svcConfig := kapi.ServiceConfig{
-		Name:      name,
-		Namespace: namespace,
+		Name:          name,
+		Namespace:     namespace,
+		IPServiceType: serviceType,
 	}
-	// services w/ -exp are exposed
-	if exp {
-		svcConfig.IPServiceType = kapi.ClusterIPServiceTypeNodePort
-	}
+
 	mySvc := types.NewService(svcConfig)
 	portVal, _ := strconv.Atoi(port)
 	myPort := &kapi.ServicePortConfig{
@@ -276,9 +301,9 @@ func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodLis
 }
 
 // FilterPodByNamePrefix will filter the pod based on pod name prefix from a list a pods
-func FilterPodByNamePrefix(pods *corev1.PodList) *corev1.Pod {
+func FilterPodByNamePrefix(pods *corev1.PodList, prefix string) *corev1.Pod {
 	for _, pod := range pods.Items {
-		if strings.HasPrefix(pod.Name, "registration") {
+		if strings.HasPrefix(pod.Name, prefix) {
 			return &pod
 		}
 	}
@@ -348,6 +373,39 @@ func GetKubeConfig() (*rest.Config, error) {
 // GetService will get the service information for the input service name inside the input namespace
 func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*v1.Service, error) {
 	return clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
+}
+
+// ListStorageClass will list all the storageClass in the cluster
+func ListStorageClass(clientset *kubernetes.Clientset) (*v1beta1.StorageClassList, error) {
+	return clientset.StorageV1beta1().StorageClasses().List(metav1.ListOptions{})
+}
+
+// GetPVC will get the PVC for the given name
+func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*v1.PersistentVolumeClaim, error) {
+	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+}
+
+// ListHubs will list all hubs in the cluster
+func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v1.HubList, error) {
+	return hubClientset.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
+}
+
+// ListHubPV will list all the persistent volumes attached to each hub in the cluster
+func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[string]string, error) {
+	var pvList map[string]string
+	pvList = make(map[string]string)
+	hubs, err := ListHubs(hubClientset, namespace)
+	if err != nil {
+		log.Errorf("unable to list the hubs due to %+v", err)
+		return pvList, err
+	}
+	for _, hub := range hubs.Items {
+		if !strings.EqualFold(hub.Status.PVCVolumeName, "") {
+			pvList[hub.Name] = fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName)
+		}
+	}
+	pvList["empty"] = "empty"
+	return pvList, nil
 }
 
 // IntToInt32 will convert from int to int32

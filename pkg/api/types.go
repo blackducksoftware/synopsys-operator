@@ -104,6 +104,7 @@ type Container struct {
 	EnvConfigs      []*kapi.EnvConfig
 	VolumeMounts    []*kapi.VolumeMountConfig
 	PortConfig      *kapi.PortConfig
+	ActionConfig    *kapi.ActionConfig
 }
 
 // ProtoformConfig defines the configuration for protoform

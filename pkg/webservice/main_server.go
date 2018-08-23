@@ -22,6 +22,7 @@ under the License.
 package webservice
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
@@ -45,8 +46,22 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 		// prints debug stuff out.
 		router.Use(GinRequestLogger())
 
-		router.GET("/api/sql-instances", func(c *gin.Context) {
-			keys := []string{"pvc-000", "pvc-001", "pvc-002"}
+		router.GET("/sql-instances", func(c *gin.Context) {
+			// keys := []string{"pvc-000", "pvc-001", "pvc-002"}
+			keys, _ := hub.ListHubPV(hc.HubClient, config.Namespace)
+			c.JSON(200, keys)
+		})
+
+		router.GET("/storage-classes", func(c *gin.Context) {
+			storageClasses, err := hub.ListStorageClass(hc.KubeClient)
+			if err != nil {
+				log.Errorf("unable to list the storage classes due to %+v", err)
+				c.JSON(404, fmt.Sprintf("\"message\": \"Failed to List the storage class due to %+v\"", err))
+			}
+			keys := []string{}
+			for _, storageClass := range storageClasses.Items {
+				keys = append(keys, storageClass.GetName())
+			}
 			c.JSON(200, keys)
 		})
 

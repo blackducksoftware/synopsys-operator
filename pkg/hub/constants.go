@@ -64,8 +64,8 @@ const (
 	smallJobRunnerMemoryLimit  = "4608M"
 	smallJobRunnerHubMaxMemory = "4096m"
 
-	smallPostgresCPULimit    = "0.3"
-	smallPostgresMemoryLimit = "300M"
+	smallPostgresCPULimit    = "1"
+	smallPostgresMemoryLimit = "4096M"
 
 	// Medium Flavor
 	mediumWebServerMemoryLimit = "2048M"

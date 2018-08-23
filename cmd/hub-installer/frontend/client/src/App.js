@@ -15,8 +15,19 @@ class App extends Component {
                 'large',
                 'OpsSight'
             ],
+            backupUnits: [
+                'Minute(s)',
+                'Hour(s)',
+                'Day(s)',
+                'Week(s)'
+            ],
             instances: {},
             dbInstances: [],
+            pvcStorageClasses: [],
+            pvcAccessModes: [
+                'ReadWriteMany',
+                'ReadWriteOnce'
+            ],
             invalidNamespace: false,
             toastMsgOpen: false,
             toastMsgText: '',
@@ -29,6 +40,7 @@ class App extends Component {
         this.handleDelete = this.handleDelete.bind(this);
         this.setNamespaceStatus = this.setNamespaceStatus.bind(this);
         this.fetchDatabases = this.fetchDatabases.bind(this);
+        this.fetchPVCStorageClasses = this.fetchPVCStorageClasses.bind(this);
         this.setToastStatus = this.setToastStatus.bind(this);
         this.handleToastMsgClick = this.handleToastMsgClick.bind(this);
     }
@@ -39,6 +51,7 @@ class App extends Component {
         }, 120000);
         this.fetchInstances();
         this.fetchDatabases();
+        this.fetchPVCStorageClasses();
     }
 
     componentWillUnmount() {
@@ -73,7 +86,7 @@ class App extends Component {
     }
 
     async fetchDatabases() {
-        const response = await fetch('/api/sql-instances', {
+        const response = await fetch('/sql-instances', {
             credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
@@ -84,11 +97,30 @@ class App extends Component {
         });
         if (response.status === 200) {
             console.log('DB Instances fetched');
-            const dbInstances = await response.json();
+            const data = await response.json();
             this.setState({
-                dbInstances : [
+                dbInstances : data,
+            })
+        }
+    }
+
+    async fetchPVCStorageClasses() {
+        const response = await fetch('/storage-classes', {
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'rgb-token': 'RGB'
+            },
+            accept: 'application/json',
+            mode: 'same-origin',
+        });
+        if (response.status === 200) {
+            console.log('Storage classes fetched');
+            const pvcStorageClasses = await response.json();
+            this.setState({
+                pvcStorageClasses : [
                     'empty',
-                    ...dbInstances
+                    ...pvcStorageClasses
                 ]
             })
         }
@@ -188,6 +220,9 @@ class App extends Component {
                     setNamespaceStatus={this.setNamespaceStatus}
                     invalidNamespace={this.state.invalidNamespace}
                     dbInstances={this.state.dbInstances}
+                    pvcStorageClasses={this.state.pvcStorageClasses}
+                    backupUnits={this.state.backupUnits}
+                    pvcAccessModes={this.state.pvcAccessModes}
                     setToastStatus={this.setToastStatus}
                 />
 

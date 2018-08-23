@@ -41,12 +41,16 @@ type Hub struct {
 type HubSpec struct {
 	Namespace        string `json:"namespace"`
 	Flavor           string `json:"flavor"`
-	HubTimeout       string `json:"hubTimeout"`
 	DockerRegistry   string `json:"dockerRegistry"`
 	DockerRepo       string `json:"dockerRepo"`
 	HubVersion       string `json:"hubVersion"`
 	DbPrototype      string `json:"dbPrototype"`
 	InstanceName     string `json:"instanceName"`
+	BackupInterval   string `json:"backupInterval"`
+	BackupUnit       string `json:"backupUnit"`
+	PVCStorageClass  string `json:"pvcStorageClass"`
+	PVCAccessMode    string `json:"pvcAccessMode"`
+	PVCClaimSize     string `json:"pvcClaimSize"`
 	PostgresPassword string `json:"postgresPassword"`
 	AdminPassword    string `json:"adminPassword"`
 	UserPassword     string `json:"userPassword"`
@@ -56,9 +60,10 @@ type HubSpec struct {
 
 // HubStatus will be CRD Hub definition's Status
 type HubStatus struct {
-	State string `json:"state"`
-	IP    string `json:"ip"`
-	Fqdn  string `json:"fqdn"`
+	State         string `json:"state"`
+	IP            string `json:"ip"`
+	PVCVolumeName string `json:"pvcVolumeName"`
+	Fqdn          string `json:"fqdn"`
 }
 
 // HubList will store the list of Hubs
