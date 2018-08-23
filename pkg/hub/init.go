@@ -127,4 +127,5 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)
 	deployer.AddService(CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, kapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, kapi.ClusterIPServiceTypeLoadBalancer))
 }
