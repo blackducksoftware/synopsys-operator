@@ -391,8 +391,9 @@ func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v1.H
 }
 
 // ListHubPV will list all the persistent volumes attached to each hub in the cluster
-func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) ([]string, error) {
-	var pvList []string
+func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[string]string, error) {
+	var pvList map[string]string
+	pvList = make(map[string]string)
 	hubs, err := ListHubs(hubClientset, namespace)
 	if err != nil {
 		log.Errorf("unable to list the hubs due to %+v", err)
@@ -400,9 +401,10 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) ([]string
 	}
 	for _, hub := range hubs.Items {
 		if !strings.EqualFold(hub.Status.PVCVolumeName, "") {
-			pvList = append(pvList, fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName))
+			pvList[hub.Name] = fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName)
 		}
 	}
+	pvList["empty"] = "empty"
 	return pvList, nil
 }
 

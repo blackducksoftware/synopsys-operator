@@ -126,11 +126,10 @@ class StagingForm extends Component {
         const {
             token,
             emptyFormFields,
-            dbPrototype,
+            // dbPrototype,
             // pvcStorageClass,
             ...formData
         } = this.state;
-        const database = dbPrototype === 'empty' ? '' : dbPrototype;
         const response = await fetch('/hub', {
             method: 'POST',
             credentials: 'same-origin',
@@ -139,7 +138,7 @@ class StagingForm extends Component {
                 'rgb-token': token
             },
             mode: 'same-origin',
-            body: JSON.stringify({ ...formData, dbPrototype: database}),
+            body: JSON.stringify({ ...formData}),
         });
 
         if (response.status === 200) {
@@ -169,6 +168,7 @@ class StagingForm extends Component {
     emptyFormFields() {
         const {
             flavor,
+            dbPrototype,
             backupUnit,
             pvcAccessMode,
             status,
@@ -192,6 +192,7 @@ class StagingForm extends Component {
             pvcStorageClasses
         } = this.props;
         // const primary = deepPurple[200];
+        const customers = Object.keys(dbInstances);
 
         return (
             <div className={classes.formContainer}>
@@ -279,10 +280,11 @@ class StagingForm extends Component {
                         }}
                         margin="normal"
                     >
-                        {dbInstances.map((instance) => {
+                        {customers.map((customer) => {
+                            const dbInstance = dbInstances[customer];
                             return (
-                                <MenuItem key={`instance-${instance}`} value={instance}>
-                                    {instance}
+                                <MenuItem key={`dbInstance-${dbInstance}`} value={customer}>
+                                    {dbInstance}
                                 </MenuItem>
                             );
                         })}

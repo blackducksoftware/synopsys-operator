@@ -92,7 +92,7 @@ const InstanceTable = ({ instances, classes, handleDelete }) => {
                                 <TableCell>{instance.spec.flavor}</TableCell>
                                 <TableCell>{instance.spec.backupInterval} {instance.spec.backupUnit}</TableCell>
                                 <TableCell>{instance.spec.hubVersion}</TableCell>
-                                <TableCell>{instance.spec.dbPrototype || 'empty'}</TableCell>
+                                <TableCell>{instance.spec.dbPrototype}</TableCell>
                                 <TableCell>{instance.spec.pvcStorageClass} - {instance.spec.pvcClaimSize}</TableCell>
                                 <TableCell>
                                     {instance.status.ip ? <span><a href={`https://${instance.status.fqdn}`} target='_blank'> {instance.status.fqdn} </a><br/> <a href={`https://${ip}`} target='_blank'>{instance.status.ip}</a></span> : instance.status.state}

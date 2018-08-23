@@ -97,12 +97,9 @@ class App extends Component {
         });
         if (response.status === 200) {
             console.log('DB Instances fetched');
-            const dbInstances = await response.json();
+            const data = await response.json();
             this.setState({
-                dbInstances : [
-                    'empty',
-                    ...dbInstances
-                ]
+                dbInstances : data,
             })
         }
     }
