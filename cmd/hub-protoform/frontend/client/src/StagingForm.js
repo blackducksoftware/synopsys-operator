@@ -83,7 +83,7 @@ const initialState = {
     dbPrototype: 'empty',
     pvcStorageClass: 'empty',
     pvcAccessMode: 'ReadWriteMany',
-    pvcClaimSize: '10Gi',
+    pvType: 'Artifacts',
     status: 'pending',
     token: '',
     emptyFormFields: true
@@ -126,8 +126,6 @@ class StagingForm extends Component {
         const {
             token,
             emptyFormFields,
-            // dbPrototype,
-            // pvcStorageClass,
             ...formData
         } = this.state;
         const response = await fetch('/hub', {
@@ -171,6 +169,8 @@ class StagingForm extends Component {
             dbPrototype,
             backupUnit,
             pvcAccessMode,
+            pvType,
+            pvcClaimSize,
             status,
             emptyFormFields : emptyFields,
             ...textFields
@@ -188,6 +188,7 @@ class StagingForm extends Component {
             kubeSizes,
             backupUnits,
             pvcAccessModes,
+            pvTypes,
             dbInstances,
             pvcStorageClasses
         } = this.props;
@@ -367,6 +368,31 @@ class StagingForm extends Component {
                                 return (
                                     <MenuItem key={`accessMode-${accessMode}`} value={accessMode}>
                                         {accessMode}
+                                    </MenuItem>
+                                );
+                            })}
+                        </TextField>
+                    </div>
+                    <div className={classnames(classes.singleRowFields, classes.textField)}>
+                        <TextField
+                            select
+                            id="pvType"
+                            name="pvType"
+                            label="PV Type"
+                            className={classes.singleRowFieldLeft}
+                            value={this.state.pvType}
+                            onChange={this.handleChange}
+                            SelectProps={{
+                                MenuProps: {
+                                    className: classes.menu,
+                                },
+                            }}
+                            margin="normal"
+                        >
+                            {pvTypes.map((type) => {
+                                return (
+                                    <MenuItem key={`pv-${type}`} value={type}>
+                                        {type}
                                     </MenuItem>
                                 );
                             })}

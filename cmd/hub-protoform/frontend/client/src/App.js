@@ -28,6 +28,10 @@ class App extends Component {
                 'ReadWriteMany',
                 'ReadWriteOnce'
             ],
+            pvTypes: [
+                'Artifacts',
+                'Containers'
+            ],
             invalidNamespace: false,
             toastMsgOpen: false,
             toastMsgText: '',
@@ -51,11 +55,15 @@ class App extends Component {
         }, 120000);
         this.fetchInstances();
         this.fetchDatabases();
+        this.pollPVCStorageClasses = setInterval(() => {
+            return this.fetchPVCStorageClasses();
+        }, 120000);
         this.fetchPVCStorageClasses();
     }
 
     componentWillUnmount() {
         clearInterval(this.pollInstances);
+        clearInterval(this.pollPVCStorageClasses);
     }
 
     //TODO: remove hardcoded tokens
@@ -223,6 +231,7 @@ class App extends Component {
                     pvcStorageClasses={this.state.pvcStorageClasses}
                     backupUnits={this.state.backupUnits}
                     pvcAccessModes={this.state.pvcAccessModes}
+                    pvTypes={this.state.pvTypes}
                     setToastStatus={this.setToastStatus}
                 />
 

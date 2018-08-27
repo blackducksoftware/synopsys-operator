@@ -30,6 +30,9 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*kapi.EnvConfig) {
@@ -61,6 +64,30 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	} else {
 		storageClass = createHub.Spec.PVCStorageClass
 	}
+
+	// Postgres PV
+	pvQuantity, _ := resource.ParseQuantity(createHub.Spec.PVCClaimSize)
+	_, err = hc.KubeClient.CoreV1().PersistentVolumes().Create(&corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: createHub.Name,
+			Name:      createHub.Name,
+		},
+		Spec: corev1.PersistentVolumeSpec{
+			Capacity:         map[corev1.ResourceName]resource.Quantity{corev1.ResourceStorage: pvQuantity},
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+			StorageClassName: "",
+			PersistentVolumeSource: corev1.PersistentVolumeSource{
+				NFS: &corev1.NFSVolumeSource{
+					Path: "/data/bds/backup",
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		log.Errorf("unable to create the PV %s due to %+v", createHub.Name, err)
+	}
+
 	// Postgres PVC
 	postgresPVC, err := components.NewPersistentVolumeClaim(kapi.PVCConfig{
 		Name:      createHub.Name,
