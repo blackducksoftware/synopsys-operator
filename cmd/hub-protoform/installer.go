@@ -24,7 +24,7 @@ package main
 import (
 	"os"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/controller"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hub/controller"
 )
 
 func main() {
