@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/client-go/util/workqueue"
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -38,9 +39,9 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/client/informers/externalversions/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/webservice"
 )
