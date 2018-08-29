@@ -50,7 +50,9 @@ type HubSpec struct {
 	BackupUnit       string `json:"backupUnit"`
 	PVCStorageClass  string `json:"pvcStorageClass"`
 	PVCAccessMode    string `json:"pvcAccessMode"`
+	ScanType         string `json:"scanType"`
 	PVCClaimSize     string `json:"pvcClaimSize"`
+	NFSServer        string `json:"nfsServer"`
 	PostgresPassword string `json:"postgresPassword"`
 	AdminPassword    string `json:"adminPassword"`
 	UserPassword     string `json:"userPassword"`

@@ -59,33 +59,44 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	}
 
 	var storageClass string
-	if strings.EqualFold(createHub.Spec.PVCStorageClass, "empty") {
+	if strings.EqualFold(createHub.Spec.PVCStorageClass, "manual") {
 		storageClass = ""
 	} else {
 		storageClass = createHub.Spec.PVCStorageClass
 	}
 
+	var accessMode []corev1.PersistentVolumeAccessMode
+	switch createHub.Spec.PVCAccessMode {
+	case "ReadWriteOnce":
+		accessMode = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
+	default:
+		accessMode = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany}
+	}
+
 	// Postgres PV
-	pvQuantity, _ := resource.ParseQuantity(createHub.Spec.PVCClaimSize)
-	_, err = hc.KubeClient.CoreV1().PersistentVolumes().Create(&corev1.PersistentVolume{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: createHub.Name,
-			Name:      createHub.Name,
-		},
-		Spec: corev1.PersistentVolumeSpec{
-			Capacity:         map[corev1.ResourceName]resource.Quantity{corev1.ResourceStorage: pvQuantity},
-			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-			StorageClassName: "",
-			PersistentVolumeSource: corev1.PersistentVolumeSource{
-				NFS: &corev1.NFSVolumeSource{
-					Path: "/data/bds/backup",
+	if strings.EqualFold(createHub.Spec.PVCStorageClass, "manual") {
+		pvQuantity, _ := resource.ParseQuantity(createHub.Spec.PVCClaimSize)
+		_, err = hc.KubeClient.CoreV1().PersistentVolumes().Create(&corev1.PersistentVolume{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: createHub.Name,
+				Name:      createHub.Name,
+			},
+			Spec: corev1.PersistentVolumeSpec{
+				Capacity:         map[corev1.ResourceName]resource.Quantity{corev1.ResourceStorage: pvQuantity},
+				AccessModes:      accessMode,
+				StorageClassName: storageClass,
+				PersistentVolumeSource: corev1.PersistentVolumeSource{
+					NFS: &corev1.NFSVolumeSource{
+						Path:   "/data/bds/backup",
+						Server: createHub.Spec.NFSServer,
+					},
 				},
 			},
-		},
-	})
+		})
 
-	if err != nil {
-		log.Errorf("unable to create the PV %s due to %+v", createHub.Name, err)
+		if err != nil {
+			log.Errorf("unable to create the PV %s due to %+v", createHub.Name, err)
+		}
 	}
 
 	// Postgres PVC
@@ -142,7 +153,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	}
 
 	var postgres *components.Deployment
-	if strings.EqualFold(createHub.Spec.PVCStorageClass, "empty") {
+	if strings.EqualFold(createHub.Spec.PVCStorageClass, "manual") {
 		postgres = CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "postgres", Replicas: IntToInt32(1)},
 			[]*api.Container{postgresExternalContainerConfig}, []*components.Volume{postgresEmptyDir, postgresBackupDir, postgresInitConfigVol, postgresBootstrapConfigVol},
 			[]*api.Container{}, []kapi.AffinityConfig{})
