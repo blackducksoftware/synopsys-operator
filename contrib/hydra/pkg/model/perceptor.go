@@ -29,16 +29,22 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type PerceptorHubConfig struct {
+	Host                      string
+	User                      string
+	PasswordEnvVar            string
+	ClientTimeoutMilliseconds int
+	Port                      int
+	ConcurrentScanLimit       int
+	TotalScanLimit            int
+}
+
 type PerceptorConfigMap struct {
-	HubHost                      string
-	HubUser                      string
-	HubUserPasswordEnvVar        string
-	HubClientTimeoutMilliseconds int
-	HubPort                      int
-	ConcurrentScanLimit          int
-	UseMockMode                  bool
-	Port                         int32
-	LogLevel                     string
+	Hub                             *PerceptorHubConfig
+	PruneOrphanedImagesPauseMinutes int
+	UseMockMode                     bool
+	Port                            int32
+	LogLevel                        string
 }
 
 type Perceptor struct {
@@ -95,7 +101,7 @@ func (pc *Perceptor) Container() *v1.Container {
 		ImagePullPolicy: "Always",
 		Env: []v1.EnvVar{
 			v1.EnvVar{
-				Name: pc.Config.HubUserPasswordEnvVar,
+				Name: pc.Config.Hub.PasswordEnvVar,
 				ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{
 						LocalObjectReference: v1.LocalObjectReference{

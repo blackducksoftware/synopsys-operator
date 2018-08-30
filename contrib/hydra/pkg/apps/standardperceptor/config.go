@@ -41,6 +41,7 @@ type Config struct {
 	Perceptor struct {
 		HubClientTimeoutMilliseconds int
 		ConcurrentScanLimit          int
+		TotalScanLimit               int
 		ServiceName                  string
 		Port                         int32
 		UseMockMode                  bool
@@ -151,15 +152,18 @@ func (pc *Config) ImagefacadeConfig() model.ImagefacadeConfigMap {
 
 func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 	return model.PerceptorConfigMap{
-		ConcurrentScanLimit: pc.Perceptor.ConcurrentScanLimit,
-		HubHost:             pc.Hub.Host,
-		HubUser:             pc.Hub.User,
-		HubClientTimeoutMilliseconds: pc.Perceptor.HubClientTimeoutMilliseconds,
-		HubUserPasswordEnvVar:        "PERCEPTOR_HUBUSERPASSWORD",
-		HubPort:                      int(pc.Hub.Port),
-		UseMockMode:                  pc.Perceptor.UseMockMode,
-		Port:                         pc.Perceptor.Port,
-		LogLevel:                     pc.LogLevel,
+		Hub: &model.PerceptorHubConfig{
+			Host: pc.Hub.Host,
+			User: pc.Hub.User,
+			ClientTimeoutMilliseconds: pc.Perceptor.HubClientTimeoutMilliseconds,
+			PasswordEnvVar:            "PERCEPTOR_HUBUSERPASSWORD",
+			Port:                      int(pc.Hub.Port),
+			ConcurrentScanLimit:       pc.Perceptor.ConcurrentScanLimit,
+			TotalScanLimit:            pc.Perceptor.TotalScanLimit,
+		},
+		UseMockMode: pc.Perceptor.UseMockMode,
+		Port:        pc.Perceptor.Port,
+		LogLevel:    pc.LogLevel,
 	}
 }
 

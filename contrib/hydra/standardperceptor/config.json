@@ -12,6 +12,7 @@
   "Perceptor": {
     "HubClientTimeoutSeconds": 5,
     "ConcurrentScanLimit": 2,
+    "TotalScanLimit": 5,
     "ServiceName": "perceptor",
     "Port": 3001,
     "UseMockMode": false
