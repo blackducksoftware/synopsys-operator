@@ -25,6 +25,7 @@ import (
 	"fmt"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 )
 
 // App defines the alert application
@@ -45,7 +46,7 @@ func NewApp(defaults interface{}) (*App, error) {
 
 // Configure will configure the alert app
 func (a *App) Configure(config interface{}) error {
-	return apps.MergeConfig(config, a.config)
+	return util.MergeConfig(config, a.config)
 }
 
 // GetNamespace returns the namespace for this alert app

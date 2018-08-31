@@ -30,8 +30,10 @@ import (
 )
 
 func main() {
-	opts := options.NewBootstrapperOptions()
 	configFile := os.Args[1]
+	overrideFile := os.Args[2]
+
+	opts := options.NewBootstrapperOptions()
 	if len(configFile) <= 0 {
 		panic(fmt.Errorf("no config provided"))
 	}
@@ -40,17 +42,15 @@ func main() {
 		panic(fmt.Errorf("failed to read config: %v", err))
 	}
 
-	// Get values if interactive mode is enabled
-	if opts.Interactive {
-		fmt.Println("============================================")
-		fmt.Println("Blackduck Hub Configuration Information")
-		fmt.Println("============================================")
-		fmt.Println("Interactive")
-		fmt.Println("============================================")
-		err := opts.InteractiveConfig()
-		fmt.Println("============================================")
+	if len(overrideFile) > 0 {
+		overrides := &options.BootstrapperOptions{}
+		err := overrides.ReadConfig(overrideFile)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("failed to read override config: %v", err))
+		}
+		err = opts.MergeOptions(overrides)
+		if err != nil {
+			panic(fmt.Errorf("failed to merge overrides: %v", err))
 		}
 	}
 

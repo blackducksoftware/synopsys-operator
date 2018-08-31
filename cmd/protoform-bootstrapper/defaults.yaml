@@ -1,0 +1,8 @@
+EnableMetrics: true
+EnableSkyfire: false
+DefaultRegistry: "gcr.io"
+DefaultImagePath: "gke-verification/blackducksoftware"
+ProtoformImageVersion: "master"
+LogLevel: "debug"
+AlertImageVersion: "2.0.0"
+CfsslImageVersion: "4.7.0"
