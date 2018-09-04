@@ -43,6 +43,7 @@ import (
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/api/storage/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -92,8 +93,8 @@ func CreateEmptyDirVolumeWithoutSizeLimit(volumeName string) (*types.Volume, err
 	return emptyDirVol, err
 }
 
-// CreatePersistentVolumeClaim will create a PVC claim for a pod
-func CreatePersistentVolumeClaim(volumeName string, pvcName string) (*types.Volume, error) {
+// CreatePersistentVolumeClaimVolume will create a PVC claim for a pod
+func CreatePersistentVolumeClaimVolume(volumeName string, pvcName string) (*types.Volume, error) {
 	pvcVol := types.NewPVCVolume(kapi.PVCVolumeConfig{
 		PVCName:    pvcName,
 		VolumeName: volumeName,
@@ -285,6 +286,50 @@ func GetAllPodsForNamespace(clientset *kubernetes.Clientset, namespace string) (
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 }
 
+// CreatePersistentVolume will create the persistent volume
+func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storageClass string, claimSize string, nfsPath string, nfsServer string) (*corev1.PersistentVolume, error) {
+	pvQuantity, _ := resource.ParseQuantity(claimSize)
+	return clientset.CoreV1().PersistentVolumes().Create(&corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: name,
+			Name:      name,
+		},
+		Spec: corev1.PersistentVolumeSpec{
+			Capacity:         map[corev1.ResourceName]resource.Quantity{corev1.ResourceStorage: pvQuantity},
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			StorageClassName: storageClass,
+			PersistentVolumeSource: corev1.PersistentVolumeSource{
+				NFS: &corev1.NFSVolumeSource{
+					Path:   nfsPath,
+					Server: nfsServer,
+				},
+			},
+		},
+	})
+}
+
+// DeletePersistentVolume will delete the persistent volume
+func DeletePersistentVolume(clientset *kubernetes.Clientset, name string) error {
+	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{})
+}
+
+// CreatePersistentVolumeClaim will create the persistent volume claim
+func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize string, storageClass string, accessMode kapi.PVCAccessModeType) (*types.PersistentVolumeClaim, error) {
+	postgresPVC, err := types.NewPersistentVolumeClaim(kapi.PVCConfig{
+		Name:      name,
+		Namespace: namespace,
+		// VolumeName: createHub.Name,
+		Size:  pvcClaimSize,
+		Class: &storageClass,
+	})
+	if err != nil {
+		return nil, err
+	}
+	postgresPVC.AddAccessMode(accessMode)
+
+	return postgresPVC, nil
+}
+
 // ValidatePodsAreRunning will validate whether the pods are running
 func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodList) {
 	// Check whether all pods are running
@@ -400,7 +445,7 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 		return pvList, err
 	}
 	for _, hub := range hubs.Items {
-		if !strings.EqualFold(hub.Status.PVCVolumeName, "") {
+		if !strings.EqualFold(hub.Status.PVCVolumeName, "") && strings.EqualFold(hub.Spec.PVCStorageClass, "none") {
 			pvList[hub.Name] = fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName)
 		}
 	}

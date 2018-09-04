@@ -199,7 +199,7 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 
 	// Hub federator deployment
 	hubFederatorContainerConfig := &api.Container{
-		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:hub",
+		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:master",
 			PullPolicy: kapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
 		EnvConfigs:   []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: "blackduck"}},
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationNone}},

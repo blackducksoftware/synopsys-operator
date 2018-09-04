@@ -93,7 +93,7 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 
 	postgresBootstrap.AddData(map[string]string{"pgbootstrap.sh": fmt.Sprintf(`#!/bin/bash
     if [ ! -f /data/bds/backup/%s.sql ] && [ -f /data/bds/backup/%s.sql ]; then
-			echo "backup data file found"
+			echo "clone data file found"
 			while true; do
 				if psql -c "SELECT 1" &>/dev/null; then
 					echo "Migrating the data"
@@ -120,11 +120,13 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
   		done
 		fi;
 
-		while true; do
-		  echo "Dump the data"
-			sleep %d;
-			pg_dumpall -w > /data/bds/backup/%s.sql;
-		done`, createHub.Name, createHub.Spec.DbPrototype, createHub.Spec.DbPrototype, createHub.Name, createHub.Name, backupInSeconds, createHub.Name)})
+		if [ "%s" == "Yes" ]; then
+			while true; do
+			  echo "Dump the data"
+				sleep %d;
+				pg_dumpall -w > /data/bds/backup/%s.sql;
+			done
+		fi`, createHub.Name, createHub.Spec.DbPrototype, createHub.Spec.DbPrototype, createHub.Name, createHub.Name, createHub.Spec.BackupSupport, backupInSeconds, createHub.Name)})
 
 	configMaps["postgres-bootstrap"] = postgresBootstrap
 

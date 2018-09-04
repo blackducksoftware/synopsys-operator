@@ -77,17 +77,17 @@ const initialState = {
   flavor: "small",
   backupInterval: "24",
   backupUnit: "Hour(s)",
+  showBackup: true,
   dockerRegistry: "docker.io",
   dockerRepo: "blackducksoftware",
   hubVersion: "4.8.1",
   dbPrototype: "empty",
-  pvcStorageClass: "manual",
-  pvcAccessMode: "ReadWriteOnce",
-  pvcAccessModes: ["ReadWriteOnce", "Ephemeral"],
+  pvcStorageClass: "none",
+  showManualStorageClass: false,
   status: "pending",
   token: "",
   emptyFormFields: true,
-  cloneSupport: "No",
+  backupSupport: "Yes",
   scanType: "Artifacts",
   pvcClaimSize: "20Gi",
   showNFSPath: true,
@@ -102,6 +102,7 @@ class StagingForm extends Component {
     // TODO: React docs - transform pkg, don't need to bind
     this.handleChange = this.handleChange.bind(this);
     this.handleCloneSupportChange = this.handleCloneSupportChange.bind(this);
+    this.handleBackupSupportChange = this.handleBackupSupportChange.bind(this);
     this.handleScanTypeChange = this.handleScanTypeChange.bind(this);
     this.handleStorageClassChange = this.handleStorageClassChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -125,21 +126,64 @@ class StagingForm extends Component {
     });
   }
 
+  setPVCEmptyValue() {
+    this.setState({
+      pvcClaimSize: "",
+      pvcStorageClass: "",
+      scanType: "",
+      nfsServer: ""
+    });
+  }
+
+  setPVCDefaultValue() {
+    if (this.state.pvcStorageClass === "") {
+      this.setState({
+        pvcClaimSize: "20Gi",
+        pvcStorageClass: "none",
+        scanType: "Artifacts",
+        nfsServer: ""
+      });
+    }
+  }
+
   handleCloneSupportChange(event) {
-    if (event.target.value === "No") {
-      this.setState({ pvcAccessModes: ["ReadWriteOnce", "Ephemeral"], pvcAccessMode: "ReadWriteOnce" });
+    if (event.target.value === "empty") {
+      if (!this.state.showBackup) {
+        this.setPVCEmptyValue();
+      } else {
+        this.setPVCDefaultValue();
+      }
+      this.setState({ showManualStorageClass: false });
     } else {
-      this.setState({ pvcAccessModes: ["ReadWriteMany", "ReadWriteOnce", "Ephemeral"], pvcAccessMode: "ReadWriteMany", showNFSPath: true, pvcStorageClass: "manual" });
+      this.setState({ showManualStorageClass: true });
+      this.setPVCDefaultValue();
     }
 
     this.handleChange(event);
   }
 
+  handleBackupSupportChange(event) {
+    if (event.target.value === "Yes") {
+      this.setState({
+        showBackup: true,
+        backupInterval: "24",
+        backupUnit: "Hour(s)"
+      });
+      this.setPVCDefaultValue();
+    } else {
+      if (this.state.dbPrototype === "empty") {
+        this.setPVCEmptyValue();
+      }
+      this.setState({ showBackup: false, backupInterval: "", backupUnit: "" });
+    }
+    this.handleChange(event);
+  }
+
   handleStorageClassChange(event) {
-    if (event.target.value === "manual") {
+    if (event.target.value === "none") {
       this.setState({ showNFSPath: true });
     } else {
-      this.setState({ showNFSPath: false });
+      this.setState({ showNFSPath: false, nfsServer: "" });
     }
     this.handleChange(event);
   }
@@ -203,44 +247,42 @@ class StagingForm extends Component {
   emptyFormFields() {
     const {
       flavor,
-      cloneSupport,
+      backupSupport,
       dbPrototype,
       backupUnit,
-      pvcAccessMode,
+      backupInterval,
       pvcStorageClass,
       scanType,
       pvcClaimSize,
       status,
-      nfsServer,
       showNFSPath,
+      showBackup,
+      showManualStorageClass,
+      showCloneSupport,
       emptyFormFields: emptyFields,
       ...textFields
     } = this.state;
 
-    const emptyFormFields = Object.keys(textFields).some(
-      field => !Boolean(textFields[field])
-    );
+    const emptyFormFields = Object.keys(textFields).some(field => {
+      if (
+        field === "nfsServer" &&
+        this.state.dbPrototype === "empty" &&
+        this.state.backupSupport === "No"
+      ) {
+        return false;
+      } else {
+        return !Boolean(textFields[field]);
+      }
+    });
 
-    console.log("emptyFormFields", emptyFormFields)
-    console.log("state Empty form field", this.state.emptyFormFields)
+    // const texts = Object.keys(textFields);
+    // texts.map(text => {
+    //   console.log(text, textFields[text], !Boolean(textFields[text]), emptyFormFields);
+    // });
+
     if (emptyFormFields !== this.state.emptyFormFields) {
       this.setState({ emptyFormFields });
     }
-  }
-
-  displayNFSMount(){
-    return (
-      <div>
-        <TextField
-          id="nfsServer"
-          name="nfsServer"
-          label="NFS Server Path"
-          value={this.state.nfsServer}
-          onChange={this.handleChange}
-          margin="normal"
-        />
-      </div>
-    );
   }
 
   render() {
@@ -248,17 +290,18 @@ class StagingForm extends Component {
       classes,
       invalidNamespace,
       kubeSizes,
-      cloneSupports,
+      backupSupports,
+      manualStorageClasses,
       backupUnits,
       scanTypes,
       dbInstances,
       pvcStorageClasses
     } = this.props;
 
-    const { pvcAccessModes } = this.state;
-
     // const primary = deepPurple[200];
     const customers = Object.keys(dbInstances);
+    const storageClasses = Object.keys(pvcStorageClasses);
+    const manualStorage = Object.keys(manualStorageClasses);
 
     return (
       <div className={classes.formContainer}>
@@ -335,10 +378,10 @@ class StagingForm extends Component {
             select
             id="dbPrototype"
             name="dbPrototype"
-            label="Database"
+            label="Clone Database"
             className={classes.textField}
             value={this.state.dbPrototype}
-            onChange={this.handleChange}
+            onChange={this.handleCloneSupportChange}
             SelectProps={{
               MenuProps: {
                 className: classes.menu
@@ -355,56 +398,22 @@ class StagingForm extends Component {
               );
             })}
           </TextField>
-          <div
-            className={classnames(classes.textField, classes.singleRowFields)}
-          >
-            <TextField
-              id="backupInterval"
-              name="backupInterval"
-              label="Backup Interval"
-              className={classes.singleRowFieldLeft}
-              value={this.state.backupInterval}
-              onChange={this.handleChange}
-              margin="normal"
-            />
-            <TextField
-              select
-              id="backupUnit"
-              name="backupUnit"
-              label="Units"
-              className={classes.singleRowFieldRight}
-              value={this.state.backupUnit}
-              onChange={this.handleChange}
-              SelectProps={{
-                MenuProps: {
-                  className: classes.menu
-                }
-              }}
-              margin="normal"
-            >
-              {backupUnits.map(unit => {
-                return (
-                  <MenuItem key={`backup-${unit}`} value={unit}>
-                    {unit}
-                  </MenuItem>
-                );
-              })}
-            </TextField>
-          </div>
           <div className={classes.root}>
             <FormControl component="fieldset" className={classes.formControl}>
-              <FormLabel component="legend">Black Duck Clone Support</FormLabel>
+              <FormLabel component="legend">
+                Black Duck Backup Storage Support
+              </FormLabel>
               <RadioGroup
-                aria-label="Black Duck Clone Support"
-                name="cloneSupport"
+                aria-label="Black Duck Backup Storage Support"
+                name="backupSupport"
                 className={classes.group}
-                value={this.state.cloneSupport}
-                onChange={this.handleCloneSupportChange}
+                value={this.state.backupSupport}
+                onChange={this.handleBackupSupportChange}
               >
-                {cloneSupports.map(support => {
+                {backupSupports.map(support => {
                   return (
                     <FormControlLabel
-                      key={`clone-${support}`}
+                      key={`backup-${support}`}
                       value={support}
                       control={<Radio color="primary" />}
                       label={support}
@@ -414,98 +423,210 @@ class StagingForm extends Component {
               </RadioGroup>
             </FormControl>
           </div>
-          <div
-            className={classnames(classes.singleRowFields, classes.textField)}
-          >
-            <TextField
-              select
-              id="pvcStorageClass"
-              name="pvcStorageClass"
-              label="PVC Storage Class"
-              className={classes.singleRowFieldLeft}
-              value={this.state.pvcStorageClass}
-              onChange={this.handleStorageClassChange}
-              SelectProps={{
-                MenuProps: {
-                  className: classes.menu
-                }
-              }}
-              margin="normal"
-            >
-              {pvcStorageClasses.map(storageClass => {
-                return (
-                  <MenuItem
-                    key={`storageClass-${storageClass}`}
-                    value={storageClass}
-                  >
-                    {storageClass}
-                  </MenuItem>
-                );
-              })}
-            </TextField>
-            {this.state.showNFSPath ? (
-              this.displayNFSMount()
-            ) : null}
-          </div>
-          <div
-            className={classnames(classes.singleRowFields, classes.textField)}
-          >
-            <TextField
-              select
-              id="pvcAccessMode"
-              name="pvcAccessMode"
-              label="PVC Access Mode"
-              className={classes.singleRowThreeFieldLeft}
-              value={this.state.pvcAccessMode}
-              onChange={this.handleChange}
-              SelectProps={{
-                MenuProps: {
-                  className: classes.menu
-                }
-              }}
-              margin="normal"
-            >
-              {pvcAccessModes.map(accessMode => {
-                return (
-                  <MenuItem key={`accessMode-${accessMode}`} value={accessMode}>
-                    {accessMode}
-                  </MenuItem>
-                );
-              })}
-            </TextField>
-            <TextField
-              select
-              id="scanType"
-              name="scanType"
-              label="Scan Type"
-              className={classes.singleRowThreeFieldMiddle}
-              value={this.state.scanType}
-              onChange={this.handleScanTypeChange}
-              SelectProps={{
-                MenuProps: {
-                  className: classes.menu
-                }
-              }}
-              margin="normal"
-            >
-              {scanTypes.map(type => {
-                return (
-                  <MenuItem key={`pv-${type}`} value={type}>
-                    {type}
-                  </MenuItem>
-                );
-              })}
-            </TextField>
-            <TextField
-              id="pvcClaimSize"
-              name="pvcClaimSize"
-              label="PVC Claim Size"
-              className={classes.singleRowThreeFieldRight}
-              value={this.state.pvcClaimSize}
-              onChange={this.handleChange}
-              margin="normal"
-            />
-          </div>
+          {this.state.showBackup ? (
+            <div>
+              <div
+                className={classnames(
+                  classes.textField,
+                  classes.singleRowFields
+                )}
+              >
+                <TextField
+                  id="backupInterval"
+                  name="backupInterval"
+                  label="Backup Interval"
+                  className={classes.singleRowFieldLeft}
+                  value={this.state.backupInterval}
+                  onChange={this.handleChange}
+                  margin="normal"
+                />
+                <TextField
+                  select
+                  id="backupUnit"
+                  name="backupUnit"
+                  label="Units"
+                  className={classes.singleRowFieldRight}
+                  value={this.state.backupUnit}
+                  onChange={this.handleChange}
+                  margin="normal"
+                >
+                  {backupUnits.map(unit => {
+                    return (
+                      <MenuItem key={`backup-${unit}`} value={unit}>
+                        {unit}
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+              </div>
+            </div>
+          ) : null}
+          {this.state.showManualStorageClass ? (
+            <div>
+              <div className={classnames(classes.singleRowFields)}>
+                <TextField
+                  select
+                  id="pvcStorageClass"
+                  name="pvcStorageClass"
+                  label="PVC Storage Class"
+                  className={classes.singleRowFieldLeft}
+                  value={this.state.pvcStorageClass}
+                  onChange={this.handleStorageClassChange}
+                  SelectProps={{
+                    MenuProps: {
+                      className: classes.menu
+                    }
+                  }}
+                  margin="normal"
+                >
+                  {manualStorage.map(storageClass => {
+                    const displayValue = manualStorageClasses[storageClass];
+                    return (
+                      <MenuItem
+                        key={`manual-${storageClass}`}
+                        value={storageClass}
+                      >
+                        {displayValue}
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+              </div>
+              {this.state.showNFSPath ? (
+                <TextField
+                  id="nfsServer"
+                  name="nfsServer"
+                  label="NFS Server Path"
+                  className={classes.textField}
+                  value={this.state.nfsServer}
+                  onChange={this.handleChange}
+                  margin="normal"
+                />
+              ) : null}
+              <div
+                className={classnames(
+                  classes.singleRowFields,
+                  classes.textField
+                )}
+              >
+                <TextField
+                  select
+                  id="scanType"
+                  name="scanType"
+                  label="Scan Type"
+                  className={classes.singleRowThreeFieldMiddle}
+                  value={this.state.scanType}
+                  onChange={this.handleScanTypeChange}
+                  SelectProps={{
+                    MenuProps: {
+                      className: classes.menu
+                    }
+                  }}
+                  margin="normal"
+                >
+                  {scanTypes.map(type => {
+                    return (
+                      <MenuItem key={`pv-${type}`} value={type}>
+                        {type}
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+                <TextField
+                  id="pvcClaimSize"
+                  name="pvcClaimSize"
+                  label="PVC Claim Size"
+                  className={classes.singleRowThreeFieldRight}
+                  value={this.state.pvcClaimSize}
+                  onChange={this.handleChange}
+                  margin="normal"
+                />
+              </div>
+            </div>
+          ) : null}
+          {this.state.showBackup && !this.state.showManualStorageClass ? (
+            <div>
+              <div className={classnames(classes.singleRowFields)}>
+                <TextField
+                  select
+                  id="pvcStorageClass"
+                  name="pvcStorageClass"
+                  label="PVC Storage Class"
+                  className={classes.singleRowFieldLeft}
+                  value={this.state.pvcStorageClass}
+                  onChange={this.handleStorageClassChange}
+                  SelectProps={{
+                    MenuProps: {
+                      className: classes.menu
+                    }
+                  }}
+                  margin="normal"
+                >
+                  {storageClasses.map(storageClass => {
+                    const displayValue = pvcStorageClasses[storageClass];
+                    return (
+                      <MenuItem
+                        key={`storageClass-${storageClass}`}
+                        value={storageClass}
+                      >
+                        {displayValue}
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+              </div>
+              {this.state.showNFSPath ? (
+                <TextField
+                  id="nfsServer"
+                  name="nfsServer"
+                  label="NFS Server Path"
+                  className={classes.textField}
+                  value={this.state.nfsServer}
+                  onChange={this.handleChange}
+                  margin="normal"
+                />
+              ) : null}
+              <div
+                className={classnames(
+                  classes.singleRowFields,
+                  classes.textField
+                )}
+              >
+                <TextField
+                  select
+                  id="scanType"
+                  name="scanType"
+                  label="Scan Type"
+                  className={classes.singleRowThreeFieldMiddle}
+                  value={this.state.scanType}
+                  onChange={this.handleScanTypeChange}
+                  SelectProps={{
+                    MenuProps: {
+                      className: classes.menu
+                    }
+                  }}
+                  margin="normal"
+                >
+                  {scanTypes.map(type => {
+                    return (
+                      <MenuItem key={`pv-${type}`} value={type}>
+                        {type}
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+                <TextField
+                  id="pvcClaimSize"
+                  name="pvcClaimSize"
+                  label="PVC Claim Size"
+                  className={classes.singleRowThreeFieldRight}
+                  value={this.state.pvcClaimSize}
+                  onChange={this.handleChange}
+                  margin="normal"
+                />
+              </div>
+            </div>
+          ) : null}
           <TextField
             id="token"
             name="token"
@@ -539,9 +660,11 @@ StagingForm.propTypes = {
   dbInstances: PropTypes.arrayOf(PropTypes.string),
   pvcStorageClasses: PropTypes.arrayOf(PropTypes.string),
   backupUnits: PropTypes.arrayOf(PropTypes.string),
-  pvcAccessModes: PropTypes.arrayOf(PropTypes.string),
   invalidNamespace: PropTypes.bool,
   kubeSizes: PropTypes.arrayOf(PropTypes.string),
-  cloneSupports: PropTypes.arrayOf(PropTypes.string),
-  nfsServer: PropTypes.string
+  backupSupports: PropTypes.arrayOf(PropTypes.string),
+  manualStorageClasses: PropTypes.arrayOf(PropTypes.string),
+  nfsServer: PropTypes.string,
+  backupInterval: PropTypes.string,
+  backupUnit: PropTypes.string
 };

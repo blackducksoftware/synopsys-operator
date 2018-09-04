@@ -35,7 +35,6 @@ import (
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -79,9 +78,9 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 		if err != nil {
 			log.Errorf("unable to create the new hub creater for %s due to %+v", hubv1.Name, err)
 		}
-		ip, pvc, err := hubCreator.CreateHub(hubv1)
+		ip, pvc, updateError, err := hubCreator.CreateHub(hubv1)
 
-		if err != nil {
+		if updateError {
 			//Set spec/state  and status/state to started
 			hubv1.Spec.State = "error"
 			hubv1.Status.State = "error"
@@ -155,7 +154,7 @@ func (h *HubHandler) callHubFederator() {
 // HubNamespaces will list the hub namespaces
 func (h *HubHandler) getHubUrls() (*APISetHubsRequest, error) {
 	// 1. get Hub CDR list from default ns
-	hubList, err := h.hubClientset.SynopsysV1().Hubs(h.namespace).List(metav1.ListOptions{})
+	hubList, err := hub.ListHubs(h.hubClientset, h.namespace)
 	if err != nil {
 		return &APISetHubsRequest{}, err
 	}

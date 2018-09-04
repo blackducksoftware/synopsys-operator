@@ -10,12 +10,12 @@ class App extends Component {
     super(props);
     this.state = {
       kubeSizes: ["small", "medium", "large", "OpsSight"],
-      cloneSupports: ["Yes", "No"],
+      backupSupports: ["Yes", "No"],
+      manualStorageClasses: {"none" : "None (Disable dynamic provisioner)"},
       backupUnits: ["Minute(s)", "Hour(s)", "Day(s)", "Week(s)"],
       instances: {},
       dbInstances: [],
       pvcStorageClasses: [],
-      pvcAccessModes: ["ReadWriteMany", "ReadWriteOnce"],
       scanTypes: ["Artifacts", "Images", "Custom"],
       invalidNamespace: false,
       toastMsgOpen: false,
@@ -109,9 +109,9 @@ class App extends Component {
     });
     if (response.status === 200) {
       console.log("Storage classes fetched");
-      const pvcStorageClasses = await response.json();
+      const data = await response.json();
       this.setState({
-        pvcStorageClasses: ["manual", ...pvcStorageClasses]
+        pvcStorageClasses: data
       });
     }
   }
@@ -207,13 +207,14 @@ class App extends Component {
         </header>
         <StagingForm
           kubeSizes={this.state.kubeSizes}
-          cloneSupports={this.state.cloneSupports}
+          backupSupports={this.state.backupSupports}
+          backupUnits={this.state.backupUnits}
+          manualStorageClasses={this.state.manualStorageClasses}
           addInstance={this.addInstance}
           setNamespaceStatus={this.setNamespaceStatus}
           invalidNamespace={this.state.invalidNamespace}
           dbInstances={this.state.dbInstances}
           pvcStorageClasses={this.state.pvcStorageClasses}
-          backupUnits={this.state.backupUnits}
           scanTypes={this.state.scanTypes}
           setToastStatus={this.setToastStatus}
         />
