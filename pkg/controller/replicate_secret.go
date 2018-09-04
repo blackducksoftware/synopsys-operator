@@ -41,6 +41,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// SecretReplicator will have the configuration related to replicate the secrets
 type SecretReplicator struct {
 	client     *kubernetes.Clientset
 	hubClient  *hubclientset.Clientset
@@ -99,6 +100,7 @@ func NewSecretReplicator(client *kubernetes.Clientset, hubClient *hubclientset.C
 	return &repl
 }
 
+// Run method will watch for secrets events
 func (r *SecretReplicator) Run() {
 	log.Printf("running secret controller")
 	r.controller.Run(wait.NeverStop)
