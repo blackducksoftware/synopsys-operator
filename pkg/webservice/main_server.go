@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hub"
 	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/gin-gonic/contrib/static"
 	gin "github.com/gin-gonic/gin"
