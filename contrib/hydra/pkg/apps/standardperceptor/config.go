@@ -124,19 +124,25 @@ func (pc *Config) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 
 func (pc *Config) ScannerConfig() model.ScannerConfigMap {
 	return model.ScannerConfigMap{
-		HubHost:                 pc.Hub.Host,
-		HubUser:                 pc.Hub.User,
-		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
-		HubPort:                 pc.Hub.Port,
-		HubClientTimeoutSeconds: 120,
-		JavaInitialHeapSizeMBs:  pc.Scanner.JavaInitialHeapSizeMBs,
-		JavaMaxHeapSizeMBs:      pc.Scanner.JavaMaxHeapSizeMBs,
-		LogLevel:                pc.LogLevel,
-		Port:                    pc.Scanner.Port,
-		PerceptorHost:           pc.Perceptor.ServiceName,
-		PerceptorPort:           pc.Perceptor.Port,
-		ImageFacadePort:         pc.ImageFacade.Port,
-		ImageDirectory:          pc.ScannerPod.ImageDirectory,
+		Hub: &model.ScannerHubConfig{
+			User:                 pc.Hub.User,
+			PasswordEnvVar:       "SCANNER_HUBUSERPASSWORD",
+			Port:                 pc.Hub.Port,
+			ClientTimeoutSeconds: 600,
+		},
+		JavaInitialHeapSizeMBs: pc.Scanner.JavaInitialHeapSizeMBs,
+		JavaMaxHeapSizeMBs:     pc.Scanner.JavaMaxHeapSizeMBs,
+		LogLevel:               pc.LogLevel,
+		Port:                   pc.Scanner.Port,
+		Perceptor: &model.ScannerPerceptorConfig{
+			Host: pc.Perceptor.ServiceName,
+			Port: pc.Perceptor.Port,
+		},
+		ImageFacade: &model.ScannerImageFacadeConfig{
+			Host: "localhost",
+			Port: pc.ImageFacade.Port,
+		},
+		ImageDirectory: pc.ScannerPod.ImageDirectory,
 	}
 }
 
@@ -160,6 +166,13 @@ func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 			Port:                      int(pc.Hub.Port),
 			ConcurrentScanLimit:       pc.Perceptor.ConcurrentScanLimit,
 			TotalScanLimit:            pc.Perceptor.TotalScanLimit,
+		},
+		Timings: &model.PerceptorTimingsConfig{
+			CheckForStalledScansPauseHours:  2,
+			ModelMetricsPauseSeconds:        15,
+			PruneOrphanedImagesPauseMinutes: 9999999,
+			StalledScanClientTimeoutHours:   2,
+			UnknownImagePauseMilliseconds:   15000,
 		},
 		UseMockMode: pc.Perceptor.UseMockMode,
 		Port:        pc.Perceptor.Port,

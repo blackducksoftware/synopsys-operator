@@ -39,8 +39,17 @@ type PerceptorHubConfig struct {
 	TotalScanLimit            int
 }
 
+type PerceptorTimingsConfig struct {
+	CheckForStalledScansPauseHours  int
+	StalledScanClientTimeoutHours   int
+	ModelMetricsPauseSeconds        int
+	UnknownImagePauseMilliseconds   int
+	PruneOrphanedImagesPauseMinutes int
+}
+
 type PerceptorConfigMap struct {
 	Hub                             *PerceptorHubConfig
+	Timings                         *PerceptorTimingsConfig
 	PruneOrphanedImagesPauseMinutes int
 	UseMockMode                     bool
 	Port                            int32

@@ -30,25 +30,35 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type ScannerHubConfig struct {
+	User                 string
+	PasswordEnvVar       string
+	Port                 int32
+	ClientTimeoutSeconds int
+}
+
+type ScannerImageFacadeConfig struct {
+	Host string
+	Port int32
+}
+
+type ScannerPerceptorConfig struct {
+	Host string
+	Port int32
+}
+
 type ScannerConfigMap struct {
-	HubHost                 string
-	HubUser                 string
-	HubUserPasswordEnvVar   string
-	HubPort                 int32
-	HubClientTimeoutSeconds int
+	Hub         *ScannerHubConfig
+	ImageFacade *ScannerImageFacadeConfig
+	Perceptor   *ScannerPerceptorConfig
 
 	JavaInitialHeapSizeMBs int
 	JavaMaxHeapSizeMBs     int
 
-	LogLevel string
-	Port     int32
-
 	ImageDirectory string
 
-	ImageFacadePort int32
-
-	PerceptorHost string
-	PerceptorPort int32
+	LogLevel string
+	Port     int32
 }
 
 type Scanner struct {
@@ -112,7 +122,7 @@ func (psp *Scanner) Container() *v1.Container {
 		Command:         []string{"./perceptor-scanner", psp.FullConfigMapPath()},
 		Env: []v1.EnvVar{
 			v1.EnvVar{
-				Name: psp.Config.HubUserPasswordEnvVar,
+				Name: psp.Config.Hub.PasswordEnvVar,
 				ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{
 						LocalObjectReference: v1.LocalObjectReference{
