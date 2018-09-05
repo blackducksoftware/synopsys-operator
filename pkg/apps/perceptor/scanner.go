@@ -22,6 +22,7 @@ under the License.
 package perceptor
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 
@@ -117,7 +118,7 @@ func (p *App) imageFacadeContainer() *components.Container {
 		Name:       p.config.ImageFacadeImageName,
 		Image:      fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, p.config.ImageFacadeImageName, p.config.ImageFacadeImageVersion),
 		Command:    []string{"./perceptor-imagefacade"},
-		Args:       []string{"/etc/perceptor_imagefacade/perceptor_imagefacade.yaml"},
+		Args:       []string{"/etc/perceptor_imagefacade/perceptor_imagefacade.json"},
 		MinCPU:     p.config.DefaultCPU,
 		MinMem:     p.config.DefaultMem,
 		Privileged: &priv,
@@ -238,11 +239,12 @@ func (p *App) ScannerConfigMap() *components.ConfigMap {
 
 //ImageFacadeConfigMap creates a config map for the perceptor image-facade
 func (p *App) ImageFacadeConfigMap() *components.ConfigMap {
+	internalRegistry, _ := json.Marshal(p.config.InternalRegistries)
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor-imagefacade",
 		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceptor_imagefacade.yaml": fmt.Sprint(`{"DockerUser": "`, p.config.DockerUsername, `","DockerPassword": "`, p.config.DockerPasswordOrToken, `","Port": "`, *p.config.ImageFacadePort, `","InternalDockerRegistries": `, p.generateStringFromStringArr(p.config.InternalDockerRegistries), `,"LogLevel": "`, p.config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"perceptor_imagefacade.json": fmt.Sprint(`{"PrivateDockerRegistries": "`, string(internalRegistry), `","Port": "`, *p.config.ImageFacadePort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }

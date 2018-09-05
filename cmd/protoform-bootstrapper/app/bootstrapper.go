@@ -143,7 +143,7 @@ func (b *Bootstrapper) setup() error {
 			PodPerceiver:                          &b.opts.AnnotatePods,
 			PerceptorSkyfire:                      &b.opts.EnableSkyfire,
 			Metrics:                               &b.opts.EnableMetrics,
-			InternalDockerRegistries:              b.opts.InternalDockerRegistries,
+			InternalRegistries:                    b.opts.InternalRegistries,
 			DefaultCPU:                            b.opts.DefaultCPU,
 			DefaultMem:                            b.opts.DefaultMem,
 			Registry:                              b.opts.DefaultRegistry,

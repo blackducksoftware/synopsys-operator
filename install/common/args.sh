@@ -8,26 +8,27 @@
 # ARG_OPTIONAL_BOOLEAN([skyfire],[],[Enable Skyfire container for testing.],[off])
 #
 
-# ARG_OPTIONAL_SINGLE([private-registry],[p],[A private registry url you will need to pull images for scan.],["docker-registry.default.svc:5000"])
-# ARG_OPTIONAL_SINGLE([private-registry-token],[t],[A private registry token to have access to pull images],[perceptor-scanner service account token])
+# ARG_OPTIONAL_SINGLE([private-registry],[p],[A private registry url you will need to pull images for scan.],["[{\"Url\": \"docker-registry.default.svc:5000\", \"User\": \"admin\", \"Password\": \"registry token\"}]"])
 
 # ARG_OPTIONAL_SINGLE([container-registry],[c],[Base docker repo for the applicaition.],[gcr.io])
 # ARG_OPTIONAL_SINGLE([image-repository],[I],[Image repository for the applicaition.],[gke-verification/blackducksoftware])
 # ARG_OPTIONAL_SINGLE([default-container-version],[v],[Default container version],[master])
 # ARG_OPTIONAL_SINGLE([pcp-namespace],[n],[The namespace perceptor containers run in.],[nginx-webapp-logstash])
 
-# ARG_OPTIONAL_SINGLE([hub-user],[U],[hub user],[master])
-# ARG_OPTIONAL_SINGLE([hub-password],[W],[hub password],[master])
-# ARG_OPTIONAL_SINGLE([hub-host],[H],[hub hostname ],[nginx-webapp-logstash])
-# ARG_OPTIONAL_SINGLE([hub-port],[P],[hub port ],[8443])
+# ARG_OPTIONAL_SINGLE([hub-user],[U],[hub user],[sysadmin])
+# ARG_OPTIONAL_SINGLE([hub-password],[W],[hub password],[])
+# ARG_OPTIONAL_SINGLE([hub-host],[H],[hub hostname],[webserver])
+# ARG_OPTIONAL_SINGLE([hub-port],[P],[hub port],[443])
 # ARG_OPTIONAL_SINGLE([hub-client-timeout-perceptor-seconds],[T],[hub client timeout for perceptor in seconds ],[5])
 # ARG_OPTIONAL_SINGLE([hub-client-timeout-scanner-seconds],[s],[hub client timeout for perceptor scanner in seconds ],[120])
+# ARG_OPTIONAL_SINGLE([annotation-interval-seconds],[a],[The annotation interval in seconds.],[30])
 # ARG_OPTIONAL_SINGLE([hub-max-concurrent-scans],[C],[maximum scans at a time for the hub],[7])
 # ARG_OPTIONAL_SINGLE([container-default-cpu],[u],[All containers default cpu],[300m])
 # ARG_OPTIONAL_SINGLE([container-default-memory],[m],[All containers default memory],[1300Mi])
 # ARG_OPTIONAL_SINGLE([container-default-log-level],[l],[All containers default log level],[info])
-# ARG_OPTIONAL_SINGLE([prompt],[],[prompt for values rather then expecting them all at the command line],[off])
-
+# ARG_OPTIONAL_SINGLE([docker-config-path],[D],[Path to the Docker config.json],[~/.docker/config.json])
+# ARG_OPTIONAL_BOOLEAN([rhcc],[],[Need to install OpsSight Connector using Red Hat Container Catalog],[off])
+# ARG_OPTIONAL_BOOLEAN([prompt],[],[Prompt for values rather then expecting them all at the command line],[off])
 
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO()
@@ -68,29 +69,17 @@ begins_with_short_option()
 _arg_pod_perceiver="on"
 _arg_image_perceiver="off"
 _arg_prometheus_metrics="off"
-_arg_private_registry=
-_arg_private_registry_token=""
 _arg_container_registry="gcr.io"
 _arg_image_repository="gke-verification/blackducksoftware"
 _arg_default_container_version="master"
 _arg_pcp_namespace="perceptor"
-_arg_hub_user="sysadmin"
-_arg_hub_password=""
-# DOC : This is the default namespace since, if co-deploying with hub, it allows you to talk on internal service endpoints.
-_arg_hub_host="webserver"
-_arg_hub_port="443"
-# DOC: If your hub is on the same node, or network namespace ~ you can possibly reduce this to 30 seconds.
-_arg_hub_client_timeout_perceptor_seconds="5"
-_arg_hub_client_timeout_scanner_seconds="120"
-# DOC: This is conservative.  A large hub instance can handle 40 scans in parallel or more.
-_arg_hub_max_concurrent_scans="7"
+_arg_private_registry=""
 _arg_prompt="off"
-_arg_container_default_cpu="300m"
-# DOC: Significantly changing this parameter shouldn't be necessary, even for large images.
-_arg_container_default_memory="1300Mi"
-_arg_container_default_log_level="info"
 _arg_developer_mode="off"
 _arg_skyfire="off"
+_arg_rhcc="off"
+_arg_docker_config_path="~/.docker/config.json"
+_arg_container_default_log_level="info"
 
 # Function that prints general usage of the script.
 # This is useful if users asks for it, or if there is an argument parsing error (unexpected / spurious arguments)
@@ -98,15 +87,16 @@ _arg_skyfire="off"
 print_help ()
 {
 	printf '%s\n' "The general script's help msg"
-	printf 'Usage: %s [-p|--(no-)pod-perceiver] [-i|--(no-)image-perceiver] [-M|--(no-)prometheus-metrics] [--private-registry <arg>] [-t|--private-registry-token <arg>] [-c|--container-registry <arg>] [-I|--image-repository <arg>] [-v|--default-container-version <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-T|--hub-client-timeout-perceptor-seconds <arg>] [-s|--hub-client-timeout-scanner-seconds <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--container-default-cpu <arg>] [-m|--container-default-memory <arg>] [-l|--container-default-log-level <arg>] [-d|--developer-mode <arg>] [--(no-)prompt] [-h|--help]\n' "$0"
+	printf 'Usage: %s [-p|--(no-)pod-perceiver] [-i|--(no-)image-perceiver] [-M|--(no-)prometheus-metrics] [--private-registry <arg>] [-c|--container-registry <arg>] [-I|--image-repository <arg>] [-v|--default-container-version <arg>] [--(no-)rhcc] [-D|--docker-config-path <arg>] [-n|--pcp-namespace <arg>] [-U|--hub-user <arg>] [-W|--hub-password <arg>] [-H|--hub-host <arg>] [-P|--hub-port <arg>] [-T|--hub-client-timeout-perceptor-seconds <arg>] [-s|--hub-client-timeout-scanner-seconds <arg>] [-C|--hub-max-concurrent-scans <arg>] [-u|--container-default-cpu <arg>] [-m|--container-default-memory <arg>] [-l|--container-default-log-level <arg>] [-d|--developer-mode <arg>] [--(no-)prompt] [-h|--help]\n' "$0"
 	printf '\t%s\n' "-p,--pod-perceiver,--no-pod-perceiver: Whether the pod perceiver is enabled. (on by default)"
 	printf '\t%s\n' "-i,--image-perceiver,--no-image-perceiver: Whether the image perceiver is enabled. (off by default)"
 	printf '\t%s\n' "-M,--prometheus-metrics,--no-prometheus-metrics: Whether the prometheus metrics is enabled. (off by default)"
-	printf '\t%s\n' "--private-registry: A private registry url you will need to pull images for scan. (default: [\"docker-registry.default.svc:5000\"]). eg. [\"docker-registry.default.svc:5000\", \"172.1.1.0:5000\"]"
-	printf '\t%s\n' "-t,--private-registry-token: A private registry token to have access to pull images  (default: 'perceptor-scanner service account token')"
+	printf '\t%s\n' "--private-registry: A private registry url you will need to pull images for scan. (default: [[{\"Url\": \"docker-registry.default.svc:5000\", \"User\": \"admin\", \"Password\": \"registry token\"}]]). eg. [{\"Url\": \"docker-registry.default.svc:5000\", \"User\": \"admin\", \"Password\": \"registry token\"}, {\"Url\": \"172.1.1.0:5000\", \"User\": \"admin\", \"Password\": \"registry token\"}]"
 	printf '\t%s\n' "-c,--container-registry: Base docker repo for the applicaition. (default: 'gcr.io')"
 	printf '\t%s\n' "-I,--image-repository: Image repository for the applicaition. (default: 'gke-verification/blackducksoftware ')"
 	printf '\t%s\n' "-v,--default-container-version: Default container version (default: 'master')"
+	printf '\t%s\n' "--rhcc,--no-rhcc: Need to install OpsSight Connector using Red Hat Container Catalog (off by default)"
+	printf '\t%s\n' "-D,--docker-config-path: Path to the Docker config.json (default: '~/.docker/config.json')"
 	printf '\t%s\n' "-n,--pcp-namespace: The namespace perceptor containers run in. (default: 'bds-perceptor')"
 	printf '\t%s\n' "-U,--hub-user: hub user (default: 'sysadmin')"
 	printf '\t%s\n' "-W,--hub-password: hub password"
@@ -114,13 +104,14 @@ print_help ()
 	printf '\t%s\n' "-P,--hub-port: hub port  (default: '443')"
 	printf '\t%s\n' "-T,--hub-client-timeout-perceptor-seconds: hub client timeout for perceptor in seconds  (default: '5')"
 	printf '\t%s\n' "-s,--hub-client-timeout-scanner-seconds: hub client timeout for perceptor scanner in seconds  (default: '30')"
+	printf '\t%s\n' "-a,--annotation-interval-seconds: annotation interval in seconds  (default: '30')"
 	printf '\t%s\n' "-C,--hub-max-concurrent-scans: maximum scans at a time for the hub (default: '7')"
 	printf '\t%s\n' "-u,--container-default-cpu: All container's default cpu (default: '300m')"
 	printf '\t%s\n' "-m,--container-default-memory: All container's default memory (default: '1300Mi')"
 	printf '\t%s\n' "-l,--container-default-log-level: All container's default log level (default: 'info')"
 	printf '\t%s\n' "-d,--developer-mode,--no-developer-mode: Whether the developer mode is enabled. (off by default)"
 	printf '\t%s\n' "--skyfire,--no-skyfire: Whether the skyfire is enabled. (off by default)"
-	printf '\t%s\n' "--prompt,--no-prompt: prompt for values rather then expecting them all at the command line (off by default)"
+	printf '\t%s\n' "--prompt,--no-prompt: Prompt for values rather then expecting them all at the command line (off by default)"
 	printf '\t%s\n' "-h,--help: Prints help"
 }
 
@@ -133,7 +124,7 @@ parse_commandline ()
 		case "$_key" in
 			# The pod-perceiver argurment doesn't accept a value,
 			# we expect the --pod-perceiver or -k, so we watch for them.
-			-k|--no-pod-perceiver|--pod-perceiver)
+			-p|--no-pod-perceiver|--pod-perceiver)
 				_arg_pod_perceiver="on"
 				test "${1:0:5}" = "--no-" && _arg_pod_perceiver="off"
 				;;
@@ -141,9 +132,9 @@ parse_commandline ()
 			# so as -k doesn't accept value, other short options may be appended to it, so we watch for -k*.
 			# After stripping the leading -k from the argument, we have to make sure
 			# that the first character that follows coresponds to a short option.
-			-k*)
+			-p*)
 				_arg_pod_perceiver="on"
-				_next="${_key##-k}"
+				_next="${_key##-p}"
 				if test -n "$_next" -a "$_next" != "$_key"
 				then
 					begins_with_short_option "$_next" && shift && set -- "-k" "-${_next}" "$@" || die "The short option '$_key' can't be decomposed to ${_key:0:2} and -${_key:2}, because ${_key:0:2} doesn't accept value and '-${_key:2:1}' doesn't correspond to a short option."
@@ -193,20 +184,6 @@ parse_commandline ()
 			# to get the argument value
 			--private-registry=*)
 				_arg_private_registry="${_key##--private-registry=}"
-				;;
-			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
-			-t|--private-registry-token)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_private_registry_token="$2"
-				shift
-				;;
-			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
-			--private-registry-token=*)
-				_arg_private_registry_token="${_key##--private-registry-token=}"
-				;;
-			# See the comment of option '-p' to see what's going on here - principle is the same.
-			-t*)
-				_arg_private_registry_token="${_key##-t}"
 				;;
 			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-c|--container-registry)
@@ -349,6 +326,20 @@ parse_commandline ()
 				_arg_hub_client_timeout_scanner_seconds="${_key##-s}"
 				;;
 			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
+			-a|--annotation-interval-seconds)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_annotation_interval_seconds="$2"
+				shift
+				;;
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--annotation-interval-seconds=*)
+				_arg_annotation_interval_seconds="${_key##--annotation-interval-seconds=}"
+				;;
+			# See the comment of option '-p' to see what's going on here - principle is the same.
+			-a*)
+				_arg_annotation_interval_seconds="${_key##-a}"
+				;;
+			# See the comment of option '--private-registry' to see what's going on here - principle is the same.
 			-C|--hub-max-concurrent-scans)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
 				_arg_hub_max_concurrent_scans="$2"
@@ -419,6 +410,23 @@ parse_commandline ()
 				fi
 				;;
 			# See the comment of option '--pod-perceiver' to see what's going on here - principle is the same.
+			--no-rhcc|--rhcc)
+				_arg_rhcc="on"
+				test "${1:0:5}" = "--no-" && _arg_rhcc="off"
+				;;
+			-D|--docker-config-path)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_docker_config_path="$2"
+				shift
+				;;
+			# See the comment of option '--private-registry=' to see what's going on here - principle is the same.
+			--docker-config-path=*)
+				_arg_docker_config_path="${_key##--docker-config-path=}"
+				;;
+			# See the comment of option '-p' to see what's going on here - principle is the same.
+			-D*)
+				_arg_docker_config_path="${_key##-D}"
+				;;
 			--no-prompt|--prompt)
 				_arg_prompt="on"
 				test "${1:0:5}" = "--no-" && _arg_prompt="off"

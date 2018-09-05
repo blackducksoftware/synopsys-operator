@@ -26,6 +26,12 @@ DEF_PERCEPTOR_PROTOFORM_TAG=master
 perceptor_protoform_image=${perceptor_protoform_image:-$DEF_PERCEPTOR_PROTOFORM_IMAGE}
 perceptor_protoform_tag=${perceptor_protoform_tag:-$DEF_PERCEPTOR_PROTOFORM_TAG}
 
+perceptor_protoform_tag=${_arg_default_container_version:-$perceptor_protoform_tag}
+perceptor_tag=${_arg_default_container_version:-$perceptor_tag}
+perceptor_scanner_tag=${_arg_default_container_version:-$perceptor_scanner_tag}
+pod_perceiver_tag=${_arg_default_container_version:-$pod_perceiver_tag}
+perceptor_imagefacade_tag=${_arg_default_container_version:-$perceptor_imagefacade_tag}
+
 hubUserPassword=$(printf "%s" "$_arg_hub_password" | base64)
 
 cat << EOF > protoform.yaml
@@ -78,21 +84,19 @@ items:
     name: protoform
   data:
     protoform.yaml: |
-      DockerPasswordOrToken: "$_arg_private_registry_token"
       HubHost: "$_arg_hub_host"
       HubUser: "$_arg_hub_user"
       HubPort: "$_arg_hub_port"
       HubClientTimeoutPerceptorSeconds: "$_arg_hub_client_timeout_perceptor_seconds"
       HubClientTimeoutScannerSeconds: "$_arg_hub_client_timeout_scanner_seconds"
       ConcurrentScanLimit: "$_arg_hub_max_concurrent_scans"
-      # TODO, the Docker username is hardcoded, it is not required as of now.
-      DockerUsername: "admin"
       Namespace: "$_arg_pcp_namespace"
       ImagePerceiver: "$image_perceiver"
       PodPerceiver: "$pod_perceiver"
-      InternalDockerRegistries: "${_arg_private_registry[@]}"
+      InternalRegistries: '`echo "$_arg_private_registry"`'
       DefaultCPU: "$_arg_container_default_cpu"
       DefaultMem: "$_arg_container_default_memory"
+      AnnotationIntervalSeconds: "$_arg_annotation_interval_seconds"
 
       # TODO: Assuming for now that we run the same version of everything
       # For the curated installers.  For developers ? You might want to

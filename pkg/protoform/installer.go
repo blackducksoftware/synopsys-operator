@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -136,7 +137,19 @@ func readConfig(configPath string) *api.ProtoformConfig {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Errorf("unable to read the config file! The input config file path is %s. Using defaults for everything", configPath)
+		log.Errorf("the input config file path is %s. unable to read the config file due to %+v! Using defaults for everything", configPath, err)
+	}
+
+	internalRegistry := []byte(viper.GetString("InternalRegistries"))
+	internalRegistries := make([]perceptor.RegistryAuth, 0)
+	if !strings.EqualFold(viper.GetString("InternalRegistries"), "") {
+		err = json.Unmarshal(internalRegistry, &internalRegistries)
+		if err != nil {
+			log.Errorf("Internal registry is %s, unable to marshal the internal registries due to %+v", viper.GetString("InternalRegistries"), err)
+			os.Exit(1)
+		}
+		log.Infof("internalRegistries: %+v", internalRegistries)
+		viper.Set("InternalRegistries", internalRegistries)
 	}
 
 	setViperAppStructs(&config)

@@ -31,6 +31,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -70,7 +71,7 @@ type BootstrapperOptions struct {
 	SkyfireImageVersion                   string
 	ProtoformImageVersion                 string
 	ConcurrentScanLimit                   int
-	InternalDockerRegistries              []string
+	InternalRegistries                    []perceptor.RegistryAuth
 	DockerUsername                        string
 	DockerPasswordOrToken                 string
 	PerceptorNamespace                    string

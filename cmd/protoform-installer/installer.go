@@ -61,7 +61,7 @@ func createPerceptorAppDefaults() *perceptor.AppConfig {
 	d.HubUser = "sysadmin"
 	d.HubHost = "webserver"
 	d.HubPort = &hubPort
-	d.InternalDockerRegistries = []string{"docker-registry.default.svc:5000", "172.1.1.0:5000"}
+	// d.InternalRegistries = []api.RegistryAuth{{Url: "docker-registry.default.svc:5000", User: "admin"}, {Url: "172.1.1.0:5000", User: "admin"}}
 	d.DefaultVersion = "master"
 	d.Registry = "gcr.io"
 	d.ImagePath = "gke-verification/blackducksoftware"

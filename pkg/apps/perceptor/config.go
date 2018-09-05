@@ -21,27 +21,34 @@ under the License.
 
 package perceptor
 
+// RegistryAuth will store the Openshift Internal Registries
+type RegistryAuth struct {
+	URL      string `json:"Url"`
+	User     string
+	Password string
+}
+
 // AppConfig defines the configuration for the perceptor app
 type AppConfig struct {
 	// CONTAINER CONFIGS
 	// These are sed replaced into the config maps for the containers.
-	PerceptorPort                         *int     `json:"perceptorPort,omitempty"`
-	ScannerPort                           *int     `json:"scannerPort,omitempty"`
-	PerceiverPort                         *int     `json:"perceiverPort,omitempty"`
-	ImageFacadePort                       *int     `json:"imageFacadePort,omitempty"`
-	SkyfirePort                           *int     `json:"skyfirePort,omitempty"`
-	InternalDockerRegistries              []string `json:"internalDockerRegistries,omitempty"`
-	AnnotationIntervalSeconds             *int     `json:"annotationIntervalSeconds,omitempty"`
-	DumpIntervalMinutes                   *int     `json:"dumpIntervalMinutes,omitempty"`
-	HubHost                               string   `json:"hubHost,omitempty"`
-	HubUser                               string   `json:"hubUser,omitempty"`
-	HubPort                               *int     `json:"hubPort,omitempty"`
-	HubUserPassword                       string   `json:"hubUserPassword,omitempty"`
-	HubClientTimeoutPerceptorMilliseconds *int     `json:"hubClientTimeoutPerceptorMilliseconds,omitempty"`
-	HubClientTimeoutScannerSeconds        *int     `json:"hubClientTimeoutScannerSeconds,omitempty"`
-	ConcurrentScanLimit                   *int     `json:"concurrentScanLimit,omitempty"`
-	Namespace                             string   `json:"namespace,omitempty"`
-	DefaultVersion                        string   `json:"defaultVersion,omitempty"`
+	PerceptorPort                         *int           `json:"perceptorPort,omitempty"`
+	ScannerPort                           *int           `json:"scannerPort,omitempty"`
+	PerceiverPort                         *int           `json:"perceiverPort,omitempty"`
+	ImageFacadePort                       *int           `json:"imageFacadePort,omitempty"`
+	SkyfirePort                           *int           `json:"skyfirePort,omitempty"`
+	InternalRegistries                    []RegistryAuth `json:"internalRegistries,omitempty"`
+	AnnotationIntervalSeconds             *int           `json:"annotationIntervalSeconds,omitempty"`
+	DumpIntervalMinutes                   *int           `json:"dumpIntervalMinutes,omitempty"`
+	HubHost                               string         `json:"hubHost,omitempty"`
+	HubUser                               string         `json:"hubUser,omitempty"`
+	HubPort                               *int           `json:"hubPort,omitempty"`
+	HubUserPassword                       string         `json:"hubUserPassword,omitempty"`
+	HubClientTimeoutPerceptorMilliseconds *int           `json:"hubClientTimeoutPerceptorMilliseconds,omitempty"`
+	HubClientTimeoutScannerSeconds        *int           `json:"hubClientTimeoutScannerSeconds,omitempty"`
+	ConcurrentScanLimit                   *int           `json:"concurrentScanLimit,omitempty"`
+	Namespace                             string         `json:"namespace,omitempty"`
+	DefaultVersion                        string         `json:"defaultVersion,omitempty"`
 
 	// CONTAINER PULL CONFIG
 	// These are for defining docker registry and image location and versions

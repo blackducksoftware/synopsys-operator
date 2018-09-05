@@ -70,7 +70,7 @@ func TestPerceptorContainers(t *testing.T) {
 		"pod-perceiver":         "/etc/perceiver/perceiver.yaml",
 		"image-perceiver":       "/etc/perceiver/perceiver.yaml",
 		"perceptor-scanner":     "/etc/perceptor_scanner/perceptor_scanner.yaml",
-		"perceptor-imagefacade": "/etc/perceptor_imagefacade/perceptor_imagefacade.yaml",
+		"perceptor-imagefacade": "/etc/perceptor_imagefacade/perceptor_imagefacade.json",
 		"skyfire":               "/etc/skyfire/skyfire.yaml",
 	}
 
