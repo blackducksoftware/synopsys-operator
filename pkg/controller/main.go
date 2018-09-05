@@ -158,8 +158,10 @@ func RunHubController(configPath string) {
 	stopCh := make(chan struct{})
 
 	defer close(stopCh)
+	secretReplicator := NewSecretReplicator(clientset, hubResourceClient, config.Namespace, 0)
 
 	go controller.Run(config.Threadiness, stopCh)
+	go secretReplicator.Run(stopCh)
 
 	<-stopCh
 }
@@ -213,6 +215,13 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	hubFederator := hub.CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
 		[]*api.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*api.Container{}, []kapi.AffinityConfig{})
 	deployer.AddDeployment(hubFederator)
+
+	certificate, key := hub.CreateSelfSignedCert()
+
+	certificateSecret := components.NewSecret(kapi.SecretConfig{Namespace: config.Namespace, Name: "hub-certificate", Type: kapi.SecretTypeOpaque})
+	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
+
+	deployer.AddSecret(certificateSecret)
 
 	err = deployer.Run()
 

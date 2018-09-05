@@ -114,14 +114,25 @@ func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, e
 }
 
 // CreateConfigMapVolume will mount the config map for a pod
-func CreateConfigMapVolume(volumeName string, mapOrSecretName string, defaultMode int) (*types.Volume, error) {
+func CreateConfigMapVolume(volumeName string, mapName string, defaultMode int) (*types.Volume, error) {
 	configMapVol := types.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
 		DefaultMode:     IntToInt32(defaultMode),
-		MapOrSecretName: mapOrSecretName,
+		MapOrSecretName: mapName,
 	})
 
 	return configMapVol, nil
+}
+
+// CreateSecretVolume will mount the secret for a pod
+func CreateSecretVolume(volumeName string, secretName string, defaultMode int) (*types.Volume, error) {
+	secretVol := types.NewSecretVolume(kapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      volumeName,
+		DefaultMode:     IntToInt32(defaultMode),
+		MapOrSecretName: secretName,
+	})
+
+	return secretVol, nil
 }
 
 // CreatePod will create the pod
@@ -219,7 +230,6 @@ func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, name
 
 // CreateSecret will create the secret
 func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string, stringData map[string]string) (*v1.Secret, error) {
-
 	return clientset.CoreV1().Secrets(namespace).Create(&v1.Secret{
 		Type:       v1.SecretTypeOpaque,
 		StringData: stringData,
@@ -229,10 +239,14 @@ func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string
 	})
 }
 
+// GetSecret will create the secret
+func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (*v1.Secret, error) {
+	return clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+}
+
 // ReadFromFile will read the file
 func ReadFromFile(filePath string) ([]byte, error) {
 	file, err := ioutil.ReadFile(filePath)
-
 	return file, err
 }
 
@@ -456,6 +470,12 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 // IntToInt32 will convert from int to int32
 func IntToInt32(i int) *int32 {
 	j := int32(i)
+	return &j
+}
+
+// IntToInt64 will convert from int to int64
+func IntToInt64(i int) *int64 {
+	j := int64(i)
 	return &j
 }
 

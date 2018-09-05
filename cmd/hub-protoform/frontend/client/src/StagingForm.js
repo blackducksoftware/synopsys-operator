@@ -91,7 +91,9 @@ const initialState = {
   scanType: "Artifacts",
   pvcClaimSize: "20Gi",
   showNFSPath: true,
-  nfsServer: ""
+  nfsServer: "",
+  certificateName: "default",
+  showCertificates: false
 };
 
 class StagingForm extends Component {
@@ -105,6 +107,7 @@ class StagingForm extends Component {
     this.handleBackupSupportChange = this.handleBackupSupportChange.bind(this);
     this.handleScanTypeChange = this.handleScanTypeChange.bind(this);
     this.handleStorageClassChange = this.handleStorageClassChange.bind(this);
+    this.handleCertificateChanges = this.handleCertificateChanges.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.resetForm = this.resetForm.bind(this);
     this.validateNamespace = this.validateNamespace.bind(this);
@@ -199,6 +202,15 @@ class StagingForm extends Component {
     this.handleChange(event);
   }
 
+  handleCertificateChanges(event) {
+    if (event.target.value === "manual") {
+      this.setState({ showCertificates: true });
+    } else {
+      this.setState({ showCertificates: false });
+    }
+    this.handleChange(event);
+  }
+
   resetForm() {
     this.setState(initialState);
   }
@@ -259,6 +271,7 @@ class StagingForm extends Component {
       showBackup,
       showManualStorageClass,
       showCloneSupport,
+      showCertificates,
       emptyFormFields: emptyFields,
       ...textFields
     } = this.state;
@@ -268,6 +281,11 @@ class StagingForm extends Component {
         field === "nfsServer" &&
         this.state.dbPrototype === "empty" &&
         this.state.backupSupport === "No"
+      ) {
+        return false;
+      } else if (
+        field === "certificate" &&
+        this.state.certificateName !== "manual"
       ) {
         return false;
       } else {
@@ -295,13 +313,24 @@ class StagingForm extends Component {
       backupUnits,
       scanTypes,
       dbInstances,
-      pvcStorageClasses
+      pvcStorageClasses,
+      instances
     } = this.props;
 
     // const primary = deepPurple[200];
     const customers = Object.keys(dbInstances);
     const storageClasses = Object.keys(pvcStorageClasses);
     const manualStorage = Object.keys(manualStorageClasses);
+    const hubs = Object.keys(instances);
+
+    // Retrieve unique certificates
+    const uniqueCertificates = ["default", "manual"];
+    hubs.map(hubCrd => {
+      const hub = instances[hubCrd];
+      if (uniqueCertificates.indexOf(hub.spec.certificateName) === -1) {
+        uniqueCertificates.push(hub.spec.certificateName);
+      }
+    });
 
     return (
       <div className={classes.formContainer}>
@@ -621,6 +650,65 @@ class StagingForm extends Component {
                   label="PVC Claim Size"
                   className={classes.singleRowThreeFieldRight}
                   value={this.state.pvcClaimSize}
+                  onChange={this.handleChange}
+                  margin="normal"
+                />
+              </div>
+            </div>
+          ) : null}
+          <TextField
+            select
+            id="certificateName"
+            name="certificateName"
+            label="Black Duck Certificate"
+            className={classes.textField}
+            value={this.state.certificateName}
+            onChange={this.handleCertificateChanges}
+            SelectProps={{
+              MenuProps: {
+                className: classes.menu
+              }
+            }}
+            margin="normal"
+          >
+            {uniqueCertificates.map(uniqueCertificate => {
+              return (
+                <MenuItem
+                  key={`certificate-${uniqueCertificate}`}
+                  value={uniqueCertificate}
+                >
+                  {uniqueCertificate}
+                </MenuItem>
+              );
+            })}
+          </TextField>
+          {this.state.showCertificates ? (
+            <div>
+              <div
+                className={classnames(
+                  classes.singleRowFields,
+                  classes.singleRowFields
+                )}
+              >
+                <TextField
+                  id="certificate"
+                  name="certificate"
+                  label="Certificate"
+                  multiline
+                  type="password"
+                  className={classes.singleRowFieldLeft}
+                  value={this.state.certificate}
+                  onChange={this.handleChange}
+                  margin="normal"
+                />
+                <TextField
+                  id="certificateKey"
+                  name="certificateKey"
+                  label="Certificate Key"
+                  multiline
+                  type="password"
+                  className={classes.singleRowFieldRight}
+                  value={this.state.certificateKey}
                   onChange={this.handleChange}
                   margin="normal"
                 />

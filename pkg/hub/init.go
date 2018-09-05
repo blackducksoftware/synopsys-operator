@@ -43,7 +43,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	}
 
 	// Create a secret
-	secrets := hc.createHubSecrets(createHub.Spec.Namespace, createHub.Spec.AdminPassword, createHub.Spec.UserPassword)
+	secrets := hc.createHubSecrets(createHub)
 
 	for _, secret := range secrets {
 		deployer.AddSecret(secret)

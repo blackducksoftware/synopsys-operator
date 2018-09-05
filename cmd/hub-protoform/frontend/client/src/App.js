@@ -11,7 +11,7 @@ class App extends Component {
     this.state = {
       kubeSizes: ["small", "medium", "large", "OpsSight"],
       backupSupports: ["Yes", "No"],
-      manualStorageClasses: {"none" : "None (Disable dynamic provisioner)"},
+      manualStorageClasses: { none: "None (Disable dynamic provisioner)" },
       backupUnits: ["Minute(s)", "Hour(s)", "Day(s)", "Week(s)"],
       instances: {},
       dbInstances: [],
@@ -217,6 +217,7 @@ class App extends Component {
           pvcStorageClasses={this.state.pvcStorageClasses}
           scanTypes={this.state.scanTypes}
           setToastStatus={this.setToastStatus}
+          instances={this.state.instances}
         />
 
         <div className="paper-container">

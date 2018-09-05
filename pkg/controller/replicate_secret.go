@@ -22,16 +22,14 @@ under the License.
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -43,40 +41,25 @@ import (
 
 // SecretReplicator will have the configuration related to replicate the secrets
 type SecretReplicator struct {
-	client     *kubernetes.Clientset
-	hubClient  *hubclientset.Clientset
-	namespace  string
-	store      cache.Store
-	controller cache.Controller
-
+	client        *kubernetes.Clientset
+	hubClient     *hubclientset.Clientset
+	namespace     string
+	controller    cache.Controller
 	dependencyMap map[string][]string
-}
-
-// Annotations that are used to control this controller's behaviour
-const (
-	ReplicateFromAnnotation         = "replicator.v1.mittwald.de/replicate-from"
-	ReplicatedAtAnnotation          = "replicator.v1.mittwald.de/replicated-at"
-	ReplicatedFromVersionAnnotation = "replicator.v1.mittwald.de/replicated-from-version"
-)
-
-// JSONPatchOperation is a struct that defines PATCH operations on
-// a JSON structure.
-type JSONPatchOperation struct {
-	Operation string      `json:"op"`
-	Path      string      `json:"path"`
-	Value     interface{} `json:"value,omitempty"`
 }
 
 // NewSecretReplicator creates a new secret replicator
 func NewSecretReplicator(client *kubernetes.Clientset, hubClient *hubclientset.Clientset, namespace string, resyncPeriod time.Duration) *SecretReplicator {
+	dependencyMap, _ := buildDependentKeys(hubClient, namespace)
+
 	repl := SecretReplicator{
 		client:        client,
 		hubClient:     hubClient,
 		namespace:     namespace,
-		dependencyMap: make(map[string][]string),
+		dependencyMap: dependencyMap,
 	}
 
-	store, controller := cache.NewInformer(
+	_, controller := cache.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 				return client.CoreV1().Secrets(v1.NamespaceAll).List(opts)
@@ -89,37 +72,38 @@ func NewSecretReplicator(client *kubernetes.Clientset, hubClient *hubclientset.C
 		resyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    repl.secretAdded,
-			UpdateFunc: func(old interface{}, new interface{}) { repl.secretAdded(new) },
-			DeleteFunc: repl.secretDeleted,
+			UpdateFunc: func(old interface{}, new interface{}) { repl.secretUpdated(old, new) },
 		},
 	)
 
-	repl.store = store
 	repl.controller = controller
 
 	return &repl
 }
 
 // Run method will watch for secrets events
-func (r *SecretReplicator) Run() {
+func (r *SecretReplicator) Run(stopCh <-chan struct{}) {
 	log.Printf("running secret controller")
-	r.controller.Run(wait.NeverStop)
+	go r.controller.Run(stopCh)
+	// Wait until we're told to stop
+	<-stopCh
 }
 
 func (r *SecretReplicator) secretAdded(obj interface{}) {
 	secret := obj.(*v1.Secret)
 
-	hubList, err := hub.ListHubs(r.hubClient, r.namespace)
-	if err != nil {
-		log.Errorf("unable to list the hubs due to %+v", err)
-	}
-
 	if strings.EqualFold(secret.Name, "hub-certificate") {
+		hubList, err := hub.ListHubs(r.hubClient, r.namespace)
+		if err != nil {
+			log.Errorf("unable to list the hubs due to %+v", err)
+		}
+
 		for _, hub := range hubList.Items {
 			if strings.EqualFold(secret.Namespace, hub.Name) {
-				if !strings.EqualFold(hub.Spec.CertificateName, "Custom") {
+				if !strings.EqualFold(hub.Spec.CertificateName, "manual") {
 					replicas := r.dependencyMap[hub.Spec.CertificateName]
 					replicas = append(replicas, secret.Namespace)
+					r.updateSecretData(secret, hub.Spec.CertificateName)
 					r.dependencyMap[hub.Spec.CertificateName] = replicas
 				} else {
 					return
@@ -129,153 +113,122 @@ func (r *SecretReplicator) secretAdded(obj interface{}) {
 	} else {
 		return
 	}
-
-	replicas, ok := r.dependencyMap["secretKey"]
-	if ok {
-		log.Printf("secret %s has %d dependents", "secretKey", len(replicas))
-		r.updateDependents(secret, replicas)
-	}
-
-	val, ok := secret.Annotations[ReplicateFromAnnotation]
-	if !ok {
-		return
-	}
-
-	log.Printf("secret %s/%s is replicated from %s", secret.Namespace, secret.Name, val)
-	v := strings.SplitN(val, "/", 2)
-
-	if len(v) < 2 {
-		return
-	}
-
-	sourceObject, exists, err := r.store.GetByKey(val)
-	if err != nil {
-		log.Printf("could not get secret %s: %s", val, err)
-		return
-	} else if !exists {
-		log.Printf("could not get secret %s: does not exist", val)
-		return
-	}
-
-	if _, ok := r.dependencyMap[val]; !ok {
-		r.dependencyMap[val] = make([]string, 0, 1)
-	}
-
-	r.dependencyMap[val] = append(r.dependencyMap[val], "secretKey")
-
-	sourceSecret := sourceObject.(*v1.Secret)
-
-	r.replicateSecret(secret, sourceSecret)
 }
 
-func (r *SecretReplicator) replicateSecret(secret *v1.Secret, sourceSecret *v1.Secret) error {
-	targetVersion, ok := secret.Annotations[ReplicatedFromVersionAnnotation]
-	sourceVersion := sourceSecret.ResourceVersion
+func (r *SecretReplicator) secretUpdated(oldObj interface{}, newobj interface{}) {
+	secret := newobj.(*v1.Secret)
 
-	if ok && targetVersion == sourceVersion {
-		log.Printf("secret %s/%s is already up-to-date", secret.Namespace, secret.Name)
+	if strings.EqualFold(secret.Name, "hub-certificate") {
+		hubList, err := hub.ListHubs(r.hubClient, r.namespace)
+		if err != nil {
+			log.Errorf("unable to list the hubs due to %+v", err)
+		}
+
+		for _, hub := range hubList.Items {
+			if strings.EqualFold(secret.Namespace, hub.Name) {
+				r.updateDependents(secret, r.dependencyMap[secret.Namespace])
+			}
+		}
+	}
+}
+
+func (r *SecretReplicator) replicateSecret(sourceSecret *v1.Secret, updatedSecret *v1.Secret) error {
+
+	if reflect.DeepEqual(sourceSecret.Data, updatedSecret.Data) {
+		log.Infof("secret %s/%s is already up-to-date", sourceSecret.Namespace, sourceSecret.Name)
 		return nil
 	}
 
-	secretCopy := secret.DeepCopy()
+	secretCopy := sourceSecret.DeepCopy()
 
 	if secretCopy.Data == nil {
 		secretCopy.Data = make(map[string][]byte)
 	}
 
-	for key, value := range sourceSecret.Data {
+	for key, value := range updatedSecret.Data {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		secretCopy.Data[key] = newValue
 	}
 
-	log.Printf("updating secret %s/%s", secret.Namespace, secret.Name)
+	log.Debugf("updating secret %s/%s", sourceSecret.Namespace, sourceSecret.Name)
 
-	secretCopy.Annotations[ReplicatedAtAnnotation] = time.Now().Format(time.RFC3339)
-	secretCopy.Annotations[ReplicatedFromVersionAnnotation] = sourceSecret.ResourceVersion
-
-	s, err := r.client.CoreV1().Secrets(secret.Namespace).Update(secretCopy)
+	_, err := r.client.CoreV1().Secrets(sourceSecret.Namespace).Update(secretCopy)
 	if err != nil {
 		return err
 	}
 
-	r.store.Update(s)
+	log.Printf("updated secret %s/%s", sourceSecret.Namespace, sourceSecret.Name)
+
 	return nil
 }
 
-func (r *SecretReplicator) secretFromStore(key string) (*v1.Secret, error) {
-	obj, exists, err := r.store.GetByKey(key)
+func (r *SecretReplicator) deletePod(namespace string) error {
+	log.Debugf("deleting pod %s/%s", namespace, "webserver")
+
+	// Get all pods corresponding to the hub namespace
+	pods, err := hub.GetAllPodsForNamespace(r.client, namespace)
 	if err != nil {
-		return nil, fmt.Errorf("could not get secret %s: %s", key, err)
+		return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
 	}
 
-	if !exists {
-		return nil, fmt.Errorf("could not get secret %s: does not exist", key)
+	webserverPod := hub.FilterPodByNamePrefix(pods, "webserver")
+	err = r.client.AppsV1().Deployments(namespace).Delete(webserverPod.Name, &metav1.DeleteOptions{})
+	if err != nil {
+		return err
 	}
 
-	secret, ok := obj.(*v1.Secret)
-	if !ok {
-		return nil, fmt.Errorf("bad type returned from store: %T", obj)
+	log.Printf("deleted pod %s/%s", namespace, "webserver")
+	return nil
+}
+
+func (r *SecretReplicator) updateSecretData(secret *v1.Secret, dependentSecretNamespace string) error {
+	log.Printf("updating dependent secret %s/%s -> %s", secret.Namespace, secret.Name, dependentSecretNamespace)
+	var err error
+	var dependentSecret *v1.Secret
+	if strings.EqualFold(dependentSecretNamespace, "default") {
+		dependentSecret, err = hub.GetSecret(r.client, r.namespace, secret.Name)
+	} else {
+		dependentSecret, err = hub.GetSecret(r.client, dependentSecretNamespace, secret.Name)
+	}
+	if err != nil {
+		log.Errorf("could not get dependent secret %s: %s", dependentSecretNamespace, err)
 	}
 
-	return secret, nil
+	r.replicateSecret(secret, dependentSecret)
+
+	return nil
 }
 
 func (r *SecretReplicator) updateDependents(secret *v1.Secret, dependents []string) error {
 	for _, dependentKey := range dependents {
 		log.Printf("updating dependent secret %s/%s -> %s", secret.Namespace, secret.Name, dependentKey)
 
-		targetObject, exists, err := r.store.GetByKey(dependentKey)
+		sourceSecret, err := hub.GetSecret(r.client, dependentKey, secret.Name)
 		if err != nil {
-			log.Printf("could not get dependent secret %s: %s", dependentKey, err)
-			continue
-		} else if !exists {
-			log.Printf("could not get dependent secret %s: does not exist", dependentKey)
-			continue
+			log.Errorf("could not get dependent secret %s: %s", dependentKey, err)
 		}
 
-		targetSecret := targetObject.(*v1.Secret)
-
-		r.replicateSecret(targetSecret, secret)
+		r.replicateSecret(sourceSecret, secret)
+		r.deletePod(secret.Namespace)
 	}
 
 	return nil
 }
 
-func (r *SecretReplicator) secretDeleted(obj interface{}) {
-	secret := obj.(*v1.Secret)
-	secretKey := fmt.Sprintf("%s/%s", secret.Namespace, secret.Name)
-
-	replicas, ok := r.dependencyMap[secretKey]
-	if !ok {
-		log.Printf("secret %s has no dependents and can be deleted without issues", secretKey)
-		return
+func buildDependentKeys(hubClient *hubclientset.Clientset, namespace string) (map[string][]string, error) {
+	hubList, err := hub.ListHubs(hubClient, namespace)
+	if err != nil {
+		log.Errorf("unable to list the hubs due to %+v", err)
+		return nil, err
 	}
 
-	for _, dependentKey := range replicas {
-		targetSecret, err := r.secretFromStore(dependentKey)
-		if err != nil {
-			log.Printf("could not load dependent secret: %s", err)
-			continue
-		}
-
-		patch := []JSONPatchOperation{{Operation: "remove", Path: "/data"}}
-		patchBody, err := json.Marshal(&patch)
-
-		if err != nil {
-			log.Printf("error while building patch body for secret %s: %s", dependentKey, err)
-			continue
-		}
-
-		log.Printf("clearing dependent secret %s", dependentKey)
-		log.Printf("patch body: %s", string(patchBody))
-
-		s, err := r.client.CoreV1().Secrets(targetSecret.Namespace).Patch(targetSecret.Name, types.JSONPatchType, patchBody)
-		if err != nil {
-			log.Printf("error while patching secret %s: %s", dependentKey, err)
-			continue
-		}
-
-		r.store.Update(s)
+	dependencyMap := make(map[string][]string)
+	for _, hub := range hubList.Items {
+		replicas := dependencyMap[hub.Spec.CertificateName]
+		replicas = append(replicas, hub.Name)
+		dependencyMap[hub.Spec.CertificateName] = replicas
 	}
+	log.Debugf("dependencyMap: %+v", dependencyMap)
+	return dependencyMap, nil
 }
