@@ -27,7 +27,6 @@ import (
 
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -157,22 +156,4 @@ func (c *Controller) processNextItem() bool {
 
 	// keep the worker loop running by returning true
 	return true
-}
-
-// HubNamespaces will list the hub namespaces
-func (c *Controller) HubNamespaces() ([]string, error) {
-	// 1. get Hub CDR list from default ns
-	hubList, err := c.hubclientset.SynopsysV1().Hubs(c.namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. extract the namespaces
-	hubNamespaces := []string{}
-	for _, hub := range hubList.Items {
-		if len(hub.Spec.Namespace) > 0 {
-			hubNamespaces = append(hubNamespaces, hub.Spec.Namespace)
-		}
-	}
-	return hubNamespaces, nil
 }

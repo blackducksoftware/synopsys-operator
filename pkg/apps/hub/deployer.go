@@ -23,12 +23,14 @@ package hub
 
 import (
 	"fmt"
+	"time"
 
 	kapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	log "github.com/sirupsen/logrus"
 )
 
 // createDeployer will create an entire hub for you.  TODO add flavor parameters !
@@ -70,16 +72,32 @@ func (hc *Creater) createDeployer(deployer *horizon.Deployer, createHub *v1.Hub,
 
 	// webserver
 	// webServerGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webserver", fmt.Sprintf("%s-%s", "webserver-disk", createHub.Spec.Namespace), "ext4")
+	for {
+		secret, err := GetSecret(hc.KubeClient, createHub.Name, "hub-certificate")
+		if err != nil {
+			log.Errorf("unable to get the secret in %s due to %+v", createHub.Name, err)
+			break
+		}
+		data := secret.Data
+		if len(data) > 0 {
+			break
+		}
+		time.Sleep(10 * time.Second)
+	}
 	webServerEmptyDir, _ := CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
+	webServerSecretVol, _ := CreateSecretVolume("certificate", "hub-certificate", 0777)
 	webServerContainerConfig := &api.Container{
 		ContainerConfig: &kapi.ContainerConfig{Name: "webserver", Image: fmt.Sprintf("%s/%s/hub-nginx:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
-			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.WebserverMemoryLimit, MaxMem: hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
-		EnvConfigs:   hubConfigEnv,
-		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security", Propagation: kapi.MountPropagationNone}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: webserverPort, Protocol: kapi.ProtocolTCP},
+			PullPolicy: kapi.PullAlways, MinMem: hubContainerFlavor.WebserverMemoryLimit, MaxMem: hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: "", UID: IntToInt64(1000)},
+		EnvConfigs: hubConfigEnv,
+		VolumeMounts: []*kapi.VolumeMountConfig{
+			{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security", Propagation: kapi.MountPropagationNone},
+			{Name: "certificate", MountPath: "/tmp/secrets", Propagation: kapi.MountPropagationNone},
+		},
+		PortConfig: &kapi.PortConfig{ContainerPort: webserverPort, Protocol: kapi.ProtocolTCP},
 	}
 	webserver := CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "webserver", Replicas: IntToInt32(1)},
-		[]*api.Container{webServerContainerConfig}, []*components.Volume{webServerEmptyDir}, []*api.Container{},
+		[]*api.Container{webServerContainerConfig}, []*components.Volume{webServerEmptyDir, webServerSecretVol}, []*api.Container{},
 		[]kapi.AffinityConfig{})
 	// log.Infof("webserver : %v\n", webserver.GetObj())
 	deployer.AddDeployment(webserver)

@@ -72,16 +72,20 @@ func (hc *Creater) DeleteHub(namespace string) {
 				break
 			}
 		}
+		err = DeletePersistentVolume(hc.KubeClient, namespace)
+		if err != nil {
+			log.Errorf("unable to delete the pv for %+v", namespace)
+		}
 	}
 }
 
 // CreateHub will create the Black Duck Hub
-func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, error) {
+func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	log.Debugf("Create Hub details for %s: %+v", createHub.Spec.Namespace, createHub)
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.Config)
 	if err != nil {
-		return "", "", fmt.Errorf("unable to create the horizon deployer due to %+v", err)
+		return "", "", true, fmt.Errorf("unable to create the horizon deployer due to %+v", err)
 	}
 
 	// Get Containers Flavor
@@ -89,7 +93,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, error) {
 	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
 
 	if hubContainerFlavor == nil {
-		return "", "", fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) OpsSight, Actual: %s", createHub.Spec.Flavor)
+		return "", "", true, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) OpsSight, Actual: %s", createHub.Spec.Flavor)
 	}
 
 	// All ConfigMap environment variables
@@ -108,7 +112,10 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, error) {
 	}
 	log.Debugf("Before init: %+v", createHub)
 	// Create the config-maps, secrets and postgres container
-	hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	err = hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	if err != nil {
+		return "", "", true, err
+	}
 	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
 	if err != nil {
@@ -118,7 +125,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, error) {
 	// Get all pods corresponding to the hub namespace
 	pods, err := GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
 	if err != nil {
-		return "", "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
+		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	// Validate all pods are in running state
 	ValidatePodsAreRunning(hc.KubeClient, pods)
@@ -135,13 +142,13 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, error) {
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("deployments failed because %+v", err)
-		return "", "", fmt.Errorf("unable to deploy the hub in %s due to %+v", createHub.Spec.Namespace, err)
+		return "", "", true, fmt.Errorf("unable to deploy the hub in %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	time.Sleep(10 * time.Second)
 	// Get all pods corresponding to the hub namespace
 	pods, err = GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
 	if err != nil {
-		return "", "", fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
+		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	// Validate all pods are in running state
 	ValidatePodsAreRunning(hc.KubeClient, pods)
@@ -168,19 +175,21 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, error) {
 		}
 	}
 
-	pvcVolumeName, err := hc.getPVCVolumeName(createHub.Spec.Namespace)
-	if err != nil {
-		return "", "", err
+	// Retrieve the PVC volume name
+	pvcVolumeName := ""
+	if strings.EqualFold(createHub.Spec.BackupSupport, "Yes") || !strings.EqualFold(createHub.Spec.PVCStorageClass, "") {
+		pvcVolumeName, err = hc.getPVCVolumeName(createHub.Spec.Namespace)
+		if err != nil {
+			return "", "", false, err
+		}
 	}
-
-	// hc.postgresBackup(createHub)
 
 	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-lb")
 	if err != nil {
-		return "", "", err
+		return "", pvcVolumeName, false, err
 	}
 	log.Infof("hub Ip address: %s", ipAddress)
-	return ipAddress, pvcVolumeName, nil
+	return ipAddress, pvcVolumeName, false, nil
 }
 
 func (hc *Creater) getPVCVolumeName(namespace string) (string, error) {

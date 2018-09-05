@@ -159,8 +159,10 @@ func RunHubController(configPath string) {
 	stopCh := make(chan struct{})
 
 	defer close(stopCh)
+	secretReplicator := NewSecretReplicator(clientset, hubResourceClient, config.Namespace, 0)
 
 	go controller.Run(config.Threadiness, stopCh)
+	go secretReplicator.Run(stopCh)
 
 	<-stopCh
 }
@@ -200,7 +202,7 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 
 	// Hub federator deployment
 	hubFederatorContainerConfig := &api.Container{
-		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:hub",
+		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:master",
 			PullPolicy: kapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
 		EnvConfigs:   []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: "blackduck"}},
 		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationNone}},
@@ -214,6 +216,13 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	hubFederator := hub.CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
 		[]*api.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*api.Container{}, []kapi.AffinityConfig{})
 	deployer.AddDeployment(hubFederator)
+
+	certificate, key := hub.CreateSelfSignedCert()
+
+	certificateSecret := components.NewSecret(kapi.SecretConfig{Namespace: config.Namespace, Name: "hub-certificate", Type: kapi.SecretTypeOpaque})
+	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
+
+	deployer.AddSecret(certificateSecret)
 
 	err = deployer.Run()
 

@@ -53,16 +53,18 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 		})
 
 		router.GET("/storage-classes", func(c *gin.Context) {
+			var storageList map[string]string
+			storageList = make(map[string]string)
 			storageClasses, err := hub.ListStorageClass(hc.KubeClient)
 			if err != nil {
 				log.Errorf("unable to list the storage classes due to %+v", err)
 				c.JSON(404, fmt.Sprintf("\"message\": \"Failed to List the storage class due to %+v\"", err))
 			}
-			keys := []string{}
 			for _, storageClass := range storageClasses.Items {
-				keys = append(keys, storageClass.GetName())
+				storageList[storageClass.GetName()] = fmt.Sprintf("%s (%s)", storageClass.GetName(), storageClass.Provisioner)
 			}
-			c.JSON(200, keys)
+			storageList["none"] = fmt.Sprintf("%s (%s)", "None", "Disable dynamic provisioner")
+			c.JSON(200, storageList)
 		})
 
 		router.GET("/hub", func(c *gin.Context) {

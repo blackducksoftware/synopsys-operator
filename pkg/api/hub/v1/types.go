@@ -49,12 +49,17 @@ type HubSpec struct {
 	BackupInterval   string `json:"backupInterval"`
 	BackupUnit       string `json:"backupUnit"`
 	PVCStorageClass  string `json:"pvcStorageClass"`
-	PVCAccessMode    string `json:"pvcAccessMode"`
+	BackupSupport    string `json:"backupSupport"`
+	ScanType         string `json:"scanType"`
 	PVCClaimSize     string `json:"pvcClaimSize"`
+	NFSServer        string `json:"nfsServer"`
 	PostgresPassword string `json:"postgresPassword"`
 	AdminPassword    string `json:"adminPassword"`
 	UserPassword     string `json:"userPassword"`
 	IsRandomPassword bool   `json:"isRandomPassword"`
+	CertificateName  string `json:"certificateName"`
+	Certificate      string `json:"certificate"`
+	CertificateKey   string `json:"certificateKey"`
 	State            string `json:"state"`
 }
 

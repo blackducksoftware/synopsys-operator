@@ -43,6 +43,7 @@ import (
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/api/storage/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -92,8 +93,8 @@ func CreateEmptyDirVolumeWithoutSizeLimit(volumeName string) (*types.Volume, err
 	return emptyDirVol, err
 }
 
-// CreatePersistentVolumeClaim will create a PVC claim for a pod
-func CreatePersistentVolumeClaim(volumeName string, pvcName string) (*types.Volume, error) {
+// CreatePersistentVolumeClaimVolume will create a PVC claim for a pod
+func CreatePersistentVolumeClaimVolume(volumeName string, pvcName string) (*types.Volume, error) {
 	pvcVol := types.NewPVCVolume(kapi.PVCVolumeConfig{
 		PVCName:    pvcName,
 		VolumeName: volumeName,
@@ -113,14 +114,25 @@ func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, e
 }
 
 // CreateConfigMapVolume will mount the config map for a pod
-func CreateConfigMapVolume(volumeName string, mapOrSecretName string, defaultMode int) (*types.Volume, error) {
+func CreateConfigMapVolume(volumeName string, mapName string, defaultMode int) (*types.Volume, error) {
 	configMapVol := types.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
 		DefaultMode:     IntToInt32(defaultMode),
-		MapOrSecretName: mapOrSecretName,
+		MapOrSecretName: mapName,
 	})
 
 	return configMapVol, nil
+}
+
+// CreateSecretVolume will mount the secret for a pod
+func CreateSecretVolume(volumeName string, secretName string, defaultMode int) (*types.Volume, error) {
+	secretVol := types.NewSecretVolume(kapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      volumeName,
+		DefaultMode:     IntToInt32(defaultMode),
+		MapOrSecretName: secretName,
+	})
+
+	return secretVol, nil
 }
 
 // CreatePod will create the pod
@@ -218,7 +230,6 @@ func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, name
 
 // CreateSecret will create the secret
 func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string, stringData map[string]string) (*v1.Secret, error) {
-
 	return clientset.CoreV1().Secrets(namespace).Create(&v1.Secret{
 		Type:       v1.SecretTypeOpaque,
 		StringData: stringData,
@@ -228,10 +239,14 @@ func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string
 	})
 }
 
+// GetSecret will create the secret
+func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (*v1.Secret, error) {
+	return clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+}
+
 // ReadFromFile will read the file
 func ReadFromFile(filePath string) ([]byte, error) {
 	file, err := ioutil.ReadFile(filePath)
-
 	return file, err
 }
 
@@ -283,6 +298,50 @@ func DeleteNamespace(clientset *kubernetes.Clientset, namespace string) error {
 // GetAllPodsForNamespace will get all the pods corresponding to a namespace
 func GetAllPodsForNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.PodList, error) {
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+}
+
+// CreatePersistentVolume will create the persistent volume
+func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storageClass string, claimSize string, nfsPath string, nfsServer string) (*corev1.PersistentVolume, error) {
+	pvQuantity, _ := resource.ParseQuantity(claimSize)
+	return clientset.CoreV1().PersistentVolumes().Create(&corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: name,
+			Name:      name,
+		},
+		Spec: corev1.PersistentVolumeSpec{
+			Capacity:         map[corev1.ResourceName]resource.Quantity{corev1.ResourceStorage: pvQuantity},
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			StorageClassName: storageClass,
+			PersistentVolumeSource: corev1.PersistentVolumeSource{
+				NFS: &corev1.NFSVolumeSource{
+					Path:   nfsPath,
+					Server: nfsServer,
+				},
+			},
+		},
+	})
+}
+
+// DeletePersistentVolume will delete the persistent volume
+func DeletePersistentVolume(clientset *kubernetes.Clientset, name string) error {
+	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{})
+}
+
+// CreatePersistentVolumeClaim will create the persistent volume claim
+func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize string, storageClass string, accessMode kapi.PVCAccessModeType) (*types.PersistentVolumeClaim, error) {
+	postgresPVC, err := types.NewPersistentVolumeClaim(kapi.PVCConfig{
+		Name:      name,
+		Namespace: namespace,
+		// VolumeName: createHub.Name,
+		Size:  pvcClaimSize,
+		Class: &storageClass,
+	})
+	if err != nil {
+		return nil, err
+	}
+	postgresPVC.AddAccessMode(accessMode)
+
+	return postgresPVC, nil
 }
 
 // ValidatePodsAreRunning will validate whether the pods are running
@@ -400,7 +459,7 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 		return pvList, err
 	}
 	for _, hub := range hubs.Items {
-		if !strings.EqualFold(hub.Status.PVCVolumeName, "") {
+		if !strings.EqualFold(hub.Status.PVCVolumeName, "") && strings.EqualFold(hub.Spec.PVCStorageClass, "none") {
 			pvList[hub.Name] = fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName)
 		}
 	}
@@ -411,6 +470,12 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 // IntToInt32 will convert from int to int32
 func IntToInt32(i int) *int32 {
 	j := int32(i)
+	return &j
+}
+
+// IntToInt64 will convert from int to int64
+func IntToInt64(i int) *int64 {
+	j := int64(i)
 	return &j
 }
 
