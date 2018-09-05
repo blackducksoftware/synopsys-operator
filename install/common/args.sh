@@ -12,7 +12,7 @@
 
 # ARG_OPTIONAL_SINGLE([container-registry],[c],[Base docker repo for the applicaition.],[gcr.io])
 # ARG_OPTIONAL_SINGLE([image-repository],[I],[Image repository for the applicaition.],[gke-verification/blackducksoftware])
-# ARG_OPTIONAL_SINGLE([default-container-version],[v],[Default container version],[master])
+# ARG_OPTIONAL_SINGLE([default-container-version],[v],[Default container version],[])
 # ARG_OPTIONAL_SINGLE([pcp-namespace],[n],[The namespace perceptor containers run in.],[nginx-webapp-logstash])
 
 # ARG_OPTIONAL_SINGLE([hub-user],[U],[hub user],[sysadmin])
@@ -71,7 +71,7 @@ _arg_image_perceiver="off"
 _arg_prometheus_metrics="off"
 _arg_container_registry="gcr.io"
 _arg_image_repository="gke-verification/blackducksoftware"
-_arg_default_container_version="master"
+_arg_default_container_version=""
 _arg_pcp_namespace="perceptor"
 _arg_private_registry=""
 _arg_prompt="off"
