@@ -63,6 +63,7 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 	}
 }
 
+// CreateSelfSignedCert will create a random self signed certificate
 func CreateSelfSignedCert() (string, string) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
