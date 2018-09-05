@@ -683,37 +683,32 @@ class StagingForm extends Component {
             })}
           </TextField>
           {this.state.showCertificates ? (
-            <div>
-              <div
-                className={classnames(
-                  classes.singleRowFields,
-                  classes.singleRowFields
-                )}
-              >
-                <TextField
-                  id="certificate"
-                  name="certificate"
-                  label="Certificate"
-                  multiline
-                  type="password"
-                  className={classes.singleRowFieldLeft}
-                  value={this.state.certificate}
-                  onChange={this.handleChange}
-                  margin="normal"
-                />
-                <TextField
-                  id="certificateKey"
-                  name="certificateKey"
-                  label="Certificate Key"
-                  multiline
-                  type="password"
-                  className={classes.singleRowFieldRight}
-                  value={this.state.certificateKey}
-                  onChange={this.handleChange}
-                  margin="normal"
-                />
-              </div>
-            </div>
+            <TextField
+              id="certificate"
+              name="certificate"
+              label="Certificate"
+              multiline
+              rows="2"
+              rowsMax="2"
+              className={classes.textField}
+              value={this.state.certificate}
+              onChange={this.handleChange}
+              margin="normal"
+            />
+          ) : null}
+          {this.state.showCertificates ? (
+            <TextField
+              id="certificateKey"
+              name="certificateKey"
+              label="Certificate Key"
+              multiline
+              rows="2"
+              rowsMax="2"
+              className={classes.textField}
+              value={this.state.certificateKey}
+              onChange={this.handleChange}
+              margin="normal"
+            />
           ) : null}
           <TextField
             id="token"

@@ -34,8 +34,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	// hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	log "github.com/sirupsen/logrus"
 )
 
