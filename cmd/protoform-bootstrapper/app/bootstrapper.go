@@ -128,21 +128,22 @@ func (b *Bootstrapper) setup() error {
 	}
 
 	// Perceptor Config
-	if b.opts.AnnotateImages || b.opts.AnnotatePods {
+	if (b.opts.AnnotateImages != nil && *b.opts.AnnotateImages) ||
+		(b.opts.AnnotatePods != nil && *b.opts.AnnotatePods) {
 		config.Apps.PerceptorConfig = &perceptor.AppConfig{
 			DockerPasswordOrToken: b.opts.DockerPasswordOrToken,
 			HubHost:               b.opts.HubHost,
 			HubUser:               b.opts.HubUser,
-			HubPort:               &b.opts.HubPort,
-			HubClientTimeoutPerceptorMilliseconds: &b.opts.HubClientTimeoutPerceptorMilliseconds,
-			HubClientTimeoutScannerSeconds:        &b.opts.HubClientTimeoutScannerSeconds,
-			ConcurrentScanLimit:                   &b.opts.ConcurrentScanLimit,
+			HubPort:               b.opts.HubPort,
+			HubClientTimeoutPerceptorMilliseconds: b.opts.HubClientTimeoutPerceptorMilliseconds,
+			HubClientTimeoutScannerSeconds:        b.opts.HubClientTimeoutScannerSeconds,
+			ConcurrentScanLimit:                   b.opts.ConcurrentScanLimit,
 			DockerUsername:                        "admin",
 			Namespace:                             b.opts.PerceptorNamespace,
-			ImagePerceiver:                        &b.opts.AnnotateImages,
-			PodPerceiver:                          &b.opts.AnnotatePods,
-			PerceptorSkyfire:                      &b.opts.EnableSkyfire,
-			Metrics:                               &b.opts.EnableMetrics,
+			ImagePerceiver:                        b.opts.AnnotateImages,
+			PodPerceiver:                          b.opts.AnnotatePods,
+			PerceptorSkyfire:                      b.opts.EnableSkyfire,
+			Metrics:                               b.opts.EnableMetrics,
 			InternalDockerRegistries:              b.opts.InternalDockerRegistries,
 			DefaultCPU:                            b.opts.DefaultCPU,
 			DefaultMem:                            b.opts.DefaultMem,
@@ -166,11 +167,11 @@ func (b *Bootstrapper) setup() error {
 	}
 
 	// Alert Config
-	if b.opts.AlertEnabled {
+	if b.opts.AlertEnabled != nil && *b.opts.AlertEnabled {
 		config.Apps.AlertConfig = &alert.AppConfig{
 			HubHost:           b.opts.HubHost,
 			HubUser:           b.opts.HubUser,
-			HubPort:           &b.opts.HubPort,
+			HubPort:           b.opts.HubPort,
 			Namespace:         b.opts.AlertNamespace,
 			Registry:          b.opts.AlertRegistry,
 			ImagePath:         b.opts.AlertImagePath,

@@ -26,6 +26,7 @@ import (
 	"fmt"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 )
 
 // App defines the perceptor application
@@ -48,7 +49,7 @@ func NewApp(defaults interface{}) (*App, error) {
 
 // Configure will configure the perceptor app
 func (p *App) Configure(config interface{}) error {
-	return apps.MergeConfig(config, p.config)
+	return util.MergeConfig(config, p.config)
 }
 
 // GetNamespace returns the namespace for this perceptor app
