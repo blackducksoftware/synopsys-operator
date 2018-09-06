@@ -68,14 +68,6 @@ type AppConfig struct {
 	ImageFacadeImageVersion string `json:"imageFacadeImageVersion,omitempty"`
 	SkyfireImageVersion     string `json:"skyfireImageVersion,omitempty"`
 
-	// AUTH CONFIGS
-	// These are given to containers through secrets or other mechanisms.
-	// Not necessarily a one-to-one text replacement.
-	// TODO Lets try to have this injected on serviceaccount
-	// at pod startup, eventually Service accounts.
-	DockerPasswordOrToken string `json:"dockerPasswordOrToken,omitempty"`
-	DockerUsername        string `json:"dockerUsername,omitempty"`
-
 	ServiceAccounts  map[string]string `json:"serviceAccounts,omitempty"`
 	ImagePerceiver   *bool             `json:"imagePerceiver,omitempty"`
 	PodPerceiver     *bool             `json:"podPerceiver,omitempty"`
@@ -110,7 +102,6 @@ func NewPerceptorAppDefaults() *AppConfig {
 	defaultDumpInterval := 30
 	defaultPerceptorHubClientTimeout := 5000
 	defaultScannerHubClientTimeout := 30
-	defaultHubPort := 443
 	defaultScanLimit := 7
 	defaultPodPerceiverEnabled := true
 
@@ -124,19 +115,16 @@ func NewPerceptorAppDefaults() *AppConfig {
 		DumpIntervalMinutes:                   &defaultDumpInterval,
 		HubClientTimeoutPerceptorMilliseconds: &defaultPerceptorHubClientTimeout,
 		HubClientTimeoutScannerSeconds:        &defaultScannerHubClientTimeout,
-		HubHost:                 "nginx-webapp-logstash",
-		HubPort:                 &defaultHubPort,
-		DockerUsername:          "admin",
-		ConcurrentScanLimit:     &defaultScanLimit,
-		DefaultVersion:          "master",
-		PerceptorImageName:      "perceptor",
-		ScannerImageName:        "perceptor-scanner",
-		ImagePerceiverImageName: "image-perceiver",
-		PodPerceiverImageName:   "pod-perceiver",
-		ImageFacadeImageName:    "perceptor-imagefacade",
-		SkyfireImageName:        "skyfire",
-		LogLevel:                "debug",
-		PodPerceiver:            &defaultPodPerceiverEnabled,
-		SecretName:              "perceptor",
+		ConcurrentScanLimit:                   &defaultScanLimit,
+		DefaultVersion:                        "master",
+		PerceptorImageName:                    "perceptor",
+		ScannerImageName:                      "perceptor-scanner",
+		ImagePerceiverImageName:               "image-perceiver",
+		PodPerceiverImageName:                 "pod-perceiver",
+		ImageFacadeImageName:                  "perceptor-imagefacade",
+		SkyfireImageName:                      "skyfire",
+		LogLevel:                              "debug",
+		PodPerceiver:                          &defaultPodPerceiverEnabled,
+		SecretName:                            "perceptor",
 	}
 }

@@ -26,6 +26,7 @@ import (
 	"fmt"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
+	log "github.com/sirupsen/logrus"
 )
 
 // App defines the perceptor application
@@ -84,6 +85,7 @@ func (p *App) GetComponents() (*apps.ComponentList, error) {
 	components.Services = append(components.Services, p.ImageFacadeService())
 	components.ConfigMaps = append(components.ConfigMaps, p.ScannerConfigMap())
 	components.ConfigMaps = append(components.ConfigMaps, p.ImageFacadeConfigMap())
+	log.Debugf("image facade configmap: %+v", p.ImageFacadeConfigMap().GetObj())
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 

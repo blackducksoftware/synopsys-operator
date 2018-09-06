@@ -190,17 +190,21 @@ func (i *Installer) Run(stopCh chan struct{}) error {
 		return err
 	}
 
-	err = i.deployer.Run()
-	if err != nil {
-		return err
-	}
+	if !i.config.DryRun {
+		err = i.deployer.Run()
+		if err != nil {
+			return err
+		}
 
-	err = i.postDeploy()
-	if err != nil {
-		return err
-	}
+		err = i.postDeploy()
+		if err != nil {
+			return err
+		}
 
-	i.deployer.StartControllers(stopCh)
+		i.deployer.StartControllers(stopCh)
+	} else {
+		i.prettyPrint(fmt.Sprintf("%+v", i.deployer))
+	}
 
 	return nil
 }
@@ -249,7 +253,7 @@ func (i *Installer) createApps() error {
 func (i *Installer) addApp(app apps.AppInstallerInterface, config interface{}) error {
 	err := app.Configure(config)
 	if err != nil {
-		return fmt.Errorf("failed to configure app: %v", err)
+		return fmt.Errorf("failed to configure app: %+v", err)
 	}
 	i.apps = append(i.apps, app)
 

@@ -1,0 +1,20 @@
+{
+  "apps": {
+    "perceptorConfig": {
+      "perceptorImageVersion": "master",
+      "scannerImageVersion": "master",
+      "perceiverImageVersion": "master",
+      "imageFacadeImageVersion": "master",
+      "skyfireImageVersion": "master",
+      "ImagePerceiver": true,
+      "PodPerceiver": true,
+      "Metrics": true,
+      "PerceptorSkyfire": true,
+      "DefaultCPU": "200m",
+      "DefaultMem": "300Mi",
+      "SecretName": "blackduck-secrets"
+    }
+  },
+  "dryRun": true,
+  "defaultLogLevel": "debug"
+}
