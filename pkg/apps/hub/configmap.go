@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	kapi "github.com/blackducksoftware/horizon/pkg/api"
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 )
@@ -35,7 +35,7 @@ import (
 func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *ContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
-	hubConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config"})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config"})
 	hubConfig.AddData(map[string]string{
 		"PUBLIC_HUB_WEBSERVER_HOST": "localhost",
 		"PUBLIC_HUB_WEBSERVER_PORT": "443",
@@ -48,7 +48,7 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 
 	configMaps["hub-config"] = hubConfig
 
-	hubDbConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-db-config"})
+	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-db-config"})
 	hubDbConfig.AddData(map[string]string{
 		"HUB_POSTGRES_ADMIN": "blackduck",
 		"HUB_POSTGRES_USER":  "blackduck_user",
@@ -58,7 +58,7 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 
 	configMaps["hub-db-config"] = hubDbConfig
 
-	hubConfigResources := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config-resources"})
+	hubConfigResources := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config-resources"})
 	hubConfigResources.AddData(map[string]string{
 		"webapp-mem":    hubContainerFlavor.WebappHubMaxMemory,
 		"jobrunner-mem": hubContainerFlavor.JobRunnerHubMaxMemory,
@@ -67,12 +67,12 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 
 	configMaps["hub-config-resources"] = hubConfigResources
 
-	hubDbConfigGranular := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-db-config-granular"})
+	hubDbConfigGranular := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-db-config-granular"})
 	hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 
 	configMaps["hub-db-config-granular"] = hubDbConfigGranular
 
-	postgresBootstrap := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "postgres-bootstrap"})
+	postgresBootstrap := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "postgres-bootstrap"})
 	var backupInSeconds int
 	switch createHub.Spec.BackupUnit {
 	case "Minute(s)":
@@ -130,7 +130,7 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 
 	configMaps["postgres-bootstrap"] = postgresBootstrap
 
-	postgresInit := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: createHub.Name, Name: "postgres-init"})
+	postgresInit := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "postgres-init"})
 	postgresInit.AddData(map[string]string{"pginit.sh": `#!/bin/bash
 		echo "executing bds init script"
     sh /usr/share/container-scripts/postgresql/pgbootstrap.sh &

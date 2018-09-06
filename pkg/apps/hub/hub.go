@@ -27,13 +27,16 @@ import (
 	"strings"
 	"time"
 
-	kapi "github.com/blackducksoftware/horizon/pkg/api"
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
+
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
-	log "github.com/sirupsen/logrus"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Creater will store the configuration to create the Hub
@@ -97,10 +100,10 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	}
 
 	// All ConfigMap environment variables
-	allConfigEnv := []*kapi.EnvConfig{
-		{Type: kapi.EnvFromConfigMap, FromName: "hub-config"},
-		{Type: kapi.EnvFromConfigMap, FromName: "hub-db-config"},
-		{Type: kapi.EnvFromConfigMap, FromName: "hub-db-config-granular"},
+	allConfigEnv := []*horizonapi.EnvConfig{
+		{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"},
+		{Type: horizonapi.EnvFromConfigMap, FromName: "hub-db-config"},
+		{Type: horizonapi.EnvFromConfigMap, FromName: "hub-db-config-granular"},
 	}
 
 	if createHub.Spec.IsRandomPassword {
@@ -135,7 +138,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	}
 
 	// Create all hub deployments
-	deployer, err = horizon.NewDeployer(hc.Config)
+	deployer, _ = horizon.NewDeployer(hc.Config)
 	hc.createDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	log.Debugf("%+v", deployer)
 	// Deploy all hub containers

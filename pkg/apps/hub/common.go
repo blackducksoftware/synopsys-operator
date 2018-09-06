@@ -35,16 +35,19 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	kapi "github.com/blackducksoftware/horizon/pkg/api"
-	types "github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
+
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
+
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+
 	"k8s.io/api/storage/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -53,9 +56,9 @@ import (
 )
 
 // CreateContainer will create the container
-func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volumeMounts []*kapi.VolumeMountConfig, port *kapi.PortConfig, actionConfig *kapi.ActionConfig) *types.Container {
+func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, port *horizonapi.PortConfig, actionConfig *horizonapi.ActionConfig) *components.Container {
 
-	container := types.NewContainer(*config)
+	container := components.NewContainer(*config)
 
 	for _, env := range envs {
 		container.AddEnv(*env)
@@ -74,8 +77,8 @@ func CreateContainer(config *kapi.ContainerConfig, envs []*kapi.EnvConfig, volum
 }
 
 // CreateGCEPersistentDiskVolume will create a GCE Persistent disk volume for a pod
-func CreateGCEPersistentDiskVolume(volumeName string, diskName string, fsType string) *types.Volume {
-	gcePersistentDiskVol := types.NewGCEPersistentDiskVolume(kapi.GCEPersistentDiskVolumeConfig{
+func CreateGCEPersistentDiskVolume(volumeName string, diskName string, fsType string) *components.Volume {
+	gcePersistentDiskVol := components.NewGCEPersistentDiskVolume(horizonapi.GCEPersistentDiskVolumeConfig{
 		VolumeName: volumeName,
 		DiskName:   diskName,
 		FSType:     fsType,
@@ -85,8 +88,8 @@ func CreateGCEPersistentDiskVolume(volumeName string, diskName string, fsType st
 }
 
 // CreateEmptyDirVolumeWithoutSizeLimit will create a empty directory for a pod
-func CreateEmptyDirVolumeWithoutSizeLimit(volumeName string) (*types.Volume, error) {
-	emptyDirVol, err := types.NewEmptyDirVolume(kapi.EmptyDirVolumeConfig{
+func CreateEmptyDirVolumeWithoutSizeLimit(volumeName string) (*components.Volume, error) {
+	emptyDirVol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: volumeName,
 	})
 
@@ -94,8 +97,8 @@ func CreateEmptyDirVolumeWithoutSizeLimit(volumeName string) (*types.Volume, err
 }
 
 // CreatePersistentVolumeClaimVolume will create a PVC claim for a pod
-func CreatePersistentVolumeClaimVolume(volumeName string, pvcName string) (*types.Volume, error) {
-	pvcVol := types.NewPVCVolume(kapi.PVCVolumeConfig{
+func CreatePersistentVolumeClaimVolume(volumeName string, pvcName string) (*components.Volume, error) {
+	pvcVol := components.NewPVCVolume(horizonapi.PVCVolumeConfig{
 		PVCName:    pvcName,
 		VolumeName: volumeName,
 	})
@@ -104,8 +107,8 @@ func CreatePersistentVolumeClaimVolume(volumeName string, pvcName string) (*type
 }
 
 // CreateEmptyDirVolume will create a empty directory for a pod
-func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, error) {
-	emptyDirVol, err := types.NewEmptyDirVolume(kapi.EmptyDirVolumeConfig{
+func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*components.Volume, error) {
+	emptyDirVol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: volumeName,
 		SizeLimit:  sizeLimit,
 	})
@@ -114,8 +117,8 @@ func CreateEmptyDirVolume(volumeName string, sizeLimit string) (*types.Volume, e
 }
 
 // CreateConfigMapVolume will mount the config map for a pod
-func CreateConfigMapVolume(volumeName string, mapName string, defaultMode int) (*types.Volume, error) {
-	configMapVol := types.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
+func CreateConfigMapVolume(volumeName string, mapName string, defaultMode int) (*components.Volume, error) {
+	configMapVol := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
 		DefaultMode:     IntToInt32(defaultMode),
 		MapOrSecretName: mapName,
@@ -125,8 +128,8 @@ func CreateConfigMapVolume(volumeName string, mapName string, defaultMode int) (
 }
 
 // CreateSecretVolume will mount the secret for a pod
-func CreateSecretVolume(volumeName string, secretName string, defaultMode int) (*types.Volume, error) {
-	secretVol := types.NewSecretVolume(kapi.ConfigMapOrSecretVolumeConfig{
+func CreateSecretVolume(volumeName string, secretName string, defaultMode int) (*components.Volume, error) {
+	secretVol := components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
 		DefaultMode:     IntToInt32(defaultMode),
 		MapOrSecretName: secretName,
@@ -136,8 +139,8 @@ func CreateSecretVolume(volumeName string, secretName string, defaultMode int) (
 }
 
 // CreatePod will create the pod
-func CreatePod(name string, volumes []*types.Volume, containers []*api.Container, initContainers []*api.Container, affinityConfigs []kapi.AffinityConfig) *types.Pod {
-	pod := types.NewPod(kapi.PodConfig{
+func CreatePod(name string, volumes []*components.Volume, containers []*Container, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.Pod {
+	pod := components.NewPod(horizonapi.PodConfig{
 		Name: name,
 	})
 
@@ -171,8 +174,8 @@ func CreatePod(name string, volumes []*types.Volume, containers []*api.Container
 }
 
 // CreateDeployment will create a deployment
-func CreateDeployment(deploymentConfig *kapi.DeploymentConfig, pod *types.Pod) *types.Deployment {
-	deployment := types.NewDeployment(*deploymentConfig)
+func CreateDeployment(deploymentConfig *horizonapi.DeploymentConfig, pod *components.Pod) *components.Deployment {
+	deployment := components.NewDeployment(*deploymentConfig)
 
 	deployment.AddMatchLabelsSelectors(map[string]string{
 		"app":  deploymentConfig.Name,
@@ -183,27 +186,27 @@ func CreateDeployment(deploymentConfig *kapi.DeploymentConfig, pod *types.Pod) *
 }
 
 // CreateDeploymentFromContainer will create a deployment with multiple containers inside a pod
-func CreateDeploymentFromContainer(deploymentConfig *kapi.DeploymentConfig, containers []*api.Container, volumes []*types.Volume, initContainers []*api.Container, affinityConfigs []kapi.AffinityConfig) *types.Deployment {
+func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.Deployment {
 	pod := CreatePod(deploymentConfig.Name, volumes, containers, initContainers, affinityConfigs)
 	deployment := CreateDeployment(deploymentConfig, pod)
 	return deployment
 }
 
 // CreateService will create the service
-func CreateService(name string, label string, namespace string, port string, target string, serviceType kapi.ClusterIPServiceType) *types.Service {
-	svcConfig := kapi.ServiceConfig{
+func CreateService(name string, label string, namespace string, port string, target string, serviceType horizonapi.ClusterIPServiceType) *components.Service {
+	svcConfig := horizonapi.ServiceConfig{
 		Name:          name,
 		Namespace:     namespace,
 		IPServiceType: serviceType,
 	}
 
-	mySvc := types.NewService(svcConfig)
+	mySvc := components.NewService(svcConfig)
 	portVal, _ := strconv.Atoi(port)
-	myPort := &kapi.ServicePortConfig{
+	myPort := &horizonapi.ServicePortConfig{
 		Name:       fmt.Sprintf("port-" + name),
 		Port:       int32(portVal),
 		TargetPort: target,
-		Protocol:   kapi.ProtocolTCP,
+		Protocol:   horizonapi.ProtocolTCP,
 	}
 
 	mySvc.AddPort(*myPort)
@@ -251,9 +254,9 @@ func ReadFromFile(filePath string) ([]byte, error) {
 }
 
 // // CreateSecret will create the secret
-// func CreateNewSecret(secretConfig *kapi.SecretConfig) *types.Secret {
+// func CreateNewSecret(secretConfig *horizonapi.SecretConfig) *components.Secret {
 //
-// 	secret := types.NewSecret(kapi.SecretConfig{Namespace: secretConfig.Namespace, Name: secretConfig.Name, Type: secretConfig.Type})
+// 	secret := components.NewSecret(horizonapi.SecretConfig{Namespace: secretConfig.Namespace, Name: secretConfig.Name, Type: secretConfig.Type})
 //
 // 	secret.AddData(secretConfig.Data)
 // 	secret.AddStringData(secretConfig.StringData)
@@ -264,9 +267,9 @@ func ReadFromFile(filePath string) ([]byte, error) {
 // }
 //
 // // CreateConfigMap will create the configMap
-// func CreateConfigMap(configMapConfig *kapi.ConfigMapConfig) *types.ConfigMap {
+// func CreateConfigMap(configMapConfig *horizonapi.ConfigMapConfig) *components.ConfigMap {
 //
-// 	configMap := types.NewConfigMap(kapi.ConfigMapConfig{Namespace: configMapConfig.Namespace, Name: configMapConfig.Name})
+// 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: configMapConfig.Namespace, Name: configMapConfig.Name})
 //
 // 	configMap.AddData(configMapConfig.Data)
 // 	configMap.AddLabels(configMapConfig.Labels)
@@ -328,8 +331,8 @@ func DeletePersistentVolume(clientset *kubernetes.Clientset, name string) error 
 }
 
 // CreatePersistentVolumeClaim will create the persistent volume claim
-func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize string, storageClass string, accessMode kapi.PVCAccessModeType) (*types.PersistentVolumeClaim, error) {
-	postgresPVC, err := types.NewPersistentVolumeClaim(kapi.PVCConfig{
+func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize string, storageClass string, accessMode horizonapi.PVCAccessModeType) (*components.PersistentVolumeClaim, error) {
+	postgresPVC, err := components.NewPersistentVolumeClaim(horizonapi.PVCConfig{
 		Name:      name,
 		Namespace: namespace,
 		// VolumeName: createHub.Name,
