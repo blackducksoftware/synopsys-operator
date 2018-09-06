@@ -26,24 +26,27 @@ import (
 	"fmt"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
-
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/client-go/util/workqueue"
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	kapi "github.com/blackducksoftware/horizon/pkg/api"
+
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hub"
+
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/client/informers/externalversions/hub/v1"
+
 	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/webservice"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // RunHubController will initialize the input config file, create the hub informers, initiantiate all rest api
@@ -174,7 +177,7 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	}
 
 	// Hub CRD
-	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(kapi.CRDConfig{
+	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
 		Name:       "hubs.synopsys.com",
 		Namespace:  config.Namespace,
@@ -183,11 +186,11 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 		Kind:       "Hub",
 		Plural:     "hubs",
 		Singular:   "hub",
-		Scope:      kapi.CRDClusterScoped,
+		Scope:      horizonapi.CRDClusterScoped,
 	}))
 
 	// Perceptor configMap
-	hubFederatorConfig := components.NewConfigMap(kapi.ConfigMapConfig{Namespace: config.Namespace, Name: "hubfederator"})
+	hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: config.Namespace, Name: "hubfederator"})
 	hubFederatorConfig.AddData(map[string]string{"config.json": fmt.Sprint(`{"HubConfig": {"User": "`, config.HubFederatorConfig.HubConfig.User,
 		`", "PasswordEnvVar": "`, config.HubFederatorConfig.HubConfig.PasswordEnvVar,
 		`", "ClientTimeoutMilliseconds": `, config.HubFederatorConfig.HubConfig.ClientTimeoutMilliseconds,
@@ -196,30 +199,30 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	deployer.AddConfigMap(hubFederatorConfig)
 
 	// Perceptor service
-	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), kapi.ClusterIPServiceTypeDefault))
-	deployer.AddService(hub.CreateService("hub-federator-np", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), kapi.ClusterIPServiceTypeNodePort))
-	deployer.AddService(hub.CreateService("hub-federator-lb", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), kapi.ClusterIPServiceTypeLoadBalancer))
+	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(hub.CreateService("hub-federator-np", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeNodePort))
+	deployer.AddService(hub.CreateService("hub-federator-lb", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeLoadBalancer))
 
 	// Hub federator deployment
-	hubFederatorContainerConfig := &api.Container{
-		ContainerConfig: &kapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:master",
-			PullPolicy: kapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
-		EnvConfigs:   []*kapi.EnvConfig{{Type: kapi.EnvVal, NameOrPrefix: config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: "blackduck"}},
-		VolumeMounts: []*kapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: kapi.MountPropagationNone}},
-		PortConfig:   &kapi.PortConfig{ContainerPort: fmt.Sprint(config.HubFederatorConfig.Port), Protocol: kapi.ProtocolTCP},
+	hubFederatorContainerConfig := &hub.Container{
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:master",
+			PullPolicy: horizonapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
+		EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: "blackduck"}},
+		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: horizonapi.MountPropagationNone}},
+		PortConfig:   &horizonapi.PortConfig{ContainerPort: fmt.Sprint(config.HubFederatorConfig.Port), Protocol: horizonapi.ProtocolTCP},
 	}
-	hubFederatorVolume := components.NewConfigMapVolume(kapi.ConfigMapOrSecretVolumeConfig{
+	hubFederatorVolume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "hubfederator",
 		MapOrSecretName: "hubfederator",
 		DefaultMode:     hub.IntToInt32(420),
 	})
-	hubFederator := hub.CreateDeploymentFromContainer(&kapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
-		[]*api.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*api.Container{}, []kapi.AffinityConfig{})
+	hubFederator := hub.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
+		[]*hub.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*hub.Container{}, []horizonapi.AffinityConfig{})
 	deployer.AddDeployment(hubFederator)
 
 	certificate, key := hub.CreateSelfSignedCert()
 
-	certificateSecret := components.NewSecret(kapi.SecretConfig{Namespace: config.Namespace, Name: "hub-certificate", Type: kapi.SecretTypeOpaque})
+	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: config.Namespace, Name: "hub-certificate", Type: horizonapi.SecretTypeOpaque})
 	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
 
 	deployer.AddSecret(certificateSecret)
