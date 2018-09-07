@@ -84,6 +84,16 @@ type BootstrapperOptions struct {
 	CfsslImageName    string
 	CfsslImageVersion string
 	AlertNamespace    string
+
+	// Hub Federator
+	HubFederatorEnabled         *bool
+	HubFederatorRegistry        string
+	HubFederatorImagePath       string
+	HubFederatorImageName       string
+	HubFederatorImageVersion    string
+	HubFederatorNamespace       string
+	HubFederatorRegistrationKey string
+	HubFederatorPort            *int
 }
 
 // NewBootstrapperOptions creates a BootstrapperOptions object

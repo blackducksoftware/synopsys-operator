@@ -27,6 +27,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hubfederator"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 )
@@ -44,6 +45,7 @@ func runProtoform(configPath string) {
 	}
 	installer.LoadAppDefault(apps.Perceptor, createPerceptorAppDefaults())
 	installer.LoadAppDefault(apps.Alert, createAlertAppDefaults())
+	installer.LoadAppDefault(apps.HubFederator, createHubFederatorAppDefaults())
 	stopCh := make(chan struct{})
 	err = installer.Run(stopCh)
 	if err != nil {
@@ -85,6 +87,18 @@ func createAlertAppDefaults() *alert.AppConfig {
 	d.CfsslImageVersion = "master"
 	d.CfsslImageName = "hub-cfssl"
 	d.Namespace = "alert"
+
+	return d
+}
+
+func createHubFederatorAppDefaults() *hubfederator.AppConfig {
+	d := hubfederator.NewAppDefaults()
+	d.Registry = "docker.io"
+	d.ImagePath = "gke-verification/blackducksoftware"
+	d.ImageVersion = "master"
+	d.ImageName = "hub-federator"
+	d.Namespace = "hub-federator"
+	d.DryRun = false
 
 	return d
 }

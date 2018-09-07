@@ -31,6 +31,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/cmd/protoform-bootstrapper/app/options"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hubfederator"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -179,6 +180,20 @@ func (b *Bootstrapper) setup() error {
 			AlertImageVersion: b.opts.AlertImageVersion,
 			CfsslImageName:    b.opts.CfsslImageName,
 			CfsslImageVersion: b.opts.CfsslImageVersion,
+		}
+	}
+
+	// Hub Federator Config
+	if b.opts.HubFederatorEnabled != nil && *b.opts.HubFederatorEnabled {
+		config.Apps.HubFederatorConfig = &hubfederator.AppConfig{
+			Registry:        b.opts.HubFederatorRegistry,
+			ImagePath:       b.opts.HubFederatorImagePath,
+			ImageName:       b.opts.HubFederatorImageName,
+			ImageVersion:    b.opts.HubFederatorImageVersion,
+			Namespace:       b.opts.HubFederatorNamespace,
+			RegistrationKey: b.opts.HubFederatorRegistrationKey,
+			Port:            b.opts.HubFederatorPort,
+			LogLevel:        b.opts.LogLevel,
 		}
 	}
 

@@ -33,6 +33,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hubfederator"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -160,6 +161,9 @@ func setViperAppStructs(conf *api.ProtoformConfig) {
 		if viper.Get("Apps.AlertConfig") != nil {
 			conf.Apps.AlertConfig = &alert.AppConfig{}
 		}
+		if viper.Get("Apps.HubFederatorConfig") != nil {
+			conf.Apps.HubFederatorConfig = &hubfederator.AppConfig{}
+		}
 	}
 }
 
@@ -219,6 +223,17 @@ func (i *Installer) createApps() error {
 		err = i.addApp(a, i.config.Apps.AlertConfig)
 		if err != nil {
 			return fmt.Errorf("failed to create alert app: %v", err)
+		}
+	}
+
+	if i.config.Apps.HubFederatorConfig != nil {
+		h, err := hubfederator.NewApp(i.appDefaults[apps.HubFederator])
+		if err != nil {
+			return fmt.Errorf("failed to load hub federator: %v", err)
+		}
+		err = i.addApp(h, i.config.Apps.HubFederatorConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create hub federator app: %v", err)
 		}
 	}
 
