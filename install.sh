@@ -24,13 +24,12 @@ function get_user_input() {
   clear
   read -p "Install Perceptor [y/N] ? " install_perceptor
   read -p "Install Alert [y/N] ? " install_alert
-# TODO
-#  read -p "Install Hub Launcher [y/N] ? " install_hub_launcher
+  read -p "Install Hub Federator [y/N] ? " install_hub_federator
 
   # Convert everything to uppercase
   install_perceptor=$(upper $install_perceptor)
   install_alert=$(upper $install_alert)
-  install_hub_ui=$(upper $install_hub_ui)
+  install_hub_federator=$(upper $install_hub_federator)
 
   # Input needed for all cases
   read -p "Cluster config file: " cluster_config_file
@@ -47,6 +46,11 @@ function get_user_input() {
   if [[ "$install_alert" == "Y" || "$install_alert" == "YES" ]]
   then
     configure_alert
+  fi
+
+  if [[ "$install_hub_federator" == "Y" || "$install_hub_federator" == "YES" ]]
+  then
+    configure_hub_federator
   fi
 }
 
@@ -97,9 +101,16 @@ function configure_alert() {
   echo "AlertEnabled: true" >> $bootstrapper_config
 }
 
-#function configure_hub_launcher() {
-#  # TODO
-#}
+function configure_hub_federator() {
+  printf "\n============================================\n"
+  printf "Hub Federator Configuration Information\n"
+  printf "============================================\n"
+
+  echo "HubFederatorEnabled: true" >> $bootstrapper_config
+
+  read -p "Hub Registration Key: " key
+  echo "HubFederatorRegistrationKey: $key" >> $bootstrapper_config
+}
 
 config_file=$1
 config_created=0

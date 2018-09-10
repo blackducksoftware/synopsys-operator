@@ -23,6 +23,7 @@ package api
 
 import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/hubfederator"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
 )
 
@@ -44,6 +45,7 @@ type ProtoformConfig struct {
 
 // ProtoformApps defines the configuration for supported apps
 type ProtoformApps struct {
-	PerceptorConfig *perceptor.AppConfig `json:"perceptorConfig,omitempty"`
-	AlertConfig     *alert.AppConfig     `json:"alertConfig,omitempty"`
+	PerceptorConfig    *perceptor.AppConfig    `json:"perceptorConfig,omitempty"`
+	AlertConfig        *alert.AppConfig        `json:"alertConfig,omitempty"`
+	HubFederatorConfig *hubfederator.AppConfig `json:"hubFederatorConfig,omitempty"`
 }

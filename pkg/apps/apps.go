@@ -49,6 +49,7 @@ type AppType string
 
 // Types of apps
 const (
-	Perceptor AppType = "perceptor"
-	Alert     AppType = "alert"
+	Perceptor    AppType = "perceptor"
+	Alert        AppType = "alert"
+	HubFederator AppType = "hub-federator"
 )
