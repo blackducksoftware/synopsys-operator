@@ -3,16 +3,15 @@
   "KubeConfigPath": "",
 
   "Hub": {
-    "Host": "",
     "User": "sysadmin",
     "Password": "duck",
     "Port": 443
   },
 
   "Perceptor": {
-    "HubClientTimeoutSeconds": 5,
-    "ConcurrentScanLimit": 2,
-    "TotalScanLimit": 5,
+    "HubClientTimeoutMilliseconds": 120000,
+    "ConcurrentScanLimit": 4,
+    "TotalScanLimit": 15,
     "ServiceName": "perceptor",
     "Port": 3001,
     "UseMockMode": false
@@ -27,7 +26,7 @@
   "PodPerceiver": {
     "Port": 4008,
     "ReplicationCount": 1,
-    "AnnotationIntervalSeconds": 30,
+    "AnnotationIntervalSeconds": 180,
     "DumpIntervalMinutes": 30
   },
 
