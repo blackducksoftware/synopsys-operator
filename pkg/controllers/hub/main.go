@@ -42,7 +42,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Controller defines the specification for the controller
+// ControllerConfig defines the specification for the controller
 type ControllerConfig struct {
 	config *ProtoformControllerConfig
 }

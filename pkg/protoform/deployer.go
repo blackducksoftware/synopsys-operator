@@ -22,10 +22,7 @@ under the License.
 package protoform
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/blackducksoftware/perceptor-protoform/pkg/controller"
+	controller "github.com/blackducksoftware/perceptor-protoform/pkg/controllers"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -42,6 +39,7 @@ type Deployer struct {
 	controllers   []controller.ProtoformControllerInterface
 }
 
+// NewDeployer will create the specification that is used for deploying controllers
 func NewDeployer(config *model.Config, kubeConfig *rest.Config, kubeClientSet *kubernetes.Clientset, namespace string, stopCh <-chan struct{}) *Deployer {
 	deployer := Deployer{
 		Config:        config,
@@ -51,15 +49,17 @@ func NewDeployer(config *model.Config, kubeConfig *rest.Config, kubeClientSet *k
 	return &deployer
 }
 
-// LoadAppDefault will store the defaults for the provided controller
+// LoadController will store the defaults for the provided controller
 func (d *Deployer) LoadController(controller controller.ControllerType, defaults interface{}) {
 	d.controllerMap[controller] = defaults
 }
 
+// AddController will add the controllers to the list
 func (d *Deployer) AddController(controller controller.ProtoformControllerInterface) {
 	d.controllers = append(d.controllers, controller)
 }
 
+// Deploy will deploy the controllers
 func (d *Deployer) Deploy() {
 	for _, controller := range d.controllers {
 		controller.CreateClientSet()
@@ -73,9 +73,4 @@ func (d *Deployer) Deploy() {
 		controller.Run()
 		controller.PostRun()
 	}
-}
-
-func (i *Deployer) prettyPrint(v interface{}) {
-	b, _ := json.MarshalIndent(v, "", "  ")
-	fmt.Println(string(b))
 }

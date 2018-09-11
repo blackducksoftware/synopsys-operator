@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/controller/alert"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/controller/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/controller/opssight"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/alert"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/hub"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 )
 

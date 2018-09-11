@@ -19,7 +19,28 @@ specific language governing permissions and limitations
 under the License.
 */
 
-// +k8s:deepcopy-gen=package
-// +groupName=synopsys
+package controllers
 
-package v1
+// ProtoformControllerInterface defines the interface for crds
+type ProtoformControllerInterface interface {
+	CreateClientSet()
+	Deploy() error
+	PostDeploy()
+	CreateInformer()
+	CreateQueue()
+	AddInformerEventHandler()
+	CreateHandler()
+	CreateController()
+	Run()
+	PostRun()
+}
+
+// ControllerType defines the type of controller
+type ControllerType string
+
+// Types of apps
+const (
+	OpsSight ControllerType = "opssight"
+	Alert    ControllerType = "alert"
+	Hub      ControllerType = "hub"
+)

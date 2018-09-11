@@ -19,28 +19,14 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package controller
+package util
 
-// ProtoformControllerInterface defines the interface for crds
-type ProtoformControllerInterface interface {
-	CreateClientSet()
-	Deploy() error
-	PostDeploy()
-	CreateInformer()
-	CreateQueue()
-	AddInformerEventHandler()
-	CreateHandler()
-	CreateController()
-	Run()
-	PostRun()
-}
-
-// ControllerType defines the type of controller
-type ControllerType string
-
-// Types of apps
-const (
-	OpsSight ControllerType = "opssight"
-	Alert    ControllerType = "alert"
-	Hub      ControllerType = "hub"
+import (
+	"encoding/json"
+	"fmt"
 )
+
+func PrettyPrint(v interface{}) {
+	b, _ := json.MarshalIndent(v, "", "  ")
+	fmt.Println(string(b))
+}
