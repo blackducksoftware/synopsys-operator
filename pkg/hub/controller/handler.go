@@ -48,12 +48,12 @@ type Handler interface {
 
 // HubHandler will store the configuration that is required to initiantiate the informers callback
 type HubHandler struct {
-	config           *rest.Config
-	clientset        *kubernetes.Clientset
-	hubClientset     *hubclientset.Clientset
-	namespace        string
-	federatorBaseURL string
-	cmMutex          chan bool
+	Config           *rest.Config
+	Clientset        *kubernetes.Clientset
+	HubClientset     *hubclientset.Clientset
+	Namespace        string
+	FederatorBaseURL string
+	CmMutex          chan bool
 }
 
 // APISetHubsRequest to set the Hub urls for Perceptor
@@ -74,7 +74,7 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 			log.Errorf("Couldn't update Hub object: %s", err.Error())
 		}
 
-		hubCreator, err := hub.NewCreater(h.config, h.clientset, h.hubClientset)
+		hubCreator := hub.NewCreater(h.Config, h.Clientset, h.HubClientset)
 		if err != nil {
 			log.Errorf("unable to create the new hub creater for %s due to %+v", hubv1.Name, err)
 		}
@@ -102,10 +102,7 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 func (h *HubHandler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
-	hubCreator, err := hub.NewCreater(h.config, h.clientset, h.hubClientset)
-	if err != nil {
-		log.Errorf("unable to create the new hub creater for %s due to %+v", name, err)
-	}
+	hubCreator := hub.NewCreater(h.Config, h.Clientset, h.HubClientset)
 	hubCreator.DeleteHub(name)
 	h.callHubFederator()
 
@@ -129,14 +126,14 @@ func (h *HubHandler) ObjectUpdated(objOld, objNew interface{}) {
 }
 
 func (h *HubHandler) updateHubObject(obj *hub_v1.Hub) (*hub_v1.Hub, error) {
-	return h.hubClientset.SynopsysV1().Hubs(h.namespace).Update(obj)
+	return h.HubClientset.SynopsysV1().Hubs(h.Namespace).Update(obj)
 }
 
 func (h *HubHandler) callHubFederator() {
 	// IMPORTANT ! This will block.
-	h.cmMutex <- true
+	h.CmMutex <- true
 	defer func() {
-		<-h.cmMutex
+		<-h.CmMutex
 	}()
 	hubUrls, err := h.getHubUrls()
 	log.Debugf("hubUrls: %+v", hubUrls)
@@ -144,7 +141,7 @@ func (h *HubHandler) callHubFederator() {
 		log.Errorf("unable to get the hub urls due to %+v", err)
 		return
 	}
-	err = h.addHubFederatorEvents(fmt.Sprintf("%s/sethubs", h.federatorBaseURL), hubUrls)
+	err = h.addHubFederatorEvents(fmt.Sprintf("%s/sethubs", h.FederatorBaseURL), hubUrls)
 	if err != nil {
 		log.Errorf("unable to update the hub urls in perceptor due to %+v", err)
 		return
@@ -154,7 +151,7 @@ func (h *HubHandler) callHubFederator() {
 // HubNamespaces will list the hub namespaces
 func (h *HubHandler) getHubUrls() (*APISetHubsRequest, error) {
 	// 1. get Hub CDR list from default ns
-	hubList, err := hub.ListHubs(h.hubClientset, h.namespace)
+	hubList, err := hub.ListHubs(h.HubClientset, h.Namespace)
 	if err != nil {
 		return &APISetHubsRequest{}, err
 	}

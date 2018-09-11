@@ -10,3 +10,4 @@ _output/protoform-installer
 cmd/protoform-installer/protoform-installer
 cmd/hub-installer/opssight-deployer
 cmd/hub-protoform/hub-protoform
+cmd/hub-federator/hub-federator

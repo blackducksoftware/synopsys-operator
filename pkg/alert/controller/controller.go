@@ -28,18 +28,24 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
 	log "github.com/sirupsen/logrus"
+
+	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 )
 
 // Controller will store the controller configuration
 type Controller struct {
-	Logger   *log.Entry
-	Queue    workqueue.RateLimitingInterface
-	Informer cache.SharedIndexInformer
-	Handler  Handler
+	Logger         *log.Entry
+	Clientset      kubernetes.Interface
+	Queue          workqueue.RateLimitingInterface
+	Informer       cache.SharedIndexInformer
+	Handler        Handler
+	AlertClientset *alertclientset.Clientset
+	Namespace      string
 }
 
 // NewController will contain the controller specification

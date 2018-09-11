@@ -27,7 +27,6 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
-	model "github.com/blackducksoftware/perceptor-protoform/pkg/hub/model"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -37,7 +36,7 @@ import (
 )
 
 // SetupHTTPServer will used to create all the http api
-func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
+func SetupHTTPServer(hc *hub.Creater, namespace string) {
 	go func() {
 		// data, err := ioutil.ReadFile("/public/index.html")
 		// Set the router as the default one shipped with Gin
@@ -50,7 +49,7 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 
 		router.GET("/sql-instances", func(c *gin.Context) {
 			// keys := []string{"pvc-000", "pvc-001", "pvc-002"}
-			keys, _ := hub.ListHubPV(hc.HubClient, config.Namespace)
+			keys, _ := hub.ListHubPV(hc.HubClient, namespace)
 			c.JSON(200, keys)
 		})
 
@@ -71,7 +70,7 @@ func SetupHTTPServer(hc *hub.Creater, config *model.Config) {
 
 		router.GET("/hub", func(c *gin.Context) {
 			log.Debug("get hub request")
-			hubs, err := hc.HubClient.SynopsysV1().Hubs(config.Namespace).List(metav1.ListOptions{})
+			hubs, err := hc.HubClient.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
 			if err != nil {
 				log.Errorf("unable to get the hub list due to %+v", err)
 				c.JSON(404, "\"message\": \"Failed to List the hub\"")

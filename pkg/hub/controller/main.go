@@ -92,8 +92,8 @@ func RunHubController(configPath string) {
 
 	deploy(kubeConfig, config)
 
-	hc, err := hub.NewCreater(kubeConfig, clientset, hubResourceClient)
-	webservice.SetupHTTPServer(hc, config)
+	hc := hub.NewCreater(kubeConfig, clientset, hubResourceClient)
+	webservice.SetupHTTPServer(hc, config.Namespace)
 
 	informer := hubinformerv1.NewHubInformer(
 		hubResourceClient,
@@ -141,20 +141,17 @@ func RunHubController(configPath string) {
 	})
 
 	controller := Controller{
-		logger:    log.NewEntry(log.New()),
-		clientset: clientset,
-		queue:     queue,
-		informer:  informer,
-		handler: &HubHandler{
-			config:           kubeConfig,
-			clientset:        clientset,
-			hubClientset:     hubResourceClient,
-			namespace:        config.Namespace,
-			federatorBaseURL: fmt.Sprintf("http://hub-federator:%d", config.HubFederatorConfig.Port),
-			cmMutex:          make(chan bool, 1),
+		Logger:   log.NewEntry(log.New()),
+		Queue:    queue,
+		Informer: informer,
+		Handler: &HubHandler{
+			Config:           kubeConfig,
+			Clientset:        clientset,
+			HubClientset:     hubResourceClient,
+			Namespace:        config.Namespace,
+			FederatorBaseURL: fmt.Sprintf("http://hub-federator:%d", config.HubFederatorConfig.Port),
+			CmMutex:          make(chan bool, 1),
 		},
-		hubclientset: hubResourceClient,
-		namespace:    config.Namespace,
 	}
 
 	stopCh := make(chan struct{})

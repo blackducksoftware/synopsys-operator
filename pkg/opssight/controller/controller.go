@@ -25,9 +25,12 @@ import (
 	"fmt"
 	"time"
 
+	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -36,10 +39,13 @@ import (
 
 // Controller will store the controller configuration
 type Controller struct {
-	Logger   *log.Entry
-	Queue    workqueue.RateLimitingInterface
-	Informer cache.SharedIndexInformer
-	Handler  Handler
+	Logger            *log.Entry
+	Clientset         kubernetes.Interface
+	Queue             workqueue.RateLimitingInterface
+	Informer          cache.SharedIndexInformer
+	Handler           Handler
+	OpsSightClientset *opssightclientset.Clientset
+	Namespace         string
 }
 
 // NewController will contain the controller specification

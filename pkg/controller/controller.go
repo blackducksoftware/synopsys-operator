@@ -19,14 +19,28 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package main
+package controller
 
-import (
-	"os"
-	"testing"
-)
-
-func TestGenerateStringFromStringArr(t *testing.T) {
-	os.Setenv("PCP_HUBUSERPASSWORD", "example")
-	runProtoform("perceptor.json")
+// ProtoformControllerInterface defines the interface for crds
+type ProtoformControllerInterface interface {
+	CreateClientSet()
+	Deploy() error
+	PostDeploy()
+	CreateInformer()
+	CreateQueue()
+	AddInformerEventHandler()
+	CreateHandler()
+	CreateController()
+	Run()
+	PostRun()
 }
+
+// ControllerType defines the type of controller
+type ControllerType string
+
+// Types of apps
+const (
+	OpsSight ControllerType = "opssight"
+	Alert    ControllerType = "alert"
+	Hub      ControllerType = "hub"
+)

@@ -47,8 +47,8 @@ type Creater struct {
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset) (*Creater, error) {
-	return &Creater{Config: config, KubeClient: kubeClient, HubClient: hubClient}, nil
+func NewCreater(config *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset) *Creater {
+	return &Creater{Config: config, KubeClient: kubeClient, HubClient: hubClient}
 }
 
 // DeleteHub will delete the Black Duck Hub
