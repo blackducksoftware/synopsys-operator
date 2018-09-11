@@ -26,6 +26,7 @@ import (
 	"fmt"
 )
 
+// PrettyPrint will print the interface in string format
 func PrettyPrint(v interface{}) {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(b))
