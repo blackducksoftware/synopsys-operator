@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -94,9 +95,10 @@ func (ac *Creater) DeleteAlert(namespace string) {
 // CreateAlert will create the Black Duck Alert
 func (ac *Creater) CreateAlert(createAlert *v1.Alert) error {
 	log.Debugf("Create Alert details for %s: %+v", createAlert.Spec.Namespace, createAlert)
+	newSpec := createAlert.Spec
 	alertSpec := NewAppDefaults()
-	util.MergeConfig(createAlert.Spec, alertSpec)
-	alert := NewAlert(alertSpec)
+	mergo.Merge(&newSpec, alertSpec)
+	alert := NewAlert(&newSpec)
 	components, err := alert.GetComponents()
 	if err != nil {
 		log.Errorf(err.Error())

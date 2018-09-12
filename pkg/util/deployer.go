@@ -117,9 +117,13 @@ func (i *Deployer) addSecrets(list []*components.Secret) {
 	}
 }
 
-// addDefaultController adds a default 'pod list' controller, just as an example.
 func (i *Deployer) addDefaultController(namespace string) {
 	i.Deployer.AddController("Pod List Controller", NewPodListController(namespace))
+}
+
+// AddController will add the controller to the deployer
+func (i *Deployer) AddController(name string, c horizonapi.DeployerControllerInterface) {
+	i.Deployer.AddController(name, c)
 }
 
 // PreDeploy will provide the deploy objects
@@ -139,7 +143,7 @@ func (i *Deployer) PreDeploy(components *api.ComponentList, namespace string) {
 
 // Run will run the deployer
 func (i *Deployer) Run() error {
-	return i.Run()
+	return i.Deployer.Run()
 }
 
 // StartControllers will start the controllers

@@ -28,6 +28,7 @@ import (
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	plugins "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/imdario/mergo"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -88,7 +89,7 @@ func NewAppDefaults() *v1.OpsSightSpec {
 
 // DeleteOpsSight will delete the Black Duck OpsSight
 func (ac *Creater) DeleteOpsSight(namespace string) {
-	log.Debugf("Delete Alert details for %s", namespace)
+	log.Debugf("Delete OpsSight details for %s", namespace)
 	var err error
 	// Verify whether the namespace exist
 	_, err = util.GetNamespace(ac.kubeClient, namespace)
@@ -116,10 +117,12 @@ func (ac *Creater) DeleteOpsSight(namespace string) {
 
 // CreateOpsSight will create the Black Duck OpsSight
 func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
-	log.Debugf("Create Alert details for %s: %+v", createOpsSight.Spec.Namespace, createOpsSight)
+	log.Debugf("Create OpsSight details for %s: %+v", createOpsSight.Spec.Namespace, createOpsSight)
+	newSpec := createOpsSight.Spec
 	opssightSpec := NewAppDefaults()
-	util.MergeConfig(createOpsSight.Spec, opssightSpec)
-	opssight := NewOpsSight(opssightSpec)
+	mergo.Merge(&newSpec, opssightSpec)
+	opssight := NewOpsSight(&newSpec)
+
 	components, err := opssight.GetComponents()
 	if err != nil {
 		log.Errorf(err.Error())
@@ -135,7 +138,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	deployer.PreDeploy(components, createOpsSight.Name)
 
 	// Any new, pluggable maintainance stuff should go in here...
-	deployer.Deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{})
+	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{})
 
 	err = deployer.Run()
 
