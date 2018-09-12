@@ -26,6 +26,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	plugins "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
 
@@ -35,7 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Creater will store the configuration to create the Hub
+// Creater will store the configuration to create OpsSight
 type Creater struct {
 	kubeConfig     *rest.Config
 	kubeClient     *kubernetes.Clientset
@@ -132,8 +133,15 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 		log.Errorf(err.Error())
 		return err
 	}
+	// Note: controllers that need to continually run to update your app
+	// should be added in PreDeploy().
 	deployer.PreDeploy(components, createOpsSight.Name)
+
+	// Any new, pluggable maintainance stuff should go in here...
+	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{})
+
 	err = deployer.Run()
+
 	if err != nil {
 		log.Errorf("unable to deploy opssight app due to %+v", err)
 	}
