@@ -452,6 +452,11 @@ func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v1.H
 	return hubClientset.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
 }
 
+// GetHub will list all hubs in the cluster
+func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*hub_v1.Hub, error) {
+	return hubClientset.SynopsysV1().Hubs(namespace).Get(name, metav1.GetOptions{})
+}
+
 // ListHubPV will list all the persistent volumes attached to each hub in the cluster
 func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[string]string, error) {
 	var pvList map[string]string
