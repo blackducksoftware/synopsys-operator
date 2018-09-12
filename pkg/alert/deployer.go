@@ -49,6 +49,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.Deployments = append(components.Deployments, dep)
 	components.Services = append(components.Services, a.alertService())
+	components.Services = append(components.Services, a.alertExposedService())
 	components.ConfigMaps = append(components.ConfigMaps, a.alertConfigMap())
 
 	// Add cfssl if running in stand alone mode

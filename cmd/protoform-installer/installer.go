@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/alert"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/opssight"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/alert"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/hub"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 )
 
@@ -51,6 +51,7 @@ func runProtoform(configPath string) {
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
 		Threadiness:   installer.Config.Threadiness,
+		StopCh:        stopCh,
 	})
 	installer.AddController(alertConfig)
 
@@ -59,6 +60,7 @@ func runProtoform(configPath string) {
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
 		Threadiness:   installer.Config.Threadiness,
+		StopCh:        stopCh,
 	})
 	installer.AddController(hubConfig)
 
@@ -67,6 +69,7 @@ func runProtoform(configPath string) {
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
 		Threadiness:   installer.Config.Threadiness,
+		StopCh:        stopCh,
 	})
 	installer.AddController(opssSightConfig)
 

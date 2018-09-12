@@ -80,7 +80,9 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 			log.Errorf("unable to create the new hub creater for %s due to %+v", hubv1.Name, err)
 		}
 		ip, pvc, updateError, err := hubCreator.CreateHub(hubv1)
-
+		if err != nil {
+			log.Errorf("unable to create hub for %s due to %+v", hubv1.Name, err)
+		}
 		if updateError {
 			//Set spec/state  and status/state to started
 			hubv1.Spec.State = "error"

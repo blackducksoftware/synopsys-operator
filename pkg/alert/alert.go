@@ -135,6 +135,26 @@ func (a *SpecConfig) alertService() *components.Service {
 	return service
 }
 
+// alertExposedService creates a loadBalancer service for alert
+func (a *SpecConfig) alertExposedService() *components.Service {
+	service := components.NewService(horizonapi.ServiceConfig{
+		Name:          "alert-lb",
+		Namespace:     a.config.Namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeLoadBalancer,
+	})
+
+	service.AddPort(horizonapi.ServicePortConfig{
+		Port:       8443,
+		TargetPort: "8443",
+		Protocol:   horizonapi.ProtocolTCP,
+		Name:       "8443-tcp",
+	})
+
+	service.AddSelectors(map[string]string{"app": "alert"})
+
+	return service
+}
+
 // alertConfigMap creates a config map for alert
 func (a *SpecConfig) alertConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{

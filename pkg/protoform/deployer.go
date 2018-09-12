@@ -22,7 +22,7 @@ under the License.
 package protoform
 
 import (
-	controller "github.com/blackducksoftware/perceptor-protoform/pkg/controllers"
+	crd "github.com/blackducksoftware/perceptor-protoform/pkg/crds"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -33,8 +33,8 @@ type Deployer struct {
 	Config        *model.Config
 	KubeConfig    *rest.Config
 	KubeClientSet *kubernetes.Clientset
-	controllerMap map[controller.ControllerType]interface{}
-	controllers   []controller.ProtoformControllerInterface
+	controllerMap map[crd.ControllerType]interface{}
+	controllers   []crd.ProtoformControllerInterface
 }
 
 // NewDeployer will create the specification that is used for deploying controllers
@@ -43,19 +43,19 @@ func NewDeployer(config *model.Config, kubeConfig *rest.Config, kubeClientSet *k
 		Config:        config,
 		KubeConfig:    kubeConfig,
 		KubeClientSet: kubeClientSet,
-		controllerMap: make(map[controller.ControllerType]interface{}),
-		controllers:   make([]controller.ProtoformControllerInterface, 0),
+		controllerMap: make(map[crd.ControllerType]interface{}),
+		controllers:   make([]crd.ProtoformControllerInterface, 0),
 	}
 	return &deployer
 }
 
 // LoadController will store the defaults for the provided controller
-func (d *Deployer) LoadController(controller controller.ControllerType, defaults interface{}) {
+func (d *Deployer) LoadController(controller crd.ControllerType, defaults interface{}) {
 	d.controllerMap[controller] = defaults
 }
 
 // AddController will add the controllers to the list
-func (d *Deployer) AddController(controller controller.ProtoformControllerInterface) {
+func (d *Deployer) AddController(controller crd.ProtoformControllerInterface) {
 	d.controllers = append(d.controllers, controller)
 }
 
