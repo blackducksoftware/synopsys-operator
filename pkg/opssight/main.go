@@ -26,7 +26,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-	plugins "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/controller_plugins"
+	plugins "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 
 	"k8s.io/client-go/kubernetes"

@@ -1,4 +1,4 @@
-package controller_plugins
+package plugins
 
 // This is a controller that updates the configmap
 // in perceptor periodically.
