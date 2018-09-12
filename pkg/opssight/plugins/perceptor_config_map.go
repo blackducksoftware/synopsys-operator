@@ -45,6 +45,7 @@ type perceptorConfig struct {
 	LogLevel    string
 }
 
+// PerceptorConfigMap ...
 type PerceptorConfigMap struct{}
 
 // sendHubs is one possible way to configure the perceptor hub family.
@@ -86,6 +87,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string)
 	return nil
 }
 
+// Run ...
 func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) error {
 
 	allHubNamespaces := func() []string {
