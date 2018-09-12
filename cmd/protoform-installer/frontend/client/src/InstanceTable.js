@@ -49,7 +49,7 @@ const InstanceTable = ({ instances, classes, handleDelete }) => {
                         <TableCell>Namespace</TableCell>
                         <TableCell>Size</TableCell>
                         <TableCell>Backup Interval</TableCell>
-                        <TableCell>Hub Version</TableCell>
+                        <TableCell>Black Duck Version</TableCell>
                         <TableCell>Database</TableCell>
                         <TableCell>PVC Claim</TableCell>
                         <TableCell>IP Address</TableCell>
