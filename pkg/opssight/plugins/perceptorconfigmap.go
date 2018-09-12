@@ -7,18 +7,20 @@ package plugins
 // there is a problem in the orchestration environment.
 
 import (
-	"k8s.io/apimachinery/pkg/util/wait"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	opssiteclient "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
- 	"github.com/kubernetes/kubernetes/pkg/kubelet/kubeletconfig/util/log"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/kubernetes/pkg/apis/extensions"
+
+	//extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
 
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -56,7 +58,7 @@ type PerceptorConfigMap struct{}
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
 func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string) error {
-	configmapList, err := kubeClient.Core().ConfigMaps(namespace).List(meta_v1.ListOptions{})
+	configmapList, err := kubeClient.Core().ConfigMaps(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -99,32 +101,33 @@ func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) {
 	}
 	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List()
+			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).Watch()
+			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).Watch(metav1.ListOptions{})
 		},
 	}
-	st, ctrl := cache.NewInformer(lw,
+	_, ctrl := cache.NewInformer(lw,
 		&extensions.Deployment{},
-		c.SyncPeriod,
+		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
-			// TODO kinda dumb, we just do a complete re-list of all hubs, 
+			// TODO kinda dumb, we just do a complete re-list of all hubs,
 			// every time an event happens... But thats all we need to do, so its good enough.
 			DeleteFunc: func(obj interface{}) {
-				logrus.Infof("Hub deleted ! %v ",obj)
+				logrus.Infof("Hub deleted ! %v ", obj)
 				syncFunc()
 			},
-			OnAdd: func(obj interface{}){
-				logrus.Infof("Hub added ! %v ",obj)
+
+			AddFunc: func(obj interface{}) {
+				logrus.Infof("Hub added ! %v ", obj)
 				syncFunc()
-			}
+			},
 		},
 	)
 	logrus.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
-	
+
 	// make sure this is called from a go func.
-	// This blocks!  
+	// This blocks!
 	ctrl.Run(ch)
 }
 
@@ -132,7 +135,7 @@ func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) {
 func (p *PerceptorConfigMap) updateAllHubs(c api.ControllerResources, ch chan struct{}) error {
 	allHubNamespaces := func() []string {
 		allHubNamespaces := []string{}
-		hubsList, _ := hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(meta_v1.ListOptions{})
+		hubsList, _ := hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
 		hubs := hubsList.Items
 		for _, hub := range hubs {
 			ns := hub.Namespace
@@ -143,7 +146,7 @@ func (p *PerceptorConfigMap) updateAllHubs(c api.ControllerResources, ch chan st
 	}()
 
 	// for opssight 3.0, only support one opssight
-	opssiteList, err := opssiteclient.New(c.KubeClient.RESTClient()).SynopsysV1().OpsSights(v1.NamespaceAll).List(meta_v1.ListOptions{})
+	opssiteList, err := opssiteclient.New(c.KubeClient.RESTClient()).SynopsysV1().OpsSights(v1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}

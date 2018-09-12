@@ -175,7 +175,12 @@ func applyTemplateLabelsOverride(labelsOverride map[string]string, kokiMeta *typ
 
 func revertRSSelector(name string, selector *types.RSSelector, templateLabels map[string]string) (*metav1.LabelSelector, map[string]string, error) {
 	if selector == nil {
-		return nil, nil, nil
+		defaultSelector := map[string]string{
+			"koki.io/selector.name": name,
+		}
+		return &metav1.LabelSelector{
+			MatchLabels: defaultSelector,
+		}, defaultSelector, nil
 	}
 
 	if len(selector.Shorthand) > 0 {
