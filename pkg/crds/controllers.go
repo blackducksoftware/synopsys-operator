@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package controllers
+package crds
 
 // ProtoformControllerInterface defines the interface for crds
 type ProtoformControllerInterface interface {

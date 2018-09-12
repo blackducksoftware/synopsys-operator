@@ -129,6 +129,7 @@ func (i *Deployer) AddController(name string, c horizonapi.DeployerControllerInt
 // PreDeploy will provide the deploy objects
 func (i *Deployer) PreDeploy(components *api.ComponentList, namespace string) {
 	if components != nil {
+		i.addNS(namespace)
 		i.addRCs(components.ReplicationControllers)
 		i.addSvcs(components.Services)
 		i.addCMs(components.ConfigMaps)

@@ -23,6 +23,7 @@ package hub
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
@@ -132,10 +133,12 @@ func (c *ControllerConfig) Deploy() error {
 	deployer.AddSecret(certificateSecret)
 
 	err = deployer.Run()
-
 	if err != nil {
 		log.Errorf("unable to create the hub federator resources due to %+v", err)
 	}
+
+	time.Sleep(10 * time.Second)
+
 	return err
 }
 

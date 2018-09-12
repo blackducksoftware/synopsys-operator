@@ -19,15 +19,16 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package alert
+package opssight
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
-	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
-	alertinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/informers/externalversions/alert/v1"
-	alertcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/alert/controller"
+	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	opssightinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/informers/externalversions/opssight/v1"
+	opssightcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/controller"
 
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -48,7 +49,7 @@ type ControllerConfig struct {
 func NewController(config interface{}) (*ControllerConfig, error) {
 	dependentConfig, ok := config.(*ProtoformControllerConfig)
 	if !ok {
-		return nil, fmt.Errorf("failed to convert alert defaults: %v", config)
+		return nil, fmt.Errorf("failed to convert opssight defaults: %v", config)
 	}
 	d := &ControllerConfig{protoformConfig: dependentConfig}
 
@@ -60,11 +61,11 @@ func NewController(config interface{}) (*ControllerConfig, error) {
 
 // CreateClientSet will create the CRD client
 func (c *ControllerConfig) CreateClientSet() {
-	alertClient, err := alertclientset.NewForConfig(c.protoformConfig.KubeConfig)
+	opssightClient, err := opssightclientset.NewForConfig(c.protoformConfig.KubeConfig)
 	if err != nil {
-		log.Panicf("Unable to create Alert informer client: %s", err.Error())
+		log.Panicf("Unable to create OpsSight informer client: %s", err.Error())
 	}
-	c.protoformConfig.customClientSet = alertClient
+	c.protoformConfig.customClientSet = opssightClient
 }
 
 // Deploy will deploy the CRD
@@ -77,17 +78,22 @@ func (c *ControllerConfig) Deploy() error {
 	// Hub CRD
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
-		Name:       "alerts.synopsys.com",
+		Name:       "opssights.synopsys.com",
 		Namespace:  c.protoformConfig.Config.Namespace,
 		Group:      "synopsys.com",
 		CRDVersion: "v1",
-		Kind:       "Alert",
-		Plural:     "alerts",
-		Singular:   "alert",
+		Kind:       "OpsSight",
+		Plural:     "opssights",
+		Singular:   "opssight",
 		Scope:      horizonapi.CRDClusterScoped,
 	}))
 
 	err = deployer.Run()
+	if err != nil {
+		log.Errorf("unable to create the opssight CRD due to %+v", err)
+	}
+
+	time.Sleep(10 * time.Second)
 	return err
 }
 
@@ -97,7 +103,7 @@ func (c *ControllerConfig) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *ControllerConfig) CreateInformer() {
-	c.protoformConfig.infomer = alertinformerv1.NewAlertInformer(
+	c.protoformConfig.infomer = opssightinformerv1.NewOpsSightInformer(
 		c.protoformConfig.customClientSet,
 		c.protoformConfig.Config.Namespace,
 		c.protoformConfig.resyncPeriod,
@@ -120,7 +126,7 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 			// convert the resource object into a key (in this case
 			// we are just doing it in the format of 'namespace/name')
 			key, err := cache.MetaNamespaceKeyFunc(obj)
-			log.Infof("add alert: %s", key)
+			log.Infof("add opssight: %s", key)
 			if err == nil {
 				// add the key to the queue for the handler to get
 				c.protoformConfig.queue.Add(key)
@@ -128,7 +134,7 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
-			log.Infof("update alert: %s", key)
+			log.Infof("update opssight: %s", key)
 			if err == nil {
 				c.protoformConfig.queue.Add(key)
 			}
@@ -140,7 +146,7 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 			//
 			// this then in turn calls MetaNamespaceKeyFunc
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			log.Infof("delete alert: %s: %+v", key, obj)
+			log.Infof("delete opssight: %s: %+v", key, obj)
 
 			if err == nil {
 				c.protoformConfig.queue.Add(key)
@@ -151,26 +157,26 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *ControllerConfig) CreateHandler() {
-	c.protoformConfig.handler = &alertcontroller.AlertHandler{
-		Config:         c.protoformConfig.KubeConfig,
-		Clientset:      c.protoformConfig.KubeClientSet,
-		AlertClientset: c.protoformConfig.customClientSet,
-		Namespace:      c.protoformConfig.Config.Namespace,
-		CmMutex:        make(chan bool, 1),
+	c.protoformConfig.handler = &opssightcontroller.OpsSightHandler{
+		Config:            c.protoformConfig.KubeConfig,
+		Clientset:         c.protoformConfig.KubeClientSet,
+		OpsSightClientset: c.protoformConfig.customClientSet,
+		Namespace:         c.protoformConfig.Config.Namespace,
+		CmMutex:           make(chan bool, 1),
 	}
 }
 
 // CreateController will create a CRD controller
 func (c *ControllerConfig) CreateController() {
-	c.protoformConfig.controller = alertcontroller.NewController(
-		&alertcontroller.Controller{
-			Logger:         log.NewEntry(log.New()),
-			Clientset:      c.protoformConfig.KubeClientSet,
-			Queue:          c.protoformConfig.queue,
-			Informer:       c.protoformConfig.infomer,
-			Handler:        c.protoformConfig.handler,
-			AlertClientset: c.protoformConfig.customClientSet,
-			Namespace:      c.protoformConfig.Config.Namespace,
+	c.protoformConfig.controller = opssightcontroller.NewController(
+		&opssightcontroller.Controller{
+			Logger:            log.NewEntry(log.New()),
+			Clientset:         c.protoformConfig.KubeClientSet,
+			Queue:             c.protoformConfig.queue,
+			Informer:          c.protoformConfig.infomer,
+			Handler:           c.protoformConfig.handler,
+			OpsSightClientset: c.protoformConfig.customClientSet,
+			Namespace:         c.protoformConfig.Config.Namespace,
 		})
 }
 
