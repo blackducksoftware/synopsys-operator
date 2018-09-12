@@ -233,7 +233,7 @@ class StagingForm extends Component {
       this.props.setToastStatus({
         toastMsgOpen: true,
         toastMsgVariant: "success",
-        toastMsgText: "Black Duck Server instance submitted! IP address will appear shortly"
+        toastMsgText: "Black Duck instance submitted! IP address will appear shortly"
       });
       this.props.addInstance(formData);
       this.resetForm();
@@ -355,9 +355,9 @@ class StagingForm extends Component {
           />
           <div className={classes.root}>
             <FormControl component="fieldset" className={classes.formControl}>
-              <FormLabel component="legend">Black Duck Server Size</FormLabel>
+              <FormLabel component="legend">Black Duck Size</FormLabel>
               <RadioGroup
-                aria-label="Black Duck Server Size"
+                aria-label="Black Duck Size"
                 name="flavor"
                 className={classes.group}
                 value={this.state.flavor}
@@ -397,7 +397,7 @@ class StagingForm extends Component {
           <TextField
             id="hubVersion"
             name="hubVersion"
-            label="Black Duck Server Version"
+            label="Black Duck Version"
             className={classes.textField}
             value={this.state.hubVersion}
             onChange={this.handleChange}
