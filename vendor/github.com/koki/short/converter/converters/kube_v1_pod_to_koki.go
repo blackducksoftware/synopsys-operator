@@ -154,6 +154,9 @@ func convertPodSpec(kubeSpec v1.PodSpec) (*types.PodTemplate, error) {
 			if container.UID == nil {
 				container.UID = securityContext.RunAsUser
 			}
+			if container.GID == nil {
+				container.GID = securityContext.RunAsGroup
+			}
 			if container.ForceNonRoot == nil {
 				container.ForceNonRoot = securityContext.RunAsNonRoot
 			}
@@ -847,6 +850,7 @@ func convertContainer(container *v1.Container) (*types.Container, error) {
 		}
 		kokiContainer.ForceNonRoot = container.SecurityContext.RunAsNonRoot
 		kokiContainer.UID = container.SecurityContext.RunAsUser
+		kokiContainer.GID = container.SecurityContext.RunAsGroup
 		kokiContainer.SELinux = convertSELinux(container.SecurityContext.SELinuxOptions)
 		kokiContainer.AddCapabilities = convertCapabilitiesAdds(container.SecurityContext.Capabilities)
 		kokiContainer.DelCapabilities = convertCapabilitiesDels(container.SecurityContext.Capabilities)
@@ -1268,6 +1272,8 @@ func convertMountPropagation(p v1.MountPropagationMode) (types.MountPropagation,
 		return types.MountPropagationHostToContainer, nil
 	} else if p == v1.MountPropagationBidirectional {
 		return types.MountPropagationBidirectional, nil
+	} else if p == v1.MountPropagationNone {
+		return types.MountPropagationNone, nil
 	}
 	return "", serrors.InvalidInstanceError(p)
 }

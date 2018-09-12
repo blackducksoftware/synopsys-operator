@@ -1,9 +1,9 @@
-# Perceptor-protoform: a cloud native administration utility for the perceptor ecosystem components:
+# Perceptor-protoform: a cloud native administration utility for blackduck ecosystem components:
 
 - perceptor
 - perceivers (openshift, kube, ...)
 - perceptor-image-facade
-- perceptor-scan
+- perceptor-scanner
 
 # Quick start
 

@@ -1,8 +1,0 @@
-{
-  "DryRun":"true",
-  "Openshift": "true",
-  "DefaultCPU": "300m",
-  "DefaultMem": "1300Mi",
-  "InternalDockerRegistries": ["docker-registry.default.svc:5000", "172.1.1.0:5000"],
-  "PerceptorSkyfire": "true"
-}
