@@ -14,8 +14,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/api"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	opssiteclient "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-	"github.com/kubernetes/kubernetes/pkg/apis/extensions"
-	"github.com/kubernetes/kubernetes/pkg/kubelet/kubeletconfig/util/log"
+ 	"github.com/kubernetes/kubernetes/pkg/kubelet/kubeletconfig/util/log"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
