@@ -31,7 +31,7 @@ import (
 )
 
 // ScannerReplicationController creates a replication controller for the perceptor scanner
-func (p *OpsSightConfig) ScannerReplicationController() (*components.ReplicationController, error) {
+func (p *SpecConfig) ScannerReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(math.Ceil(float64(*p.config.ConcurrentScanLimit) / 2.0))
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
@@ -50,7 +50,7 @@ func (p *OpsSightConfig) ScannerReplicationController() (*components.Replication
 	return rc, nil
 }
 
-func (p *OpsSightConfig) scannerPod() (*components.Pod, error) {
+func (p *SpecConfig) scannerPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name:           p.config.ScannerImageName,
 		ServiceAccount: p.config.ServiceAccounts["perceptor-image-facade"],
@@ -76,7 +76,7 @@ func (p *OpsSightConfig) scannerPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *OpsSightConfig) scannerContainer() *components.Container {
+func (p *SpecConfig) scannerContainer() *components.Container {
 	priv := false
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       p.config.ScannerImageName,
@@ -112,7 +112,7 @@ func (p *OpsSightConfig) scannerContainer() *components.Container {
 	return container
 }
 
-func (p *OpsSightConfig) imageFacadeContainer() *components.Container {
+func (p *SpecConfig) imageFacadeContainer() *components.Container {
 	priv := true
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       p.config.ImageFacadeImageName,
@@ -145,7 +145,7 @@ func (p *OpsSightConfig) imageFacadeContainer() *components.Container {
 	return container
 }
 
-func (p *OpsSightConfig) scannerVolumes() ([]*components.Volume, error) {
+func (p *SpecConfig) scannerVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -166,7 +166,7 @@ func (p *OpsSightConfig) scannerVolumes() ([]*components.Volume, error) {
 	return vols, nil
 }
 
-func (p *OpsSightConfig) imageFacadeVolumes() ([]*components.Volume, error) {
+func (p *SpecConfig) imageFacadeVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -193,7 +193,7 @@ func (p *OpsSightConfig) imageFacadeVolumes() ([]*components.Volume, error) {
 }
 
 // ScannerService creates a service for perceptor scanner
-func (p *OpsSightConfig) ScannerService() *components.Service {
+func (p *SpecConfig) ScannerService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.config.ScannerImageName,
 		Namespace: p.config.Namespace,
@@ -210,7 +210,7 @@ func (p *OpsSightConfig) ScannerService() *components.Service {
 }
 
 // ImageFacadeService creates a service for perceptor image-facade
-func (p *OpsSightConfig) ImageFacadeService() *components.Service {
+func (p *SpecConfig) ImageFacadeService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.config.ImageFacadeImageName,
 		Namespace: p.config.Namespace,
@@ -227,7 +227,7 @@ func (p *OpsSightConfig) ImageFacadeService() *components.Service {
 }
 
 // ScannerConfigMap creates a config map for the perceptor scanner
-func (p *OpsSightConfig) ScannerConfigMap() *components.ConfigMap {
+func (p *SpecConfig) ScannerConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor-scanner",
 		Namespace: p.config.Namespace,
@@ -238,7 +238,7 @@ func (p *OpsSightConfig) ScannerConfigMap() *components.ConfigMap {
 }
 
 //ImageFacadeConfigMap creates a config map for the perceptor image-facade
-func (p *OpsSightConfig) ImageFacadeConfigMap() *components.ConfigMap {
+func (p *SpecConfig) ImageFacadeConfigMap() *components.ConfigMap {
 	internalRegistry, _ := json.Marshal(p.config.InternalRegistries)
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor-imagefacade",
@@ -250,7 +250,7 @@ func (p *OpsSightConfig) ImageFacadeConfigMap() *components.ConfigMap {
 }
 
 // ScannerServiceAccount creates a service account for the perceptor scanner
-func (p *OpsSightConfig) ScannerServiceAccount() *components.ServiceAccount {
+func (p *SpecConfig) ScannerServiceAccount() *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		Name:      p.config.ServiceAccounts["perceptor-image-facade"],
 		Namespace: p.config.Namespace,
@@ -260,7 +260,7 @@ func (p *OpsSightConfig) ScannerServiceAccount() *components.ServiceAccount {
 }
 
 // ScannerClusterRoleBinding creates a cluster role binding for the perceptor scanner
-func (p *OpsSightConfig) ScannerClusterRoleBinding() *components.ClusterRoleBinding {
+func (p *SpecConfig) ScannerClusterRoleBinding() *components.ClusterRoleBinding {
 	scannerCRB := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       "perceptor-scanner",
 		APIVersion: "rbac.authorization.k8s.io/v1",

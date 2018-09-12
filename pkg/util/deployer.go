@@ -31,10 +31,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Deployer will contain the deployer specification
 type Deployer struct {
 	deployer *deployer.Deployer
 }
 
+// NewDeployer will create the horizon deployer
 func NewDeployer(config *rest.Config) (*Deployer, error) {
 	deployer, err := deployer.NewDeployer(config)
 	if err != nil {

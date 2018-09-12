@@ -30,7 +30,7 @@ import (
 )
 
 // PerceptorMetricsDeployment creates a deployment for perceptor metrics
-func (p *OpsSightConfig) PerceptorMetricsDeployment() (*components.Deployment, error) {
+func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
@@ -48,7 +48,7 @@ func (p *OpsSightConfig) PerceptorMetricsDeployment() (*components.Deployment, e
 	return deployment, nil
 }
 
-func (p *OpsSightConfig) perceptorMetricsPod() (*components.Pod, error) {
+func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "prometheus",
 	})
@@ -67,7 +67,7 @@ func (p *OpsSightConfig) perceptorMetricsPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *OpsSightConfig) perceptorMetricsContainer() *components.Container {
+func (p *SpecConfig) perceptorMetricsContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  "prometheus",
 		Image: "prom/prometheus:v2.1.0",
@@ -92,7 +92,7 @@ func (p *OpsSightConfig) perceptorMetricsContainer() *components.Container {
 	return container
 }
 
-func (p *OpsSightConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
+func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "prometheus",
@@ -112,7 +112,7 @@ func (p *OpsSightConfig) perceptorMetricsVolumes() ([]*components.Volume, error)
 }
 
 // PerceptorMetricsService creates a service for perceptor metrics
-func (p *OpsSightConfig) PerceptorMetricsService() *components.Service {
+func (p *SpecConfig) PerceptorMetricsService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "prometheus",
 		Namespace:     p.config.Namespace,
@@ -133,7 +133,7 @@ func (p *OpsSightConfig) PerceptorMetricsService() *components.Service {
 }
 
 // PerceptorMetricsConfigMap creates a config map for perceptor metrics
-func (p *OpsSightConfig) PerceptorMetricsConfigMap() *components.ConfigMap {
+func (p *SpecConfig) PerceptorMetricsConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "prometheus",
 		Namespace: p.config.Namespace,

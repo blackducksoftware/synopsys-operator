@@ -28,8 +28,8 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// AlertDeployment creates a new deployment for alert
-func (a *AlertConfig) alertDeployment() (*components.Deployment, error) {
+// alertDeployment creates a new deployment for alert
+func (a *SpecConfig) alertDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
@@ -47,7 +47,7 @@ func (a *AlertConfig) alertDeployment() (*components.Deployment, error) {
 	return deployment, nil
 }
 
-func (a *AlertConfig) alertPod() (*components.Pod, error) {
+func (a *SpecConfig) alertPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "alert",
 	})
@@ -64,7 +64,7 @@ func (a *AlertConfig) alertPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (a *AlertConfig) alertContainer() *components.Container {
+func (a *SpecConfig) alertContainer() *components.Container {
 	// This will prevent it from working on openshift without a privileged service account.  Remove once the
 	// chowns are removed in the image
 	user := int64(0)
@@ -103,7 +103,7 @@ func (a *AlertConfig) alertContainer() *components.Container {
 	return container
 }
 
-func (a *AlertConfig) alertVolume() (*components.Volume, error) {
+func (a *SpecConfig) alertVolume() (*components.Volume, error) {
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "dir-alert",
 		Medium:     horizonapi.StorageMediumDefault,
@@ -116,7 +116,7 @@ func (a *AlertConfig) alertVolume() (*components.Volume, error) {
 }
 
 // alertService creates a service for alert
-func (a *AlertConfig) alertService() *components.Service {
+func (a *SpecConfig) alertService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "alert",
 		Namespace:     a.config.Namespace,
@@ -136,7 +136,7 @@ func (a *AlertConfig) alertService() *components.Service {
 }
 
 // alertConfigMap creates a config map for alert
-func (a *AlertConfig) alertConfigMap() *components.ConfigMap {
+func (a *SpecConfig) alertConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "alert",
 		Namespace: a.config.Namespace,

@@ -28,16 +28,18 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
 )
 
-type AlertConfig struct {
+// SpecConfig will contain the specification of Alert
+type SpecConfig struct {
 	config *v1.AlertSpec
 }
 
-func NewAlert(config *v1.AlertSpec) *AlertConfig {
-	return &AlertConfig{config: config}
+// NewAlert will create the Alert object
+func NewAlert(config *v1.AlertSpec) *SpecConfig {
+	return &SpecConfig{config: config}
 }
 
 // GetComponents will return the list of components for alert
-func (a *AlertConfig) GetComponents() (*api.ComponentList, error) {
+func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
 
 	// Add alert

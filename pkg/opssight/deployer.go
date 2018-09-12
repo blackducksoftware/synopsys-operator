@@ -30,16 +30,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type OpsSightConfig struct {
+// SpecConfig will contain the specification of OpsSight
+type SpecConfig struct {
 	config *v1.OpsSightSpec
 }
 
-func NewOpsSight(config *v1.OpsSightSpec) *OpsSightConfig {
-	return &OpsSightConfig{config: config}
+// NewOpsSight will create the OpsSight object
+func NewOpsSight(config *v1.OpsSightSpec) *SpecConfig {
+	return &SpecConfig{config: config}
 }
 
 // GetComponents will return the list of components for alert
-func (p *OpsSightConfig) GetComponents() (*api.ComponentList, error) {
+func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	p.configServiceAccounts()
 	err := p.sanityCheckServices()
 	if err != nil {
@@ -125,7 +127,7 @@ func (p *OpsSightConfig) GetComponents() (*api.ComponentList, error) {
 	return components, nil
 }
 
-func (p *OpsSightConfig) substituteDefaultImageVersion() {
+func (p *SpecConfig) substituteDefaultImageVersion() {
 	if len(p.config.PerceptorImageVersion) == 0 {
 		p.config.PerceptorImageVersion = p.config.DefaultVersion
 	}
@@ -143,7 +145,7 @@ func (p *OpsSightConfig) substituteDefaultImageVersion() {
 	}
 }
 
-func (p *OpsSightConfig) configServiceAccounts() {
+func (p *SpecConfig) configServiceAccounts() {
 	// TODO Viperize these env vars.
 	if len(p.config.ServiceAccounts) == 0 {
 		svcAccounts := map[string]string{
@@ -158,7 +160,7 @@ func (p *OpsSightConfig) configServiceAccounts() {
 }
 
 // TODO programatically validate rather then sanity check.
-func (p *OpsSightConfig) sanityCheckServices() error {
+func (p *SpecConfig) sanityCheckServices() error {
 	isValid := func(cn string) bool {
 		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner", "perceptor-image-facade", "skyfire"} {
 			if cn == valid {
@@ -175,13 +177,13 @@ func (p *OpsSightConfig) sanityCheckServices() error {
 	return nil
 }
 
-func (p *OpsSightConfig) setInternalDefaults() {
+func (p *SpecConfig) setInternalDefaults() {
 	if len(p.config.HubUserPasswordEnvVar) == 0 {
 		p.config.HubUserPasswordEnvVar = "PCP_HUBUSERPASSWORD"
 	}
 }
 
-func (p *OpsSightConfig) generateStringFromStringArr(strArr []string) string {
+func (p *SpecConfig) generateStringFromStringArr(strArr []string) string {
 	str, _ := json.Marshal(strArr)
 	return string(str)
 }
