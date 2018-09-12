@@ -38,10 +38,74 @@ type OpsSight struct {
 	Status OpsSightStatus `json:"status,omitempty"`
 }
 
+// RegistryAuth will store the Openshift Internal Registries
+type RegistryAuth struct {
+	URL      string `json:"Url"`
+	User     string
+	Password string
+}
+
 // OpsSightSpec is the spec for a OpsSight resource
 type OpsSightSpec struct {
-	Namespace string `json:"namespace"`
+	Namespace string `json:"namespace,omitempty"`
 	State     string `json:"state"`
+	// CONTAINER CONFIGS
+	// These are sed replaced into the config maps for the containers.
+	PerceptorPort                         *int           `json:"perceptorPort,omitempty"`
+	ScannerPort                           *int           `json:"scannerPort,omitempty"`
+	PerceiverPort                         *int           `json:"perceiverPort,omitempty"`
+	ImageFacadePort                       *int           `json:"imageFacadePort,omitempty"`
+	SkyfirePort                           *int           `json:"skyfirePort,omitempty"`
+	InternalRegistries                    []RegistryAuth `json:"internalRegistries,omitempty"`
+	AnnotationIntervalSeconds             *int           `json:"annotationIntervalSeconds,omitempty"`
+	DumpIntervalMinutes                   *int           `json:"dumpIntervalMinutes,omitempty"`
+	HubHost                               string         `json:"hubHost,omitempty"`
+	HubUser                               string         `json:"hubUser,omitempty"`
+	HubPort                               *int           `json:"hubPort,omitempty"`
+	HubUserPassword                       string         `json:"hubUserPassword,omitempty"`
+	HubClientTimeoutPerceptorMilliseconds *int           `json:"hubClientTimeoutPerceptorMilliseconds,omitempty"`
+	HubClientTimeoutScannerSeconds        *int           `json:"hubClientTimeoutScannerSeconds,omitempty"`
+	ConcurrentScanLimit                   *int           `json:"concurrentScanLimit,omitempty"`
+	DefaultVersion                        string         `json:"defaultVersion,omitempty"`
+
+	// CONTAINER PULL CONFIG
+	// These are for defining docker registry and image location and versions
+	Registry  string `json:"registry,omitempty"`
+	ImagePath string `json:"imagePath,omitempty"`
+
+	PerceptorImageName      string `json:"perceptorImageName,omitempty"`
+	ScannerImageName        string `json:"scannerImageName,omitempty"`
+	PodPerceiverImageName   string `json:"podPerceiverImageName,omitempty"`
+	ImagePerceiverImageName string `json:"imagePerceiverImageName,omitempty"`
+	ImageFacadeImageName    string `json:"imageFacadeImageName,omitempty"`
+	SkyfireImageName        string `json:"skyfireImageName,omitempty"`
+
+	PerceptorImageVersion   string `json:"perceptorImageVersion,omitempty"`
+	ScannerImageVersion     string `json:"scannerImageVersion,omitempty"`
+	PerceiverImageVersion   string `json:"perceiverImageVersion,omitempty"`
+	ImageFacadeImageVersion string `json:"imageFacadeImageVersion,omitempty"`
+	SkyfireImageVersion     string `json:"skyfireImageVersion,omitempty"`
+
+	ServiceAccounts  map[string]string `json:"serviceAccounts,omitempty"`
+	ImagePerceiver   *bool             `json:"imagePerceiver,omitempty"`
+	PodPerceiver     *bool             `json:"podPerceiver,omitempty"`
+	Metrics          *bool             `json:"metrics,omitempty"`
+	PerceptorSkyfire *bool             `json:"perceptorSkyfire,omitempty"`
+
+	// CPU and memory configurations
+	// Should be passed like: e.g. "300m"
+	DefaultCPU string `json:"defaultCpu,omitempty"`
+	// Should be passed like: e.g "1300Mi"
+	DefaultMem string `json:"defaultMem.omitempty"`
+
+	// Log level
+	LogLevel string `json:"logLevel,omitempty"`
+
+	// Environment Variables
+	HubUserPasswordEnvVar string `json:"hubuserPasswordEnvVar"`
+
+	// Configuration secret
+	SecretName string `json:"secretName"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource

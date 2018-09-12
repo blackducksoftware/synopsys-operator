@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package hub
+package util
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"

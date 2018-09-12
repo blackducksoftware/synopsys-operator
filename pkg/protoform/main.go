@@ -78,7 +78,6 @@ func NewController(configPath string) (*Deployer, error) {
 
 	defer close(stopCh)
 	return NewDeployer(config, kubeConfig, kubeClientSet, config.Namespace, stopCh), err
-	// deployer.AddController(
 }
 
 func newKubeClientFromOutsideCluster() (*rest.Config, error) {

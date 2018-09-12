@@ -28,6 +28,7 @@ import (
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/informers/externalversions/hub/v1"
 	hubcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/hub/controller"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -101,12 +102,12 @@ func (c *ControllerConfig) Deploy() error {
 	deployer.AddConfigMap(hubFederatorConfig)
 
 	// Perceptor service
-	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", c.config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeDefault))
-	deployer.AddService(hub.CreateService("hub-federator-np", "hub-federator", c.config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeNodePort))
-	deployer.AddService(hub.CreateService("hub-federator-lb", "hub-federator", c.config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeLoadBalancer))
+	deployer.AddService(util.CreateService("hub-federator", "hub-federator", c.config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(util.CreateService("hub-federator-np", "hub-federator", c.config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeNodePort))
+	deployer.AddService(util.CreateService("hub-federator-lb", "hub-federator", c.config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeLoadBalancer))
 
 	// Hub federator deployment
-	hubFederatorContainerConfig := &hub.Container{
+	hubFederatorContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:master",
 			PullPolicy: horizonapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
 		EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_PASSWORD", KeyOrVal: "blackduck"}},
@@ -116,10 +117,10 @@ func (c *ControllerConfig) Deploy() error {
 	hubFederatorVolume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "hubfederator",
 		MapOrSecretName: "hubfederator",
-		DefaultMode:     hub.IntToInt32(420),
+		DefaultMode:     util.IntToInt32(420),
 	})
-	hubFederator := hub.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: c.config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
-		[]*hub.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*hub.Container{}, []horizonapi.AffinityConfig{})
+	hubFederator := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: c.config.Namespace, Name: "hub-federator", Replicas: util.IntToInt32(1)},
+		[]*util.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*util.Container{}, []horizonapi.AffinityConfig{})
 	deployer.AddDeployment(hubFederator)
 
 	certificate, key := hub.CreateSelfSignedCert()

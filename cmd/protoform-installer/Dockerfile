@@ -1,9 +1,13 @@
-# Stub
+FROM node:carbon
 
-# gce make / copy steps go bbelow
-FROM centos:centos7
+WORKDIR /
+
+# FRONTEND
+ADD ./frontend/client/ /app/
+RUN cd /app/ && npm i && npm run build
+RUN mv /app/build/ /views/
 
 COPY ./protoform-installer ./protoform
 
-# Run perceptor
+# Run protoform
 CMD ["./protoform"]

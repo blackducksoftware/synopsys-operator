@@ -35,8 +35,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	// hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
+
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -95,7 +96,7 @@ func (r *SecretReplicator) secretAdded(obj interface{}) {
 	secret := obj.(*v1.Secret)
 
 	if strings.EqualFold(secret.Name, "hub-certificate") {
-		hubList, err := hub.ListHubs(r.hubClient, r.namespace)
+		hubList, err := util.ListHubs(r.hubClient, r.namespace)
 		if err != nil {
 			log.Errorf("unable to list the hubs due to %+v", err)
 		}
@@ -121,7 +122,7 @@ func (r *SecretReplicator) secretUpdated(oldObj interface{}, newobj interface{})
 	secret := newobj.(*v1.Secret)
 
 	if strings.EqualFold(secret.Name, "hub-certificate") {
-		hubList, err := hub.ListHubs(r.hubClient, r.namespace)
+		hubList, err := util.ListHubs(r.hubClient, r.namespace)
 		if err != nil {
 			log.Errorf("unable to list the hubs due to %+v", err)
 		}
@@ -169,12 +170,12 @@ func (r *SecretReplicator) deletePod(namespace string) error {
 	log.Debugf("deleting pod %s/%s", namespace, "webserver")
 
 	// Get all pods corresponding to the hub namespace
-	pods, err := hub.GetAllPodsForNamespace(r.client, namespace)
+	pods, err := util.GetAllPodsForNamespace(r.client, namespace)
 	if err != nil {
 		return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
 	}
 
-	webserverPod := hub.FilterPodByNamePrefix(pods, "webserver")
+	webserverPod := util.FilterPodByNamePrefix(pods, "webserver")
 	err = r.client.AppsV1().Deployments(namespace).Delete(webserverPod.Name, &metav1.DeleteOptions{})
 	if err != nil {
 		return err
@@ -189,9 +190,9 @@ func (r *SecretReplicator) updateSecretData(secret *v1.Secret, dependentSecretNa
 	var err error
 	var dependentSecret *v1.Secret
 	if strings.EqualFold(dependentSecretNamespace, "default") {
-		dependentSecret, err = hub.GetSecret(r.client, r.namespace, secret.Name)
+		dependentSecret, err = util.GetSecret(r.client, r.namespace, secret.Name)
 	} else {
-		dependentSecret, err = hub.GetSecret(r.client, dependentSecretNamespace, secret.Name)
+		dependentSecret, err = util.GetSecret(r.client, dependentSecretNamespace, secret.Name)
 	}
 	if err != nil {
 		log.Errorf("could not get dependent secret %s: %s", dependentSecretNamespace, err)
@@ -206,7 +207,7 @@ func (r *SecretReplicator) updateDependents(secret *v1.Secret, dependents []stri
 	for _, dependentKey := range dependents {
 		log.Printf("updating dependent secret %s/%s -> %s", secret.Namespace, secret.Name, dependentKey)
 
-		sourceSecret, err := hub.GetSecret(r.client, dependentKey, secret.Name)
+		sourceSecret, err := util.GetSecret(r.client, dependentKey, secret.Name)
 		if err != nil {
 			log.Errorf("could not get dependent secret %s: %s", dependentKey, err)
 		}
@@ -219,7 +220,7 @@ func (r *SecretReplicator) updateDependents(secret *v1.Secret, dependents []stri
 }
 
 func buildDependentKeys(hubClient *hubclientset.Clientset, namespace string) (map[string][]string, error) {
-	hubList, err := hub.ListHubs(hubClient, namespace)
+	hubList, err := util.ListHubs(hubClient, namespace)
 	if err != nil {
 		log.Errorf("unable to list the hubs due to %+v", err)
 		return nil, err

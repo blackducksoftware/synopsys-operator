@@ -28,17 +28,17 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// AlertDeployment creates a new deployment for alert
-func (a *App) AlertDeployment() (*components.Deployment, error) {
+// CfsslDeployment creates a new deployment for cfssl
+func (a *AlertConfig) cfsslDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
-		Name:      "alert",
+		Name:      "cfssl",
 		Namespace: a.config.Namespace,
 	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": "alert", "tier": "alert"})
+	deployment.AddMatchLabelsSelectors(map[string]string{"app": "cfssl", "tier": "cfssl"})
 
-	pod, err := a.alertPod()
+	pod, err := a.cfsslPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pod: %v", err)
 	}
@@ -47,15 +47,15 @@ func (a *App) AlertDeployment() (*components.Deployment, error) {
 	return deployment, nil
 }
 
-func (a *App) alertPod() (*components.Pod, error) {
+func (a *AlertConfig) cfsslPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "alert",
+		Name: "cfssl",
 	})
-	pod.AddLabels(map[string]string{"app": "alert", "tier": "alert"})
+	pod.AddLabels(map[string]string{"app": "cfssl", "tier": "cfssl"})
 
-	pod.AddContainer(a.alertContainer())
+	pod.AddContainer(a.cfsslContainer())
 
-	vol, err := a.alertVolume()
+	vol, err := a.cfsslVolume()
 	if err != nil {
 		return nil, fmt.Errorf("error creating volumes: %v", err)
 	}
@@ -64,25 +64,21 @@ func (a *App) alertPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (a *App) alertContainer() *components.Container {
-	// This will prevent it from working on openshift without a privileged service account.  Remove once the
-	// chowns are removed in the image
-	user := int64(0)
+func (a *AlertConfig) cfsslContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:   "alert",
-		Image:  fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.AlertImageName, a.config.AlertImageVersion),
-		MinMem: a.config.AlertMemory,
-		UID:    &user,
+		Name:   "hub-cfssl",
+		Image:  fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.CfsslImageName, a.config.CfsslImageVersion),
+		MinMem: a.config.CfsslMemory,
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: "8443",
+		ContainerPort: "8888",
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
 	container.AddVolumeMount(horizonapi.VolumeMountConfig{
-		Name:      "dir-alert",
-		MountPath: "/opt/blackduck/alert/alert-config",
+		Name:      "dir-cfssl",
+		MountPath: "/etc/cfssl",
 	})
 
 	container.AddEnv(horizonapi.EnvConfig{
@@ -92,20 +88,20 @@ func (a *App) alertContainer() *components.Container {
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{
 		ActionConfig: horizonapi.ActionConfig{
-			Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/alert/api/about"},
+			Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:8888/api/v1/cfssl/scaninfo"},
 		},
 		Delay:           240,
 		Timeout:         10,
 		Interval:        30,
-		MinCountFailure: 5,
+		MinCountFailure: 10,
 	})
 
 	return container
 }
 
-func (a *App) alertVolume() (*components.Volume, error) {
+func (a *AlertConfig) cfsslVolume() (*components.Volume, error) {
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
-		VolumeName: "dir-alert",
+		VolumeName: "dir-cfssl",
 		Medium:     horizonapi.StorageMediumDefault,
 	})
 	if err != nil {
@@ -115,38 +111,22 @@ func (a *App) alertVolume() (*components.Volume, error) {
 	return vol, nil
 }
 
-// AlertService creates a service for alert
-func (a *App) AlertService() *components.Service {
+// CfsslService creates a service for cfssl
+func (a *AlertConfig) cfsslService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "alert",
+		Name:          "cfssl",
 		Namespace:     a.config.Namespace,
 		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       8443,
-		TargetPort: "8443",
+		Port:       8888,
+		TargetPort: "8888",
 		Protocol:   horizonapi.ProtocolTCP,
-		Name:       "8443-tcp",
+		Name:       "8888-tcp",
 	})
 
-	service.AddSelectors(map[string]string{"app": "alert"})
+	service.AddSelectors(map[string]string{"app": "cfssl"})
 
 	return service
-}
-
-// ConfigMap creates a config map for alert
-func (a *App) ConfigMap() *components.ConfigMap {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      "alert",
-		Namespace: a.config.Namespace,
-	})
-
-	configMap.AddData(map[string]string{
-		"ALERT_SERVER_PORT":         fmt.Sprintf("%d", *a.config.Port),
-		"PUBLIC_HUB_WEBSERVER_HOST": a.config.HubHost,
-		"PUBLIC_HUB_WEBSERVER_PORT": fmt.Sprintf("%d", *a.config.HubPort),
-	})
-
-	return configMap
 }

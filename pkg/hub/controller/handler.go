@@ -34,6 +34,7 @@ import (
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -151,7 +152,7 @@ func (h *HubHandler) callHubFederator() {
 // HubNamespaces will list the hub namespaces
 func (h *HubHandler) getHubUrls() (*APISetHubsRequest, error) {
 	// 1. get Hub CDR list from default ns
-	hubList, err := hub.ListHubs(h.HubClientset, h.Namespace)
+	hubList, err := util.ListHubs(h.HubClientset, h.Namespace)
 	if err != nil {
 		return &APISetHubsRequest{}, err
 	}

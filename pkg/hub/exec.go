@@ -25,6 +25,7 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -32,7 +33,7 @@ import (
 
 func (hc *Creater) execContainer(request *rest.Request, command []string) error {
 	var stdin io.Reader
-	stdin = NewStringReader(command)
+	stdin = util.NewStringReader(command)
 
 	log.Debugf("Request URL: %+v, request: %+v", request.URL().String(), request)
 

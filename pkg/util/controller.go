@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package protoform
+package util
 
 import (
 	"time"
@@ -33,23 +33,21 @@ import (
 
 // PodListController defines a controller that will list pods
 type PodListController struct {
-	namespaces []string
+	namespace string
 }
 
 // NewPodListController will create a new ListPodController
-func NewPodListController(ns []string) *PodListController {
-	return &PodListController{namespaces: ns}
+func NewPodListController(ns string) *PodListController {
+	return &PodListController{namespace: ns}
 }
 
 // Run will print to debug output the status of the pods that were started
 func (l *PodListController) Run(resources horizonapi.ControllerResources, stopCh chan struct{}) error {
 	client := resources.KubeClient
 	for cnt := 0; cnt < 10; cnt++ {
-		for _, n := range l.namespaces {
-			pods, _ := client.Core().Pods(n).List(v1meta.ListOptions{})
-			for _, pod := range pods.Items {
-				log.Debugf("Pod = %v -> %v", pod.Name, pod.Status.Phase)
-			}
+		pods, _ := client.Core().Pods(l.namespace).List(v1meta.ListOptions{})
+		for _, pod := range pods.Items {
+			log.Debugf("Pod = %v -> %v", pod.Name, pod.Status.Phase)
 		}
 		log.Debug("***************")
 		time.Sleep(10 * time.Second)

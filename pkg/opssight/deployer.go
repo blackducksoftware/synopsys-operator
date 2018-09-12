@@ -4,7 +4,7 @@ Copyright (C) 2018 Synopsys, Inc.
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
 distributed with this work for additional information
-regarding copyright ownership. The ASF licenses this file
+regarding copyright ownershia. The ASF licenses this file
 to you under the Apache License, Version 2.0 (the
 "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
@@ -19,48 +19,27 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package perceptor
+package opssight
 
 import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 )
 
-// App defines the perceptor application
-type App struct {
-	config *AppConfig
+type OpsSightConfig struct {
+	config *v1.OpsSightSpec
 }
 
-// NewApp creates a App object
-func NewApp(defaults interface{}) (*App, error) {
-	d, ok := defaults.(*AppConfig)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert perceptor defaults: %v", defaults)
-	}
-	p := App{config: d}
-
-	p.setInternalDefaults()
-
-	return &p, nil
+func NewOpsSight(config *v1.OpsSightSpec) *OpsSightConfig {
+	return &OpsSightConfig{config: config}
 }
 
-// Configure will configure the perceptor app
-func (p *App) Configure(config interface{}) error {
-	return util.MergeConfig(config, p.config)
-}
-
-// GetNamespace returns the namespace for this perceptor app
-func (p *App) GetNamespace() string {
-	return p.config.Namespace
-}
-
-// GetComponents will return the list of components for perceptor
-func (p *App) GetComponents() (*apps.ComponentList, error) {
+// GetComponents will return the list of components for alert
+func (p *OpsSightConfig) GetComponents() (*api.ComponentList, error) {
 	p.configServiceAccounts()
 	err := p.sanityCheckServices()
 	if err != nil {
@@ -69,7 +48,7 @@ func (p *App) GetComponents() (*apps.ComponentList, error) {
 
 	p.substituteDefaultImageVersion()
 
-	components := &apps.ComponentList{}
+	components := &api.ComponentList{}
 
 	// Add Perceptor
 	components.ReplicationControllers = append(components.ReplicationControllers, p.PerceptorReplicationController())
@@ -146,7 +125,7 @@ func (p *App) GetComponents() (*apps.ComponentList, error) {
 	return components, nil
 }
 
-func (p *App) substituteDefaultImageVersion() {
+func (p *OpsSightConfig) substituteDefaultImageVersion() {
 	if len(p.config.PerceptorImageVersion) == 0 {
 		p.config.PerceptorImageVersion = p.config.DefaultVersion
 	}
@@ -164,7 +143,7 @@ func (p *App) substituteDefaultImageVersion() {
 	}
 }
 
-func (p *App) configServiceAccounts() {
+func (p *OpsSightConfig) configServiceAccounts() {
 	// TODO Viperize these env vars.
 	if len(p.config.ServiceAccounts) == 0 {
 		svcAccounts := map[string]string{
@@ -179,7 +158,7 @@ func (p *App) configServiceAccounts() {
 }
 
 // TODO programatically validate rather then sanity check.
-func (p *App) sanityCheckServices() error {
+func (p *OpsSightConfig) sanityCheckServices() error {
 	isValid := func(cn string) bool {
 		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner", "perceptor-image-facade", "skyfire"} {
 			if cn == valid {
@@ -196,13 +175,13 @@ func (p *App) sanityCheckServices() error {
 	return nil
 }
 
-func (p *App) setInternalDefaults() {
+func (p *OpsSightConfig) setInternalDefaults() {
 	if len(p.config.HubUserPasswordEnvVar) == 0 {
 		p.config.HubUserPasswordEnvVar = "PCP_HUBUSERPASSWORD"
 	}
 }
 
-func (p *App) generateStringFromStringArr(strArr []string) string {
+func (p *OpsSightConfig) generateStringFromStringArr(strArr []string) string {
 	str, _ := json.Marshal(strArr)
 	return string(str)
 }

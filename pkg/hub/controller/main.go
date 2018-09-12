@@ -43,6 +43,7 @@ import (
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/informers/externalversions/hub/v1"
 	model "github.com/blackducksoftware/perceptor-protoform/pkg/hub/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/webservice"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -194,12 +195,12 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	deployer.AddConfigMap(hubFederatorConfig)
 
 	// Perceptor service
-	deployer.AddService(hub.CreateService("hub-federator", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeDefault))
-	deployer.AddService(hub.CreateService("hub-federator-np", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeNodePort))
-	deployer.AddService(hub.CreateService("hub-federator-lb", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeLoadBalancer))
+	deployer.AddService(util.CreateService("hub-federator", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(util.CreateService("hub-federator-np", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeNodePort))
+	deployer.AddService(util.CreateService("hub-federator-lb", "hub-federator", config.Namespace, fmt.Sprint(config.HubFederatorConfig.Port), fmt.Sprint(config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeLoadBalancer))
 
 	// Hub federator deployment
-	hubFederatorContainerConfig := &hub.Container{
+	hubFederatorContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:master",
 			PullPolicy: horizonapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
 		EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: "blackduck"}},
@@ -209,10 +210,10 @@ func deploy(kubeConfig *rest.Config, config *model.Config) {
 	hubFederatorVolume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "hubfederator",
 		MapOrSecretName: "hubfederator",
-		DefaultMode:     hub.IntToInt32(420),
+		DefaultMode:     util.IntToInt32(420),
 	})
-	hubFederator := hub.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: hub.IntToInt32(1)},
-		[]*hub.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*hub.Container{}, []horizonapi.AffinityConfig{})
+	hubFederator := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: config.Namespace, Name: "hub-federator", Replicas: util.IntToInt32(1)},
+		[]*util.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*util.Container{}, []horizonapi.AffinityConfig{})
 	deployer.AddDeployment(hubFederator)
 
 	certificate, key := hub.CreateSelfSignedCert()

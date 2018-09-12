@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package perceptor
+package opssight
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ import (
 )
 
 // PerceptorReplicationController creates a replication controller for perceptor
-func (p *App) PerceptorReplicationController() *components.ReplicationController {
+func (p *OpsSightConfig) PerceptorReplicationController() *components.ReplicationController {
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
@@ -42,7 +42,7 @@ func (p *App) PerceptorReplicationController() *components.ReplicationController
 	return rc
 }
 
-func (p *App) perceptorPod() *components.Pod {
+func (p *OpsSightConfig) perceptorPod() *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: p.config.PerceptorImageName,
 	})
@@ -53,7 +53,7 @@ func (p *App) perceptorPod() *components.Pod {
 	return pod
 }
 
-func (p *App) perceptorContainer() *components.Container {
+func (p *OpsSightConfig) perceptorContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    p.config.PerceptorImageName,
 		Image:   fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, p.config.PerceptorImageName, p.config.PerceptorImageVersion),
@@ -80,7 +80,7 @@ func (p *App) perceptorContainer() *components.Container {
 	return container
 }
 
-func (p *App) perceptorVolume() *components.Volume {
+func (p *OpsSightConfig) perceptorVolume() *components.Volume {
 	volume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "perceptor",
 		MapOrSecretName: "perceptor",
@@ -90,7 +90,7 @@ func (p *App) perceptorVolume() *components.Volume {
 }
 
 // PerceptorService creates a service for perceptor
-func (p *App) PerceptorService() *components.Service {
+func (p *OpsSightConfig) PerceptorService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.config.PerceptorImageName,
 		Namespace: p.config.Namespace,
@@ -108,7 +108,7 @@ func (p *App) PerceptorService() *components.Service {
 }
 
 // PerceptorConfigMap creates a config map for perceptor
-func (p *App) PerceptorConfigMap() *components.ConfigMap {
+func (p *OpsSightConfig) PerceptorConfigMap() *components.ConfigMap {
 	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor",
 		Namespace: p.config.Namespace,
@@ -119,7 +119,7 @@ func (p *App) PerceptorConfigMap() *components.ConfigMap {
 }
 
 // PerceptorSecret create a secret for perceptor
-func (p *App) PerceptorSecret() *components.Secret {
+func (p *OpsSightConfig) PerceptorSecret() *components.Secret {
 	secretConfig := horizonapi.SecretConfig{
 		Name:      p.config.SecretName,
 		Namespace: p.config.Namespace,

@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -38,7 +39,7 @@ type Handler interface {
 	ObjectUpdated(objOld, objNew interface{})
 }
 
-// OpsSightHandler will store the configuration that is required to initiantiate the informers callback
+// AlertHandler will store the configuration that is required to initiantiate the informers callback
 type OpsSightHandler struct {
 	Config            *rest.Config
 	Clientset         *kubernetes.Clientset
@@ -49,40 +50,44 @@ type OpsSightHandler struct {
 
 // ObjectCreated will be called for create opssight events
 func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
-	log.Debugf("ObjectCreated: %+v", obj)
-	opsSightv1 := obj.(*opssight_v1.OpsSight)
-	if strings.EqualFold(opsSightv1.Spec.State, "") {
+	log.Debugf("objectCreated: %+v", obj)
+	opssightv1 := obj.(*opssight_v1.OpsSight)
+	if strings.EqualFold(opssightv1.Spec.State, "") {
 		// Update status
-		opsSightv1.Spec.State = "pending"
-		opsSightv1.Status.State = "creating"
-		_, err := h.updateHubObject(opsSightv1)
+		opssightv1.Spec.State = "pending"
+		opssightv1.Status.State = "creating"
+		_, err := h.updateHubObject(opssightv1)
 		if err != nil {
 			log.Errorf("Couldn't update Alert object: %s", err.Error())
+		}
+
+		opssightCreator := opssight.NewCreater(h.Config, h.Clientset, h.OpsSightClientset)
+		if err != nil {
+			log.Errorf("unable to create the new hub creater for %s due to %+v", opssightv1.Name, err)
+		}
+		err = opssightCreator.CreateOpsSight(opssightv1)
+
+		if err != nil {
+			//Set spec/state  and status/state to started
+			opssightv1.Spec.State = "error"
+			opssightv1.Status.State = "error"
+		} else {
+			opssightv1.Spec.State = "running"
+			opssightv1.Status.State = "running"
 		}
 	}
 }
 
 // ObjectDeleted will be called for delete opssight events
 func (h *OpsSightHandler) ObjectDeleted(name string) {
-	log.Debugf("ObjectDeleted: %+v", name)
-
-	//Set spec/state  and status/state to started
-	// obj.Spec.State = "deleted"
-	// obj.Status.State = "deleted"
-	// obj, err = h.updateHubObject(obj)
-	// if err != nil {
-	// 	log.Errorf("Couldn't update Hub object: %s", err.Error())
-	// }
+	log.Debugf("objectDeleted: %+v", name)
+	opssightCreator := opssight.NewCreater(h.Config, h.Clientset, h.OpsSightClientset)
+	opssightCreator.DeleteOpsSight(name)
 }
 
 // ObjectUpdated will be called for update opssight events
 func (h *OpsSightHandler) ObjectUpdated(objOld, objNew interface{}) {
-	//if strings.Compare(objOld.Spec.State, objNew.Spec.State) != 0 {
-	//	log.Infof("%s - Changing state [%s] -> [%s] | Current: [%s]", objNew.Name, objOld.Spec.State, objNew.Spec.State, objNew.Status.State )
-	//	// TO DO
-	//	objNew.Status.State = objNew.Spec.State
-	//	h.hubClientset.SynopsysV1().Hubs(objNew.Namespace).Update(objNew)
-	//}
+	log.Debugf("objectUpdated: %+v", objNew)
 }
 
 func (h *OpsSightHandler) updateHubObject(obj *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {

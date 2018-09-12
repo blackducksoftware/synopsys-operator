@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package perceptor
+package opssight
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ import (
 )
 
 // PerceptorSkyfireReplicationController creates a replication controller for perceptor skyfire
-func (p *App) PerceptorSkyfireReplicationController() (*components.ReplicationController, error) {
+func (p *OpsSightConfig) PerceptorSkyfireReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
@@ -46,7 +46,7 @@ func (p *App) PerceptorSkyfireReplicationController() (*components.ReplicationCo
 	return rc, nil
 }
 
-func (p *App) perceptorSkyfirePod() (*components.Pod, error) {
+func (p *OpsSightConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name:           p.config.SkyfireImageName,
 		ServiceAccount: p.config.ServiceAccounts["skyfire"],
@@ -66,7 +66,7 @@ func (p *App) perceptorSkyfirePod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *App) perceptorSkyfireContainer() *components.Container {
+func (p *OpsSightConfig) perceptorSkyfireContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    p.config.SkyfireImageName,
 		Image:   fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, p.config.SkyfireImageName, p.config.SkyfireImageVersion),
@@ -100,7 +100,7 @@ func (p *App) perceptorSkyfireContainer() *components.Container {
 	return container
 }
 
-func (p *App) perceptorSkyfireVolumes() ([]*components.Volume, error) {
+func (p *OpsSightConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -121,7 +121,7 @@ func (p *App) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 }
 
 // PerceptorSkyfireService creates a service for perceptor skyfire
-func (p *App) PerceptorSkyfireService() *components.Service {
+func (p *OpsSightConfig) PerceptorSkyfireService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.config.SkyfireImageName,
 		Namespace: p.config.Namespace,
@@ -139,7 +139,7 @@ func (p *App) PerceptorSkyfireService() *components.Service {
 }
 
 // PerceptorSkyfireConfigMap creates a config map for perceptor skyfire
-func (p *App) PerceptorSkyfireConfigMap() *components.ConfigMap {
+func (p *OpsSightConfig) PerceptorSkyfireConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "skyfire",
 		Namespace: p.config.Namespace,
@@ -150,7 +150,7 @@ func (p *App) PerceptorSkyfireConfigMap() *components.ConfigMap {
 }
 
 // PerceptorSkyfireServiceAccount creates a service account for perceptor skyfire
-func (p *App) PerceptorSkyfireServiceAccount() *components.ServiceAccount {
+func (p *OpsSightConfig) PerceptorSkyfireServiceAccount() *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		Name:      "skyfire",
 		Namespace: p.config.Namespace,
@@ -160,7 +160,7 @@ func (p *App) PerceptorSkyfireServiceAccount() *components.ServiceAccount {
 }
 
 // PerceptorSkyfireClusterRole creates a cluster role for perceptor skyfire
-func (p *App) PerceptorSkyfireClusterRole() *components.ClusterRole {
+func (p *OpsSightConfig) PerceptorSkyfireClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
 		Name:       "skyfire",
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -175,7 +175,7 @@ func (p *App) PerceptorSkyfireClusterRole() *components.ClusterRole {
 }
 
 // PerceptorSkyfireClusterRoleBinding creates a cluster role binding for perceptor skyfire
-func (p *App) PerceptorSkyfireClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
+func (p *OpsSightConfig) PerceptorSkyfireClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       "skyfire",
 		APIVersion: "rbac.authorization.k8s.io/v1",

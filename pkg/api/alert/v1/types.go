@@ -40,8 +40,23 @@ type Alert struct {
 
 // AlertSpec is the spec for a Alert resource
 type AlertSpec struct {
-	Namespace string `json:"namespace"`
-	State     string `json:"state"`
+	Namespace         string `json:"namespace,omitempty"`
+	Registry          string `json:"registry,omitempty"`
+	ImagePath         string `json:"imagePath,omitempty"`
+	AlertImageName    string `json:"alertImageName,omitempty"`
+	AlertImageVersion string `json:"alertImageVersion,omitempty"`
+	CfsslImageName    string `json:"cfsslImageName,omitempty"`
+	CfsslImageVersion string `json:"cfsslImageVersion,omitempty"`
+	HubHost           string `json:"hubHost,omitempty"`
+	HubUser           string `json:"hubUser,omitempty"`
+	HubPort           *int   `json:"hubPort,omitempty"`
+	Port              *int   `json:"port"`
+	StandAlone        *bool  `json:"standAlone"`
+
+	// Should be passed like: e.g "1300Mi"
+	AlertMemory string `json:"alertMemory.omitempty"`
+	CfsslMemory string `json:"cfsslMemory.omitempty"`
+	State       string `json:"state"`
 }
 
 // AlertStatus is the status for a Alert resource

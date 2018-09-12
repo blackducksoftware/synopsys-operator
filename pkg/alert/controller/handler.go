@@ -24,6 +24,7 @@ package controller
 import (
 	"strings"
 
+	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
 	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 	alert_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
 	log "github.com/sirupsen/logrus"
@@ -49,7 +50,7 @@ type AlertHandler struct {
 
 // ObjectCreated will be called for create alert events
 func (h *AlertHandler) ObjectCreated(obj interface{}) {
-	log.Debugf("ObjectCreated: %+v", obj)
+	log.Debugf("objectCreated: %+v", obj)
 	alertv1 := obj.(*alert_v1.Alert)
 	if strings.EqualFold(alertv1.Spec.State, "") {
 		// Update status
@@ -59,30 +60,34 @@ func (h *AlertHandler) ObjectCreated(obj interface{}) {
 		if err != nil {
 			log.Errorf("Couldn't update Alert object: %s", err.Error())
 		}
+
+		alertCreator := alert.NewCreater(h.Config, h.Clientset, h.AlertClientset)
+		if err != nil {
+			log.Errorf("unable to create the new hub creater for %s due to %+v", alertv1.Name, err)
+		}
+		err = alertCreator.CreateAlert(alertv1)
+
+		if err != nil {
+			//Set spec/state  and status/state to started
+			alertv1.Spec.State = "error"
+			alertv1.Status.State = "error"
+		} else {
+			alertv1.Spec.State = "running"
+			alertv1.Status.State = "running"
+		}
 	}
 }
 
 // ObjectDeleted will be called for delete alert events
 func (h *AlertHandler) ObjectDeleted(name string) {
-	log.Debugf("ObjectDeleted: %+v", name)
-
-	//Set spec/state  and status/state to started
-	// obj.Spec.State = "deleted"
-	// obj.Status.State = "deleted"
-	// obj, err = h.updateHubObject(obj)
-	// if err != nil {
-	// 	log.Errorf("Couldn't update Hub object: %s", err.Error())
-	// }
+	log.Debugf("objectDeleted: %+v", name)
+	alertCreator := alert.NewCreater(h.Config, h.Clientset, h.AlertClientset)
+	alertCreator.DeleteAlert(name)
 }
 
 // ObjectUpdated will be called for update alert events
 func (h *AlertHandler) ObjectUpdated(objOld, objNew interface{}) {
-	//if strings.Compare(objOld.Spec.State, objNew.Spec.State) != 0 {
-	//	log.Infof("%s - Changing state [%s] -> [%s] | Current: [%s]", objNew.Name, objOld.Spec.State, objNew.Spec.State, objNew.Status.State )
-	//	// TO DO
-	//	objNew.Status.State = objNew.Spec.State
-	//	h.hubClientset.SynopsysV1().Hubs(objNew.Namespace).Update(objNew)
-	//}
+	log.Debugf("objectUpdated: %+v", objNew)
 }
 
 func (h *AlertHandler) updateHubObject(obj *alert_v1.Alert) (*alert_v1.Alert, error) {

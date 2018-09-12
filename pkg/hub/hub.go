@@ -32,6 +32,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -55,19 +56,19 @@ func NewCreater(config *rest.Config, kubeClient *kubernetes.Clientset, hubClient
 func (hc *Creater) DeleteHub(namespace string) {
 	var err error
 	// Verify whether the namespace exist
-	_, err = GetNamespace(hc.KubeClient, namespace)
+	_, err = util.GetNamespace(hc.KubeClient, namespace)
 	if err != nil {
 		log.Errorf("Unable to find the namespace %+v due to %+v", namespace, err)
 	} else {
 		// Delete a namespace
-		err = DeleteNamespace(hc.KubeClient, namespace)
+		err = util.DeleteNamespace(hc.KubeClient, namespace)
 		if err != nil {
 			log.Errorf("Unable to delete the namespace %+v due to %+v", namespace, err)
 		}
 
 		for {
 			// Verify whether the namespace deleted
-			ns, err := GetNamespace(hc.KubeClient, namespace)
+			ns, err := util.GetNamespace(hc.KubeClient, namespace)
 			log.Infof("Namespace: %v, status: %v", namespace, ns.Status)
 			time.Sleep(10 * time.Second)
 			if err != nil {
@@ -75,7 +76,7 @@ func (hc *Creater) DeleteHub(namespace string) {
 				break
 			}
 		}
-		err = DeletePersistentVolume(hc.KubeClient, namespace)
+		err = util.DeletePersistentVolume(hc.KubeClient, namespace)
 		if err != nil {
 			log.Errorf("unable to delete the pv for %+v", namespace)
 		}
@@ -107,8 +108,8 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	}
 
 	if createHub.Spec.IsRandomPassword {
-		createHub.Spec.AdminPassword, _ = RandomString(12)
-		createHub.Spec.UserPassword, _ = RandomString(12)
+		createHub.Spec.AdminPassword, _ = util.RandomString(12)
+		createHub.Spec.UserPassword, _ = util.RandomString(12)
 	} else {
 		createHub.Spec.AdminPassword = createHub.Spec.PostgresPassword
 		createHub.Spec.UserPassword = createHub.Spec.PostgresPassword
@@ -126,12 +127,12 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	}
 	// time.Sleep(20 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err := GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
+	pods, err := util.GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
 	if err != nil {
 		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	// Validate all pods are in running state
-	ValidatePodsAreRunning(hc.KubeClient, pods)
+	util.ValidatePodsAreRunning(hc.KubeClient, pods)
 	// Initialize the hub database
 	if strings.EqualFold(createHub.Spec.DbPrototype, "empty") {
 		InitDatabase(createHub)
@@ -149,15 +150,15 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	}
 	time.Sleep(10 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err = GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
+	pods, err = util.GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
 	if err != nil {
 		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
 	}
 	// Validate all pods are in running state
-	ValidatePodsAreRunning(hc.KubeClient, pods)
+	util.ValidatePodsAreRunning(hc.KubeClient, pods)
 
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod := FilterPodByNamePrefix(pods, "registration")
+	registrationPod := util.FilterPodByNamePrefix(pods, "registration")
 	log.Debugf("registration pod: %+v", registrationPod)
 	registrationKey := os.Getenv("REGISTRATION_KEY")
 	log.Debugf("registration key: %s", registrationKey)
@@ -165,7 +166,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	if registrationPod != nil {
 		for {
 			// Create the exec into kubernetes pod request
-			req := CreateExecContainerRequest(hc.KubeClient, registrationPod)
+			req := util.CreateExecContainerRequest(hc.KubeClient, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
 			err = hc.execContainer(req, []string{fmt.Sprintf("curl -k -X POST https://127.0.0.1:8443/registration/HubRegistration?action=activate\\&registrationid=%s", registrationKey)})
 			if err != nil {
@@ -198,7 +199,7 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 func (hc *Creater) getPVCVolumeName(namespace string) (string, error) {
 	for i := 0; i < 60; i++ {
 		time.Sleep(10 * time.Second)
-		pvc, err := GetPVC(hc.KubeClient, namespace, namespace)
+		pvc, err := util.GetPVC(hc.KubeClient, namespace, namespace)
 		if err != nil {
 			return "", fmt.Errorf("unable to get pvc in %s namespace due to %s", namespace, err.Error())
 		}
@@ -217,7 +218,7 @@ func (hc *Creater) getPVCVolumeName(namespace string) (string, error) {
 func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
 	for i := 0; i < 10; i++ {
 		time.Sleep(10 * time.Second)
-		service, err := GetService(hc.KubeClient, namespace, serviceName)
+		service, err := util.GetService(hc.KubeClient, namespace, serviceName)
 		if err != nil {
 			return "", fmt.Errorf("unable to get service %s in %s namespace due to %s", serviceName, namespace, err.Error())
 		}

@@ -27,6 +27,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -49,14 +50,14 @@ func SetupHTTPServer(hc *hub.Creater, namespace string) {
 
 		router.GET("/sql-instances", func(c *gin.Context) {
 			// keys := []string{"pvc-000", "pvc-001", "pvc-002"}
-			keys, _ := hub.ListHubPV(hc.HubClient, namespace)
+			keys, _ := util.ListHubPV(hc.HubClient, namespace)
 			c.JSON(200, keys)
 		})
 
 		router.GET("/storage-classes", func(c *gin.Context) {
 			var storageList map[string]string
 			storageList = make(map[string]string)
-			storageClasses, err := hub.ListStorageClass(hc.KubeClient)
+			storageClasses, err := util.ListStorageClass(hc.KubeClient)
 			if err != nil {
 				log.Errorf("unable to list the storage classes due to %+v", err)
 				c.JSON(404, fmt.Sprintf("\"message\": \"Failed to List the storage class due to %+v\"", err))
@@ -98,7 +99,7 @@ func SetupHTTPServer(hc *hub.Creater, namespace string) {
 				hubSpec.PostgresPassword = "blackduck"
 			}
 
-			ns, err := hub.CreateNamespace(hc.KubeClient, hubSpec.Namespace)
+			ns, err := util.CreateNamespace(hc.KubeClient, hubSpec.Namespace)
 			log.Debugf("created namespace: %+v", ns)
 			if err != nil {
 				log.Errorf("unable to create the namespace due to %+v", err)
