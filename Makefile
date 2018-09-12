@@ -8,7 +8,7 @@ ifdef IMAGE_PREFIX
 PREFIX="$(IMAGE_PREFIX)-"
 endif
 
-ifneq (, $(findstring gcr.io,$(REGISTRY))) 
+ifneq (, $(findstring gcr.io,$(REGISTRY)))
 PREFIX_CMD="gcloud"
 DOCKER_OPTS="--"
 endif
@@ -49,3 +49,8 @@ clean:
 
 ${OUTDIR}:
 	mkdir -p ${OUTDIR}
+
+lint:
+	./hack/verify-gofmt.sh
+	./hack/verify-golint.sh
+	./hack/verify-govet.sh
