@@ -41,7 +41,7 @@ import (
 
 // ControllerConfig defines the specification for the controller
 type ControllerConfig struct {
-	config *ProtoformControllerConfig
+	protoformConfig *ProtoformControllerConfig
 }
 
 // NewController will create a controller configuration
@@ -50,27 +50,27 @@ func NewController(config interface{}) (*ControllerConfig, error) {
 	if !ok {
 		return nil, fmt.Errorf("failed to convert opssight defaults: %v", config)
 	}
-	d := &ControllerConfig{config: dependentConfig}
+	d := &ControllerConfig{protoformConfig: dependentConfig}
 
-	d.config.resyncPeriod = 0
-	d.config.indexers = cache.Indexers{}
-	d.config.threadiness = 5
+	d.protoformConfig.resyncPeriod = 0
+	d.protoformConfig.indexers = cache.Indexers{}
+	d.protoformConfig.threadiness = 5
 
 	return d, nil
 }
 
 // CreateClientSet will create the CRD client
 func (c *ControllerConfig) CreateClientSet() {
-	opssightClient, err := opssightclientset.NewForConfig(c.config.KubeConfig)
+	opssightClient, err := opssightclientset.NewForConfig(c.protoformConfig.KubeConfig)
 	if err != nil {
 		log.Panicf("Unable to create OpsSight informer client: %s", err.Error())
 	}
-	c.config.customClientSet = opssightClient
+	c.protoformConfig.customClientSet = opssightClient
 }
 
 // Deploy will deploy the CRD
 func (c *ControllerConfig) Deploy() error {
-	deployer, err := horizon.NewDeployer(c.config.KubeConfig)
+	deployer, err := horizon.NewDeployer(c.protoformConfig.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (c *ControllerConfig) Deploy() error {
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
 		Name:       "opssights.synopsys.com",
-		Namespace:  c.config.Namespace,
+		Namespace:  c.protoformConfig.Config.Namespace,
 		Group:      "synopsys.com",
 		CRDVersion: "v1",
 		Kind:       "OpsSight",
@@ -98,11 +98,11 @@ func (c *ControllerConfig) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *ControllerConfig) CreateInformer() {
-	c.config.infomer = opssightinformerv1.NewOpsSightInformer(
-		c.config.customClientSet,
-		c.config.Namespace,
-		c.config.resyncPeriod,
-		c.config.indexers,
+	c.protoformConfig.infomer = opssightinformerv1.NewOpsSightInformer(
+		c.protoformConfig.customClientSet,
+		c.protoformConfig.Config.Namespace,
+		c.protoformConfig.resyncPeriod,
+		c.protoformConfig.indexers,
 	)
 }
 
@@ -111,12 +111,12 @@ func (c *ControllerConfig) CreateQueue() {
 	// create a new queue so that when the informer gets a resource that is either
 	// a result of listing or watching, we can add an idenfitying key to the queue
 	// so that it can be handled in the handler
-	c.config.queue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	c.protoformConfig.queue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 }
 
 // AddInformerEventHandler will add the event handlers for the informers
 func (c *ControllerConfig) AddInformerEventHandler() {
-	c.config.infomer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.protoformConfig.infomer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			// convert the resource object into a key (in this case
 			// we are just doing it in the format of 'namespace/name')
@@ -124,14 +124,14 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 			log.Infof("add opssight: %s", key)
 			if err == nil {
 				// add the key to the queue for the handler to get
-				c.config.queue.Add(key)
+				c.protoformConfig.queue.Add(key)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
 			log.Infof("update opssight: %s", key)
 			if err == nil {
-				c.config.queue.Add(key)
+				c.protoformConfig.queue.Add(key)
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -144,7 +144,7 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 			log.Infof("delete opssight: %s: %+v", key, obj)
 
 			if err == nil {
-				c.config.queue.Add(key)
+				c.protoformConfig.queue.Add(key)
 			}
 		},
 	})
@@ -152,33 +152,32 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *ControllerConfig) CreateHandler() {
-	c.config.handler = &opssightcontroller.OpsSightHandler{
-		Config:            c.config.KubeConfig,
-		Clientset:         c.config.KubeClientSet,
-		OpsSightClientset: c.config.customClientSet,
-		Namespace:         c.config.Namespace,
+	c.protoformConfig.handler = &opssightcontroller.OpsSightHandler{
+		Config:            c.protoformConfig.KubeConfig,
+		Clientset:         c.protoformConfig.KubeClientSet,
+		OpsSightClientset: c.protoformConfig.customClientSet,
+		Namespace:         c.protoformConfig.Config.Namespace,
 		CmMutex:           make(chan bool, 1),
 	}
 }
 
 // CreateController will create a CRD controller
 func (c *ControllerConfig) CreateController() {
-	c.config.controller = opssightcontroller.NewController(
+	c.protoformConfig.controller = opssightcontroller.NewController(
 		&opssightcontroller.Controller{
 			Logger:            log.NewEntry(log.New()),
-			Clientset:         c.config.KubeClientSet,
-			Queue:             c.config.queue,
-			Informer:          c.config.infomer,
-			Handler:           c.config.handler,
-			OpsSightClientset: c.config.customClientSet,
-			Namespace:         c.config.Namespace,
+			Clientset:         c.protoformConfig.KubeClientSet,
+			Queue:             c.protoformConfig.queue,
+			Informer:          c.protoformConfig.infomer,
+			Handler:           c.protoformConfig.handler,
+			OpsSightClientset: c.protoformConfig.customClientSet,
+			Namespace:         c.protoformConfig.Config.Namespace,
 		})
 }
 
 // Run will run the CRD controller
 func (c *ControllerConfig) Run() {
-	go c.config.controller.Run(c.config.threadiness, c.config.StopCh)
-	<-c.config.StopCh
+	go c.protoformConfig.controller.Run(c.protoformConfig.threadiness, c.protoformConfig.StopCh)
 }
 
 // PostRun will run post CRD controller execution

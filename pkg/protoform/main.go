@@ -74,10 +74,8 @@ func NewController(configPath string) (*Deployer, error) {
 	if err != nil {
 		log.Panicf("unable to create kubernetes clientset: %s", err.Error())
 	}
-	stopCh := make(chan struct{})
 
-	defer close(stopCh)
-	return NewDeployer(config, kubeConfig, kubeClientSet, config.Namespace, stopCh), err
+	return NewDeployer(config, kubeConfig, kubeClientSet), err
 }
 
 func newKubeClientFromOutsideCluster() (*rest.Config, error) {

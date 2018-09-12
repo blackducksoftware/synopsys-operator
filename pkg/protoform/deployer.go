@@ -33,16 +33,16 @@ type Deployer struct {
 	Config        *model.Config
 	KubeConfig    *rest.Config
 	KubeClientSet *kubernetes.Clientset
-	Namespace     string
-	StopCh        <-chan struct{}
 	controllerMap map[controller.ControllerType]interface{}
 	controllers   []controller.ProtoformControllerInterface
 }
 
 // NewDeployer will create the specification that is used for deploying controllers
-func NewDeployer(config *model.Config, kubeConfig *rest.Config, kubeClientSet *kubernetes.Clientset, namespace string, stopCh <-chan struct{}) *Deployer {
+func NewDeployer(config *model.Config, kubeConfig *rest.Config, kubeClientSet *kubernetes.Clientset) *Deployer {
 	deployer := Deployer{
 		Config:        config,
+		KubeConfig:    kubeConfig,
+		KubeClientSet: kubeClientSet,
 		controllerMap: make(map[controller.ControllerType]interface{}),
 		controllers:   make([]controller.ProtoformControllerInterface, 0),
 	}

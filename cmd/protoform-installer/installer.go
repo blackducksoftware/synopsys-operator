@@ -42,33 +42,33 @@ func runProtoform(configPath string) {
 	if err != nil {
 		panic(err)
 	}
+
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
 	alertConfig, err := alert.NewController(&alert.ProtoformControllerConfig{
+		Config:        installer.Config,
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
-		Namespace:     installer.Namespace,
-		StopCh:        stopCh,
 	})
 	installer.AddController(alertConfig)
 
 	hubConfig, err := hub.NewController(&hub.ProtoformControllerConfig{
+		Config:        installer.Config,
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
-		Namespace:     installer.Namespace,
-		StopCh:        stopCh,
 	})
 	installer.AddController(hubConfig)
 
 	opssSightConfig, err := opssight.NewController(&opssight.ProtoformControllerConfig{
+		Config:        installer.Config,
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
-		Namespace:     installer.Namespace,
-		StopCh:        stopCh,
 	})
 	installer.AddController(opssSightConfig)
 
 	installer.Deploy()
+
+	<-stopCh
 
 }

@@ -24,6 +24,7 @@ package opssight
 import (
 	"time"
 
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	opssightcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/controller"
 	"k8s.io/client-go/kubernetes"
@@ -34,9 +35,9 @@ import (
 
 // ProtoformControllerConfig defines the specification for the controller
 type ProtoformControllerConfig struct {
+	Config          *model.Config
 	KubeConfig      *rest.Config
 	KubeClientSet   *kubernetes.Clientset
-	Namespace       string
 	resyncPeriod    time.Duration
 	indexers        cache.Indexers
 	infomer         cache.SharedIndexInformer

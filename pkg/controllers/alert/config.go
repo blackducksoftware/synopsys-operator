@@ -26,6 +26,7 @@ import (
 
 	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 	alertcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/alert/controller"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -34,9 +35,9 @@ import (
 
 // ProtoformControllerConfig defines the specification for the controller
 type ProtoformControllerConfig struct {
+	Config          *model.Config
 	KubeConfig      *rest.Config
 	KubeClientSet   *kubernetes.Clientset
-	Namespace       string
 	resyncPeriod    time.Duration
 	indexers        cache.Indexers
 	infomer         cache.SharedIndexInformer
