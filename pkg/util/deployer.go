@@ -33,7 +33,7 @@ import (
 
 // Deployer will contain the deployer specification
 type Deployer struct {
-	deployer *deployer.Deployer
+	Deployer *deployer.Deployer
 }
 
 // NewDeployer will create the horizon deployer
@@ -42,7 +42,7 @@ func NewDeployer(config *rest.Config) (*Deployer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create deployer: %v", err)
 	}
-	return &Deployer{deployer: deployer}, nil
+	return &Deployer{Deployer: deployer}, nil
 }
 
 func (i *Deployer) addNS(ns string) {
@@ -50,13 +50,13 @@ func (i *Deployer) addNS(ns string) {
 		Name: ns,
 	})
 
-	i.deployer.AddNamespace(comp)
+	i.Deployer.AddNamespace(comp)
 }
 
 func (i *Deployer) addRCs(list []*components.ReplicationController) {
 	if len(list) > 0 {
 		for _, rc := range list {
-			i.deployer.AddReplicationController(rc)
+			i.Deployer.AddReplicationController(rc)
 		}
 	}
 }
@@ -64,7 +64,7 @@ func (i *Deployer) addRCs(list []*components.ReplicationController) {
 func (i *Deployer) addSvcs(list []*components.Service) {
 	if len(list) > 0 {
 		for _, svc := range list {
-			i.deployer.AddService(svc)
+			i.Deployer.AddService(svc)
 		}
 	}
 }
@@ -72,7 +72,7 @@ func (i *Deployer) addSvcs(list []*components.Service) {
 func (i *Deployer) addCMs(list []*components.ConfigMap) {
 	if len(list) > 0 {
 		for _, cm := range list {
-			i.deployer.AddConfigMap(cm)
+			i.Deployer.AddConfigMap(cm)
 		}
 	}
 }
@@ -80,7 +80,7 @@ func (i *Deployer) addCMs(list []*components.ConfigMap) {
 func (i *Deployer) addSAs(list []*components.ServiceAccount) {
 	if len(list) > 0 {
 		for _, sa := range list {
-			i.deployer.AddServiceAccount(sa)
+			i.Deployer.AddServiceAccount(sa)
 		}
 	}
 }
@@ -88,7 +88,7 @@ func (i *Deployer) addSAs(list []*components.ServiceAccount) {
 func (i *Deployer) addCRs(list []*components.ClusterRole) {
 	if len(list) > 0 {
 		for _, cr := range list {
-			i.deployer.AddClusterRole(cr)
+			i.Deployer.AddClusterRole(cr)
 		}
 	}
 }
@@ -96,7 +96,7 @@ func (i *Deployer) addCRs(list []*components.ClusterRole) {
 func (i *Deployer) addCRBs(list []*components.ClusterRoleBinding) {
 	if len(list) > 0 {
 		for _, crb := range list {
-			i.deployer.AddClusterRoleBinding(crb)
+			i.Deployer.AddClusterRoleBinding(crb)
 		}
 	}
 }
@@ -104,7 +104,7 @@ func (i *Deployer) addCRBs(list []*components.ClusterRoleBinding) {
 func (i *Deployer) addDeploys(list []*components.Deployment) {
 	if len(list) > 0 {
 		for _, d := range list {
-			i.deployer.AddDeployment(d)
+			i.Deployer.AddDeployment(d)
 		}
 	}
 }
@@ -112,13 +112,14 @@ func (i *Deployer) addDeploys(list []*components.Deployment) {
 func (i *Deployer) addSecrets(list []*components.Secret) {
 	if len(list) > 0 {
 		for _, s := range list {
-			i.deployer.AddSecret(s)
+			i.Deployer.AddSecret(s)
 		}
 	}
 }
 
-func (i *Deployer) addController(namespace string) {
-	i.deployer.AddController("Pod List Controller", NewPodListController(namespace))
+// addDefaultController adds a default 'pod list' controller, just as an example.
+func (i *Deployer) addDefaultController(namespace string) {
+	i.Deployer.AddController("Pod List Controller", NewPodListController(namespace))
 }
 
 // PreDeploy will provide the deploy objects
@@ -132,7 +133,7 @@ func (i *Deployer) PreDeploy(components *api.ComponentList, namespace string) {
 		i.addCRBs(components.ClusterRoleBindings)
 		i.addDeploys(components.Deployments)
 		i.addSecrets(components.Secrets)
-		i.addController(namespace)
+		i.addDefaultController(namespace)
 	}
 }
 
@@ -145,5 +146,5 @@ func (i *Deployer) Run() error {
 func (i *Deployer) StartControllers() {
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	i.deployer.StartControllers(stopCh)
+	i.Deployer.StartControllers(stopCh)
 }
