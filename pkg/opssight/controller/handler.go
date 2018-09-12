@@ -39,7 +39,7 @@ type Handler interface {
 	ObjectUpdated(objOld, objNew interface{})
 }
 
-// AlertHandler will store the configuration that is required to initiantiate the informers callback
+// OpsSightHandler will store the configuration that is required to initiantiate the informers callback
 type OpsSightHandler struct {
 	Config            *rest.Config
 	Clientset         *kubernetes.Clientset
