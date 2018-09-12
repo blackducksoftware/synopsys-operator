@@ -2,6 +2,25 @@
 
 
 [[projects]]
+  name = "cloud.google.com/go"
+  packages = ["compute/metadata"]
+  revision = "c728a003b238b26cef9ab6753a5dc424b331c3ad"
+  version = "v0.27.0"
+
+[[projects]]
+  name = "github.com/Azure/go-autorest"
+  packages = [
+    "autorest",
+    "autorest/adal",
+    "autorest/azure",
+    "autorest/date",
+    "logger",
+    "version"
+  ]
+  revision = "a88c19ef2016e095f0b6c3b451074b4663f53bed"
+  version = "v10.15.4"
+
+[[projects]]
   branch = "master"
   name = "github.com/blackducksoftware/horizon"
   packages = [
@@ -18,6 +37,12 @@
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   branch = "master"
@@ -110,6 +135,20 @@
   ]
   revision = "7c663266750e7d82587642f65e60bc4083f1f84e"
   version = "v0.2.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gophercloud/gophercloud"
+  packages = [
+    ".",
+    "openstack",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/utils",
+    "pagination"
+  ]
+  revision = "a5e4374c99156e0f98429d363ace306d8f9fff6d"
 
 [[projects]]
   branch = "master"
@@ -241,21 +280,6 @@
   version = "1.0.1"
 
 [[projects]]
-  name = "github.com/openshift/api"
-  packages = ["security/v1"]
-  revision = "0d921e363e951d89f583292c60d013c318df64dc"
-  version = "v3.9.0"
-
-[[projects]]
-  name = "github.com/openshift/client-go"
-  packages = [
-    "security/clientset/versioned/scheme",
-    "security/clientset/versioned/typed/security/v1"
-  ]
-  revision = "1fa528d3be060e4c7178eb69e76d37cf7e699e3c"
-  version = "v3.9.0"
-
-[[projects]]
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
@@ -329,12 +353,25 @@
   name = "golang.org/x/net"
   packages = [
     "context",
+    "context/ctxhttp",
     "http/httpguts",
     "http2",
     "http2/hpack",
     "idna"
   ]
   revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt"
+  ]
+  revision = "d2e6202438beef2727060aa7cabdd924d92ebfd9"
 
 [[projects]]
   branch = "master"
@@ -371,6 +408,23 @@
   name = "golang.org/x/time"
   packages = ["rate"]
   revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
+
+[[projects]]
+  name = "google.golang.org/appengine"
+  packages = [
+    ".",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch"
+  ]
+  revision = "b1f26356af11148e710935ed1ac8a7f5702c7612"
+  version = "v1.1.0"
 
 [[projects]]
   name = "gopkg.in/go-playground/validator.v8"
@@ -527,10 +581,16 @@
     "pkg/apis/clientauthentication/v1alpha1",
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
+    "plugin/pkg/client/auth",
+    "plugin/pkg/client/auth/azure",
     "plugin/pkg/client/auth/exec",
+    "plugin/pkg/client/auth/gcp",
+    "plugin/pkg/client/auth/oidc",
+    "plugin/pkg/client/auth/openstack",
     "rest",
     "rest/watch",
     "testing",
+    "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -550,6 +610,7 @@
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
+    "util/jsonpath",
     "util/retry",
     "util/workqueue"
   ]
@@ -570,9 +631,21 @@
   packages = ["pkg/util/proto"]
   revision = "e3762e86a74c878ffed47484592986685639c2cd"
 
+[[projects]]
+  name = "k8s.io/kubernetes"
+  packages = [
+    "pkg/apis/autoscaling",
+    "pkg/apis/core",
+    "pkg/apis/extensions",
+    "pkg/apis/networking",
+    "pkg/apis/policy"
+  ]
+  revision = "a4529464e4629c21224b3d52edfe0ea91b072862"
+  version = "v1.11.3"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "320430ce99446f851ec8a65505cea107c9f0002b191a5990db2c4518dbc24cd5"
+  inputs-digest = "440bd696799000c64a7e78484bcb8c31c4b33c0be6bf4671e8e5a6484e626aa1"
   solver-name = "gps-cdcl"
   solver-version = 1
