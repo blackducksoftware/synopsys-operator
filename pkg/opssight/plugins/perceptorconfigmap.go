@@ -7,17 +7,23 @@ package plugins
 // there is a problem in the orchestration environment.
 
 import (
+	"k8s.io/apimachinery/pkg/util/wait"
 	"encoding/json"
 	"fmt"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	opssiteclient "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/kubernetes/kubernetes/pkg/apis/extensions"
+	"github.com/kubernetes/kubernetes/pkg/kubelet/kubeletconfig/util/log"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 )
 
 type hubConfig struct {
@@ -87,9 +93,44 @@ func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string)
 	return nil
 }
 
-// Run ...
-func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) error {
+// Run is a BLOCKING function which should be run by the framework .
+func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) {
+	syncFunc := func() {
+		p.updateAllHubs(c, ch)
+	}
+	lw := &cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List()
+		},
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).Watch()
+		},
+	}
+	st, ctrl := cache.NewInformer(lw,
+		&extensions.Deployment{},
+		c.SyncPeriod,
+		cache.ResourceEventHandlerFuncs{
+			// TODO kinda dumb, we just do a complete re-list of all hubs, 
+			// every time an event happens... But thats all we need to do, so its good enough.
+			DeleteFunc: func(obj interface{}) {
+				logrus.Infof("Hub deleted ! %v ",obj)
+				syncFunc()
+			},
+			OnAdd: func(obj interface{}){
+				logrus.Infof("Hub added ! %v ",obj)
+				syncFunc()
+			}
+		},
+	)
+	logrus.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
+	
+	// make sure this is called from a go func.
+	// This blocks!  
+	ctrl.Run(ch)
+}
 
+// Run ...
+func (p *PerceptorConfigMap) updateAllHubs(c api.ControllerResources, ch chan struct{}) error {
 	allHubNamespaces := func() []string {
 		allHubNamespaces := []string{}
 		hubsList, _ := hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(meta_v1.ListOptions{})
