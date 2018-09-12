@@ -22,8 +22,7 @@ under the License.
 package api
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
+	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
 // ProtoformConfig defines the configuration for protoform
@@ -44,6 +43,16 @@ type ProtoformConfig struct {
 
 // ProtoformApps defines the configuration for supported apps
 type ProtoformApps struct {
-	PerceptorConfig *perceptor.AppConfig `json:"perceptorConfig,omitempty"`
-	AlertConfig     *alert.AppConfig     `json:"alertConfig,omitempty"`
+}
+
+// ComponentList defines the list of components for an app
+type ComponentList struct {
+	ReplicationControllers []*components.ReplicationController
+	Services               []*components.Service
+	ConfigMaps             []*components.ConfigMap
+	ServiceAccounts        []*components.ServiceAccount
+	ClusterRoleBindings    []*components.ClusterRoleBinding
+	ClusterRoles           []*components.ClusterRole
+	Deployments            []*components.Deployment
+	Secrets                []*components.Secret
 }

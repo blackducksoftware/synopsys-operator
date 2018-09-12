@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/alert"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/perceptor"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/alert"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/hub"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/controllers/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 )
 
@@ -38,53 +38,40 @@ func main() {
 }
 
 func runProtoform(configPath string) {
-	installer, err := protoform.NewInstaller(configPath)
+	installer, err := protoform.NewController(configPath)
 	if err != nil {
 		panic(err)
 	}
-	installer.LoadAppDefault(apps.Perceptor, createPerceptorAppDefaults())
-	installer.LoadAppDefault(apps.Alert, createAlertAppDefaults())
+
 	stopCh := make(chan struct{})
-	err = installer.Run(stopCh)
-	if err != nil {
-		panic(err)
-	}
-}
+	defer close(stopCh)
 
-func createPerceptorAppDefaults() *perceptor.AppConfig {
-	hubPort := 443
-	perceptorHubClientTimeout := 5000
-	scannerHubClientTimeout := 120
-	scanLimit := 7
+	alertConfig, err := alert.NewController(&alert.ProtoformControllerConfig{
+		Config:        installer.Config,
+		KubeConfig:    installer.KubeConfig,
+		KubeClientSet: installer.KubeClientSet,
+		Threadiness:   installer.Config.Threadiness,
+	})
+	installer.AddController(alertConfig)
 
-	d := perceptor.NewPerceptorAppDefaults()
-	d.HubUser = "sysadmin"
-	d.HubHost = "webserver"
-	d.HubPort = &hubPort
-	d.InternalDockerRegistries = []string{"docker-registry.default.svc:5000", "172.1.1.0:5000"}
-	d.DefaultVersion = "master"
-	d.Registry = "gcr.io"
-	d.ImagePath = "gke-verification/blackducksoftware"
-	d.Namespace = "perceptor"
-	d.LogLevel = "info"
-	d.DefaultCPU = "300m"
-	d.DefaultMem = "1300Mi"
-	d.HubClientTimeoutPerceptorMilliseconds = &perceptorHubClientTimeout
-	d.HubClientTimeoutScannerSeconds = &scannerHubClientTimeout
-	d.ConcurrentScanLimit = &scanLimit
+	hubConfig, err := hub.NewController(&hub.ProtoformControllerConfig{
+		Config:        installer.Config,
+		KubeConfig:    installer.KubeConfig,
+		KubeClientSet: installer.KubeClientSet,
+		Threadiness:   installer.Config.Threadiness,
+	})
+	installer.AddController(hubConfig)
 
-	return d
-}
+	opssSightConfig, err := opssight.NewController(&opssight.ProtoformControllerConfig{
+		Config:        installer.Config,
+		KubeConfig:    installer.KubeConfig,
+		KubeClientSet: installer.KubeClientSet,
+		Threadiness:   installer.Config.Threadiness,
+	})
+	installer.AddController(opssSightConfig)
 
-func createAlertAppDefaults() *alert.AppConfig {
-	d := alert.NewAppDefaults()
-	d.Registry = "docker.io"
-	d.ImagePath = "blackducksoftware"
-	d.AlertImageVersion = "master"
-	d.AlertImageName = "blackduck-alert"
-	d.CfsslImageVersion = "master"
-	d.CfsslImageName = "hub-cfssl"
-	d.Namespace = "alert"
+	installer.Deploy()
 
-	return d
+	<-stopCh
+
 }
