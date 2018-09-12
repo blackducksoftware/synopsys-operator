@@ -45,6 +45,6 @@ type ProtoformControllerConfig struct {
 	handler         *alertcontroller.AlertHandler
 	controller      *alertcontroller.Controller
 	customClientSet *alertclientset.Clientset
-	threadiness     int
+	Threadiness     int
 	StopCh          <-chan struct{}
 }

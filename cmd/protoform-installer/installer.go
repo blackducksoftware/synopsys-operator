@@ -50,6 +50,7 @@ func runProtoform(configPath string) {
 		Config:        installer.Config,
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
+		Threadiness:   installer.Config.Threadiness,
 	})
 	installer.AddController(alertConfig)
 
@@ -57,6 +58,7 @@ func runProtoform(configPath string) {
 		Config:        installer.Config,
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
+		Threadiness:   installer.Config.Threadiness,
 	})
 	installer.AddController(hubConfig)
 
@@ -64,6 +66,7 @@ func runProtoform(configPath string) {
 		Config:        installer.Config,
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
+		Threadiness:   installer.Config.Threadiness,
 	})
 	installer.AddController(opssSightConfig)
 

@@ -54,7 +54,6 @@ func NewController(config interface{}) (*ControllerConfig, error) {
 
 	d.protoformConfig.resyncPeriod = 0
 	d.protoformConfig.indexers = cache.Indexers{}
-	d.protoformConfig.threadiness = 5
 
 	return d, nil
 }
@@ -177,7 +176,7 @@ func (c *ControllerConfig) CreateController() {
 
 // Run will run the CRD controller
 func (c *ControllerConfig) Run() {
-	go c.protoformConfig.controller.Run(c.protoformConfig.threadiness, c.protoformConfig.StopCh)
+	go c.protoformConfig.controller.Run(c.protoformConfig.Threadiness, c.protoformConfig.StopCh)
 }
 
 // PostRun will run post CRD controller execution

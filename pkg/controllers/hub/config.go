@@ -45,6 +45,6 @@ type ProtoformControllerConfig struct {
 	handler         *hubcontroller.HubHandler
 	controller      *hubcontroller.Controller
 	customClientSet *hubclientset.Clientset
-	threadiness     int
+	Threadiness     int
 	StopCh          <-chan struct{}
 }

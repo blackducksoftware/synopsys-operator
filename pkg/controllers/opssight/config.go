@@ -45,6 +45,6 @@ type ProtoformControllerConfig struct {
 	handler         *opssightcontroller.OpsSightHandler
 	controller      *opssightcontroller.Controller
 	customClientSet *opssightclientset.Clientset
-	threadiness     int
+	Threadiness     int
 	StopCh          <-chan struct{}
 }

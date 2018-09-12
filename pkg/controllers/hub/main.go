@@ -58,7 +58,6 @@ func NewController(config interface{}) (*ControllerConfig, error) {
 
 	d.protoformConfig.resyncPeriod = 0
 	d.protoformConfig.indexers = cache.Indexers{}
-	d.protoformConfig.threadiness = 5
 
 	return d, nil
 }
@@ -94,25 +93,27 @@ func (c *ControllerConfig) Deploy() error {
 
 	// Perceptor configMap
 	hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.protoformConfig.Config.Namespace, Name: "hubfederator"})
-	hubFederatorConfig.AddData(map[string]string{"config.json": fmt.Sprint(`{"HubConfig": {"User": "`, "sysadmin",
-		`", "PasswordEnvVar": "`, "HUB_PASSWORD",
-		`", "ClientTimeoutMilliseconds": `, 5000,
-		`, "Port": `, "443", `, "FetchAllProjectsPauseSeconds": `, 60,
-		`}, "UseMockMode": `, false, `, "LogLevel": "`, "debug", `", "Port": `, "3016", `}`)})
+	hubFederatorConfig.AddData(map[string]string{"config.json": fmt.Sprint(`{"HubConfig": {"User": "`, c.protoformConfig.Config.HubFederatorConfig.HubConfig.User,
+		`", "PasswordEnvVar": "`, c.protoformConfig.Config.HubFederatorConfig.HubConfig.PasswordEnvVar,
+		`", "ClientTimeoutMilliseconds": `, c.protoformConfig.Config.HubFederatorConfig.HubConfig.ClientTimeoutMilliseconds,
+		`, "Port": `, c.protoformConfig.Config.HubFederatorConfig.HubConfig.Port,
+		`, "FetchAllProjectsPauseSeconds": `, c.protoformConfig.Config.HubFederatorConfig.HubConfig.FetchAllProjectsPauseSeconds,
+		`}, "UseMockMode": `, c.protoformConfig.Config.HubFederatorConfig.UseMockMode, `, "LogLevel": "`, c.protoformConfig.Config.LogLevel,
+		`", "Port": `, c.protoformConfig.Config.HubFederatorConfig.Port, `}`)})
 	deployer.AddConfigMap(hubFederatorConfig)
 
 	// Perceptor service
-	deployer.AddService(util.CreateService("hub-federator", "hub-federator", c.protoformConfig.Config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeDefault))
-	deployer.AddService(util.CreateService("hub-federator-np", "hub-federator", c.protoformConfig.Config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeNodePort))
-	deployer.AddService(util.CreateService("hub-federator-lb", "hub-federator", c.protoformConfig.Config.Namespace, "3016", "3016", horizonapi.ClusterIPServiceTypeLoadBalancer))
+	deployer.AddService(util.CreateService("hub-federator", "hub-federator", c.protoformConfig.Config.Namespace, fmt.Sprint(c.protoformConfig.Config.HubFederatorConfig.Port), fmt.Sprint(c.protoformConfig.Config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(util.CreateService("hub-federator-np", "hub-federator", c.protoformConfig.Config.Namespace, fmt.Sprint(c.protoformConfig.Config.HubFederatorConfig.Port), fmt.Sprint(c.protoformConfig.Config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeNodePort))
+	deployer.AddService(util.CreateService("hub-federator-lb", "hub-federator", c.protoformConfig.Config.Namespace, fmt.Sprint(c.protoformConfig.Config.HubFederatorConfig.Port), fmt.Sprint(c.protoformConfig.Config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeLoadBalancer))
 
 	// Hub federator deployment
 	hubFederatorContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-federator", Image: "gcr.io/gke-verification/blackducksoftware/federator:master",
 			PullPolicy: horizonapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/hubfederator/config.json"}},
-		EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_PASSWORD", KeyOrVal: "blackduck"}},
+		EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: c.protoformConfig.Config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: "blackduck"}},
 		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "hubfederator", MountPath: "/etc/hubfederator", Propagation: horizonapi.MountPropagationNone}},
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: "3016", Protocol: horizonapi.ProtocolTCP},
+		PortConfig:   &horizonapi.PortConfig{ContainerPort: fmt.Sprint(c.protoformConfig.Config.HubFederatorConfig.Port), Protocol: horizonapi.ProtocolTCP},
 	}
 	hubFederatorVolume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "hubfederator",
@@ -205,7 +206,7 @@ func (c *ControllerConfig) CreateHandler() {
 		Clientset:        c.protoformConfig.KubeClientSet,
 		HubClientset:     c.protoformConfig.customClientSet,
 		Namespace:        c.protoformConfig.Config.Namespace,
-		FederatorBaseURL: fmt.Sprintf("http://hub-federator:%d", 3016),
+		FederatorBaseURL: fmt.Sprintf("http://hub-federator:%d", c.protoformConfig.Config.HubFederatorConfig.Port),
 		CmMutex:          make(chan bool, 1),
 	}
 }
@@ -223,7 +224,7 @@ func (c *ControllerConfig) CreateController() {
 
 // Run will run the CRD controller
 func (c *ControllerConfig) Run() {
-	go c.protoformConfig.controller.Run(c.protoformConfig.threadiness, c.protoformConfig.StopCh)
+	go c.protoformConfig.controller.Run(c.protoformConfig.Threadiness, c.protoformConfig.StopCh)
 }
 
 // PostRun will run post CRD controller execution
