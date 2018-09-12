@@ -148,6 +148,7 @@ func (p *PerceptorConfigMap) updateAllHubs(c api.ControllerResources, ch chan st
 		return err
 	}
 
+	// TODO, replace w/ configmap mutat ?
 	// curl perceptor w/ the latest hub list
 	for _, opssight := range opssiteList.Items {
 		sendHubs(c.KubeClient, opssight.Namespace, allHubNamespaces)
