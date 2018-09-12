@@ -7,57 +7,90 @@ package controller_plugins
 // there is a problem in the orchestration environment.
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	opssiteclient "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
-type PerceptorConfigMap struct {
+type hubConfig struct {
+	Hosts                     []string
+	User                      string
+	PasswordEnvVar            string
+	ClientTimeoutMilliseconds int
+	Port                      int
+	ConcurrentScanLimit       int
+	TotalScanLimit            int
 }
 
-type PerceptorPayload struct {
-	HubURLs []string `json:"HubURLs"`
+type timings struct {
+	CheckForStalledScansPauseHours int
+	StalledScanClientTimeoutHours  int
+	ModelMetricsPauseSeconds       int
+	UnknownImagePauseMilliseconds  int
 }
+
+type perceptorConfig struct {
+	Hub         *hubConfig
+	Timings     *timings
+	UseMockMode bool
+	Port        int
+	LogLevel    string
+}
+
+type PerceptorConfigMap struct{}
 
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
-func sendHubs(url string, hubs []string) {
-	data := PerceptorPayload{
-		HubURLs: hubs,
-	}
-	payloadBytes, err := json.Marshal(data)
+func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string) error {
+	configmapList, err := kubeClient.Core().ConfigMaps(namespace).List(meta_v1.ListOptions{})
 	if err != nil {
-		// handle err
+		return err
 	}
-	body := bytes.NewReader(payloadBytes)
 
-	req, err := http.NewRequest("PUT", url, body)
-	if err != nil {
-		// handle err
+	var configMap *v1.ConfigMap
+	for _, cm := range configmapList.Items {
+		if cm.Name == "perceptor-config" {
+			configMap = &cm
+			break
+		}
 	}
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		// handle err
+	if configMap == nil {
+		return fmt.Errorf("unable to find configmap perceptor-config")
 	}
-	defer resp.Body.Close()
+
+	var value perceptorConfig
+	err = json.Unmarshal([]byte(configMap.Data["perceptor_conf.yaml"]), &value)
+	if err != nil {
+		return err
+	}
+
+	value.Hub.Hosts = hubs
+
+	jsonBytes, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	configMap.Data["perceptor_conf.yaml"] = string(jsonBytes)
+	kubeClient.Core().ConfigMaps(namespace).Update(configMap)
+
+	return nil
 }
 
 func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) error {
 
-	// for matt .
 	allHubNamespaces := func() []string {
 		allHubNamespaces := []string{}
-		hubsList, _ := hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs("").List(v1.ListOptions{})
+		hubsList, _ := hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(meta_v1.ListOptions{})
 		hubs := hubsList.Items
 		for _, hub := range hubs {
 			ns := hub.Namespace
@@ -68,11 +101,14 @@ func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) er
 	}()
 
 	// for opssight 3.0, only support one opssight
-	opssiteList, _ := opssiteclient.New(c.KubeClient.RESTClient()).SynopsysV1().OpsSights("").List(v1.ListOptions{})
+	opssiteList, err := opssiteclient.New(c.KubeClient.RESTClient()).SynopsysV1().OpsSights(v1.NamespaceAll).List(meta_v1.ListOptions{})
+	if err != nil {
+		return err
+	}
 
 	// curl perceptor w/ the latest hub list
 	for _, opssight := range opssiteList.Items {
-		sendHubs(fmt.Sprintf("%v.svc.cluster.local", opssight.Namespace), allHubNamespaces)
+		sendHubs(c.KubeClient, opssight.Namespace, allHubNamespaces)
 	}
 	return nil
 }
