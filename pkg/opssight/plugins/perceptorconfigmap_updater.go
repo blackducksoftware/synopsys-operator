@@ -131,7 +131,8 @@ func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) {
 	ctrl.Run(ch)
 }
 
-// Run ...
+// updateAllHubs will list all hubs in the cluster, and send them to opssight as scan targets.
+// TODO there may be hubs which we dont want opssight to use.  Not sure how to deal with that yet.
 func (p *PerceptorConfigMap) updateAllHubs(c api.ControllerResources, ch chan struct{}) error {
 	allHubNamespaces := func() []string {
 		allHubNamespaces := []string{}
