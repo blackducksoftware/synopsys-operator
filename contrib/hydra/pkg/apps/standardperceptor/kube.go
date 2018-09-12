@@ -23,8 +23,8 @@ package standardperceptor
 
 import (
 	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
+	v1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
-	// v1beta1 "k8s.io/api/extensions/v1beta1"
 
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,6 +44,7 @@ type Kube struct {
 	ConfigMaps             []*v1.ConfigMap
 	Services               []*v1.Service
 	Secrets                []*v1.Secret
+	Deployments            []*v1beta1.Deployment
 }
 
 func NewKube(config *Config) *Kube {
@@ -55,38 +56,31 @@ func NewKube(config *Config) *Kube {
 func (kube *Kube) createResources() {
 	config := kube.Config
 
-	perceptor := model.NewPerceptor()
+	perceptor := model.NewPerceptor(config.Perceptor.ServiceName, config.HubPasswordSecretName, config.HubPasswordSecretKey)
 	perceptor.Config = config.PerceptorConfig()
-	perceptor.HubPasswordSecretName = config.HubPasswordSecretName
-	perceptor.HubPasswordSecretKey = config.HubPasswordSecretKey
 
-	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName, config.PodPerceiverReplicationCount)
+	podPerceiver := model.NewPodPerceiver(config.AuxConfig.PodPerceiverServiceAccountName, config.PodPerceiver.ReplicationCount)
 	podPerceiver.Config = config.PodPerceiverConfig()
-	podPerceiver.Config.PerceptorHost = perceptor.ServiceName
 
-	perceptorScanner := model.NewScanner(config.ScannerMemory)
+	perceptorScanner := model.NewScanner(config.Scanner.Memory, config.ScannerPod.Name, config.HubPasswordSecretName, config.HubPasswordSecretKey)
 	perceptorScanner.Config = config.ScannerConfig()
-	perceptorScanner.Config.PerceptorHost = perceptor.ServiceName
-	perceptorScanner.HubPasswordSecretKey = config.HubPasswordSecretKey
-	perceptorScanner.HubPasswordSecretName = config.HubPasswordSecretName
 
-	imageFacade := model.NewImagefacade(config.AuxConfig.ImageFacadeServiceAccountName)
+	imageFacade := model.NewImagefacade(config.AuxConfig.ImageFacadeServiceAccountName, config.ScannerPod.Name)
 	imageFacade.Config = config.ImagefacadeConfig()
 
-	skyfire := model.NewSkyfire()
+	skyfire := model.NewSkyfire(config.HubPasswordSecretName, config.HubPasswordSecretKey)
 	skyfire.Config = config.SkyfireConfig()
-	skyfire.Config.PerceptorHost = perceptor.ServiceName
 
 	prometheus := model.NewPrometheus()
-	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.PerceptorPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorScanner.ServiceName, Port: config.ScannerPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: imageFacade.ServiceName, Port: config.ImageFacadePort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: podPerceiver.ServiceName, Port: config.PodPerceiverPort})
-	prometheus.AddTarget(&model.PrometheusTarget{Host: skyfire.ServiceName, Port: config.SkyfirePort})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptor.ServiceName, Port: config.Perceptor.Port})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: perceptorScanner.ServiceName, Port: config.Scanner.Port})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: imageFacade.ServiceName, Port: config.ImageFacade.Port})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: podPerceiver.ServiceName, Port: config.PodPerceiver.Port})
+	prometheus.AddTarget(&model.PrometheusTarget{Host: skyfire.ServiceName, Port: config.Skyfire.Port})
 	//	prometheus.Config = config.PrometheusConfig() // TODO ?
 
 	scanner := model.NewScannerPod(perceptorScanner, imageFacade)
-	scanner.ReplicaCount = config.ScannerReplicationCount
+	scanner.ReplicaCount = config.ScannerPod.ReplicationCount
 
 	kube.ReplicationControllers = []*v1.ReplicationController{
 		perceptor.ReplicationController(),
@@ -100,7 +94,7 @@ func (kube *Kube) createResources() {
 		perceptorScanner.Service(),
 		imageFacade.Service(),
 		skyfire.Service(),
-		//		prometheus.Service(),
+		prometheus.Service(),
 	}
 	kube.ConfigMaps = []*v1.ConfigMap{
 		perceptor.ConfigMap(),
@@ -111,15 +105,18 @@ func (kube *Kube) createResources() {
 		skyfire.ConfigMap(),
 	}
 	kube.Secrets = []*v1.Secret{
-		{
+		&v1.Secret{
 			ObjectMeta: v1meta.ObjectMeta{
 				Name: config.HubPasswordSecretName,
 			},
 			Type: v1.SecretTypeOpaque,
 			StringData: map[string]string{
-				config.HubPasswordSecretKey: config.HubUserPassword,
+				config.HubPasswordSecretKey: config.Hub.Password,
 			},
 		},
+	}
+	kube.Deployments = []*v1beta1.Deployment{
+		prometheus.Deployment(),
 	}
 
 	kube.Perceptor = perceptor
@@ -145,4 +142,8 @@ func (kube *Kube) GetSecrets() []*v1.Secret {
 
 func (kube *Kube) GetReplicationControllers() []*v1.ReplicationController {
 	return kube.ReplicationControllers
+}
+
+func (kube *Kube) GetDeployments() []*v1beta1.Deployment {
+	return kube.Deployments
 }

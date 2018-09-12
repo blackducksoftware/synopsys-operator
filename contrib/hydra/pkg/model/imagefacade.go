@@ -22,7 +22,7 @@ under the License.
 package model
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"k8s.io/api/core/v1"
 
@@ -30,25 +30,28 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ImagefacadeConfigMap struct {
-	DockerUser               string
-	DockerPassword           string
-	InternalDockerRegistries []string
-	LogLevel                 string
-	CreateImagesOnly         bool
-	Port                     int32
+type RegistryAuth struct {
+	Url      string
+	User     string
+	Password string
 }
 
-func NewImagefacadeConfigMap(dockerUser string, dockerPassword string, internalDockerRegistries []string, logLevel string, createImagesOnly bool, port int32) *ImagefacadeConfigMap {
-	return &ImagefacadeConfigMap{
-		DockerUser:               dockerUser,
-		DockerPassword:           dockerPassword,
-		InternalDockerRegistries: internalDockerRegistries,
-		LogLevel:                 logLevel,
-		CreateImagesOnly:         createImagesOnly,
-		Port:                     port,
-	}
+type ImagefacadeConfigMap struct {
+	PrivateDockerRegistries []RegistryAuth
+	LogLevel                string
+	CreateImagesOnly        bool
+	Port                    int32
+	ImageDirectory          string
 }
+
+// func NewImagefacadeConfigMap(privateDockerRegistries []RegistryAuth, logLevel string, createImagesOnly bool, port int32) *ImagefacadeConfigMap {
+// 	return &ImagefacadeConfigMap{
+// 		PrivateDockerRegistries: privateDockerRegistries,
+// 		LogLevel:                logLevel,
+// 		CreateImagesOnly:        createImagesOnly,
+// 		Port:                    port,
+// 	}
+// }
 
 type Imagefacade struct {
 	Image  string
@@ -69,10 +72,10 @@ type Imagefacade struct {
 	PodName string
 
 	ImagesMountName string
-	ImagesMountPath string
+	// ImagesMountPath string
 }
 
-func NewImagefacade(serviceAccountName string) *Imagefacade {
+func NewImagefacade(serviceAccountName string, podName string) *Imagefacade {
 	defaultMem, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -94,12 +97,16 @@ func NewImagefacade(serviceAccountName string) *Imagefacade {
 		DockerSocketName: "dir-docker-socket",
 		DockerSocketPath: "/var/run/docker.sock",
 
-		// Must fill these out before using this object
-		PodName: "",
+		PodName: podName,
 
+		// Must fill these out before using this object
 		ImagesMountName: "var-images",
-		ImagesMountPath: "/var/images",
+		// ImagesMountPath: "/var/images",
 	}
+}
+
+func (pif *Imagefacade) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", pif.ConfigMapMount, pif.ConfigMapPath)
 }
 
 func (pif *Imagefacade) Container() *v1.Container {
@@ -108,9 +115,9 @@ func (pif *Imagefacade) Container() *v1.Container {
 		Name:            "perceptor-imagefacade",
 		Image:           pif.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Command:         []string{"./perceptor-imagefacade", pif.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				ContainerPort: pif.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -122,15 +129,15 @@ func (pif *Imagefacade) Container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      pif.ImagesMountName,
-				MountPath: pif.ImagesMountPath,
+				MountPath: pif.Config.ImageDirectory,
 			},
-			{
+			v1.VolumeMount{
 				Name:      pif.ConfigMapName,
 				MountPath: pif.ConfigMapMount,
 			},
-			{
+			v1.VolumeMount{
 				Name:      pif.DockerSocketName,
 				MountPath: pif.DockerSocketPath,
 			},
@@ -146,7 +153,7 @@ func (pif *Imagefacade) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name: pif.ServiceName,
 					Port: pif.Config.Port,
 				},
@@ -165,7 +172,7 @@ func (pif *Imagefacade) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pif.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
+						v1.Volume{
 							Name: pif.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -173,11 +180,11 @@ func (pif *Imagefacade) ReplicationController() *v1.ReplicationController {
 								},
 							},
 						},
-						{
+						v1.Volume{
 							Name:         pif.ImagesMountName,
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
-						{
+						v1.Volume{
 							Name: pif.DockerSocketName,
 							VolumeSource: v1.VolumeSource{
 								HostPath: &v1.HostPathVolumeSource{Path: pif.DockerSocketPath},
@@ -190,9 +197,5 @@ func (pif *Imagefacade) ReplicationController() *v1.ReplicationController {
 }
 
 func (pif *Imagefacade) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(pif.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(pif.ConfigMapName, pif.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pif.ConfigMapName, pif.ConfigMapPath, pif.Config)
 }

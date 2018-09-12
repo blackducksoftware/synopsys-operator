@@ -22,35 +22,38 @@ under the License.
 package model
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PerceptorConfigMap struct {
-	HubHost               string
-	HubUser               string
-	HubUserPasswordEnvVar string
-	HubPort               int
-	ConcurrentScanLimit   int
-	UseMockMode           bool
-	Port                  int32
-	LogLevel              string
+type PerceptorHubConfig struct {
+	Host                      string
+	User                      string
+	PasswordEnvVar            string
+	ClientTimeoutMilliseconds int
+	Port                      int
+	ConcurrentScanLimit       int
+	TotalScanLimit            int
 }
 
-func NewPerceptorConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar string, hubPort int, concurrentScanLimit int, useMockMode bool, port int32, logLevel string) *PerceptorConfigMap {
-	return &PerceptorConfigMap{
-		HubHost:               hubHost,
-		HubUser:               hubUser,
-		HubUserPasswordEnvVar: hubUserPasswordEnvVar,
-		HubPort:               hubPort,
-		ConcurrentScanLimit:   concurrentScanLimit,
-		UseMockMode:           useMockMode,
-		Port:                  port,
-		LogLevel:              logLevel,
-	}
+type PerceptorTimingsConfig struct {
+	CheckForStalledScansPauseHours  int
+	StalledScanClientTimeoutHours   int
+	ModelMetricsPauseSeconds        int
+	UnknownImagePauseMilliseconds   int
+	PruneOrphanedImagesPauseMinutes int
+}
+
+type PerceptorConfigMap struct {
+	Hub                             *PerceptorHubConfig
+	Timings                         *PerceptorTimingsConfig
+	PruneOrphanedImagesPauseMinutes int
+	UseMockMode                     bool
+	Port                            int32
+	LogLevel                        string
 }
 
 type Perceptor struct {
@@ -71,7 +74,7 @@ type Perceptor struct {
 	ServiceName  string
 }
 
-func NewPerceptor() *Perceptor {
+func NewPerceptor(serviceName string, hubPasswordSecretName string, hubPasswordSecretKey string) *Perceptor {
 	memory, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -82,16 +85,22 @@ func NewPerceptor() *Perceptor {
 	}
 
 	return &Perceptor{
-		PodName:        "perceptor",
-		Image:          "gcr.io/gke-verification/blackducksoftware/perceptor:master",
-		CPU:            cpu,
-		Memory:         memory,
-		ConfigMapName:  "perceptor-config",
-		ConfigMapMount: "/etc/perceptor",
-		ConfigMapPath:  "perceptor_conf.yaml",
-		ReplicaCount:   1,
-		ServiceName:    "perceptor",
+		PodName:               "perceptor",
+		Image:                 "gcr.io/gke-verification/blackducksoftware/perceptor:master",
+		CPU:                   cpu,
+		Memory:                memory,
+		ConfigMapName:         "perceptor-config",
+		ConfigMapMount:        "/etc/perceptor",
+		ConfigMapPath:         "perceptor_conf.yaml",
+		HubPasswordSecretName: hubPasswordSecretName,
+		HubPasswordSecretKey:  hubPasswordSecretKey,
+		ReplicaCount:          1,
+		ServiceName:           serviceName,
 	}
+}
+
+func (pc *Perceptor) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", pc.ConfigMapMount, pc.ConfigMapPath)
 }
 
 func (pc *Perceptor) Container() *v1.Container {
@@ -100,8 +109,8 @@ func (pc *Perceptor) Container() *v1.Container {
 		Image:           pc.Image,
 		ImagePullPolicy: "Always",
 		Env: []v1.EnvVar{
-			{
-				Name: pc.Config.HubUserPasswordEnvVar,
+			v1.EnvVar{
+				Name: pc.Config.Hub.PasswordEnvVar,
 				ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{
 						LocalObjectReference: v1.LocalObjectReference{
@@ -112,9 +121,9 @@ func (pc *Perceptor) Container() *v1.Container {
 				},
 			},
 		},
-		Command: []string{},
+		Command: []string{"./perceptor", pc.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				ContainerPort: pc.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -126,7 +135,7 @@ func (pc *Perceptor) Container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      pc.ConfigMapName,
 				MountPath: pc.ConfigMapMount,
 			},
@@ -144,7 +153,7 @@ func (pc *Perceptor) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pc.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
+						v1.Volume{
 							Name: pc.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -165,18 +174,14 @@ func (pc *Perceptor) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name: pc.ServiceName,
 					Port: pc.Config.Port,
 				},
 			},
-			Selector: map[string]string{"name": pc.ServiceName}}}
+			Selector: map[string]string{"name": pc.PodName}}}
 }
 
 func (pc *Perceptor) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(pc.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, pc.Config)
 }

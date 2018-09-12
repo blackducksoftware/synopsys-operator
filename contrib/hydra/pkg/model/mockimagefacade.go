@@ -22,8 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
-
 	"k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -91,7 +89,7 @@ func (mif *MockImagefacade) Container() *v1.Container {
 		ImagePullPolicy: "Always",
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				ContainerPort: mif.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -103,11 +101,11 @@ func (mif *MockImagefacade) Container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      mif.ImagesMountName,
 				MountPath: mif.ImagesMountPath,
 			},
-			{
+			v1.VolumeMount{
 				Name:      mif.ConfigMapName,
 				MountPath: mif.ConfigMapMount,
 			},
@@ -122,7 +120,7 @@ func (mif *MockImagefacade) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name: mif.ServiceName,
 					Port: mif.Config.Port,
 				},
@@ -131,9 +129,5 @@ func (mif *MockImagefacade) Service() *v1.Service {
 }
 
 func (mif *MockImagefacade) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(mif.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(mif.ConfigMapName, mif.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(mif.ConfigMapName, mif.ConfigMapPath, mif.Config)
 }

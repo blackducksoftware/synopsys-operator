@@ -85,11 +85,13 @@ func (b *Builder) CreateResources() {
 		}
 	}
 
-	// for _, dep := range deployments {
-	// 	PrettyPrint(dep)
-	// 	_, err := clientset.Extensions().Deployments(namespace).Create(dep)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// }
+	for _, dep := range resources.GetDeployments() {
+		PrettyPrint(dep)
+		// _, err := clientset.ExtensionsV1beta1().Deployments(namespace).Create(dep)
+		//		_, err := clientset.Extensions().Deployments(namespace).Create(dep)
+		_, err := clientset.AppsV1beta1().Deployments(namespace).Create(dep)
+		if err != nil {
+			panic(err)
+		}
+	}
 }

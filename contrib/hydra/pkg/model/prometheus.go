@@ -22,11 +22,11 @@ under the License.
 package model
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"k8s.io/api/core/v1"
-	v1beta1 "k8s.io/api/extensions/v1beta1"
+	//	v1beta1 "k8s.io/api/extensions/v1beta1"
+	v1beta1 "k8s.io/api/apps/v1beta1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -54,7 +54,7 @@ type Prometheus struct {
 func NewPrometheus() *Prometheus {
 	return &Prometheus{
 		Name:                "prometheus",
-		PodName:             "prometheus-pod",
+		PodName:             "prometheus",
 		Image:               "prom/prometheus:v2.1.0",
 		ReplicaCount:        1,
 		DataVolumeName:      "data",
@@ -85,11 +85,11 @@ func (prom *Prometheus) Deployment() *v1beta1.Deployment {
 					Labels: map[string]string{"app": prom.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
+						v1.Volume{
 							Name:         prom.DataVolumeName,
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
-						{
+						v1.Volume{
 							Name: prom.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -110,19 +110,20 @@ func (prom *Prometheus) container() *v1.Container {
 			"--log.level=debug",
 			"--config.file=/etc/prometheus/prometheus.yml",
 			"--storage.tsdb.path=/tmp/data/",
+			"--storage.tsdb.retention=120d",
 		},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				Name:          "web",
 				ContainerPort: prom.Port,
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      prom.DataVolumeName,
 				MountPath: prom.DataVolumeMountPath,
 			},
-			{
+			v1.VolumeMount{
 				Name:      prom.ConfigMapName,
 				MountPath: prom.ConfigMapMountPath,
 			},
@@ -139,14 +140,14 @@ func (prom *Prometheus) Service() *v1.Service {
 		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeNodePort,
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name:       prom.ServiceName,
 					Port:       prom.Port,
 					Protocol:   "TCP",
 					TargetPort: intstr.IntOrString{IntVal: prom.Port},
 				},
 			},
-			Selector: map[string]string{"name": prom.PodName}}}
+			Selector: map[string]string{"app": prom.PodName}}}
 }
 
 func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
@@ -154,28 +155,21 @@ func (prom *Prometheus) ConfigMap() *v1.ConfigMap {
 	for _, target := range prom.Targets {
 		targets = append(targets, fmt.Sprintf("%s:%d", target.Host, target.Port))
 	}
-	targetsBytes, err := json.Marshal(targets)
-	if err != nil {
-		panic(err)
+	params := map[string]interface{}{
+		"global": map[string]string{
+			"scrape_interval": "5s",
+		},
+		"scrape_configs": []map[string]interface{}{
+			{
+				"job_name":        "perceptor-scrape",
+				"scrape_interval": "5s",
+				"static_configs": []map[string]interface{}{
+					{
+						"targets": targets,
+					},
+				},
+			},
+		},
 	}
-	jsonString := `
-  {
-    "global": {
-      "scrape_interval": "5s"
-    },
-    "scrape_configs": [
-      {
-        "job_name": "perceptor-scrape",
-        "scrape_interval": "5s",
-        "static_configs": [
-          {
-            "targets": %s
-          }
-        ]
-      }
-    ]
-  }
-  `
-	paramString := fmt.Sprintf(jsonString, string(targetsBytes))
-	return MakeConfigMap("prometheus", "prometheus.yml", paramString)
+	return MakeConfigMap("prometheus", "prometheus.yml", params)
 }

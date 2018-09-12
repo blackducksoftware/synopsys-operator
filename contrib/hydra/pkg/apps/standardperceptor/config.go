@@ -31,32 +31,56 @@ type Config struct {
 	MasterURL      string
 	KubeConfigPath string
 
-	// perceptor config
-	HubHost              string
-	HubUser              string
-	HubUserPassword      string
-	HubPort              int32
-	ConcurrentScanLimit  int
-	PerceptorPort        int32
-	UseMockPerceptorMode bool
+	Hub struct {
+		Host     string
+		User     string
+		Password string
+		Port     int32
+	}
+
+	Perceptor struct {
+		HubClientTimeoutMilliseconds int
+		ConcurrentScanLimit          int
+		TotalScanLimit               int
+		ServiceName                  string
+		Port                         int32
+		UseMockMode                  bool
+	}
 
 	// Perceivers config
-	ImagePerceiverPort           int32
-	PodPerceiverPort             int32
-	PodPerceiverReplicationCount int
-	AnnotationIntervalSeconds    int
-	DumpIntervalMinutes          int
+	ImagePerceiver struct {
+		Port                      int32
+		AnnotationIntervalSeconds int
+		DumpIntervalMinutes       int
+	}
 
-	// Scanner config
-	ScannerReplicationCount int32
-	ScannerPort             int32
-	ImageFacadePort         int32
-	ScannerMemory           string
-	JavaInitialHeapSizeMBs  int
-	JavaMaxHeapSizeMBs      int
+	PodPerceiver struct {
+		Port                      int32
+		ReplicationCount          int
+		AnnotationIntervalSeconds int
+		DumpIntervalMinutes       int
+	}
 
-	// Skyfire config
-	SkyfirePort int32
+	ScannerPod struct {
+		Name             string
+		ReplicationCount int32
+		ImageDirectory   string
+	}
+
+	Scanner struct {
+		Port                   int32
+		Memory                 string
+		JavaInitialHeapSizeMBs int
+		JavaMaxHeapSizeMBs     int
+	}
+
+	ImageFacade struct {
+		Port int32
+	}
+
+	Skyfire struct {
+		Port int32
+	}
 
 	// Secret config
 	HubPasswordSecretName string
@@ -80,78 +104,95 @@ func ReadConfig(configPath string) *Config {
 
 func (pc *Config) PodPerceiverConfig() model.PodPerceiverConfigMap {
 	return model.PodPerceiverConfigMap{
-		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
-		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
-		PerceptorHost:             "", // must be filled in elsewhere
-		PerceptorPort:             pc.PerceptorPort,
-		Port:                      pc.PodPerceiverPort,
+		AnnotationIntervalSeconds: pc.PodPerceiver.AnnotationIntervalSeconds,
+		DumpIntervalMinutes:       pc.PodPerceiver.DumpIntervalMinutes,
+		PerceptorHost:             pc.Perceptor.ServiceName,
+		PerceptorPort:             pc.Perceptor.Port,
+		Port:                      pc.PodPerceiver.Port,
 	}
 }
 
 func (pc *Config) ImagePerceiverConfig() model.ImagePerceiverConfigMap {
 	return model.ImagePerceiverConfigMap{
-		AnnotationIntervalSeconds: pc.AnnotationIntervalSeconds,
-		DumpIntervalMinutes:       pc.DumpIntervalMinutes,
-		PerceptorHost:             "", // must be filled in elsewhere
-		PerceptorPort:             pc.PerceptorPort,
-		Port:                      pc.ImagePerceiverPort,
+		AnnotationIntervalSeconds: pc.ImagePerceiver.AnnotationIntervalSeconds,
+		DumpIntervalMinutes:       pc.ImagePerceiver.DumpIntervalMinutes,
+		PerceptorHost:             pc.Perceptor.ServiceName,
+		PerceptorPort:             pc.Perceptor.Port,
+		Port:                      pc.ImagePerceiver.Port,
 	}
 }
 
 func (pc *Config) ScannerConfig() model.ScannerConfigMap {
 	return model.ScannerConfigMap{
-		HubHost:                 pc.HubHost,
-		HubUser:                 pc.HubUser,
-		HubUserPasswordEnvVar:   "SCANNER_HUBUSERPASSWORD",
-		HubPort:                 pc.HubPort,
-		HubClientTimeoutSeconds: 120,
-		JavaInitialHeapSizeMBs:  pc.JavaInitialHeapSizeMBs,
-		JavaMaxHeapSizeMBs:      pc.JavaMaxHeapSizeMBs,
-		LogLevel:                pc.LogLevel,
-		Port:                    pc.ScannerPort,
-		PerceptorHost:           "", // must be filled in elsewhere
-		PerceptorPort:           pc.PerceptorPort,
-		ImageFacadePort:         pc.ImageFacadePort,
+		Hub: &model.ScannerHubConfig{
+			User:                 pc.Hub.User,
+			PasswordEnvVar:       "SCANNER_HUBUSERPASSWORD",
+			Port:                 pc.Hub.Port,
+			ClientTimeoutSeconds: 600,
+		},
+		JavaInitialHeapSizeMBs: pc.Scanner.JavaInitialHeapSizeMBs,
+		JavaMaxHeapSizeMBs:     pc.Scanner.JavaMaxHeapSizeMBs,
+		LogLevel:               pc.LogLevel,
+		Port:                   pc.Scanner.Port,
+		Perceptor: &model.ScannerPerceptorConfig{
+			Host: pc.Perceptor.ServiceName,
+			Port: pc.Perceptor.Port,
+		},
+		ImageFacade: &model.ScannerImageFacadeConfig{
+			Host: "localhost",
+			Port: pc.ImageFacade.Port,
+		},
+		ImageDirectory: pc.ScannerPod.ImageDirectory,
 	}
 }
 
 func (pc *Config) ImagefacadeConfig() model.ImagefacadeConfigMap {
 	return model.ImagefacadeConfigMap{
-		DockerPassword:           pc.AuxConfig.DockerPassword,
-		DockerUser:               pc.AuxConfig.DockerUsername,
-		InternalDockerRegistries: pc.AuxConfig.InternalDockerRegistries,
-		CreateImagesOnly:         false,
-		Port:                     pc.ImageFacadePort,
-		LogLevel:                 pc.LogLevel,
+		PrivateDockerRegistries: pc.AuxConfig.PrivateDockerRegistries,
+		CreateImagesOnly:        false,
+		Port:                    pc.ImageFacade.Port,
+		LogLevel:                pc.LogLevel,
+		ImageDirectory:          pc.ScannerPod.ImageDirectory,
 	}
 }
 
 func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 	return model.PerceptorConfigMap{
-		ConcurrentScanLimit:   pc.ConcurrentScanLimit,
-		HubHost:               pc.HubHost,
-		HubUser:               pc.HubUser,
-		HubUserPasswordEnvVar: "PERCEPTOR_HUBUSERPASSWORD",
-		HubPort:               int(pc.HubPort),
-		UseMockMode:           pc.UseMockPerceptorMode,
-		Port:                  pc.PerceptorPort,
-		LogLevel:              pc.LogLevel,
+		Hub: &model.PerceptorHubConfig{
+			Host: pc.Hub.Host,
+			User: pc.Hub.User,
+			ClientTimeoutMilliseconds: pc.Perceptor.HubClientTimeoutMilliseconds,
+			PasswordEnvVar:            "PERCEPTOR_HUBUSERPASSWORD",
+			Port:                      int(pc.Hub.Port),
+			ConcurrentScanLimit:       pc.Perceptor.ConcurrentScanLimit,
+			TotalScanLimit:            pc.Perceptor.TotalScanLimit,
+		},
+		Timings: &model.PerceptorTimingsConfig{
+			CheckForStalledScansPauseHours:  2,
+			ModelMetricsPauseSeconds:        15,
+			PruneOrphanedImagesPauseMinutes: 9999999,
+			StalledScanClientTimeoutHours:   2,
+			UnknownImagePauseMilliseconds:   15000,
+		},
+		UseMockMode: pc.Perceptor.UseMockMode,
+		Port:        pc.Perceptor.Port,
+		LogLevel:    pc.LogLevel,
 	}
 }
 
 func (pc *Config) SkyfireConfig() model.SkyfireConfigMap {
 	return model.SkyfireConfigMap{
-		HubHost:     pc.HubHost,
-		HubUser:     pc.HubUser,
-		HubPassword: pc.HubUserPassword,
+		HubHost:               pc.Hub.Host,
+		HubUser:               pc.Hub.User,
+		HubUserPasswordEnvVar: "PERCEPTOR_HUBUSERPASSWORD",
 		// TODO pc.HubPort ?
 		KubeDumpIntervalSeconds:      15,
 		PerceptorDumpIntervalSeconds: 15,
 		HubDumpPauseSeconds:          30,
 		LogLevel:                     pc.LogLevel,
-		PerceptorHost:                "", // must be filled in elsewhere
-		PerceptorPort:                pc.PerceptorPort,
-		Port:                         pc.SkyfirePort,
+		PerceptorHost:                pc.Perceptor.ServiceName,
+		PerceptorPort:                pc.Perceptor.Port,
+		Port:                         pc.Skyfire.Port,
 		UseInClusterConfig:           true,
 	}
 }

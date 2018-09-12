@@ -22,7 +22,7 @@ under the License.
 package model
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -87,14 +87,18 @@ func NewPodPerceiver(serviceAccountName string, replicaCount int) *PodPerceiver 
 	}
 }
 
+func (pp *PodPerceiver) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", pp.ConfigMapMount, pp.ConfigMapPath)
+}
+
 func (pp *PodPerceiver) container() *v1.Container {
 	return &v1.Container{
 		Name:            "pod-perceiver",
 		Image:           pp.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Command:         []string{"./pod-perceiver", pp.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				ContainerPort: pp.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -106,7 +110,7 @@ func (pp *PodPerceiver) container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      pp.ConfigMapName,
 				MountPath: pp.ConfigMapMount,
 			},
@@ -124,7 +128,7 @@ func (pp *PodPerceiver) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pp.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
+						v1.Volume{
 							Name: pp.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -146,7 +150,7 @@ func (pp *PodPerceiver) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name: pp.ServiceName,
 					Port: pp.Config.Port,
 				},
@@ -155,9 +159,5 @@ func (pp *PodPerceiver) Service() *v1.Service {
 }
 
 func (pp *PodPerceiver) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(pp.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(pp.ConfigMapName, pp.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pp.ConfigMapName, pp.ConfigMapPath, pp.Config)
 }

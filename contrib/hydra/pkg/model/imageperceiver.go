@@ -22,7 +22,7 @@ under the License.
 package model
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -87,14 +87,18 @@ func NewImagePerceiver(replicaCount int32, serviceAccountName string) *ImagePerc
 	}
 }
 
-func (ip *ImagePerceiver) container() *v1.Container {
+func (ip *ImagePerceiver) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", ip.ConfigMapMount, ip.ConfigMapPath)
+}
+
+func (ip *ImagePerceiver) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "pod-perceiver",
 		Image:           ip.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Command:         []string{"./image-perceiver", ip.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				ContainerPort: ip.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -106,7 +110,7 @@ func (ip *ImagePerceiver) container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      ip.ConfigMapName,
 				MountPath: ip.ConfigMapMount,
 			},
@@ -124,7 +128,7 @@ func (ip *ImagePerceiver) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": ip.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
+						v1.Volume{
 							Name: ip.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -133,7 +137,7 @@ func (ip *ImagePerceiver) ReplicationController() *v1.ReplicationController {
 							},
 						},
 					},
-					Containers:         []v1.Container{*ip.container()},
+					Containers:         []v1.Container{*ip.Container()},
 					ServiceAccountName: ip.ServiceAccountName,
 					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
 				}}}}
@@ -146,7 +150,7 @@ func (ip *ImagePerceiver) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name: ip.ServiceName,
 					Port: ip.Config.Port,
 				},
@@ -155,9 +159,5 @@ func (ip *ImagePerceiver) Service() *v1.Service {
 }
 
 func (ip *ImagePerceiver) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(ip.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(ip.ConfigMapName, ip.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(ip.ConfigMapName, ip.ConfigMapPath, ip.Config)
 }

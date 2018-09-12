@@ -22,17 +22,23 @@ under the License.
 package model
 
 import (
+	"encoding/json"
+
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func MakeConfigMap(name string, filename string, contents string) *v1.ConfigMap {
+func MakeConfigMap(name string, filename string, contents interface{}) *v1.ConfigMap {
+	contentBytes, err := json.MarshalIndent(contents, "", "  ")
+	if err != nil {
+		panic(err)
+	}
 	return &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Data: map[string]string{
-			filename: contents,
+			filename: string(contentBytes),
 		},
 	}
 }

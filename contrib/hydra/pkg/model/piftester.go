@@ -22,8 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
-
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,7 +78,7 @@ func (pc *PifTester) container() *v1.Container {
 		ImagePullPolicy: "Always",
 		Command:         []string{},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				ContainerPort: pc.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -92,7 +90,7 @@ func (pc *PifTester) container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      pc.ConfigMapName,
 				MountPath: pc.ConfigMapMount,
 			},
@@ -110,7 +108,7 @@ func (pc *PifTester) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pc.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
+						v1.Volume{
 							Name: pc.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -130,7 +128,7 @@ func (pc *PifTester) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name: pc.ServiceName,
 					Port: pc.Config.Port,
 				},
@@ -139,9 +137,5 @@ func (pc *PifTester) Service() *v1.Service {
 }
 
 func (pc *PifTester) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(pc.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, pc.Config)
 }

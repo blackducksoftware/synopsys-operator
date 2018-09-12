@@ -36,7 +36,6 @@ type ScannerPod struct {
 	DockerSocketPath string
 
 	ImagesMountName string
-	ImagesMountPath string
 
 	Scanner     *Scanner
 	Imagefacade *Imagefacade
@@ -52,19 +51,16 @@ func NewScannerPod(scanner *Scanner, imagefacade *Imagefacade) *ScannerPod {
 		DockerSocketPath: "/var/run/docker.sock",
 
 		ImagesMountName: "var-images",
-		ImagesMountPath: "/var/images",
 
 		Scanner:     scanner,
 		Imagefacade: imagefacade,
 	}
 
 	scanner.ImagesMountName = scannerPod.ImagesMountName
-	scanner.ImagesMountPath = scannerPod.ImagesMountPath
 
 	scanner.PodName = scannerPod.PodName
 
 	imagefacade.ImagesMountName = scannerPod.ImagesMountName
-	imagefacade.ImagesMountPath = scannerPod.ImagesMountPath
 
 	imagefacade.DockerSocketName = scannerPod.DockerSocketName
 	imagefacade.DockerSocketPath = scannerPod.DockerSocketPath
@@ -84,7 +80,7 @@ func (sc *ScannerPod) ReplicationController() *v1.ReplicationController {
 				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": sc.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
+						v1.Volume{
 							Name: sc.Scanner.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -92,7 +88,7 @@ func (sc *ScannerPod) ReplicationController() *v1.ReplicationController {
 								},
 							},
 						},
-						{
+						v1.Volume{
 							Name: sc.Imagefacade.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
@@ -100,11 +96,11 @@ func (sc *ScannerPod) ReplicationController() *v1.ReplicationController {
 								},
 							},
 						},
-						{
+						v1.Volume{
 							Name:         sc.ImagesMountName,
 							VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
 						},
-						{
+						v1.Volume{
 							Name: sc.DockerSocketName,
 							VolumeSource: v1.VolumeSource{
 								HostPath: &v1.HostPathVolumeSource{Path: sc.DockerSocketPath},

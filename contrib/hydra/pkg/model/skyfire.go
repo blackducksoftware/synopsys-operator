@@ -22,7 +22,6 @@ under the License.
 package model
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"k8s.io/api/core/v1"
@@ -42,24 +41,24 @@ type SkyfireConfigMap struct {
 
 	Port int32
 
-	HubHost     string
-	HubUser     string
-	HubPassword string
+	HubHost               string
+	HubUser               string
+	HubUserPasswordEnvVar string
 
 	PerceptorHost string
 	PerceptorPort int32
 }
 
-func NewSkyfireConfigMap(logLevel string, port int32, hubHost string, hubUser string, hubPassword string, perceptorHost string, perceptorPort int32) *SkyfireConfigMap {
+func NewSkyfireConfigMap(logLevel string, port int32, hubHost string, hubUser string, hubUserPasswordEnvVar string, perceptorHost string, perceptorPort int32) *SkyfireConfigMap {
 	return &SkyfireConfigMap{
-		UseInClusterConfig: true,
-		LogLevel:           logLevel,
-		Port:               port,
-		HubHost:            hubHost,
-		HubUser:            hubUser,
-		HubPassword:        hubPassword,
-		PerceptorHost:      perceptorHost,
-		PerceptorPort:      perceptorPort,
+		UseInClusterConfig:    true,
+		LogLevel:              logLevel,
+		Port:                  port,
+		HubHost:               hubHost,
+		HubUser:               hubUser,
+		HubUserPasswordEnvVar: hubUserPasswordEnvVar,
+		PerceptorHost:         perceptorHost,
+		PerceptorPort:         perceptorPort,
 	}
 }
 
@@ -81,7 +80,7 @@ type Skyfire struct {
 	ServiceName  string
 }
 
-func NewSkyfire() *Skyfire {
+func NewSkyfire(hubPasswordSecretName string, hubPasswordSecretKey string) *Skyfire {
 	memory, err := resource.ParseQuantity("512Mi")
 	if err != nil {
 		panic(err)
@@ -92,15 +91,17 @@ func NewSkyfire() *Skyfire {
 	}
 
 	return &Skyfire{
-		PodName:        "skyfire",
-		Image:          "gcr.io/gke-verification/blackducksoftware/skyfire:master",
-		CPU:            cpu,
-		Memory:         memory,
-		ConfigMapName:  "skyfire-config",
-		ConfigMapMount: "/etc/perceptor",
-		ConfigMapPath:  "skyfire_conf.yaml",
-		ReplicaCount:   1,
-		ServiceName:    "skyfire",
+		PodName:               "skyfire",
+		Image:                 "gcr.io/gke-verification/blackducksoftware/skyfire:master",
+		CPU:                   cpu,
+		Memory:                memory,
+		ConfigMapName:         "skyfire-config",
+		ConfigMapMount:        "/etc/skyfire",
+		ConfigMapPath:         "skyfire_conf.yaml",
+		HubPasswordSecretName: hubPasswordSecretName,
+		HubPasswordSecretKey:  hubPasswordSecretKey,
+		ReplicaCount:          1,
+		ServiceName:           "skyfire",
 	}
 }
 
@@ -108,89 +109,85 @@ func (sf *Skyfire) FullConfigMapPath() string {
 	return fmt.Sprintf("%s/%s", sf.ConfigMapMount, sf.ConfigMapPath)
 }
 
-func (pc *Skyfire) Container() *v1.Container {
+func (sf *Skyfire) Container() *v1.Container {
 	return &v1.Container{
 		Name:            "skyfire",
-		Image:           pc.Image,
+		Image:           sf.Image,
 		ImagePullPolicy: "Always",
-		// Env: []v1.EnvVar{
-		// 	v1.EnvVar{
-		// 		Name: pc.Config.HubUserPasswordEnvVar,
-		// 		ValueFrom: &v1.EnvVarSource{
-		// 			SecretKeyRef: &v1.SecretKeySelector{
-		// 				LocalObjectReference: v1.LocalObjectReference{
-		// 					Name: pc.HubPasswordSecretName,
-		// 				},
-		// 				Key: pc.HubPasswordSecretKey,
-		// 			},
-		// 		},
-		// 	},
-		// },
-		Command: []string{"./skyfire", pc.FullConfigMapPath()},
+		Env: []v1.EnvVar{
+			v1.EnvVar{
+				Name: sf.Config.HubUserPasswordEnvVar,
+				ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: sf.HubPasswordSecretName,
+						},
+						Key: sf.HubPasswordSecretKey,
+					},
+				},
+			},
+		},
+		Command: []string{"./skyfire", sf.FullConfigMapPath()},
 		Ports: []v1.ContainerPort{
-			{
-				ContainerPort: pc.Config.Port,
+			v1.ContainerPort{
+				ContainerPort: sf.Config.Port,
 				Protocol:      "TCP",
 			},
 		},
 		Resources: v1.ResourceRequirements{
 			Requests: v1.ResourceList{
-				v1.ResourceCPU:    pc.CPU,
-				v1.ResourceMemory: pc.Memory,
+				v1.ResourceCPU:    sf.CPU,
+				v1.ResourceMemory: sf.Memory,
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
-				Name:      pc.ConfigMapName,
-				MountPath: pc.ConfigMapMount,
+			v1.VolumeMount{
+				Name:      sf.ConfigMapName,
+				MountPath: sf.ConfigMapMount,
 			},
 		},
 	}
 }
 
-func (pc *Skyfire) ReplicationController() *v1.ReplicationController {
+func (sf *Skyfire) ReplicationController() *v1.ReplicationController {
 	return &v1.ReplicationController{
-		ObjectMeta: v1meta.ObjectMeta{Name: pc.PodName},
+		ObjectMeta: v1meta.ObjectMeta{Name: sf.PodName},
 		Spec: v1.ReplicationControllerSpec{
-			Replicas: &pc.ReplicaCount,
-			Selector: map[string]string{"name": pc.PodName},
+			Replicas: &sf.ReplicaCount,
+			Selector: map[string]string{"name": sf.PodName},
 			Template: &v1.PodTemplateSpec{
-				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": pc.PodName}},
+				ObjectMeta: v1meta.ObjectMeta{Labels: map[string]string{"name": sf.PodName}},
 				Spec: v1.PodSpec{
 					Volumes: []v1.Volume{
-						{
-							Name: pc.ConfigMapName,
+						v1.Volume{
+							Name: sf.ConfigMapName,
 							VolumeSource: v1.VolumeSource{
 								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{Name: pc.ConfigMapName},
+									LocalObjectReference: v1.LocalObjectReference{Name: sf.ConfigMapName},
 								},
 							},
 						},
 					},
-					Containers: []v1.Container{*pc.Container()},
+					Containers: []v1.Container{*sf.Container()},
 					// TODO: RestartPolicy?  terminationGracePeriodSeconds? dnsPolicy?
 				}}}}
 }
 
-func (pc *Skyfire) Service() *v1.Service {
+func (sf *Skyfire) Service() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: v1meta.ObjectMeta{
-			Name: pc.ServiceName,
+			Name: sf.ServiceName,
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
-					Name: pc.ServiceName,
-					Port: pc.Config.Port,
+				v1.ServicePort{
+					Name: sf.ServiceName,
+					Port: sf.Config.Port,
 				},
 			},
-			Selector: map[string]string{"name": pc.ServiceName}}}
+			Selector: map[string]string{"name": sf.ServiceName}}}
 }
 
-func (pc *Skyfire) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(pc.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(pc.ConfigMapName, pc.ConfigMapPath, string(jsonBytes))
+func (sf *Skyfire) ConfigMap() *v1.ConfigMap {
+	return MakeConfigMap(sf.ConfigMapName, sf.ConfigMapPath, sf.Config)
 }

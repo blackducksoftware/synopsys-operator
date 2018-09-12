@@ -22,7 +22,7 @@ under the License.
 package model
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"k8s.io/api/core/v1"
 
@@ -30,40 +30,35 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type ScannerHubConfig struct {
+	User                 string
+	PasswordEnvVar       string
+	Port                 int32
+	ClientTimeoutSeconds int
+}
+
+type ScannerImageFacadeConfig struct {
+	Host string
+	Port int32
+}
+
+type ScannerPerceptorConfig struct {
+	Host string
+	Port int32
+}
+
 type ScannerConfigMap struct {
-	HubHost                 string
-	HubUser                 string
-	HubUserPasswordEnvVar   string
-	HubPort                 int32
-	HubClientTimeoutSeconds int
+	Hub         *ScannerHubConfig
+	ImageFacade *ScannerImageFacadeConfig
+	Perceptor   *ScannerPerceptorConfig
 
 	JavaInitialHeapSizeMBs int
 	JavaMaxHeapSizeMBs     int
 
+	ImageDirectory string
+
 	LogLevel string
 	Port     int32
-
-	ImageFacadePort int32
-
-	PerceptorHost string
-	PerceptorPort int32
-}
-
-func NewScannerConfigMap(hubHost string, hubUser string, hubUserPasswordEnvVar string, hubPort int32, hubClientTimeoutSeconds int, javaInitialHeapSizeMBs int, javaMaxHeapSizeMBs int, logLevel string, port int32, imageFacadePort int32, perceptorHost string, perceptorPort int32) *ScannerConfigMap {
-	return &ScannerConfigMap{
-		HubHost:                 hubHost,
-		HubUser:                 hubUser,
-		HubUserPasswordEnvVar:   hubUserPasswordEnvVar,
-		HubPort:                 hubPort,
-		HubClientTimeoutSeconds: hubClientTimeoutSeconds,
-		JavaInitialHeapSizeMBs:  javaInitialHeapSizeMBs,
-		JavaMaxHeapSizeMBs:      javaMaxHeapSizeMBs,
-		LogLevel:                logLevel,
-		Port:                    port,
-		ImageFacadePort:         imageFacadePort,
-		PerceptorHost:           perceptorHost,
-		PerceptorPort:           perceptorPort,
-	}
 }
 
 type Scanner struct {
@@ -84,10 +79,9 @@ type Scanner struct {
 	HubPasswordSecretKey  string
 
 	ImagesMountName string
-	ImagesMountPath string
 }
 
-func NewScanner(memoryString string) *Scanner {
+func NewScanner(memoryString string, podName string, hubPasswordSecretName string, hubPasswordSecretKey string) *Scanner {
 	memory, err := resource.ParseQuantity(memoryString)
 	if err != nil {
 		panic(err)
@@ -106,12 +100,18 @@ func NewScanner(memoryString string) *Scanner {
 		ConfigMapPath:  "perceptor_scanner_conf.yaml",
 		ServiceName:    "perceptor-scanner",
 
-		// Must fill these out before use
-		PodName: "",
+		PodName: podName,
 
+		HubPasswordSecretName: hubPasswordSecretName,
+		HubPasswordSecretKey:  hubPasswordSecretKey,
+
+		// Must fill these out before use
 		ImagesMountName: "",
-		ImagesMountPath: "",
 	}
+}
+
+func (psp *Scanner) FullConfigMapPath() string {
+	return fmt.Sprintf("%s/%s", psp.ConfigMapMount, psp.ConfigMapPath)
 }
 
 func (psp *Scanner) Container() *v1.Container {
@@ -119,10 +119,10 @@ func (psp *Scanner) Container() *v1.Container {
 		Name:            "perceptor-scanner",
 		Image:           psp.Image,
 		ImagePullPolicy: "Always",
-		Command:         []string{},
+		Command:         []string{"./perceptor-scanner", psp.FullConfigMapPath()},
 		Env: []v1.EnvVar{
-			{
-				Name: psp.Config.HubUserPasswordEnvVar,
+			v1.EnvVar{
+				Name: psp.Config.Hub.PasswordEnvVar,
 				ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{
 						LocalObjectReference: v1.LocalObjectReference{
@@ -134,7 +134,7 @@ func (psp *Scanner) Container() *v1.Container {
 			},
 		},
 		Ports: []v1.ContainerPort{
-			{
+			v1.ContainerPort{
 				ContainerPort: psp.Config.Port,
 				Protocol:      "TCP",
 			},
@@ -150,11 +150,11 @@ func (psp *Scanner) Container() *v1.Container {
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			{
+			v1.VolumeMount{
 				Name:      psp.ImagesMountName,
-				MountPath: psp.ImagesMountPath,
+				MountPath: psp.Config.ImageDirectory,
 			},
-			{
+			v1.VolumeMount{
 				Name:      psp.ConfigMapName,
 				MountPath: psp.ConfigMapMount,
 			},
@@ -169,18 +169,14 @@ func (psp *Scanner) Service() *v1.Service {
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				{
+				v1.ServicePort{
 					Name: psp.ServiceName,
 					Port: psp.Config.Port,
 				},
 			},
-			Selector: map[string]string{"name": psp.ServiceName}}}
+			Selector: map[string]string{"name": psp.PodName}}}
 }
 
 func (psp *Scanner) ConfigMap() *v1.ConfigMap {
-	jsonBytes, err := json.Marshal(psp.Config)
-	if err != nil {
-		panic(err)
-	}
-	return MakeConfigMap(psp.ConfigMapName, psp.ConfigMapPath, string(jsonBytes))
+	return MakeConfigMap(psp.ConfigMapName, psp.ConfigMapPath, psp.Config)
 }

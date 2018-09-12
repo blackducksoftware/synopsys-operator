@@ -23,8 +23,8 @@ package standardperceptor
 
 import (
 	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
+	v1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
-	// v1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
 type Openshift struct {
@@ -36,6 +36,7 @@ type Openshift struct {
 	ConfigMaps             []*v1.ConfigMap
 	Services               []*v1.Service
 	Secrets                []*v1.Secret
+	Deployments            []*v1beta1.Deployment
 }
 
 func NewOpenshift(config *Config) *Openshift {
@@ -52,13 +53,13 @@ func (os *Openshift) createResources() {
 	imagePerceiver.Config = os.Config.ImagePerceiverConfig()
 	imagePerceiver.Config.PerceptorHost = os.Kube.Perceptor.ServiceName
 
-	// TODO ensure that this target actually gets added to the prometheus config
-	os.Kube.Prometheus.AddTarget(&model.PrometheusTarget{Host: imagePerceiver.ServiceName, Port: os.Config.ImagePerceiverPort})
+	os.Kube.Prometheus.AddTarget(&model.PrometheusTarget{Host: imagePerceiver.ServiceName, Port: os.Config.ImagePerceiver.Port})
 
 	os.ReplicationControllers = append(os.Kube.ReplicationControllers, imagePerceiver.ReplicationController())
 	os.ConfigMaps = append(os.Kube.ConfigMaps, imagePerceiver.ConfigMap())
 	os.Services = append(os.Kube.Services, imagePerceiver.Service())
 	os.Secrets = os.Kube.Secrets
+	os.Deployments = os.Kube.Deployments
 }
 
 func (os *Openshift) GetConfigMaps() []*v1.ConfigMap {
@@ -75,4 +76,8 @@ func (os *Openshift) GetSecrets() []*v1.Secret {
 
 func (os *Openshift) GetReplicationControllers() []*v1.ReplicationController {
 	return os.ReplicationControllers
+}
+
+func (os *Openshift) GetDeployments() []*v1beta1.Deployment {
+	return os.Deployments
 }
