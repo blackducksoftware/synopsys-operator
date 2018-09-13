@@ -74,11 +74,11 @@ type perceptorConfig struct {
 }
 
 // PerceptorConfigMap ...
-type PerceptorConfigMap struct{
-	Client *kubernetes.Clientset,
+type PerceptorConfigMap struct {
+	Client *kubernetes.Clientset
 }
 
-func  (p *PerceptorConfigMap)  init() {
+func (p *PerceptorConfigMap) init() {
 	if p.Client == nil {
 		panic("Failure ! I need a client to run.")
 	}
@@ -86,7 +86,7 @@ func  (p *PerceptorConfigMap)  init() {
 
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
-func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string) error {
+func (p *PerceptorConfigMap) sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string) error {
 	p.init()
 	configmapList, err := kubeClient.Core().ConfigMaps(namespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -124,17 +124,17 @@ func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string)
 }
 
 // Run is a BLOCKING function which should be run by the framework .
-func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) {
+func (p *PerceptorConfigMap) Run(c api.DeployerControllerInterface, ch chan struct{}) {
 	p.init()
 	syncFunc := func() {
 		p.updateAllHubs(c, ch)
 	}
 	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
+			return hubclient.New(p.Client.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).Watch(metav1.ListOptions{})
+			return hubclient.New(p.Client.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).Watch(metav1.ListOptions{})
 		},
 	}
 	_, ctrl := cache.NewInformer(lw,
@@ -186,7 +186,7 @@ func (p *PerceptorConfigMap) updateAllHubs(c api.DeployerControllerInterface, ch
 	// TODO, replace w/ configmap mutat ?
 	// curl perceptor w/ the latest hub list
 	for _, opssight := range opssiteList.Items {
-		sendHubs(p.Client, opssight.Namespace, allHubNamespaces)
+		p.sendHubs(p.Client, opssight.Namespace, allHubNamespaces)
 	}
 	return nil
 }
