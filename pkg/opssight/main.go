@@ -57,32 +57,59 @@ func NewAppDefaults() *v1.OpsSightSpec {
 	defaultSkyfirePort := 3005
 	defaultAnnotationInterval := 30
 	defaultDumpInterval := 30
-	defaultPerceptorHubClientTimeout := 5000
-	defaultScannerHubClientTimeout := 30
+	defaultHubPort := 443
+	defaultPerceptorHubClientTimeout := 100000
+	defaultScannerHubClientTimeout := 600
 	defaultScanLimit := 7
+	defaultTotalScanLimit := 1000
+	defaultCheckForStalledScansPauseHours := 999999
+	defaultStalledScanClientTimeoutHours := 999999
+	defaultModelMetricsPauseSeconds := 15
+	defaultUnknownImagePauseMilliseconds := 15000
 	defaultPodPerceiverEnabled := true
+	defaultImagePerceiverEnabled := false
+	defaultMetricsEnabled := false
+	defaultPerceptorSkyfire := false
+	defaultUseMockMode := false
 
 	return &v1.OpsSightSpec{
-		PerceptorPort:                         &defaultPerceptorPort,
-		PerceiverPort:                         &defaultPerceiverPort,
-		ScannerPort:                           &defaultScannerPort,
-		ImageFacadePort:                       &defaultIFPort,
-		SkyfirePort:                           &defaultSkyfirePort,
-		AnnotationIntervalSeconds:             &defaultAnnotationInterval,
-		DumpIntervalMinutes:                   &defaultDumpInterval,
+		PerceptorPort:             &defaultPerceptorPort,
+		PerceiverPort:             &defaultPerceiverPort,
+		ScannerPort:               &defaultScannerPort,
+		ImageFacadePort:           &defaultIFPort,
+		SkyfirePort:               &defaultSkyfirePort,
+		InternalRegistries:        []v1.RegistryAuth{},
+		AnnotationIntervalSeconds: &defaultAnnotationInterval,
+		DumpIntervalMinutes:       &defaultDumpInterval,
+		HubUser:                   "sysadmin",
+		HubPort:                   &defaultHubPort,
 		HubClientTimeoutPerceptorMilliseconds: &defaultPerceptorHubClientTimeout,
 		HubClientTimeoutScannerSeconds:        &defaultScannerHubClientTimeout,
 		ConcurrentScanLimit:                   &defaultScanLimit,
+		TotalScanLimit:                        &defaultTotalScanLimit,
+		CheckForStalledScansPauseHours:        &defaultCheckForStalledScansPauseHours,
+		StalledScanClientTimeoutHours:         &defaultStalledScanClientTimeoutHours,
+		ModelMetricsPauseSeconds:              &defaultModelMetricsPauseSeconds,
+		UnknownImagePauseMilliseconds:         &defaultUnknownImagePauseMilliseconds,
 		DefaultVersion:                        "master",
-		PerceptorImageName:                    "perceptor",
-		ScannerImageName:                      "perceptor-scanner",
-		ImagePerceiverImageName:               "image-perceiver",
-		PodPerceiverImageName:                 "pod-perceiver",
-		ImageFacadeImageName:                  "perceptor-imagefacade",
+		Registry:                              "docker.io",
+		ImagePath:                             "blackducksoftware",
+		PerceptorImageName:                    "opssight-core",
+		ScannerImageName:                      "opssight-scanner",
+		ImagePerceiverImageName:               "opssight-image-processor",
+		PodPerceiverImageName:                 "opssight-pod-processor",
+		ImageFacadeImageName:                  "opssight-image-getter",
 		SkyfireImageName:                      "skyfire",
-		LogLevel:                              "debug",
 		PodPerceiver:                          &defaultPodPerceiverEnabled,
+		ImagePerceiver:                        &defaultImagePerceiverEnabled,
+		Metrics:                               &defaultMetricsEnabled,
+		PerceptorSkyfire:                      &defaultPerceptorSkyfire,
+		DefaultCPU:                            "300m",
+		DefaultMem:                            "1300Mi",
+		LogLevel:                              "debug",
+		HubUserPasswordEnvVar:                 "PCP_HUBUSERPASSWORD",
 		SecretName:                            "perceptor",
+		UseMockMode:                           &defaultUseMockMode,
 	}
 }
 
@@ -119,17 +146,21 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	log.Debugf("Create OpsSight details for %s: %+v", createOpsSight.Spec.Namespace, createOpsSight)
 	newSpec := createOpsSight.Spec
 	opssightSpec := NewAppDefaults()
-	mergo.Merge(&newSpec, opssightSpec)
-	opssight := NewOpsSight(&newSpec)
+	err := mergo.Merge(&newSpec, opssightSpec)
+	if err != nil {
+		log.Errorf("unable to merge the opssight structs for %s due to %+v", createOpsSight.Name, err)
+		return err
+	}
 
+	opssight := NewOpsSight(&newSpec)
 	components, err := opssight.GetComponents()
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("unable to get opssight components for %s due to %+v", createOpsSight.Name, err)
 		return err
 	}
 	deployer, err := util.NewDeployer(ac.kubeConfig)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("unable to get deployer object for %s due to %+v", createOpsSight.Name, err)
 		return err
 	}
 	// Note: controllers that need to continually run to update your app

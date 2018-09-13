@@ -2,9 +2,9 @@ apiVersion: synopsys.com/v1
 kind: OpsSight
 metadata:
   clusterName: ""
-  name: opssight-test1
+  name: opssight-test
 spec:
-  namespace: opssight-test1
+  namespace: opssight-test
   # CONTAINER CONFIGS
   # These are sed replaced into the config maps for the containers.
   perceptorPort: 3001
@@ -19,28 +19,34 @@ spec:
   hubUser: sysadmin
   hubPort: 443
   hubUserPassword: blackduck
-  hubClientTimeoutPerceptorMilliseconds: 5000
-  hubClientTimeoutScannerSeconds: 30
-  concurrentScanLimit: 7
-  defaultVersion: 2.0.3
+  hubClientTimeoutPerceptorMilliseconds: 100000
+  hubClientTimeoutScannerSeconds: 600
+  concurrentScanLimit: 2
+  totalScanLimit: 1000
+  checkForStalledScansPauseHours: 999999
+  stalledScanClientTimeoutHours: 999999
+  modelMetricsPauseSeconds: 15
+  unknownImagePauseMilliseconds: 15000
 
   # CONTAINER PULL CONFIG
   # These are for defining docker registry and image location and versions
-  registry: docker.io
-  imagePath: blackducksoftware
+  registry: gcr.io
+  imagePath: gke-verification/blackducksoftware
+  # Default version will override the corresponding image version
+  defaultVersion: ""
 
-  perceptorImageName: opssight-core
-  scannerImageName: opssight-scanner
-  podPerceiverImageName: opssight-pod-processor
-  imagePerceiverImageName: opssight-image-processor
-  imageFacadeImageName: opssight-image-getter
-  skyfireImageName: perceptor-skyfire
+  perceptorImageName: perceptor
+  scannerImageName: perceptor-scanner
+  podPerceiverImageName: pod-perceiver
+  imagePerceiverImageName: image-perceiver
+  imageFacadeImageName: perceptor-imagefacade
+  skyfireImageName: skyfire
 
-  perceptorImageVersion: 2.0.3
-  scannerImageVersion: 2.0.3
-  perceiverImageVersion: 2.0.3
-  imageFacadeImageVersion: 2.0.3
-  skyfireImageVersion: 2.0.3
+  perceptorImageVersion: master
+  scannerImageVersion: master
+  perceiverImageVersion: master
+  imageFacadeImageVersion: master
+  skyfireImageVersion: master
 
   imagePerceiver: false
   podPerceiver: true
@@ -60,4 +66,5 @@ spec:
   hubuserPasswordEnvVar: PCP_HUBUSERPASSWORD
 
   # Configuration secret
-  secretName: opssight-secret
+  secretName: blackduck-secret
+  useMockMode: false

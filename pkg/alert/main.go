@@ -97,16 +97,20 @@ func (ac *Creater) CreateAlert(createAlert *v1.Alert) error {
 	log.Debugf("Create Alert details for %s: %+v", createAlert.Spec.Namespace, createAlert)
 	newSpec := createAlert.Spec
 	alertSpec := NewAppDefaults()
-	mergo.Merge(&newSpec, alertSpec)
+	err := mergo.Merge(&newSpec, alertSpec)
+	if err != nil {
+		log.Errorf("unable to merge the alert structs for %s due to %+v", createAlert.Name, err)
+		return err
+	}
 	alert := NewAlert(&newSpec)
 	components, err := alert.GetComponents()
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("unable to get alert components for %s due to %+v", createAlert.Name, err)
 		return err
 	}
 	deployer, err := util.NewDeployer(ac.kubeConfig)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("unable to get deployer object for %s due to %+v", createAlert.Name, err)
 		return err
 	}
 	deployer.PreDeploy(components, createAlert.Name)

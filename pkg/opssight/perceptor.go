@@ -113,7 +113,7 @@ func (p *SpecConfig) PerceptorConfigMap() *components.ConfigMap {
 		Name:      "perceptor",
 		Namespace: p.config.Namespace,
 	})
-	cm.AddData(map[string]string{"perceptor.yaml": fmt.Sprint(`{"HubHost": "`, p.config.HubHost, `","HubPort": "`, *p.config.HubPort, `","HubUser": "`, p.config.HubUser, `","HubUserPasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `","HubClientTimeoutMilliseconds": "`, *p.config.HubClientTimeoutPerceptorMilliseconds, `","ConcurrentScanLimit": "`, *p.config.ConcurrentScanLimit, `","Port": "`, *p.config.PerceptorPort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
+	cm.AddData(map[string]string{"perceptor.yaml": fmt.Sprint(`{"Hub": {"Host": [], "Port": `, *p.config.HubPort, `, "User": "`, p.config.HubUser, `", "PasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `", "ClientTimeoutMilliseconds": `, *p.config.HubClientTimeoutPerceptorMilliseconds, `, "ConcurrentScanLimit": `, *p.config.ConcurrentScanLimit, `, "TotalScanLimit": `, *p.config.TotalScanLimit, `}, "Port": "`, *p.config.PerceptorPort, `", "LogLevel": "`, p.config.LogLevel, `", "UseMockMode": `, *p.config.UseMockMode, `, "Timings": {"CheckForStalledScansPauseHours": `, *p.config.CheckForStalledScansPauseHours, `, "StalledScanClientTimeoutHours": `, *p.config.StalledScanClientTimeoutHours, `, "ModelMetricsPauseSeconds": `, *p.config.ModelMetricsPauseSeconds, `, "UnknownImagePauseMilliseconds": `, *p.config.UnknownImagePauseMilliseconds, `}}`)})
 
 	return cm
 }

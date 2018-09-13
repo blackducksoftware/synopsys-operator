@@ -66,12 +66,17 @@ type OpsSightSpec struct {
 	HubClientTimeoutPerceptorMilliseconds *int           `json:"hubClientTimeoutPerceptorMilliseconds,omitempty"`
 	HubClientTimeoutScannerSeconds        *int           `json:"hubClientTimeoutScannerSeconds,omitempty"`
 	ConcurrentScanLimit                   *int           `json:"concurrentScanLimit,omitempty"`
-	DefaultVersion                        string         `json:"defaultVersion,omitempty"`
+	TotalScanLimit                        *int           `json:"totalScanLimit,omitempty"`
+	CheckForStalledScansPauseHours        *int           `json:"checkForStalledScansPauseHours"`
+	StalledScanClientTimeoutHours         *int           `json:"stalledScanClientTimeoutHours"`
+	ModelMetricsPauseSeconds              *int           `json:"modelMetricsPauseSeconds"`
+	UnknownImagePauseMilliseconds         *int           `json:"unknownImagePauseMilliseconds"`
 
 	// CONTAINER PULL CONFIG
 	// These are for defining docker registry and image location and versions
-	Registry  string `json:"registry,omitempty"`
-	ImagePath string `json:"imagePath,omitempty"`
+	DefaultVersion string `json:"defaultVersion,omitempty"`
+	Registry       string `json:"registry,omitempty"`
+	ImagePath      string `json:"imagePath,omitempty"`
 
 	PerceptorImageName      string `json:"perceptorImageName,omitempty"`
 	ScannerImageName        string `json:"scannerImageName,omitempty"`
@@ -105,7 +110,8 @@ type OpsSightSpec struct {
 	HubUserPasswordEnvVar string `json:"hubuserPasswordEnvVar"`
 
 	// Configuration secret
-	SecretName string `json:"secretName"`
+	SecretName  string `json:"secretName"`
+	UseMockMode *bool  `json:"useMockMode"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource

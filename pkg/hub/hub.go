@@ -76,10 +76,12 @@ func (hc *Creater) DeleteHub(namespace string) {
 				break
 			}
 		}
-		err = util.DeletePersistentVolume(hc.KubeClient, namespace)
-		if err != nil {
-			log.Errorf("unable to delete the pv for %+v", namespace)
-		}
+	}
+
+	// Delete a persistent volume
+	err = util.DeletePersistentVolume(hc.KubeClient, namespace)
+	if err != nil {
+		log.Errorf("unable to delete the pv for %+v", namespace)
 	}
 }
 

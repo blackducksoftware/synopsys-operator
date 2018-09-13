@@ -232,7 +232,7 @@ func (p *SpecConfig) ScannerConfigMap() *components.ConfigMap {
 		Name:      "perceptor-scanner",
 		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceptor_scanner.yaml": fmt.Sprint(`{"HubHost": "`, p.config.HubHost, `","HubPort": "`, *p.config.HubPort, `","HubUser": "`, p.config.HubUser, `","HubUserPasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, *p.config.HubClientTimeoutScannerSeconds, `","Port": "`, *p.config.ScannerPort, `","PerceptorHost": "`, p.config.PerceptorImageName, `","PerceptorPort": "`, *p.config.PerceptorPort, `","ImageFacadeHost": "`, p.config.ImageFacadeImageName, `","ImageFacadePort": "`, *p.config.ImageFacadePort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"perceptor_scanner.yaml": fmt.Sprint(`{"Hub": {"Port": `, *p.config.HubPort, `, "User": "`, p.config.HubUser, `", "PasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `", "ClientTimeoutSeconds": `, *p.config.HubClientTimeoutScannerSeconds, `}, "ImageFacade": {"Port": `, *p.config.ImageFacadePort, `, "Host": "localhost"}, "Perceptor": {"Port": `, *p.config.PerceptorPort, `, "Host": "`, p.config.PerceptorImageName, `"}, "Port": `, *p.config.ScannerPort, `, "LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }
@@ -244,7 +244,7 @@ func (p *SpecConfig) ImageFacadeConfigMap() *components.ConfigMap {
 		Name:      "perceptor-imagefacade",
 		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceptor_imagefacade.json": fmt.Sprint(`{"PrivateDockerRegistries": "`, string(internalRegistry), `","Port": "`, *p.config.ImageFacadePort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"perceptor_imagefacade.json": fmt.Sprint(`{"PrivateDockerRegistries": `, string(internalRegistry), `, "Port": "`, *p.config.ImageFacadePort, `", "LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }

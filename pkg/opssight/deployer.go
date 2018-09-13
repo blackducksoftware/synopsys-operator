@@ -177,12 +177,6 @@ func (p *SpecConfig) sanityCheckServices() error {
 	return nil
 }
 
-func (p *SpecConfig) setInternalDefaults() {
-	if len(p.config.HubUserPasswordEnvVar) == 0 {
-		p.config.HubUserPasswordEnvVar = "PCP_HUBUSERPASSWORD"
-	}
-}
-
 func (p *SpecConfig) generateStringFromStringArr(strArr []string) string {
 	str, _ := json.Marshal(strArr)
 	return string(str)
