@@ -74,20 +74,11 @@ type perceptorConfig struct {
 }
 
 // PerceptorConfigMap ...
-type PerceptorConfigMap struct {
-	Client *kubernetes.Clientset
-}
-
-func (p *PerceptorConfigMap) init() {
-	if p.Client == nil {
-		panic("Failure ! I need a client to run.")
-	}
-}
+type PerceptorConfigMap struct{}
 
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
-func (p *PerceptorConfigMap) sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string) error {
-	p.init()
+func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string) error {
 	configmapList, err := kubeClient.Core().ConfigMaps(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -95,7 +86,7 @@ func (p *PerceptorConfigMap) sendHubs(kubeClient *kubernetes.Clientset, namespac
 
 	var configMap *v1.ConfigMap
 	for _, cm := range configmapList.Items {
-		if cm.Name == "perceptor-config" {
+		if cm.Name == "perceptor" {
 			configMap = &cm
 			break
 		}
@@ -106,7 +97,7 @@ func (p *PerceptorConfigMap) sendHubs(kubeClient *kubernetes.Clientset, namespac
 	}
 
 	var value perceptorConfig
-	err = json.Unmarshal([]byte(configMap.Data["perceptor_conf.yaml"]), &value)
+	err = json.Unmarshal([]byte(configMap.Data["perceptor.yaml"]), &value)
 	if err != nil {
 		return err
 	}
@@ -124,17 +115,16 @@ func (p *PerceptorConfigMap) sendHubs(kubeClient *kubernetes.Clientset, namespac
 }
 
 // Run is a BLOCKING function which should be run by the framework .
-func (p *PerceptorConfigMap) Run(c api.DeployerControllerInterface, ch chan struct{}) {
-	p.init()
+func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch chan struct{}) error {
 	syncFunc := func() {
-		p.updateAllHubs(c, ch)
+		updateAllHubs(resources.KubeClient)
 	}
 	lw := &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return hubclient.New(p.Client.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
+			return hubclient.New(resources.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return hubclient.New(p.Client.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).Watch(metav1.ListOptions{})
+			return hubclient.New(resources.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).Watch(metav1.ListOptions{})
 		},
 	}
 	_, ctrl := cache.NewInformer(lw,
@@ -159,15 +149,16 @@ func (p *PerceptorConfigMap) Run(c api.DeployerControllerInterface, ch chan stru
 	// make sure this is called from a go func.
 	// This blocks!
 	ctrl.Run(ch)
+	return nil
 }
 
 // updateAllHubs will list all hubs in the cluster, and send them to opssight as scan targets.
 // TODO there may be hubs which we dont want opssight to use.  Not sure how to deal with that yet.
-func (p *PerceptorConfigMap) updateAllHubs(c api.DeployerControllerInterface, ch chan struct{}) error {
+func updateAllHubs(kubeClient *kubernetes.Clientset) error {
 	allHubNamespaces := func() []string {
 		allHubNamespaces := []string{}
 
-		hubsList, _ := hubclient.New(p.Client.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
+		hubsList, _ := hubclient.New(kubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
 		hubs := hubsList.Items
 		for _, hub := range hubs {
 			ns := hub.Namespace
@@ -178,7 +169,7 @@ func (p *PerceptorConfigMap) updateAllHubs(c api.DeployerControllerInterface, ch
 	}()
 
 	// for opssight 3.0, only support one opssight
-	opssiteList, err := opssiteclient.New(p.Client.RESTClient()).SynopsysV1().OpsSights(v1.NamespaceAll).List(metav1.ListOptions{})
+	opssiteList, err := opssiteclient.New(kubeClient.RESTClient()).SynopsysV1().OpsSights(v1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -186,7 +177,7 @@ func (p *PerceptorConfigMap) updateAllHubs(c api.DeployerControllerInterface, ch
 	// TODO, replace w/ configmap mutat ?
 	// curl perceptor w/ the latest hub list
 	for _, opssight := range opssiteList.Items {
-		p.sendHubs(p.Client, opssight.Namespace, allHubNamespaces)
+		sendHubs(kubeClient, opssight.Namespace, allHubNamespaces)
 	}
 	return nil
 }

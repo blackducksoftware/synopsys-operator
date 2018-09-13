@@ -169,9 +169,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	deployer.PreDeploy(components, createOpsSight.Name)
 
 	// Any new, pluggable maintainance stuff should go in here...
-	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{
-		Client: ac.kubeClient,
-	})
+	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{})
 
 	err = deployer.Run()
 
