@@ -26,6 +26,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
 
@@ -137,7 +138,9 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	deployer.PreDeploy(components, createOpsSight.Name)
 
 	// Any new, pluggable maintainance stuff should go in here...
-	// deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{})
+	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{
+		Client: ac.kubeClient,
+	})
 
 	err = deployer.Run()
 
