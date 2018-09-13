@@ -134,7 +134,7 @@ class App extends Component {
         toastMsgOpen: true,
         toastMsgVariant: "success",
         toastMsgText:
-          "Hub instance deleted... (Wait a few minutes for the state to be reflected in the UI)."
+          "Black Duck instance deleted... (Wait a few minutes for the state to be reflected in the UI)."
       });
       this.removeInstance(namespace);
       console.log("Deleted instance");
@@ -146,7 +146,7 @@ class App extends Component {
       toastMsgOpen: true,
       toastMsgVariant: "error",
       toastMsgText:
-        "Hub instance not deleted, check your network settings and try again"
+        "Black Duck instance not deleted, check your network settings and try again"
     });
   }
 
