@@ -1,9 +1,0 @@
-AnnotatePods: true
-AnnotateImages: true
-EnableMetrics: true
-ClusterConfigFile: "~/.kube/config"
-DefaultRegistry: "gcr.io"
-DefaultImagePath: "gke-verification/blackducksoftware"
-ProtoformImageVersion: "master"
-Interactive: true
-LogLevel: "debug"

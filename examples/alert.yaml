@@ -2,9 +2,9 @@ apiVersion: synopsys.com/v1
 kind: Alert
 metadata:
   clusterName: ""
-  name: pvc-test
+  name: alert-test
 spec:
-  namespace: pvc-test
+  namespace: alert-test
   registry: docker.io
   imagePath: blackducksoftware
   alertImageName: blackduck-alert
