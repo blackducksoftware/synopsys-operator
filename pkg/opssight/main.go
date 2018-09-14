@@ -22,6 +22,8 @@ under the License.
 package opssight
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
@@ -30,24 +32,25 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
-
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Creater will store the configuration to create OpsSight
 type Creater struct {
-	config         *model.Config
-	kubeConfig     *rest.Config
-	kubeClient     *kubernetes.Clientset
-	opssightClient *opssightclientset.Clientset
+	config           *model.Config
+	kubeConfig       *rest.Config
+	kubeClient       *kubernetes.Clientset
+	opssightClient   *opssightclientset.Clientset
+	osSecurityClient *securityclient.SecurityV1Client
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset) *Creater {
-	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient}
+func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient}
 }
 
 // NewAppDefaults creates a perceptor app configuration object
@@ -178,6 +181,46 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	if err != nil {
 		log.Errorf("unable to deploy opssight app due to %+v", err)
 	}
+
+	ac.postDeploy(opssight, createOpsSight.Name)
+	if err != nil {
+		log.Errorf("error: %+v", err)
+	}
+
 	deployer.StartControllers()
+	return nil
+}
+
+func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
+	if ac.osSecurityClient != nil {
+		// Need to add the perceptor-scanner service account to the privelged scc
+		scc, err := ac.osSecurityClient.SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get scc privileged: %v", err)
+		}
+
+		var scannerAccount string
+		s := opssight.ScannerServiceAccount()
+		scannerAccount = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, s.GetName())
+
+		// Only add the service account if it isn't already in the list of users for the privileged scc
+		exists := false
+		for _, u := range scc.Users {
+			if strings.Compare(u, scannerAccount) == 0 {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			scc.Users = append(scc.Users, scannerAccount)
+
+			_, err = ac.osSecurityClient.SecurityContextConstraints().Update(scc)
+			if err != nil {
+				return fmt.Errorf("failed to update scc privileged: %v", err)
+			}
+		}
+	}
+
 	return nil
 }

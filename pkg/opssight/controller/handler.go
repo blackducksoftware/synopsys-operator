@@ -28,6 +28,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -48,6 +49,7 @@ type OpsSightHandler struct {
 	OpsSightClientset *opssightclientset.Clientset
 	Namespace         string
 	CmMutex           chan bool
+	OSSecurityClient  *securityclient.SecurityV1Client
 }
 
 // ObjectCreated will be called for create opssight events
@@ -63,7 +65,7 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 			log.Errorf("Couldn't update Alert object: %s", err.Error())
 		}
 
-		opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset)
+		opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient)
 		if err != nil {
 			log.Errorf("unable to create the new hub creater for %s due to %+v", opssightv1.Name, err)
 		}
