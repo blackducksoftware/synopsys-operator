@@ -451,7 +451,7 @@ func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*v1
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 }
 
-// ListOpsSights will list all hubs in the cluster
+// ListOpsSights will list all opssights in the cluster
 func ListOpsSights(opssightClientset *opssightclientset.Clientset, namespace string) (*opssight_v1.OpsSightList, error) {
 	return opssightClientset.SynopsysV1().OpsSights(namespace).List(metav1.ListOptions{})
 }
