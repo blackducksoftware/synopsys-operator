@@ -151,5 +151,5 @@ func (i *Deployer) Run() error {
 func (i *Deployer) StartControllers() {
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	i.Deployer.StartControllers(stopCh)
+	go i.Deployer.StartControllers(stopCh)
 }
