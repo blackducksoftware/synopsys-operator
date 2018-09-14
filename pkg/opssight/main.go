@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -38,14 +39,15 @@ import (
 
 // Creater will store the configuration to create OpsSight
 type Creater struct {
+	config         *model.Config
 	kubeConfig     *rest.Config
 	kubeClient     *kubernetes.Clientset
 	opssightClient *opssightclientset.Clientset
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset) *Creater {
-	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient}
+func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient}
 }
 
 // NewAppDefaults creates a perceptor app configuration object
@@ -169,7 +171,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	deployer.PreDeploy(components, createOpsSight.Name)
 
 	// Any new, pluggable maintainance stuff should go in here...
-	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{})
+	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{Config: ac.config, KubeConfig: ac.kubeConfig, OpsSightClient: ac.opssightClient})
 
 	err = deployer.Run()
 

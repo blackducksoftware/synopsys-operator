@@ -41,12 +41,16 @@ import (
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 
+	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/api/storage/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -447,9 +451,19 @@ func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*v1
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 }
 
+// ListOpsSights will list all hubs in the cluster
+func ListOpsSights(opssightClientset *opssightclientset.Clientset, namespace string) (*opssight_v1.OpsSightList, error) {
+	return opssightClientset.SynopsysV1().OpsSights(namespace).List(metav1.ListOptions{})
+}
+
 // ListHubs will list all hubs in the cluster
 func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v1.HubList, error) {
 	return hubClientset.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
+}
+
+// WatchHubs will watch for hub events in the cluster
+func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.Interface, error) {
+	return hubClientset.SynopsysV1().Hubs(namespace).Watch(metav1.ListOptions{})
 }
 
 // GetHub will list all hubs in the cluster

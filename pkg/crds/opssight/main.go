@@ -158,7 +158,8 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 // CreateHandler will create a CRD handler
 func (c *ControllerConfig) CreateHandler() {
 	c.protoformConfig.handler = &opssightcontroller.OpsSightHandler{
-		Config:            c.protoformConfig.KubeConfig,
+		Config:            c.protoformConfig.Config,
+		KubeConfig:        c.protoformConfig.KubeConfig,
 		Clientset:         c.protoformConfig.KubeClientSet,
 		OpsSightClientset: c.protoformConfig.customClientSet,
 		Namespace:         c.protoformConfig.Config.Namespace,

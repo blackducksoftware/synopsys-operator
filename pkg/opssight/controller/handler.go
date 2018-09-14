@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
@@ -41,7 +42,8 @@ type Handler interface {
 
 // OpsSightHandler will store the configuration that is required to initiantiate the informers callback
 type OpsSightHandler struct {
-	Config            *rest.Config
+	Config            *model.Config
+	KubeConfig        *rest.Config
 	Clientset         *kubernetes.Clientset
 	OpsSightClientset *opssightclientset.Clientset
 	Namespace         string
@@ -61,7 +63,7 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 			log.Errorf("Couldn't update Alert object: %s", err.Error())
 		}
 
-		opssightCreator := opssight.NewCreater(h.Config, h.Clientset, h.OpsSightClientset)
+		opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset)
 		if err != nil {
 			log.Errorf("unable to create the new hub creater for %s due to %+v", opssightv1.Name, err)
 		}
@@ -81,7 +83,7 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete opssight events
 func (h *OpsSightHandler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	opssightCreator := opssight.NewCreater(h.Config, h.Clientset, h.OpsSightClientset)
+	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset)
 	opssightCreator.DeleteOpsSight(name)
 }
 
