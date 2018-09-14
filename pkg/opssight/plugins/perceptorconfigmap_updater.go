@@ -30,6 +30,7 @@ package plugins
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
@@ -82,6 +83,7 @@ type PerceptorConfigMap struct {
 	Config         *model.Config
 	KubeConfig     *rest.Config
 	OpsSightClient *opssightclientset.Clientset
+	Namespace      string
 }
 
 // sendHubs is one possible way to configure the perceptor hub family.
@@ -137,6 +139,8 @@ func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch chan stru
 		p.updateAllHubs(hubClient, resources.KubeClient)
 	}
 
+	syncFunc()
+
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			return hubClient.SynopsysV1().Hubs(p.Config.Namespace).List(options)
@@ -180,28 +184,29 @@ func (p *PerceptorConfigMap) updateAllHubs(hubClient *hubclient.Clientset, kubeC
 		hubsList, _ := util.ListHubs(hubClient, p.Config.Namespace)
 		hubs := hubsList.Items
 		for _, hub := range hubs {
-			allHubNamespaces = append(allHubNamespaces, fmt.Sprintf("webserver.%s.svc", hub.Name))
-			log.Infof("Hub config map controller, namespace is %s", hub.Name)
+			if strings.EqualFold(hub.Spec.HubType, "worker") {
+				allHubNamespaces = append(allHubNamespaces, fmt.Sprintf("webserver.%s.svc", hub.Name))
+				log.Infof("Hub config map controller, namespace is %s", hub.Name)
+			}
 		}
 		return allHubNamespaces
 	}()
 
 	log.Debugf("allHubNamespaces: %+v", allHubNamespaces)
 	// for opssight 3.0, only support one opssight
-	opssightList, err := util.ListOpsSights(p.OpsSightClient, p.Config.Namespace)
+	opssight, err := util.GetOpsSight(p.OpsSightClient, p.Namespace, p.Namespace)
 	if err != nil {
-		log.Errorf("unable to list opssights due to %+v", err)
+		log.Errorf("unable to get opssight in %s due to %+v", p.Namespace, err)
 		return err
 	}
 
 	// TODO, replace w/ configmap mutat ?
 	// curl perceptor w/ the latest hub list
-	for _, opssight := range opssightList.Items {
-		err := sendHubs(kubeClient, opssight.Name, allHubNamespaces)
-		if err != nil {
-			log.Errorf("unable to send hubs due to %+v", err)
-			return err
-		}
+	err = sendHubs(kubeClient, opssight.Name, allHubNamespaces)
+	if err != nil {
+		log.Errorf("unable to send hubs due to %+v", err)
+		return err
 	}
+
 	return nil
 }

@@ -23,3 +23,4 @@ spec:
   pvcClaimSize: 10Gi
   pvcStorageClass: none
   scanType: Custom
+  hubType: worker
