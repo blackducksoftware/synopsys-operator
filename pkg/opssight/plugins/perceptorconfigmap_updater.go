@@ -127,7 +127,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string)
 }
 
 // Run is a BLOCKING function which should be run by the framework .
-func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch chan struct{}) error {
+func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch <-chan struct{}) error {
 	hubClient, err := hubclient.NewForConfig(p.KubeConfig)
 	if err != nil {
 		log.Panicf("unable to create the hub client due to %+v", err)
@@ -166,7 +166,7 @@ func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch chan stru
 
 	// make sure this is called from a go func.
 	// This blocks!
-	ctrl.Run(ch)
+	go ctrl.Run(ch)
 
 	return nil
 }

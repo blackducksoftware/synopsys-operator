@@ -182,7 +182,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 		log.Errorf("unable to deploy opssight app due to %+v", err)
 	}
 
-	ac.postDeploy(opssight, createOpsSight.Name)
+	err = ac.postDeploy(opssight, createOpsSight.Name)
 	if err != nil {
 		log.Errorf("error: %+v", err)
 	}

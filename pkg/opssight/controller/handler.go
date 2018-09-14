@@ -28,6 +28,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -62,14 +63,17 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 		opssightv1.Status.State = "creating"
 		_, err := h.updateHubObject(opssightv1)
 		if err != nil {
-			log.Errorf("Couldn't update Alert object: %s", err.Error())
+			log.Errorf("Couldn't update OpsSight object: %s", err.Error())
 		}
 
 		opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient)
 		if err != nil {
-			log.Errorf("unable to create the new hub creater for %s due to %+v", opssightv1.Name, err)
+			log.Errorf("unable to create the new OpsSight creater for %s due to %+v", opssightv1.Name, err)
 		}
+
 		err = opssightCreator.CreateOpsSight(opssightv1)
+
+		opssightv1, err = util.GetOpsSight(h.OpsSightClientset, opssightv1.Name, opssightv1.Name)
 
 		if err != nil {
 			//Set spec/state  and status/state to started
@@ -79,13 +83,18 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 			opssightv1.Spec.State = "running"
 			opssightv1.Status.State = "running"
 		}
+
+		opssightv1, err = h.updateHubObject(opssightv1)
+		if err != nil {
+			log.Errorf("Couldn't update OpsSight object: %s", err.Error())
+		}
 	}
 }
 
 // ObjectDeleted will be called for delete opssight events
 func (h *OpsSightHandler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset)
+	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient)
 	opssightCreator.DeleteOpsSight(name)
 }
 

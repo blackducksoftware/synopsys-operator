@@ -94,7 +94,7 @@ func (c *ControllerConfig) Deploy() error {
 		log.Errorf("unable to create the opssight CRD due to %+v", err)
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 	return err
 }
 

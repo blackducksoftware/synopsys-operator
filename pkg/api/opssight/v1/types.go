@@ -101,7 +101,7 @@ type OpsSightSpec struct {
 	// Should be passed like: e.g. "300m"
 	DefaultCPU string `json:"defaultCpu,omitempty"`
 	// Should be passed like: e.g "1300Mi"
-	DefaultMem string `json:"defaultMem.omitempty"`
+	DefaultMem string `json:"defaultMem,omitempty"`
 
 	// Log level
 	LogLevel string `json:"logLevel,omitempty"`

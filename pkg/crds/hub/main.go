@@ -137,7 +137,7 @@ func (c *ControllerConfig) Deploy() error {
 		log.Errorf("unable to create the hub federator resources due to %+v", err)
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	return err
 }

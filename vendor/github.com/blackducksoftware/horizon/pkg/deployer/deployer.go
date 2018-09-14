@@ -240,8 +240,8 @@ func (d *Deployer) Run() error {
 }
 
 // StartControllers will start all the configured controllers
-func (d *Deployer) StartControllers(stopCh chan struct{}) map[string][]error {
-	errs := make(map[string][]error)
+func (d *Deployer) StartControllers(stopCh <-chan struct{}) map[string]error {
+	errs := make(map[string]error)
 
 	// Run the controllers if there are any configured
 	if len(d.controllers) > 0 {
@@ -249,27 +249,29 @@ func (d *Deployer) StartControllers(stopCh chan struct{}) map[string][]error {
 			KubeClient:           d.client,
 			KubeExtensionsClient: d.apiextensions,
 		}
-		errCh := make(chan map[string]error)
+		// errCh := make(chan map[string]error)
 		for n, c := range d.controllers {
-			go func(name string, controller api.DeployerControllerInterface) {
-				err := controller.Run(resources, stopCh)
-				if err != nil {
-					errCh <- map[string]error{name: err}
-				}
-			}(n, c)
+			err := c.Run(resources, stopCh)
+			errs[string(n)] = err
+			// go func(name string, controller api.DeployerControllerInterface) {
+			// 	err := controller.Run(resources, stopCh)
+			// 	if err != nil {
+			// 		errCh <- map[string]error{name: err}
+			// 	}
+			// }(n, c)
 		}
 
-	controllerRun:
-		for {
-			select {
-			case e := <-errCh:
-				for k, v := range e {
-					errs[k] = append(errs[k], v)
-				}
-			case <-stopCh:
-				break controllerRun
-			}
-		}
+		// controllerRun:
+		// 	for {
+		// 		select {
+		// 		case e := <-errCh:
+		// 			for k, v := range e {
+		// 				errs[k] = append(errs[k], v)
+		// 			}
+		// 		case <-stopCh:
+		// 			break controllerRun
+		// 		}
+		// 	}
 	}
 	return errs
 }
@@ -605,7 +607,7 @@ func (d *Deployer) undeployRBAC() map[util.ComponentType][]error {
 
 	for name := range d.clusterRoleBindings {
 		log.Infof("Deleting cluster role binding %s", name)
-		err := d.client.Rbac().ClusterRoleBindings().Delete(name,  &meta_v1.DeleteOptions{})
+		err := d.client.Rbac().ClusterRoleBindings().Delete(name, &meta_v1.DeleteOptions{})
 		if err != nil {
 			errs[util.ClusterRoleBindingComponent] = append(errs[util.ClusterRoleComponent], err)
 		}

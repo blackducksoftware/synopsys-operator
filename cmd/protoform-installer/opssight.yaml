@@ -15,7 +15,7 @@ spec:
   internalRegistries: []
   annotationIntervalSeconds: 30
   dumpIntervalMinutes: 30
-  hubHost: webserver.pvc-test.svc
+  hubHost: ""
   hubUser: sysadmin
   hubPort: 443
   hubUserPassword: blackduck
@@ -54,9 +54,9 @@ spec:
   perceptorSkyfire: false
 
   # CPU and memory configurations
-  // Should be passed like: e.g. "300m"
+  # Should be passed like: e.g. "300m"
   defaultCpu: 300m
-  // Should be passed like: e.g "1300Mi"
+  # Should be passed like: e.g "1300Mi"
   defaultMem: 1300Mi
 
   # Log level

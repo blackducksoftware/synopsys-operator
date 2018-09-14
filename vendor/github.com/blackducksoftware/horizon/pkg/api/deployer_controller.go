@@ -35,5 +35,5 @@ type ControllerResources struct {
 
 // DeployerControllerInterface defines the interface for controllers
 type DeployerControllerInterface interface {
-	Run(ControllerResources, chan struct{}) error
+	Run(ControllerResources, <-chan struct{}) error
 }
