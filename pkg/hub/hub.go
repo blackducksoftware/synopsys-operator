@@ -119,9 +119,9 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 		userPassword = "blackduck"
 		postgresPassword = "blackduck"
 	} else {
-		adminPassword = blackduckSecret.StringData["ADMIN_PASSWORD"]
-		userPassword = blackduckSecret.StringData["USER_PASSWORD"]
-		postgresPassword = blackduckSecret.StringData["POSTGRES_PASSWORD"]
+		adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
+		userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
+		postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
 	}
 
 	log.Debugf("Before init: %+v", createHub)

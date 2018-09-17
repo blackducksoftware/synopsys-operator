@@ -20,7 +20,8 @@ class App extends Component {
       invalidNamespace: false,
       toastMsgOpen: false,
       toastMsgText: "",
-      toastMsgVariant: "success"
+      toastMsgVariant: "success",
+      hubTypes: { "master": "Master", "worker": "Worker" }
     };
 
     this.fetchInstances = this.fetchInstances.bind(this);
@@ -218,6 +219,7 @@ class App extends Component {
           scanTypes={this.state.scanTypes}
           setToastStatus={this.setToastStatus}
           instances={this.state.instances}
+          hubTypes={this.state.hubTypes}
         />
 
         <div className="paper-container">

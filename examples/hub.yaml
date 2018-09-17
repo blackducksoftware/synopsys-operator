@@ -17,9 +17,7 @@ spec:
   flavor: small
   hubVersion: 4.8.1
   instanceName: ""
-  isRandomPassword: false
   nfsServer: <<NFS Server>>
-  postgresPassword: blackduck
   pvcClaimSize: 10Gi
   pvcStorageClass: none
   scanType: Custom
