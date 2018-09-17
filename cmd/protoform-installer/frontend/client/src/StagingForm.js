@@ -134,6 +134,7 @@ class StagingForm extends Component {
       pvcClaimSize: "",
       pvcStorageClass: "",
       scanType: "",
+      showNFSPath: false,
       nfsServer: ""
     });
   }
@@ -144,6 +145,7 @@ class StagingForm extends Component {
         pvcClaimSize: "20Gi",
         pvcStorageClass: "none",
         scanType: "Artifacts",
+        showNFSPath: true,
         nfsServer: ""
       });
     }

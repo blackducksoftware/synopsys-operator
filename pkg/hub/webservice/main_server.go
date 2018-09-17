@@ -23,7 +23,6 @@ package webservice
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
@@ -93,10 +92,6 @@ func SetupHTTPServer(hc *hub.Creater, namespace string) {
 			hubSpec := &v1.HubSpec{}
 			if err := c.BindJSON(hubSpec); err != nil {
 				log.Debugf("Fatal failure binding the incoming request ! %v", c.Request)
-			}
-
-			if strings.EqualFold(hubSpec.PostgresPassword, "") {
-				hubSpec.PostgresPassword = "blackduck"
 			}
 
 			ns, err := util.CreateNamespace(hc.KubeClient, hubSpec.Namespace)

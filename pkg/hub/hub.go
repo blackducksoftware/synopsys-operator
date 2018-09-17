@@ -32,6 +32,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 
 	"k8s.io/client-go/kubernetes"
@@ -42,14 +43,15 @@ import (
 
 // Creater will store the configuration to create the Hub
 type Creater struct {
-	Config     *rest.Config
+	Config     *model.Config
+	KubeConfig *rest.Config
 	KubeClient *kubernetes.Clientset
 	HubClient  *hubclientset.Clientset
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset) *Creater {
-	return &Creater{Config: config, KubeClient: kubeClient, HubClient: hubClient}
+func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset) *Creater {
+	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient}
 }
 
 // DeleteHub will delete the Black Duck Hub
@@ -89,7 +91,7 @@ func (hc *Creater) DeleteHub(namespace string) {
 func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	log.Debugf("Create Hub details for %s: %+v", createHub.Spec.Namespace, createHub)
 	// Create a horizon deployer for each hub
-	deployer, err := horizon.NewDeployer(hc.Config)
+	deployer, err := horizon.NewDeployer(hc.KubeConfig)
 	if err != nil {
 		return "", "", true, fmt.Errorf("unable to create the horizon deployer due to %+v", err)
 	}
@@ -109,16 +111,22 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 		{Type: horizonapi.EnvFromConfigMap, FromName: "hub-db-config-granular"},
 	}
 
-	if createHub.Spec.IsRandomPassword {
-		createHub.Spec.AdminPassword, _ = util.RandomString(12)
-		createHub.Spec.UserPassword, _ = util.RandomString(12)
+	var adminPassword, userPassword, postgresPassword string
+	blackduckSecret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-secret")
+	if err != nil {
+		log.Errorf("unable to find the default blackduck secret due to %+v. Using the default value", err)
+		adminPassword = "blackduck"
+		userPassword = "blackduck"
+		postgresPassword = "blackduck"
 	} else {
-		createHub.Spec.AdminPassword = createHub.Spec.PostgresPassword
-		createHub.Spec.UserPassword = createHub.Spec.PostgresPassword
+		adminPassword = blackduckSecret.StringData["ADMIN_PASSWORD"]
+		userPassword = blackduckSecret.StringData["USER_PASSWORD"]
+		postgresPassword = blackduckSecret.StringData["POSTGRES_PASSWORD"]
 	}
+
 	log.Debugf("Before init: %+v", createHub)
 	// Create the config-maps, secrets and postgres container
-	err = hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	err = hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv, adminPassword, userPassword)
 	if err != nil {
 		return "", "", true, err
 	}
@@ -137,11 +145,11 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	util.ValidatePodsAreRunning(hc.KubeClient, pods)
 	// Initialize the hub database
 	if strings.EqualFold(createHub.Spec.DbPrototype, "empty") {
-		InitDatabase(createHub)
+		InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 	}
 
 	// Create all hub deployments
-	deployer, _ = horizon.NewDeployer(hc.Config)
+	deployer, _ = horizon.NewDeployer(hc.KubeConfig)
 	hc.createDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	log.Debugf("%+v", deployer)
 	// Deploy all hub containers
@@ -192,7 +200,10 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 
 	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-lb")
 	if err != nil {
-		return "", pvcVolumeName, false, err
+		ipAddress, err = hc.getNodePortIPAddress(createHub.Spec.Namespace, "webserver-np")
+		if err != nil {
+			return "", pvcVolumeName, false, err
+		}
 	}
 	log.Infof("hub Ip address: %s", ipAddress)
 	return ipAddress, pvcVolumeName, false, nil
@@ -229,6 +240,24 @@ func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string
 
 		if len(service.Status.LoadBalancer.Ingress) > 0 {
 			ipAddress := service.Status.LoadBalancer.Ingress[0].IP
+			return ipAddress, nil
+		}
+	}
+	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
+}
+
+func (hc *Creater) getNodePortIPAddress(namespace string, serviceName string) (string, error) {
+	for i := 0; i < 10; i++ {
+		time.Sleep(10 * time.Second)
+		service, err := util.GetService(hc.KubeClient, namespace, serviceName)
+		if err != nil {
+			return "", fmt.Errorf("unable to get service %s in %s namespace due to %s", serviceName, namespace, err.Error())
+		}
+
+		log.Debugf("Service: %v", service)
+
+		if !strings.EqualFold(service.Spec.ClusterIP, "") {
+			ipAddress := service.Spec.ClusterIP
 			return ipAddress, nil
 		}
 	}

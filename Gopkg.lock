@@ -36,7 +36,7 @@
     "pkg/util/error",
   ]
   pruneopts = "UT"
-  revision = "712de79abc13ccc0df818e5d1ace572223bfe808"
+  revision = "f3914d8d11fce7d08f05f4ef79c4fa89247c06a0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -349,17 +349,22 @@
   version = "1.0.1"
 
 [[projects]]
-  digest = "1:ccda8b9b5889f60d21ab3639f5074ea6865d89a42a6efc40e8aa65e659f84e9f"
+  digest = "1:202d9939bd49c6c9efb4722de6c677d56d99996765ede8bb55c83f28ef5e3cb7"
   name = "github.com/openshift/api"
-  packages = ["security/v1"]
+  packages = [
+    "route/v1",
+    "security/v1",
+  ]
   pruneopts = "UT"
   revision = "0d921e363e951d89f583292c60d013c318df64dc"
   version = "v3.9.0"
 
 [[projects]]
-  digest = "1:5379fd636367542abf1db1f9d982fc149f6bd81ae32971477a9f4725d532db4b"
+  digest = "1:42f56fba058aaf9bb5ea7f2a59a3a94c57355be3b14ff87f424571546a0ed298"
   name = "github.com/openshift/client-go"
   packages = [
+    "route/clientset/versioned/scheme",
+    "route/clientset/versioned/typed/route/v1",
     "security/clientset/versioned/scheme",
     "security/clientset/versioned/typed/security/v1",
   ]
@@ -782,6 +787,7 @@
     "github.com/gin-gonic/gin",
     "github.com/imdario/mergo",
     "github.com/lib/pq",
+    "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1",
     "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",

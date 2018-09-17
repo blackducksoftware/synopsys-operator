@@ -37,6 +37,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 )
@@ -163,6 +164,11 @@ func (c *ControllerConfig) CreateHandler() {
 		osClient = nil
 	}
 
+	routeClient, err := routeclient.NewForConfig(c.protoformConfig.KubeConfig)
+	if err != nil {
+		routeClient = nil
+	}
+
 	c.protoformConfig.handler = &opssightcontroller.OpsSightHandler{
 		Config:            c.protoformConfig.Config,
 		KubeConfig:        c.protoformConfig.KubeConfig,
@@ -171,6 +177,7 @@ func (c *ControllerConfig) CreateHandler() {
 		Namespace:         c.protoformConfig.Config.Namespace,
 		CmMutex:           make(chan bool, 1),
 		OSSecurityClient:  osClient,
+		RouteClient:       routeClient,
 	}
 }
 

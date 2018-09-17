@@ -35,7 +35,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig) error {
+func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
 
 	// Create a namespaces
 	_, err := util.GetNamespace(hc.KubeClient, createHub.Spec.Namespace)
@@ -45,7 +45,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	}
 
 	// Create a secret
-	secrets := hc.createHubSecrets(createHub)
+	secrets := hc.createHubSecrets(createHub, adminPassword, userPassword)
 
 	for _, secret := range secrets {
 		deployer.AddSecret(secret)

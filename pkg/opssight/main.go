@@ -32,6 +32,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,11 +47,12 @@ type Creater struct {
 	kubeClient       *kubernetes.Clientset
 	opssightClient   *opssightclientset.Clientset
 	osSecurityClient *securityclient.SecurityV1Client
+	routeClient      *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client) *Creater {
-	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient}
+func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
 // NewAppDefaults creates a perceptor app configuration object
@@ -158,7 +160,11 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 		return err
 	}
 
+	// get the registry auth credentials for default OpenShift internal docker registries
+	ac.addRegistryAuth(&newSpec)
+
 	opssight := NewOpsSight(&newSpec)
+
 	components, err := opssight.GetComponents()
 	if err != nil {
 		log.Errorf("unable to get opssight components for %s due to %+v", createOpsSight.Name, err)
@@ -182,6 +188,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 		log.Errorf("unable to deploy opssight app due to %+v", err)
 	}
 
+	// if OpenShift, add a privileged role to scanner account
 	err = ac.postDeploy(opssight, createOpsSight.Name)
 	if err != nil {
 		log.Errorf("error: %+v", err)
@@ -189,6 +196,41 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 
 	deployer.StartControllers()
 	return nil
+}
+
+func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
+	// if OpenShift, get the registry auth informations
+	if ac.osSecurityClient != nil {
+		var internalRegistries []string
+		route, err := ac.routeClient.Routes("default").Get("docker-registry", metav1.GetOptions{})
+		if err != nil {
+			log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
+		} else {
+			internalRegistries = append(internalRegistries, route.Spec.Host)
+		}
+
+		registrySvc, err := ac.kubeClient.CoreV1().Services("default").Get("docker-registry", metav1.GetOptions{})
+		if err != nil {
+			log.Errorf("unable to get docker-registry service in default namespace due to %+v", err)
+		} else {
+			if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
+				internalRegistries = append(internalRegistries, registrySvc.Spec.ClusterIP)
+				for _, port := range registrySvc.Spec.Ports {
+					internalRegistries = append(internalRegistries, string(port.Port))
+				}
+			}
+		}
+
+		file, err := util.ReadFromFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+		if err != nil {
+			log.Errorf("unable to read the service account token file due to %+v", err)
+		} else {
+			for _, internalRegistry := range internalRegistries {
+				registryAuth := v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
+				opsSightSpec.InternalRegistries = append(opsSightSpec.InternalRegistries, registryAuth)
+			}
+		}
+	}
 }
 
 func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {

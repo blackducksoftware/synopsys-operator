@@ -95,7 +95,7 @@ func (r *SecretReplicator) Run(stopCh <-chan struct{}) {
 func (r *SecretReplicator) secretAdded(obj interface{}) {
 	secret := obj.(*v1.Secret)
 
-	if strings.EqualFold(secret.Name, "hub-certificate") {
+	if strings.EqualFold(secret.Name, "blackduck-certificate") {
 		hubList, err := util.ListHubs(r.hubClient, r.namespace)
 		if err != nil {
 			log.Errorf("unable to list the hubs due to %+v", err)
@@ -121,7 +121,7 @@ func (r *SecretReplicator) secretAdded(obj interface{}) {
 func (r *SecretReplicator) secretUpdated(oldObj interface{}, newobj interface{}) {
 	secret := newobj.(*v1.Secret)
 
-	if strings.EqualFold(secret.Name, "hub-certificate") {
+	if strings.EqualFold(secret.Name, "blackduck-certificate") {
 		hubList, err := util.ListHubs(r.hubClient, r.namespace)
 		if err != nil {
 			log.Errorf("unable to list the hubs due to %+v", err)

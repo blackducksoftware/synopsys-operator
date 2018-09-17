@@ -39,29 +39,25 @@ type Hub struct {
 
 // HubSpec will be CRD Hub definition's Spec
 type HubSpec struct {
-	Namespace        string `json:"namespace"`
-	Flavor           string `json:"flavor"`
-	DockerRegistry   string `json:"dockerRegistry"`
-	DockerRepo       string `json:"dockerRepo"`
-	HubVersion       string `json:"hubVersion"`
-	DbPrototype      string `json:"dbPrototype"`
-	InstanceName     string `json:"instanceName"`
-	BackupInterval   string `json:"backupInterval"`
-	BackupUnit       string `json:"backupUnit"`
-	PVCStorageClass  string `json:"pvcStorageClass"`
-	BackupSupport    string `json:"backupSupport"`
-	ScanType         string `json:"scanType"`
-	PVCClaimSize     string `json:"pvcClaimSize"`
-	NFSServer        string `json:"nfsServer"`
-	PostgresPassword string `json:"postgresPassword"`
-	AdminPassword    string `json:"adminPassword"`
-	UserPassword     string `json:"userPassword"`
-	IsRandomPassword bool   `json:"isRandomPassword"`
-	CertificateName  string `json:"certificateName"`
-	Certificate      string `json:"certificate"`
-	CertificateKey   string `json:"certificateKey"`
-	HubType          string `json:"hubType"`
-	State            string `json:"state"`
+	Namespace       string `json:"namespace"`
+	Flavor          string `json:"flavor"`
+	DockerRegistry  string `json:"dockerRegistry"`
+	DockerRepo      string `json:"dockerRepo"`
+	HubVersion      string `json:"hubVersion"`
+	DbPrototype     string `json:"dbPrototype"`
+	InstanceName    string `json:"instanceName"`
+	BackupInterval  string `json:"backupInterval"`
+	BackupUnit      string `json:"backupUnit"`
+	PVCStorageClass string `json:"pvcStorageClass"`
+	BackupSupport   string `json:"backupSupport"`
+	ScanType        string `json:"scanType"`
+	PVCClaimSize    string `json:"pvcClaimSize"`
+	NFSServer       string `json:"nfsServer"`
+	CertificateName string `json:"certificateName"`
+	Certificate     string `json:"certificate"`
+	CertificateKey  string `json:"certificateKey"`
+	HubType         string `json:"hubType"`
+	State           string `json:"state"`
 }
 
 // HubStatus will be CRD Hub definition's Status

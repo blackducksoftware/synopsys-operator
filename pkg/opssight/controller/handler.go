@@ -29,6 +29,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -51,6 +52,7 @@ type OpsSightHandler struct {
 	Namespace         string
 	CmMutex           chan bool
 	OSSecurityClient  *securityclient.SecurityV1Client
+	RouteClient       *routeclient.RouteV1Client
 }
 
 // ObjectCreated will be called for create opssight events
@@ -66,7 +68,7 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 			log.Errorf("Couldn't update OpsSight object: %s", err.Error())
 		}
 
-		opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient)
+		opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient)
 		if err != nil {
 			log.Errorf("unable to create the new OpsSight creater for %s due to %+v", opssightv1.Name, err)
 		}
@@ -94,7 +96,7 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete opssight events
 func (h *OpsSightHandler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient)
+	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient)
 	opssightCreator.DeleteOpsSight(name)
 }
 
