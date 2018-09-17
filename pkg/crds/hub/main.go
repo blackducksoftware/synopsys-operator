@@ -127,24 +127,29 @@ func (c *ControllerConfig) Deploy() error {
 
 	certificate, key := hub.CreateSelfSignedCert()
 
-	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.protoformConfig.Config.Namespace, Name: "hub-certificate", Type: horizonapi.SecretTypeOpaque})
+	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.protoformConfig.Config.Namespace, Name: "blackduck-certificate", Type: horizonapi.SecretTypeOpaque})
 	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
 
 	deployer.AddSecret(certificateSecret)
+
+	blackduckSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.protoformConfig.Config.Namespace, Name: "blackduck-secret", Type: horizonapi.SecretTypeOpaque})
+	blackduckSecret.AddStringData(map[string]string{"ADMIN_PASSWORD": "blackduck", "USER_PASSWORD": "blackduck", "POSTGRES_PASSWORD": "blackduck"})
+
+	deployer.AddSecret(blackduckSecret)
 
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("unable to create the hub federator resources due to %+v", err)
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	return err
 }
 
 // PostDeploy will call after deploying the CRD
 func (c *ControllerConfig) PostDeploy() {
-	hc := hub.NewCreater(c.protoformConfig.KubeConfig, c.protoformConfig.KubeClientSet, c.protoformConfig.customClientSet)
+	hc := hub.NewCreater(c.protoformConfig.Config, c.protoformConfig.KubeConfig, c.protoformConfig.KubeClientSet, c.protoformConfig.customClientSet)
 	webservice.SetupHTTPServer(hc, c.protoformConfig.Config.Namespace)
 }
 
@@ -205,7 +210,8 @@ func (c *ControllerConfig) AddInformerEventHandler() {
 // CreateHandler will create a CRD handler
 func (c *ControllerConfig) CreateHandler() {
 	c.protoformConfig.handler = &hubcontroller.HubHandler{
-		Config:           c.protoformConfig.KubeConfig,
+		Config:           c.protoformConfig.Config,
+		KubeConfig:       c.protoformConfig.KubeConfig,
 		Clientset:        c.protoformConfig.KubeClientSet,
 		HubClientset:     c.protoformConfig.customClientSet,
 		Namespace:        c.protoformConfig.Config.Namespace,

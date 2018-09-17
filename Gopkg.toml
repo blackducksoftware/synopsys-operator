@@ -37,7 +37,7 @@
   name = "github.com/spf13/viper"
   version = "1.0.2"
 
-[[constraint]]
+[[override]]
   branch = "master"
   name = "golang.org/x/crypto"
 

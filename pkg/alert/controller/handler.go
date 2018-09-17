@@ -63,7 +63,7 @@ func (h *AlertHandler) ObjectCreated(obj interface{}) {
 
 		alertCreator := alert.NewCreater(h.Config, h.Clientset, h.AlertClientset)
 		if err != nil {
-			log.Errorf("unable to create the new hub creater for %s due to %+v", alertv1.Name, err)
+			log.Errorf("unable to create the new Alert creater for %s due to %+v", alertv1.Name, err)
 		}
 		err = alertCreator.CreateAlert(alertv1)
 
@@ -74,6 +74,11 @@ func (h *AlertHandler) ObjectCreated(obj interface{}) {
 		} else {
 			alertv1.Spec.State = "running"
 			alertv1.Status.State = "running"
+		}
+
+		alertv1, err = h.updateHubObject(alertv1)
+		if err != nil {
+			log.Errorf("Couldn't update Alert object: %s", err.Error())
 		}
 	}
 }

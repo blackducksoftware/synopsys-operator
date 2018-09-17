@@ -93,7 +93,8 @@ const initialState = {
   showNFSPath: true,
   nfsServer: "",
   certificateName: "default",
-  showCertificates: false
+  showCertificates: false,
+  hubType: "worker"
 };
 
 class StagingForm extends Component {
@@ -134,6 +135,7 @@ class StagingForm extends Component {
       pvcClaimSize: "",
       pvcStorageClass: "",
       scanType: "",
+      showNFSPath: false,
       nfsServer: ""
     });
   }
@@ -144,6 +146,7 @@ class StagingForm extends Component {
         pvcClaimSize: "20Gi",
         pvcStorageClass: "none",
         scanType: "Artifacts",
+        showNFSPath: true,
         nfsServer: ""
       });
     }
@@ -233,7 +236,8 @@ class StagingForm extends Component {
       this.props.setToastStatus({
         toastMsgOpen: true,
         toastMsgVariant: "success",
-        toastMsgText: "Black Duck instance submitted! IP address will appear shortly"
+        toastMsgText:
+          "Black Duck instance submitted! IP address will appear shortly"
       });
       this.props.addInstance(formData);
       this.resetForm();
@@ -272,6 +276,7 @@ class StagingForm extends Component {
       showManualStorageClass,
       showCloneSupport,
       showCertificates,
+      hubType,
       emptyFormFields: emptyFields,
       ...textFields
     } = this.state;
@@ -314,17 +319,20 @@ class StagingForm extends Component {
       scanTypes,
       dbInstances,
       pvcStorageClasses,
-      instances
+      instances,
+      hubTypes
     } = this.props;
 
     // const primary = deepPurple[200];
     const customers = Object.keys(dbInstances);
     const storageClasses = Object.keys(pvcStorageClasses);
     const manualStorage = Object.keys(manualStorageClasses);
+    const types = Object.keys(hubTypes);
     const hubs = Object.keys(instances);
 
     // Retrieve unique certificates
     const uniqueCertificates = ["default", "manual"];
+    // eslint-disable-next-line
     hubs.map(hubCrd => {
       const hub = instances[hubCrd];
       if (uniqueCertificates.indexOf(hub.spec.certificateName) === -1) {
@@ -491,197 +499,163 @@ class StagingForm extends Component {
             </div>
           ) : null}
           {this.state.showManualStorageClass ? (
-            <div>
-              <div className={classnames(classes.singleRowFields)}>
-                <TextField
-                  select
-                  id="pvcStorageClass"
-                  name="pvcStorageClass"
-                  label="PVC Storage Class"
-                  className={classes.singleRowFieldLeft}
-                  value={this.state.pvcStorageClass}
-                  onChange={this.handleStorageClassChange}
-                  SelectProps={{
-                    MenuProps: {
-                      className: classes.menu
-                    }
-                  }}
-                  margin="normal"
-                >
-                  {manualStorage.map(storageClass => {
-                    const displayValue = manualStorageClasses[storageClass];
-                    return (
-                      <MenuItem
-                        key={`manual-${storageClass}`}
-                        value={storageClass}
-                      >
-                        {displayValue}
-                      </MenuItem>
-                    );
-                  })}
-                </TextField>
-              </div>
-              {this.state.showNFSPath ? (
-                <TextField
-                  id="nfsServer"
-                  name="nfsServer"
-                  label="NFS Server Path"
-                  className={classes.textField}
-                  value={this.state.nfsServer}
-                  onChange={this.handleChange}
-                  margin="normal"
-                />
-              ) : null}
-              <div
-                className={classnames(
-                  classes.singleRowFields,
-                  classes.textField
-                )}
-              >
-                <TextField
-                  select
-                  id="scanType"
-                  name="scanType"
-                  label="Scan Type"
-                  className={classes.singleRowThreeFieldMiddle}
-                  value={this.state.scanType}
-                  onChange={this.handleScanTypeChange}
-                  SelectProps={{
-                    MenuProps: {
-                      className: classes.menu
-                    }
-                  }}
-                  margin="normal"
-                >
-                  {scanTypes.map(type => {
-                    return (
-                      <MenuItem key={`pv-${type}`} value={type}>
-                        {type}
-                      </MenuItem>
-                    );
-                  })}
-                </TextField>
-                <TextField
-                  id="pvcClaimSize"
-                  name="pvcClaimSize"
-                  label="PVC Claim Size"
-                  className={classes.singleRowThreeFieldRight}
-                  value={this.state.pvcClaimSize}
-                  onChange={this.handleChange}
-                  margin="normal"
-                />
-              </div>
-            </div>
+            <TextField
+              select
+              id="pvcStorageClass"
+              name="pvcStorageClass"
+              label="PVC Storage Class"
+              className={classes.textField}
+              value={this.state.pvcStorageClass}
+              onChange={this.handleStorageClassChange}
+              SelectProps={{
+                MenuProps: {
+                  className: classes.menu
+                }
+              }}
+              margin="normal"
+            >
+              {manualStorage.map(storageClass => {
+                const displayValue = manualStorageClasses[storageClass];
+                return (
+                  <MenuItem key={`manual-${storageClass}`} value={storageClass}>
+                    {displayValue}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
           ) : null}
           {this.state.showBackup && !this.state.showManualStorageClass ? (
-            <div>
-              <div className={classnames(classes.singleRowFields)}>
-                <TextField
-                  select
-                  id="pvcStorageClass"
-                  name="pvcStorageClass"
-                  label="PVC Storage Class"
-                  className={classes.singleRowFieldLeft}
-                  value={this.state.pvcStorageClass}
-                  onChange={this.handleStorageClassChange}
-                  SelectProps={{
-                    MenuProps: {
-                      className: classes.menu
-                    }
-                  }}
-                  margin="normal"
-                >
-                  {storageClasses.map(storageClass => {
-                    const displayValue = pvcStorageClasses[storageClass];
-                    return (
-                      <MenuItem
-                        key={`storageClass-${storageClass}`}
-                        value={storageClass}
-                      >
-                        {displayValue}
-                      </MenuItem>
-                    );
-                  })}
-                </TextField>
-              </div>
-              {this.state.showNFSPath ? (
-                <TextField
-                  id="nfsServer"
-                  name="nfsServer"
-                  label="NFS Server Path"
-                  className={classes.textField}
-                  value={this.state.nfsServer}
-                  onChange={this.handleChange}
-                  margin="normal"
-                />
-              ) : null}
-              <div
-                className={classnames(
-                  classes.singleRowFields,
-                  classes.textField
-                )}
+            <TextField
+              select
+              id="pvcStorageClass"
+              name="pvcStorageClass"
+              label="PVC Storage Class"
+              className={classes.textField}
+              value={this.state.pvcStorageClass}
+              onChange={this.handleStorageClassChange}
+              SelectProps={{
+                MenuProps: {
+                  className: classes.menu
+                }
+              }}
+              margin="normal"
+            >
+              {storageClasses.map(storageClass => {
+                const displayValue = pvcStorageClasses[storageClass];
+                return (
+                  <MenuItem
+                    key={`storageClass-${storageClass}`}
+                    value={storageClass}
+                  >
+                    {displayValue}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+          ) : null}
+          {this.state.showNFSPath ? (
+            <TextField
+              id="nfsServer"
+              name="nfsServer"
+              label="NFS Server Path"
+              className={classes.textField}
+              value={this.state.nfsServer}
+              onChange={this.handleChange}
+              margin="normal"
+            />
+          ) : null}
+          {this.state.showBackup ? (
+            <div
+              className={classnames(classes.singleRowFields, classes.textField)}
+            >
+              <TextField
+                select
+                id="scanType"
+                name="scanType"
+                label="Scan Type"
+                className={classes.singleRowThreeFieldMiddle}
+                value={this.state.scanType}
+                onChange={this.handleScanTypeChange}
+                SelectProps={{
+                  MenuProps: {
+                    className: classes.menu
+                  }
+                }}
+                margin="normal"
               >
-                <TextField
-                  select
-                  id="scanType"
-                  name="scanType"
-                  label="Scan Type"
-                  className={classes.singleRowThreeFieldMiddle}
-                  value={this.state.scanType}
-                  onChange={this.handleScanTypeChange}
-                  SelectProps={{
-                    MenuProps: {
-                      className: classes.menu
-                    }
-                  }}
-                  margin="normal"
-                >
-                  {scanTypes.map(type => {
-                    return (
-                      <MenuItem key={`pv-${type}`} value={type}>
-                        {type}
-                      </MenuItem>
-                    );
-                  })}
-                </TextField>
-                <TextField
-                  id="pvcClaimSize"
-                  name="pvcClaimSize"
-                  label="PVC Claim Size"
-                  className={classes.singleRowThreeFieldRight}
-                  value={this.state.pvcClaimSize}
-                  onChange={this.handleChange}
-                  margin="normal"
-                />
-              </div>
+                {scanTypes.map(type => {
+                  return (
+                    <MenuItem key={`pv-${type}`} value={type}>
+                      {type}
+                    </MenuItem>
+                  );
+                })}
+              </TextField>
+              <TextField
+                id="pvcClaimSize"
+                name="pvcClaimSize"
+                label="PVC Claim Size"
+                className={classes.singleRowThreeFieldRight}
+                value={this.state.pvcClaimSize}
+                onChange={this.handleChange}
+                margin="normal"
+              />
             </div>
           ) : null}
-          <TextField
-            select
-            id="certificateName"
-            name="certificateName"
-            label="Black Duck Certificate"
-            className={classes.textField}
-            value={this.state.certificateName}
-            onChange={this.handleCertificateChanges}
-            SelectProps={{
-              MenuProps: {
-                className: classes.menu
-              }
-            }}
-            margin="normal"
+          <div
+            className={classnames(classes.singleRowFields, classes.textField)}
           >
-            {uniqueCertificates.map(uniqueCertificate => {
-              return (
-                <MenuItem
-                  key={`certificate-${uniqueCertificate}`}
-                  value={uniqueCertificate}
-                >
-                  {uniqueCertificate}
-                </MenuItem>
-              );
-            })}
-          </TextField>
+            <TextField
+              select
+              id="certificateName"
+              name="certificateName"
+              label="Black Duck Certificate"
+              className={classes.singleRowFieldLeft}
+              value={this.state.certificateName}
+              onChange={this.handleCertificateChanges}
+              SelectProps={{
+                MenuProps: {
+                  className: classes.menu
+                }
+              }}
+              margin="normal"
+            >
+              {uniqueCertificates.map(uniqueCertificate => {
+                return (
+                  <MenuItem
+                    key={`certificate-${uniqueCertificate}`}
+                    value={uniqueCertificate}
+                  >
+                    {uniqueCertificate}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+            <TextField
+              select
+              id="hubType"
+              name="hubType"
+              label="Black Duck Type"
+              className={classes.singleRowFieldRight}
+              value={this.state.hubType}
+              onChange={this.handleChange}
+              SelectProps={{
+                MenuProps: {
+                  className: classes.menu
+                }
+              }}
+              margin="normal"
+            >
+              {types.map(type => {
+                const displayValue = hubTypes[type];
+                return (
+                  <MenuItem key={`hub-${type}`} value={type}>
+                    {displayValue}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+          </div>
           {this.state.showCertificates ? (
             <TextField
               id="certificate"
@@ -749,5 +723,6 @@ StagingForm.propTypes = {
   manualStorageClasses: PropTypes.arrayOf(PropTypes.string),
   nfsServer: PropTypes.string,
   backupInterval: PropTypes.string,
-  backupUnit: PropTypes.string
+  backupUnit: PropTypes.string,
+  hubTypes: PropTypes.string
 };

@@ -22,6 +22,7 @@ under the License.
 package util
 
 import (
+	"strings"
 	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -46,11 +47,19 @@ func (l *PodListController) Run(resources horizonapi.ControllerResources, stopCh
 	client := resources.KubeClient
 	for cnt := 0; cnt < 10; cnt++ {
 		pods, _ := client.Core().Pods(l.namespace).List(v1meta.ListOptions{})
+		var isPodNotRunning bool
 		for _, pod := range pods.Items {
 			log.Debugf("Pod = %v -> %v", pod.Name, pod.Status.Phase)
+			if !strings.EqualFold(string(pod.Status.Phase), "Running") && !isPodNotRunning {
+				isPodNotRunning = true
+			}
 		}
 		log.Debug("***************")
-		time.Sleep(10 * time.Second)
+		if isPodNotRunning {
+			time.Sleep(10 * time.Second)
+		} else {
+			break
+		}
 	}
 
 	return nil

@@ -30,21 +30,26 @@ package plugins
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
+	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	opssiteclient "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/kubernetes/pkg/apis/extensions"
 
 	//extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
 
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -52,61 +57,57 @@ type hubConfig struct {
 	Hosts                     []string
 	User                      string
 	PasswordEnvVar            string
-	ClientTimeoutMilliseconds int
-	Port                      int
-	ConcurrentScanLimit       int
-	TotalScanLimit            int
+	ClientTimeoutMilliseconds *int
+	Port                      *int
+	ConcurrentScanLimit       *int
+	TotalScanLimit            *int
 }
 
 type timings struct {
-	CheckForStalledScansPauseHours int
-	StalledScanClientTimeoutHours  int
-	ModelMetricsPauseSeconds       int
-	UnknownImagePauseMilliseconds  int
+	CheckForStalledScansPauseHours *int
+	StalledScanClientTimeoutHours  *int
+	ModelMetricsPauseSeconds       *int
+	UnknownImagePauseMilliseconds  *int
 }
 
 type perceptorConfig struct {
 	Hub         *hubConfig
 	Timings     *timings
 	UseMockMode bool
-	Port        int
+	Port        *int
 	LogLevel    string
 }
 
 // PerceptorConfigMap ...
-type PerceptorConfigMap struct{
-	Client *kubernetes.Clientset,
-}
-
-func  (p *PerceptorConfigMap)  init() {
-	if p.Client == nil {
-		panic("Failure ! I need a client to run.")
-	}
+type PerceptorConfigMap struct {
+	Config         *model.Config
+	KubeConfig     *rest.Config
+	OpsSightClient *opssightclientset.Clientset
+	Namespace      string
 }
 
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
 func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string) error {
-	p.init()
-	configmapList, err := kubeClient.Core().ConfigMaps(namespace).List(metav1.ListOptions{})
+	configmapList, err := kubeClient.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	var configMap *v1.ConfigMap
 	for _, cm := range configmapList.Items {
-		if cm.Name == "perceptor-config" {
+		if cm.Name == "perceptor" {
 			configMap = &cm
 			break
 		}
 	}
 
 	if configMap == nil {
-		return fmt.Errorf("unable to find configmap perceptor-config")
+		return fmt.Errorf("unable to find configmap perceptor in %s", namespace)
 	}
 
 	var value perceptorConfig
-	err = json.Unmarshal([]byte(configMap.Data["perceptor_conf.yaml"]), &value)
+	err = json.Unmarshal([]byte(configMap.Data["perceptor.yaml"]), &value)
 	if err != nil {
 		return err
 	}
@@ -118,75 +119,94 @@ func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string)
 		return err
 	}
 
-	configMap.Data["perceptor_conf.yaml"] = string(jsonBytes)
-	kubeClient.Core().ConfigMaps(namespace).Update(configMap)
+	configMap.Data["perceptor.yaml"] = string(jsonBytes)
+	log.Debugf("updated configmap in %s is %+v", namespace, configMap)
+	_, err = kubeClient.CoreV1().ConfigMaps(namespace).Update(configMap)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // Run is a BLOCKING function which should be run by the framework .
-func (p *PerceptorConfigMap) Run(c api.ControllerResources, ch chan struct{}) {
-	p.init()
-	syncFunc := func() {
-		p.updateAllHubs(c, ch)
+func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch chan struct{}) error {
+	hubClient, err := hubclient.NewForConfig(p.KubeConfig)
+	if err != nil {
+		log.Panicf("unable to create the hub client due to %+v", err)
 	}
+
+	syncFunc := func() {
+		p.updateAllHubs(hubClient, resources.KubeClient)
+	}
+
+	syncFunc()
+
 	lw := &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			return hubClient.SynopsysV1().Hubs(p.Config.Namespace).List(options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return hubclient.New(c.KubeClient.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).Watch(metav1.ListOptions{})
+			return hubClient.SynopsysV1().Hubs(p.Config.Namespace).Watch(options)
 		},
 	}
 	_, ctrl := cache.NewInformer(lw,
-		&extensions.Deployment{},
+		&hubv1.Hub{},
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			// TODO kinda dumb, we just do a complete re-list of all hubs,
 			// every time an event happens... But thats all we need to do, so its good enough.
 			DeleteFunc: func(obj interface{}) {
-				logrus.Infof("Hub deleted ! %v ", obj)
+				log.Debugf("Hub deleted ! %v ", obj)
 				syncFunc()
 			},
 
 			AddFunc: func(obj interface{}) {
-				logrus.Infof("Hub added ! %v ", obj)
+				log.Debugf("Hub added ! %v ", obj)
 				syncFunc()
 			},
 		},
 	)
-	logrus.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
+	log.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
 
 	// make sure this is called from a go func.
 	// This blocks!
-	ctrl.Run(ch)
+	go ctrl.Run(ch)
+
+	return nil
 }
 
 // updateAllHubs will list all hubs in the cluster, and send them to opssight as scan targets.
 // TODO there may be hubs which we dont want opssight to use.  Not sure how to deal with that yet.
-func (p *PerceptorConfigMap) updateAllHubs(c api.DeployerControllerInterface, ch chan struct{}) error {
+func (p *PerceptorConfigMap) updateAllHubs(hubClient *hubclient.Clientset, kubeClient *kubernetes.Clientset) error {
 	allHubNamespaces := func() []string {
 		allHubNamespaces := []string{}
 
-		hubsList, _ := hubclient.New(p.Client.RESTClient()).SynopsysV1().Hubs(v1.NamespaceAll).List(metav1.ListOptions{})
+		hubsList, _ := util.ListHubs(hubClient, p.Config.Namespace)
 		hubs := hubsList.Items
 		for _, hub := range hubs {
-			ns := hub.Namespace
-			allHubNamespaces = append(allHubNamespaces, ns)
-			logrus.Infof("Hub config map controller, namespace is %v", ns)
+			if strings.EqualFold(hub.Spec.HubType, "worker") {
+				allHubNamespaces = append(allHubNamespaces, fmt.Sprintf("webserver.%s.svc", hub.Name))
+				log.Infof("Hub config map controller, namespace is %s", hub.Name)
+			}
 		}
 		return allHubNamespaces
 	}()
 
+	log.Debugf("allHubNamespaces: %+v", allHubNamespaces)
 	// for opssight 3.0, only support one opssight
-	opssiteList, err := opssiteclient.New(p.Client.RESTClient()).SynopsysV1().OpsSights(v1.NamespaceAll).List(metav1.ListOptions{})
+	opssight, err := util.GetOpsSight(p.OpsSightClient, p.Namespace, p.Namespace)
 	if err != nil {
+		log.Errorf("unable to get opssight in %s due to %+v", p.Namespace, err)
 		return err
 	}
 
 	// TODO, replace w/ configmap mutat ?
 	// curl perceptor w/ the latest hub list
-	for _, opssight := range opssiteList.Items {
-		sendHubs(p.Client, opssight.Namespace, allHubNamespaces)
+	err = sendHubs(kubeClient, opssight.Name, allHubNamespaces)
+	if err != nil {
+		log.Errorf("unable to send hubs due to %+v", err)
+		return err
 	}
+
 	return nil
 }

@@ -37,7 +37,7 @@ func (hc *Creater) execContainer(request *rest.Request, command []string) error 
 
 	log.Debugf("Request URL: %+v, request: %+v", request.URL().String(), request)
 
-	exec, err := remotecommand.NewSPDYExecutor(hc.Config, "POST", request.URL())
+	exec, err := remotecommand.NewSPDYExecutor(hc.KubeConfig, "POST", request.URL())
 	log.Debugf("exec: %+v, error: %+v", exec, err)
 	if err != nil {
 		log.Errorf("error while creating Executor: %v", err)

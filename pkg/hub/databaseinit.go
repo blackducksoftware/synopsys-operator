@@ -33,19 +33,19 @@ import (
 )
 
 // InitDatabase will init the database
-func InitDatabase(createHub *v1.Hub) {
+func InitDatabase(createHub *v1.Hub, adminPassword string, userPassword string, postgresPassword string) {
 	databaseName := "postgres"
 	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Name)
-	db, err := OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
+	db, err := OpenDatabaseConnection(hostName, databaseName, "postgres", postgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
 		log.Errorf("Unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
 	}
-	execPostGresDBStatements(db, createHub.Spec.AdminPassword, createHub.Spec.UserPassword)
+	execPostGresDBStatements(db, adminPassword, userPassword)
 
 	databaseName = "bds_hub"
-	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", postgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
@@ -54,7 +54,7 @@ func InitDatabase(createHub *v1.Hub) {
 	execBdsHubDBStatements(db)
 
 	databaseName = "bds_hub_report"
-	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", postgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
@@ -63,7 +63,7 @@ func InitDatabase(createHub *v1.Hub) {
 	execBdsHubReportDBStatements(db)
 
 	databaseName = "bdio"
-	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", createHub.Spec.PostgresPassword, "postgres")
+	db, err = OpenDatabaseConnection(hostName, databaseName, "postgres", postgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {

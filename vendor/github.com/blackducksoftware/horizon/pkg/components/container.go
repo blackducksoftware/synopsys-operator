@@ -125,9 +125,19 @@ func (c *Container) AddVolumeMount(config api.VolumeMountConfig) error {
 	if loc := c.findVolumeMount(config.Name, c.obj.VolumeMounts); loc >= 0 {
 		return fmt.Errorf("volume mount %s already exists", config.Name)
 	}
+
+	store := config.Name
+	if len(config.SubPath) != 0 {
+		store += fmt.Sprintf(":%s", config.SubPath)
+	}
+
+	if config.ReadOnly != nil && *config.ReadOnly == true {
+		store += ":ro"
+	}
+
 	vm := types.VolumeMount{
 		MountPath: config.MountPath,
-		Store:     config.Name,
+		Store:     store,
 	}
 
 	switch config.Propagation {

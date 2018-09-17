@@ -73,7 +73,7 @@ func (hc *Creater) createDeployer(deployer *horizon.Deployer, createHub *v1.Hub,
 	// webserver
 	// webServerGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webserver", fmt.Sprintf("%s-%s", "webserver-disk", createHub.Spec.Namespace), "ext4")
 	for {
-		secret, err := util.GetSecret(hc.KubeClient, createHub.Name, "hub-certificate")
+		secret, err := util.GetSecret(hc.KubeClient, createHub.Name, "blackduck-certificate")
 		if err != nil {
 			log.Errorf("unable to get the secret in %s due to %+v", createHub.Name, err)
 			break
@@ -85,7 +85,7 @@ func (hc *Creater) createDeployer(deployer *horizon.Deployer, createHub *v1.Hub,
 		time.Sleep(10 * time.Second)
 	}
 	webServerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
-	webServerSecretVol, _ := util.CreateSecretVolume("certificate", "hub-certificate", 0777)
+	webServerSecretVol, _ := util.CreateSecretVolume("certificate", "blackduck-certificate", 0777)
 	webServerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: fmt.Sprintf("%s/%s/hub-nginx:%s", createHub.Spec.DockerRegistry, createHub.Spec.DockerRepo, createHub.Spec.HubVersion),
 			PullPolicy: horizonapi.PullAlways, MinMem: hubContainerFlavor.WebserverMemoryLimit, MaxMem: hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: "", UID: util.IntToInt64(1000)},

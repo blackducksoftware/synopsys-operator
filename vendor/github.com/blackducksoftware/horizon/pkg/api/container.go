@@ -77,6 +77,8 @@ type VolumeMountConfig struct {
 	MountPath   string
 	Propagation MountPropagationType
 	Name        string
+	SubPath     string
+	ReadOnly    *bool
 }
 
 // MountPropagationType defines the type of mount propagation

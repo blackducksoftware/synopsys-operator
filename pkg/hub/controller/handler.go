@@ -34,6 +34,7 @@ import (
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -49,7 +50,8 @@ type Handler interface {
 
 // HubHandler will store the configuration that is required to initiantiate the informers callback
 type HubHandler struct {
-	Config           *rest.Config
+	Config           *model.Config
+	KubeConfig       *rest.Config
 	Clientset        *kubernetes.Clientset
 	HubClientset     *hubclientset.Clientset
 	Namespace        string
@@ -75,7 +77,7 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 			log.Errorf("Couldn't update Hub object: %s", err.Error())
 		}
 
-		hubCreator := hub.NewCreater(h.Config, h.Clientset, h.HubClientset)
+		hubCreator := hub.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.HubClientset)
 		if err != nil {
 			log.Errorf("unable to create the new hub creater for %s due to %+v", hubv1.Name, err)
 		}
@@ -105,7 +107,7 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 func (h *HubHandler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
-	hubCreator := hub.NewCreater(h.Config, h.Clientset, h.HubClientset)
+	hubCreator := hub.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.HubClientset)
 	hubCreator.DeleteHub(name)
 	h.callHubFederator()
 
