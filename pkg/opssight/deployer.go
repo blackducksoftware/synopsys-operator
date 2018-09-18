@@ -35,17 +35,17 @@ type SpecConfig struct {
 	config *v1.OpsSightSpec
 }
 
-// NewOpsSight will create the OpsSight object
-func NewOpsSight(config *v1.OpsSightSpec) *SpecConfig {
+// NewSpecConfig will create the OpsSight object
+func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 	return &SpecConfig{config: config}
 }
 
-// GetComponents will return the list of components for alert
+// GetComponents will return the list of components
 func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	p.configServiceAccounts()
 	err := p.sanityCheckServices()
 	if err != nil {
-		return nil, fmt.Errorf("Please set the service accounts correctly; %v", err)
+		return nil, fmt.Errorf("Please set the service accounts correctly: %v", err)
 	}
 
 	p.substituteDefaultImageVersion()

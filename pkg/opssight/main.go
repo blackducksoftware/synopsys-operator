@@ -163,7 +163,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	// get the registry auth credentials for default OpenShift internal docker registries
 	ac.addRegistryAuth(&newSpec)
 
-	opssight := NewOpsSight(&newSpec)
+	opssight := NewSpecConfig(&newSpec)
 
 	components, err := opssight.GetComponents()
 	if err != nil {
