@@ -64,10 +64,8 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, fmt.Errorf("failed to create scanner replication controller: %v", err)
 	}
 	components.ReplicationControllers = append(components.ReplicationControllers, rc)
-	components.Services = append(components.Services, p.ScannerService())
-	components.Services = append(components.Services, p.ImageFacadeService())
-	components.ConfigMaps = append(components.ConfigMaps, p.ScannerConfigMap())
-	components.ConfigMaps = append(components.ConfigMaps, p.ImageFacadeConfigMap())
+	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
+	components.ConfigMaps = append(components.ConfigMaps, p.ScannerConfigMap(), p.ImageFacadeConfigMap())
 	log.Debugf("image facade configmap: %+v", p.ImageFacadeConfigMap().GetObj())
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
@@ -161,23 +159,26 @@ func (p *SpecConfig) configServiceAccounts() {
 
 // TODO programatically validate rather then sanity check.
 func (p *SpecConfig) sanityCheckServices() error {
-	isValid := func(cn string) bool {
-		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner", "perceptor-image-facade", "skyfire"} {
-			if cn == valid {
-				return true
-			}
-		}
-		return false
+	serviceAccountNames := map[string]bool{
+		"perceptor":              true,
+		"pod-perceiver":          true,
+		"image-perceiver":        true,
+		"perceptor-scanner":      true,
+		"perceptor-image-facade": true,
+		"skyfire":                true,
 	}
 	for cn := range p.config.ServiceAccounts {
-		if !isValid(cn) {
-			return fmt.Errorf("failed at verifiying that the container name for a svc account was valid")
+		if _, ok := serviceAccountNames[cn]; !ok {
+			return fmt.Errorf("failed at verifying that the container name for a svc account was valid")
 		}
 	}
 	return nil
 }
 
 func (p *SpecConfig) generateStringFromStringArr(strArr []string) string {
-	str, _ := json.Marshal(strArr)
+	str, err := json.Marshal(strArr)
+	if err != nil {
+		log.Errorf("unable to marshal json: %s", err.Error())
+	}
 	return string(str)
 }
