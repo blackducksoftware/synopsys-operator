@@ -225,15 +225,20 @@ class StagingForm extends Component {
   }
 
   handleEnvironAddClick(event) {
-    this.setState(prevState => ({
-      environs: [...prevState.environs, { key: "", value: "" }]
-    }));
+    // this.setState(prevState => ({
+    //   environs: [...prevState.environs, { key: "", value: "" }]
+    // }));
+    let environ = { key: "", value: "" };
+    this.state.environs.push(environ);
+    this.setState({ environs: this.state.environs })
+    this.handleChange(event);
   }
 
   handleEnvironRemoveClick(i, event) {
-    let tmpEnvirons = [...this.state.environs];
-    tmpEnvirons.splice(i, 1);
-    this.setState({ environs: tmpEnvirons });
+    // let tmpEnvirons = [...this.state.environs];
+    // tmpEnvirons.splice(i, 1);
+    this.state.environs.splice(i, 1);
+    this.setState({ environs: this.state.environs });
     if (this.state.key !== undefined) {
       delete this.state.key;
     }
@@ -335,6 +340,15 @@ class StagingForm extends Component {
         field === "certificate" &&
         this.state.certificateName !== "manual"
       ) {
+        return false;
+      } else if (field === "environs") {
+        for (let environ of this.state.environs) {
+          if (environ.key === "" || environ.value === "") {
+            return true;
+          }
+        }
+        return false;
+      } else if (field === "") {
         return false;
       } else {
         return !Boolean(textFields[field]);
