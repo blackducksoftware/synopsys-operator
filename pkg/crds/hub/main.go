@@ -30,6 +30,7 @@ import (
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/informers/externalversions/hub/v1"
 	hubcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/hub/controller"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/juju/errors"
 
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -64,12 +65,13 @@ func NewController(config interface{}) (*ControllerConfig, error) {
 }
 
 // CreateClientSet will create the CRD client
-func (c *ControllerConfig) CreateClientSet() {
+func (c *ControllerConfig) CreateClientSet() error {
 	hubClient, err := hubclientset.NewForConfig(c.protoformConfig.KubeConfig)
 	if err != nil {
-		log.Panicf("Unable to create Hub informer client: %s", err.Error())
+		return errors.Trace(err)
 	}
 	c.protoformConfig.customClientSet = hubClient
+	return nil
 }
 
 // Deploy will deploy the CRD and other relevant components
