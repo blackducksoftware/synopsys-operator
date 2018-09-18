@@ -15,7 +15,6 @@ spec:
   internalRegistries: []
   annotationIntervalSeconds: 30
   dumpIntervalMinutes: 30
-  hubHost: ""
   hubUser: sysadmin
   hubPort: 443
   hubUserPassword: blackduck
