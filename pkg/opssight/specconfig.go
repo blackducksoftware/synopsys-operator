@@ -168,7 +168,7 @@ func (p *SpecConfig) sanityCheckServices() error {
 	}
 	for cn := range p.config.ServiceAccounts {
 		if _, ok := serviceAccountNames[cn]; !ok {
-			return fmt.Errorf("failed at verifying that the container name for a svc account was valid")
+			return fmt.Errorf("invalid service account name <%s>", cn)
 		}
 	}
 	return nil
