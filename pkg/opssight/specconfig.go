@@ -22,7 +22,6 @@ under the License.
 package opssight
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
@@ -173,12 +172,4 @@ func (p *SpecConfig) sanityCheckServices() error {
 		}
 	}
 	return nil
-}
-
-func (p *SpecConfig) generateStringFromStringArr(strArr []string) string {
-	str, err := json.Marshal(strArr)
-	if err != nil {
-		log.Errorf("unable to marshal json: %s", err.Error())
-	}
-	return string(str)
 }
