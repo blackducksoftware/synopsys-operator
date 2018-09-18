@@ -129,9 +129,15 @@ class StagingForm extends Component {
 
   handleChange(event) {
     const stateKey = event.target.name;
-    this.setState({ [stateKey]: event.target.value }, () => {
-      this.emptyFormFields();
-    });
+    if (stateKey === undefined) {
+      this.setState(() => {
+        this.emptyFormFields();
+      });
+    } else {
+      this.setState({ [stateKey]: event.target.value }, () => {
+        this.emptyFormFields();
+      });
+    }
   }
 
   setPVCEmptyValue() {
@@ -218,16 +224,23 @@ class StagingForm extends Component {
     this.handleChange(event);
   }
 
-  handleEnvironAddClick() {
+  handleEnvironAddClick(event) {
     this.setState(prevState => ({
       environs: [...prevState.environs, { key: "", value: "" }]
     }));
   }
 
   handleEnvironRemoveClick(i, event) {
-    let environs = [...this.state.environs];
-    environs.splice(i, 1);
-    this.setState({ environs });
+    let tmpEnvirons = [...this.state.environs];
+    tmpEnvirons.splice(i, 1);
+    this.setState({ environs: tmpEnvirons });
+    if (this.state.key !== undefined) {
+      delete this.state.key;
+    }
+    if (this.state.value !== undefined) {
+      delete this.state.value;
+    }
+    this.handleChange(event);
   }
 
   handleEnvironKeyChange(i, event) {
@@ -748,8 +761,7 @@ class StagingForm extends Component {
                   size="small"
                   className={classes.button}
                   aria-label="Delete"
-                  color="primary"
-                  type="submit"
+                  color="default"
                   onClick={this.handleEnvironRemoveClick.bind(this, i)}
                 >
                   <DeleteIcon />
