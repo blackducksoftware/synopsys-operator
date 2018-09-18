@@ -7,13 +7,31 @@
 
 # Quick start
 
+## Preconditions
+
+ - have `kubectl` set up and configured
+ 
+## Steps
+
  - clone this repo
 
 ```
 git clone git@github.com:blackducksoftware/perceptor-protoform.git
+cd perceptor-protoform
 ```
 
-## TODO!!  Add more instructions
+ - find the deploy script
+ 
+```
+cd cmd/protoform-installer
+```
+
+ - run the script
+
+```
+./deploy.sh my-favorite-namespace
+```
+ 
 
 # Tested Cluster Versions
 
