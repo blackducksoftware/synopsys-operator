@@ -1,4 +1,4 @@
-# Perceptor-protoform: a cloud native administration utility for blackduck ecosystem components:
+# Perceptor-protoform: a cloud native administration utility for Black Duck ecosystem components:
 
 - perceptor
 - perceivers (openshift, kube, ...)
@@ -10,7 +10,7 @@
 ## Preconditions
 
  - have `kubectl` set up and configured
- 
+
 ## Steps
 
  - clone this repo
@@ -21,33 +21,33 @@ cd perceptor-protoform
 ```
 
  - find the deploy script
- 
+
 ```
-cd cmd/protoform-installer
+cd install
 ```
 
  - run the script
 
 ```
-./deploy.sh my-favorite-namespace <your_favorite_hub_registration_key> master
+./install.sh my-favorite-namespace <your_favorite_hub_registration_key> master
 ```
 
  - create a Hub
 
 ```
-kubectl create -f ../../examples/hub.yaml
+kubectl create -f ../examples/hub.yaml
 ```
 
  - create an OpsSight instance
- 
+
 ```
-kubectl create -f ../../examples/opssight.yaml
+kubectl create -f ../examples/opssight.yaml
 ```
- 
+
  - create an alert instance
- 
+
 ```
-kubectl create -f ../../examples/alert.yaml
+kubectl create -f ../examples/alert.yaml
 ```
 
 # Tested Cluster Versions
