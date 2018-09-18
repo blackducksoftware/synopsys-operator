@@ -55,9 +55,9 @@ func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kuber
 	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
-// NewAppDefaults creates a perceptor app configuration object
+// DefaultOpssightSpec creates a perceptor app configuration object
 // with defaults
-func NewAppDefaults() *v1.OpsSightSpec {
+func DefaultOpssightSpec() *v1.OpsSightSpec {
 	defaultPerceptorPort := 3001
 	defaultPerceiverPort := 3002
 	defaultScannerPort := 3003
@@ -68,7 +68,7 @@ func NewAppDefaults() *v1.OpsSightSpec {
 	defaultHubPort := 443
 	defaultPerceptorHubClientTimeout := 100000
 	defaultScannerHubClientTimeout := 600
-	defaultScanLimit := 7
+	defaultScanLimit := 2
 	defaultTotalScanLimit := 1000
 	defaultCheckForStalledScansPauseHours := 999999
 	defaultStalledScanClientTimeoutHours := 999999
@@ -76,7 +76,7 @@ func NewAppDefaults() *v1.OpsSightSpec {
 	defaultUnknownImagePauseMilliseconds := 15000
 	defaultPodPerceiverEnabled := true
 	defaultImagePerceiverEnabled := false
-	defaultMetricsEnabled := false
+	defaultMetricsEnabled := true
 	defaultPerceptorSkyfire := false
 	defaultUseMockMode := false
 
@@ -153,8 +153,8 @@ func (ac *Creater) DeleteOpsSight(namespace string) {
 func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	log.Debugf("Create OpsSight details for %s: %+v", createOpsSight.Spec.Namespace, createOpsSight)
 	newSpec := createOpsSight.Spec
-	opssightSpec := NewAppDefaults()
-	err := mergo.Merge(&newSpec, opssightSpec)
+	defaultSpec := DefaultOpssightSpec()
+	err := mergo.Merge(&newSpec, defaultSpec)
 	if err != nil {
 		log.Errorf("unable to merge the opssight structs for %s due to %+v", createOpsSight.Name, err)
 		return err
