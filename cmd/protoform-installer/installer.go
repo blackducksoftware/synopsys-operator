@@ -64,7 +64,7 @@ func runProtoform(configPath string) {
 	})
 	installer.AddController(hubConfig)
 
-	opssSightConfig, err := opssight.NewController(&opssight.ProtoformControllerConfig{
+	opssSightConfig, err := opssight.NewController(&opssight.Config{
 		Config:        installer.Config,
 		KubeConfig:    installer.KubeConfig,
 		KubeClientSet: installer.KubeClientSet,
