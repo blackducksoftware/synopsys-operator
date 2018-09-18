@@ -10,7 +10,7 @@
 
 ## Preconditions
 
- - have `kubectl` set up and configured
+ - have `kubectl` or `oc` set up and configured
 
 ## Steps
 
@@ -21,10 +21,11 @@ git clone git@github.com:blackducksoftware/perceptor-protoform.git
 cd perceptor-protoform
 ```
 
+ ### Kubernetes
  - find the deploy script
 
 ```
-cd install
+cd install/kube
 ```
 
  - run the script
@@ -36,19 +37,50 @@ cd install
  - create a Hub
 
 ```
-kubectl create -f ../examples/hub.yaml
+kubectl create -f ../../examples/hub.yaml
 ```
 
  - create an OpsSight instance
 
 ```
-kubectl create -f ../examples/opssight.yaml
+kubectl create -f ../../examples/opssight.yaml
 ```
 
  - create an alert instance
 
 ```
-kubectl create -f ../examples/alert.yaml
+kubectl create -f ../../examples/alert.yaml
+```
+
+ ### OpenShift
+ - find the deploy script
+
+```
+cd install/openshift
+```
+
+ - run the script
+
+```
+./install.sh my-favorite-namespace <your_favorite_hub_registration_key> master
+```
+
+ - create a Hub
+
+```
+oc create -f ../../examples/hub.yaml
+```
+
+ - create an OpsSight instance
+
+```
+oc create -f ../../examples/opssight.yaml
+```
+
+ - create an alert instance
+
+```
+oc create -f ../../examples/alert.yaml
 ```
 
 # Tested Cluster Versions
