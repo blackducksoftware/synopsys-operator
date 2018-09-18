@@ -114,21 +114,24 @@ func (p *SpecConfig) perceptorVolume() *components.Volume {
 }
 
 // PerceptorService creates a service for perceptor
-func (p *SpecConfig) PerceptorService() *components.Service {
+func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.config.PerceptorImageName,
 		Namespace: p.config.Namespace,
 	})
 
-	service.AddPort(horizonapi.ServicePortConfig{
+	err := service.AddPort(horizonapi.ServicePortConfig{
 		Port:       int32(*p.config.PerceptorPort),
 		TargetPort: fmt.Sprintf("%d", *p.config.PerceptorPort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	service.AddSelectors(map[string]string{"name": p.config.PerceptorImageName})
 
-	return service
+	return service, nil
 }
 
 // PerceptorConfigMap creates a config map for perceptor

@@ -32,6 +32,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
+	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -122,31 +123,30 @@ func DefaultOpssightSpec() *v1.OpsSightSpec {
 }
 
 // DeleteOpsSight will delete the Black Duck OpsSight
-func (ac *Creater) DeleteOpsSight(namespace string) {
+func (ac *Creater) DeleteOpsSight(namespace string) error {
 	log.Debugf("Delete OpsSight details for %s", namespace)
-	var err error
-	// Verify whether the namespace exist
-	_, err = util.GetNamespace(ac.kubeClient, namespace)
+	// Verify that the namespace exists
+	_, err := util.GetNamespace(ac.kubeClient, namespace)
 	if err != nil {
-		log.Errorf("Unable to find the namespace %+v due to %+v", namespace, err)
-	} else {
-		// Delete a namespace
-		err = util.DeleteNamespace(ac.kubeClient, namespace)
-		if err != nil {
-			log.Errorf("Unable to delete the namespace %+v due to %+v", namespace, err)
-		}
+		return errors.Annotatef(err, "Unable to find namespace %s", namespace)
+	}
+	// Delete the namespace
+	err = util.DeleteNamespace(ac.kubeClient, namespace)
+	if err != nil {
+		return errors.Annotatef(err, "Unable to delete namespace %s", namespace)
+	}
 
-		for {
-			// Verify whether the namespace deleted
-			ns, err := util.GetNamespace(ac.kubeClient, namespace)
-			log.Infof("Namespace: %v, status: %v", namespace, ns.Status)
-			time.Sleep(10 * time.Second)
-			if err != nil {
-				log.Infof("Deleted the namespace %+v", namespace)
-				break
-			}
+	for {
+		// Verify whether the namespace was deleted
+		ns, err := util.GetNamespace(ac.kubeClient, namespace)
+		log.Infof("Namespace: %v, status: %v", namespace, ns.Status)
+		time.Sleep(10 * time.Second)
+		if err != nil {
+			log.Infof("Deleted the namespace %+v", namespace)
+			break
 		}
 	}
+	return nil
 }
 
 // CreateOpsSight will create the Black Duck OpsSight
@@ -156,8 +156,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	defaultSpec := DefaultOpssightSpec()
 	err := mergo.Merge(&newSpec, defaultSpec)
 	if err != nil {
-		log.Errorf("unable to merge the opssight structs for %s due to %+v", createOpsSight.Name, err)
-		return err
+		return errors.Annotatef(err, "unable to merge the opssight structs for %s", createOpsSight.Name)
 	}
 
 	// get the registry auth credentials for default OpenShift internal docker registries
@@ -167,13 +166,11 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 
 	components, err := opssight.GetComponents()
 	if err != nil {
-		log.Errorf("unable to get opssight components for %s due to %+v", createOpsSight.Name, err)
-		return err
+		return errors.Annotatef(err, "unable to get opssight components for %s", createOpsSight.Name)
 	}
 	deployer, err := util.NewDeployer(ac.kubeConfig)
 	if err != nil {
-		log.Errorf("unable to get deployer object for %s due to %+v", createOpsSight.Name, err)
-		return err
+		return errors.Annotatef(err, "unable to get deployer object for %s", createOpsSight.Name)
 	}
 	// Note: controllers that need to continually run to update your app
 	// should be added in PreDeploy().
@@ -183,15 +180,14 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{Config: ac.config, KubeConfig: ac.kubeConfig, OpsSightClient: ac.opssightClient, Namespace: createOpsSight.Name})
 
 	err = deployer.Run()
-
 	if err != nil {
-		log.Errorf("unable to deploy opssight app due to %+v", err)
+		return errors.Annotate(err, "unable to deploy opssight app")
 	}
 
 	// if OpenShift, add a privileged role to scanner account
 	err = ac.postDeploy(opssight, createOpsSight.Name)
 	if err != nil {
-		log.Errorf("error: %+v", err)
+		return errors.Trace(err)
 	}
 
 	deployer.StartControllers()

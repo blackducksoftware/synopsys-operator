@@ -58,7 +58,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, errors.Trace(err)
 	}
 	components.ReplicationControllers = append(components.ReplicationControllers, rc)
-	components.Services = append(components.Services, p.PerceptorService())
+	service, err := p.PerceptorService()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	components.Services = append(components.Services, service)
 	components.ConfigMaps = append(components.ConfigMaps, p.PerceptorConfigMap())
 	components.Secrets = append(components.Secrets, p.PerceptorSecret())
 
