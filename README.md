@@ -4,6 +4,7 @@
 - perceivers (openshift, kube, ...)
 - perceptor-image-facade
 - perceptor-scanner
+- blackduck hub
 
 # Quick start
 
