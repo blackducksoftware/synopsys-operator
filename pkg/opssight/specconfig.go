@@ -63,7 +63,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, errors.Trace(err)
 	}
 	components.Services = append(components.Services, service)
-	components.ConfigMaps = append(components.ConfigMaps, p.PerceptorConfigMap())
+	cm, err := p.PerceptorConfigMap()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	components.ConfigMaps = append(components.ConfigMaps, cm)
 	components.Secrets = append(components.Secrets, p.PerceptorSecret())
 
 	// Add Perceptor Scanner
@@ -73,8 +77,16 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.ReplicationControllers = append(components.ReplicationControllers, scannerRC)
 	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
-	components.ConfigMaps = append(components.ConfigMaps, p.ScannerConfigMap(), p.ImageFacadeConfigMap())
-	log.Debugf("image facade configmap: %+v", p.ImageFacadeConfigMap().GetObj())
+	scannerCM, err := p.ScannerConfigMap()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create scanner replication controller")
+	}
+	ifCM, err := p.ImageFacadeConfigMap()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create scanner replication controller")
+	}
+	components.ConfigMaps = append(components.ConfigMaps, scannerCM, ifCM)
+	log.Debugf("image facade configmap: %+v", ifCM.GetObj())
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 
