@@ -134,6 +134,6 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)
 	deployer.AddService(util.CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeDefault))
-	deployer.AddService(util.CreateService("postgres-exposed", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeLoadBalancer))
+	// deployer.AddService(util.CreateService("postgres-exposed", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeLoadBalancer))
 	return nil
 }
