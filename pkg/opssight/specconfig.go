@@ -22,7 +22,6 @@ under the License.
 package opssight
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
@@ -35,17 +34,17 @@ type SpecConfig struct {
 	config *v1.OpsSightSpec
 }
 
-// NewOpsSight will create the OpsSight object
-func NewOpsSight(config *v1.OpsSightSpec) *SpecConfig {
+// NewSpecConfig will create the OpsSight object
+func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 	return &SpecConfig{config: config}
 }
 
-// GetComponents will return the list of components for alert
+// GetComponents will return the list of components
 func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	p.configServiceAccounts()
 	err := p.sanityCheckServices()
 	if err != nil {
-		return nil, fmt.Errorf("Please set the service accounts correctly; %v", err)
+		return nil, fmt.Errorf("Please set the service accounts correctly: %v", err)
 	}
 
 	p.substituteDefaultImageVersion()
@@ -64,10 +63,8 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, fmt.Errorf("failed to create scanner replication controller: %v", err)
 	}
 	components.ReplicationControllers = append(components.ReplicationControllers, rc)
-	components.Services = append(components.Services, p.ScannerService())
-	components.Services = append(components.Services, p.ImageFacadeService())
-	components.ConfigMaps = append(components.ConfigMaps, p.ScannerConfigMap())
-	components.ConfigMaps = append(components.ConfigMaps, p.ImageFacadeConfigMap())
+	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
+	components.ConfigMaps = append(components.ConfigMaps, p.ScannerConfigMap(), p.ImageFacadeConfigMap())
 	log.Debugf("image facade configmap: %+v", p.ImageFacadeConfigMap().GetObj())
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
@@ -161,23 +158,18 @@ func (p *SpecConfig) configServiceAccounts() {
 
 // TODO programatically validate rather then sanity check.
 func (p *SpecConfig) sanityCheckServices() error {
-	isValid := func(cn string) bool {
-		for _, valid := range []string{"perceptor", "pod-perceiver", "image-perceiver", "perceptor-scanner", "perceptor-image-facade", "skyfire"} {
-			if cn == valid {
-				return true
-			}
-		}
-		return false
+	serviceAccountNames := map[string]bool{
+		"perceptor":              true,
+		"pod-perceiver":          true,
+		"image-perceiver":        true,
+		"perceptor-scanner":      true,
+		"perceptor-image-facade": true,
+		"skyfire":                true,
 	}
 	for cn := range p.config.ServiceAccounts {
-		if !isValid(cn) {
-			return fmt.Errorf("failed at verifiying that the container name for a svc account was valid")
+		if _, ok := serviceAccountNames[cn]; !ok {
+			return fmt.Errorf("invalid service account name <%s>", cn)
 		}
 	}
 	return nil
-}
-
-func (p *SpecConfig) generateStringFromStringArr(strArr []string) string {
-	str, _ := json.Marshal(strArr)
-	return string(str)
 }

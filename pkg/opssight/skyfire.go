@@ -53,20 +53,30 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	})
 	pod.AddLabels(map[string]string{"name": p.config.SkyfireImageName})
 
-	pod.AddContainer(p.perceptorSkyfireContainer())
+	cont, err := p.perceptorSkyfireContainer()
+	if err != nil {
+		return nil, err
+	}
+	err = pod.AddContainer(cont)
+	if err != nil {
+		return nil, fmt.Errorf("unable to add skyfire container: %v", err)
+	}
 
 	vols, err := p.perceptorSkyfireVolumes()
 	if err != nil {
 		return nil, fmt.Errorf("error creating skyfire volumes: %v", err)
 	}
 	for _, v := range vols {
-		pod.AddVolume(v)
+		err = pod.AddVolume(v)
+		if err != nil {
+			return nil, fmt.Errorf("error add pod volume: %v", err)
+		}
 	}
 
 	return pod, nil
 }
 
-func (p *SpecConfig) perceptorSkyfireContainer() *components.Container {
+func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    p.config.SkyfireImageName,
 		Image:   fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, p.config.SkyfireImageName, p.config.SkyfireImageVersion),
@@ -81,23 +91,32 @@ func (p *SpecConfig) perceptorSkyfireContainer() *components.Container {
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "skyfire",
 		MountPath: "/etc/skyfire",
 	})
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	if err != nil {
+		return nil, err
+	}
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "logs",
 		MountPath: "/tmp",
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	container.AddEnv(horizonapi.EnvConfig{
+	err = container.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: p.config.HubUserPasswordEnvVar,
 		Type:         horizonapi.EnvFromSecret,
 		KeyOrVal:     "HubUserPassword",
 		FromName:     p.config.SecretName,
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return container
+	return container, nil
 }
 
 func (p *SpecConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
