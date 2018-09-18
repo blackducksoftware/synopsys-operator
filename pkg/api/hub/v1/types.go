@@ -61,7 +61,7 @@ type HubSpec struct {
 	Environs        []Environs `json:"environs"`
 }
 
-// HubStatus will hold the list of Environment variables
+// Environs will hold the list of Environment variables
 type Environs struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
