@@ -7,13 +7,48 @@
 
 # Quick start
 
+## Preconditions
+
+ - have `kubectl` set up and configured
+ 
+## Steps
+
  - clone this repo
 
 ```
 git clone git@github.com:blackducksoftware/perceptor-protoform.git
+cd perceptor-protoform
 ```
 
-## TODO!!  Add more instructions
+ - find the deploy script
+ 
+```
+cd cmd/protoform-installer
+```
+
+ - run the script
+
+```
+./deploy.sh my-favorite-namespace <your_favorite_hub_registration_key> master
+```
+
+ - create a Hub
+
+```
+kubectl create -f ../../examples/hub.yaml
+```
+
+ - create an OpsSight instance
+ 
+```
+kubectl create -f ../../examples/opssight.yaml
+```
+ 
+ - create an alert instance
+ 
+```
+kubectl create -f ../../examples/alert.yaml
+```
 
 # Tested Cluster Versions
 
