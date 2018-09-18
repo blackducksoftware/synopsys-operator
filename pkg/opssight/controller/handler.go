@@ -97,7 +97,10 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 func (h *OpsSightHandler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
 	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient)
-	opssightCreator.DeleteOpsSight(name)
+	err := opssightCreator.DeleteOpsSight(name)
+	if err != nil {
+		log.Errorf("unable to delete opssight: %v", err)
+	}
 }
 
 // ObjectUpdated will be called for update opssight events
