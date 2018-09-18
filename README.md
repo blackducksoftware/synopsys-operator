@@ -29,8 +29,12 @@ cd cmd/protoform-installer
  - run the script
 
 ```
-./deploy.sh my-favorite-namespace
+./deploy.sh my-favorite-namespace <your_favorite_hub_registration_key> master
 ```
+
+ - create a Hub
+ 
+ - create an OpsSight instance
  
 
 # Tested Cluster Versions
