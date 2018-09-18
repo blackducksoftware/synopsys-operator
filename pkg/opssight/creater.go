@@ -23,6 +23,7 @@ package opssight
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -203,6 +204,7 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
 			log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
 		} else {
 			internalRegistries = append(internalRegistries, route.Spec.Host)
+			internalRegistries = append(internalRegistries, fmt.Sprintf("%s:443", route.Spec.Host))
 		}
 
 		registrySvc, err := ac.kubeClient.CoreV1().Services("default").Get("docker-registry", metav1.GetOptions{})
@@ -210,9 +212,9 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
 			log.Errorf("unable to get docker-registry service in default namespace due to %+v", err)
 		} else {
 			if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
-				internalRegistries = append(internalRegistries, registrySvc.Spec.ClusterIP)
 				for _, port := range registrySvc.Spec.Ports {
-					internalRegistries = append(internalRegistries, string(port.Port))
+					internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port))))
+					internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port))))
 				}
 			}
 		}
