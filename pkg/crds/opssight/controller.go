@@ -22,13 +22,13 @@ under the License.
 package opssight
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	opssightinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/informers/externalversions/opssight/v1"
 	opssightcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/controller"
+	"github.com/juju/errors"
 
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -51,7 +51,7 @@ type Controller struct {
 func NewController(config interface{}) (*Controller, error) {
 	dependentConfig, ok := config.(*Config)
 	if !ok {
-		return nil, fmt.Errorf("failed to convert opssight defaults: %v", config)
+		return nil, errors.Errorf("failed to convert opssight defaults: %v", config)
 	}
 	d := &Controller{config: dependentConfig}
 
@@ -62,19 +62,20 @@ func NewController(config interface{}) (*Controller, error) {
 }
 
 // CreateClientSet will create the CRD client
-func (c *Controller) CreateClientSet() {
+func (c *Controller) CreateClientSet() error {
 	opssightClient, err := opssightclientset.NewForConfig(c.config.KubeConfig)
 	if err != nil {
-		log.Panicf("Unable to create OpsSight informer client: %s", err.Error())
+		return errors.Annotate(err, "Unable to create OpsSight informer client")
 	}
 	c.config.customClientSet = opssightClient
+	return nil
 }
 
 // Deploy will deploy the CRD
 func (c *Controller) Deploy() error {
 	deployer, err := horizon.NewDeployer(c.config.KubeConfig)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	// Hub CRD
@@ -93,10 +94,11 @@ func (c *Controller) Deploy() error {
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("unable to create the opssight CRD due to %+v", err)
+		return errors.Trace(err)
 	}
 
 	time.Sleep(5 * time.Second)
-	return err
+	return nil
 }
 
 // PostDeploy will initialize before deploying the CRD
@@ -132,6 +134,8 @@ func (c *Controller) AddInformerEventHandler() {
 			if err == nil {
 				// add the key to the queue for the handler to get
 				c.config.queue.Add(key)
+			} else {
+				log.Errorf("unable to add OpsSight: %v", err)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
@@ -139,10 +143,12 @@ func (c *Controller) AddInformerEventHandler() {
 			log.Infof("update opssight: %s", key)
 			if err == nil {
 				c.config.queue.Add(key)
+			} else {
+				log.Errorf("unable to update OpsSight: %v", err)
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			// DeletionHandlingMetaNamsespaceKeyFunc is a helper function that allows
+			// DeletionHandlingMetaNamespaceKeyFunc is a helper function that allows
 			// us to check the DeletedFinalStateUnknown existence in the event that
 			// a resource was deleted but it is still contained in the index
 			//
@@ -152,6 +158,8 @@ func (c *Controller) AddInformerEventHandler() {
 
 			if err == nil {
 				c.config.queue.Add(key)
+			} else {
+				log.Errorf("unable to delete OpsSight: %v", err)
 			}
 		},
 	})

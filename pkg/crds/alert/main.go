@@ -29,6 +29,7 @@ import (
 	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 	alertinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/informers/externalversions/alert/v1"
 	alertcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/alert/controller"
+	"github.com/juju/errors"
 
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -60,12 +61,13 @@ func NewController(config interface{}) (*ControllerConfig, error) {
 }
 
 // CreateClientSet will create the CRD client
-func (c *ControllerConfig) CreateClientSet() {
+func (c *ControllerConfig) CreateClientSet() error {
 	alertClient, err := alertclientset.NewForConfig(c.protoformConfig.KubeConfig)
 	if err != nil {
-		log.Panicf("Unable to create Alert informer client: %s", err.Error())
+		return errors.Trace(err)
 	}
 	c.protoformConfig.customClientSet = alertClient
+	return nil
 }
 
 // Deploy will deploy the CRD

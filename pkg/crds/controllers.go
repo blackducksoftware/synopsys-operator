@@ -23,7 +23,7 @@ package crds
 
 // ProtoformControllerInterface defines the interface for crds
 type ProtoformControllerInterface interface {
-	CreateClientSet()
+	CreateClientSet() error
 	Deploy() error
 	PostDeploy()
 	CreateInformer()

@@ -62,7 +62,10 @@ func (d *Deployer) AddController(controller crd.ProtoformControllerInterface) {
 // Deploy will deploy the controllers
 func (d *Deployer) Deploy() {
 	for _, controller := range d.controllers {
-		controller.CreateClientSet()
+		err := controller.CreateClientSet()
+		if err != nil {
+			panic(err)
+		}
 		controller.Deploy()
 		controller.PostDeploy()
 		controller.CreateInformer()
