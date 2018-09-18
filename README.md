@@ -33,9 +33,22 @@ cd cmd/protoform-installer
 ```
 
  - create a Hub
- 
+
+```
+kubectl create -f ../../examples/hub.yaml
+```
+
  - create an OpsSight instance
  
+```
+kubectl create -f ../../examples/opssight.yaml
+```
+ 
+ - create an alert instance
+ 
+```
+kubectl create -f ../../examples/alert.yaml
+```
 
 # Tested Cluster Versions
 
