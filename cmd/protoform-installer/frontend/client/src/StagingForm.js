@@ -10,6 +10,8 @@ import RadioGroup from "@material-ui/core/RadioGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import FormControl from "@material-ui/core/FormControl";
 import FormLabel from "@material-ui/core/FormLabel";
+import IconButton from "@material-ui/core/IconButton";
+import DeleteIcon from "@material-ui/icons/Delete";
 // import deepPurple from '@material-ui/core/colors/purple';
 
 //TODO: figure out child selectors/dynamic styles
@@ -94,7 +96,8 @@ const initialState = {
   nfsServer: "",
   certificateName: "default",
   showCertificates: false,
-  hubType: "worker"
+  hubType: "worker",
+  environs: [{ key: "", value: "" }]
 };
 
 class StagingForm extends Component {
@@ -113,6 +116,7 @@ class StagingForm extends Component {
     this.resetForm = this.resetForm.bind(this);
     this.validateNamespace = this.validateNamespace.bind(this);
     this.emptyFormFields = this.emptyFormFields.bind(this);
+    this.handleEnvironAddClick = this.handleEnvironAddClick.bind(this);
   }
 
   componentDidMount() {
@@ -211,6 +215,32 @@ class StagingForm extends Component {
     } else {
       this.setState({ showCertificates: false });
     }
+    this.handleChange(event);
+  }
+
+  handleEnvironAddClick() {
+    this.setState(prevState => ({
+      environs: [...prevState.environs, { key: "", value: "" }]
+    }));
+  }
+
+  handleEnvironRemoveClick(i, event) {
+    let environs = [...this.state.environs];
+    environs.splice(i, 1);
+    this.setState({ environs });
+  }
+
+  handleEnvironKeyChange(i, event) {
+    let environs = [...this.state.environs];
+    environs[i] = { key: event.target.value, value: environs[i].value };
+    this.setState({ environs });
+    this.handleChange(event);
+  }
+
+  handleEnvironValueChange(i, event) {
+    let environs = [...this.state.environs];
+    environs[i] = { key: environs[i].key, value: event.target.value };
+    this.setState({ environs });
     this.handleChange(event);
   }
 
@@ -684,6 +714,57 @@ class StagingForm extends Component {
               margin="normal"
             />
           ) : null}
+          {this.state.environs.map((environ, i) => {
+            const keyEnviron = this.state.environs[i].key;
+            const valueEnviron = this.state.environs[i].value;
+            return (
+              <div
+                key={i}
+                className={classnames(
+                  classes.singleRowFields,
+                  classes.textField,
+                  classes.button
+                )}
+              >
+                <TextField
+                  key="key"
+                  name="key"
+                  label="Key"
+                  className={classes.singleRowThreeFieldLeft}
+                  onChange={this.handleEnvironKeyChange.bind(this, i)}
+                  margin="normal"
+                  value={keyEnviron}
+                />
+                <TextField
+                  key="value"
+                  name="value"
+                  label="Value"
+                  className={classes.singleRowThreeFieldMiddle}
+                  onChange={this.handleEnvironValueChange.bind(this, i)}
+                  margin="normal"
+                  value={valueEnviron}
+                />
+                <IconButton
+                  size="small"
+                  className={classes.button}
+                  aria-label="Delete"
+                  color="primary"
+                  type="submit"
+                  onClick={this.handleEnvironRemoveClick.bind(this, i)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </div>
+            );
+          })}
+          <Button
+            variant="contained"
+            className={classes.button}
+            color="secondary"
+            onClick={this.handleEnvironAddClick.bind(this)}
+          >
+            Add Environs
+          </Button>
           <TextField
             id="token"
             name="token"

@@ -36,7 +36,7 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 	configMaps := make(map[string]*components.ConfigMap)
 
 	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config"})
-	hubConfig.AddData(map[string]string{
+	hubData := map[string]string{
 		"PUBLIC_HUB_WEBSERVER_HOST": "localhost",
 		"PUBLIC_HUB_WEBSERVER_PORT": "443",
 		"HUB_WEBSERVER_PORT":        "8443",
@@ -44,7 +44,12 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 		"RUN_SECRETS_DIR":           "/tmp/secrets",
 		"HUB_VERSION":               createHub.Spec.HubVersion,
 		"HUB_PROXY_NON_PROXY_HOSTS": "solr",
-	})
+	}
+
+	for _, data := range createHub.Spec.Environs {
+		hubData[data.Key] = data.Value
+	}
+	hubConfig.AddData(hubData)
 
 	configMaps["hub-config"] = hubConfig
 
