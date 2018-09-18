@@ -1,7 +1,7 @@
 # Perceptor-protoform: a cloud native administration utility for Black Duck ecosystem components:
 
 - perceptor
-- perceivers (openshift, kube, ...)
+- perceivers (openshift, kube, ..., )
 - perceptor-image-facade
 - perceptor-scanner
 - blackduck hub
@@ -14,7 +14,7 @@
 
 ## Steps
 
- - clone this repo
+ - Clone this repo
 
 ```
 git clone git@github.com:blackducksoftware/perceptor-protoform.git
@@ -87,8 +87,8 @@ oc create -f ../../examples/alert.yaml
 
 Protoform has been run against the following clusters:
 
-- Kubernetes 1.9.1
-- Openshift Origin 3.6, 3.7 and 3.9
+- Kubernetes 1.9.1 and 1.10
+- Openshift Origin 3.6, 3.7, 3.9, 3.10
 
 # Prerequisites
 
