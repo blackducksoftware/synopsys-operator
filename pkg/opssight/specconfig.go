@@ -26,6 +26,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -44,7 +45,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	p.configServiceAccounts()
 	err := p.sanityCheckServices()
 	if err != nil {
-		return nil, fmt.Errorf("Please set the service accounts correctly: %v", err)
+		return nil, errors.Annotate(err, "Please set the service accounts correctly")
 	}
 
 	p.substituteDefaultImageVersion()
@@ -52,17 +53,21 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
 
 	// Add Perceptor
-	components.ReplicationControllers = append(components.ReplicationControllers, p.PerceptorReplicationController())
+	rc, err := p.PerceptorReplicationController()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	components.ReplicationControllers = append(components.ReplicationControllers, rc)
 	components.Services = append(components.Services, p.PerceptorService())
 	components.ConfigMaps = append(components.ConfigMaps, p.PerceptorConfigMap())
 	components.Secrets = append(components.Secrets, p.PerceptorSecret())
 
 	// Add Perceptor Scanner
-	rc, err := p.ScannerReplicationController()
+	scannerRC, err := p.ScannerReplicationController()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create scanner replication controller: %v", err)
+		return nil, errors.Annotate(err, "failed to create scanner replication controller")
 	}
-	components.ReplicationControllers = append(components.ReplicationControllers, rc)
+	components.ReplicationControllers = append(components.ReplicationControllers, scannerRC)
 	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
 	components.ConfigMaps = append(components.ConfigMaps, p.ScannerConfigMap(), p.ImageFacadeConfigMap())
 	log.Debugf("image facade configmap: %+v", p.ImageFacadeConfigMap().GetObj())
@@ -72,7 +77,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	if p.config.PodPerceiver != nil && *p.config.PodPerceiver {
 		rc, err := p.PodPerceiverReplicationController()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create pod perceiver: %v", err)
+			return nil, errors.Annotate(err, "failed to create pod perceiver")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.PodPerceiverService())
@@ -86,7 +91,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	if p.config.ImagePerceiver != nil && *p.config.ImagePerceiver {
 		rc, err := p.ImagePerceiverReplicationController()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create image perceiver: %v", err)
+			return nil, errors.Annotate(err, "failed to create image perceiver")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.ImagePerceiverService())
@@ -100,7 +105,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	if p.config.PerceptorSkyfire != nil && *p.config.PerceptorSkyfire {
 		rc, err := p.PerceptorSkyfireReplicationController()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create skyfire: %v", err)
+			return nil, errors.Annotate(err, "failed to create skyfire")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.PerceptorSkyfireService())
@@ -114,7 +119,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	if p.config.Metrics != nil && *p.config.Metrics {
 		dep, err := p.PerceptorMetricsDeployment()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create metrics: %v", err)
+			return nil, errors.Annotate(err, "failed to create metrics")
 		}
 		components.Deployments = append(components.Deployments, dep)
 		components.Services = append(components.Services, p.PerceptorMetricsService())
