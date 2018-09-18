@@ -28,6 +28,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/juju/errors"
 )
 
 // ScannerReplicationController creates a replication controller for the perceptor scanner
@@ -227,26 +228,56 @@ func (p *SpecConfig) ImageFacadeService() *components.Service {
 }
 
 // ScannerConfigMap creates a config map for the perceptor scanner
-func (p *SpecConfig) ScannerConfigMap() *components.ConfigMap {
+func (p *SpecConfig) ScannerConfigMap() (*components.ConfigMap, error) {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor-scanner",
 		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceptor_scanner.yaml": fmt.Sprint(`{"Hub": {"Port": `, *p.config.HubPort, `, "User": "`, p.config.HubUser, `", "PasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `", "ClientTimeoutSeconds": `, *p.config.HubClientTimeoutScannerSeconds, `}, "ImageFacade": {"Port": `, *p.config.ImageFacadePort, `, "Host": "localhost"}, "Perceptor": {"Port": `, *p.config.PerceptorPort, `, "Host": "`, p.config.PerceptorImageName, `"}, "Port": `, *p.config.ScannerPort, `, "LogLevel": "`, p.config.LogLevel, `"}`)})
+	data := map[string]interface{}{
+		"Hub": map[string]interface{}{
+			"Port":                 *p.config.HubPort,
+			"User":                 p.config.HubUser,
+			"PasswordEnvVar":       p.config.HubUserPasswordEnvVar,
+			"ClientTimeoutSeconds": *p.config.HubClientTimeoutScannerSeconds,
+		},
+		"ImageFacade": map[string]interface{}{
+			"Port": *p.config.ImageFacadePort,
+			"Host": "localhost",
+		},
+		"Perceptor": map[string]interface{}{
+			"Port": *p.config.PerceptorPort,
+			"Host": p.config.PerceptorImageName,
+		},
+		"Port":     *p.config.ScannerPort,
+		"LogLevel": p.config.LogLevel,
+	}
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	configMap.AddData(map[string]string{"perceptor_scanner.yaml": string(bytes)})
 
-	return configMap
+	return configMap, nil
 }
 
 //ImageFacadeConfigMap creates a config map for the perceptor image-facade
-func (p *SpecConfig) ImageFacadeConfigMap() *components.ConfigMap {
-	internalRegistry, _ := json.Marshal(p.config.InternalRegistries)
+func (p *SpecConfig) ImageFacadeConfigMap() (*components.ConfigMap, error) {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor-imagefacade",
 		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceptor_imagefacade.json": fmt.Sprint(`{"PrivateDockerRegistries": `, string(internalRegistry), `, "Port": "`, *p.config.ImageFacadePort, `", "LogLevel": "`, p.config.LogLevel, `"}`)})
+	data := map[string]interface{}{
+		"PrivateDockerRegistries": p.config.InternalRegistries,
+		"Port":     *p.config.ImageFacadePort,
+		"LogLevel": p.config.LogLevel,
+	}
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	configMap.AddData(map[string]string{"perceptor_imagefacade.json": string(bytes)})
 
-	return configMap
+	return configMap, nil
 }
 
 // ScannerServiceAccount creates a service account for the perceptor scanner

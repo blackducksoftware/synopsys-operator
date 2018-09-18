@@ -22,6 +22,7 @@ under the License.
 package opssight
 
 import (
+	"encoding/json"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -135,14 +136,38 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 }
 
 // PerceptorConfigMap creates a config map for perceptor
-func (p *SpecConfig) PerceptorConfigMap() *components.ConfigMap {
+func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
 	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceptor",
 		Namespace: p.config.Namespace,
 	})
-	cm.AddData(map[string]string{"perceptor.yaml": fmt.Sprint(`{"Hub": {"Hosts": [], "Port": `, *p.config.HubPort, `, "User": "`, p.config.HubUser, `", "PasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `", "ClientTimeoutMilliseconds": `, *p.config.HubClientTimeoutPerceptorMilliseconds, `, "ConcurrentScanLimit": `, *p.config.ConcurrentScanLimit, `, "TotalScanLimit": `, *p.config.TotalScanLimit, `}, "Port": `, *p.config.PerceptorPort, `, "LogLevel": "`, p.config.LogLevel, `", "UseMockMode": `, *p.config.UseMockMode, `, "Timings": {"CheckForStalledScansPauseHours": `, *p.config.CheckForStalledScansPauseHours, `, "StalledScanClientTimeoutHours": `, *p.config.StalledScanClientTimeoutHours, `, "ModelMetricsPauseSeconds": `, *p.config.ModelMetricsPauseSeconds, `, "UnknownImagePauseMilliseconds": `, *p.config.UnknownImagePauseMilliseconds, `}}`)})
+	data := map[string]interface{}{
+		"Hub": map[string]interface{}{
+			"Hosts":                     []string{},
+			"Port":                      *p.config.HubPort,
+			"User":                      p.config.HubUser,
+			"PasswordEnvVar":            p.config.HubUserPasswordEnvVar,
+			"ClientTimeoutMilliseconds": *p.config.HubClientTimeoutPerceptorMilliseconds,
+			"ConcurrentScanLimit":       *p.config.ConcurrentScanLimit,
+			"TotalScanLimit":            *p.config.TotalScanLimit,
+		},
+		"Port":        *p.config.PerceptorPort,
+		"LogLevel":    p.config.LogLevel,
+		"UseMockMode": *p.config.UseMockMode,
+		"Timings": map[string]interface{}{
+			"CheckForStalledScansPauseHours": *p.config.CheckForStalledScansPauseHours,
+			"StalledScanClientTimeoutHours":  *p.config.StalledScanClientTimeoutHours,
+			"ModelMetricsPauseSeconds":       *p.config.ModelMetricsPauseSeconds,
+			"UnknownImagePauseMilliseconds":  *p.config.UnknownImagePauseMilliseconds,
+		},
+	}
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	cm.AddData(map[string]string{"perceptor.yaml": string(bytes)})
 
-	return cm
+	return cm, nil
 }
 
 // PerceptorSecret create a secret for perceptor
