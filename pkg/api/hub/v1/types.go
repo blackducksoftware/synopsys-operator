@@ -39,25 +39,32 @@ type Hub struct {
 
 // HubSpec will be CRD Hub definition's Spec
 type HubSpec struct {
-	Namespace       string `json:"namespace"`
-	Flavor          string `json:"flavor"`
-	DockerRegistry  string `json:"dockerRegistry"`
-	DockerRepo      string `json:"dockerRepo"`
-	HubVersion      string `json:"hubVersion"`
-	DbPrototype     string `json:"dbPrototype"`
-	InstanceName    string `json:"instanceName"`
-	BackupInterval  string `json:"backupInterval"`
-	BackupUnit      string `json:"backupUnit"`
-	PVCStorageClass string `json:"pvcStorageClass"`
-	BackupSupport   string `json:"backupSupport"`
-	ScanType        string `json:"scanType"`
-	PVCClaimSize    string `json:"pvcClaimSize"`
-	NFSServer       string `json:"nfsServer"`
-	CertificateName string `json:"certificateName"`
-	Certificate     string `json:"certificate"`
-	CertificateKey  string `json:"certificateKey"`
-	HubType         string `json:"hubType"`
-	State           string `json:"state"`
+	Namespace       string     `json:"namespace"`
+	Flavor          string     `json:"flavor"`
+	DockerRegistry  string     `json:"dockerRegistry"`
+	DockerRepo      string     `json:"dockerRepo"`
+	HubVersion      string     `json:"hubVersion"`
+	DbPrototype     string     `json:"dbPrototype"`
+	InstanceName    string     `json:"instanceName"`
+	BackupInterval  string     `json:"backupInterval"`
+	BackupUnit      string     `json:"backupUnit"`
+	PVCStorageClass string     `json:"pvcStorageClass"`
+	BackupSupport   string     `json:"backupSupport"`
+	ScanType        string     `json:"scanType"`
+	PVCClaimSize    string     `json:"pvcClaimSize"`
+	NFSServer       string     `json:"nfsServer"`
+	CertificateName string     `json:"certificateName"`
+	Certificate     string     `json:"certificate"`
+	CertificateKey  string     `json:"certificateKey"`
+	HubType         string     `json:"hubType"`
+	State           string     `json:"state"`
+	Environs        []Environs `json:"environs"`
+}
+
+// Environs will hold the list of Environment variables
+type Environs struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 // HubStatus will be CRD Hub definition's Status
