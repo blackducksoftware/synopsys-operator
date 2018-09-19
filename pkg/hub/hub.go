@@ -112,16 +112,16 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	}
 
 	var adminPassword, userPassword, postgresPassword string
-	blackduckSecret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-secret")
-	if err != nil {
-		log.Errorf("unable to find the default blackduck secret due to %+v. Using the default value", err)
-		adminPassword = "blackduck"
-		userPassword = "blackduck"
-		postgresPassword = "blackduck"
-	} else {
+	for {
+	    blackduckSecret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-secret")
+	    if err != nil {
+		log.Infof("Aborting: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD,USER_PASSWORD,POSTGRES_PASSWORD and retry")
+	    } else {
 		adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
 		userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
 		postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
+	    }
+	    time.Sleep(5*time.Second)
 	}
 
 	log.Debugf("Before init: %+v", createHub)
