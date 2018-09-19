@@ -96,6 +96,7 @@ type OpsSightSpec struct {
 	PodPerceiver     *bool             `json:"podPerceiver,omitempty"`
 	Metrics          *bool             `json:"metrics,omitempty"`
 	PerceptorSkyfire *bool             `json:"perceptorSkyfire,omitempty"`
+	RequireLabel     *bool             `json:"requireLabel,omitempty"`
 
 	// CPU and memory configurations
 	// Should be passed like: e.g. "300m"
