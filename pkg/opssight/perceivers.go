@@ -22,10 +22,12 @@ under the License.
 package opssight
 
 import (
+	"encoding/json"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/juju/errors"
 )
 
 func (p *SpecConfig) perceiverReplicationController(imageName string, replicas int32) *components.ReplicationController {
@@ -165,14 +167,28 @@ func (p *SpecConfig) ImagePerceiverService() *components.Service {
 }
 
 // PerceiverConfigMap creates a config map for perceivers
-func (p *SpecConfig) PerceiverConfigMap() *components.ConfigMap {
+func (p *SpecConfig) PerceiverConfigMap() (*components.ConfigMap, error) {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "perceiver",
 		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"perceiver.yaml": fmt.Sprint(`{"PerceptorHost": "`, p.config.PerceptorImageName, `","PerceptorPort": "`, *p.config.PerceptorPort, `","AnnotationIntervalSeconds": "`, *p.config.AnnotationIntervalSeconds, `","DumpIntervalMinutes": "`, *p.config.DumpIntervalMinutes, `","Port": "`, *p.config.PerceiverPort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
 
-	return configMap
+	data := map[string]interface{}{
+		"PerceptorHost":             p.config.PerceptorImageName,
+		"PerceptorPort":             *p.config.PerceptorPort,
+		"AnnotationIntervalSeconds": *p.config.AnnotationIntervalSeconds,
+		"DumpIntervalMinutes":       *p.config.DumpIntervalMinutes,
+		"Port":                      *p.config.PerceiverPort,
+		"LogLevel":                  p.config.LogLevel,
+		"RequireLabel":              *p.config.RequireLabel,
+	}
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	configMap.AddData(map[string]string{"perceiver.yaml": string(bytes)})
+
+	return configMap, nil
 }
 
 func (p *SpecConfig) perceiverServiceAccount(name string) *components.ServiceAccount {

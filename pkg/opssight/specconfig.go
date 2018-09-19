@@ -97,7 +97,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.PodPerceiverService())
-		components.ConfigMaps = append(components.ConfigMaps, p.PerceiverConfigMap())
+		perceiverConfigMap, err := p.PerceiverConfigMap()
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		components.ConfigMaps = append(components.ConfigMaps, perceiverConfigMap)
 		components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
 		cr := p.PodPerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, cr)
@@ -111,7 +115,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.ImagePerceiverService())
-		components.ConfigMaps = append(components.ConfigMaps, p.PerceiverConfigMap())
+		perceiverConfigMap, err := p.PerceiverConfigMap()
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		components.ConfigMaps = append(components.ConfigMaps, perceiverConfigMap)
 		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
 		cr := p.ImagePerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, cr)
