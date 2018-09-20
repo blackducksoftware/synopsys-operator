@@ -35,13 +35,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContainerFlavor *ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
+func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubContainerFlavor *ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
 
 	// Create a namespaces
-	_, err := util.GetNamespace(hc.KubeClient, createHub.Spec.Namespace)
+	_, err := util.GetNamespace(hc.KubeClient, createHub.Namespace)
 	if err != nil {
-		log.Debugf("unable to find the namespace %s", createHub.Spec.Namespace)
-		deployer.AddNamespace(components.NewNamespace(horizonapi.NamespaceConfig{Name: createHub.Spec.Namespace}))
+		log.Debugf("unable to find the namespace %s", createHub.Namespace)
+		deployer.AddNamespace(components.NewNamespace(horizonapi.NamespaceConfig{Name: createHub.Namespace}))
 	}
 
 	// Create a secret
@@ -59,22 +59,22 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	}
 
 	var storageClass string
-	if strings.EqualFold(createHub.Spec.PVCStorageClass, "none") {
+	if strings.EqualFold(createHub.PVCStorageClass, "none") {
 		storageClass = ""
 	} else {
-		storageClass = createHub.Spec.PVCStorageClass
+		storageClass = createHub.PVCStorageClass
 	}
 
-	if strings.EqualFold(createHub.Spec.PVCStorageClass, "none") {
+	if strings.EqualFold(createHub.PVCStorageClass, "none") {
 		// Postgres PV
-		if strings.EqualFold(createHub.Spec.NFSServer, "") {
-			return fmt.Errorf("unable to create the PV %s due to missing NFS server path", createHub.Name)
+		if strings.EqualFold(createHub.NFSServer, "") {
+			return fmt.Errorf("unable to create the PV %s due to missing NFS server path", createHub.Namespace)
 		}
 
-		_, err = util.CreatePersistentVolume(hc.KubeClient, createHub.Name, storageClass, createHub.Spec.PVCClaimSize, "/data/bds/backup", createHub.Spec.NFSServer)
+		_, err = util.CreatePersistentVolume(hc.KubeClient, createHub.Namespace, storageClass, createHub.PVCClaimSize, "/data/bds/backup", createHub.NFSServer)
 
 		if err != nil {
-			return fmt.Errorf("unable to create the PV %s due to %+v", createHub.Name, err)
+			return fmt.Errorf("unable to create the PV %s due to %+v", createHub.Namespace, err)
 		}
 	}
 
@@ -95,15 +95,15 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: "postgres-bootstrap-vol:pgbootstrap.sh", MountPath: "/usr/share/container-scripts/postgresql/pgbootstrap.sh", Propagation: horizonapi.MountPropagationNone})
 	postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: "postgres-init-vol:pginit.sh", MountPath: "/usr/share/container-scripts/postgresql/pginit.sh", Propagation: horizonapi.MountPropagationNone})
 
-	if strings.EqualFold(createHub.Spec.BackupSupport, "Yes") || !strings.EqualFold(createHub.Spec.PVCStorageClass, "") {
+	if strings.EqualFold(createHub.BackupSupport, "Yes") || !strings.EqualFold(createHub.PVCStorageClass, "") {
 		// Postgres PVC
-		postgresPVC, err := util.CreatePersistentVolumeClaim(createHub.Name, createHub.Name, createHub.Spec.PVCClaimSize, storageClass, horizonapi.ReadWriteOnce)
+		postgresPVC, err := util.CreatePersistentVolumeClaim(createHub.Namespace, createHub.Namespace, createHub.PVCClaimSize, storageClass, horizonapi.ReadWriteOnce)
 		if err != nil {
-			return fmt.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Name, err)
+			return fmt.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Namespace, err)
 		}
 		deployer.AddPVC(postgresPVC)
 
-		postgresBackupDir, _ := util.CreatePersistentVolumeClaimVolume("postgres-backup-vol", createHub.Name)
+		postgresBackupDir, _ := util.CreatePersistentVolumeClaimVolume("postgres-backup-vol", createHub.Namespace)
 		postgresVolumes = append(postgresVolumes, postgresBackupDir)
 		postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: "postgres-backup-vol", MountPath: "/data/bds/backup", Propagation: horizonapi.MountPropagationNone})
 	}
@@ -118,7 +118,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 	}
 	initContainers := []*util.Container{}
 	// If the PV storage is other than NFS or if the backup is enabled and PV storage is other than NFS, add the init container
-	if !strings.EqualFold(createHub.Spec.PVCStorageClass, "") && !strings.EqualFold(createHub.Spec.PVCStorageClass, "none") {
+	if !strings.EqualFold(createHub.PVCStorageClass, "") && !strings.EqualFold(createHub.PVCStorageClass, "none") {
 		postgresInitContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /data/bds/backup"}},
 			VolumeMounts: []*horizonapi.VolumeMountConfig{
@@ -129,11 +129,11 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.Hub, hubContai
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
 
-	postgres := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: createHub.Spec.Namespace, Name: "postgres", Replicas: util.IntToInt32(1)},
+	postgres := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "postgres", Replicas: util.IntToInt32(1)},
 		[]*util.Container{postgresExternalContainerConfig}, postgresVolumes, initContainers, []horizonapi.AffinityConfig{})
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)
-	deployer.AddService(util.CreateService("postgres", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeDefault))
+	deployer.AddService(util.CreateService("postgres", "postgres", createHub.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeDefault))
 	// deployer.AddService(util.CreateService("postgres-exposed", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeLoadBalancer))
 	return nil
 }

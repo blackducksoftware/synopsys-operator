@@ -38,6 +38,7 @@ type Config struct {
 	Config          *model.Config
 	KubeConfig      *rest.Config
 	KubeClientSet   *kubernetes.Clientset
+	Defaults        interface{}
 	resyncPeriod    time.Duration
 	indexers        cache.Indexers
 	infomer         cache.SharedIndexInformer

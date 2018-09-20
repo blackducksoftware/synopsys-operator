@@ -22,11 +22,13 @@ under the License.
 package controller
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
 	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 	alert_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
+	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -44,6 +46,7 @@ type AlertHandler struct {
 	Config         *rest.Config
 	Clientset      *kubernetes.Clientset
 	AlertClientset *alertclientset.Clientset
+	Defaults       *alert_v1.AlertSpec
 	Namespace      string
 	CmMutex        chan bool
 }
@@ -53,32 +56,32 @@ func (h *AlertHandler) ObjectCreated(obj interface{}) {
 	log.Debugf("objectCreated: %+v", obj)
 	alertv1 := obj.(*alert_v1.Alert)
 	if strings.EqualFold(alertv1.Spec.State, "") {
-		// Update status
-		alertv1.Spec.State = "pending"
-		alertv1.Status.State = "creating"
-		_, err := h.updateHubObject(alertv1)
+		// merge with default values
+		newSpec := alertv1.Spec
+		alertDefaultSpec := h.Defaults
+		err := mergo.Merge(&newSpec, alertDefaultSpec)
+		log.Debugf("merged alert details for %s: %+v", newSpec)
 		if err != nil {
-			log.Errorf("Couldn't update Alert object: %s", err.Error())
-		}
-
-		alertCreator := alert.NewCreater(h.Config, h.Clientset, h.AlertClientset)
-		if err != nil {
-			log.Errorf("unable to create the new Alert creater for %s due to %+v", alertv1.Name, err)
-		}
-		err = alertCreator.CreateAlert(alertv1)
-
-		if err != nil {
+			log.Errorf("unable to merge the alert structs for %s due to %+v", alertv1.Name, err)
 			//Set spec/state  and status/state to started
-			alertv1.Spec.State = "error"
-			alertv1.Status.State = "error"
+			h.updateState("error", "error", fmt.Sprintf("unable to merge the alert structs for %s due to %+v", alertv1.Name, err), alertv1)
 		} else {
-			alertv1.Spec.State = "running"
-			alertv1.Status.State = "running"
-		}
+			alertv1.Spec = newSpec
+			// update status
+			alertv1, err := h.updateState("pending", "creating", "", alertv1)
 
-		alertv1, err = h.updateHubObject(alertv1)
-		if err != nil {
-			log.Errorf("Couldn't update Alert object: %s", err.Error())
+			if err == nil {
+				alertCreator := alert.NewCreater(h.Config, h.Clientset, h.AlertClientset)
+
+				// create alert instance
+				err = alertCreator.CreateAlert(&alertv1.Spec)
+
+				if err != nil {
+					h.updateState("error", "error", fmt.Sprintf("%+v", err), alertv1)
+				} else {
+					h.updateState("running", "running", "", alertv1)
+				}
+			}
 		}
 	}
 }
@@ -95,6 +98,17 @@ func (h *AlertHandler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("objectUpdated: %+v", objNew)
 }
 
-func (h *AlertHandler) updateHubObject(obj *alert_v1.Alert) (*alert_v1.Alert, error) {
+func (h *AlertHandler) updateState(specState string, statusState string, errorMessage string, alert *alert_v1.Alert) (*alert_v1.Alert, error) {
+	alert.Spec.State = specState
+	alert.Status.State = statusState
+	alert.Status.ErrorMessage = errorMessage
+	alert, err := h.updateAlertObject(alert)
+	if err != nil {
+		log.Errorf("couldn't update the state of alert object: %s", err.Error())
+	}
+	return alert, err
+}
+
+func (h *AlertHandler) updateAlertObject(obj *alert_v1.Alert) (*alert_v1.Alert, error) {
 	return h.AlertClientset.SynopsysV1().Alerts(h.Namespace).Update(obj)
 }

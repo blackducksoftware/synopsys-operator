@@ -117,7 +117,8 @@ type OpsSightSpec struct {
 
 // OpsSightStatus is the status for a OpsSight resource
 type OpsSightStatus struct {
-	State string `json:"state"`
+	State        string `json:"state"`
+	ErrorMessage string `json:"errorMessage"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

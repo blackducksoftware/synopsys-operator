@@ -40,6 +40,8 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 )
 
 // Controller defines the specification for the controller
@@ -53,12 +55,12 @@ func NewController(config interface{}) (*Controller, error) {
 	if !ok {
 		return nil, errors.Errorf("failed to convert opssight defaults: %v", config)
 	}
-	d := &Controller{config: dependentConfig}
+	c := &Controller{config: dependentConfig}
 
-	d.config.resyncPeriod = 0
-	d.config.indexers = cache.Indexers{}
+	c.config.resyncPeriod = 0
+	c.config.indexers = cache.Indexers{}
 
-	return d, nil
+	return c, nil
 }
 
 // CreateClientSet will create the CRD client
@@ -186,6 +188,7 @@ func (c *Controller) CreateHandler() {
 		CmMutex:           make(chan bool, 1),
 		OSSecurityClient:  osClient,
 		RouteClient:       routeClient,
+		Defaults:          c.config.Defaults.(*v1.OpsSightSpec),
 	}
 }
 

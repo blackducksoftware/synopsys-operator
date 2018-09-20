@@ -32,7 +32,6 @@ import (
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
-	"github.com/imdario/mergo"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
@@ -55,74 +54,6 @@ type Creater struct {
 // NewCreater will instantiate the Creater
 func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
 	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
-}
-
-// DefaultOpssightSpec creates a perceptor app configuration object
-// with defaults
-func DefaultOpssightSpec() *v1.OpsSightSpec {
-	defaultPerceptorPort := 3001
-	defaultPerceiverPort := 3002
-	defaultScannerPort := 3003
-	defaultIFPort := 3004
-	defaultSkyfirePort := 3005
-	defaultAnnotationInterval := 30
-	defaultDumpInterval := 30
-	defaultHubPort := 443
-	defaultPerceptorHubClientTimeout := 100000
-	defaultScannerHubClientTimeout := 600
-	defaultScanLimit := 2
-	defaultTotalScanLimit := 1000
-	defaultCheckForStalledScansPauseHours := 999999
-	defaultStalledScanClientTimeoutHours := 999999
-	defaultModelMetricsPauseSeconds := 15
-	defaultUnknownImagePauseMilliseconds := 15000
-	defaultPodPerceiverEnabled := true
-	defaultImagePerceiverEnabled := false
-	defaultMetricsEnabled := true
-	defaultPerceptorSkyfire := false
-	defaultUseMockMode := false
-	defaultRequireLabel := false
-
-	return &v1.OpsSightSpec{
-		PerceptorPort:             &defaultPerceptorPort,
-		PerceiverPort:             &defaultPerceiverPort,
-		ScannerPort:               &defaultScannerPort,
-		ImageFacadePort:           &defaultIFPort,
-		SkyfirePort:               &defaultSkyfirePort,
-		InternalRegistries:        []v1.RegistryAuth{},
-		AnnotationIntervalSeconds: &defaultAnnotationInterval,
-		DumpIntervalMinutes:       &defaultDumpInterval,
-		HubUser:                   "sysadmin",
-		HubPort:                   &defaultHubPort,
-		HubClientTimeoutPerceptorMilliseconds: &defaultPerceptorHubClientTimeout,
-		HubClientTimeoutScannerSeconds:        &defaultScannerHubClientTimeout,
-		ConcurrentScanLimit:                   &defaultScanLimit,
-		TotalScanLimit:                        &defaultTotalScanLimit,
-		CheckForStalledScansPauseHours:        &defaultCheckForStalledScansPauseHours,
-		StalledScanClientTimeoutHours:         &defaultStalledScanClientTimeoutHours,
-		ModelMetricsPauseSeconds:              &defaultModelMetricsPauseSeconds,
-		UnknownImagePauseMilliseconds:         &defaultUnknownImagePauseMilliseconds,
-		DefaultVersion:                        "master",
-		Registry:                              "docker.io",
-		ImagePath:                             "blackducksoftware",
-		PerceptorImageName:                    "opssight-core",
-		ScannerImageName:                      "opssight-scanner",
-		ImagePerceiverImageName:               "opssight-image-processor",
-		PodPerceiverImageName:                 "opssight-pod-processor",
-		ImageFacadeImageName:                  "opssight-image-getter",
-		SkyfireImageName:                      "skyfire",
-		PodPerceiver:                          &defaultPodPerceiverEnabled,
-		ImagePerceiver:                        &defaultImagePerceiverEnabled,
-		Metrics:                               &defaultMetricsEnabled,
-		PerceptorSkyfire:                      &defaultPerceptorSkyfire,
-		RequireLabel:                          &defaultRequireLabel,
-		DefaultCPU:                            "300m",
-		DefaultMem:                            "1300Mi",
-		LogLevel:                              "debug",
-		HubUserPasswordEnvVar:                 "PCP_HUBUSERPASSWORD",
-		SecretName:                            "perceptor",
-		UseMockMode:                           &defaultUseMockMode,
-	}
 }
 
 // DeleteOpsSight will delete the Black Duck OpsSight
@@ -153,34 +84,28 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 }
 
 // CreateOpsSight will create the Black Duck OpsSight
-func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
-	log.Debugf("Create OpsSight details for %s: %+v", createOpsSight.Spec.Namespace, createOpsSight)
-	newSpec := createOpsSight.Spec
-	defaultSpec := DefaultOpssightSpec()
-	err := mergo.Merge(&newSpec, defaultSpec)
-	if err != nil {
-		return errors.Annotatef(err, "unable to merge the opssight structs for %s", createOpsSight.Name)
-	}
+func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
+	log.Debugf("Create OpsSight details for %s: %+v", createOpsSight.Namespace, createOpsSight)
 
 	// get the registry auth credentials for default OpenShift internal docker registries
-	ac.addRegistryAuth(&newSpec)
+	ac.addRegistryAuth(createOpsSight)
 
-	opssight := NewSpecConfig(&newSpec)
+	opssight := NewSpecConfig(createOpsSight)
 
 	components, err := opssight.GetComponents()
 	if err != nil {
-		return errors.Annotatef(err, "unable to get opssight components for %s", createOpsSight.Name)
+		return errors.Annotatef(err, "unable to get opssight components for %s", createOpsSight.Namespace)
 	}
 	deployer, err := util.NewDeployer(ac.kubeConfig)
 	if err != nil {
-		return errors.Annotatef(err, "unable to get deployer object for %s", createOpsSight.Name)
+		return errors.Annotatef(err, "unable to get deployer object for %s", createOpsSight.Namespace)
 	}
 	// Note: controllers that need to continually run to update your app
 	// should be added in PreDeploy().
-	deployer.PreDeploy(components, createOpsSight.Name)
+	deployer.PreDeploy(components, createOpsSight.Namespace)
 
 	// Any new, pluggable maintainance stuff should go in here...
-	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{Config: ac.config, KubeConfig: ac.kubeConfig, OpsSightClient: ac.opssightClient, Namespace: createOpsSight.Name})
+	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{Config: ac.config, KubeConfig: ac.kubeConfig, OpsSightClient: ac.opssightClient, Namespace: createOpsSight.Namespace})
 
 	err = deployer.Run()
 	if err != nil {
@@ -188,7 +113,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSight) error {
 	}
 
 	// if OpenShift, add a privileged role to scanner account
-	err = ac.postDeploy(opssight, createOpsSight.Name)
+	err = ac.postDeploy(opssight, createOpsSight.Namespace)
 	if err != nil {
 		return errors.Trace(err)
 	}

@@ -22,7 +22,7 @@ under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/alert"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,7 +30,7 @@ import (
 
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{
-	Group:   alert.GroupName,
+	Group:   opssight.GroupName,
 	Version: "v1",
 }
 

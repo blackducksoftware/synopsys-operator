@@ -33,11 +33,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-// ProtoformControllerConfig defines the specification for the controller
-type ProtoformControllerConfig struct {
+// Config defines the specification for the controller
+type Config struct {
 	Config          *model.Config
 	KubeConfig      *rest.Config
 	KubeClientSet   *kubernetes.Clientset
+	Defaults        interface{}
 	resyncPeriod    time.Duration
 	indexers        cache.Indexers
 	infomer         cache.SharedIndexInformer

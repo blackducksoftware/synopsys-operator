@@ -33,7 +33,6 @@ type Deployer struct {
 	Config        *model.Config
 	KubeConfig    *rest.Config
 	KubeClientSet *kubernetes.Clientset
-	controllerMap map[crd.ControllerType]interface{}
 	controllers   []crd.ProtoformControllerInterface
 }
 
@@ -43,15 +42,9 @@ func NewDeployer(config *model.Config, kubeConfig *rest.Config, kubeClientSet *k
 		Config:        config,
 		KubeConfig:    kubeConfig,
 		KubeClientSet: kubeClientSet,
-		controllerMap: make(map[crd.ControllerType]interface{}),
 		controllers:   make([]crd.ProtoformControllerInterface, 0),
 	}
 	return &deployer
-}
-
-// LoadController will store the defaults for the provided controller
-func (d *Deployer) LoadController(controller crd.ControllerType, defaults interface{}) {
-	d.controllerMap[controller] = defaults
 }
 
 // AddController will add the controllers to the list

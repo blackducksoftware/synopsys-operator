@@ -34,13 +34,3 @@ type ProtoformControllerInterface interface {
 	Run()
 	PostRun()
 }
-
-// ControllerType defines the type of controller
-type ControllerType string
-
-// Types of apps
-const (
-	OpsSight ControllerType = "opssight"
-	Alert    ControllerType = "alert"
-	Hub      ControllerType = "hub"
-)

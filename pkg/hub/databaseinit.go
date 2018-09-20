@@ -33,9 +33,9 @@ import (
 )
 
 // InitDatabase will init the database
-func InitDatabase(createHub *v1.Hub, adminPassword string, userPassword string, postgresPassword string) {
+func InitDatabase(createHub *v1.HubSpec, adminPassword string, userPassword string, postgresPassword string) {
 	databaseName := "postgres"
-	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Name)
+	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Namespace)
 	db, err := OpenDatabaseConnection(hostName, databaseName, "postgres", postgresPassword, "postgres")
 	defer db.Close()
 	log.Infof("Db: %+v, error: %+v", db, err)

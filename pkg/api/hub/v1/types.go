@@ -73,6 +73,7 @@ type HubStatus struct {
 	IP            string `json:"ip"`
 	PVCVolumeName string `json:"pvcVolumeName"`
 	Fqdn          string `json:"fqdn"`
+	ErrorMessage  string `json:"errorMessage"`
 }
 
 // HubList will store the list of Hubs

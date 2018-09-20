@@ -24,36 +24,37 @@ package hub
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // CreateHubConfig will create the hub configMaps
-func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *ContainerFlavor) map[string]*components.ConfigMap {
+func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *ContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
-	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config"})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-config"})
 	hubData := map[string]string{
 		"PUBLIC_HUB_WEBSERVER_HOST": "localhost",
 		"PUBLIC_HUB_WEBSERVER_PORT": "443",
 		"HUB_WEBSERVER_PORT":        "8443",
 		"IPV4_ONLY":                 "0",
 		"RUN_SECRETS_DIR":           "/tmp/secrets",
-		"HUB_VERSION":               createHub.Spec.HubVersion,
+		"HUB_VERSION":               createHub.HubVersion,
 		"HUB_PROXY_NON_PROXY_HOSTS": "solr",
 	}
 
-	for _, data := range createHub.Spec.Environs {
+	for _, data := range createHub.Environs {
 		hubData[data.Key] = data.Value
 	}
 	hubConfig.AddData(hubData)
 
 	configMaps["hub-config"] = hubConfig
 
-	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-db-config"})
+	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-db-config"})
 	hubDbConfig.AddData(map[string]string{
 		"HUB_POSTGRES_ADMIN": "blackduck",
 		"HUB_POSTGRES_USER":  "blackduck_user",
@@ -63,7 +64,7 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 
 	configMaps["hub-db-config"] = hubDbConfig
 
-	hubConfigResources := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-config-resources"})
+	hubConfigResources := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-config-resources"})
 	hubConfigResources.AddData(map[string]string{
 		"webapp-mem":    hubContainerFlavor.WebappHubMaxMemory,
 		"jobrunner-mem": hubContainerFlavor.JobRunnerHubMaxMemory,
@@ -72,28 +73,32 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 
 	configMaps["hub-config-resources"] = hubConfigResources
 
-	hubDbConfigGranular := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "hub-db-config-granular"})
+	hubDbConfigGranular := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-db-config-granular"})
 	hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 
 	configMaps["hub-db-config-granular"] = hubDbConfigGranular
 
-	postgresBootstrap := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "postgres-bootstrap"})
+	postgresBootstrap := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "postgres-bootstrap"})
 	var backupInSeconds int
-	switch createHub.Spec.BackupUnit {
+	var err error
+	switch createHub.BackupUnit {
 	case "Minute(s)":
-		backupInSeconds, _ = strconv.Atoi(createHub.Spec.BackupInterval)
+		backupInSeconds, err = strconv.Atoi(createHub.BackupInterval)
 		backupInSeconds = backupInSeconds * 60
 	case "Hour(s)":
-		backupInSeconds, _ = strconv.Atoi(createHub.Spec.BackupInterval)
+		backupInSeconds, err = strconv.Atoi(createHub.BackupInterval)
 		backupInSeconds = backupInSeconds * 60 * 60
 	case "Week(s)":
-		backupInSeconds, _ = strconv.Atoi(createHub.Spec.BackupInterval)
-		backupInSeconds = backupInSeconds * 60 * 60 * 7
+		backupInSeconds, err = strconv.Atoi(createHub.BackupInterval)
+		backupInSeconds = backupInSeconds * 60 * 60 * 24 * 7
 	default:
-		if strings.EqualFold(createHub.Spec.BackupInterval, "") {
-			backupInSeconds = 1
-		}
-		backupInSeconds = backupInSeconds * 60 * 60
+		backupInSeconds = 24 * 60 * 60
+		err = nil
+	}
+
+	if err != nil {
+		log.Errorf("unable to convert %s from string to integer due to %+v and hence defaults to 24 Hours", createHub.BackupInterval, err)
+		backupInSeconds = 24 * 60 * 60
 	}
 
 	postgresBootstrap.AddData(map[string]string{"pgbootstrap.sh": fmt.Sprintf(`#!/bin/bash
@@ -131,11 +136,11 @@ func (hc *Creater) createHubConfig(createHub *v1.Hub, hubContainerFlavor *Contai
 				sleep %d;
 				pg_dumpall -w > /data/bds/backup/%s.sql;
 			done
-		fi`, createHub.Name, createHub.Spec.DbPrototype, createHub.Spec.DbPrototype, createHub.Name, createHub.Name, createHub.Spec.BackupSupport, backupInSeconds, createHub.Name)})
+		fi`, createHub.Namespace, createHub.DbPrototype, createHub.DbPrototype, createHub.Namespace, createHub.Namespace, createHub.BackupSupport, backupInSeconds, createHub.Namespace)})
 
 	configMaps["postgres-bootstrap"] = postgresBootstrap
 
-	postgresInit := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Name, Name: "postgres-init"})
+	postgresInit := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "postgres-init"})
 	postgresInit.AddData(map[string]string{"pginit.sh": `#!/bin/bash
 		echo "executing bds init script"
     sh /usr/share/container-scripts/postgresql/pgbootstrap.sh &

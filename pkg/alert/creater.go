@@ -31,7 +31,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -45,23 +44,6 @@ type Creater struct {
 // NewCreater will instantiate the Creater
 func NewCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset) *Creater {
 	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient}
-}
-
-// NewAppDefaults will return defaults for alert
-func NewAppDefaults() *v1.AlertSpec {
-	port := 8443
-	hubPort := 443
-	standAlone := true
-
-	return &v1.AlertSpec{
-		Port:           &port,
-		HubPort:        &hubPort,
-		StandAlone:     &standAlone,
-		AlertMemory:    "512M",
-		CfsslMemory:    "640M",
-		AlertImageName: "blackduck-alert",
-		CfsslImageName: "hub-cfssl",
-	}
 }
 
 // DeleteAlert will delete the Black Duck Alert
@@ -93,27 +75,20 @@ func (ac *Creater) DeleteAlert(namespace string) {
 }
 
 // CreateAlert will create the Black Duck Alert
-func (ac *Creater) CreateAlert(createAlert *v1.Alert) error {
-	log.Debugf("Create Alert details for %s: %+v", createAlert.Spec.Namespace, createAlert)
-	newSpec := createAlert.Spec
-	alertSpec := NewAppDefaults()
-	err := mergo.Merge(&newSpec, alertSpec)
-	if err != nil {
-		log.Errorf("unable to merge the alert structs for %s due to %+v", createAlert.Name, err)
-		return err
-	}
-	alert := NewAlert(&newSpec)
+func (ac *Creater) CreateAlert(createAlert *v1.AlertSpec) error {
+	log.Debugf("Create Alert details for %s: %+v", createAlert.Namespace, createAlert)
+	alert := NewAlert(createAlert)
 	components, err := alert.GetComponents()
 	if err != nil {
-		log.Errorf("unable to get alert components for %s due to %+v", createAlert.Name, err)
+		log.Errorf("unable to get alert components for %s due to %+v", createAlert.Namespace, err)
 		return err
 	}
 	deployer, err := util.NewDeployer(ac.kubeConfig)
 	if err != nil {
-		log.Errorf("unable to get deployer object for %s due to %+v", createAlert.Name, err)
+		log.Errorf("unable to get deployer object for %s due to %+v", createAlert.Namespace, err)
 		return err
 	}
-	deployer.PreDeploy(components, createAlert.Name)
+	deployer.PreDeploy(components, createAlert.Namespace)
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("unable to deploy alert app due to %+v", err)

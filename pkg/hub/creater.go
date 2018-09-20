@@ -88,8 +88,9 @@ func (hc *Creater) DeleteHub(namespace string) {
 }
 
 // CreateHub will create the Black Duck Hub
-func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
-	log.Debugf("Create Hub details for %s: %+v", createHub.Spec.Namespace, createHub)
+func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error) {
+	log.Debugf("Create Hub details for %s: %+v", createHub.Namespace, createHub)
+
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.KubeConfig)
 	if err != nil {
@@ -97,11 +98,11 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	}
 
 	// Get Containers Flavor
-	hubContainerFlavor := GetContainersFlavor(createHub.Spec.Flavor)
+	hubContainerFlavor := GetContainersFlavor(createHub.Flavor)
 	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
 
 	if hubContainerFlavor == nil {
-		return "", "", true, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) OpsSight, Actual: %s", createHub.Spec.Flavor)
+		return "", "", true, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) OpsSight, Actual: %s", createHub.Flavor)
 	}
 
 	// All ConfigMap environment variables
@@ -120,11 +121,12 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 			adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
 			userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
 			postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
+			break
 		}
 		time.Sleep(5 * time.Second)
 	}
 
-	log.Debugf("Before init: %+v", createHub)
+	log.Debugf("Before init: %+v", &createHub)
 	// Create the config-maps, secrets and postgres container
 	err = hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv, adminPassword, userPassword)
 	if err != nil {
@@ -137,14 +139,14 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	}
 	// time.Sleep(20 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err := util.GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
+	pods, err := util.GetAllPodsForNamespace(hc.KubeClient, createHub.Namespace)
 	if err != nil {
-		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
+		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Namespace, err)
 	}
 	// Validate all pods are in running state
 	util.ValidatePodsAreRunning(hc.KubeClient, pods)
 	// Initialize the hub database
-	if strings.EqualFold(createHub.Spec.DbPrototype, "empty") {
+	if strings.EqualFold(createHub.DbPrototype, "empty") {
 		InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 	}
 
@@ -156,13 +158,13 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("deployments failed because %+v", err)
-		return "", "", true, fmt.Errorf("unable to deploy the hub in %s due to %+v", createHub.Spec.Namespace, err)
+		return "", "", true, fmt.Errorf("unable to deploy the hub in %s due to %+v", createHub.Namespace, err)
 	}
 	time.Sleep(10 * time.Second)
 	// Get all pods corresponding to the hub namespace
-	pods, err = util.GetAllPodsForNamespace(hc.KubeClient, createHub.Spec.Namespace)
+	pods, err = util.GetAllPodsForNamespace(hc.KubeClient, createHub.Namespace)
 	if err != nil {
-		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Spec.Namespace, err)
+		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Namespace, err)
 	}
 	// Validate all pods are in running state
 	util.ValidatePodsAreRunning(hc.KubeClient, pods)
@@ -191,16 +193,16 @@ func (hc *Creater) CreateHub(createHub *v1.Hub) (string, string, bool, error) {
 
 	// Retrieve the PVC volume name
 	pvcVolumeName := ""
-	if strings.EqualFold(createHub.Spec.BackupSupport, "Yes") || !strings.EqualFold(createHub.Spec.PVCStorageClass, "") {
-		pvcVolumeName, err = hc.getPVCVolumeName(createHub.Spec.Namespace)
+	if strings.EqualFold(createHub.BackupSupport, "Yes") || !strings.EqualFold(createHub.PVCStorageClass, "") {
+		pvcVolumeName, err = hc.getPVCVolumeName(createHub.Namespace)
 		if err != nil {
 			return "", "", false, err
 		}
 	}
 
-	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-lb")
+	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Namespace, "webserver-lb")
 	if err != nil {
-		ipAddress, err = hc.getNodePortIPAddress(createHub.Spec.Namespace, "webserver-np")
+		ipAddress, err = hc.getNodePortIPAddress(createHub.Namespace, "webserver-np")
 		if err != nil {
 			return "", pvcVolumeName, false, err
 		}

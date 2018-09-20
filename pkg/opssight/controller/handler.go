@@ -29,6 +29,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -49,6 +50,7 @@ type OpsSightHandler struct {
 	KubeConfig        *rest.Config
 	Clientset         *kubernetes.Clientset
 	OpsSightClientset *opssightclientset.Clientset
+	Defaults          *opssight_v1.OpsSightSpec
 	Namespace         string
 	CmMutex           chan bool
 	OSSecurityClient  *securityclient.SecurityV1Client
@@ -60,35 +62,32 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 	log.Debugf("objectCreated: %+v", obj)
 	opssightv1 := obj.(*opssight_v1.OpsSight)
 	if strings.EqualFold(opssightv1.Spec.State, "") {
-		// Update status
-		opssightv1.Spec.State = "pending"
-		opssightv1.Status.State = "creating"
-		_, err := h.updateHubObject(opssightv1)
+		newSpec := opssightv1.Spec
+		defaultSpec := h.Defaults
+		err := mergo.Merge(&newSpec, defaultSpec)
+		log.Debugf("merged opssight details for %s: %+v", newSpec)
 		if err != nil {
-			log.Errorf("Couldn't update OpsSight object: %s", err.Error())
-		}
-
-		opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient)
-		if err != nil {
-			log.Errorf("unable to create the new OpsSight creater for %s due to %+v", opssightv1.Name, err)
-		}
-
-		err = opssightCreator.CreateOpsSight(opssightv1)
-
-		opssightv1, err = util.GetOpsSight(h.OpsSightClientset, opssightv1.Name, opssightv1.Name)
-
-		if err != nil {
-			//Set spec/state  and status/state to started
-			opssightv1.Spec.State = "error"
-			opssightv1.Status.State = "error"
+			h.updateState("error", "error", err.Error(), opssightv1)
 		} else {
-			opssightv1.Spec.State = "running"
-			opssightv1.Status.State = "running"
-		}
+			opssightv1.Spec = newSpec
+			opssightv1, err := h.updateState("pending", "creating", "", opssightv1)
 
-		opssightv1, err = h.updateHubObject(opssightv1)
-		if err != nil {
-			log.Errorf("Couldn't update OpsSight object: %s", err.Error())
+			if err == nil {
+				opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient)
+				if err != nil {
+					log.Errorf("unable to create the new OpsSight creater for %s due to %+v", opssightv1.Name, err)
+				}
+
+				err = opssightCreator.CreateOpsSight(&opssightv1.Spec)
+
+				opssightv1, err = util.GetOpsSight(h.OpsSightClientset, opssightv1.Name, opssightv1.Name)
+
+				if err != nil {
+					h.updateState("error", "error", err.Error(), opssightv1)
+				} else {
+					h.updateState("running", "running", "", opssightv1)
+				}
+			}
 		}
 	}
 }
@@ -108,6 +107,17 @@ func (h *OpsSightHandler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("objectUpdated: %+v", objNew)
 }
 
-func (h *OpsSightHandler) updateHubObject(obj *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
+func (h *OpsSightHandler) updateState(specState string, statusState string, errorMessage string, opssight *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
+	opssight.Spec.State = specState
+	opssight.Status.State = statusState
+	opssight.Status.ErrorMessage = errorMessage
+	opssight, err := h.updateOpsSightObject(opssight)
+	if err != nil {
+		log.Errorf("couldn't update the state of opssight object: %s", err.Error())
+	}
+	return opssight, err
+}
+
+func (h *OpsSightHandler) updateOpsSightObject(obj *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
 	return h.OpsSightClientset.SynopsysV1().OpsSights(h.Namespace).Update(obj)
 }
