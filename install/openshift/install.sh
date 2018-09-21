@@ -1,13 +1,32 @@
 #!/bin/bash
+echo "args = Namespace, Reg_key, branch"
 
 NS=$1
 REG_KEY=$2
 BRANCH=$3
 
-kubectl create ns $NS
+echo "Using the secret encoded in this file.  Change it before running, or press enter..."
+read x
 
-cat ../blackduck-protoform.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' |sed 's/${BCH}/'${BRANCH}'/g' | kubectl create --namespace=$NS -f -
+cat << EOF > /tmp/secret
+apiVersion: v1
+data:
+  ADMIN_PASSWORD: YmxhY2tkdWNr
+  POSTGRES_PASSWORD: YmxhY2tkdWNr
+  USER_PASSWORD: YmxhY2tkdWNr
+  HUB_PASSWORD: YmxhY2tkdWNr
+kind: Secret
+metadata:
+  name: blackduck-secret
+type: Opaque
+EOF
 
-#kubectl expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-np --type=NodePort --namespace=$NS
+oc new-project $NS
 
-#kubectl expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-lb --type=LoadBalancer --namespace=$NS
+oc create -f /tmp/secret -n $NS
+
+cat ../blackduck-protoform.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' |sed 's/${BCH}/'${BRANCH}'/g' | oc create --namespace=$NS -f -
+
+#oc expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-np --type=NodePort --namespace=$NS
+
+#oc expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-lb --type=LoadBalancer --namespace=$NS
