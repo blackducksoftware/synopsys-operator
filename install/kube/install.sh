@@ -14,6 +14,7 @@ data:
   ADMIN_PASSWORD: YmxhY2tkdWNr
   POSTGRES_PASSWORD: YmxhY2tkdWNr
   USER_PASSWORD: YmxhY2tkdWNr
+  HUB_PASSWORD: YmxhY2tkdWNr
 kind: Secret
 metadata:
   name: blackduck-secret
@@ -29,4 +30,3 @@ cat ../blackduck-protoform.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed
 #oc expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-np --type=NodePort --namespace=$NS
 
 #oc expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-lb --type=LoadBalancer --namespace=$NS
-

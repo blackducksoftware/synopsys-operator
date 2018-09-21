@@ -97,7 +97,7 @@ const initialState = {
   certificateName: "default",
   showCertificates: false,
   hubType: "worker",
-  environs: [{ key: "", value: "" }]
+  environs: []
 };
 
 class StagingForm extends Component {
