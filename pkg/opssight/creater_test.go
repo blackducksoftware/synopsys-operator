@@ -114,9 +114,9 @@ func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components
 	perceiver := opssightSpec.ContainerNames["perceiver"]
 
 	expectedClusterRoleBindings := map[string]*types.ClusterRoleBinding{
-		perceptorScanner: &types.ClusterRoleBinding{Version: "rbac.authorization.k8s.io/v1", Name: perceptorScanner, Subjects: []types.Subject{{Name: types.Name(perceptorScanner), Kind: "ServiceAccount"}}, RoleRef: types.RoleRef{Name: "cluster-admin", Kind: "ClusterRole"}},
-		podPerceiver:     &types.ClusterRoleBinding{Version: "rbac.authorization.k8s.io/v1", Name: podPerceiver, Subjects: []types.Subject{{Name: types.Name(perceiver), Kind: "ServiceAccount"}}, RoleRef: types.RoleRef{Name: types.Name(podPerceiver), Kind: "ClusterRole"}},
-		imagePerceiver:   &types.ClusterRoleBinding{Version: "rbac.authorization.k8s.io/v1", Name: imagePerceiver, Subjects: []types.Subject{{Name: types.Name(perceiver), Kind: "ServiceAccount"}}, RoleRef: types.RoleRef{Name: types.Name(imagePerceiver), Kind: "ClusterRole"}},
+		perceptorScanner: {Version: "rbac.authorization.k8s.io/v1", Name: perceptorScanner, Subjects: []types.Subject{{Name: types.Name(perceptorScanner), Kind: "ServiceAccount"}}, RoleRef: types.RoleRef{Name: "cluster-admin", Kind: "ClusterRole"}},
+		podPerceiver:     {Version: "rbac.authorization.k8s.io/v1", Name: podPerceiver, Subjects: []types.Subject{{Name: types.Name(perceiver), Kind: "ServiceAccount"}}, RoleRef: types.RoleRef{Name: types.Name(podPerceiver), Kind: "ClusterRole"}},
+		imagePerceiver:   {Version: "rbac.authorization.k8s.io/v1", Name: imagePerceiver, Subjects: []types.Subject{{Name: types.Name(perceiver), Kind: "ServiceAccount"}}, RoleRef: types.RoleRef{Name: types.Name(imagePerceiver), Kind: "ClusterRole"}},
 	}
 
 	for _, cb := range clusterRoleBindings {
@@ -135,8 +135,8 @@ func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, 
 	imagePerceiver := opssightSpec.ContainerNames["image-perceiver"]
 
 	expectedClusterRoles := map[string]*types.ClusterRole{
-		podPerceiver:   &types.ClusterRole{Version: "rbac.authorization.k8s.io/v1", Name: podPerceiver, Rules: []types.PolicyRule{{Verbs: []string{"get", "watch", "list", "update"}, APIGroups: []string{"*"}, Resources: []string{"pods"}}}},
-		imagePerceiver: &types.ClusterRole{Version: "rbac.authorization.k8s.io/v1", Name: imagePerceiver, Rules: []types.PolicyRule{{Verbs: []string{"get", "watch", "list", "update"}, APIGroups: []string{"*"}, Resources: []string{"images"}}}},
+		podPerceiver:   {Version: "rbac.authorization.k8s.io/v1", Name: podPerceiver, Rules: []types.PolicyRule{{Verbs: []string{"get", "watch", "list", "update"}, APIGroups: []string{"*"}, Resources: []string{"pods"}}}},
+		imagePerceiver: {Version: "rbac.authorization.k8s.io/v1", Name: imagePerceiver, Rules: []types.PolicyRule{{Verbs: []string{"get", "watch", "list", "update"}, APIGroups: []string{"*"}, Resources: []string{"images"}}}},
 	}
 
 	for _, cr := range clusterRoles {
@@ -163,11 +163,11 @@ func validateConfigMaps(t *testing.T, configMaps []*components.ConfigMap, opssig
 	}
 
 	expectedConfigMaps := map[string]*configMap{
-		perceptor:            &configMap{name: perceptor, fileName: fmt.Sprintf("%s.yaml", perceptor)},
-		perceptorScanner:     &configMap{name: perceptorScanner, fileName: fmt.Sprintf("%s.yaml", perceptorScanner)},
-		perceptorImageFacade: &configMap{name: perceptorImageFacade, fileName: fmt.Sprintf("%s.json", perceptorImageFacade)},
-		perceiver:            &configMap{name: perceiver, fileName: fmt.Sprintf("%s.yaml", perceiver)},
-		prometheus:           &configMap{name: prometheus},
+		perceptor:            {name: perceptor, fileName: fmt.Sprintf("%s.yaml", perceptor)},
+		perceptorScanner:     {name: perceptorScanner, fileName: fmt.Sprintf("%s.yaml", perceptorScanner)},
+		perceptorImageFacade: {name: perceptorImageFacade, fileName: fmt.Sprintf("%s.json", perceptorImageFacade)},
+		perceiver:            {name: perceiver, fileName: fmt.Sprintf("%s.yaml", perceiver)},
+		prometheus:           {name: prometheus},
 	}
 
 	for _, cm := range configMaps {
@@ -197,8 +197,8 @@ func validateDeployments(t *testing.T, deployments []*components.Deployment, ops
 		TemplateMetadata: &types.PodTemplateMeta{Name: "prometheus", Labels: map[string]string{"app": "prometheus"}},
 		PodTemplate: types.PodTemplate{
 			Volumes: map[string]types.Volume{
-				"data":       types.Volume{EmptyDir: &types.EmptyDirVolume{}},
-				"prometheus": types.Volume{ConfigMap: &types.ConfigMapVolume{Name: "prometheus", Items: map[string]types.KeyAndMode{}}},
+				"data":       {EmptyDir: &types.EmptyDirVolume{}},
+				"prometheus": {ConfigMap: &types.ConfigMapVolume{Name: "prometheus", Items: map[string]types.KeyAndMode{}}},
 			},
 			Containers: []types.Container{
 				{
@@ -249,14 +249,14 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 	priviledgedFalse := false
 	priviledgedTrue := true
 	expectedReplicationController := map[string]*types.ReplicationController{
-		perceptor: &types.ReplicationController{
+		perceptor: {
 			Name:             perceptor,
 			Replicas:         &replica,
 			Selector:         map[string]string{"name": perceptor},
 			TemplateMetadata: &types.PodTemplateMeta{Name: perceptor, Labels: map[string]string{"name": perceptor}},
 			PodTemplate: types.PodTemplate{
 				Volumes: map[string]types.Volume{
-					perceptor: types.Volume{ConfigMap: &types.ConfigMapVolume{Name: perceptor, Items: map[string]types.KeyAndMode{}}},
+					perceptor: {ConfigMap: &types.ConfigMapVolume{Name: perceptor, Items: map[string]types.KeyAndMode{}}},
 				},
 				Containers: []types.Container{
 					{
@@ -283,17 +283,17 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 				DNSPolicy:     types.DNSClusterFirstWithHostNet,
 			},
 		},
-		perceptorScanner: &types.ReplicationController{
+		perceptorScanner: {
 			Name:             perceptorScanner,
 			Replicas:         &replica,
 			Selector:         map[string]string{"name": perceptorScanner},
 			TemplateMetadata: &types.PodTemplateMeta{Name: perceptorScanner, Labels: map[string]string{"name": perceptorScanner}},
 			PodTemplate: types.PodTemplate{
 				Volumes: map[string]types.Volume{
-					perceptorScanner:     types.Volume{ConfigMap: &types.ConfigMapVolume{Name: perceptorScanner, Items: map[string]types.KeyAndMode{}}},
-					perceptorImageFacade: types.Volume{ConfigMap: &types.ConfigMapVolume{Name: perceptorImageFacade, Items: map[string]types.KeyAndMode{}}},
-					"var-images":         types.Volume{EmptyDir: &types.EmptyDirVolume{}},
-					"dir-docker-socket":  types.Volume{HostPath: &types.HostPathVolume{Path: "/var/run/docker.sock"}},
+					perceptorScanner:     {ConfigMap: &types.ConfigMapVolume{Name: perceptorScanner, Items: map[string]types.KeyAndMode{}}},
+					perceptorImageFacade: {ConfigMap: &types.ConfigMapVolume{Name: perceptorImageFacade, Items: map[string]types.KeyAndMode{}}},
+					"var-images":         {EmptyDir: &types.EmptyDirVolume{}},
+					"dir-docker-socket":  {HostPath: &types.HostPathVolume{Path: "/var/run/docker.sock"}},
 				},
 				Containers: []types.Container{
 					{
@@ -342,15 +342,15 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 				Account:       perceptorScanner,
 			},
 		},
-		podPerceiver: &types.ReplicationController{
+		podPerceiver: {
 			Name:             podPerceiver,
 			Replicas:         &replica,
 			Selector:         map[string]string{"name": podPerceiver},
 			TemplateMetadata: &types.PodTemplateMeta{Name: podPerceiver, Labels: map[string]string{"name": podPerceiver}},
 			PodTemplate: types.PodTemplate{
 				Volumes: map[string]types.Volume{
-					perceiver: types.Volume{ConfigMap: &types.ConfigMapVolume{Name: perceiver, Items: map[string]types.KeyAndMode{}}},
-					"logs":    types.Volume{EmptyDir: &types.EmptyDirVolume{}},
+					perceiver: {ConfigMap: &types.ConfigMapVolume{Name: perceiver, Items: map[string]types.KeyAndMode{}}},
+					"logs":    {EmptyDir: &types.EmptyDirVolume{}},
 				},
 				Containers: []types.Container{
 					{
@@ -376,15 +376,15 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 				Account:       perceiver,
 			},
 		},
-		imagePerceiver: &types.ReplicationController{
+		imagePerceiver: {
 			Name:             imagePerceiver,
 			Replicas:         &replica,
 			Selector:         map[string]string{"name": imagePerceiver},
 			TemplateMetadata: &types.PodTemplateMeta{Name: imagePerceiver, Labels: map[string]string{"name": imagePerceiver}},
 			PodTemplate: types.PodTemplate{
 				Volumes: map[string]types.Volume{
-					perceiver: types.Volume{ConfigMap: &types.ConfigMapVolume{Name: perceiver, Items: map[string]types.KeyAndMode{}}},
-					"logs":    types.Volume{EmptyDir: &types.EmptyDirVolume{}},
+					perceiver: {ConfigMap: &types.ConfigMapVolume{Name: perceiver, Items: map[string]types.KeyAndMode{}}},
+					"logs":    {EmptyDir: &types.EmptyDirVolume{}},
 				},
 				Containers: []types.Container{
 					{
@@ -425,7 +425,7 @@ func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *o
 	}
 
 	expectedSecrets := map[string]*types.Secret{
-		opssightSpec.SecretName: &types.Secret{Name: opssightSpec.SecretName, Data: map[string][]byte{"HubUserPassword": []byte("")}, SecretType: types.SecretTypeOpaque},
+		opssightSpec.SecretName: {Name: opssightSpec.SecretName, Data: map[string][]byte{"HubUserPassword": []byte("")}, SecretType: types.SecretTypeOpaque},
 	}
 
 	for _, secret := range secrets {
@@ -444,8 +444,8 @@ func validateServiceAccounts(t *testing.T, serviceAccounts []*components.Service
 	perceiver := opssightSpec.ContainerNames["perceiver"]
 
 	expectedServiceAccounts := map[string]*types.ServiceAccount{
-		perceptorScanner: &types.ServiceAccount{Name: perceptorScanner},
-		perceiver:        &types.ServiceAccount{Name: perceiver},
+		perceptorScanner: {Name: perceptorScanner},
+		perceiver:        {Name: perceiver},
 	}
 
 	for _, serviceAccount := range serviceAccounts {
@@ -467,42 +467,42 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 	imagePerceiver := opssightSpec.ContainerNames["image-perceiver"]
 
 	expectedServices := map[string]*types.Service{
-		perceptor: &types.Service{
+		perceptor: {
 			Name:             perceptor,
 			Type:             types.ClusterIPServiceTypeDefault,
 			Selector:         map[string]string{"name": perceptor},
 			Port:             &types.ServicePort{Expose: int32(3001), Protocol: types.ProtocolTCP, PodPort: &intstr.IntOrString{Type: intstr.Int, IntVal: 3001}},
 			ClientIPAffinity: &intbool.IntOrBool{Type: intbool.Bool},
 		},
-		perceptorScanner: &types.Service{
+		perceptorScanner: {
 			Name:             perceptorScanner,
 			Type:             types.ClusterIPServiceTypeDefault,
 			Selector:         map[string]string{"name": perceptorScanner},
 			Port:             &types.ServicePort{Expose: int32(3003), Protocol: types.ProtocolTCP, PodPort: &intstr.IntOrString{Type: intstr.Int, IntVal: 3003}},
 			ClientIPAffinity: &intbool.IntOrBool{Type: intbool.Bool},
 		},
-		perceptorImageFacade: &types.Service{
+		perceptorImageFacade: {
 			Name:             perceptorImageFacade,
 			Type:             types.ClusterIPServiceTypeDefault,
 			Selector:         map[string]string{"name": perceptorImageFacade},
 			Port:             &types.ServicePort{Expose: int32(3004), Protocol: types.ProtocolTCP, PodPort: &intstr.IntOrString{Type: intstr.Int, IntVal: 3004}},
 			ClientIPAffinity: &intbool.IntOrBool{Type: intbool.Bool},
 		},
-		podPerceiver: &types.Service{
+		podPerceiver: {
 			Name:             podPerceiver,
 			Type:             types.ClusterIPServiceTypeDefault,
 			Selector:         map[string]string{"name": podPerceiver},
 			Port:             &types.ServicePort{Expose: int32(3002), Protocol: types.ProtocolTCP, PodPort: &intstr.IntOrString{Type: intstr.Int, IntVal: 3002}},
 			ClientIPAffinity: &intbool.IntOrBool{Type: intbool.Bool},
 		},
-		imagePerceiver: &types.Service{
+		imagePerceiver: {
 			Name:             imagePerceiver,
 			Type:             types.ClusterIPServiceTypeDefault,
 			Selector:         map[string]string{"name": imagePerceiver},
 			Port:             &types.ServicePort{Expose: int32(3002), Protocol: types.ProtocolTCP, PodPort: &intstr.IntOrString{Type: intstr.Int, IntVal: 3002}},
 			ClientIPAffinity: &intbool.IntOrBool{Type: intbool.Bool},
 		},
-		"prometheus": &types.Service{
+		"prometheus": {
 			Name:             "prometheus",
 			Labels:           map[string]string{"name": "prometheus"},
 			Annotations:      map[string]string{"prometheus.io/scrape": "true"},
