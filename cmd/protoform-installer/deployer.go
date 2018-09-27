@@ -186,7 +186,6 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			"skyfire":                "skyfire",
 		},
 		ContainerNames: map[string]string{
-			// WARNING: These service accounts need to exist !
 			"pod-perceiver":         "pod-perceiver",
 			"image-perceiver":       "image-perceiver",
 			"perceptor":             "perceptor",
