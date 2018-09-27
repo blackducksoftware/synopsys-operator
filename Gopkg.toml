@@ -65,6 +65,10 @@
   name = "k8s.io/kube-aggregator"
   revision = "89512616b165a8d1280cf4b7dfdc266e96d8abe1"
 
+[[override]]
+  source = "https://github.com/fsnotify/fsnotify/archive/v1.4.7.tar.gz"
+  name = "gopkg.in/fsnotify.v1"
+
 [prune]
   go-tests = true
   unused-packages = true
