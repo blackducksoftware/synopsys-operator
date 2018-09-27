@@ -190,40 +190,42 @@ func validateDeployments(t *testing.T, deployments []*components.Deployment, ops
 	}
 
 	replica := int32(1)
-	expectedDeployment := map[string]*types.Deployment{"prometheus": &types.Deployment{
-		Name:             "prometheus",
-		Replicas:         &replica,
-		Selector:         &types.RSSelector{Labels: map[string]string{"app": "prometheus"}},
-		TemplateMetadata: &types.PodTemplateMeta{Name: "prometheus", Labels: map[string]string{"app": "prometheus"}},
-		PodTemplate: types.PodTemplate{
-			Volumes: map[string]types.Volume{
-				"data":       {EmptyDir: &types.EmptyDirVolume{}},
-				"prometheus": {ConfigMap: &types.ConfigMapVolume{Name: "prometheus", Items: map[string]types.KeyAndMode{}}},
-			},
-			Containers: []types.Container{
-				{
-					Name:                 "prometheus",
-					Pull:                 types.PullAlways,
-					Image:                "prom/prometheus:v2.1.0",
-					TerminationMsgPolicy: types.TerminationMessageReadFile,
-					Expose:               []types.Port{{Name: "web", ContainerPort: "9090", Protocol: types.ProtocolTCP}},
-					Args: []floatstr.FloatOrString{
-						{Type: floatstr.String, StringVal: "--log.level=debug"},
-						{Type: floatstr.String, StringVal: "--config.file=/etc/prometheus/prometheus.yml"},
-						{Type: floatstr.String, StringVal: "--storage.tsdb.path=/tmp/data/"},
-						{Type: floatstr.String, StringVal: "--storage.tsdb.retention=120d"},
-					},
-					VolumeMounts: []types.VolumeMount{
-						{MountPath: "/data", Propagation: types.MountPropagationNone, Store: "data"},
-						{MountPath: "/etc/prometheus", Propagation: types.MountPropagationNone, Store: "prometheus"},
+	expectedDeployment := map[string]*types.Deployment{
+		"prometheus": {
+			Name:             "prometheus",
+			Replicas:         &replica,
+			Selector:         &types.RSSelector{Labels: map[string]string{"app": "prometheus"}},
+			TemplateMetadata: &types.PodTemplateMeta{Name: "prometheus", Labels: map[string]string{"app": "prometheus"}},
+			PodTemplate: types.PodTemplate{
+				Volumes: map[string]types.Volume{
+					"data":       {EmptyDir: &types.EmptyDirVolume{}},
+					"prometheus": {ConfigMap: &types.ConfigMapVolume{Name: "prometheus", Items: map[string]types.KeyAndMode{}}},
+				},
+				Containers: []types.Container{
+					{
+						Name:                 "prometheus",
+						Pull:                 types.PullAlways,
+						Image:                "prom/prometheus:v2.1.0",
+						TerminationMsgPolicy: types.TerminationMessageReadFile,
+						Expose:               []types.Port{{Name: "web", ContainerPort: "9090", Protocol: types.ProtocolTCP}},
+						Args: []floatstr.FloatOrString{
+							{Type: floatstr.String, StringVal: "--log.level=debug"},
+							{Type: floatstr.String, StringVal: "--config.file=/etc/prometheus/prometheus.yml"},
+							{Type: floatstr.String, StringVal: "--storage.tsdb.path=/tmp/data/"},
+							{Type: floatstr.String, StringVal: "--storage.tsdb.retention=120d"},
+						},
+						VolumeMounts: []types.VolumeMount{
+							{MountPath: "/data", Propagation: types.MountPropagationNone, Store: "data"},
+							{MountPath: "/etc/prometheus", Propagation: types.MountPropagationNone, Store: "prometheus"},
+						},
 					},
 				},
+				RestartPolicy: types.RestartPolicyAlways,
+				DNSPolicy:     types.DNSClusterFirstWithHostNet,
 			},
-			RestartPolicy: types.RestartPolicyAlways,
-			DNSPolicy:     types.DNSClusterFirstWithHostNet,
+			DeploymentStatus: types.DeploymentStatus{Replicas: types.DeploymentReplicasStatus{}},
 		},
-		DeploymentStatus: types.DeploymentStatus{Replicas: types.DeploymentReplicasStatus{}},
-	}}
+	}
 
 	for _, d := range deployments {
 		if !cmp.Equal(d.GetObj(), expectedDeployment[d.GetName()]) {
