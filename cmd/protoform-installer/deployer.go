@@ -178,5 +178,20 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		HubUserPasswordEnvVar:                 "PCP_HUBUSERPASSWORD",
 		SecretName:                            "perceptor",
 		UseMockMode:                           &defaultUseMockMode,
+		ServiceAccounts: map[string]string{
+			// WARNING: These service accounts need to exist !
+			"pod-perceiver":          "perceiver",
+			"image-perceiver":        "perceiver",
+			"perceptor-image-facade": "perceptor-scanner",
+			"skyfire":                "skyfire",
+		},
+		ContainerNames: map[string]string{
+			"pod-perceiver":         "pod-perceiver",
+			"image-perceiver":       "image-perceiver",
+			"perceptor":             "perceptor",
+			"perceptor-imagefacade": "perceptor-imagefacade",
+			"perceptor-scanner":     "perceptor-scanner",
+			"skyfire":               "skyfire",
+		},
 	}
 }
