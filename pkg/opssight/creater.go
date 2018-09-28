@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
@@ -194,4 +195,9 @@ func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 	}
 
 	return nil
+}
+
+func (ac *Creater) deployHub(hubSpec *hub_v1.HubSpec) {
+	hub := &hub_v1.Hub{}
+	hub.Spec = &hubSpec
 }
