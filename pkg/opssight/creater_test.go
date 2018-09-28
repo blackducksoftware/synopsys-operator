@@ -121,7 +121,7 @@ func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components
 
 	for _, cb := range clusterRoleBindings {
 		if !cmp.Equal(cb.GetObj(), expectedClusterRoleBindings[cb.GetName()]) {
-			t.Errorf("cluster role bindings is not equal. Diff: %+v", cmp.Diff(cb.GetObj(), expectedClusterRoleBindings[cb.GetName()]))
+			t.Errorf("cluster role bindings is not equal for %s. Diff: %+v", cb.GetName(), cmp.Diff(cb.GetObj(), expectedClusterRoleBindings[cb.GetName()]))
 		}
 	}
 }
@@ -141,7 +141,7 @@ func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, 
 
 	for _, cr := range clusterRoles {
 		if !cmp.Equal(cr.GetObj(), expectedClusterRoles[cr.GetName()]) {
-			t.Errorf("cluster role is not equal. Diff: %+v", cmp.Diff(cr.GetObj(), expectedClusterRoles[cr.GetName()]))
+			t.Errorf("cluster role is not equal for %s. Diff: %+v", cr.GetName(), cmp.Diff(cr.GetObj(), expectedClusterRoles[cr.GetName()]))
 		}
 	}
 }
@@ -215,8 +215,8 @@ func validateDeployments(t *testing.T, deployments []*components.Deployment, ops
 							{Type: floatstr.String, StringVal: "--storage.tsdb.retention=120d"},
 						},
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: "/data", Propagation: types.MountPropagationNone, Store: "data"},
-							{MountPath: "/etc/prometheus", Propagation: types.MountPropagationNone, Store: "prometheus"},
+							{MountPath: "/data", Propagation: types.MountPropagationHostToContainer, Store: "data"},
+							{MountPath: "/etc/prometheus", Propagation: types.MountPropagationHostToContainer, Store: "prometheus"},
 						},
 					},
 				},
@@ -229,7 +229,7 @@ func validateDeployments(t *testing.T, deployments []*components.Deployment, ops
 
 	for _, d := range deployments {
 		if !cmp.Equal(d.GetObj(), expectedDeployment[d.GetName()]) {
-			t.Errorf("deployment is not equal. Expected: %+v, Actual: %+v, Diff: %+v", expectedDeployment[d.GetName()], d.GetObj(), cmp.Diff(d.GetObj(), expectedDeployment[d.GetName()]))
+			t.Errorf("deployment is not equal for %s. Diff: %+v", d.GetName(), cmp.Diff(d.GetObj(), expectedDeployment[d.GetName()]))
 		}
 	}
 }
@@ -277,7 +277,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3001", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceptor), Propagation: types.MountPropagationNone, Store: perceptor},
+							{MountPath: fmt.Sprintf("/etc/%s", perceptor), Propagation: types.MountPropagationHostToContainer, Store: perceptor},
 						},
 					},
 				},
@@ -315,8 +315,8 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3003", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceptorScanner), Propagation: types.MountPropagationNone, Store: perceptorScanner},
-							{MountPath: "/var/images", Propagation: types.MountPropagationNone, Store: "var-images"},
+							{MountPath: fmt.Sprintf("/etc/%s", perceptorScanner), Propagation: types.MountPropagationHostToContainer, Store: perceptorScanner},
+							{MountPath: "/var/images", Propagation: types.MountPropagationHostToContainer, Store: "var-images"},
 						},
 					},
 					{
@@ -333,9 +333,9 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3004", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceptorImageFacade), Propagation: types.MountPropagationNone, Store: perceptorImageFacade},
-							{MountPath: "/var/images", Propagation: types.MountPropagationNone, Store: "var-images"},
-							{MountPath: "/var/run/docker.sock", Propagation: types.MountPropagationNone, Store: "dir-docker-socket"},
+							{MountPath: fmt.Sprintf("/etc/%s", perceptorImageFacade), Propagation: types.MountPropagationHostToContainer, Store: perceptorImageFacade},
+							{MountPath: "/var/images", Propagation: types.MountPropagationHostToContainer, Store: "var-images"},
+							{MountPath: "/var/run/docker.sock", Propagation: types.MountPropagationHostToContainer, Store: "dir-docker-socket"},
 						},
 					},
 				},
@@ -368,8 +368,8 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3002", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceiver), Propagation: types.MountPropagationNone, Store: perceiver},
-							{MountPath: "/tmp", Propagation: types.MountPropagationNone, Store: "logs"},
+							{MountPath: fmt.Sprintf("/etc/%s", perceiver), Propagation: types.MountPropagationHostToContainer, Store: perceiver},
+							{MountPath: "/tmp", Propagation: types.MountPropagationHostToContainer, Store: "logs"},
 						},
 					},
 				},
@@ -402,8 +402,8 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3002", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceiver), Propagation: types.MountPropagationNone, Store: perceiver},
-							{MountPath: "/tmp", Propagation: types.MountPropagationNone, Store: "logs"},
+							{MountPath: fmt.Sprintf("/etc/%s", perceiver), Propagation: types.MountPropagationHostToContainer, Store: perceiver},
+							{MountPath: "/tmp", Propagation: types.MountPropagationHostToContainer, Store: "logs"},
 						},
 					},
 				},
@@ -416,7 +416,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 
 	for _, rc := range replicationControllers {
 		if !cmp.Equal(rc.GetObj(), expectedReplicationController[rc.GetName()]) {
-			t.Errorf("replication controller is not equal. Diff: %+v", cmp.Diff(rc.GetObj(), expectedReplicationController[rc.GetName()]))
+			t.Errorf("replication controller is not equal for %s. Diff: %+v", rc.GetName(), cmp.Diff(rc.GetObj(), expectedReplicationController[rc.GetName()]))
 		}
 	}
 }
@@ -432,7 +432,7 @@ func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *o
 
 	for _, secret := range secrets {
 		if !cmp.Equal(secret.GetObj(), expectedSecrets[secret.GetName()]) {
-			t.Errorf("secret is not equal. Diff: %+v", cmp.Diff(secret.GetObj(), expectedSecrets[secret.GetName()]))
+			t.Errorf("secret is not equal for %s. Diff: %+v", secret.GetName(), cmp.Diff(secret.GetObj(), expectedSecrets[secret.GetName()]))
 		}
 	}
 }
@@ -452,7 +452,7 @@ func validateServiceAccounts(t *testing.T, serviceAccounts []*components.Service
 
 	for _, serviceAccount := range serviceAccounts {
 		if !cmp.Equal(serviceAccount.GetObj(), expectedServiceAccounts[serviceAccount.GetName()]) {
-			t.Errorf("service account is not equal. Diff: %+v", cmp.Diff(serviceAccount.GetObj(), expectedServiceAccounts[serviceAccount.GetName()]))
+			t.Errorf("service account is not equal for %s. Diff: %+v", serviceAccount.GetName(), cmp.Diff(serviceAccount.GetObj(), expectedServiceAccounts[serviceAccount.GetName()]))
 		}
 	}
 }
@@ -517,7 +517,7 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 
 	for _, service := range services {
 		if !cmp.Equal(service.GetObj(), expectedServices[service.GetName()]) {
-			t.Errorf("service is not equal. Diff: %+v", cmp.Diff(service.GetObj(), expectedServices[service.GetName()]))
+			t.Errorf("service is not equal for %s. Diff: %+v", service.GetName(), cmp.Diff(service.GetObj(), expectedServices[service.GetName()]))
 		}
 	}
 }
