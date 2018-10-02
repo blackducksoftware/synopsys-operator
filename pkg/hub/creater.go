@@ -176,11 +176,11 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	// log.Debugf("registration key: %s", registrationKey)
 
 	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
-		for {
+		for i := 0; i < 20; i++ {
 			// Create the exec into kubernetes pod request
 			req := util.CreateExecContainerRequest(hc.KubeClient, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
-			err = hc.execContainer(req, []string{fmt.Sprintf("curl -k -X POST https://127.0.0.1:8443/registration/HubRegistration?action=activate\\&registrationid=%s", registrationKey)})
+			err = hc.execContainer(req, []string{fmt.Sprintf(`curl -k -X POST https://127.0.0.1:8443/registration/HubRegistration?action=activate\\&registrationid=%s" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
 			if err != nil {
 				log.Infof("error in Stream: %v", err)
 			} else {

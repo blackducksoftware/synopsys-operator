@@ -139,7 +139,7 @@ func (c *Controller) Deploy() error {
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "federator", Image: fmt.Sprintf("%s/%s/%s:%s", c.protoform.Config.HubFederatorConfig.Registry, c.protoform.Config.HubFederatorConfig.ImagePath, c.protoform.Config.HubFederatorConfig.ImageName, c.protoform.Config.HubFederatorConfig.ImageVersion),
 			PullPolicy: horizonapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/federator/config.json"}},
 		EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: c.protoform.Config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: hubPassword}},
-		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "federator", MountPath: "/etc/federator", Propagation: horizonapi.MountPropagationNone}},
+		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "federator", MountPath: "/etc/federator", Propagation: horizonapi.MountPropagationHostToContainer}},
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: fmt.Sprint(c.protoform.Config.HubFederatorConfig.Port), Protocol: horizonapi.ProtocolTCP},
 	}
 	hubFederatorVolume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -147,7 +147,7 @@ func (c *Controller) Deploy() error {
 		MapOrSecretName: "federator",
 		DefaultMode:     util.IntToInt32(420),
 	})
-	hubFederator := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: c.protoform.Config.Namespace, Name: "federator", Replicas: util.IntToInt32(1)},
+	hubFederator := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: c.protoform.Config.Namespace, Name: "federator", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*util.Container{}, []horizonapi.AffinityConfig{})
 	deployer.AddDeployment(hubFederator)
 
