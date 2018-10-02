@@ -210,10 +210,9 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		route, err := util.CreateOpenShiftRoutes(hc.routeClient, createHub.Namespace, createHub.Namespace, "Service", "webserver")
 		if err != nil {
 			return "", pvcVolumeName, false, err
-		} else {
-			log.Debugf("openshift route host: %s", route.Spec.Host)
-			ipAddress = route.Spec.Host
 		}
+		log.Debugf("openshift route host: %s", route.Spec.Host)
+		ipAddress = route.Spec.Host
 	}
 
 	if strings.EqualFold(ipAddress, "") {
