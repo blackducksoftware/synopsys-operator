@@ -1,6 +1,6 @@
 steps:
 - name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o', './cmd/protoform-installer/protoform-installer', './cmd/protoform-installer/installer.go']
+  args: ['build', '-o', './cmd/protoform-installer/protoform-installer', './cmd/protoform-installer/deployer.go']
   env:
   - 'PROJECT_ROOT=github.com/blackducksoftware/perceptor-protoform'
   - 'CGO_ENABLED=0'
