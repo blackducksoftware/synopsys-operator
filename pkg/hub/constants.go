@@ -58,8 +58,8 @@ const (
 	smallSolrMemoryLimit = "640M"
 
 	smallWebappCPULimit     = "1"
-	smallWebappMemoryLimit  = "2560M"
-	smallWebappHubMaxMemory = "2048m"
+	smallWebappMemoryLimit  = "4500M"
+	smallWebappHubMaxMemory = "4000m"
 
 	smallScanReplicas     = 1
 	smallScanMemoryLimit  = "2560M"
