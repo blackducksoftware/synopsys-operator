@@ -559,6 +559,11 @@ func CreateClusterRoleBinding(namespace string, name string, serviceAccountName 
 	return clusterRoleBinding
 }
 
+// DeleteClusterRoleBinding delete a cluster role binding
+func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
+	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{})
+}
+
 // CreateOpenShiftRoutes creates a OpenShift routes
 func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Create(&routev1.Route{

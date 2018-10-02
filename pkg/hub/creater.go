@@ -89,6 +89,12 @@ func (hc *Creater) DeleteHub(namespace string) {
 	if err != nil {
 		log.Errorf("unable to delete the pv for %+v", namespace)
 	}
+
+	// Delete a Cluster Role Binding
+	err = util.DeleteClusterRoleBinding(hc.KubeClient, namespace)
+	if err != nil {
+		log.Errorf("unable to delete the cluster role binding for %+v", namespace)
+	}
 }
 
 // CreateHub will create the Black Duck Hub
