@@ -536,7 +536,7 @@ func CreateServiceAccount(namespace string, name string) *components.ServiceAcco
 }
 
 // CreateClusterRoleBinding creates a cluster role binding
-func CreateClusterRoleBinding(namespace string, name string, serviceAccountName string, clusterRoleApiGroup string, clusterRoleKind string, clusterRoleName string) *components.ClusterRoleBinding {
+func CreateClusterRoleBinding(namespace string, name string, serviceAccountName string, clusterRoleAPIGroup string, clusterRoleKind string, clusterRoleName string) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       name,
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -548,7 +548,7 @@ func CreateClusterRoleBinding(namespace string, name string, serviceAccountName 
 		Namespace: namespace,
 	})
 	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
-		APIGroup: clusterRoleApiGroup,
+		APIGroup: clusterRoleAPIGroup,
 		Kind:     clusterRoleKind,
 		Name:     clusterRoleName,
 	})
