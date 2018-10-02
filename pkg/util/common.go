@@ -577,7 +577,7 @@ func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace str
 				Kind: routeKind,
 				Name: serviceName,
 			},
-			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: serviceName}},
+			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: fmt.Sprintf("port-%s", serviceName)}},
 		},
 	})
 }
