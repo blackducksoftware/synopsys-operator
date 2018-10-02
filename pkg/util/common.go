@@ -143,10 +143,14 @@ func CreateSecretVolume(volumeName string, secretName string, defaultMode int) (
 }
 
 // CreatePod will create the pod
-func CreatePod(name string, volumes []*components.Volume, containers []*Container, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.Pod {
+func CreatePod(name string, serviceAccount string, volumes []*components.Volume, containers []*Container, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: name,
 	})
+
+	if !strings.EqualFold(serviceAccount, "") {
+		pod.GetObj().Account = serviceAccount
+	}
 
 	for _, volume := range volumes {
 		pod.AddVolume(volume)
@@ -190,8 +194,8 @@ func CreateDeployment(deploymentConfig *horizonapi.DeploymentConfig, pod *compon
 }
 
 // CreateDeploymentFromContainer will create a deployment with multiple containers inside a pod
-func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.Deployment {
-	pod := CreatePod(deploymentConfig.Name, volumes, containers, initContainers, affinityConfigs)
+func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.Deployment {
+	pod := CreatePod(deploymentConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs)
 	deployment := CreateDeployment(deploymentConfig, pod)
 	return deployment
 }
@@ -519,4 +523,35 @@ func getBytes(n int) ([]byte, error) {
 func RandomString(n int) (string, error) {
 	b, err := getBytes(n)
 	return base64.URLEncoding.EncodeToString(b), err
+}
+
+// CreateServiceAccount creates a service account
+func CreateServiceAccount(namespace string, name string) *components.ServiceAccount {
+	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
+		Name:      name,
+		Namespace: namespace,
+	})
+
+	return serviceAccount
+}
+
+// CreateClusterRoleBinding creates a cluster role binding
+func CreateClusterRoleBinding(namespace string, name string, serviceAccountName string, clusterRoleApiGroup string, clusterRoleKind string, clusterRoleName string) *components.ClusterRoleBinding {
+	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
+		Name:       name,
+		APIVersion: "rbac.authorization.k8s.io/v1",
+	})
+
+	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
+		Kind:      "ServiceAccount",
+		Name:      serviceAccountName,
+		Namespace: namespace,
+	})
+	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
+		APIGroup: clusterRoleApiGroup,
+		Kind:     clusterRoleKind,
+		Name:     clusterRoleName,
+	})
+
+	return clusterRoleBinding
 }

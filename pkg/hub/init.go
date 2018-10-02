@@ -51,6 +51,14 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 		deployer.AddSecret(secret)
 	}
 
+	// Create a service account
+	serviceAccount := util.CreateServiceAccount(createHub.Namespace, createHub.Namespace)
+	deployer.AddServiceAccount(serviceAccount)
+
+	// Create a cluster role binding and associated it to a service account
+	clusterRoleBinding := util.CreateClusterRoleBinding(createHub.Namespace, createHub.Namespace, createHub.Namespace, "", "ClusterRole", "cluster-admin")
+	deployer.AddClusterRoleBinding(clusterRoleBinding)
+
 	// Create ConfigMaps
 	configMaps := hc.createHubConfig(createHub, hubContainerFlavor)
 
@@ -129,7 +137,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
 
-	postgres := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "postgres", Replicas: util.IntToInt32(1)},
+	postgres := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: createHub.Namespace, Name: "postgres", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{postgresExternalContainerConfig}, postgresVolumes, initContainers, []horizonapi.AffinityConfig{})
 	// log.Infof("postgres : %+v\n", postgres.GetObj())
 	deployer.AddDeployment(postgres)

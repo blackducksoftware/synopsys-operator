@@ -147,7 +147,7 @@ func (c *Controller) Deploy() error {
 		MapOrSecretName: "federator",
 		DefaultMode:     util.IntToInt32(420),
 	})
-	hubFederator := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: c.protoform.Config.Namespace, Name: "federator", Replicas: util.IntToInt32(1)},
+	hubFederator := util.CreateDeploymentFromContainer(&horizonapi.DeploymentConfig{Namespace: c.protoform.Config.Namespace, Name: "federator", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*util.Container{}, []horizonapi.AffinityConfig{})
 	deployer.AddDeployment(hubFederator)
 

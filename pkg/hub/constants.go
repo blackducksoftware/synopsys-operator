@@ -33,6 +33,11 @@ const (
 	authenticationHubMaxMemory = "512m"
 	documentationMemoryLimit   = "512M"
 
+	registrationMinCPUUsage = "1"
+	zookeeperMinCPUUsage    = "1"
+	jonRunnerMinCPUUsage    = "1"
+	jonRunnerMaxCPUUsage    = "1"
+
 	// Ports
 	cfsslPort          = "8888"
 	webserverPort      = "8443"
