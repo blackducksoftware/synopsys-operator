@@ -43,6 +43,8 @@ import (
 
 	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	routev1 "github.com/openshift/api/route/v1"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -52,6 +54,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -554,4 +557,22 @@ func CreateClusterRoleBinding(namespace string, name string, serviceAccountName 
 	})
 
 	return clusterRoleBinding
+}
+
+// CreateOpenShiftRoutes creates a OpenShift routes
+func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string) (*routev1.Route, error) {
+	return routeClient.Routes(namespace).Create(&routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{Termination: routev1.TLSTerminationPassthrough},
+			To: routev1.RouteTargetReference{
+				Kind: routeKind,
+				Name: serviceName,
+			},
+			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: serviceName}},
+		},
+	})
 }

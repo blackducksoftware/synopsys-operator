@@ -34,6 +34,8 @@ import (
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -43,15 +45,17 @@ import (
 
 // Creater will store the configuration to create the Hub
 type Creater struct {
-	Config     *model.Config
-	KubeConfig *rest.Config
-	KubeClient *kubernetes.Clientset
-	HubClient  *hubclientset.Clientset
+	Config           *model.Config
+	KubeConfig       *rest.Config
+	KubeClient       *kubernetes.Clientset
+	HubClient        *hubclientset.Clientset
+	osSecurityClient *securityclient.SecurityV1Client
+	routeClient      *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset) *Creater {
-	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient}
+func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
+	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
 // DeleteHub will delete the Black Duck Hub
@@ -200,11 +204,25 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		}
 	}
 
-	ipAddress, err := hc.getLoadBalancerIPAddress(createHub.Namespace, "webserver-lb")
-	if err != nil {
-		ipAddress, err = hc.getNodePortIPAddress(createHub.Namespace, "webserver-np")
+	// OpenShift routes
+	ipAddress := ""
+	if hc.osSecurityClient != nil {
+		route, err := util.CreateOpenShiftRoutes(hc.routeClient, createHub.Namespace, createHub.Namespace, "Service", "webserver")
 		if err != nil {
 			return "", pvcVolumeName, false, err
+		} else {
+			log.Debugf("openshift route host: %s", route.Spec.Host)
+			ipAddress = route.Spec.Host
+		}
+	}
+
+	if strings.EqualFold(ipAddress, "") {
+		ipAddress, err = hc.getLoadBalancerIPAddress(createHub.Namespace, "webserver-lb")
+		if err != nil {
+			ipAddress, err = hc.getNodePortIPAddress(createHub.Namespace, "webserver-np")
+			if err != nil {
+				return "", pvcVolumeName, false, err
+			}
 		}
 	}
 	log.Infof("hub Ip address: %s", ipAddress)
