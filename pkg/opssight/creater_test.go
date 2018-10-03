@@ -215,8 +215,8 @@ func validateDeployments(t *testing.T, deployments []*components.Deployment, ops
 							{Type: floatstr.String, StringVal: "--storage.tsdb.retention=120d"},
 						},
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: "/data", Propagation: types.MountPropagationHostToContainer, Store: "data"},
-							{MountPath: "/etc/prometheus", Propagation: types.MountPropagationHostToContainer, Store: "prometheus"},
+							{MountPath: "/data", Store: "data"},
+							{MountPath: "/etc/prometheus", Store: "prometheus"},
 						},
 					},
 				},
@@ -277,7 +277,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3001", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceptor), Propagation: types.MountPropagationHostToContainer, Store: perceptor},
+							{MountPath: fmt.Sprintf("/etc/%s", perceptor), Store: perceptor},
 						},
 					},
 				},
@@ -315,8 +315,8 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3003", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceptorScanner), Propagation: types.MountPropagationHostToContainer, Store: perceptorScanner},
-							{MountPath: "/var/images", Propagation: types.MountPropagationHostToContainer, Store: "var-images"},
+							{MountPath: fmt.Sprintf("/etc/%s", perceptorScanner), Store: perceptorScanner},
+							{MountPath: "/var/images", Store: "var-images"},
 						},
 					},
 					{
@@ -333,9 +333,9 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3004", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceptorImageFacade), Propagation: types.MountPropagationHostToContainer, Store: perceptorImageFacade},
-							{MountPath: "/var/images", Propagation: types.MountPropagationHostToContainer, Store: "var-images"},
-							{MountPath: "/var/run/docker.sock", Propagation: types.MountPropagationHostToContainer, Store: "dir-docker-socket"},
+							{MountPath: fmt.Sprintf("/etc/%s", perceptorImageFacade), Store: perceptorImageFacade},
+							{MountPath: "/var/images", Store: "var-images"},
+							{MountPath: "/var/run/docker.sock", Store: "dir-docker-socket"},
 						},
 					},
 				},
@@ -368,8 +368,8 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3002", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceiver), Propagation: types.MountPropagationHostToContainer, Store: perceiver},
-							{MountPath: "/tmp", Propagation: types.MountPropagationHostToContainer, Store: "logs"},
+							{MountPath: fmt.Sprintf("/etc/%s", perceiver), Store: perceiver},
+							{MountPath: "/tmp", Store: "logs"},
 						},
 					},
 				},
@@ -402,8 +402,8 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Expose:               []types.Port{{ContainerPort: "3002", Protocol: types.ProtocolTCP}},
 						TerminationMsgPolicy: types.TerminationMessageReadFile,
 						VolumeMounts: []types.VolumeMount{
-							{MountPath: fmt.Sprintf("/etc/%s", perceiver), Propagation: types.MountPropagationHostToContainer, Store: perceiver},
-							{MountPath: "/tmp", Propagation: types.MountPropagationHostToContainer, Store: "logs"},
+							{MountPath: fmt.Sprintf("/etc/%s", perceiver), Store: perceiver},
+							{MountPath: "/tmp", Store: "logs"},
 						},
 					},
 				},
