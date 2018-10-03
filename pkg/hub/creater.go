@@ -104,11 +104,11 @@ func GetDefaultPasswords(kubeClient *kubernetes.Clientset, ns string) (adminPass
 	if err != nil {
 		log.Infof("Aborting: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD,USER_PASSWORD,POSTGRES_PASSWORD and retry")
 		return "", "", "", err
-	} else {
-		adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
-		userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
-		postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
 	}
+	adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
+	userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
+	postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
+
 	// default named return
 	return adminPassword, userPassword, postgresPassword, err
 }
