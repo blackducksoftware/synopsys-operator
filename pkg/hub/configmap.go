@@ -106,7 +106,7 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 		CLONE_FILENAME="%s"
 		echo "Backup file name: /data/bds/backup/$BACKUP_FILENAME"
 		echo "Clone file name: /data/bds/backup/$CLONE_FILENAME"
-    if [ ! -f /data/bds/backup/$BACKUP_FILENAME.sql ] && [ -f /data/bds/backup/$CLONE_FILENAME.sql ]; then
+                if [ ! -f /data/bds/backup/$BACKUP_FILENAME.sql ] && [ -f /data/bds/backup/$CLONE_FILENAME.sql ]; then
 			echo "clone data file found"
 			while true; do
 				if psql -c "SELECT 1" &>/dev/null; then
@@ -114,7 +114,7 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
       		psql < /data/bds/backup/$CLONE_FILENAME.sql
       		break
     		else
-      		echo "unable to execute the SELECT 1"
+      		echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying to init db again."
       		sleep 10
     		fi
   		done
@@ -124,11 +124,11 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 			echo "backup data file found"
 			while true; do
 				if psql -c "SELECT 1" &>/dev/null; then
-					echo "Migrating the data"
+					echo "Migrating the data from backup !"
       		psql < /data/bds/backup/$BACKUP_FILENAME.sql
       		break
     		else
-      		echo "unable to execute the SELECT 1"
+      		echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying migration again"
       		sleep 10
     		fi
   		done
@@ -136,7 +136,7 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 
 		if [ "%s" == "Yes" ]; then
 			while true; do
-			  echo "Dump the data"
+			  echo "Doing periodic data dump..."
 				sleep %d;
 				if [ ! -f /data/bds/backup/$BACKUP_FILENAME_tmp.sql ]; then
 					pg_dumpall -w > /data/bds/backup/$BACKUP_FILENAME_tmp.sql;
