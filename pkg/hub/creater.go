@@ -250,8 +250,8 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	go func() {
 		var checks int32
 		for {
-			log.Infof("%v: Waiting five minutes before running repair check.", createHub.Namespace)
-			time.Sleep(time.Duration(checks) * time.Minute) // i.e. after 60 checks, wait an hour before checking again.  hacky.  TODO make configurable.
+			log.Infof("%v: Waiting 3 minutes before running repair check.", createHub.Namespace)
+			time.Sleep(time.Duration(3) * time.Minute) // i.e. after 60 checks, wait an hour before checking again.  hacky.  TODO make configurable.
 			log.Infof("%v: running postgres schema repair check # %v...", createHub.Namespace, checks)
 			// name == namespace (before the namespace is set, it might be empty, but name wont be)
 			hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Namespace)
