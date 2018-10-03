@@ -257,10 +257,10 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 			hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", hubv1.Name)
 			adminPassword, userPassword, postgresPassword, err := hub.GetDefaultPasswords(h.Clientset, hubv1.Name)
 
-			db, err := hub.OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
+			db, err := OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
 			if err != nil {
 				log.Warnf("[%v] Database connection check result: %v.  Reinitializing it just to be safe. This is a UX improvment for dealing with postgres restarts on ephemeral instances.", hubv1.Name, err)
-				hub.InitDatabase(&hubv1.Spec, adminPassword, userPassword, postgresPassword)
+				InitDatabase(&hubv1.Spec, adminPassword, userPassword, postgresPassword)
 			} else {
 				db.Close()
 			}
