@@ -257,13 +257,27 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 			hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Namespace)
 			adminPassword, userPassword, postgresPassword, err := GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
 
+			dbNeedsInitBecause := ""
+
+			log.Infof("%v : Checking connection now...", createHub.Namespace)
 			db, err := OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
+			defer func() {
+				db.Close()
+			}()
+			log.Infof("%v : Done checking [ error status == %v ] ...", createHub.Namespace, err)
 			if err != nil {
-				log.Warnf("[%v] Database connection check result: %+v.  Reinitializing it just to be safe. This is a UX improvment for dealing with postgres restarts on ephemeral instances.", createHub.Namespace, err)
+				dbNeedsInitBecause = "couldnt connect !"
+			} else {
+				_, err := db.Query("SELECT * FROM USER")
+				if err != nil {
+					dbNeedsInitBecause = "couldnt select!"
+				}
+			}
+			if dbNeedsInitBecause != "" {
+				log.Warn("%v database needs init (%v), ::: %v ", createHub.Namespace, dbNeedsInitBecause, err)
 				InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 			} else {
-				log.Infof("Database connection %v succeeded")
-				db.Close()
+				log.Infof("%v Database connection and USER table query  succeeded, not fixing ", createHub.Namespace)
 			}
 			checks++
 		}
