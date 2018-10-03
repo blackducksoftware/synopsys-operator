@@ -251,7 +251,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		var checks int32
 		for {
 			log.Infof("%v: Waiting 3 minutes before running repair check.", createHub.Namespace)
-			time.Sleep(time.Duration(3) * time.Minute) // i.e. after 60 checks, wait an hour before checking again.  hacky.  TODO make configurable.
+			time.Sleep(time.Duration(3) * time.Minute) // i.e. hacky.  TODO make configurable.
 			log.Infof("%v: running postgres schema repair check # %v...", createHub.Namespace, checks)
 			// name == namespace (before the namespace is set, it might be empty, but name wont be)
 			hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Namespace)
@@ -259,12 +259,12 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 
 			dbNeedsInitBecause := ""
 
-			log.Infof("%v : Checking connection now...", createHub.Namespace)
+			log.Debugf("%v : Checking connection now...", createHub.Namespace)
 			db, err := OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
 			defer func() {
 				db.Close()
 			}()
-			log.Infof("%v : Done checking [ error status == %v ] ...", createHub.Namespace, err)
+			log.Debugf("%v : Done checking [ error status == %v ] ...", createHub.Namespace, err)
 			if err != nil {
 				dbNeedsInitBecause = "couldnt connect !"
 			} else {
@@ -274,10 +274,10 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 				}
 			}
 			if dbNeedsInitBecause != "" {
-				log.Warnf("%v: database needs init (%v), ::: %v ", createHub.Namespace, dbNeedsInitBecause, err)
+				log.Warnf("%v: database needs init because (%v), ::: %v ", createHub.Namespace, dbNeedsInitBecause, err)
 				InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 			} else {
-				log.Infof("%v Database connection and USER table query  succeeded, not fixing ", createHub.Namespace)
+				log.Debugf("%v Database connection and USER table query  succeeded, not fixing ", createHub.Namespace)
 			}
 			checks++
 		}
