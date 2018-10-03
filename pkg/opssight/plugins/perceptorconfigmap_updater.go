@@ -43,7 +43,6 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
-	v1 "k8s.io/api/core/v1"
 
 	//extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
 
@@ -93,21 +92,10 @@ type PerceptorConfigMap struct {
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
 func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
-	configmapList, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).List(metav1.ListOptions{})
+	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(opsSightSpec.ContainerNames["perceptor"], metav1.GetOptions{})
+
 	if err != nil {
-		return err
-	}
-
-	var configMap *v1.ConfigMap
-	for _, cm := range configmapList.Items {
-		if cm.Name == opsSightSpec.ContainerNames["perceptor"] {
-			configMap = &cm
-			break
-		}
-	}
-
-	if configMap == nil {
-		return fmt.Errorf("unable to find configmap %s in %s", opsSightSpec.ContainerNames["perceptor"], opsSightSpec.Namespace)
+		return fmt.Errorf("unable to find configmap %s in %s: %v", opsSightSpec.ContainerNames["perceptor"], opsSightSpec.Namespace, err)
 	}
 
 	var value perceptorConfig
