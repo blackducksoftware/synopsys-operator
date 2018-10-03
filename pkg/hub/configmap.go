@@ -106,9 +106,6 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 		CLONE_FILENAME="%s"
 		echo "Backup file name: /data/bds/backup/$BACKUP_FILENAME"
 		echo "Clone file name: /data/bds/backup/$CLONE_FILENAME"
-		if [ ! -f /data/bds/backup/$BACKUP_FILENAME.sql ] && [ ! -f /data/bds/backup/$CLONE_FILENAME.sql ]; then
-			
-		fi
 		if [ ! -f /data/bds/backup/$BACKUP_FILENAME.sql ] && [ -f /data/bds/backup/$CLONE_FILENAME.sql ]; then
 			echo "clone data file found"
 			while true; do
