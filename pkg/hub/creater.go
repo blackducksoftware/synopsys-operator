@@ -172,7 +172,11 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	util.ValidatePodsAreRunning(hc.KubeClient, pods)
 
 	if strings.EqualFold(createHub.DbPrototype, "empty") {
-		InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
+		err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
+		if err != nil {
+			log.Errorf("%v: error: %+v", createHub.Namespace, err)
+			return "", "", true, fmt.Errorf("%v: error: %+v", createHub.Namespace, err)
+		}
 	}
 
 	// Create all hub deployments
@@ -275,7 +279,10 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 			}
 			if dbNeedsInitBecause != "" {
 				log.Warnf("%v: database needs init because (%v), ::: %v ", createHub.Namespace, dbNeedsInitBecause, err)
-				InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
+				err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
+				if err != nil {
+					log.Errorf("%v: error: %+v", createHub.Namespace, err)
+				}
 			} else {
 				log.Debugf("%v Database connection and USER table query  succeeded, not fixing ", createHub.Namespace)
 			}
