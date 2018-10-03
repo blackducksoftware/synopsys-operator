@@ -274,7 +274,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 				}
 			}
 			if dbNeedsInitBecause != "" {
-				log.Warn("%v database needs init (%v), ::: %v ", createHub.Namespace, dbNeedsInitBecause, err)
+				log.Warnf("%v: database needs init (%v), ::: %v ", createHub.Namespace, dbNeedsInitBecause, err)
 				InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 			} else {
 				log.Infof("%v Database connection and USER table query  succeeded, not fixing ", createHub.Namespace)
