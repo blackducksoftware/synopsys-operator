@@ -40,7 +40,7 @@ func InitDatabase(createHub *v1.HubSpec, adminPassword string, userPassword stri
 	defer db.Close()
 	// log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
-		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
+		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
 	}
 	execPostGresDBStatements(db, adminPassword, userPassword)
 
@@ -49,7 +49,7 @@ func InitDatabase(createHub *v1.HubSpec, adminPassword string, userPassword stri
 	defer db.Close()
 	// log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
-		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
+		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
 	}
 	execBdsHubDBStatements(db)
 
@@ -58,7 +58,7 @@ func InitDatabase(createHub *v1.HubSpec, adminPassword string, userPassword stri
 	defer db.Close()
 	// log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
-		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
+		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
 	}
 	execBdsHubReportDBStatements(db)
 
@@ -67,7 +67,7 @@ func InitDatabase(createHub *v1.HubSpec, adminPassword string, userPassword stri
 	defer db.Close()
 	// log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
-		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v\n", databaseName, hostName, err)
+		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
 	}
 	execBdioDBStatements(db)
 	return nil
