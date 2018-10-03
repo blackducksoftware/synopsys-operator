@@ -240,5 +240,5 @@ func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 
 func (ac *Creater) deployHub(hubSpec *hub_v1.HubSpec) {
 	hub := &hub_v1.Hub{}
-	hub.Spec = &hubSpec
+	hub.Spec = *hubSpec
 }
