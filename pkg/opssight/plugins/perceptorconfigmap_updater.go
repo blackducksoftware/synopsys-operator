@@ -38,6 +38,7 @@ import (
 
 	"github.com/blackducksoftware/horizon/pkg/api"
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
@@ -91,26 +92,26 @@ type PerceptorConfigMap struct {
 
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
-func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string) error {
-	configmapList, err := kubeClient.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
+func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
+	configmapList, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	var configMap *v1.ConfigMap
 	for _, cm := range configmapList.Items {
-		if cm.Name == "perceptor" {
+		if cm.Name == opsSightSpec.ContainerNames["perceptor"] {
 			configMap = &cm
 			break
 		}
 	}
 
 	if configMap == nil {
-		return fmt.Errorf("unable to find configmap perceptor in %s", namespace)
+		return fmt.Errorf("unable to find configmap %s in %s", opsSightSpec.ContainerNames["perceptor"], opsSightSpec.Namespace)
 	}
 
 	var value perceptorConfig
-	err = json.Unmarshal([]byte(configMap.Data["perceptor.yaml"]), &value)
+	err = json.Unmarshal([]byte(configMap.Data[fmt.Sprintf("%s.yaml", opsSightSpec.ContainerNames["perceptor"])]), &value)
 	if err != nil {
 		return err
 	}
@@ -122,9 +123,9 @@ func sendHubs(kubeClient *kubernetes.Clientset, namespace string, hubs []string)
 		return err
 	}
 
-	configMap.Data["perceptor.yaml"] = string(jsonBytes)
-	log.Debugf("updated configmap in %s is %+v", namespace, configMap)
-	_, err = kubeClient.CoreV1().ConfigMaps(namespace).Update(configMap)
+	configMap.Data[fmt.Sprintf("%s.yaml", opsSightSpec.ContainerNames["perceptor"])] = string(jsonBytes)
+	log.Debugf("updated configmap in %s is %+v", opsSightSpec.Namespace, configMap)
+	_, err = kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
 	if err != nil {
 		return err
 	}
@@ -209,7 +210,7 @@ func (p *PerceptorConfigMap) updateAllHubs(hubClient *hubclient.Clientset, kubeC
 
 	// TODO, replace w/ configmap mutat ?
 	// curl perceptor w/ the latest hub list
-	err = sendHubs(kubeClient, opssight.Name, allHubNamespaces)
+	err = sendHubs(kubeClient, &opssight.Spec, allHubNamespaces)
 	if err != nil {
 		log.Errorf("unable to send hubs due to %+v", err)
 		return err
