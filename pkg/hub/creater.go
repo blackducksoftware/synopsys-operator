@@ -140,7 +140,9 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	var adminPassword, userPassword, postgresPassword string
 
 	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
-		adminPassword, userPassword, postgresPassword, err := GetDefaultPasswords(hc.KubeClient, createHub.Namespace)
+
+		// get the secret from the default operator namespace, then copy it into the hub namespace.
+		adminPassword, userPassword, postgresPassword, err := GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
 		if err == nil {
 			InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 			break
