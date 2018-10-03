@@ -29,6 +29,7 @@ import (
 
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
@@ -47,6 +48,7 @@ type Creater struct {
 	kubeConfig       *rest.Config
 	kubeClient       *kubernetes.Clientset
 	opssightClient   *opssightclientset.Clientset
+	hubClient        *hubclientset.Clientset
 	osSecurityClient *securityclient.SecurityV1Client
 	routeClient      *routeclient.RouteV1Client
 }

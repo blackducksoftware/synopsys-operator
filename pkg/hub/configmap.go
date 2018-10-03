@@ -111,13 +111,13 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 			while true; do
 				if psql -c "SELECT 1" &>/dev/null; then
 					echo "Migrating the data"
-      				psql < /data/bds/backup/$CLONE_FILENAME.sql
-      				break
-    			else
-      				echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying to init db again."
-      				sleep 10
-    			fi
-  			done
+      			psql < /data/bds/backup/$CLONE_FILENAME.sql
+      			break
+    		else
+      		echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying to init db again."
+      		sleep 10
+    		fi
+  		done
 		fi
 
 		if [ -f /data/bds/backup/$BACKUP_FILENAME.sql ]; then
@@ -125,13 +125,13 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 			while true; do
 				if psql -c "SELECT 1" &>/dev/null; then
 					echo "Migrating the data from backup !"
-      				psql < /data/bds/backup/$BACKUP_FILENAME.sql
-      				break
-    			else
-      				echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying migration again"
-      				sleep 10
-    			fi
-  			done
+      		psql < /data/bds/backup/$BACKUP_FILENAME.sql
+      		break
+    		else
+      		echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying migration again"
+      		sleep 10
+    		fi
+  		done
 		fi
 
 		if [ "%s" == "Yes" ]; then
