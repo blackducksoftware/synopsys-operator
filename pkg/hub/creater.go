@@ -32,7 +32,6 @@ import (
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -250,20 +249,21 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	go func() {
 		checks := 0
 		for {
-			log.Infof("%v: Waiting five minutes before running repair check.", hubv1.Name)
+			log.Infof("%v: Waiting five minutes before running repair check.", createHub.Namespace)
 			time.Sleep(5 * time.Minute) // periodically b/c i dont know how to make this into a controller.
-			log.Infof("%v: running postgres schema repair check # %v...", hubv1.Name, checks)
+			log.Infof("%v: running postgres schema repair check # %v...", createHub.Namespace, checks)
 			// name == namespace (before the namespace is set, it might be empty, but name wont be)
-			hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", hubv1.Name)
-			adminPassword, userPassword, postgresPassword, err := hub.GetDefaultPasswords(h.Clientset, hubv1.Name)
+			hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Namespace)
+			adminPassword, userPassword, postgresPassword, err := GetDefaultPasswords(hc.KubeClient, createHub.Namespace)
 
 			db, err := OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
 			if err != nil {
-				log.Warnf("[%v] Database connection check result: %v.  Reinitializing it just to be safe. This is a UX improvment for dealing with postgres restarts on ephemeral instances.", hubv1.Name, err)
-				InitDatabase(&hubv1.Spec, adminPassword, userPassword, postgresPassword)
+				log.Warnf("[%v] Database connection check result: %+v.  Reinitializing it just to be safe. This is a UX improvment for dealing with postgres restarts on ephemeral instances.", createHub.Namespace, err)
+				InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 			} else {
 				db.Close()
 			}
+			checks++
 		}
 	}()
 
