@@ -132,14 +132,14 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
       				sleep 10
     			fi
   			done
-		fi;
+		fi
 
 		if [ "%s" == "Yes" ]; then
 			while true; do
 			  echo "Doing periodic data dump..."
-				sleep %d;
+				sleep %d
 				if [ ! -f /data/bds/backup/$BACKUP_FILENAME_tmp.sql ]; then
-					pg_dumpall -w > /data/bds/backup/$BACKUP_FILENAME_tmp.sql;
+					pg_dumpall -w > /data/bds/backup/$BACKUP_FILENAME_tmp.sql
 					if [ $? -eq 0 ]; then
 						mv /data/bds/backup/$BACKUP_FILENAME_tmp.sql /data/bds/backup/$BACKUP_FILENAME.sql
 						if [ $? -eq 0 ]; then

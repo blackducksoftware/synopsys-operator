@@ -101,7 +101,7 @@ func (hc *Creater) DeleteHub(namespace string) {
 func GetDefaultPasswords(kubeClient *kubernetes.Clientset, ns string) (adminPassword string, userPassword string, postgresPassword string, err error) {
 	blackduckSecret, err := util.GetSecret(kubeClient, ns, "blackduck-secret")
 	if err != nil {
-		log.Infof("Aborting: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD,USER_PASSWORD,POSTGRES_PASSWORD and retry")
+		log.Infof("warning: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD, USER_PASSWORD, POSTGRES_PASSWORD")
 		return "", "", "", err
 	}
 	adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
@@ -145,7 +145,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 			InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 			break
 		} else {
-			log.Infof("Wasn't able to init databbase, sleeping 5 seconds.  try = %v", dbInitTry)
+			log.Infof("wasn't able to init database, sleeping 5 seconds.  try = %v", dbInitTry)
 			time.Sleep(5 * time.Second)
 		}
 	}
