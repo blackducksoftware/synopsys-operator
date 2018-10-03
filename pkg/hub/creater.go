@@ -23,6 +23,7 @@ package hub
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -31,6 +32,7 @@ import (
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -95,6 +97,22 @@ func (hc *Creater) DeleteHub(namespace string) {
 	}
 }
 
+// GetDefaultPasswords returns admin,user,postgres passwords for db maintainance tasks.  Should only be used during
+// initialization, or for 'babysitting' ephemeral hub instances (which might have postgres restarts)
+func GetDefaultPasswords(kubeClient *kubernetes.Clientset, ns string) (adminPassword string, userPassword string, postgresPassword string, err error) {
+	blackduckSecret, err := util.GetSecret(kubeClient, ns, "blackduck-secret")
+	if err != nil {
+		log.Infof("Aborting: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD,USER_PASSWORD,POSTGRES_PASSWORD and retry")
+		return "", "", "", err
+	} else {
+		adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
+		userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
+		postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
+	}
+	// default named return
+	return adminPassword, userPassword, postgresPassword, err
+}
+
 // CreateHub will create the Black Duck Hub
 func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error) {
 	log.Debugf("Create Hub details for %s: %+v", createHub.Namespace, createHub)
@@ -121,17 +139,16 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	}
 
 	var adminPassword, userPassword, postgresPassword string
-	for {
-		blackduckSecret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-secret")
-		if err != nil {
-			log.Infof("Aborting: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD,USER_PASSWORD,POSTGRES_PASSWORD and retry")
-		} else {
-			adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
-			userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
-			postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
+
+	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
+		adminPassword, userPassword, postgresPassword, err := GetDefaultPasswords(hc.KubeClient, createHub.Namespace)
+		if err == nil {
+			InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 			break
+		} else {
+			log.Infof("Wasn't able to init databbase, sleeping 5 seconds.  try = %v", dbInitTry)
+			time.Sleep(5 * time.Second)
 		}
-		time.Sleep(5 * time.Second)
 	}
 
 	log.Debugf("Before init: %+v", &createHub)
@@ -153,7 +170,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	}
 	// Validate all pods are in running state
 	util.ValidatePodsAreRunning(hc.KubeClient, pods)
-	// Initialize the hub database
+
 	if strings.EqualFold(createHub.DbPrototype, "empty") {
 		InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 	}
@@ -229,6 +246,27 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		}
 	}
 	log.Infof("hub Ip address: %s", ipAddress)
+
+	go func() {
+		checks := 0
+		for {
+			log.Infof("%v: Waiting five minutes before running repair check.", hubv1.Name)
+			time.Sleep(5 * time.Minute) // periodically b/c i dont know how to make this into a controller.
+			log.Infof("%v: running postgres schema repair check # %v...", hubv1.Name, checks)
+			// name == namespace (before the namespace is set, it might be empty, but name wont be)
+			hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", hubv1.Name)
+			adminPassword, userPassword, postgresPassword, err := hub.GetDefaultPasswords(h.Clientset, hubv1.Name)
+
+			db, err := hub.OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
+			if err != nil {
+				log.Warnf("[%v] Database connection check result: %v.  Reinitializing it just to be safe. This is a UX improvment for dealing with postgres restarts on ephemeral instances.", hubv1.Name, err)
+				hub.InitDatabase(&hubv1.Spec, adminPassword, userPassword, postgresPassword)
+			} else {
+				db.Close()
+			}
+		}
+	}()
+
 	return ipAddress, pvcVolumeName, false, nil
 }
 
