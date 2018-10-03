@@ -146,6 +146,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		if err == nil {
 			break
 		} else {
+			log.Infof("wasn't able to init database, sleeping 5 seconds.  try = %v", dbInitTry)
 			time.Sleep(5 * time.Second)
 		}
 	}
