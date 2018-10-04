@@ -427,7 +427,7 @@ func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *o
 	}
 
 	expectedSecrets := map[string]*types.Secret{
-		opssightSpec.SecretName: {Name: opssightSpec.SecretName, Data: map[string][]byte{"HubUserPassword": []byte("")}, SecretType: types.SecretTypeOpaque},
+		opssightSpec.SecretName: {Name: opssightSpec.SecretName, SecretType: types.SecretTypeOpaque},
 	}
 
 	for _, secret := range secrets {
