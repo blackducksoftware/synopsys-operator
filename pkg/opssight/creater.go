@@ -65,14 +65,14 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 		return errors.Annotatef(err, "unable to find namespace %s", namespace)
 	}
 
-	deployments, err := util.GetAllDeploymentsForNamespace(ac.kubeClient, namespace)
+	rcs, err := util.GetAllReplicationControllersForNamespace(ac.kubeClient, namespace)
 	if err != nil {
 		return errors.Annotatef(err, "unable to find deployments in %s", namespace)
 	}
 
 	var downstream bool
-	for _, deployment := range deployments.Items {
-		if strings.Contains(deployment.Name, "opssight") {
+	for _, rc := range rcs.Items {
+		if strings.Contains(rc.Name, "opssight") {
 			downstream = true
 			break
 		}
