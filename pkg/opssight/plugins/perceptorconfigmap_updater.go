@@ -52,7 +52,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -84,15 +83,16 @@ type perceptorConfig struct {
 // PerceptorConfigMap ...
 type PerceptorConfigMap struct {
 	Config         *model.Config
-	KubeConfig     *rest.Config
+	KubeClient     *kubernetes.Clientset
 	OpsSightClient *opssightclientset.Clientset
+	HubClient      *hubclient.Clientset
 	Namespace      string
 }
 
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
-func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
-	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(opsSightSpec.ContainerNames["perceptor"], metav1.GetOptions{})
+func (p *PerceptorConfigMap) sendHubs(opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
+	configMap, err := p.KubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(opsSightSpec.ContainerNames["perceptor"], metav1.GetOptions{})
 
 	if err != nil {
 		return fmt.Errorf("unable to find configmap %s in %s: %v", opsSightSpec.ContainerNames["perceptor"], opsSightSpec.Namespace, err)
@@ -113,7 +113,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 
 	configMap.Data[fmt.Sprintf("%s.yaml", opsSightSpec.ContainerNames["perceptor"])] = string(jsonBytes)
 	log.Debugf("updated configmap in %s is %+v", opsSightSpec.Namespace, configMap)
-	_, err = kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
+	_, err = p.KubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
 	if err != nil {
 		return err
 	}
@@ -122,23 +122,15 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 
 // Run is a BLOCKING function which should be run by the framework .
 func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch chan struct{}) error {
-	hubClient, err := hubclient.NewForConfig(p.KubeConfig)
-	if err != nil {
-		log.Panicf("unable to create the hub client due to %+v", err)
-	}
 
-	syncFunc := func() {
-		p.updateAllHubs(hubClient, resources.KubeClient)
-	}
-
-	syncFunc()
+	p.updateAllHubs()
 
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return hubClient.SynopsysV1().Hubs(p.Config.Namespace).List(options)
+			return p.HubClient.SynopsysV1().Hubs(p.Config.Namespace).List(options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return hubClient.SynopsysV1().Hubs(p.Config.Namespace).Watch(options)
+			return p.HubClient.SynopsysV1().Hubs(p.Config.Namespace).Watch(options)
 		},
 	}
 	_, ctrl := cache.NewInformer(lw,
@@ -149,12 +141,12 @@ func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch chan stru
 			// every time an event happens... But thats all we need to do, so its good enough.
 			DeleteFunc: func(obj interface{}) {
 				log.Debugf("Hub deleted ! %v ", obj)
-				syncFunc()
+				p.updateAllHubs()
 			},
 
 			AddFunc: func(obj interface{}) {
 				log.Debugf("Hub added ! %v ", obj)
-				syncFunc()
+				p.updateAllHubs()
 			},
 		},
 	)
@@ -169,16 +161,25 @@ func (p *PerceptorConfigMap) Run(resources api.ControllerResources, ch chan stru
 
 // updateAllHubs will list all hubs in the cluster, and send them to opssight as scan targets.
 // TODO there may be hubs which we dont want opssight to use.  Not sure how to deal with that yet.
-func (p *PerceptorConfigMap) updateAllHubs(hubClient *hubclient.Clientset, kubeClient *kubernetes.Clientset) error {
+func (p *PerceptorConfigMap) updateAllHubs() error {
+	// for opssight 3.0, only support one opssight
+	opssight, err := util.GetOpsSight(p.OpsSightClient, p.Namespace, p.Namespace)
+	if err != nil {
+		log.Errorf("unable to get opssight in %s due to %+v", p.Namespace, err)
+		return err
+	}
+
+	opsSightSpec := &opssight.Spec
+
 	allHubNamespaces := func() []string {
 		allHubNamespaces := []string{}
 
-		hubsList, _ := util.ListHubs(hubClient, p.Config.Namespace)
+		hubsList, _ := util.ListHubs(p.HubClient, p.Config.Namespace)
 		hubs := hubsList.Items
 		for _, hub := range hubs {
-			if strings.EqualFold(hub.Spec.HubType, "worker") {
+			if strings.EqualFold(hub.Spec.HubType, opsSightSpec.HubSpec.HubType) {
 				hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
-				status := p.verifyHub(hubClient, hubURL, hub.Name)
+				status := p.verifyHub(hubURL, hub.Name)
 				if status {
 					allHubNamespaces = append(allHubNamespaces, hubURL)
 				}
@@ -189,16 +190,10 @@ func (p *PerceptorConfigMap) updateAllHubs(hubClient *hubclient.Clientset, kubeC
 	}()
 
 	log.Debugf("allHubNamespaces: %+v", allHubNamespaces)
-	// for opssight 3.0, only support one opssight
-	opssight, err := util.GetOpsSight(p.OpsSightClient, p.Namespace, p.Namespace)
-	if err != nil {
-		log.Errorf("unable to get opssight in %s due to %+v", p.Namespace, err)
-		return err
-	}
 
 	// TODO, replace w/ configmap mutat ?
 	// curl perceptor w/ the latest hub list
-	err = sendHubs(kubeClient, &opssight.Spec, allHubNamespaces)
+	err = p.sendHubs(opsSightSpec, allHubNamespaces)
 	if err != nil {
 		log.Errorf("unable to send hubs due to %+v", err)
 		return err
@@ -207,7 +202,7 @@ func (p *PerceptorConfigMap) updateAllHubs(hubClient *hubclient.Clientset, kubeC
 	return nil
 }
 
-func (p *PerceptorConfigMap) verifyHub(hubClient *hubclient.Clientset, hubURL string, name string) bool {
+func (p *PerceptorConfigMap) verifyHub(hubURL string, name string) bool {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -222,7 +217,7 @@ func (p *PerceptorConfigMap) verifyHub(hubClient *hubclient.Clientset, hubURL st
 		if err != nil {
 			log.Debugf("unable to talk with the hub %s", hubURL)
 			time.Sleep(10 * time.Second)
-			_, err := util.GetHub(hubClient, p.Config.Namespace, name)
+			_, err := util.GetHub(p.HubClient, p.Config.Namespace, name)
 			if err != nil {
 				return false
 			}
