@@ -52,4 +52,4 @@ spec:
     dockerRepo: blackducksoftware # Required
     hubVersion: 5.0.0 # Required
     flavor: small # Required, possible values are 'small', 'medium', 'large' or 'opssight'
-    hubType: worker # Required, possible values are 'master' or 'worker' or 'any custom value to filter the hubs corresponding to particular opssight'
+    hubType: senthil # Required, possible values are 'master' or 'worker' or 'any custom value to filter the hubs corresponding to particular opssight'
