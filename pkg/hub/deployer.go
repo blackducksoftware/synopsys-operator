@@ -261,6 +261,8 @@ func (hc *Creater) createDeployer(deployer *horizon.Deployer, createHub *v1.HubS
 	deployer.AddService(util.CreateService("registration", "registration", createHub.Namespace, registrationPort, registrationPort, horizonapi.ClusterIPServiceTypeDefault))
 }
 
+// addAnyUIDToServiceAccount adds the capability to run as 1000 for nginx or other special IDs.  For example, the binaryscanner
+// needs to run as root and we plan to add that into protoform in 2.1 / 3.0.
 func (hc *Creater) addAnyUIDToServiceAccount(createHub *v1.HubSpec) error {
 	if hc.osSecurityClient != nil {
 		log.Debugf("Adding anyuid securitycontextconstraint to the service account %s", createHub.Namespace)
