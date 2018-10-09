@@ -28,7 +28,7 @@ const (
 	cfsslMemoryLimit           = "1G"
 	logstashMemoryLimit        = "1G"
 	registrationMemoryLimit    = "640M"
-	zookeeperMemoryLimit       = "384M"
+	zookeeperMemoryLimit       = "640M"
 	authenticationMemoryLimit  = "1024M"
 	authenticationHubMaxMemory = "512m"
 	documentationMemoryLimit   = "512M"
@@ -62,8 +62,8 @@ const (
 	smallWebappHubMaxMemory = "4096m"
 
 	smallScanReplicas     = 1
-	smallScanMemoryLimit  = "2560M"
-	smallScanHubMaxMemory = "2048m"
+	smallScanMemoryLimit  = "5120M"
+	smallScanHubMaxMemory = "4608m"
 
 	smallJobRunnerReplicas     = 1
 	smallJobRunnerMemoryLimit  = "4608M"
