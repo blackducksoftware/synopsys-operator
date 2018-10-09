@@ -62,8 +62,8 @@ const (
 	smallWebappHubMaxMemory = "4096m"
 
 	smallScanReplicas     = 1
-	smallScanMemoryLimit  = "4608M"
-	smallScanHubMaxMemory = "4096m"
+	smallScanMemoryLimit  = "5120M"
+	smallScanHubMaxMemory = "4608m"
 
 	smallJobRunnerReplicas     = 1
 	smallJobRunnerMemoryLimit  = "4608M"
