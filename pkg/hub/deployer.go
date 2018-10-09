@@ -261,7 +261,7 @@ func (hc *Creater) createDeployer(deployer *horizon.Deployer, createHub *v1.HubS
 	deployer.AddService(util.CreateService("registration", "registration", createHub.Namespace, registrationPort, registrationPort, horizonapi.ClusterIPServiceTypeDefault))
 }
 
-func (hc *Creater) addAnyUidToServiceAccount(createHub *v1.HubSpec) error {
+func (hc *Creater) addAnyUIDToServiceAccount(createHub *v1.HubSpec) error {
 	if hc.osSecurityClient != nil {
 		log.Debugf("Adding anyuid securitycontextconstraint to the service account %s", createHub.Namespace)
 		scc, err := util.GetOpenShiftSecurityConstraint(hc.osSecurityClient, "anyuid")

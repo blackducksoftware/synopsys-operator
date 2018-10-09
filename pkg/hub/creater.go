@@ -182,7 +182,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		}
 	}
 
-	err = hc.addAnyUidToServiceAccount(createHub)
+	err = hc.addAnyUIDToServiceAccount(createHub)
 	if err != nil {
 		log.Error(err)
 	}
