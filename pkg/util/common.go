@@ -430,10 +430,9 @@ func FilterPodByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace
 		return nil, fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
 	}
 
-	for _, pod := range pods.Items {
-		if strings.HasPrefix(pod.Name, prefix) {
-			return &pod, nil
-		}
+	pod := FilterPodByNamePrefix(pods, prefix)
+	if pod != nil {
+		return pod, nil
 	}
 	return nil, fmt.Errorf("unable to find the pod with prefix %s", prefix)
 }
