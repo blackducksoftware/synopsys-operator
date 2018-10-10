@@ -24,7 +24,6 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -33,7 +32,7 @@ import (
 
 // ScannerReplicationController creates a replication controller for the perceptor scanner
 func (p *SpecConfig) ScannerReplicationController() (*components.ReplicationController, error) {
-	replicas := int32(math.Ceil(float64(*p.config.ConcurrentScanLimit) / 2.0))
+	replicas := int32(p.config.ScannerReplicaCount)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      p.config.Names.Scanner,
@@ -105,7 +104,7 @@ func (p *SpecConfig) scannerContainer() *components.Container {
 	})
 
 	container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: p.config.HubUserPasswordEnvVar,
+		NameOrPrefix: p.config.Hub.PasswordEnvVar,
 		Type:         horizonapi.EnvFromSecret,
 		KeyOrVal:     "HubUserPassword",
 		FromName:     p.config.SecretName,
@@ -237,10 +236,10 @@ func (p *SpecConfig) ScannerConfigMap() (*components.ConfigMap, error) {
 	})
 	data := map[string]interface{}{
 		"Hub": map[string]interface{}{
-			"Port":                 *p.config.HubPort,
-			"User":                 p.config.HubUser,
-			"PasswordEnvVar":       p.config.HubUserPasswordEnvVar,
-			"ClientTimeoutSeconds": *p.config.HubClientTimeoutScannerSeconds,
+			"Port":                 p.config.Hub.Port,
+			"User":                 p.config.Hub.User,
+			"PasswordEnvVar":       p.config.Hub.PasswordEnvVar,
+			"ClientTimeoutSeconds": p.config.Hub.ClientTimeoutScannerSeconds,
 		},
 		"ImageFacade": map[string]interface{}{
 			"Port": p.config.ImageFacadePort,

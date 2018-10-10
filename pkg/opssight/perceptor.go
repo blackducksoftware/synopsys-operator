@@ -95,7 +95,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 	}
 
 	err = container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: p.config.HubUserPasswordEnvVar,
+		NameOrPrefix: p.config.Hub.PasswordEnvVar,
 		Type:         horizonapi.EnvFromSecret,
 		KeyOrVal:     "HubUserPassword",
 		FromName:     p.config.SecretName,
@@ -145,12 +145,12 @@ func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
 	data := map[string]interface{}{
 		"Hub": map[string]interface{}{
 			"Hosts":                     []string{},
-			"Port":                      *p.config.HubPort,
-			"User":                      p.config.HubUser,
-			"PasswordEnvVar":            p.config.HubUserPasswordEnvVar,
-			"ClientTimeoutMilliseconds": *p.config.HubClientTimeoutPerceptorMilliseconds,
-			"ConcurrentScanLimit":       *p.config.ConcurrentScanLimit,
-			"TotalScanLimit":            *p.config.TotalScanLimit,
+			"Port":                      p.config.Hub.Port,
+			"User":                      p.config.Hub.User,
+			"PasswordEnvVar":            p.config.Hub.PasswordEnvVar,
+			"ClientTimeoutMilliseconds": p.config.Hub.ClientTimeoutPerceptorMilliseconds,
+			"ConcurrentScanLimit":       p.config.Hub.ConcurrentScanLimit,
+			"TotalScanLimit":            p.config.Hub.TotalScanLimit,
 		},
 		"Port":        p.config.PerceptorPort,
 		"LogLevel":    p.config.LogLevel,

@@ -550,50 +550,48 @@ func prettyPrintObj(components *api.ComponentList) {
 func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 	defaultAnnotationInterval := 30
 	defaultDumpInterval := 30
-	defaultHubPort := 443
-	defaultPerceptorHubClientTimeout := 100000
-	defaultScannerHubClientTimeout := 600
-	defaultScanLimit := 2
-	defaultTotalScanLimit := 1000
 	defaultCheckForStalledScansPauseHours := 999999
 	defaultStalledScanClientTimeoutHours := 999999
 	defaultModelMetricsPauseSeconds := 15
 	defaultUnknownImagePauseMilliseconds := 15000
 
 	return &opssightv1.OpsSightSpec{
-		PerceptorPort:                         3001,
-		PerceiverPort:                         3002,
-		ScannerPort:                           3003,
-		ImageFacadePort:                       3004,
-		SkyfirePort:                           3005,
-		InternalRegistries:                    []opssightv1.RegistryAuth{},
-		AnnotationIntervalSeconds:             &defaultAnnotationInterval,
-		DumpIntervalMinutes:                   &defaultDumpInterval,
-		HubUser:                               "sysadmin",
-		HubPort:                               &defaultHubPort,
-		HubClientTimeoutPerceptorMilliseconds: &defaultPerceptorHubClientTimeout,
-		HubClientTimeoutScannerSeconds:        &defaultScannerHubClientTimeout,
-		ConcurrentScanLimit:                   &defaultScanLimit,
-		TotalScanLimit:                        &defaultTotalScanLimit,
-		CheckForStalledScansPauseHours:        &defaultCheckForStalledScansPauseHours,
-		StalledScanClientTimeoutHours:         &defaultStalledScanClientTimeoutHours,
-		ModelMetricsPauseSeconds:              &defaultModelMetricsPauseSeconds,
-		UnknownImagePauseMilliseconds:         &defaultUnknownImagePauseMilliseconds,
-		PerceptorImage:                        "perceptor",
-		ScannerImage:                          "perceptor-scanner",
-		ImagePerceiverImage:                   "image-perceiver",
-		PodPerceiverImage:                     "pod-perceiver",
-		ImageFacadeImage:                      "perceptor-imagefacade",
-		SkyfireImage:                          "skyfire",
-		PodPerceiver:                          true,
-		ImagePerceiver:                        true,
-		Metrics:                               true,
-		PerceptorSkyfire:                      false,
-		DefaultCPU:                            "300m",
-		DefaultMem:                            "1300Mi",
-		LogLevel:                              "debug",
-		HubUserPasswordEnvVar:                 "PCP_HUBUSERPASSWORD",
-		SecretName:                            "perceptor",
+		PerceptorPort:             3001,
+		PerceiverPort:             3002,
+		ScannerPort:               3003,
+		ImageFacadePort:           3004,
+		SkyfirePort:               3005,
+		InternalRegistries:        []opssightv1.RegistryAuth{},
+		AnnotationIntervalSeconds: &defaultAnnotationInterval,
+		DumpIntervalMinutes:       &defaultDumpInterval,
+		Hub: &opssightv1.HubSpec{
+			User:                               "sysadmin",
+			Port:                               443,
+			ClientTimeoutPerceptorMilliseconds: 100000,
+			ClientTimeoutScannerSeconds:        600,
+			ConcurrentScanLimit:                2,
+			TotalScanLimit:                     1000,
+			PasswordEnvVar:                     "PCP_HUBUSERPASSWORD",
+			Password:                           "blackduck",
+		},
+		CheckForStalledScansPauseHours: &defaultCheckForStalledScansPauseHours,
+		StalledScanClientTimeoutHours:  &defaultStalledScanClientTimeoutHours,
+		ModelMetricsPauseSeconds:       &defaultModelMetricsPauseSeconds,
+		UnknownImagePauseMilliseconds:  &defaultUnknownImagePauseMilliseconds,
+		PerceptorImage:                 "perceptor",
+		ScannerImage:                   "perceptor-scanner",
+		ImagePerceiverImage:            "image-perceiver",
+		PodPerceiverImage:              "pod-perceiver",
+		ImageFacadeImage:               "perceptor-imagefacade",
+		SkyfireImage:                   "skyfire",
+		PodPerceiver:                   true,
+		ImagePerceiver:                 true,
+		Metrics:                        true,
+		PerceptorSkyfire:               false,
+		DefaultCPU:                     "300m",
+		DefaultMem:                     "1300Mi",
+		LogLevel:                       "debug",
+		SecretName:                     "perceptor",
 		ServiceAccounts: map[string]string{
 			"pod-perceiver":          "perceiver",
 			"image-perceiver":        "perceiver",
