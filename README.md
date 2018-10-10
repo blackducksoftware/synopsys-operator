@@ -21,7 +21,8 @@ git clone git@github.com:blackducksoftware/perceptor-protoform.git
 cd perceptor-protoform
 ```
 
- ### Kubernetes
+### Kubernetes
+
  - find the deploy script
 
 ```
@@ -53,6 +54,7 @@ kubectl create -f ../../examples/alert.yaml
 ```
 
  ### OpenShift
+
  - find the deploy script
 
 ```
@@ -95,3 +97,21 @@ Protoform has been run against the following clusters:
 The user running the installation should be able to create service accounts with in-cluster API RBAC capabilities, and launch pods within them.  Specifically, protoform assumes access to oadm (for openshift users) or the ability to define RBAC objects (for kubernetes users).  
 
 Protoform will attempt to detect your cluster type, and bootstrap all necessary components as needed.  This is done via environment variables, but the implementation is highly fluid right now, and we are leaning towards command line options once basic hardening of the core functionality is done.
+
+# CRD creation
+
+## Setup
+
+1. `cd $GOPATH/src/k8s.io`
+
+2. `git clone git@github.com:kubernetes/code-generator.git`
+
+3. `git clone git@github.com:kubernetes/apimachinery.git`
+
+4. `git clone git@github.com:kubernetes/api.git`
+
+## Generating CRD code
+
+1. `cd $GOPATH/src/k8s.io/code-generator`
+
+2. `./generate-groups.sh "deepcopy,client,informer,lister" "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client" "github.com/blackducksoftware/perceptor-protoform/pkg/api" opssight:v1`
