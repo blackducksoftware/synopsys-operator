@@ -1,7 +1,7 @@
 BINARIES = $(shell ls cmd)
 
 ifndef REGISTRY
-REGISTRY=gcr.io/gke-verification
+REGISTRY=gcr.io/saas-hub-stg
 endif
 
 ifdef IMAGE_PREFIX
