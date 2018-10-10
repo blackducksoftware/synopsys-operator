@@ -30,14 +30,24 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type staticConfig struct {
+	perceptorContainerName string
+}
+
+var (
+	defaultStaticConfig = staticConfig{
+		perceptorContainerName: "perceptor"}
+)
+
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
 	config *v1.OpsSightSpec
+	//	staticConfig
 }
 
 // NewSpecConfig will create the OpsSight object
 func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
-	return &SpecConfig{config: config}
+	return &SpecConfig{config: config} //, staticConfig: defaultStaticConfig}
 }
 
 // GetComponents will return the list of components
@@ -47,8 +57,6 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "Please set the service accounts correctly")
 	}
-
-	p.substituteDefaultImageVersion()
 
 	components := &api.ComponentList{}
 
@@ -90,14 +98,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 
-	if p.config.PodPerceiver != nil && *p.config.PodPerceiver {
+	if p.config.PodPerceiver {
 		rc, err := p.PodPerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create pod perceiver")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.PodPerceiverService())
-		perceiverConfigMap, err := p.PerceiverConfigMap()
+		perceiverConfigMap, err := p.PerceiverConfigMap(p.config.Names.PodPerceiver)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -108,14 +116,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(cr))
 	}
 
-	if p.config.ImagePerceiver != nil && *p.config.ImagePerceiver {
+	if p.config.ImagePerceiver {
 		rc, err := p.ImagePerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create image perceiver")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.ImagePerceiverService())
-		perceiverConfigMap, err := p.PerceiverConfigMap()
+		perceiverConfigMap, err := p.PerceiverConfigMap(p.config.Names.ImagePerceiver)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -126,7 +134,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(cr))
 	}
 
-	if p.config.PerceptorSkyfire != nil && *p.config.PerceptorSkyfire {
+	if p.config.PerceptorSkyfire {
 		rc, err := p.PerceptorSkyfireReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create skyfire")
@@ -140,35 +148,21 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(cr))
 	}
 
-	if p.config.Metrics != nil && *p.config.Metrics {
+	if p.config.Metrics {
 		dep, err := p.PerceptorMetricsDeployment()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create metrics")
 		}
 		components.Deployments = append(components.Deployments, dep)
 		components.Services = append(components.Services, p.PerceptorMetricsService())
-		components.ConfigMaps = append(components.ConfigMaps, p.PerceptorMetricsConfigMap())
+		perceptorCm, err := p.PerceptorMetricsConfigMap()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create perceptor config map")
+		}
+		components.ConfigMaps = append(components.ConfigMaps, perceptorCm)
 	}
 
 	return components, nil
-}
-
-func (p *SpecConfig) substituteDefaultImageVersion() {
-	if len(p.config.PerceptorImageVersion) == 0 {
-		p.config.PerceptorImageVersion = p.config.DefaultVersion
-	}
-	if len(p.config.ScannerImageVersion) == 0 {
-		p.config.ScannerImageVersion = p.config.DefaultVersion
-	}
-	if len(p.config.PerceiverImageVersion) == 0 {
-		p.config.PerceiverImageVersion = p.config.DefaultVersion
-	}
-	if len(p.config.ImageFacadeImageVersion) == 0 {
-		p.config.ImageFacadeImageVersion = p.config.DefaultVersion
-	}
-	if len(p.config.SkyfireImageVersion) == 0 {
-		p.config.SkyfireImageVersion = p.config.DefaultVersion
-	}
 }
 
 func (p *SpecConfig) configServiceAccounts() {

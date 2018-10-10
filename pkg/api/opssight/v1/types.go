@@ -45,6 +45,16 @@ type RegistryAuth struct {
 	Password string
 }
 
+// ResourceNames handles names for containers, services, configmaps ...
+type ResourceNames struct {
+	Perceptor      string
+	PodPerceiver   string
+	ImagePerceiver string
+	Skyfire        string
+	Scanner        string
+	ImageFacade    string
+}
+
 // OpsSightSpec is the spec for a OpsSight resource
 type OpsSightSpec struct {
 	Namespace string `json:"namespace,omitempty"`
@@ -80,11 +90,11 @@ type OpsSightSpec struct {
 	SkyfireImage        string `json:"skyfireImage,omitempty"`
 
 	ServiceAccounts  map[string]string `json:"serviceAccounts,omitempty"`
-	ContainerNames   map[string]string `json:"names,omitempty"`
-	ImagePerceiver   *bool             `json:"imagePerceiver,omitempty"`
-	PodPerceiver     *bool             `json:"podPerceiver,omitempty"`
-	Metrics          *bool             `json:"metrics,omitempty"`
-	PerceptorSkyfire *bool             `json:"perceptorSkyfire,omitempty"`
+	Names            *ResourceNames    `json:"names,omitempty"`
+	ImagePerceiver   bool              `json:"imagePerceiver,omitempty"`
+	PodPerceiver     bool              `json:"podPerceiver,omitempty"`
+	Metrics          bool              `json:"metrics,omitempty"`
+	PerceptorSkyfire bool              `json:"perceptorSkyfire,omitempty"`
 	NamespaceFilter  string            `json:"namespaceFilter,omitempty"`
 
 	// CPU and memory configurations
@@ -101,7 +111,7 @@ type OpsSightSpec struct {
 
 	// Configuration secret
 	SecretName  string `json:"secretName"`
-	UseMockMode *bool  `json:"useMockMode"`
+	UseMockMode bool   `json:"useMockMode"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource

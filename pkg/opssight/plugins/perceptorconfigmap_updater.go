@@ -92,14 +92,15 @@ type PerceptorConfigMap struct {
 // sendHubs is one possible way to configure the perceptor hub family.
 // TODO replace w/ configmap mutation if we want to.
 func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
-	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(opsSightSpec.ContainerNames["perceptor"], metav1.GetOptions{})
+	configMapName := "perceptor"
+	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(configMapName, metav1.GetOptions{})
 
 	if err != nil {
-		return fmt.Errorf("unable to find configmap %s in %s: %v", opsSightSpec.ContainerNames["perceptor"], opsSightSpec.Namespace, err)
+		return fmt.Errorf("unable to find configmap %s in %s: %v", configMapName, opsSightSpec.Namespace, err)
 	}
 
 	var value perceptorConfig
-	err = json.Unmarshal([]byte(configMap.Data[fmt.Sprintf("%s.yaml", opsSightSpec.ContainerNames["perceptor"])]), &value)
+	err = json.Unmarshal([]byte(configMap.Data[fmt.Sprintf("%s.yaml", configMapName)]), &value)
 	if err != nil {
 		return err
 	}
@@ -111,7 +112,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 		return err
 	}
 
-	configMap.Data[fmt.Sprintf("%s.yaml", opsSightSpec.ContainerNames["perceptor"])] = string(jsonBytes)
+	configMap.Data[fmt.Sprintf("%s.yaml", configMapName)] = string(jsonBytes)
 	log.Debugf("updated configmap in %s is %+v", opsSightSpec.Namespace, configMap)
 	_, err = kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
 	if err != nil {

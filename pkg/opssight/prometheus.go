@@ -22,11 +22,12 @@ under the License.
 package opssight
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/juju/errors"
 )
 
 // PerceptorMetricsDeployment creates a deployment for perceptor metrics
@@ -133,26 +134,72 @@ func (p *SpecConfig) PerceptorMetricsService() *components.Service {
 }
 
 // PerceptorMetricsConfigMap creates a config map for perceptor metrics
-func (p *SpecConfig) PerceptorMetricsConfigMap() *components.ConfigMap {
+func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "prometheus",
 		Namespace: p.config.Namespace,
 	})
 
-	var promConfig bytes.Buffer
-	promConfig.WriteString(fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["`, p.config.PerceptorImageName, `:`, *p.config.PerceptorPort, `","`, p.config.ScannerImageName, `:`, *p.config.ScannerPort, `","`, p.config.ImageFacadeImageName, `:`, *p.config.ImageFacadePort))
-	if p.config.ImagePerceiver != nil && *p.config.ImagePerceiver {
-		promConfig.WriteString(fmt.Sprint(`","`, p.config.ImagePerceiverImageName, `:`, *p.config.PerceiverPort))
-	}
-	if p.config.PodPerceiver != nil && *p.config.PodPerceiver {
-		promConfig.WriteString(fmt.Sprint(`","`, p.config.PodPerceiverImageName, `:`, *p.config.PerceiverPort))
-	}
-	if p.config.PerceptorSkyfire != nil && *p.config.PerceptorSkyfire {
-		promConfig.WriteString(fmt.Sprint(`","`, p.config.SkyfireImageName, `:`, *p.config.SkyfirePort))
+	/*
+			example:
 
+		{
+		  "global": {
+		    "scrape_interval": "5s"
+		  },
+		  "scrape_configs": [
+		    {
+		      "job_name": "perceptor-scrape",
+		      "scrape_interval": "5s",
+		      "static_configs": [
+		        {
+		          "targets": [
+		            "perceptor:3001",
+		            "perceptor-scanner:3003",
+		            "perceptor-imagefacade:3004",
+		            "pod-perceiver:3002"
+		          ]
+		        }
+		      ]
+		    }
+		  ]
+		}
+	*/
+	targets := []string{
+		fmt.Sprintf("%s:%d", p.config.Names.Perceptor, *p.config.PerceptorPort),
+		fmt.Sprintf("%s:%d", p.config.Names.Scanner, *p.config.ScannerPort),
+		fmt.Sprintf("%s:%d", p.config.Names.ImageFacade, *p.config.ImageFacadePort),
 	}
-	promConfig.WriteString(`"]}]}]}`)
-	configMap.AddData(map[string]string{"prometheus.yml": promConfig.String()})
+	if p.config.ImagePerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Names.ImagePerceiver, *p.config.PerceiverPort))
+	}
+	if p.config.PodPerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Names.PodPerceiver, *p.config.PerceiverPort))
+	}
+	if p.config.PerceptorSkyfire {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Names.Skyfire, *p.config.SkyfirePort))
+	}
+	data := map[string]interface{}{
+		"global": map[string]interface{}{
+			"scrape_interval": "5s",
+		},
+		"scrape_configs": []interface{}{
+			map[string]interface{}{
+				"job_name":        "perceptor-scrape",
+				"scrape_interval": "5s",
+				"static_configs": []interface{}{
+					map[string]interface{}{
+						"targets": targets,
+					},
+				},
+			},
+		},
+	}
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	configMap.AddData(map[string]string{"prometheus.yml": string(bytes)})
 
-	return configMap
+	return configMap, nil
 }
