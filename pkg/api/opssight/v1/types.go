@@ -59,7 +59,6 @@ type OpsSightSpec struct {
 	InternalRegistries                    []RegistryAuth `json:"internalRegistries,omitempty"`
 	AnnotationIntervalSeconds             *int           `json:"annotationIntervalSeconds,omitempty"`
 	DumpIntervalMinutes                   *int           `json:"dumpIntervalMinutes,omitempty"`
-	HubHost                               string         `json:"hubHost,omitempty"`
 	HubUser                               string         `json:"hubUser,omitempty"`
 	HubPort                               *int           `json:"hubPort,omitempty"`
 	HubUserPassword                       string         `json:"hubUserPassword,omitempty"`
@@ -73,23 +72,12 @@ type OpsSightSpec struct {
 	UnknownImagePauseMilliseconds         *int           `json:"unknownImagePauseMilliseconds"`
 
 	// CONTAINER PULL CONFIG
-	// These are for defining docker registry and image location and versions
-	DefaultVersion string `json:"defaultVersion,omitempty"`
-	Registry       string `json:"registry,omitempty"`
-	ImagePath      string `json:"imagePath,omitempty"`
-
-	PerceptorImageName      string `json:"perceptorImageName,omitempty"`
-	ScannerImageName        string `json:"scannerImageName,omitempty"`
-	PodPerceiverImageName   string `json:"podPerceiverImageName,omitempty"`
-	ImagePerceiverImageName string `json:"imagePerceiverImageName,omitempty"`
-	ImageFacadeImageName    string `json:"imageFacadeImageName,omitempty"`
-	SkyfireImageName        string `json:"skyfireImageName,omitempty"`
-
-	PerceptorImageVersion   string `json:"perceptorImageVersion,omitempty"`
-	ScannerImageVersion     string `json:"scannerImageVersion,omitempty"`
-	PerceiverImageVersion   string `json:"perceiverImageVersion,omitempty"`
-	ImageFacadeImageVersion string `json:"imageFacadeImageVersion,omitempty"`
-	SkyfireImageVersion     string `json:"skyfireImageVersion,omitempty"`
+	PerceptorImage      string `json:"perceptorImage,omitempty"`
+	ScannerImage        string `json:"scannerImage,omitempty"`
+	PodPerceiverImage   string `json:"podPerceiverImage,omitempty"`
+	ImagePerceiverImage string `json:"imagePerceiverImage,omitempty"`
+	ImageFacadeImage    string `json:"imageFacadeImage,omitempty"`
+	SkyfireImage        string `json:"skyfireImage,omitempty"`
 
 	ServiceAccounts  map[string]string `json:"serviceAccounts,omitempty"`
 	ContainerNames   map[string]string `json:"names,omitempty"`
