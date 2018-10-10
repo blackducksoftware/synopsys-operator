@@ -53,9 +53,9 @@ const (
 	postgresPort       = "5432"
 
 	// Small Flavor
-	smallWebServerMemoryLimit = "640M"
+	smallWebServerMemoryLimit = "1024M"
 
-	smallSolrMemoryLimit = "640M"
+	smallSolrMemoryLimit = "1024M"
 
 	smallWebappCPULimit     = "2"
 	smallWebappMemoryLimit  = "5120M"
@@ -63,11 +63,11 @@ const (
 
 	smallScanReplicas     = 1
 	smallScanMemoryLimit  = "5120M"
-	smallScanHubMaxMemory = "4608m"
+	smallScanHubMaxMemory = "4096m"
 
 	smallJobRunnerReplicas     = 1
-	smallJobRunnerMemoryLimit  = "4608M"
-	smallJobRunnerHubMaxMemory = "4096m"
+	smallJobRunnerMemoryLimit  = "7168M"
+	smallJobRunnerHubMaxMemory = "6144m"
 
 	smallPostgresCPULimit    = "1"
 	smallPostgresMemoryLimit = "4096M"
