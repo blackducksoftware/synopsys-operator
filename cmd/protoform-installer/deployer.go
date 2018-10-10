@@ -119,11 +119,6 @@ func GetHubDefaultValue() *hubv1.HubSpec {
 
 // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
-	defaultPerceptorPort := 3001
-	defaultPerceiverPort := 3002
-	defaultScannerPort := 3003
-	defaultIFPort := 3004
-	defaultSkyfirePort := 3005
 	defaultAnnotationInterval := 30
 	defaultDumpInterval := 30
 	defaultHubPort := 443
@@ -137,11 +132,11 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 	defaultUnknownImagePauseMilliseconds := 15000
 
 	return &opssightv1.OpsSightSpec{
-		PerceptorPort:                         &defaultPerceptorPort,
-		PerceiverPort:                         &defaultPerceiverPort,
-		ScannerPort:                           &defaultScannerPort,
-		ImageFacadePort:                       &defaultIFPort,
-		SkyfirePort:                           &defaultSkyfirePort,
+		PerceptorPort:                         3001,
+		PerceiverPort:                         3002,
+		ScannerPort:                           3003,
+		ImageFacadePort:                       3004,
+		SkyfirePort:                           3005,
 		InternalRegistries:                    []opssightv1.RegistryAuth{},
 		AnnotationIntervalSeconds:             &defaultAnnotationInterval,
 		DumpIntervalMinutes:                   &defaultDumpInterval,

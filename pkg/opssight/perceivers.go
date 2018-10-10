@@ -103,7 +103,7 @@ func (p *SpecConfig) perceiverContainer(name string) *components.Container {
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", *p.config.PerceiverPort),
+		ContainerPort: fmt.Sprintf("%d", p.config.PerceiverPort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -147,8 +147,8 @@ func (p *SpecConfig) perceiverService(name string) *components.Service {
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(*p.config.PerceiverPort),
-		TargetPort: fmt.Sprintf("%d", *p.config.PerceiverPort),
+		Port:       int32(p.config.PerceiverPort),
+		TargetPort: fmt.Sprintf("%d", p.config.PerceiverPort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
@@ -176,10 +176,10 @@ func (p *SpecConfig) PerceiverConfigMap(name string) (*components.ConfigMap, err
 
 	data := map[string]interface{}{
 		"PerceptorHost":             p.config.Names.Perceptor,
-		"PerceptorPort":             *p.config.PerceptorPort,
+		"PerceptorPort":             p.config.PerceptorPort,
 		"AnnotationIntervalSeconds": *p.config.AnnotationIntervalSeconds,
 		"DumpIntervalMinutes":       *p.config.DumpIntervalMinutes,
-		"Port":                      *p.config.PerceiverPort,
+		"Port":                      p.config.PerceiverPort,
 		"LogLevel":                  p.config.LogLevel,
 		"NamespaceFilter":           p.config.NamespaceFilter,
 	}

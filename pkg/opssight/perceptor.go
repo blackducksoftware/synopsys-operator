@@ -83,7 +83,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		MinMem:  p.config.DefaultMem,
 	})
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", *p.config.PerceptorPort),
+		ContainerPort: fmt.Sprintf("%d", p.config.PerceptorPort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
@@ -123,8 +123,8 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(*p.config.PerceptorPort),
-		TargetPort: fmt.Sprintf("%d", *p.config.PerceptorPort),
+		Port:       int32(p.config.PerceptorPort),
+		TargetPort: fmt.Sprintf("%d", p.config.PerceptorPort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 	if err != nil {
@@ -152,7 +152,7 @@ func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
 			"ConcurrentScanLimit":       *p.config.ConcurrentScanLimit,
 			"TotalScanLimit":            *p.config.TotalScanLimit,
 		},
-		"Port":        *p.config.PerceptorPort,
+		"Port":        p.config.PerceptorPort,
 		"LogLevel":    p.config.LogLevel,
 		"UseMockMode": p.config.UseMockMode,
 		"Timings": map[string]interface{}{

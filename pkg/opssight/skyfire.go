@@ -87,7 +87,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", *p.config.SkyfirePort),
+		ContainerPort: fmt.Sprintf("%d", p.config.SkyfirePort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -147,8 +147,8 @@ func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(*p.config.SkyfirePort),
-		TargetPort: fmt.Sprintf("%d", *p.config.SkyfirePort),
+		Port:       int32(p.config.SkyfirePort),
+		TargetPort: fmt.Sprintf("%d", p.config.SkyfirePort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
@@ -163,7 +163,7 @@ func (p *SpecConfig) PerceptorSkyfireConfigMap() *components.ConfigMap {
 		Name:      "skyfire",
 		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"skyfire.yaml": fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, *p.config.SkyfirePort, `","HubHost": "`, "TODO -- remove", `","HubPort": "`, *p.config.HubPort, `","HubUser": "`, p.config.HubUser, `","HubUserPasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, *p.config.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.config.Names.Perceptor, `","PerceptorPort": "`, *p.config.PerceptorPort, `","KubeDumpIntervalSeconds": "`, "15", `","PerceptorDumpIntervalSeconds": "`, "15", `","HubDumpPauseSeconds": "`, "30", `","ImageFacadePort": "`, *p.config.ImageFacadePort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"skyfire.yaml": fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, p.config.SkyfirePort, `","HubHost": "`, "TODO -- remove", `","HubPort": "`, p.config.HubPort, `","HubUser": "`, p.config.HubUser, `","HubUserPasswordEnvVar": "`, p.config.HubUserPasswordEnvVar, `","HubClientTimeoutSeconds": "`, *p.config.HubClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.config.Names.Perceptor, `","PerceptorPort": "`, p.config.PerceptorPort, `","KubeDumpIntervalSeconds": "`, "15", `","PerceptorDumpIntervalSeconds": "`, "15", `","HubDumpPauseSeconds": "`, "30", `","ImageFacadePort": "`, p.config.ImageFacadePort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }

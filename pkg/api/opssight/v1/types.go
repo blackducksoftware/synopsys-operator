@@ -61,11 +61,11 @@ type OpsSightSpec struct {
 	State     string `json:"state"`
 	// CONTAINER CONFIGS
 	// These are sed replaced into the config maps for the containers.
-	PerceptorPort                         *int           `json:"perceptorPort,omitempty"`
-	ScannerPort                           *int           `json:"scannerPort,omitempty"`
-	PerceiverPort                         *int           `json:"perceiverPort,omitempty"`
-	ImageFacadePort                       *int           `json:"imageFacadePort,omitempty"`
-	SkyfirePort                           *int           `json:"skyfirePort,omitempty"`
+	PerceptorPort                         int            `json:"perceptorPort,omitempty"`
+	ScannerPort                           int            `json:"scannerPort,omitempty"`
+	PerceiverPort                         int            `json:"perceiverPort,omitempty"`
+	ImageFacadePort                       int            `json:"imageFacadePort,omitempty"`
+	SkyfirePort                           int            `json:"skyfirePort,omitempty"`
 	InternalRegistries                    []RegistryAuth `json:"internalRegistries,omitempty"`
 	AnnotationIntervalSeconds             *int           `json:"annotationIntervalSeconds,omitempty"`
 	DumpIntervalMinutes                   *int           `json:"dumpIntervalMinutes,omitempty"`

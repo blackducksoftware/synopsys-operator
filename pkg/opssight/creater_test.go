@@ -61,27 +61,17 @@ func TestUpstreamPerceptor(t *testing.T) {
 // TestDownstreamPerceptor will test the downstream deployment
 func TestDownstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
-	defaultValues.PerceptorImageName = "opssight-core"
-	defaultValues.PodPerceiverImageName = "opssight-pod-processor"
-	defaultValues.ImagePerceiverImageName = "opssight-image-processor"
-	defaultValues.ScannerImageName = "opssight-scanner"
-	defaultValues.ImageFacadeImageName = "opssight-image-getter"
-	defaultValues.DefaultVersion = "2.1.0"
+	defaultValues.Names.Perceptor = "opssight-core"
+	defaultValues.Names.PodPerceiver = "opssight-pod-processor"
+	defaultValues.Names.ImagePerceiver = "opssight-image-processor"
+	defaultValues.Names.Scanner = "opssight-scanner"
+	defaultValues.Names.ImageFacade = "opssight-image-getter"
+	defaultValues.Names.Skyfire = "skyfire"
 	defaultValues.ServiceAccounts = map[string]string{
 		"pod-perceiver":          "opssight-processor",
 		"image-perceiver":        "opssight-processor",
 		"perceptor-image-facade": "opssight-scanner",
 		"skyfire":                "skyfire",
-	}
-	defaultValues.ContainerNames = map[string]string{
-		"perceiver":              "opssight-processor",
-		"pod-perceiver":          "opssight-pod-processor",
-		"image-perceiver":        "opssight-image-processor",
-		"perceptor":              "opssight-core",
-		"perceptor-image-facade": "opssight-image-getter",
-		"perceptor-scanner":      "opssight-scanner",
-		"skyfire":                "skyfire",
-		"prometheus":             "prometheus",
 	}
 	defaultValues.SecretName = "blackduck-secret"
 

@@ -91,7 +91,7 @@ func (p *SpecConfig) scannerContainer() *components.Container {
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", *p.config.ScannerPort),
+		ContainerPort: fmt.Sprintf("%d", p.config.ScannerPort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -128,7 +128,7 @@ func (p *SpecConfig) imageFacadeContainer() *components.Container {
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", *p.config.ImageFacadePort),
+		ContainerPort: fmt.Sprintf("%d", p.config.ImageFacadePort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -204,8 +204,8 @@ func (p *SpecConfig) ScannerService() *components.Service {
 	service.AddSelectors(map[string]string{"name": p.config.Names.ImageFacade})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(*p.config.ScannerPort),
-		TargetPort: fmt.Sprintf("%d", *p.config.ScannerPort),
+		Port:       int32(p.config.ScannerPort),
+		TargetPort: fmt.Sprintf("%d", p.config.ScannerPort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
@@ -221,8 +221,8 @@ func (p *SpecConfig) ImageFacadeService() *components.Service {
 	service.AddSelectors(map[string]string{"name": p.config.Names.ImageFacade})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(*p.config.ImageFacadePort),
-		TargetPort: fmt.Sprintf("%d", *p.config.ImageFacadePort),
+		Port:       int32(p.config.ImageFacadePort),
+		TargetPort: fmt.Sprintf("%d", p.config.ImageFacadePort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
@@ -243,14 +243,14 @@ func (p *SpecConfig) ScannerConfigMap() (*components.ConfigMap, error) {
 			"ClientTimeoutSeconds": *p.config.HubClientTimeoutScannerSeconds,
 		},
 		"ImageFacade": map[string]interface{}{
-			"Port": *p.config.ImageFacadePort,
+			"Port": p.config.ImageFacadePort,
 			"Host": "localhost",
 		},
 		"Perceptor": map[string]interface{}{
-			"Port": *p.config.PerceptorPort,
+			"Port": p.config.PerceptorPort,
 			"Host": p.config.Names.Perceptor,
 		},
-		"Port":     *p.config.ScannerPort,
+		"Port":     p.config.ScannerPort,
 		"LogLevel": p.config.LogLevel,
 	}
 	bytes, err := json.Marshal(data)
@@ -270,7 +270,7 @@ func (p *SpecConfig) ImageFacadeConfigMap() (*components.ConfigMap, error) {
 	})
 	data := map[string]interface{}{
 		"PrivateDockerRegistries": p.config.InternalRegistries,
-		"Port":                    *p.config.ImageFacadePort,
+		"Port":                    p.config.ImageFacadePort,
 		"LogLevel":                p.config.LogLevel,
 	}
 	bytes, err := json.Marshal(data)
