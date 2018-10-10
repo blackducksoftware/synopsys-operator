@@ -110,8 +110,7 @@ type OpsSightSpec struct {
 	HubUserPasswordEnvVar string `json:"hubuserPasswordEnvVar"`
 
 	// Configuration secret
-	SecretName  string `json:"secretName"`
-	UseMockMode bool   `json:"useMockMode"`
+	SecretName string `json:"secretName"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource

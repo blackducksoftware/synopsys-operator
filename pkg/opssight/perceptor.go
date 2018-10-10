@@ -154,7 +154,7 @@ func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
 		},
 		"Port":        p.config.PerceptorPort,
 		"LogLevel":    p.config.LogLevel,
-		"UseMockMode": p.config.UseMockMode,
+		"UseMockMode": false,
 		"Timings": map[string]interface{}{
 			"CheckForStalledScansPauseHours": *p.config.CheckForStalledScansPauseHours,
 			"StalledScanClientTimeoutHours":  *p.config.StalledScanClientTimeoutHours,

@@ -98,10 +98,10 @@ func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components
 		t.Errorf("cluster role binding length not equal to 3, actual: %d", len(clusterRoleBindings))
 	}
 
-	perceptorScanner := opssightSpec.ContainerNames["perceptor-scanner"]
-	podPerceiver := opssightSpec.ContainerNames["pod-perceiver"]
-	imagePerceiver := opssightSpec.ContainerNames["image-perceiver"]
-	perceiver := opssightSpec.ContainerNames["perceiver"]
+	perceptorScanner := opssightSpec.Names.Scanner
+	podPerceiver := opssightSpec.Names.PodPerceiver
+	imagePerceiver := opssightSpec.Names.ImagePerceiver
+	perceiver := opssightSpec.ServiceAccounts["perceiver"]
 
 	expectedClusterRoleBindings := map[string]*types.ClusterRoleBinding{
 		perceptorScanner: {Version: "rbac.authorization.k8s.io/v1", Name: perceptorScanner, Subjects: []types.Subject{{Name: types.Name(perceptorScanner), Kind: "ServiceAccount"}}, RoleRef: types.RoleRef{Name: "cluster-admin", Kind: "ClusterRole"}},
@@ -121,8 +121,8 @@ func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, 
 		t.Errorf("cluster role length not equal to 2, actual: %d", len(clusterRoles))
 	}
 
-	podPerceiver := opssightSpec.ContainerNames["pod-perceiver"]
-	imagePerceiver := opssightSpec.ContainerNames["image-perceiver"]
+	podPerceiver := opssightSpec.Names.PodPerceiver
+	imagePerceiver := opssightSpec.Names.ImagePerceiver
 
 	expectedClusterRoles := map[string]*types.ClusterRole{
 		podPerceiver:   {Version: "rbac.authorization.k8s.io/v1", Name: podPerceiver, Rules: []types.PolicyRule{{Verbs: []string{"get", "watch", "list", "update"}, APIGroups: []string{"*"}, Resources: []string{"pods"}}}},
@@ -141,11 +141,11 @@ func validateConfigMaps(t *testing.T, configMaps []*components.ConfigMap, opssig
 		t.Errorf("config maps length not equal to 6, actual: %d", len(configMaps))
 	}
 
-	perceptor := opssightSpec.ContainerNames["perceptor"]
-	perceptorScanner := opssightSpec.ContainerNames["perceptor-scanner"]
-	perceptorImageFacade := opssightSpec.ContainerNames["perceptor-image-facade"]
-	perceiver := opssightSpec.ContainerNames["perceiver"]
-	prometheus := opssightSpec.ContainerNames["prometheus"]
+	perceptor := opssightSpec.Names.Perceptor
+	perceptorScanner := opssightSpec.Names.Scanner
+	perceptorImageFacade := opssightSpec.Names.ImageFacade
+	perceiver := opssightSpec.ServiceAccounts["perceiver"]
+	prometheus := "prometheus"
 
 	type configMap struct {
 		name     string
@@ -229,12 +229,12 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 		t.Errorf("replication controllers length not equal to 5, actual: %d", len(replicationControllers))
 	}
 
-	perceptor := opssightSpec.ContainerNames["perceptor"]
-	perceptorScanner := opssightSpec.ContainerNames["perceptor-scanner"]
-	perceptorImageFacade := opssightSpec.ContainerNames["perceptor-image-facade"]
-	podPerceiver := opssightSpec.ContainerNames["pod-perceiver"]
-	imagePerceiver := opssightSpec.ContainerNames["image-perceiver"]
-	perceiver := opssightSpec.ContainerNames["perceiver"]
+	perceptor := opssightSpec.Names.Perceptor
+	perceptorScanner := opssightSpec.Names.Scanner
+	perceptorImageFacade := opssightSpec.Names.ImageFacade
+	podPerceiver := opssightSpec.Names.PodPerceiver
+	imagePerceiver := opssightSpec.Names.ImagePerceiver
+	perceiver := opssightSpec.ServiceAccounts["perceiver"]
 
 	replica := int32(1)
 	envRequired := true
@@ -259,7 +259,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Env: []types.Env{
 							{From: &types.EnvFrom{Key: "PCP_HUBUSERPASSWORD", From: fmt.Sprintf("secret:%s:HubUserPassword", opssightSpec.SecretName), Required: &envRequired}, Type: types.EnvFromEnvType},
 						},
-						Image:                fmt.Sprintf("%s/%s/%s:%s", opssightSpec.Registry, opssightSpec.ImagePath, opssightSpec.PerceptorImageName, opssightSpec.DefaultVersion),
+						Image:                "TODO -- fill in",
 						Pull:                 types.PullAlways,
 						CPU:                  &types.CPU{Min: "300m"},
 						Mem:                  &types.Mem{Min: "1300Mi"},
@@ -296,7 +296,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Env: []types.Env{
 							{From: &types.EnvFrom{Key: "PCP_HUBUSERPASSWORD", From: fmt.Sprintf("secret:%s:HubUserPassword", opssightSpec.SecretName), Required: &envRequired}, Type: types.EnvFromEnvType},
 						},
-						Image:                fmt.Sprintf("%s/%s/%s:%s", opssightSpec.Registry, opssightSpec.ImagePath, opssightSpec.ScannerImageName, opssightSpec.DefaultVersion),
+						Image:                "TODO -- fill in",
 						Pull:                 types.PullAlways,
 						CPU:                  &types.CPU{Min: "300m"},
 						Mem:                  &types.Mem{Min: "1300Mi"},
@@ -314,7 +314,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Args: []floatstr.FloatOrString{
 							{Type: floatstr.String, StringVal: fmt.Sprintf("/etc/%s/%s.json", perceptorImageFacade, perceptorImageFacade)},
 						},
-						Image:                fmt.Sprintf("%s/%s/%s:%s", opssightSpec.Registry, opssightSpec.ImagePath, opssightSpec.ImageFacadeImageName, opssightSpec.DefaultVersion),
+						Image:                "TODO -- fill in",
 						Pull:                 types.PullAlways,
 						CPU:                  &types.CPU{Min: "300m"},
 						Mem:                  &types.Mem{Min: "1300Mi"},
@@ -350,7 +350,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Args: []floatstr.FloatOrString{
 							{Type: floatstr.String, StringVal: fmt.Sprintf("/etc/%s/%s.yaml", perceiver, perceiver)},
 						},
-						Image:                fmt.Sprintf("%s/%s/%s:%s", opssightSpec.Registry, opssightSpec.ImagePath, opssightSpec.PodPerceiverImageName, opssightSpec.DefaultVersion),
+						Image:                "TODO -- fill in",
 						Pull:                 types.PullAlways,
 						CPU:                  &types.CPU{Min: "300m"},
 						Mem:                  &types.Mem{Min: "1300Mi"},
@@ -384,7 +384,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 						Args: []floatstr.FloatOrString{
 							{Type: floatstr.String, StringVal: fmt.Sprintf("/etc/%s/%s.yaml", perceiver, perceiver)},
 						},
-						Image:                fmt.Sprintf("%s/%s/%s:%s", opssightSpec.Registry, opssightSpec.ImagePath, opssightSpec.ImagePerceiverImageName, opssightSpec.DefaultVersion),
+						Image:                "TODO -- fill in",
 						Pull:                 types.PullAlways,
 						CPU:                  &types.CPU{Min: "300m"},
 						Mem:                  &types.Mem{Min: "1300Mi"},
@@ -432,8 +432,8 @@ func validateServiceAccounts(t *testing.T, serviceAccounts []*components.Service
 		t.Errorf("service account length not equal to 3, actual: %d", len(serviceAccounts))
 	}
 
-	perceptorScanner := opssightSpec.ContainerNames["perceptor-scanner"]
-	perceiver := opssightSpec.ContainerNames["perceiver"]
+	perceptorScanner := opssightSpec.Names.Scanner
+	perceiver := opssightSpec.ServiceAccounts["perceiver"]
 
 	expectedServiceAccounts := map[string]*types.ServiceAccount{
 		perceptorScanner: {Name: perceptorScanner},
@@ -452,11 +452,11 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 		t.Errorf("services length not equal to 6, actual: %d", len(services))
 	}
 
-	perceptor := opssightSpec.ContainerNames["perceptor"]
-	perceptorScanner := opssightSpec.ContainerNames["perceptor-scanner"]
-	perceptorImageFacade := opssightSpec.ContainerNames["perceptor-image-facade"]
-	podPerceiver := opssightSpec.ContainerNames["pod-perceiver"]
-	imagePerceiver := opssightSpec.ContainerNames["image-perceiver"]
+	perceptor := opssightSpec.Names.Perceptor
+	perceptorScanner := opssightSpec.Names.Scanner
+	perceptorImageFacade := opssightSpec.Names.ImageFacade
+	podPerceiver := opssightSpec.Names.PodPerceiver
+	imagePerceiver := opssightSpec.Names.ImagePerceiver
 
 	expectedServices := map[string]*types.Service{
 		perceptor: {
@@ -548,11 +548,6 @@ func prettyPrintObj(components *api.ComponentList) {
 
 // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
-	defaultPerceptorPort := 3001
-	defaultPerceiverPort := 3002
-	defaultScannerPort := 3003
-	defaultIFPort := 3004
-	defaultSkyfirePort := 3005
 	defaultAnnotationInterval := 30
 	defaultDumpInterval := 30
 	defaultHubPort := 443
@@ -564,18 +559,13 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 	defaultStalledScanClientTimeoutHours := 999999
 	defaultModelMetricsPauseSeconds := 15
 	defaultUnknownImagePauseMilliseconds := 15000
-	defaultPodPerceiverEnabled := true
-	defaultImagePerceiverEnabled := true
-	defaultMetricsEnabled := true
-	defaultPerceptorSkyfire := false
-	defaultUseMockMode := false
 
 	return &opssightv1.OpsSightSpec{
-		PerceptorPort:                         &defaultPerceptorPort,
-		PerceiverPort:                         &defaultPerceiverPort,
-		ScannerPort:                           &defaultScannerPort,
-		ImageFacadePort:                       &defaultIFPort,
-		SkyfirePort:                           &defaultSkyfirePort,
+		PerceptorPort:                         3001,
+		PerceiverPort:                         3002,
+		ScannerPort:                           3003,
+		ImageFacadePort:                       3004,
+		SkyfirePort:                           3005,
 		InternalRegistries:                    []opssightv1.RegistryAuth{},
 		AnnotationIntervalSeconds:             &defaultAnnotationInterval,
 		DumpIntervalMinutes:                   &defaultDumpInterval,
@@ -589,40 +579,27 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		StalledScanClientTimeoutHours:         &defaultStalledScanClientTimeoutHours,
 		ModelMetricsPauseSeconds:              &defaultModelMetricsPauseSeconds,
 		UnknownImagePauseMilliseconds:         &defaultUnknownImagePauseMilliseconds,
-		DefaultVersion:                        "master",
-		Registry:                              "gcr.io",
-		ImagePath:                             "gke-verification/blackducksoftware",
-		PerceptorImageName:                    "perceptor",
-		ScannerImageName:                      "perceptor-scanner",
-		ImagePerceiverImageName:               "image-perceiver",
-		PodPerceiverImageName:                 "pod-perceiver",
-		ImageFacadeImageName:                  "perceptor-imagefacade",
-		SkyfireImageName:                      "skyfire",
-		PodPerceiver:                          &defaultPodPerceiverEnabled,
-		ImagePerceiver:                        &defaultImagePerceiverEnabled,
-		Metrics:                               &defaultMetricsEnabled,
-		PerceptorSkyfire:                      &defaultPerceptorSkyfire,
+		PerceptorImage:                        "perceptor",
+		ScannerImage:                          "perceptor-scanner",
+		ImagePerceiverImage:                   "image-perceiver",
+		PodPerceiverImage:                     "pod-perceiver",
+		ImageFacadeImage:                      "perceptor-imagefacade",
+		SkyfireImage:                          "skyfire",
+		PodPerceiver:                          true,
+		ImagePerceiver:                        true,
+		Metrics:                               true,
+		PerceptorSkyfire:                      false,
 		DefaultCPU:                            "300m",
 		DefaultMem:                            "1300Mi",
 		LogLevel:                              "debug",
 		HubUserPasswordEnvVar:                 "PCP_HUBUSERPASSWORD",
 		SecretName:                            "perceptor",
-		UseMockMode:                           &defaultUseMockMode,
 		ServiceAccounts: map[string]string{
 			"pod-perceiver":          "perceiver",
 			"image-perceiver":        "perceiver",
 			"perceptor-image-facade": "perceptor-scanner",
 			"skyfire":                "skyfire",
 		},
-		ContainerNames: map[string]string{
-			"perceiver":              "perceiver",
-			"pod-perceiver":          "pod-perceiver",
-			"image-perceiver":        "image-perceiver",
-			"perceptor":              "perceptor",
-			"perceptor-image-facade": "perceptor-imagefacade",
-			"perceptor-scanner":      "perceptor-scanner",
-			"skyfire":                "skyfire",
-			"prometheus":             "prometheus",
-		},
+		Names: &opssightv1.ResourceNames{},
 	}
 }
