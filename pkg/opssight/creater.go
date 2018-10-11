@@ -172,6 +172,19 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 	// should be added in PreDeploy().
 	deployer.PreDeploy(components, createOpsSight.Namespace)
 
+	if !ac.config.DryRun {
+		err = deployer.Run()
+		if err != nil {
+			log.Errorf("unable to deploy opssight %s due to %+v", createOpsSight.Namespace, err)
+		}
+		deployer.StartControllers()
+		// if OpenShift, add a privileged role to scanner account
+		err = ac.postDeploy(opssight, createOpsSight.Namespace)
+		if err != nil {
+			return errors.Trace(err)
+		}
+	}
+
 	return nil
 }
 
