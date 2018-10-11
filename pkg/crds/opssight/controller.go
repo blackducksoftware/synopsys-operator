@@ -34,6 +34,7 @@ import (
 
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -42,6 +43,9 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+
+	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 )
@@ -82,7 +86,7 @@ func (c *Controller) Deploy() error {
 		return errors.Trace(err)
 	}
 
-	// Hub CRD
+	// OpsSight CRD
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
 		Name:       "opssights.synopsys.com",
@@ -102,6 +106,15 @@ func (c *Controller) Deploy() error {
 	}
 
 	time.Sleep(5 * time.Second)
+
+	// Any new, pluggable maintainance stuff should go in here...
+	hubClientset, err := hubclient.NewForConfig(c.config.KubeConfig)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	configMapEditor := plugins.NewConfigMapUpdater(c.config.KubeClientSet, hubClientset, c.config.customClientSet)
+	configMapEditor.Run(c.config.StopCh)
+
 	return nil
 }
 
