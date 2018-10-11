@@ -102,7 +102,7 @@ Protoform will attempt to detect your cluster type, and bootstrap all necessary 
 
 ## Setup
 
-1. `cd $GOPATH/src/k8s.io`
+1. `mkdir -p $GOPATH/src/k8s.io && cd $GOPATH/src/k8s.io`
 
 2. `git clone git@github.com:kubernetes/code-generator.git`
 
