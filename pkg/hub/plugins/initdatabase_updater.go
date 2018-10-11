@@ -65,12 +65,12 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				log.Debugf("Hub added ! %v ", obj)
+				log.Debugf("init database hub added event ! %v ", obj)
 				i.addHub(obj)
 			},
 
 			DeleteFunc: func(obj interface{}) {
-				log.Debugf("Hub deleted ! %v ", obj)
+				log.Debugf("init database hub deleted event ! %v ", obj)
 				hub := obj.(*hubv1.Hub)
 				stopCh := i.Hubs[hub.Name]
 				close(stopCh)
@@ -86,6 +86,9 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 
 func (i *InitDatabaseUpdater) addHub(obj interface{}) {
 	hub := obj.(*hubv1.Hub)
+	if i.isHubThreadAlreadyExist(hub) {
+		return
+	}
 	if strings.EqualFold(hub.Spec.BackupSupport, "No") {
 		for j := 0; j < 20; j++ {
 			hub, err := util.GetHub(i.HubClient, i.Config.Namespace, hub.Name)
@@ -93,8 +96,9 @@ func (i *InitDatabaseUpdater) addHub(obj interface{}) {
 				log.Errorf("unable to get hub %s due to %+v", hub.Name, err)
 			}
 
+			addHubSpec := hub.Spec
 			if strings.EqualFold(hub.Status.State, "running") {
-				i.Hubs[hub.Name] = i.startInitDatabaseUpdater(&hub.Spec)
+				i.Hubs[hub.Name] = i.startInitDatabaseUpdater(&addHubSpec)
 				break
 			}
 			time.Sleep(10 * time.Second)
@@ -173,8 +177,19 @@ func (i *InitDatabaseUpdater) verifyHubsPostgresRestart() {
 	}
 
 	for _, hub := range hubs.Items {
+		verifyHub := hub
+		if i.isHubThreadAlreadyExist(&verifyHub) {
+			continue
+		}
 		if strings.EqualFold(hub.Spec.BackupSupport, "No") {
-			i.Hubs[hub.Name] = i.startInitDatabaseUpdater(&hub.Spec)
+			i.Hubs[hub.Name] = i.startInitDatabaseUpdater(&verifyHub.Spec)
 		}
 	}
+}
+
+func (i *InitDatabaseUpdater) isHubThreadAlreadyExist(hub *hubv1.Hub) bool {
+	if _, ok := i.Hubs[hub.Name]; ok {
+		return true
+	}
+	return false
 }
