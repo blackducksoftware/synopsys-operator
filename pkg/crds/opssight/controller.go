@@ -102,7 +102,7 @@ func (c *Controller) Deploy() error {
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("unable to create the opssight CRD due to %+v", err)
-		return errors.Trace(err)
+		// return errors.Trace(err)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -112,7 +112,7 @@ func (c *Controller) Deploy() error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	configMapEditor := plugins.NewConfigMapUpdater(c.config.KubeClientSet, hubClientset, c.config.customClientSet)
+	configMapEditor := plugins.NewConfigMapUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
 	configMapEditor.Run(c.config.StopCh)
 
 	return nil
