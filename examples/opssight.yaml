@@ -29,7 +29,7 @@ spec:
   # CONTAINER PULL CONFIG
   # These are for defining docker registry and image location and versions
   registry: gcr.io
-  imagePath: gke-verification/blackducksoftware
+  imagePath: saas-hub-stg/blackducksoftware
   # Default version will override the corresponding image version
   defaultVersion: "master"
 
