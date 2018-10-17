@@ -486,7 +486,7 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 		perceptorImageFacade: {
 			Name:             perceptorImageFacade,
 			Type:             types.ClusterIPServiceTypeDefault,
-			Selector:         map[string]string{"name": perceptorImageFacade},
+			Selector:         map[string]string{"name": perceptorScanner},
 			Port:             &types.ServicePort{Expose: int32(3004), Protocol: types.ProtocolTCP, PodPort: &intstr.IntOrString{Type: intstr.Int, IntVal: 3004}},
 			ClientIPAffinity: &intbool.IntOrBool{Type: intbool.Bool},
 		},
