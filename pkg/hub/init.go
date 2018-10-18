@@ -79,7 +79,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 			return fmt.Errorf("unable to create the PV %s due to missing NFS server path", createHub.Namespace)
 		}
 
-		_, err = util.CreatePersistentVolume(hc.KubeClient, createHub.Namespace, storageClass, createHub.PVCClaimSize, "/data/bds/backup", createHub.NFSServer)
+		_, err = util.CreatePersistentVolume(hc.KubeClient, createHub.Namespace, storageClass, createHub.PVCClaimSize, "/kubenfs", createHub.NFSServer)
 
 		if err != nil {
 			return fmt.Errorf("unable to create the PV %s due to %+v", createHub.Namespace, err)
