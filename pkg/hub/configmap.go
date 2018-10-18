@@ -116,8 +116,8 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 				else
 					echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying to init db again."
 					sleep 10
-    		fi
-  		done
+				fi
+			done
 		fi
 
 		if [ -f /kubenfs/$BACKUP_FILENAME.sql ]; then
