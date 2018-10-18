@@ -104,46 +104,47 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 	postgresBootstrap.AddData(map[string]string{"pgbootstrap.sh": fmt.Sprintf(`#!/bin/bash
 		BACKUP_FILENAME="%s"
 		CLONE_FILENAME="%s"
-		echo "Backup file name: /kubenfs/$BACKUP_FILENAME"
-		echo "Clone file name: /kubenfs/$CLONE_FILENAME"
-		if [ ! -f /kubenfs/$BACKUP_FILENAME.sql ] && [ -f /kubenfs/$CLONE_FILENAME.sql ]; then
+		NFS_PATH="/data/bds/backup"
+		echo "Backup file name: $NFS_PATH/$BACKUP_FILENAME"
+		echo "Clone file name: $NFS_PATH/$CLONE_FILENAME"
+		if [ ! -f $NFS_PATH/$BACKUP_FILENAME.sql ] && [ -f $NFS_PATH/$CLONE_FILENAME.sql ]; then
 			echo "clone data file found"
 			while true; do
 				if psql -c "SELECT 1" &>/dev/null; then
 					echo "Migrating the data"
-      				psql < /kubenfs/$CLONE_FILENAME.sql
-      				break
-    			else
-      				echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying to init db again."
-      				sleep 10
-    			fi
-  			done
+					psql < $NFS_PATH/$CLONE_FILENAME.sql
+					break
+				else
+					echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying to init db again."
+					sleep 10
+				fi
+			done
 		fi
 
-		if [ -f /kubenfs/$BACKUP_FILENAME.sql ]; then
+		if [ -f $NFS_PATH/$BACKUP_FILENAME.sql ]; then
 			echo "backup data file found"
 			while true; do
 				if psql -c "SELECT 1" &>/dev/null; then
 					echo "Migrating the data from backup !"
-      				psql < /kubenfs/$BACKUP_FILENAME.sql
-      				break
-    			else
-      				echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying migration again"
-      				sleep 10
-    			fi
-  			done
+					psql < $NFS_PATH/$BACKUP_FILENAME.sql
+					break
+				else
+					echo "unable to execute the SELECT 1, sleeping 10 seconds... before trying migration again"
+					sleep 10
+				fi
+			done
 		fi
 
 		if [ "%s" == "Yes" ]; then
 			while true; do
-			  echo "Doing periodic data dump..."
+				echo "Doing periodic data dump..."
 				sleep %d
-				if [ ! -f /kubenfs/$BACKUP_FILENAME_tmp.sql ]; then
-					pg_dumpall -w > /kubenfs/$BACKUP_FILENAME_tmp.sql
+				if [ ! -f $NFS_PATH/$BACKUP_FILENAME_tmp.sql ]; then
+					pg_dumpall -w > $NFS_PATH/$BACKUP_FILENAME_tmp.sql
 					if [ $? -eq 0 ]; then
-						mv /kubenfs/$BACKUP_FILENAME_tmp.sql /kubenfs/$BACKUP_FILENAME.sql
+						mv $NFS_PATH/$BACKUP_FILENAME_tmp.sql $NFS_PATH/$BACKUP_FILENAME.sql
 						if [ $? -eq 0 ]; then
-							rm -f /kubenfs/$BACKUP_FILENAME_tmp.sql
+							rm -f $NFS_PATH/$BACKUP_FILENAME_tmp.sql
 						fi
 					fi
 				else
