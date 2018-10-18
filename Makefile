@@ -1,7 +1,7 @@
 BINARIES = $(shell ls cmd)
 
 ifndef REGISTRY
-REGISTRY=gcr.io/gke-verification
+REGISTRY=gcr.io/saas-hub-stg
 endif
 
 ifdef IMAGE_PREFIX
@@ -30,7 +30,7 @@ $(BINARIES):
 ifeq ($(MAKECMDGOALS),${LOCAL_TARGET})
 	cd cmd/$@; CGO_ENABLED=0 go build -o $@
 else
-	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/perceptor-protoform -w /go/src/github.com/blackducksoftware/perceptor-protoform/cmd/$@ golang:1.9 go build -o $@
+	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/perceptor-protoform -w /go/src/github.com/blackducksoftware/perceptor-protoform/cmd/$@ golang:1.11 go build -o $@
 endif
 	cp cmd/$@/$@ ${OUTDIR}
 
@@ -41,7 +41,7 @@ push: container
 	$(foreach p,${BINARIES},$(PREFIX_CMD) docker $(DOCKER_OPTS) push $(REGISTRY)/$(PREFIX)${p}:latest;)
 
 test:
-	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/perceptor-protoform -w /go/src/github.com/blackducksoftware/perceptor-protoform golang:1.9 go test ./cmd/... ./pkg/...
+	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/perceptor-protoform -w /go/src/github.com/blackducksoftware/perceptor-protoform golang:1.11 go test ./cmd/... ./pkg/...
 
 clean:
 	rm -rf ${OUTDIR}

@@ -36,6 +36,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -45,16 +46,18 @@ import (
 
 // Creater will store the configuration to create the Hub
 type Creater struct {
-	Config      *model.Config
-	KubeConfig  *rest.Config
-	KubeClient  *kubernetes.Clientset
-	HubClient   *hubclientset.Clientset
-	routeClient *routeclient.RouteV1Client
+	Config           *model.Config
+	KubeConfig       *rest.Config
+	KubeClient       *kubernetes.Clientset
+	HubClient        *hubclientset.Clientset
+	osSecurityClient *securityclient.SecurityV1Client
+	routeClient      *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient, routeClient: routeClient}
+func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset,
+	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
+	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
 // DeleteHub will delete the Black Duck Hub
@@ -163,13 +166,12 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		log.Errorf("deployments failed because %+v", err)
 	}
 	// time.Sleep(20 * time.Second)
-	// Get all pods corresponding to the hub namespace
-	pods, err := util.GetAllPodsForNamespace(hc.KubeClient, createHub.Namespace)
-	if err != nil {
-		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Namespace, err)
-	}
+
 	// Validate all pods are in running state
-	util.ValidatePodsAreRunning(hc.KubeClient, pods)
+	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Namespace)
+	if err != nil {
+		return "", "", true, err
+	}
 
 	if strings.EqualFold(createHub.DbPrototype, "empty") {
 		err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
@@ -177,6 +179,11 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 			log.Errorf("%v: error: %+v", createHub.Namespace, err)
 			return "", "", true, fmt.Errorf("%v: error: %+v", createHub.Namespace, err)
 		}
+	}
+
+	err = hc.addAnyUIDToServiceAccount(createHub)
+	if err != nil {
+		log.Error(err)
 	}
 
 	// Create all hub deployments
@@ -190,17 +197,19 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		return "", "", true, fmt.Errorf("unable to deploy the hub in %s due to %+v", createHub.Namespace, err)
 	}
 	time.Sleep(10 * time.Second)
-	// Get all pods corresponding to the hub namespace
-	pods, err = util.GetAllPodsForNamespace(hc.KubeClient, createHub.Namespace)
-	if err != nil {
-		return "", "", true, fmt.Errorf("unable to list the pods in namespace %s due to %+v", createHub.Namespace, err)
-	}
+
 	// Validate all pods are in running state
-	util.ValidatePodsAreRunning(hc.KubeClient, pods)
+	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Namespace)
+	if err != nil {
+		return "", "", true, err
+	}
 
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod := util.FilterPodByNamePrefix(pods, "registration")
+	registrationPod, err := util.FilterPodByNamePrefixInNamespace(hc.KubeClient, createHub.Namespace, "registration")
 	log.Debugf("registration pod: %+v", registrationPod)
+	if err != nil {
+		return "", "", true, err
+	}
 	registrationKey := os.Getenv("REGISTRATION_KEY")
 	// log.Debugf("registration key: %s", registrationKey)
 
@@ -209,7 +218,12 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 			// Create the exec into kubernetes pod request
 			req := util.CreateExecContainerRequest(hc.KubeClient, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
-			err = hc.execContainer(req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
+			if strings.HasPrefix(createHub.HubVersion, "4.") {
+				err = hc.execContainer(req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate"`, registrationKey)})
+			} else {
+				err = hc.execContainer(req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
+			}
+
 			if err != nil {
 				log.Infof("error in Stream: %v", err)
 			} else {
@@ -250,45 +264,6 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		}
 	}
 	log.Infof("hub Ip address: %s", ipAddress)
-
-	go func() {
-		var checks int32
-		for {
-			log.Infof("%v: Waiting 3 minutes before running repair check.", createHub.Namespace)
-			time.Sleep(time.Duration(3) * time.Minute) // i.e. hacky.  TODO make configurable.
-			log.Infof("%v: running postgres schema repair check # %v...", createHub.Namespace, checks)
-			// name == namespace (before the namespace is set, it might be empty, but name wont be)
-			hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Namespace)
-			adminPassword, userPassword, postgresPassword, err := GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
-
-			dbNeedsInitBecause := ""
-
-			log.Debugf("%v : Checking connection now...", createHub.Namespace)
-			db, err := OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
-			defer func() {
-				db.Close()
-			}()
-			log.Debugf("%v : Done checking [ error status == %v ] ...", createHub.Namespace, err)
-			if err != nil {
-				dbNeedsInitBecause = "couldnt connect !"
-			} else {
-				_, err := db.Query("SELECT * FROM USER")
-				if err != nil {
-					dbNeedsInitBecause = "couldnt select!"
-				}
-			}
-			if dbNeedsInitBecause != "" {
-				log.Warnf("%v: database needs init because (%v), ::: %v ", createHub.Namespace, dbNeedsInitBecause, err)
-				err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
-				if err != nil {
-					log.Errorf("%v: error: %+v", createHub.Namespace, err)
-				}
-			} else {
-				log.Debugf("%v Database connection and USER table query  succeeded, not fixing ", createHub.Namespace)
-			}
-			checks++
-		}
-	}()
 
 	return ipAddress, pvcVolumeName, false, nil
 }

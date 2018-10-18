@@ -33,7 +33,6 @@ import (
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -177,23 +176,12 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 	// should be added in PreDeploy().
 	deployer.PreDeploy(components, createOpsSight.Namespace)
 
-	// Any new, pluggable maintainance stuff should go in here...
-	deployer.AddController("perceptor_configmap_controller", &plugins.PerceptorConfigMap{
-		Config:         ac.config,
-		KubeClient:     ac.kubeClient,
-		OpsSightClient: ac.opssightClient,
-		HubClient:      ac.hubClient,
-		Namespace:      createOpsSight.Namespace,
-	})
-
 	if !ac.config.DryRun {
 		err = deployer.Run()
 		if err != nil {
 			log.Errorf("unable to deploy opssight %s due to %+v", createOpsSight.Namespace, err)
 		}
-
 		deployer.StartControllers()
-
 		// if OpenShift, add a privileged role to scanner account
 		err = ac.postDeploy(opssight, createOpsSight.Namespace)
 		if err != nil {
@@ -263,32 +251,11 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
 func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 	// Need to add the perceptor-scanner service account to the privelged scc
 	if ac.osSecurityClient != nil {
-		scc, err := util.GetOpenShiftSecurityConstraint(ac.osSecurityClient, "privileged")
-		if err != nil {
-			return fmt.Errorf("failed to get scc privileged: %v", err)
-		}
-
-		var scannerAccount string
-		s := opssight.ScannerServiceAccount()
-		scannerAccount = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, s.GetName())
-
-		// Only add the service account if it isn't already in the list of users for the privileged scc
-		exists := false
-		for _, u := range scc.Users {
-			if strings.Compare(u, scannerAccount) == 0 {
-				exists = true
-				break
-			}
-		}
-
-		if !exists {
-			scc.Users = append(scc.Users, scannerAccount)
-
-			_, err = ac.osSecurityClient.SecurityContextConstraints().Update(scc)
-			if err != nil {
-				return fmt.Errorf("failed to update scc privileged: %v", err)
-			}
-		}
+		scannerServiceAccount := opssight.ScannerServiceAccount()
+		perceiverServiceAccount := opssight.PodPerceiverServiceAccount()
+		serviceAccounts := []string{fmt.Sprintf("system:serviceaccount:%s:%s", namespace, scannerServiceAccount.GetName()),
+			fmt.Sprintf("system:serviceaccount:%s:%s", namespace, perceiverServiceAccount.GetName())}
+		return util.UpdateOpenShiftSecurityConstraint(ac.osSecurityClient, serviceAccounts, "privileged")
 	}
 
 	return nil
@@ -301,7 +268,6 @@ func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
 	}
 
 	hubErrs := map[string]error{}
-
 	for i = 0; i < *createOpsSight.InitialNoOfHubs; i++ {
 		name := fmt.Sprintf("%s-%v", createOpsSight.Namespace, i)
 

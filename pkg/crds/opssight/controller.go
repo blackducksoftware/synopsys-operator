@@ -30,17 +30,14 @@ import (
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	opssightinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/informers/externalversions/opssight/v1"
 	opssightcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/controller"
-
+	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/juju/errors"
-
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
-
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -82,7 +79,7 @@ func (c *Controller) Deploy() error {
 		return errors.Trace(err)
 	}
 
-	// Hub CRD
+	// OpsSight CRD
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
 		Name:       "opssights.synopsys.com",
@@ -98,10 +95,19 @@ func (c *Controller) Deploy() error {
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("unable to create the opssight CRD due to %+v", err)
-		return errors.Trace(err)
+		// return errors.Trace(err)
 	}
 
 	time.Sleep(5 * time.Second)
+
+	// Any new, pluggable maintainance stuff should go in here...
+	hubClientset, err := hubclient.NewForConfig(c.config.KubeConfig)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	configMapEditor := plugins.NewConfigMapUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
+	configMapEditor.Run(c.config.StopCh)
+
 	return nil
 }
 

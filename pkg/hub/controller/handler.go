@@ -38,6 +38,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -60,6 +61,7 @@ type HubHandler struct {
 	Namespace        string
 	FederatorBaseURL string
 	CmMutex          chan bool
+	OSSecurityClient *securityclient.SecurityV1Client
 	RouteClient      *routeclient.RouteV1Client
 }
 
@@ -76,17 +78,17 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 		newSpec := hubv1.Spec
 		hubDefaultSpec := h.Defaults
 		err := mergo.Merge(&newSpec, hubDefaultSpec)
-		log.Debugf("merged hub details for %s: %+v", newSpec)
+		log.Debugf("merged hub details %+v", newSpec)
 		if err != nil {
 			log.Errorf("unable to merge the hub structs for %s due to %+v", hubv1.Name, err)
-			h.updateState("error", "error", fmt.Sprintf("%+v", err), hubv1)
+			h.updateState("error", "error", err, hubv1)
 		} else {
 			hubv1.Spec = newSpec
 			// Update status
-			hubv1, err := h.updateState("pending", "creating", "", hubv1)
+			hubv1, err := h.updateState("pending", "creating", nil, hubv1)
 
 			if err == nil {
-				hubCreator := hub.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.HubClientset, h.RouteClient)
+				hubCreator := hub.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.HubClientset, h.OSSecurityClient, h.RouteClient)
 				ip, pvc, updateError, err := hubCreator.CreateHub(&hubv1.Spec)
 				if err != nil {
 					log.Errorf("unable to create hub for %s due to %+v", hubv1.Name, err)
@@ -94,10 +96,11 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 				hubv1.Status.IP = ip
 				hubv1.Status.PVCVolumeName = pvc
 				if updateError {
-					h.updateState("error", "error", fmt.Sprintf("%+v", err), hubv1)
+					h.updateState("error", "error", err, hubv1)
 				} else {
-					h.updateState("running", "running", fmt.Sprintf("%+v", err), hubv1)
+					h.updateState("running", "running", err, hubv1)
 				}
+
 				h.callHubFederator()
 			}
 		}
@@ -111,7 +114,7 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 func (h *HubHandler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
-	hubCreator := hub.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.HubClientset, h.RouteClient)
+	hubCreator := hub.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.HubClientset, h.OSSecurityClient, h.RouteClient)
 	hubCreator.DeleteHub(name)
 	h.callHubFederator()
 
@@ -134,11 +137,13 @@ func (h *HubHandler) ObjectUpdated(objOld, objNew interface{}) {
 	//}
 }
 
-func (h *HubHandler) updateState(specState string, statusState string, errorMessage string, hub *hub_v1.Hub) (*hub_v1.Hub, error) {
+func (h *HubHandler) updateState(specState string, statusState string, err error, hub *hub_v1.Hub) (*hub_v1.Hub, error) {
 	hub.Spec.State = specState
 	hub.Status.State = statusState
-	hub.Status.ErrorMessage = errorMessage
-	hub, err := h.updateHubObject(hub)
+	if err != nil {
+		hub.Status.ErrorMessage = fmt.Sprintf("%+v", err)
+	}
+	hub, err = h.updateHubObject(hub)
 	if err != nil {
 		log.Errorf("couldn't update the state of hub object: %s", err.Error())
 	}

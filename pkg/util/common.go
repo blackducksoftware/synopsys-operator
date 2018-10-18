@@ -206,6 +206,24 @@ func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig
 	return deployment
 }
 
+// CreateReplicationController will create a replication controller
+func CreateReplicationController(replicationControllerConfig *horizonapi.ReplicationControllerConfig, pod *components.Pod) *components.ReplicationController {
+	rc := components.NewReplicationController(*replicationControllerConfig)
+	rc.AddLabelSelectors(map[string]string{
+		"app":  replicationControllerConfig.Name,
+		"tier": replicationControllerConfig.Name,
+	})
+	rc.AddPod(pod)
+	return rc
+}
+
+// CreateReplicationControllerFromContainer will create a replication controller with multiple containers inside a pod
+func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.ReplicationController {
+	pod := CreatePod(replicationControllerConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs)
+	rc := CreateReplicationController(replicationControllerConfig, pod)
+	return rc
+}
+
 // CreateService will create the service
 func CreateService(name string, label string, namespace string, port string, target string, serviceType horizonapi.ClusterIPServiceType) *components.Service {
 	svcConfig := horizonapi.ServiceConfig{
@@ -371,19 +389,52 @@ func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize str
 	return postgresPVC, nil
 }
 
+// ValidatePodsAreRunningInNamespace will validate whether the pods are running in a given namespace
+func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespace string) error {
+	pods, err := GetAllPodsForNamespace(clientset, namespace)
+	if err != nil {
+		return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
+	}
+
+	allPodExist := ValidatePodsAreRunning(clientset, pods)
+	if !allPodExist {
+		ValidatePodsAreRunningInNamespace(clientset, namespace)
+	}
+	return nil
+}
+
 // ValidatePodsAreRunning will validate whether the pods are running
-func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodList) {
+func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodList) bool {
 	// Check whether all pods are running
 	for _, podList := range pods.Items {
 		for {
 			pod, _ := clientset.CoreV1().Pods(podList.Namespace).Get(podList.Name, metav1.GetOptions{})
-			if strings.EqualFold(string(pod.Status.Phase), "Running") || strings.EqualFold(pod.Name, "") {
+			if strings.EqualFold(pod.Name, "") {
+				log.Infof("pod %s is restarted in %s..... checking all pod status again...", podList.Name, podList.Namespace)
+				return false
+			}
+			if strings.EqualFold(string(pod.Status.Phase), "Running") {
 				break
 			}
 			log.Infof("pod %s is in %s status... waiting 10 seconds", pod.Name, string(pod.Status.Phase))
 			time.Sleep(10 * time.Second)
 		}
 	}
+	return true
+}
+
+// FilterPodByNamePrefixInNamespace will filter the pod based on pod name prefix from a list a pods in a given namespace
+func FilterPodByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace string, prefix string) (*corev1.Pod, error) {
+	pods, err := GetAllPodsForNamespace(clientset, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
+	}
+
+	pod := FilterPodByNamePrefix(pods, prefix)
+	if pod != nil {
+		return pod, nil
+	}
+	return nil, fmt.Errorf("unable to find the pod with prefix %s", prefix)
 }
 
 // FilterPodByNamePrefix will filter the pod based on pod name prefix from a list a pods
@@ -479,6 +530,11 @@ func ListOpsSights(opssightClientset *opssightclientset.Clientset, namespace str
 // GetOpsSight will get OpsSight in the cluster
 func GetOpsSight(opssightClientset *opssightclientset.Clientset, namespace string, name string) (*opssight_v1.OpsSight, error) {
 	return opssightClientset.SynopsysV1().OpsSights(namespace).Get(name, metav1.GetOptions{})
+}
+
+// GetOpsSights gets all opssights
+func GetOpsSights(clientSet *opssightclientset.Clientset) (*opssight_v1.OpsSightList, error) {
+	return clientSet.SynopsysV1().OpsSights(metav1.NamespaceAll).List(metav1.ListOptions{})
 }
 
 // ListHubs will list all hubs in the cluster
@@ -613,4 +669,38 @@ func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace str
 // GetOpenShiftSecurityConstraint get a OpenShift security constraints
 func GetOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, name string) (*securityv1.SecurityContextConstraints, error) {
 	return osSecurityClient.SecurityContextConstraints().Get(name, metav1.GetOptions{})
+}
+
+// UpdateOpenShiftSecurityConstraint updates a OpenShift security constraints
+func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, serviceAccounts []string, name string) error {
+	scc, err := GetOpenShiftSecurityConstraint(osSecurityClient, name)
+	if err != nil {
+		return fmt.Errorf("failed to get scc %s: %v", name, err)
+	}
+
+	newUsers := []string{}
+	// Only add the service account if it isn't already in the list of users for the privileged scc
+	for _, sa := range serviceAccounts {
+		exist := false
+		for _, user := range scc.Users {
+			if strings.Compare(user, sa) == 0 {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			newUsers = append(newUsers, sa)
+		}
+	}
+
+	if len(newUsers) > 0 {
+		scc.Users = append(scc.Users, newUsers...)
+
+		_, err = osSecurityClient.SecurityContextConstraints().Update(scc)
+		if err != nil {
+			return fmt.Errorf("failed to update scc %s: %v", name, err)
+		}
+	}
+	return err
 }

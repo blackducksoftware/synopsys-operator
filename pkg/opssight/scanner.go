@@ -218,7 +218,7 @@ func (p *SpecConfig) ImageFacadeService() *components.Service {
 		Name:      p.config.ContainerNames["perceptor-image-facade"],
 		Namespace: p.config.Namespace,
 	})
-	service.AddSelectors(map[string]string{"name": p.config.ContainerNames["perceptor-image-facade"]})
+	service.AddSelectors(map[string]string{"name": p.config.ContainerNames["perceptor-scanner"]})
 
 	service.AddPort(horizonapi.ServicePortConfig{
 		Port:       int32(*p.config.ImageFacadePort),
@@ -270,8 +270,8 @@ func (p *SpecConfig) ImageFacadeConfigMap() (*components.ConfigMap, error) {
 	})
 	data := map[string]interface{}{
 		"PrivateDockerRegistries": p.config.InternalRegistries,
-		"Port":     *p.config.ImageFacadePort,
-		"LogLevel": p.config.LogLevel,
+		"Port":                    *p.config.ImageFacadePort,
+		"LogLevel":                p.config.LogLevel,
 	}
 	bytes, err := json.Marshal(data)
 	if err != nil {
