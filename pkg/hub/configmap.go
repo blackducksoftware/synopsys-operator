@@ -104,7 +104,7 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 	postgresBootstrap.AddData(map[string]string{"pgbootstrap.sh": fmt.Sprintf(`#!/bin/bash
 		BACKUP_FILENAME="%s"
 		CLONE_FILENAME="%s"
-		NFS_PATH="/data/bds/backup"
+		NFS_PATH="%s"
 		echo "Backup file name: $NFS_PATH/$BACKUP_FILENAME"
 		echo "Clone file name: $NFS_PATH/$CLONE_FILENAME"
 		if [ ! -f $NFS_PATH/$BACKUP_FILENAME.sql ] && [ -f $NFS_PATH/$CLONE_FILENAME.sql ]; then
@@ -151,7 +151,7 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *Co
 					echo "backup in progress... cannot start another instance of backup"
 				fi
 			done
-		fi`, createHub.Namespace, createHub.DbPrototype, createHub.BackupSupport, backupInSeconds)})
+		fi`, createHub.Namespace, createHub.DbPrototype, hc.Config.NFSPath, createHub.BackupSupport, backupInSeconds)})
 
 	configMaps["postgres-bootstrap"] = postgresBootstrap
 

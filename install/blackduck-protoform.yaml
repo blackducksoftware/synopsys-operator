@@ -57,7 +57,7 @@ items:
   metadata:
     name: blackduck-protoform
   data:
-    config.json: '{"DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "PostgresRestartInMins": 10, "HubFederatorConfig": {"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "Port": 3016, "Registry": "gcr.io", "ImagePath": "saas-hub-stg/blackducksoftware", "ImageName": "federator", "ImageVersion": "master"}}'
+    config.json: '{"DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "PostgresRestartInMins": 10, NFSPath : "/kubenfs", "HubFederatorConfig": {"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "Port": 3016, "Registry": "gcr.io", "ImagePath": "saas-hub-stg/blackducksoftware", "ImageName": "federator", "ImageVersion": "master"}}'
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
