@@ -116,8 +116,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 
 	postgresExternalContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: horizonapi.PullAlways,
-			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: "",
-			Command: []string{"/usr/share/container-scripts/postgresql/pginit.sh"},
+			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: "", Command: []string{"/usr/share/container-scripts/postgresql/pginit.sh"},
 		},
 		EnvConfigs:   postgresEnvs,
 		VolumeMounts: postgresVolumeMounts,
