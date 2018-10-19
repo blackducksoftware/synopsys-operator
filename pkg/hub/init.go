@@ -116,11 +116,16 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 
 	postgresExternalContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: horizonapi.PullAlways,
-			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: "",
-			Command: []string{"/usr/share/container-scripts/postgresql/pginit.sh"}},
+			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: "", Command: []string{"/usr/share/container-scripts/postgresql/pginit.sh"},
+		},
 		EnvConfigs:   postgresEnvs,
 		VolumeMounts: postgresVolumeMounts,
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: postgresPort, Protocol: horizonapi.ProtocolTCP},
+		ReadinessProbeConfigs: []*horizonapi.ProbeConfig{{
+			ActionConfig: horizonapi.ActionConfig{Command: []string{"if [ -f /tmp/BLACKDUCK_MIGRATING ]; then return 1; else return 0; fi"}},
+			Delay:        1,
+			Interval:     5,
+		}},
 	}
 	initContainers := []*util.Container{}
 	// If the PV storage is other than NFS or if the backup is enabled and PV storage is other than NFS, add the init container

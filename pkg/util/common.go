@@ -66,7 +66,8 @@ import (
 )
 
 // CreateContainer will create the container
-func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, port *horizonapi.PortConfig, actionConfig *horizonapi.ActionConfig) *components.Container {
+func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, port *horizonapi.PortConfig,
+	actionConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
 
 	container := components.NewContainer(*config)
 
@@ -81,6 +82,14 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 	container.AddPort(*port)
 	if actionConfig != nil {
 		container.AddPostStartAction(*actionConfig)
+	}
+
+	for _, livenessProbe := range livenessProbeConfigs {
+		container.AddLivenessProbe(*livenessProbe)
+	}
+
+	for _, readinessProbe := range readinessProbeConfigs {
+		container.AddLivenessProbe(*readinessProbe)
 	}
 
 	return container
@@ -172,12 +181,14 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 	}
 
 	for _, containerConfig := range containers {
-		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig, containerConfig.ActionConfig)
+		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
+			containerConfig.ActionConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
 		pod.AddContainer(container)
 	}
 
 	for _, initContainerConfig := range initContainers {
-		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts, initContainerConfig.PortConfig, initContainerConfig.ActionConfig)
+		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts,
+			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
 		err := pod.AddInitContainer(initContainer)
 		if err != nil {
 			log.Printf("failed to create the init container because %+v", err)
