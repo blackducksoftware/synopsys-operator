@@ -134,7 +134,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 	log.Debugf("updated configmap in %s is %+v", opsSightSpec.Namespace, configMap)
 	_, err = kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
 	if err != nil {
-		return fmt.Errorf("unable to update configmap %s in %s: %v", opsSightSpec.Names.Perceptor, opsSightSpec.Namespace, err)
+		return fmt.Errorf("unable to update configmap %s in %s: %v", opsSightSpec.Perceptor.Name, opsSightSpec.Namespace, err)
 	}
 	return nil
 }

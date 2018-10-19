@@ -33,10 +33,10 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      p.config.Names.Skyfire,
+		Name:      p.config.Skyfire.Name,
 		Namespace: p.config.Namespace,
 	})
-	rc.AddLabelSelectors(map[string]string{"name": p.config.Names.Skyfire})
+	rc.AddLabelSelectors(map[string]string{"name": p.config.Skyfire.Name})
 	pod, err := p.perceptorSkyfirePod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create skyfire volumes: %v", err)
@@ -48,10 +48,10 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 
 func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name:           p.config.Names.Skyfire,
-		ServiceAccount: p.config.ServiceAccounts["skyfire"],
+		Name:           p.config.Skyfire.Name,
+		ServiceAccount: p.config.Skyfire.ServiceAccount,
 	})
-	pod.AddLabels(map[string]string{"name": p.config.Names.Skyfire})
+	pod.AddLabels(map[string]string{"name": p.config.Skyfire.Name})
 
 	cont, err := p.perceptorSkyfireContainer()
 	if err != nil {
@@ -78,16 +78,16 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 
 func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) {
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:    p.config.Names.Skyfire,
-		Image:   p.config.SkyfireImage,
-		Command: []string{fmt.Sprintf("./%s", p.config.Names.Skyfire)},
+		Name:    p.config.Skyfire.Name,
+		Image:   p.config.Skyfire.Image,
+		Command: []string{fmt.Sprintf("./%s", p.config.Skyfire.Name)},
 		Args:    []string{"/etc/skyfire/skyfire.yaml"},
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.config.SkyfirePort),
+		ContainerPort: fmt.Sprintf("%d", p.config.Skyfire.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -142,17 +142,17 @@ func (p *SpecConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 // PerceptorSkyfireService creates a service for perceptor skyfire
 func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      p.config.Names.Skyfire,
+		Name:      p.config.Skyfire.Name,
 		Namespace: p.config.Namespace,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(p.config.SkyfirePort),
-		TargetPort: fmt.Sprintf("%d", p.config.SkyfirePort),
+		Port:       int32(p.config.Skyfire.Port),
+		TargetPort: fmt.Sprintf("%d", p.config.Skyfire.Port),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
-	service.AddSelectors(map[string]string{"name": p.config.Names.Skyfire})
+	service.AddSelectors(map[string]string{"name": p.config.Skyfire.Name})
 
 	return service
 }
@@ -163,7 +163,7 @@ func (p *SpecConfig) PerceptorSkyfireConfigMap() *components.ConfigMap {
 		Name:      "skyfire",
 		Namespace: p.config.Namespace,
 	})
-	configMap.AddData(map[string]string{"skyfire.yaml": fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, p.config.SkyfirePort, `","HubHost": "`, "TODO -- remove", `","HubPort": "`, p.config.Hub.Port, `","HubUser": "`, p.config.Hub.User, `","HubUserPasswordEnvVar": "`, p.config.Hub.PasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.config.Hub.ClientTimeoutScannerSeconds, `","PerceptorHost": "`, p.config.Names.Perceptor, `","PerceptorPort": "`, p.config.PerceptorPort, `","KubeDumpIntervalSeconds": "`, "15", `","PerceptorDumpIntervalSeconds": "`, "15", `","HubDumpPauseSeconds": "`, "30", `","ImageFacadePort": "`, p.config.ImageFacadePort, `","LogLevel": "`, p.config.LogLevel, `"}`)})
+	configMap.AddData(map[string]string{"skyfire.yaml": fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, p.config.Skyfire.Port, `","HubHost": "`, "TODO -- remove", `","HubPort": "`, p.config.Hub.Port, `","HubUser": "`, p.config.Hub.User, `","HubUserPasswordEnvVar": "`, p.config.Hub.PasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.config.ScannerPod.Scanner.ClientTimeoutSeconds, `","PerceptorHost": "`, p.config.Perceptor.Name, `","PerceptorPort": "`, p.config.Perceptor.Port, `","KubeDumpIntervalSeconds": "`, "15", `","PerceptorDumpIntervalSeconds": "`, "15", `","HubDumpPauseSeconds": "`, "30", `","ImageFacadePort": "`, p.config.ScannerPod.ImageFacade.Port, `","LogLevel": "`, p.config.LogLevel, `"}`)})
 
 	return configMap
 }

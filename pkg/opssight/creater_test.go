@@ -63,19 +63,6 @@ func TestUpstreamPerceptor(t *testing.T) {
 // TestDownstreamPerceptor will test the downstream deployment
 func TestDownstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
-	defaultValues.Names.Perceptor = "opssight-core"
-	defaultValues.Names.PodPerceiver = "opssight-pod-processor"
-	defaultValues.Names.ImagePerceiver = "opssight-image-processor"
-	defaultValues.Names.Scanner = "opssight-scanner"
-	defaultValues.Names.ImageFacade = "opssight-image-getter"
-	defaultValues.Names.Skyfire = "skyfire"
-	defaultValues.ServiceAccounts = map[string]string{
-		"pod-perceiver":          "opssight-processor",
-		"image-perceiver":        "opssight-processor",
-		"perceptor-image-facade": "opssight-scanner",
-		"skyfire":                "skyfire",
-	}
-	defaultValues.SecretName = "blackduck-secret"
 
 	opssight := NewSpecConfig(defaultValues)
 
@@ -101,11 +88,10 @@ func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components
 	if len(clusterRoleBindings) != 3 {
 		t.Errorf("cluster role binding length not equal to 3, actual: %d", len(clusterRoleBindings))
 	}
-
-	perceptorScanner := opssightSpec.Names.Scanner
-	podPerceiver := opssightSpec.Names.PodPerceiver
-	imagePerceiver := opssightSpec.Names.ImagePerceiver
-	perceiver := opssightSpec.ServiceAccounts["perceiver"]
+	perceptorScanner := opssightSpec.ScannerPod.Scanner.Name
+	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
+	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
+	perceiver := opssightSpec.Perceiver.ServiceAccount
 
 	expectedClusterRoleBindings := map[string]*types.ClusterRoleBinding{
 		perceptorScanner: {Version: "rbac.authorization.k8s.io/v1", Name: perceptorScanner, Subjects: []types.Subject{{Name: types.Name(perceptorScanner), Kind: "ServiceAccount"}}, RoleRef: types.RoleRef{Name: "cluster-admin", Kind: "ClusterRole"}},
@@ -125,8 +111,8 @@ func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, 
 		t.Errorf("cluster role length not equal to 2, actual: %d", len(clusterRoles))
 	}
 
-	podPerceiver := opssightSpec.Names.PodPerceiver
-	imagePerceiver := opssightSpec.Names.ImagePerceiver
+	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
+	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
 
 	expectedClusterRoles := map[string]*types.ClusterRole{
 		podPerceiver:   {Version: "rbac.authorization.k8s.io/v1", Name: podPerceiver, Rules: []types.PolicyRule{{Verbs: []string{"get", "watch", "list", "update"}, APIGroups: []string{"*"}, Resources: []string{"pods"}}}},
@@ -145,10 +131,10 @@ func validateConfigMaps(t *testing.T, configMaps []*components.ConfigMap, opssig
 		t.Errorf("config maps length not equal to 6, actual: %d", len(configMaps))
 	}
 
-	perceptor := opssightSpec.Names.Perceptor
-	perceptorScanner := opssightSpec.Names.Scanner
-	perceptorImageFacade := opssightSpec.Names.ImageFacade
-	perceiver := opssightSpec.ServiceAccounts["perceiver"]
+	perceptor := opssightSpec.Perceptor.Name
+	perceptorScanner := opssightSpec.ScannerPod.Scanner.Name
+	perceptorImageFacade := opssightSpec.ScannerPod.ImageFacade.Name
+	perceiver := opssightSpec.Perceiver.ServiceAccount
 	prometheus := "prometheus"
 
 	type configMap struct {
@@ -233,12 +219,12 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 		t.Errorf("replication controllers length not equal to 5, actual: %d", len(replicationControllers))
 	}
 
-	perceptor := opssightSpec.Names.Perceptor
-	perceptorScanner := opssightSpec.Names.Scanner
-	perceptorImageFacade := opssightSpec.Names.ImageFacade
-	podPerceiver := opssightSpec.Names.PodPerceiver
-	imagePerceiver := opssightSpec.Names.ImagePerceiver
-	perceiver := opssightSpec.ServiceAccounts["perceiver"]
+	perceptor := opssightSpec.Perceptor.Name
+	perceptorScanner := opssightSpec.ScannerPod.Scanner.Name
+	perceptorImageFacade := opssightSpec.ScannerPod.ImageFacade.Name
+	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
+	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
+	perceiver := opssightSpec.Perceiver.ServiceAccount
 
 	replica := int32(1)
 	envRequired := true
@@ -436,8 +422,8 @@ func validateServiceAccounts(t *testing.T, serviceAccounts []*components.Service
 		t.Errorf("service account length not equal to 3, actual: %d", len(serviceAccounts))
 	}
 
-	perceptorScanner := opssightSpec.Names.Scanner
-	perceiver := opssightSpec.ServiceAccounts["perceiver"]
+	perceptorScanner := opssightSpec.ScannerPod.Scanner.Name
+	perceiver := opssightSpec.Perceiver.ServiceAccount
 
 	expectedServiceAccounts := map[string]*types.ServiceAccount{
 		perceptorScanner: {Name: perceptorScanner},
@@ -456,11 +442,11 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 		t.Errorf("services length not equal to 6, actual: %d", len(services))
 	}
 
-	perceptor := opssightSpec.Names.Perceptor
-	perceptorScanner := opssightSpec.Names.Scanner
-	perceptorImageFacade := opssightSpec.Names.ImageFacade
-	podPerceiver := opssightSpec.Names.PodPerceiver
-	imagePerceiver := opssightSpec.Names.ImagePerceiver
+	perceptor := opssightSpec.Perceptor.Name
+	perceptorScanner := opssightSpec.ScannerPod.Scanner.Name
+	perceptorImageFacade := opssightSpec.ScannerPod.ImageFacade.Name
+	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
+	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
 
 	expectedServices := map[string]*types.Service{
 		perceptor: {
@@ -552,56 +538,72 @@ func prettyPrintObj(components *api.ComponentList) {
 
 // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
-	defaultAnnotationInterval := 30
-	defaultDumpInterval := 30
-	defaultCheckForStalledScansPauseHours := 999999
-	defaultStalledScanClientTimeoutHours := 999999
-	defaultModelMetricsPauseSeconds := 15
-	defaultUnknownImagePauseMilliseconds := 15000
-
 	return &opssightv1.OpsSightSpec{
-		PerceptorPort:             3001,
-		PerceiverPort:             3002,
-		ScannerPort:               3003,
-		ImageFacadePort:           3004,
-		SkyfirePort:               3005,
-		InternalRegistries:        []opssightv1.RegistryAuth{},
-		AnnotationIntervalSeconds: &defaultAnnotationInterval,
-		DumpIntervalMinutes:       &defaultDumpInterval,
-		Hub: &opssightv1.HubSpec{
-			User:                               "sysadmin",
-			Port:                               443,
-			ClientTimeoutPerceptorMilliseconds: 100000,
-			ClientTimeoutScannerSeconds:        600,
-			ConcurrentScanLimit:                2,
-			TotalScanLimit:                     1000,
-			PasswordEnvVar:                     "PCP_HUBUSERPASSWORD",
-			Password:                           "blackduck",
+		Perceptor: &opssightv1.Perceptor{
+			Name:                           "perceptor",
+			Port:                           3001,
+			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+			CheckForStalledScansPauseHours: 999999,
+			StalledScanClientTimeoutHours:  999999,
+			ModelMetricsPauseSeconds:       15,
+			UnknownImagePauseMilliseconds:  15000,
+			ClientTimeoutMilliseconds:      100000,
 		},
-		CheckForStalledScansPauseHours: &defaultCheckForStalledScansPauseHours,
-		StalledScanClientTimeoutHours:  &defaultStalledScanClientTimeoutHours,
-		ModelMetricsPauseSeconds:       &defaultModelMetricsPauseSeconds,
-		UnknownImagePauseMilliseconds:  &defaultUnknownImagePauseMilliseconds,
-		PerceptorImage:                 "perceptor",
-		ScannerImage:                   "perceptor-scanner",
-		ImagePerceiverImage:            "image-perceiver",
-		PodPerceiverImage:              "pod-perceiver",
-		ImageFacadeImage:               "perceptor-imagefacade",
-		SkyfireImage:                   "skyfire",
-		PodPerceiver:                   true,
-		ImagePerceiver:                 true,
-		Metrics:                        true,
-		PerceptorSkyfire:               false,
-		DefaultCPU:                     "300m",
-		DefaultMem:                     "1300Mi",
-		LogLevel:                       "debug",
-		SecretName:                     "perceptor",
-		ServiceAccounts: map[string]string{
-			"pod-perceiver":          "perceiver",
-			"image-perceiver":        "perceiver",
-			"perceptor-image-facade": "perceptor-scanner",
-			"skyfire":                "skyfire",
+		Perceiver: &opssightv1.Perceiver{
+			EnableImagePerceiver: false,
+			EnablePodPerceiver:   true,
+			Port:                 3002,
+			ImagePerceiver: &opssightv1.ImagePerceiver{
+				Name:  "image-perceiver",
+				Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
+			},
+			PodPerceiver: &opssightv1.PodPerceiver{
+				Name:  "pod-perceiver",
+				Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
+			},
+			ServiceAccount:            "perceiver",
+			AnnotationIntervalSeconds: 30,
+			DumpIntervalMinutes:       30,
 		},
-		Names: &opssightv1.ResourceNames{},
+		ScannerPod: &opssightv1.ScannerPod{
+			ImageFacade: &opssightv1.ImageFacade{
+				Port:               3004,
+				InternalRegistries: []opssightv1.RegistryAuth{},
+				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
+				ServiceAccount:     "perceptor-scanner",
+				Name:               "perceptor-imagefacade",
+			},
+			Scanner: &opssightv1.Scanner{
+				Name:                 "perceptor-scanner",
+				Port:                 3003,
+				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
+				ClientTimeoutSeconds: 600,
+			},
+			ReplicaCount: 1,
+		},
+		Skyfire: &opssightv1.Skyfire{
+			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
+			Name:           "skyfire",
+			Port:           3005,
+			ServiceAccount: "skyfire",
+		},
+		Hub: &opssightv1.Hub{
+			User:                         "sysadmin",
+			Port:                         443,
+			ConcurrentScanLimit:          2,
+			TotalScanLimit:               1000,
+			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
+			Password:                     "blackduck",
+			InitialCount:                 1,
+			MaxCount:                     1,
+			DeleteHubThresholdPercentage: 50,
+			HubSpec:                      nil,
+		},
+		EnableMetrics: true,
+		EnableSkyfire: false,
+		DefaultCPU:    "300m",
+		DefaultMem:    "1300Mi",
+		LogLevel:      "debug",
+		SecretName:    "perceptor",
 	}
 }

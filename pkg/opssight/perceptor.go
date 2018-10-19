@@ -35,7 +35,7 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      p.config.Names.Perceptor,
+		Name:      p.config.Perceptor.Name,
 		Namespace: p.config.Namespace,
 	})
 	pod, err := p.perceptorPod()
@@ -46,15 +46,15 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	rc.AddLabelSelectors(map[string]string{"name": p.config.Names.Perceptor})
+	rc.AddLabelSelectors(map[string]string{"name": p.config.Perceptor.Name})
 	return rc, nil
 }
 
 func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: p.config.Names.Perceptor,
+		Name: p.config.Perceptor.Name,
 	})
-	pod.AddLabels(map[string]string{"name": p.config.Names.Perceptor})
+	pod.AddLabels(map[string]string{"name": p.config.Perceptor.Name})
 	cont, err := p.perceptorContainer()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -73,17 +73,17 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 }
 
 func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
-	name := p.config.Names.Perceptor
+	name := p.config.Perceptor.Name
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    name,
-		Image:   p.config.PerceptorImage,
+		Image:   p.config.Perceptor.Image,
 		Command: []string{fmt.Sprintf("./%s", name)},
 		Args:    []string{fmt.Sprintf("/etc/%s/%s.yaml", name, name)},
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
 	})
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.config.PerceptorPort),
+		ContainerPort: fmt.Sprintf("%d", p.config.Perceptor.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
@@ -108,7 +108,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 }
 
 func (p *SpecConfig) perceptorVolume() *components.Volume {
-	name := p.config.Names.Perceptor
+	name := p.config.Perceptor.Name
 	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      name,
 		MapOrSecretName: name,
@@ -118,20 +118,20 @@ func (p *SpecConfig) perceptorVolume() *components.Volume {
 // PerceptorService creates a service for perceptor
 func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      p.config.Names.Perceptor,
+		Name:      p.config.Perceptor.Name,
 		Namespace: p.config.Namespace,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(p.config.PerceptorPort),
-		TargetPort: fmt.Sprintf("%d", p.config.PerceptorPort),
+		Port:       int32(p.config.Perceptor.Port),
+		TargetPort: fmt.Sprintf("%d", p.config.Perceptor.Port),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	service.AddSelectors(map[string]string{"name": p.config.Names.Perceptor})
+	service.AddSelectors(map[string]string{"name": p.config.Perceptor.Name})
 
 	return service, nil
 }
@@ -139,7 +139,7 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 // PerceptorConfigMap creates a config map for perceptor
 func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
 	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      p.config.Names.Perceptor,
+		Name:      p.config.Perceptor.Name,
 		Namespace: p.config.Namespace,
 	})
 	data := map[string]interface{}{
@@ -148,25 +148,25 @@ func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
 			"Port":                      p.config.Hub.Port,
 			"User":                      p.config.Hub.User,
 			"PasswordEnvVar":            p.config.Hub.PasswordEnvVar,
-			"ClientTimeoutMilliseconds": p.config.Hub.ClientTimeoutPerceptorMilliseconds,
+			"ClientTimeoutMilliseconds": p.config.Perceptor.ClientTimeoutMilliseconds,
 			"ConcurrentScanLimit":       p.config.Hub.ConcurrentScanLimit,
 			"TotalScanLimit":            p.config.Hub.TotalScanLimit,
 		},
-		"Port":        p.config.PerceptorPort,
+		"Port":        p.config.Perceptor.Port,
 		"LogLevel":    p.config.LogLevel,
 		"UseMockMode": false,
 		"Timings": map[string]interface{}{
-			"CheckForStalledScansPauseHours": *p.config.CheckForStalledScansPauseHours,
-			"StalledScanClientTimeoutHours":  *p.config.StalledScanClientTimeoutHours,
-			"ModelMetricsPauseSeconds":       *p.config.ModelMetricsPauseSeconds,
-			"UnknownImagePauseMilliseconds":  *p.config.UnknownImagePauseMilliseconds,
+			"CheckForStalledScansPauseHours": p.config.Perceptor.CheckForStalledScansPauseHours,
+			"StalledScanClientTimeoutHours":  p.config.Perceptor.StalledScanClientTimeoutHours,
+			"ModelMetricsPauseSeconds":       p.config.Perceptor.ModelMetricsPauseSeconds,
+			"UnknownImagePauseMilliseconds":  p.config.Perceptor.UnknownImagePauseMilliseconds,
 		},
 	}
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	cm.AddData(map[string]string{fmt.Sprintf("%s.yaml", p.config.Names.Perceptor): string(bytes)})
+	cm.AddData(map[string]string{fmt.Sprintf("%s.yaml", p.config.Perceptor.Name): string(bytes)})
 
 	return cm, nil
 }

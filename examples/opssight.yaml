@@ -6,50 +6,69 @@ metadata:
 spec:
   namespace: opssight-test # Must match .metadata.name
 
-  annotationIntervalSeconds: 30 # Optional
-  dumpIntervalMinutes: 30 # Optional
+  perceptor:
+    name:                           "perceptor"
+    port:                           3001
+    image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master"
+    checkForStalledScansPauseHours: 999999
+    stalledScanClientTimeoutHours:  999999
+    modelMetricsPauseSeconds:       15
+    unknownImagePauseMilliseconds:  15000
+    clientTimeoutMilliseconds:      100000
+  
+  scannerPod:
+    name: "perceptor-scanner"
+    scanner:
+      name: "perceptor-scanner"
+      port:                 3003
+      image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master"
+      clientTimeoutSeconds: 600
+    imageFacade:
+      name: "perceptor-imagefacade"
+      port:               3004
+      internalRegistries: []opssightv1.RegistryAuth{}
+      image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master"
+      serviceAccount:     "perceptor-scanner"
+    replicaCount: 1
+  
+  perceiver:
+      enableImagePerceiver: false
+      enablePodPerceiver:   true
+      port:                 3002
+      imagePerceiver:
+        name:  "image-perceiver"
+        image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master"
+      podPerceiver:
+        name:  "pod-perceiver"
+        image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master"
+      serviceAccount:            "perceiver"
+      annotationIntervalSeconds: 30
+      dumpIntervalMinutes:       30
 
-  hubUser: sysadmin # Optional
-  hubPort: 443 # Optional
-  hubClientTimeoutPerceptorMilliseconds: 100000 # Optional
-  hubClientTimeoutScannerSeconds: 600 # Optional
-  concurrentScanLimit: 2 # Optional
-  totalScanLimit: 1000 # Optional
+  enableSkyfire: false
+  skyfire:
+      image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master"
+      name:           "skyfire"
+      port:           3005
+      serviceAccount: "skyfire"
 
-  # CONTAINER PULL CONFIG
-  perceptorImage: "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master"
-  scannerImage: "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master"
-  podPerceiverImage: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master"
-  imageFacadeImage: "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master"
-  skyfireImage: "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master"
+  enableMetrics: true
+  defaultCPU:    "300m"
+  defaultMem:    "1300Mi"
+  logLevel:      "debug"
+  secretName:    "perceptor"
 
-  imagePerceiver: false # OpenShift only!  Set to true to scan images in the OpenShift internal Docker registry
-  podPerceiver: true  # Both Kubernetes and Openshift.  Set to true to scan images running in pods.
-  metrics: true  # Set to true to enable a prometheus master for metrics visualizations.
-
-  # Example: "300m"
-  defaultCpu: 300m # Optional
-  # Example: "1300Mi"
-  defaultMem: 1300Mi # Optional
-
-  # Log level
-  logLevel: debug # Optional
-
-  # Environment Variables
-  hubuserPasswordEnvVar: PCP_HUBUSERPASSWORD # Optional, environment variable used to manage the Hub password
-
-  # Configuration secret
-  secretName: blackduck-secret # Optional, if the default perceptor secret name to be changed
-
-  initialNoOfHubs: 1
-  maxNoOfHubs: 4
-
-  hubSpec:
-    backupSupport: "No" # Required, possible values are 'Yes', 'No'
-    certificateName: default # Required, possible values are 'default', 'manual' or other hub names
-    dbPrototype: "empty" # Required, possible values are empty or other hub names
-    dockerRegistry: docker.io # Required
-    dockerRepo: blackducksoftware # Required
-    hubVersion: 5.0.0 # Required
-    flavor: small # Required, possible values are 'small', 'medium', 'large' or 'opssight'
-    hubType: senthil # Required, possible values are 'master' or 'worker' or 'any custom value to filter the hubs corresponding to particular opssight'
+  hub:
+    initialNoOfHubs: 1
+    maxNoOfHubs: 4
+    concurrentScanLimit: 2
+    totalScanLimit: 1000
+    hubSpec:
+      backupSupport: "No" # Required, possible values are 'Yes', 'No'
+      certificateName: default # Required, possible values are 'default', 'manual' or other hub names
+      dbPrototype: "empty" # Required, possible values are empty or other hub names
+      dockerRegistry: docker.io # Required
+      dockerRepo: blackducksoftware # Required
+      hubVersion: 5.0.0 # Required
+      flavor: small # Required, possible values are 'small', 'medium', 'large' or 'opssight'
+      hubType: senthil # Required, possible values are 'master' or 'worker' or 'any custom value to filter the hubs corresponding to particular opssight'

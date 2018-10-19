@@ -117,64 +117,72 @@ func GetHubDefaultValue() *hubv1.HubSpec {
 
 // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
-	defaultAnnotationInterval := 30
-	defaultDumpInterval := 30
-	defaultCheckForStalledScansPauseHours := 999999
-	defaultStalledScanClientTimeoutHours := 999999
-	defaultModelMetricsPauseSeconds := 15
-	defaultUnknownImagePauseMilliseconds := 15000
-
 	return &opssightv1.OpsSightSpec{
-		PerceptorPort:             3001,
-		PerceiverPort:             3002,
-		ScannerPort:               3003,
-		ImageFacadePort:           3004,
-		SkyfirePort:               3005,
-		InternalRegistries:        []opssightv1.RegistryAuth{},
-		AnnotationIntervalSeconds: &defaultAnnotationInterval,
-		DumpIntervalMinutes:       &defaultDumpInterval,
-		Hub: &opssightv1.HubSpec{
-			User:                               "sysadmin",
-			Port:                               443,
-			ClientTimeoutPerceptorMilliseconds: 100000,
-			ClientTimeoutScannerSeconds:        600,
-			ConcurrentScanLimit:                2,
-			TotalScanLimit:                     1000,
-			PasswordEnvVar:                     "PCP_HUBUSERPASSWORD",
-			Password:                           "blackduck",
+		Perceptor: &opssightv1.Perceptor{
+			Name:                           "perceptor",
+			Port:                           3001,
+			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+			CheckForStalledScansPauseHours: 999999,
+			StalledScanClientTimeoutHours:  999999,
+			ModelMetricsPauseSeconds:       15,
+			UnknownImagePauseMilliseconds:  15000,
+			ClientTimeoutMilliseconds:      100000,
 		},
-		CheckForStalledScansPauseHours: &defaultCheckForStalledScansPauseHours,
-		StalledScanClientTimeoutHours:  &defaultStalledScanClientTimeoutHours,
-		ModelMetricsPauseSeconds:       &defaultModelMetricsPauseSeconds,
-		UnknownImagePauseMilliseconds:  &defaultUnknownImagePauseMilliseconds,
-		PerceptorImage:                 "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
-		ScannerImage:                   "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
-		ImagePerceiverImage:            "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
-		PodPerceiverImage:              "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
-		ImageFacadeImage:               "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-		SkyfireImage:                   "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
-		PodPerceiver:                   true,
-		ImagePerceiver:                 false,
-		Metrics:                        true,
-		PerceptorSkyfire:               false,
-		DefaultCPU:                     "300m",
-		DefaultMem:                     "1300Mi",
-		LogLevel:                       "debug",
-		SecretName:                     "perceptor",
-		ScannerReplicaCount:            1,
-		ServiceAccounts: map[string]string{
-			"pod-perceiver":          "perceiver",
-			"image-perceiver":        "perceiver",
-			"perceptor-image-facade": "perceptor-scanner",
-			"skyfire":                "skyfire",
+		Perceiver: &opssightv1.Perceiver{
+			EnableImagePerceiver: false,
+			EnablePodPerceiver:   true,
+			Port:                 3002,
+			ImagePerceiver: &opssightv1.ImagePerceiver{
+				Name:  "image-perceiver",
+				Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
+			},
+			PodPerceiver: &opssightv1.PodPerceiver{
+				Name:  "pod-perceiver",
+				Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
+			},
+			ServiceAccount:            "perceiver",
+			AnnotationIntervalSeconds: 30,
+			DumpIntervalMinutes:       30,
 		},
-		Names: &opssightv1.ResourceNames{
-			PodPerceiver:   "pod-perceiver",
-			ImagePerceiver: "image-perceiver",
-			Perceptor:      "perceptor",
-			Skyfire:        "skyfire",
-			Scanner:        "perceptor-scanner",
-			ImageFacade:    "perceptor-imagefacade",
+		ScannerPod: &opssightv1.ScannerPod{
+			ImageFacade: &opssightv1.ImageFacade{
+				Port:               3004,
+				InternalRegistries: []opssightv1.RegistryAuth{},
+				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
+				ServiceAccount:     "perceptor-scanner",
+				Name:               "perceptor-imagefacade",
+			},
+			Scanner: &opssightv1.Scanner{
+				Name:                 "perceptor-scanner",
+				Port:                 3003,
+				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
+				ClientTimeoutSeconds: 600,
+			},
+			ReplicaCount: 1,
 		},
+		Skyfire: &opssightv1.Skyfire{
+			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
+			Name:           "skyfire",
+			Port:           3005,
+			ServiceAccount: "skyfire",
+		},
+		Hub: &opssightv1.Hub{
+			User:                         "sysadmin",
+			Port:                         443,
+			ConcurrentScanLimit:          2,
+			TotalScanLimit:               1000,
+			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
+			Password:                     "blackduck",
+			InitialCount:                 1,
+			MaxCount:                     1,
+			DeleteHubThresholdPercentage: 50,
+			HubSpec:                      nil,
+		},
+		EnableMetrics: true,
+		EnableSkyfire: false,
+		DefaultCPU:    "300m",
+		DefaultMem:    "1300Mi",
+		LogLevel:      "debug",
+		SecretName:    "perceptor",
 	}
 }

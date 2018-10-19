@@ -166,18 +166,18 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 		}
 	*/
 	targets := []string{
-		fmt.Sprintf("%s:%d", p.config.Names.Perceptor, p.config.PerceptorPort),
-		fmt.Sprintf("%s:%d", p.config.Names.Scanner, p.config.ScannerPort),
-		fmt.Sprintf("%s:%d", p.config.Names.ImageFacade, p.config.ImageFacadePort),
+		fmt.Sprintf("%s:%d", p.config.Perceptor.Name, p.config.Perceptor.Port),
+		fmt.Sprintf("%s:%d", p.config.ScannerPod.Scanner.Name, p.config.ScannerPod.Scanner.Port),
+		fmt.Sprintf("%s:%d", p.config.ScannerPod.ImageFacade.Name, p.config.ScannerPod.ImageFacade.Port),
 	}
-	if p.config.ImagePerceiver {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Names.ImagePerceiver, p.config.PerceiverPort))
+	if p.config.Perceiver.EnableImagePerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Perceiver.ImagePerceiver.Name, p.config.Perceiver.Port))
 	}
-	if p.config.PodPerceiver {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Names.PodPerceiver, p.config.PerceiverPort))
+	if p.config.Perceiver.EnablePodPerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Perceiver.PodPerceiver.Name, p.config.Perceiver.Port))
 	}
-	if p.config.PerceptorSkyfire {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Names.Skyfire, p.config.SkyfirePort))
+	if p.config.EnableSkyfire {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Skyfire.Name, p.config.Skyfire.Port))
 	}
 	data := map[string]interface{}{
 		"global": map[string]interface{}{
