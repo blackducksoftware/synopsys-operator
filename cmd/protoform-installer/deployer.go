@@ -35,9 +35,14 @@ import (
 )
 
 func main() {
-	configPath := os.Args[1]
-	fmt.Printf("Config path: %s", configPath)
-	runProtoform(configPath)
+	if len(os.Args) > 1 {
+		configPath := os.Args[1]
+		runProtoform(configPath)
+		fmt.Printf("Config path: %s", configPath)
+		return
+	}
+	fmt.Println("WARNING: Running protoform with defaults, no config file sent.")
+	runProtoform("")
 }
 
 func runProtoform(configPath string) {
@@ -78,6 +83,7 @@ func runProtoform(configPath string) {
 	})
 	deployer.AddController(opssSightController)
 
+	fmt.Printf("Starting deployer.  All controllers have been added to horizon.")
 	deployer.Deploy()
 
 	<-stopCh
@@ -113,15 +119,13 @@ func GetHubDefaultValue() *hubv1.HubSpec {
 		Environs:        []hubv1.Environs{},
 		ImagePrefix:     "hub",
 	}
-}
-
-// GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
+} // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Perceptor: &opssightv1.Perceptor{
-			Name:                           "perceptor",
-			Port:                           3001,
-			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+			Name:  "perceptor",
+			Port:  3001,
+			Image: "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
 			CheckForStalledScansPauseHours: 999999,
 			StalledScanClientTimeoutHours:  999999,
 			ModelMetricsPauseSeconds:       15,
@@ -176,7 +180,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			InitialCount:                 1,
 			MaxCount:                     1,
 			DeleteHubThresholdPercentage: 50,
-			HubSpec:                      nil,
+			HubSpec: nil,
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,

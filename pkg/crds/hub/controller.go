@@ -102,6 +102,11 @@ func (c *Controller) Deploy() error {
 
 	// Perceptor configMap
 	hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.protoform.Config.Namespace, Name: "federator"})
+
+	if c.protoform.Config.HubFederatorConfig.HubConfig == nil {
+		panic("Cant start with nil federator configuration ! Set HubFederatorConfig with Port, User")
+	}
+
 	data := map[string]interface{}{
 		"HubConfig": map[string]interface{}{
 			"Port":                         c.protoform.Config.HubFederatorConfig.HubConfig.Port,

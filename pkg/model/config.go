@@ -36,7 +36,13 @@ type Config struct {
 	Threadiness           int
 	PostgresRestartInMins int
 	NFSPath               string
-	HubFederatorConfig    HubFederatorConfig
+	HubFederatorConfig    *HubFederatorConfig
+}
+
+func (c *Config) SelfSetDefaults() {
+	c.HubFederatorConfig = &HubFederatorConfig{}
+	c.HubFederatorConfig.HubConfig = &HubConfig{}
+	c.HubFederatorConfig = &HubFederatorConfig{}
 }
 
 // HubFederatorConfig will have the configuration related to hub federator
@@ -65,7 +71,7 @@ func (config *Config) GetLogLevel() (log.Level, error) {
 }
 
 // GetConfig will read the config file and set in the Viper
-func GetConfig(configPath string) (*Config, error) {
+func ReadConfigFromPath(configPath string) (*Config, error) {
 	var config *Config
 
 	viper.SetConfigFile(configPath)
