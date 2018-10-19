@@ -161,6 +161,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		DefaultMem:                     "1300Mi",
 		LogLevel:                       "debug",
 		SecretName:                     "perceptor",
+		ScannerReplicaCount:            1,
 		ServiceAccounts: map[string]string{
 			"pod-perceiver":          "perceiver",
 			"image-perceiver":        "perceiver",
