@@ -122,9 +122,9 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 		VolumeMounts: postgresVolumeMounts,
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: postgresPort, Protocol: horizonapi.ProtocolTCP},
 		ReadinessProbeConfigs: []*horizonapi.ProbeConfig{{
-			ActionConfig: horizonapi.ActionConfig{Command: []string{"if [ -f /tmp/clone ]; then return 0; else return 1; fi"}},
+			ActionConfig: horizonapi.ActionConfig{Command: []string{"if [ -f /tmp/BLACKDUCK_MIGRATING ]; then return 1; else return 0; fi"}},
 			Delay:        1,
-			Interval:     10,
+			Interval:     5,
 		}},
 	}
 	initContainers := []*util.Container{}
