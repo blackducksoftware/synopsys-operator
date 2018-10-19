@@ -68,7 +68,7 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 		newSpec := opssightv1.Spec
 		defaultSpec := h.Defaults
 		err := mergo.Merge(&newSpec, defaultSpec)
-		log.Debugf("merged opssight details %+v", newSpec)
+		log.Debugf("merged opssight details: %+v", newSpec)
 		if err != nil {
 			recordError("unable to merge objects")
 			h.updateState("error", "error", err.Error(), opssightv1)

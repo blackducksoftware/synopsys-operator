@@ -35,7 +35,7 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      p.config.ContainerNames["perceptor"],
+		Name:      p.config.Names.Perceptor,
 		Namespace: p.config.Namespace,
 	})
 	pod, err := p.perceptorPod()
@@ -46,15 +46,15 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	rc.AddLabelSelectors(map[string]string{"name": p.config.ContainerNames["perceptor"]})
+	rc.AddLabelSelectors(map[string]string{"name": p.config.Names.Perceptor})
 	return rc, nil
 }
 
 func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: p.config.ContainerNames["perceptor"],
+		Name: p.config.Names.Perceptor,
 	})
-	pod.AddLabels(map[string]string{"name": p.config.ContainerNames["perceptor"]})
+	pod.AddLabels(map[string]string{"name": p.config.Names.Perceptor})
 	cont, err := p.perceptorContainer()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -73,17 +73,17 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 }
 
 func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
-	name := p.config.ContainerNames["perceptor"]
+	name := p.config.Names.Perceptor
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    name,
-		Image:   fmt.Sprintf("%s/%s/%s:%s", p.config.Registry, p.config.ImagePath, p.config.PerceptorImageName, p.config.PerceptorImageVersion),
+		Image:   p.config.PerceptorImage,
 		Command: []string{fmt.Sprintf("./%s", name)},
 		Args:    []string{fmt.Sprintf("/etc/%s/%s.yaml", name, name)},
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
 	})
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", *p.config.PerceptorPort),
+		ContainerPort: fmt.Sprintf("%d", p.config.PerceptorPort),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
@@ -95,7 +95,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 	}
 
 	err = container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: p.config.HubUserPasswordEnvVar,
+		NameOrPrefix: p.config.Hub.PasswordEnvVar,
 		Type:         horizonapi.EnvFromSecret,
 		KeyOrVal:     "HubUserPassword",
 		FromName:     p.config.SecretName,
@@ -108,29 +108,30 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 }
 
 func (p *SpecConfig) perceptorVolume() *components.Volume {
+	name := p.config.Names.Perceptor
 	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      p.config.ContainerNames["perceptor"],
-		MapOrSecretName: p.config.ContainerNames["perceptor"],
+		VolumeName:      name,
+		MapOrSecretName: name,
 	})
 }
 
 // PerceptorService creates a service for perceptor
 func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      p.config.ContainerNames["perceptor"],
+		Name:      p.config.Names.Perceptor,
 		Namespace: p.config.Namespace,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(*p.config.PerceptorPort),
-		TargetPort: fmt.Sprintf("%d", *p.config.PerceptorPort),
+		Port:       int32(p.config.PerceptorPort),
+		TargetPort: fmt.Sprintf("%d", p.config.PerceptorPort),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	service.AddSelectors(map[string]string{"name": p.config.ContainerNames["perceptor"]})
+	service.AddSelectors(map[string]string{"name": p.config.Names.Perceptor})
 
 	return service, nil
 }
@@ -138,22 +139,22 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 // PerceptorConfigMap creates a config map for perceptor
 func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
 	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      p.config.ContainerNames["perceptor"],
+		Name:      p.config.Names.Perceptor,
 		Namespace: p.config.Namespace,
 	})
 	data := map[string]interface{}{
 		"Hub": map[string]interface{}{
 			"Hosts":                     []string{},
-			"Port":                      *p.config.HubPort,
-			"User":                      p.config.HubUser,
-			"PasswordEnvVar":            p.config.HubUserPasswordEnvVar,
-			"ClientTimeoutMilliseconds": *p.config.HubClientTimeoutPerceptorMilliseconds,
-			"ConcurrentScanLimit":       *p.config.ConcurrentScanLimit,
-			"TotalScanLimit":            *p.config.TotalScanLimit,
+			"Port":                      p.config.Hub.Port,
+			"User":                      p.config.Hub.User,
+			"PasswordEnvVar":            p.config.Hub.PasswordEnvVar,
+			"ClientTimeoutMilliseconds": p.config.Hub.ClientTimeoutPerceptorMilliseconds,
+			"ConcurrentScanLimit":       p.config.Hub.ConcurrentScanLimit,
+			"TotalScanLimit":            p.config.Hub.TotalScanLimit,
 		},
-		"Port":        *p.config.PerceptorPort,
+		"Port":        p.config.PerceptorPort,
 		"LogLevel":    p.config.LogLevel,
-		"UseMockMode": *p.config.UseMockMode,
+		"UseMockMode": false,
 		"Timings": map[string]interface{}{
 			"CheckForStalledScansPauseHours": *p.config.CheckForStalledScansPauseHours,
 			"StalledScanClientTimeoutHours":  *p.config.StalledScanClientTimeoutHours,
@@ -165,7 +166,7 @@ func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	cm.AddData(map[string]string{fmt.Sprintf("%s.yaml", p.config.ContainerNames["perceptor"]): string(bytes)})
+	cm.AddData(map[string]string{fmt.Sprintf("%s.yaml", p.config.Names.Perceptor): string(bytes)})
 
 	return cm, nil
 }

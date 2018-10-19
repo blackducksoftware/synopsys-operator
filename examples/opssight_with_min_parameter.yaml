@@ -4,42 +4,11 @@ metadata:
   clusterName: ""
   name: opssight-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
 spec:
-  namespace: opssight-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
+  namespace: opssight-test # Must match .metadata.name
 
-  annotationIntervalSeconds: 30 # Optional, if the default annotation interval in seconds to be changed
-  dumpIntervalMinutes: 30 # Optional, if the default port for perceptor-imagefacade to be changed
-
-  hubUser: sysadmin # Optional, if the default port for perceptor-imagefacade to be changed
-  hubPort: 443 # Optional, if the default port for perceptor-imagefacade to be changed
-  hubClientTimeoutPerceptorMilliseconds: 100000 # Optional, if the default port for perceptor-imagefacade to be changed
-  hubClientTimeoutScannerSeconds: 600 # Optional, if the default port for perceptor-imagefacade to be changed
-  concurrentScanLimit: 2 # Optional, if the default port for perceptor-imagefacade to be changed
-  totalScanLimit: 1000 # Optional, if the default port for perceptor-imagefacade to be changed
-
-  # CONTAINER PULL CONFIG
-  # These are for defining docker registry and image location and versions
-  registry: gcr.io
-  imagePath: gke-verification/blackducksoftware
-  # Default version will override the corresponding image version
-  defaultVersion: "master"
-
-  imagePerceiver: false # if images in OpenShift internal Docker registry to be scanned, enable it
-  podPerceiver: true  # if images running in Kubernetes/OpenShift pods to be scanned, enable it
-  metrics: true  # Optional, if prometheus metrics to be enabled to measure the metrics, enable it
-
-  # Should be passed like: e.g. "300m"
-  defaultCpu: 300m # Optional, if the default cpu for all OpsSight containers to be changed
-  # Should be passed like: e.g "1300Mi"
-  defaultMem: 1300Mi # Optional, if the default memory for all OpsSight containers to be changed
-
-  # Log level
-  logLevel: debug # Optional, if the default log level to be changed
-
-  # Environment Variables
-  hubuserPasswordEnvVar: PCP_HUBUSERPASSWORD # Optional, if the default environment variable to be changed
-
-  # Configuration secret
-  secretName: blackduck-secret # Optional, if the default perceptor secret name to be changed
+  hubUser: sysadmin # Optional
+  concurrentScanLimit: 2
+  totalScanLimit: 1000
 
   initialNoOfHubs: 1
   maxNoOfHubs: 4
