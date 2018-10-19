@@ -47,7 +47,6 @@ func runProtoform(configPath string) {
 	}
 
 	stopCh := make(chan struct{})
-	defer close(stopCh)
 
 	alertController, err := alert.NewController(&alert.Config{
 		Config:        deployer.Config,
@@ -82,7 +81,6 @@ func runProtoform(configPath string) {
 	deployer.Deploy()
 
 	<-stopCh
-
 }
 
 // GetAlertDefaultValue creates a alert crd configuration object with defaults
