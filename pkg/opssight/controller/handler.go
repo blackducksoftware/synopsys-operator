@@ -135,11 +135,7 @@ func (h *OpsSightHandler) updateState(specState string, statusState string, erro
 	opssight.Status.State = statusState
 	opssight.Status.ErrorMessage = errorMessage
 	opssight, err := h.updateOpsSightObject(opssight)
-	if err != nil {
-		log.Errorf("couldn't update the state of opssight object: %s", err.Error())
-		recordError("couldn't update the state of opssight object")
-	}
-	return opssight, err
+	return opssight, errors.Annotate(err, "unable to update the state of opssight object")
 }
 
 func (h *OpsSightHandler) updateOpsSightObject(obj *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
