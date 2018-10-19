@@ -51,7 +51,7 @@ func (d *DeleteHub) Run(resources api.ControllerResources, ch chan struct{}) err
 		return err
 	}
 	// whether the max no of hub is reached?
-	if *d.OpsSightSpec.MaxNoOfHubs == hubCounts {
+	if d.OpsSightSpec.Hub.MaxCount == hubCounts {
 
 	}
 

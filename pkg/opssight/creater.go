@@ -242,7 +242,7 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
 		} else {
 			for _, internalRegistry := range internalRegistries {
 				registryAuth := v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
-				opsSightSpec.InternalRegistries = append(opsSightSpec.InternalRegistries, registryAuth)
+				opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightSpec.ScannerPod.ImageFacade.InternalRegistries, registryAuth)
 			}
 		}
 	}
@@ -262,13 +262,12 @@ func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 }
 
 func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
-	var i int
-	if *createOpsSight.InitialNoOfHubs > *createOpsSight.MaxNoOfHubs {
-		createOpsSight.InitialNoOfHubs = createOpsSight.MaxNoOfHubs
+	if createOpsSight.Hub.InitialCount > createOpsSight.Hub.MaxCount {
+		createOpsSight.Hub.InitialCount = createOpsSight.Hub.MaxCount
 	}
 
 	hubErrs := map[string]error{}
-	for i = 0; i < *createOpsSight.InitialNoOfHubs; i++ {
+	for i := 0; i < createOpsSight.Hub.InitialCount; i++ {
 		name := fmt.Sprintf("%s-%v", createOpsSight.Namespace, i)
 
 		ns, err := util.CreateNamespace(ac.kubeClient, name)
@@ -279,7 +278,7 @@ func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
 		}
 
 		hubSpec := &hub_v1.HubSpec{}
-		hubSpec = createOpsSight.HubSpec
+		hubSpec = createOpsSight.Hub.HubSpec
 		hubSpec.Namespace = name
 		createHub := &hub_v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
 		log.Debugf("hub[%d]: %+v", i, createHub)
