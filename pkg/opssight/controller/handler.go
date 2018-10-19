@@ -31,6 +31,7 @@ import (
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
+	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -61,44 +62,54 @@ type OpsSightHandler struct {
 
 // ObjectCreated will be called for create opssight events
 func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
+	if err := h.handleObjectCreated(obj); err != nil {
+		log.Errorf("unable to handle object created: %s", err.Error())
+	}
+}
+
+func (h *OpsSightHandler) handleObjectCreated(obj interface{}) error {
 	recordEvent("objectCreated")
 	log.Debugf("objectCreated: %+v", obj)
-	opssightv1 := obj.(*opssight_v1.OpsSight)
-	if strings.EqualFold(opssightv1.Spec.State, "") {
-		newSpec := opssightv1.Spec
-		defaultSpec := h.Defaults
-		err := mergo.Merge(&newSpec, defaultSpec)
-		log.Debugf("merged opssight details: %+v", newSpec)
-		if err != nil {
-			recordError("unable to merge objects")
-			h.updateState("error", "error", err.Error(), opssightv1)
-		} else {
-			opssightv1.Spec = newSpec
-			opssightv1, err := h.updateState("pending", "creating", "", opssightv1)
-
-			if err == nil {
-				opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
-
-				err = opssightCreator.CreateOpsSight(&opssightv1.Spec)
-				if err != nil {
-					recordError("unable to create opssight")
-					log.Errorf("unable to create opssight %s due to %s", opssightv1.Name, err.Error())
-				}
-
-				opssightv1, err1 := util.GetOpsSight(h.OpsSightClientset, opssightv1.Name, opssightv1.Name)
-				if err1 != nil {
-					recordError("unable to get opssight")
-					log.Errorf("unable to get the opssight %s due to %+v", opssightv1.Name, err1)
-				} else {
-					if err != nil {
-						h.updateState("error", "error", err.Error(), opssightv1)
-					} else {
-						h.updateState("running", "running", "", opssightv1)
-					}
-				}
-			}
-		}
+	opssightv1, ok := obj.(*opssight_v1.OpsSight)
+	if !ok {
+		return errors.Errorf("unable to cast")
 	}
+	if !strings.EqualFold(opssightv1.Spec.State, "") {
+		return nil // ??? why nil?
+	}
+	newSpec := opssightv1.Spec
+	defaultSpec := h.Defaults
+	err := mergo.Merge(&newSpec, defaultSpec)
+	if err != nil {
+		recordError("unable to merge objects")
+		h.updateState("error", "error", err.Error(), opssightv1)
+		return errors.Annotate(err, "unable to merge objects")
+	}
+	log.Debugf("merged opssight details: %+v", newSpec)
+
+	opssightv1.Spec = newSpec
+	opssightv1, err = h.updateState("pending", "creating", "", opssightv1)
+	if err != nil {
+		recordError("unable to update state")
+		return errors.Annotate(err, "unable to update state")
+	}
+	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
+
+	err = opssightCreator.CreateOpsSight(&opssightv1.Spec)
+	if err != nil {
+		recordError("unable to create opssight")
+		h.updateState("error", "error", err.Error(), opssightv1)
+		return errors.Annotatef(err, "unable to create opssight %s", opssightv1.Name)
+	}
+
+	opssightv1, err = util.GetOpsSight(h.OpsSightClientset, opssightv1.Name, opssightv1.Name)
+	if err != nil {
+		recordError("unable to get opssight")
+		return errors.Annotatef(err, "unable to get the opssight %s", opssightv1.Name)
+	}
+
+	h.updateState("running", "running", "", opssightv1)
+	return nil
 }
 
 // ObjectDeleted will be called for delete opssight events
