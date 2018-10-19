@@ -21,6 +21,7 @@ limitations under the License.
 package v1
 
 import (
+	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -155,6 +156,26 @@ func (in *OpsSightSpec) DeepCopyInto(out *OpsSightSpec) {
 		in, out := &in.Names, &out.Names
 		*out = new(ResourceNames)
 		**out = **in
+	}
+	if in.InitialNoOfHubs != nil {
+		in, out := &in.InitialNoOfHubs, &out.InitialNoOfHubs
+		*out = new(int)
+		**out = **in
+	}
+	if in.MaxNoOfHubs != nil {
+		in, out := &in.MaxNoOfHubs, &out.MaxNoOfHubs
+		*out = new(int)
+		**out = **in
+	}
+	if in.DeleteHubThresholdPercentage != nil {
+		in, out := &in.DeleteHubThresholdPercentage, &out.DeleteHubThresholdPercentage
+		*out = new(int)
+		**out = **in
+	}
+	if in.HubSpec != nil {
+		in, out := &in.HubSpec, &out.HubSpec
+		*out = new(hubv1.HubSpec)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

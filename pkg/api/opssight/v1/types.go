@@ -22,6 +22,7 @@ under the License.
 package v1
 
 import (
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -116,6 +117,12 @@ type OpsSightSpec struct {
 
 	// Configuration secret
 	SecretName string `json:"secretName"`
+
+	// Auto scaling parameters
+	InitialNoOfHubs              *int        `json:"initialNoOfHubs"`
+	MaxNoOfHubs                  *int        `json:"maxNoOfHubs"`
+	DeleteHubThresholdPercentage *int        `json:"deleteHubThresholdPercentage"`
+	HubSpec                      *v1.HubSpec `json:"hubSpec"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource

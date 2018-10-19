@@ -20,7 +20,7 @@ items:
       spec:
         containers:
         - name: blackduck-protoform
-          image: gcr.io/gke-verification/blackducksoftware/protoform-installer:${BCH}
+          image: gcr.io/saas-hub-stg/blackducksoftware/protoform-installer:${BCH}
           imagePullPolicy: Always
           ports:
           - containerPort: 8080
@@ -57,7 +57,7 @@ items:
   metadata:
     name: blackduck-protoform
   data:
-    config.json: '{"DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "HubFederatorConfig": {"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "Port": 3016, "Registry": "gcr.io", "ImagePath": "gke-verification/blackducksoftware", "ImageName": "federator", "ImageVersion": "master"}}'
+    config.json: '{"DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "PostgresRestartInMins": 10, "NFSPath" : "/kubenfs", "HubFederatorConfig": {"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "Port": 3016, "Registry": "gcr.io", "ImagePath": "saas-hub-stg/blackducksoftware", "ImageName": "federator", "ImageVersion": "master"}}'
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
@@ -75,3 +75,62 @@ items:
     kind: ClusterRole
     name: cluster-admin
     apiGroup: ""
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      prometheus.io/scrape: 'true'
+    labels:
+      name: prometheus
+    name: prometheus
+  spec:
+    selector:
+      app: prometheus
+    type: NodePort
+    ports:
+    - name: prometheus
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    name: prometheus
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: prometheus
+    template:
+      metadata:
+        name: prometheus
+        labels:
+          app: prometheus
+      spec:
+        containers:
+        - name: prometheus
+          image: prom/prometheus:v2.1.0
+          args:
+          - '--log.level=debug'
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/tmp/data/'
+          ports:
+          - name: web
+            containerPort: 9090
+          volumeMounts:
+          - name: data
+            mountPath: /data
+          - name: config-volume
+            mountPath: /etc/prometheus
+        volumes:
+        - name: data
+          emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: prometheus
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: prometheus
+  data:
+    prometheus.yml: '{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"blackduck-protoform-scrape","scrape_interval":"5s","static_configs":[{"targets":["blackduck-protoform:8080"]}]}]}'

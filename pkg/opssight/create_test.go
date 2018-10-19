@@ -29,7 +29,7 @@ import (
 func RunCreaterTests() {
 	Describe("Creater", func() {
 		It("should instantiate without crashing", func() {
-			creater := NewCreater(nil, nil, nil, nil, nil, nil)
+			creater := NewCreater(nil, nil, nil, nil, nil, nil, nil)
 			Expect(creater).ToNot(BeNil())
 		})
 	})

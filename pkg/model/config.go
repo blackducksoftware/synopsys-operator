@@ -30,11 +30,13 @@ import (
 
 // Config type will used for protoform config
 type Config struct {
-	DryRun             bool
-	LogLevel           string
-	Namespace          string
-	Threadiness        int
-	HubFederatorConfig HubFederatorConfig
+	DryRun                bool
+	LogLevel              string
+	Namespace             string
+	Threadiness           int
+	PostgresRestartInMins int
+	NFSPath               string
+	HubFederatorConfig    HubFederatorConfig
 }
 
 // HubFederatorConfig will have the configuration related to hub federator

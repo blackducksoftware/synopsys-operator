@@ -532,6 +532,11 @@ func GetOpsSight(opssightClientset *opssightclientset.Clientset, namespace strin
 	return opssightClientset.SynopsysV1().OpsSights(namespace).Get(name, metav1.GetOptions{})
 }
 
+// GetOpsSights gets all opssights
+func GetOpsSights(clientSet *opssightclientset.Clientset) (*opssight_v1.OpsSightList, error) {
+	return clientSet.SynopsysV1().OpsSights(metav1.NamespaceAll).List(metav1.ListOptions{})
+}
+
 // ListHubs will list all hubs in the cluster
 func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v1.HubList, error) {
 	return hubClientset.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
@@ -540,6 +545,11 @@ func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v1.H
 // WatchHubs will watch for hub events in the cluster
 func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.Interface, error) {
 	return hubClientset.SynopsysV1().Hubs(namespace).Watch(metav1.ListOptions{})
+}
+
+// CreateHub will create hub in the cluster
+func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v1.Hub) (*hub_v1.Hub, error) {
+	return hubClientset.SynopsysV1().Hubs(namespace).Create(createHub)
 }
 
 // GetHub will get hubs in the cluster
@@ -659,4 +669,38 @@ func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace str
 // GetOpenShiftSecurityConstraint get a OpenShift security constraints
 func GetOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, name string) (*securityv1.SecurityContextConstraints, error) {
 	return osSecurityClient.SecurityContextConstraints().Get(name, metav1.GetOptions{})
+}
+
+// UpdateOpenShiftSecurityConstraint updates a OpenShift security constraints
+func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, serviceAccounts []string, name string) error {
+	scc, err := GetOpenShiftSecurityConstraint(osSecurityClient, name)
+	if err != nil {
+		return fmt.Errorf("failed to get scc %s: %v", name, err)
+	}
+
+	newUsers := []string{}
+	// Only add the service account if it isn't already in the list of users for the privileged scc
+	for _, sa := range serviceAccounts {
+		exist := false
+		for _, user := range scc.Users {
+			if strings.Compare(user, sa) == 0 {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			newUsers = append(newUsers, sa)
+		}
+	}
+
+	if len(newUsers) > 0 {
+		scc.Users = append(scc.Users, newUsers...)
+
+		_, err = osSecurityClient.SecurityContextConstraints().Update(scc)
+		if err != nil {
+			return fmt.Errorf("failed to update scc %s: %v", name, err)
+		}
+	}
+	return err
 }
