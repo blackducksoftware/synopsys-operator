@@ -4,39 +4,39 @@ metadata:
   clusterName: ""
   name: opssight-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
 spec:
-  namespace: opssight-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
+  namespace: opssight-test # Must match .metadata.name
 
-  annotationIntervalSeconds: 30 # Optional, if the default annotation interval in seconds to be changed
-  dumpIntervalMinutes: 30 # Optional, if the default port for perceptor-imagefacade to be changed
+  annotationIntervalSeconds: 30 # Optional
+  dumpIntervalMinutes: 30 # Optional
 
-  hubUser: sysadmin # Optional, if the default port for perceptor-imagefacade to be changed
-  hubPort: 443 # Optional, if the default port for perceptor-imagefacade to be changed
-  hubClientTimeoutPerceptorMilliseconds: 100000 # Optional, if the default port for perceptor-imagefacade to be changed
-  hubClientTimeoutScannerSeconds: 600 # Optional, if the default port for perceptor-imagefacade to be changed
-  concurrentScanLimit: 2 # Optional, if the default port for perceptor-imagefacade to be changed
-  totalScanLimit: 1000 # Optional, if the default port for perceptor-imagefacade to be changed
+  hubUser: sysadmin # Optional
+  hubPort: 443 # Optional
+  hubClientTimeoutPerceptorMilliseconds: 100000 # Optional
+  hubClientTimeoutScannerSeconds: 600 # Optional
+  concurrentScanLimit: 2 # Optional
+  totalScanLimit: 1000 # Optional
 
   # CONTAINER PULL CONFIG
-  # These are for defining docker registry and image location and versions
-  registry: gcr.io
-  imagePath: gke-verification/blackducksoftware
-  # Default version will override the corresponding image version
-  defaultVersion: "master"
+  perceptorImage: "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master"
+  scannerImage: "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master"
+  podPerceiverImage: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master"
+  imageFacadeImage: "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master"
+  skyfireImage: "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master"
 
-  imagePerceiver: false # if images in OpenShift internal Docker registry to be scanned, enable it
-  podPerceiver: true  # if images running in Kubernetes/OpenShift pods to be scanned, enable it
-  metrics: true  # Optional, if prometheus metrics to be enabled to measure the metrics, enable it
+  imagePerceiver: false # OpenShift only!  Set to true to scan images in the OpenShift internal Docker registry
+  podPerceiver: true  # Both Kubernetes and Openshift.  Set to true to scan images running in pods.
+  metrics: true  # Set to true to enable a prometheus master for metrics visualizations.
 
-  # Should be passed like: e.g. "300m"
-  defaultCpu: 300m # Optional, if the default cpu for all OpsSight containers to be changed
-  # Should be passed like: e.g "1300Mi"
-  defaultMem: 1300Mi # Optional, if the default memory for all OpsSight containers to be changed
+  # Example: "300m"
+  defaultCpu: 300m # Optional
+  # Example: "1300Mi"
+  defaultMem: 1300Mi # Optional
 
   # Log level
-  logLevel: debug # Optional, if the default log level to be changed
+  logLevel: debug # Optional
 
   # Environment Variables
-  hubuserPasswordEnvVar: PCP_HUBUSERPASSWORD # Optional, if the default environment variable to be changed
+  hubuserPasswordEnvVar: PCP_HUBUSERPASSWORD # Optional, environment variable used to manage the Hub password
 
   # Configuration secret
   secretName: blackduck-secret # Optional, if the default perceptor secret name to be changed
