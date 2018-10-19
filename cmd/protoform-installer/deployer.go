@@ -56,6 +56,9 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(alertController)
 
 	hubController, err := hub.NewController(&hub.ProtoformConfig{
@@ -66,6 +69,9 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(hubController)
 
 	opssSightController, err := opssight.NewController(&opssight.Config{
@@ -76,9 +82,14 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(opssSightController)
 
-	deployer.Deploy()
+	if err = deployer.Deploy(); err != nil {
+		panic(err)
+	}
 
 	<-stopCh
 }
