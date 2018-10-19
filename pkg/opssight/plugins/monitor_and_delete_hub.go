@@ -35,7 +35,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// DeleteHub
+// DeleteHub ...
 type DeleteHub struct {
 	Config         *model.Config
 	KubeClient     *kubernetes.Clientset
