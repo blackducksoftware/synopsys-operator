@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
@@ -55,6 +56,7 @@ type OpsSightHandler struct {
 	CmMutex           chan bool
 	OSSecurityClient  *securityclient.SecurityV1Client
 	RouteClient       *routeclient.RouteV1Client
+	HubClient         *hubclientset.Clientset
 }
 
 // ObjectCreated will be called for create opssight events
@@ -75,7 +77,7 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 			opssightv1, err := h.updateState("pending", "creating", "", opssightv1)
 
 			if err == nil {
-				opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient)
+				opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
 
 				err = opssightCreator.CreateOpsSight(&opssightv1.Spec)
 				if err != nil {
@@ -103,7 +105,7 @@ func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
 func (h *OpsSightHandler) ObjectDeleted(name string) {
 	recordEvent("objectDeleted")
 	log.Debugf("objectDeleted: %+v", name)
-	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient)
+	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
 	err := opssightCreator.DeleteOpsSight(name)
 	if err != nil {
 		log.Errorf("unable to delete opssight: %v", err)

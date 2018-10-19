@@ -33,10 +33,23 @@ spec:
   defaultMem: 1300Mi # Optional, if the default memory for all OpsSight containers to be changed
 
   # Log level
-  logLevel: info # Optional, if the default log level to be changed
+  logLevel: debug # Optional, if the default log level to be changed
 
   # Environment Variables
   hubuserPasswordEnvVar: PCP_HUBUSERPASSWORD # Optional, if the default environment variable to be changed
 
   # Configuration secret
   secretName: blackduck-secret # Optional, if the default perceptor secret name to be changed
+
+  initialNoOfHubs: 1
+  maxNoOfHubs: 4
+
+  hubSpec:
+    backupSupport: "No" # Required, possible values are 'Yes', 'No'
+    certificateName: default # Required, possible values are 'default', 'manual' or other hub names
+    dbPrototype: "empty" # Required, possible values are empty or other hub names
+    dockerRegistry: docker.io # Required
+    dockerRepo: blackducksoftware # Required
+    hubVersion: 5.0.0 # Required
+    flavor: small # Required, possible values are 'small', 'medium', 'large' or 'opssight'
+    hubType: senthil # Required, possible values are 'master' or 'worker' or 'any custom value to filter the hubs corresponding to particular opssight'

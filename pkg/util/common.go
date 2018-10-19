@@ -547,6 +547,11 @@ func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.In
 	return hubClientset.SynopsysV1().Hubs(namespace).Watch(metav1.ListOptions{})
 }
 
+// CreateHub will create hub in the cluster
+func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v1.Hub) (*hub_v1.Hub, error) {
+	return hubClientset.SynopsysV1().Hubs(namespace).Create(createHub)
+}
+
 // GetHub will get hubs in the cluster
 func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*hub_v1.Hub, error) {
 	return hubClientset.SynopsysV1().Hubs(namespace).Get(name, metav1.GetOptions{})

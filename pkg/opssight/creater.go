@@ -28,7 +28,9 @@ import (
 	"strings"
 	"time"
 
+	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -36,6 +38,7 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -48,11 +51,12 @@ type Creater struct {
 	opssightClient   *opssightclientset.Clientset
 	osSecurityClient *securityclient.SecurityV1Client
 	routeClient      *routeclient.RouteV1Client
+	hubClient        *hubclientset.Clientset
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
+func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *hubclientset.Clientset) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient, routeClient: routeClient, hubClient: hubClient}
 }
 
 // DeleteOpsSight will delete the Black Duck OpsSight
@@ -183,6 +187,11 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 		if err != nil {
 			return errors.Trace(err)
 		}
+
+		err = ac.deployHub(createOpsSight)
+		if err != nil {
+			return errors.Trace(err)
+		}
 	}
 
 	return nil
@@ -250,4 +259,36 @@ func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 	}
 
 	return nil
+}
+
+func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
+	var i int
+	if *createOpsSight.InitialNoOfHubs > *createOpsSight.MaxNoOfHubs {
+		createOpsSight.InitialNoOfHubs = createOpsSight.MaxNoOfHubs
+	}
+
+	hubErrs := map[string]error{}
+	for i = 0; i < *createOpsSight.InitialNoOfHubs; i++ {
+		name := fmt.Sprintf("%s-%v", createOpsSight.Namespace, i)
+
+		ns, err := util.CreateNamespace(ac.kubeClient, name)
+		log.Debugf("created namespace: %+v", ns)
+		if err != nil {
+			log.Errorf("hub[%d]: unable to create the namespace due to %+v", i, err)
+			hubErrs[name] = fmt.Errorf("unable to create the namespace due to %+v", err)
+		}
+
+		hubSpec := &hub_v1.HubSpec{}
+		hubSpec = createOpsSight.HubSpec
+		hubSpec.Namespace = name
+		createHub := &hub_v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
+		log.Debugf("hub[%d]: %+v", i, createHub)
+		_, err = util.CreateHub(ac.hubClient, name, createHub)
+		if err != nil {
+			log.Errorf("hub[%d]: unable to create the hub due to %+v", i, err)
+			hubErrs[name] = fmt.Errorf("unable to create the hub due to %+v", err)
+		}
+	}
+
+	return util.NewMapErrors(hubErrs)
 }
