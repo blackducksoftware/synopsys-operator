@@ -39,15 +39,26 @@ import (
 
 // NewController will initialize the input config file, create the hub informers, initiantiate all rest api
 func NewController(configPath string) (*Deployer, error) {
-	config, err := model.GetConfig(configPath)
-	if err != nil {
-		log.Errorf("Failed to load configuration: %s", err.Error())
-		panic(err)
+	// initialized config as default.
+	config := &model.Config{
+		LogLevel: "INFO",
+		HubFederatorConfig: &model.HubFederatorConfig{
+			HubConfig: &model.HubConfig{},
+		},
 	}
-	if config == nil {
-		err = fmt.Errorf("expected non-nil config, but got nil")
-		log.Errorf(err.Error())
-		panic(err)
+
+	if configPath != "" {
+		log.Infof("configdata in %v, creating perceptor config. ")
+		config, err := model.ReadConfigFromPath(configPath)
+		if err != nil {
+			log.Errorf("Failed to load configuration: %s", err.Error())
+			panic(err)
+		}
+		if config == nil {
+			err = fmt.Errorf("expected non-nil config, but got nil")
+			log.Errorf(err.Error())
+			panic(err)
+		}
 	}
 
 	level, err := config.GetLogLevel()
@@ -62,8 +73,11 @@ func NewController(configPath string) (*Deployer, error) {
 	// creates the in-cluster config
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
-		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s", err)
+		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
 		kubeConfig, err = newKubeClientFromOutsideCluster()
+		if err != nil {
+			log.Errorf("Failed at both incluster and native config ! Giving up. %v\n", err)
+		}
 	}
 
 	if err != nil {
