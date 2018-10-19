@@ -54,7 +54,6 @@ type OpsSightHandler struct {
 	OpsSightClientset *opssightclientset.Clientset
 	Defaults          *opssight_v1.OpsSightSpec
 	Namespace         string
-	CmMutex           chan bool
 	OSSecurityClient  *securityclient.SecurityV1Client
 	RouteClient       *routeclient.RouteV1Client
 	HubClient         *hubclientset.Clientset
