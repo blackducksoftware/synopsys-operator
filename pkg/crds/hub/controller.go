@@ -135,7 +135,7 @@ func (c *Controller) Deploy() error {
 	for {
 		blackduckSecret, err := util.GetSecret(c.protoform.KubeClientSet, c.protoform.Config.Namespace, "blackduck-secret")
 		if err != nil {
-			log.Infof("Aborting: You need to first create a 'blackduck-secret' in this namespace with HUB_PASSWORD and retry")
+			log.Infof("Aborting: You need to first create a 'blackduck-secret' in the %v namespace with HUB_PASSWORD and retry", c.protoform.Config.Namespace)
 		} else {
 			hubPassword = string(blackduckSecret.Data["HUB_PASSWORD"])
 			break
