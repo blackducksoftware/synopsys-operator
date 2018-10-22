@@ -163,6 +163,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			DumpIntervalMinutes:       30,
 		},
 		ScannerPod: &opssightv1.ScannerPod{
+			Name: "perceptor-scanner",
 			ImageFacade: &opssightv1.ImageFacade{
 				Port:               3004,
 				InternalRegistries: []opssightv1.RegistryAuth{},
