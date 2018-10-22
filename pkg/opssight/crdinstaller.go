@@ -25,43 +25,35 @@ import (
 	"strings"
 	"time"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	opssightinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/informers/externalversions/opssight/v1"
-	opssightcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/controller"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/juju/errors"
-
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
-
-	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-
-	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight/plugins"
-
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 )
 
-// Controller defines the specification for the controller
-type Controller struct {
+// CRDInstaller defines the specification
+type CRDInstaller struct {
 	config *Config
 }
 
-// NewController will create a controller configuration
-func NewController(config interface{}) (*Controller, error) {
+// NewCRDInstaller will create a controller configuration
+func NewCRDInstaller(config interface{}) (*CRDInstaller, error) {
 	dependentConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errors.Errorf("failed to convert opssight defaults: %v", config)
 	}
-	c := &Controller{config: dependentConfig}
+	c := &CRDInstaller{config: dependentConfig}
 
 	c.config.resyncPeriod = 0
 	c.config.indexers = cache.Indexers{}
@@ -70,7 +62,7 @@ func NewController(config interface{}) (*Controller, error) {
 }
 
 // CreateClientSet will create the CRD client
-func (c *Controller) CreateClientSet() error {
+func (c *CRDInstaller) CreateClientSet() error {
 	opssightClient, err := opssightclientset.NewForConfig(c.config.KubeConfig)
 	if err != nil {
 		return errors.Annotate(err, "Unable to create OpsSight informer client")
@@ -80,7 +72,7 @@ func (c *Controller) CreateClientSet() error {
 }
 
 // Deploy will deploy the CRD
-func (c *Controller) Deploy() error {
+func (c *CRDInstaller) Deploy() error {
 	deployer, err := horizon.NewDeployer(c.config.KubeConfig)
 	if err != nil {
 		return errors.Trace(err)
@@ -119,12 +111,12 @@ func (c *Controller) Deploy() error {
 }
 
 // PostDeploy will initialize before deploying the CRD
-func (c *Controller) PostDeploy() {
+func (c *CRDInstaller) PostDeploy() {
 }
 
 // CreateInformer will create a informer for the CRD
-func (c *Controller) CreateInformer() {
-	c.config.infomer = opssightinformerv1.NewOpsSightInformer(
+func (c *CRDInstaller) CreateInformer() {
+	c.config.informer = opssightinformerv1.NewOpsSightInformer(
 		c.config.customClientSet,
 		c.config.Config.Namespace,
 		c.config.resyncPeriod,
@@ -133,7 +125,7 @@ func (c *Controller) CreateInformer() {
 }
 
 // CreateQueue will create a queue to process the CRD
-func (c *Controller) CreateQueue() {
+func (c *CRDInstaller) CreateQueue() {
 	// create a new queue so that when the informer gets a resource that is either
 	// a result of listing or watching, we can add an idenfitying key to the queue
 	// so that it can be handled in the handler
@@ -141,8 +133,8 @@ func (c *Controller) CreateQueue() {
 }
 
 // AddInformerEventHandler will add the event handlers for the informers
-func (c *Controller) AddInformerEventHandler() {
-	c.config.infomer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+func (c *CRDInstaller) AddInformerEventHandler() {
+	c.config.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			// convert the resource object into a key (in this case
 			// we are just doing it in the format of 'namespace/name')
@@ -183,7 +175,7 @@ func (c *Controller) AddInformerEventHandler() {
 }
 
 // CreateHandler will create a CRD handler
-func (c *Controller) CreateHandler() {
+func (c *CRDInstaller) CreateHandler() {
 	osClient, err := securityclient.NewForConfig(c.config.KubeConfig)
 	if err != nil {
 		osClient = nil
@@ -206,27 +198,32 @@ func (c *Controller) CreateHandler() {
 		}
 	}
 
-	c.config.handler = &opssightcontroller.OpsSightHandler{
+	hubClient, err := hubclient.NewForConfig(c.config.KubeConfig)
+	if err != nil {
+		log.Panicf("unable to create the hub client due to %+v", err)
+	}
+
+	c.config.handler = &Handler{
 		Config:            c.config.Config,
 		KubeConfig:        c.config.KubeConfig,
 		Clientset:         c.config.KubeClientSet,
 		OpsSightClientset: c.config.customClientSet,
 		Namespace:         c.config.Config.Namespace,
-		CmMutex:           make(chan bool, 1),
 		OSSecurityClient:  osClient,
 		RouteClient:       routeClient,
 		Defaults:          c.config.Defaults.(*v1.OpsSightSpec),
+		HubClient:         hubClient,
 	}
 }
 
 // CreateController will create a CRD controller
-func (c *Controller) CreateController() {
-	c.config.controller = opssightcontroller.NewController(
-		&opssightcontroller.Controller{
+func (c *CRDInstaller) CreateController() {
+	c.config.controller = NewController(
+		&Controller{
 			Logger:            log.NewEntry(log.New()),
 			Clientset:         c.config.KubeClientSet,
 			Queue:             c.config.queue,
-			Informer:          c.config.infomer,
+			Informer:          c.config.informer,
 			Handler:           c.config.handler,
 			OpsSightClientset: c.config.customClientSet,
 			Namespace:         c.config.Config.Namespace,
@@ -234,10 +231,10 @@ func (c *Controller) CreateController() {
 }
 
 // Run will run the CRD controller
-func (c *Controller) Run() {
+func (c *CRDInstaller) Run() {
 	go c.config.controller.Run(c.config.Threadiness, c.config.StopCh)
 }
 
 // PostRun will run post CRD controller execution
-func (c *Controller) PostRun() {
+func (c *CRDInstaller) PostRun() {
 }

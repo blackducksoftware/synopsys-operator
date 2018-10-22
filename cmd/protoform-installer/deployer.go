@@ -30,14 +30,20 @@ import (
 	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/alert"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/opssight"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	configPath := os.Args[1]
-	fmt.Printf("Config path: %s", configPath)
-	runProtoform(configPath)
+	if len(os.Args) > 1 {
+		configPath := os.Args[1]
+		runProtoform(configPath)
+		fmt.Printf("Config path: %s", configPath)
+		return
+	}
+	fmt.Println("WARNING: Running protoform with defaults, no config file sent.")
+	runProtoform("")
 }
 
 func runProtoform(configPath string) {
@@ -47,7 +53,6 @@ func runProtoform(configPath string) {
 	}
 
 	stopCh := make(chan struct{})
-	defer close(stopCh)
 
 	alertController, err := alert.NewController(&alert.Config{
 		Config:        deployer.Config,
@@ -57,6 +62,9 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(alertController)
 
 	hubController, err := hub.NewController(&hub.ProtoformConfig{
@@ -67,9 +75,12 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(hubController)
 
-	opssSightController, err := opssight.NewController(&opssight.Config{
+	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
 		Config:        deployer.Config,
 		KubeConfig:    deployer.KubeConfig,
 		KubeClientSet: deployer.KubeClientSet,
@@ -77,12 +88,17 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(opssSightController)
 
-	deployer.Deploy()
+	log.Info("Starting deployer.  All controllers have been added to horizon.")
+	if err = deployer.Deploy(); err != nil {
+		log.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
+	}
 
 	<-stopCh
-
 }
 
 // GetAlertDefaultValue creates a alert crd configuration object with defaults
@@ -119,80 +135,72 @@ func GetHubDefaultValue() *hubv1.HubSpec {
 
 // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
-	defaultPerceptorPort := 3001
-	defaultPerceiverPort := 3002
-	defaultScannerPort := 3003
-	defaultIFPort := 3004
-	defaultSkyfirePort := 3005
-	defaultAnnotationInterval := 30
-	defaultDumpInterval := 30
-	defaultHubPort := 443
-	defaultPerceptorHubClientTimeout := 100000
-	defaultScannerHubClientTimeout := 600
-	defaultScanLimit := 2
-	defaultTotalScanLimit := 1000
-	defaultCheckForStalledScansPauseHours := 999999
-	defaultStalledScanClientTimeoutHours := 999999
-	defaultModelMetricsPauseSeconds := 15
-	defaultUnknownImagePauseMilliseconds := 15000
-	defaultPodPerceiverEnabled := true
-	defaultImagePerceiverEnabled := false
-	defaultMetricsEnabled := true
-	defaultPerceptorSkyfire := false
-	defaultUseMockMode := false
-
 	return &opssightv1.OpsSightSpec{
-		PerceptorPort:                         &defaultPerceptorPort,
-		PerceiverPort:                         &defaultPerceiverPort,
-		ScannerPort:                           &defaultScannerPort,
-		ImageFacadePort:                       &defaultIFPort,
-		SkyfirePort:                           &defaultSkyfirePort,
-		InternalRegistries:                    []opssightv1.RegistryAuth{},
-		AnnotationIntervalSeconds:             &defaultAnnotationInterval,
-		DumpIntervalMinutes:                   &defaultDumpInterval,
-		HubUser:                               "sysadmin",
-		HubPort:                               &defaultHubPort,
-		HubClientTimeoutPerceptorMilliseconds: &defaultPerceptorHubClientTimeout,
-		HubClientTimeoutScannerSeconds:        &defaultScannerHubClientTimeout,
-		ConcurrentScanLimit:                   &defaultScanLimit,
-		TotalScanLimit:                        &defaultTotalScanLimit,
-		CheckForStalledScansPauseHours:        &defaultCheckForStalledScansPauseHours,
-		StalledScanClientTimeoutHours:         &defaultStalledScanClientTimeoutHours,
-		ModelMetricsPauseSeconds:              &defaultModelMetricsPauseSeconds,
-		UnknownImagePauseMilliseconds:         &defaultUnknownImagePauseMilliseconds,
-		DefaultVersion:                        "master",
-		Registry:                              "gcr.io",
-		ImagePath:                             "saas-hub-stg/blackducksoftware",
-		PerceptorImageName:                    "perceptor",
-		ScannerImageName:                      "perceptor-scanner",
-		ImagePerceiverImageName:               "image-perceiver",
-		PodPerceiverImageName:                 "pod-perceiver",
-		ImageFacadeImageName:                  "perceptor-imagefacade",
-		SkyfireImageName:                      "skyfire",
-		PodPerceiver:                          &defaultPodPerceiverEnabled,
-		ImagePerceiver:                        &defaultImagePerceiverEnabled,
-		Metrics:                               &defaultMetricsEnabled,
-		PerceptorSkyfire:                      &defaultPerceptorSkyfire,
-		DefaultCPU:                            "300m",
-		DefaultMem:                            "1300Mi",
-		LogLevel:                              "debug",
-		HubUserPasswordEnvVar:                 "PCP_HUBUSERPASSWORD",
-		SecretName:                            "perceptor",
-		UseMockMode:                           &defaultUseMockMode,
-		ServiceAccounts: map[string]string{
-			"pod-perceiver":          "perceiver",
-			"image-perceiver":        "perceiver",
-			"perceptor-image-facade": "perceptor-scanner",
-			"skyfire":                "skyfire",
+		Perceptor: &opssightv1.Perceptor{
+			Name:                           "perceptor",
+			Port:                           3001,
+			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+			CheckForStalledScansPauseHours: 999999,
+			StalledScanClientTimeoutHours:  999999,
+			ModelMetricsPauseSeconds:       15,
+			UnknownImagePauseMilliseconds:  15000,
+			ClientTimeoutMilliseconds:      100000,
 		},
-		ContainerNames: map[string]string{
-			"perceiver":              "perceiver",
-			"pod-perceiver":          "pod-perceiver",
-			"image-perceiver":        "image-perceiver",
-			"perceptor":              "perceptor",
-			"perceptor-image-facade": "perceptor-imagefacade",
-			"perceptor-scanner":      "perceptor-scanner",
-			"skyfire":                "skyfire",
+		Perceiver: &opssightv1.Perceiver{
+			EnableImagePerceiver: false,
+			EnablePodPerceiver:   true,
+			Port:                 3002,
+			ImagePerceiver: &opssightv1.ImagePerceiver{
+				Name:  "image-perceiver",
+				Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
+			},
+			PodPerceiver: &opssightv1.PodPerceiver{
+				Name:  "pod-perceiver",
+				Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
+			},
+			ServiceAccount:            "perceiver",
+			AnnotationIntervalSeconds: 30,
+			DumpIntervalMinutes:       30,
 		},
+		ScannerPod: &opssightv1.ScannerPod{
+			ImageFacade: &opssightv1.ImageFacade{
+				Port:               3004,
+				InternalRegistries: []opssightv1.RegistryAuth{},
+				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
+				ServiceAccount:     "perceptor-scanner",
+				Name:               "perceptor-imagefacade",
+			},
+			Scanner: &opssightv1.Scanner{
+				Name:                 "perceptor-scanner",
+				Port:                 3003,
+				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
+				ClientTimeoutSeconds: 600,
+			},
+			ReplicaCount: 1,
+		},
+		Skyfire: &opssightv1.Skyfire{
+			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
+			Name:           "skyfire",
+			Port:           3005,
+			ServiceAccount: "skyfire",
+		},
+		Hub: &opssightv1.Hub{
+			User:                         "sysadmin",
+			Port:                         443,
+			ConcurrentScanLimit:          2,
+			TotalScanLimit:               1000,
+			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
+			Password:                     "blackduck",
+			InitialCount:                 1,
+			MaxCount:                     1,
+			DeleteHubThresholdPercentage: 50,
+			HubSpec:                      GetHubDefaultValue(),
+		},
+		EnableMetrics: true,
+		EnableSkyfire: false,
+		DefaultCPU:    "300m",
+		DefaultMem:    "1300Mi",
+		LogLevel:      "debug",
+		SecretName:    "perceptor",
 	}
 }

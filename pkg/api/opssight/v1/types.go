@@ -22,6 +22,7 @@ under the License.
 package v1
 
 import (
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,75 +46,117 @@ type RegistryAuth struct {
 	Password string
 }
 
+// Hub ...
+type Hub struct {
+	User                string `json:"user"`
+	Port                int    `json:"uort"`
+	Password            string `json:"password"`
+	ConcurrentScanLimit int    `json:"concurrentScanLimit"`
+	TotalScanLimit      int    `json:"totalScanLimit"`
+	PasswordEnvVar      string `json:"passwordEnvVar"`
+	// Auto scaling parameters
+	InitialCount                 int         `json:"initialCount"`
+	MaxCount                     int         `json:"maxCount"`
+	DeleteHubThresholdPercentage int         `json:"deleteHubThresholdPercentage"`
+	HubSpec                      *v1.HubSpec `json:"hubSpec"`
+}
+
+// Perceptor ...
+type Perceptor struct {
+	Name                           string `json:"name"`
+	Image                          string `json:"image"`
+	Port                           int    `json:"port"`
+	CheckForStalledScansPauseHours int    `json:"checkForStalledScansPauseHours"`
+	StalledScanClientTimeoutHours  int    `json:"stalledScanClientTimeoutHours"`
+	ModelMetricsPauseSeconds       int    `json:"modelMetricsPauseSeconds"`
+	UnknownImagePauseMilliseconds  int    `json:"unknownImagePauseMilliseconds"`
+	ClientTimeoutMilliseconds      int    `json:"clientTimeoutMilliseconds"`
+}
+
+// ScannerPod ...
+type ScannerPod struct {
+	Name         string       `json:"name"`
+	Scanner      *Scanner     `json:"scanner"`
+	ImageFacade  *ImageFacade `json:"imageFacade"`
+	ReplicaCount int          `json:"scannerReplicaCount"`
+}
+
+// Scanner ...
+type Scanner struct {
+	Name                 string `json:"name"`
+	Image                string `json:"image"`
+	Port                 int    `json:"port"`
+	ClientTimeoutSeconds int    `json:"clientTimeoutSeconds"`
+}
+
+// ImageFacade ...
+type ImageFacade struct {
+	Name               string         `json:"name"`
+	Image              string         `json:"image"`
+	Port               int            `json:"port"`
+	InternalRegistries []RegistryAuth `json:"internalRegistries"`
+	ServiceAccount     string         `json:"serviceAccount"`
+}
+
+// ImagePerceiver ...
+type ImagePerceiver struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
+}
+
+// PodPerceiver ...
+type PodPerceiver struct {
+	Name            string `json:"name"`
+	Image           string `json:"image"`
+	NamespaceFilter string `json:"namespaceFilter,omitempty"`
+}
+
+// Perceiver ...
+type Perceiver struct {
+	EnableImagePerceiver      bool            `json:"enableImagePerceiver"`
+	EnablePodPerceiver        bool            `json:"enablePodPerceiver"`
+	ImagePerceiver            *ImagePerceiver `json:"imagePerceiver,omitempty"`
+	PodPerceiver              *PodPerceiver   `json:"podPerceiver,omitempty"`
+	AnnotationIntervalSeconds int             `json:"annotationIntervalSeconds"`
+	DumpIntervalMinutes       int             `json:"dumpIntervalMinutes"`
+	ServiceAccount            string          `json:"serviceAccount"`
+	Port                      int             `json:"port"`
+}
+
+// Skyfire ...
+type Skyfire struct {
+	Name           string `json:"name"`
+	Image          string `json:"image"`
+	Port           int    `json:"port"`
+	ServiceAccount string `json:"serviceAccount"`
+}
+
 // OpsSightSpec is the spec for a OpsSight resource
 type OpsSightSpec struct {
-	Namespace string `json:"namespace,omitempty"`
+	Namespace string `json:"namespace"`
 	State     string `json:"state"`
-	// CONTAINER CONFIGS
-	// These are sed replaced into the config maps for the containers.
-	PerceptorPort                         *int           `json:"perceptorPort,omitempty"`
-	ScannerPort                           *int           `json:"scannerPort,omitempty"`
-	PerceiverPort                         *int           `json:"perceiverPort,omitempty"`
-	ImageFacadePort                       *int           `json:"imageFacadePort,omitempty"`
-	SkyfirePort                           *int           `json:"skyfirePort,omitempty"`
-	InternalRegistries                    []RegistryAuth `json:"internalRegistries,omitempty"`
-	AnnotationIntervalSeconds             *int           `json:"annotationIntervalSeconds,omitempty"`
-	DumpIntervalMinutes                   *int           `json:"dumpIntervalMinutes,omitempty"`
-	HubHost                               string         `json:"hubHost,omitempty"`
-	HubUser                               string         `json:"hubUser,omitempty"`
-	HubPort                               *int           `json:"hubPort,omitempty"`
-	HubUserPassword                       string         `json:"hubUserPassword,omitempty"`
-	HubClientTimeoutPerceptorMilliseconds *int           `json:"hubClientTimeoutPerceptorMilliseconds,omitempty"`
-	HubClientTimeoutScannerSeconds        *int           `json:"hubClientTimeoutScannerSeconds,omitempty"`
-	ConcurrentScanLimit                   *int           `json:"concurrentScanLimit,omitempty"`
-	TotalScanLimit                        *int           `json:"totalScanLimit,omitempty"`
-	CheckForStalledScansPauseHours        *int           `json:"checkForStalledScansPauseHours"`
-	StalledScanClientTimeoutHours         *int           `json:"stalledScanClientTimeoutHours"`
-	ModelMetricsPauseSeconds              *int           `json:"modelMetricsPauseSeconds"`
-	UnknownImagePauseMilliseconds         *int           `json:"unknownImagePauseMilliseconds"`
 
-	// CONTAINER PULL CONFIG
-	// These are for defining docker registry and image location and versions
-	DefaultVersion string `json:"defaultVersion,omitempty"`
-	Registry       string `json:"registry,omitempty"`
-	ImagePath      string `json:"imagePath,omitempty"`
+	Perceptor     *Perceptor  `json:"perceptor"`
+	ScannerPod    *ScannerPod `json:"scannerPod"`
+	Perceiver     *Perceiver  `json:"perceiver"`
+	EnableSkyfire bool        `json:"enableSkyfire"`
+	Skyfire       *Skyfire    `json:"skyfire"`
 
-	PerceptorImageName      string `json:"perceptorImageName,omitempty"`
-	ScannerImageName        string `json:"scannerImageName,omitempty"`
-	PodPerceiverImageName   string `json:"podPerceiverImageName,omitempty"`
-	ImagePerceiverImageName string `json:"imagePerceiverImageName,omitempty"`
-	ImageFacadeImageName    string `json:"imageFacadeImageName,omitempty"`
-	SkyfireImageName        string `json:"skyfireImageName,omitempty"`
+	Hub *Hub `json:"hub"`
 
-	PerceptorImageVersion   string `json:"perceptorImageVersion,omitempty"`
-	ScannerImageVersion     string `json:"scannerImageVersion,omitempty"`
-	PerceiverImageVersion   string `json:"perceiverImageVersion,omitempty"`
-	ImageFacadeImageVersion string `json:"imageFacadeImageVersion,omitempty"`
-	SkyfireImageVersion     string `json:"skyfireImageVersion,omitempty"`
-
-	ServiceAccounts  map[string]string `json:"serviceAccounts,omitempty"`
-	ContainerNames   map[string]string `json:"names,omitempty"`
-	ImagePerceiver   *bool             `json:"imagePerceiver,omitempty"`
-	PodPerceiver     *bool             `json:"podPerceiver,omitempty"`
-	Metrics          *bool             `json:"metrics,omitempty"`
-	PerceptorSkyfire *bool             `json:"perceptorSkyfire,omitempty"`
-	NamespaceFilter  string            `json:"namespaceFilter,omitempty"`
+	EnableMetrics bool `json:"enableMetrics"`
 
 	// CPU and memory configurations
-	// Should be passed like: e.g. "300m"
+	// Example: "300m"
 	DefaultCPU string `json:"defaultCpu,omitempty"`
-	// Should be passed like: e.g "1300Mi"
+	// Example: "1300Mi"
 	DefaultMem string `json:"defaultMem,omitempty"`
 
 	// Log level
 	LogLevel string `json:"logLevel,omitempty"`
 
-	// Environment Variables
-	HubUserPasswordEnvVar string `json:"hubuserPasswordEnvVar"`
-
 	// Configuration secret
-	SecretName  string `json:"secretName"`
-	UseMockMode *bool  `json:"useMockMode"`
+	SecretName string `json:"secretName"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource

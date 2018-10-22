@@ -28,7 +28,9 @@ import (
 	"strings"
 	"time"
 
+	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -36,6 +38,7 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -48,11 +51,12 @@ type Creater struct {
 	opssightClient   *opssightclientset.Clientset
 	osSecurityClient *securityclient.SecurityV1Client
 	routeClient      *routeclient.RouteV1Client
+	hubClient        *hubclientset.Clientset
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
+func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *hubclientset.Clientset) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient, routeClient: routeClient, hubClient: hubClient}
 }
 
 // DeleteOpsSight will delete the Black Duck OpsSight
@@ -86,11 +90,11 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 		// Verify whether the namespace was deleted
 		ns, err := util.GetNamespace(ac.kubeClient, namespace)
 		log.Infof("namespace: %v, status: %v", namespace, ns.Status)
-		time.Sleep(10 * time.Second)
 		if err != nil {
 			log.Infof("deleted the namespace %+v", namespace)
 			break
 		}
+		time.Sleep(10 * time.Second)
 	}
 
 	// Delete a Cluster Role
@@ -183,6 +187,11 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 		if err != nil {
 			return errors.Trace(err)
 		}
+
+		err = ac.deployHub(createOpsSight)
+		if err != nil {
+			return errors.Trace(err)
+		}
 	}
 
 	return nil
@@ -194,53 +203,54 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder string) (hubPassword string, err error) {
 	blackduckSecret, err := util.GetSecret(kubeClient, nsOfSecretHolder, "blackduck-secret")
 	if err != nil {
-		log.Infof("warning: You need to first create a 'blackduck-secret' in this namespace with HUB_PASSWORD")
-		return "", err
+		return "", errors.Annotate(err, "You need to first create a 'blackduck-secret' in this namespace with HUB_PASSWORD")
 	}
 	hubPassword = string(blackduckSecret.Data["HUB_PASSWORD"])
 
 	// default named return
-	return hubPassword, err
+	return hubPassword, nil
 }
 
 func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
 	// if OpenShift, get the registry auth informations
-	var internalRegistries []string
-	if ac.routeClient != nil {
-		route, err := util.GetOpenShiftRoutes(ac.routeClient, "default", "docker-registry")
-		if err != nil {
-			log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
-		} else {
-			internalRegistries = append(internalRegistries, route.Spec.Host)
-			internalRegistries = append(internalRegistries, fmt.Sprintf("%s:443", route.Spec.Host))
-		}
+	if ac.routeClient == nil {
+		return
+	}
 
-		registrySvc, err := util.GetService(ac.kubeClient, "default", "docker-registry")
-		if err != nil {
-			log.Errorf("unable to get docker-registry service in default namespace due to %+v", err)
-		} else {
-			if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
-				for _, port := range registrySvc.Spec.Ports {
-					internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port))))
-					internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port))))
-				}
+	internalRegistries := []string{}
+	route, err := util.GetOpenShiftRoutes(ac.routeClient, "default", "docker-registry")
+	if err != nil {
+		log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
+	} else {
+		internalRegistries = append(internalRegistries, route.Spec.Host)
+		internalRegistries = append(internalRegistries, fmt.Sprintf("%s:443", route.Spec.Host))
+	}
+
+	registrySvc, err := util.GetService(ac.kubeClient, "default", "docker-registry")
+	if err != nil {
+		log.Errorf("unable to get docker-registry service in default namespace due to %+v", err)
+	} else {
+		if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
+			for _, port := range registrySvc.Spec.Ports {
+				internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port))))
+				internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port))))
 			}
 		}
+	}
 
-		file, err := util.ReadFromFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
-		if err != nil {
-			log.Errorf("unable to read the service account token file due to %+v", err)
-		} else {
-			for _, internalRegistry := range internalRegistries {
-				registryAuth := v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
-				opsSightSpec.InternalRegistries = append(opsSightSpec.InternalRegistries, registryAuth)
-			}
+	file, err := util.ReadFromFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err != nil {
+		log.Errorf("unable to read the service account token file due to %+v", err)
+	} else {
+		for _, internalRegistry := range internalRegistries {
+			registryAuth := v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
+			opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightSpec.ScannerPod.ImageFacade.InternalRegistries, registryAuth)
 		}
 	}
 }
 
 func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
-	// Need to add the perceptor-scanner service account to the privelged scc
+	// Need to add the perceptor-scanner service account to the privileged scc
 	if ac.osSecurityClient != nil {
 		scannerServiceAccount := opssight.ScannerServiceAccount()
 		perceiverServiceAccount := opssight.PodPerceiverServiceAccount()
@@ -250,4 +260,34 @@ func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 	}
 
 	return nil
+}
+
+func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
+	if createOpsSight.Hub.InitialCount > createOpsSight.Hub.MaxCount {
+		createOpsSight.Hub.InitialCount = createOpsSight.Hub.MaxCount
+	}
+
+	hubErrs := map[string]error{}
+	for i := 0; i < createOpsSight.Hub.InitialCount; i++ {
+		name := fmt.Sprintf("%s-%v", createOpsSight.Namespace, i)
+
+		ns, err := util.CreateNamespace(ac.kubeClient, name)
+		log.Debugf("created namespace: %+v", ns)
+		if err != nil {
+			log.Errorf("hub[%d]: unable to create the namespace due to %+v", i, err)
+			hubErrs[name] = fmt.Errorf("unable to create the namespace due to %+v", err)
+		}
+
+		hubSpec := createOpsSight.Hub.HubSpec
+		hubSpec.Namespace = name
+		createHub := &hub_v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
+		log.Debugf("hub[%d]: %+v", i, createHub)
+		_, err = util.CreateHub(ac.hubClient, name, createHub)
+		if err != nil {
+			log.Errorf("hub[%d]: unable to create the hub due to %+v", i, err)
+			hubErrs[name] = fmt.Errorf("unable to create the hub due to %+v", err)
+		}
+	}
+
+	return util.NewMapErrors(hubErrs)
 }

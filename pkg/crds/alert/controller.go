@@ -33,6 +33,7 @@ import (
 
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -166,7 +167,6 @@ func (c *Controller) CreateHandler() {
 		Clientset:      c.config.KubeClientSet,
 		AlertClientset: c.config.customClientSet,
 		Namespace:      c.config.Config.Namespace,
-		CmMutex:        make(chan bool, 1),
 		Defaults:       c.config.Defaults.(*v1.AlertSpec),
 	}
 }

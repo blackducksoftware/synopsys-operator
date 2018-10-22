@@ -4,64 +4,71 @@ metadata:
   clusterName: ""
   name: opssight-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
 spec:
-  namespace: opssight-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
-  perceptorPort: 3001 # Optional, if the default port for perceptor to be changed
-  perceiverPort: 3002 # Optional, if the default port for pod-perceiver or image-perceiver to be changed
-  scannerPort: 3003 # Optional, if the default port for perceptor-scanner to be changed
-  imageFacadePort: 3004 # Optional, if the default port for perceptor-imagefacade to be changed
-  internalRegistries: [] # Optional, add only if the secured registries to be scanned. The format for adding the registry auth is
-  # - Url: docker-registry
-  #   User: unused
-  #   Password: $$$$$
-  annotationIntervalSeconds: 30 # Optional, if the default annotation interval in seconds to be changed
-  dumpIntervalMinutes: 30 # Optional, if the default port for perceptor-imagefacade to be changed
-  hubUser: sysadmin # Optional, if the default port for perceptor-imagefacade to be changed
-  hubPort: 443 # Optional, if the default port for perceptor-imagefacade to be changed
-  hubClientTimeoutPerceptorMilliseconds: 100000 # Optional, if the default port for perceptor-imagefacade to be changed
-  hubClientTimeoutScannerSeconds: 600 # Optional, if the default port for perceptor-imagefacade to be changed
-  concurrentScanLimit: 2 # Optional, if the default port for perceptor-imagefacade to be changed
-  totalScanLimit: 1000 # Optional, if the default port for perceptor-imagefacade to be changed
-  checkForStalledScansPauseHours: 999999 # Optional, if the default port for perceptor-imagefacade to be changed
-  stalledScanClientTimeoutHours: 999999 # Optional, if the default port for perceptor-imagefacade to be changed
-  modelMetricsPauseSeconds: 15 # Optional, if the default port for perceptor-imagefacade to be changed
-  unknownImagePauseMilliseconds: 15000 # Optional, if the default port for perceptor-imagefacade to be changed
+  namespace: opssight-test # Must match .metadata.name
 
-  # CONTAINER PULL CONFIG
-  # These are for defining docker registry and image location and versions
-  registry: gcr.io
-  imagePath: saas-hub-stg/blackducksoftware
-  # Default version will override the corresponding image version
-  defaultVersion: "master"
+  perceptor:
+    name:                           "perceptor"
+    port:                           3001
+    image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master"
+    checkForStalledScansPauseHours: 999999
+    stalledScanClientTimeoutHours:  999999
+    modelMetricsPauseSeconds:       15
+    unknownImagePauseMilliseconds:  15000
+    clientTimeoutMilliseconds:      100000
+  
+  scannerPod:
+    name: "perceptor-scanner"
+    scanner:
+      name: "perceptor-scanner"
+      port:                 3003
+      image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master"
+      clientTimeoutSeconds: 600
+    imageFacade:
+      name: "perceptor-imagefacade"
+      port:               3004
+      internalRegistries: []opssightv1.RegistryAuth{}
+      image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master"
+      serviceAccount:     "perceptor-scanner"
+    replicaCount: 1
+  
+  perceiver:
+      enableImagePerceiver: false
+      enablePodPerceiver:   true
+      port:                 3002
+      imagePerceiver:
+        name:  "image-perceiver"
+        image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master"
+      podPerceiver:
+        name:  "pod-perceiver"
+        image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master"
+      serviceAccount:            "perceiver"
+      annotationIntervalSeconds: 30
+      dumpIntervalMinutes:       30
 
-  perceptorImageName: perceptor # Optional, if the default perceptor name to be changed
-  scannerImageName: perceptor-scanner # Optional, if the default perceptor-scanner name to be changed
-  podPerceiverImageName: pod-perceiver # Optional, if the default pod-perceiver name to be changed
-  imagePerceiverImageName: image-perceiver # Optional, if the default image-perceiver name to be changed
-  imageFacadeImageName: perceptor-imagefacade # Optional, if the default perceptor-imagefacade name to be changed
+  enableSkyfire: false
+  skyfire:
+      image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master"
+      name:           "skyfire"
+      port:           3005
+      serviceAccount: "skyfire"
 
-  #perceptorImageVersion: "master" # Optional, if the default perceptor version to be changed
-  #scannerImageVersion: "master" # Optional, if the default perceptor-scanner version to be changed
-  #perceiverImageVersion: "master" # Optional, if the default pod-perceiver or image-perceiver version to be changed
-  #imageFacadeImageVersion: "master" # Optional, if the default perceptor-imagefacade version to be changed
+  enableMetrics: true
+  defaultCPU:    "300m"
+  defaultMem:    "1300Mi"
+  logLevel:      "debug"
+  secretName:    "perceptor"
 
-  imagePerceiver: false # if images in OpenShift internal Docker registry to be scanned, enable it
-  podPerceiver: true  # if images running in Kubernetes/OpenShift pods to be scanned, enable it
-  metrics: true  # Optional, if prometheus metrics to be enabled to measure the metrics, enable it
-
-  #namespaceFilter: "" # Enable it if namespace filter is required and use the same label in namespaces that need to be scanned
-
-  # CPU and memory configurations
-  # Should be passed like: e.g. "300m"
-  defaultCpu: 300m # Optional, if the default cpu for all OpsSight containers to be changed
-  # Should be passed like: e.g "1300Mi"
-  defaultMem: 1300Mi # Optional, if the default memory for all OpsSight containers to be changed
-
-  # Log level
-  logLevel: info # Optional, if the default log level to be changed
-
-  # Environment Variables
-  hubuserPasswordEnvVar: PCP_HUBUSERPASSWORD # Optional, if the default environment variable to be changed
-
-  # Configuration secret
-  secretName: blackduck-secret # Optional, if the default perceptor secret name to be changed
-  useMockMode: false # Optional, if the mock mode to be used
+  hub:
+    initialNoOfHubs: 1
+    maxNoOfHubs: 4
+    concurrentScanLimit: 2
+    totalScanLimit: 1000
+    hubSpec:
+      backupSupport: "No" # Required, possible values are 'Yes', 'No'
+      certificateName: default # Required, possible values are 'default', 'manual' or other hub names
+      dbPrototype: "empty" # Required, possible values are empty or other hub names
+      dockerRegistry: docker.io # Required
+      dockerRepo: blackducksoftware # Required
+      hubVersion: 5.0.0 # Required
+      flavor: small # Required, possible values are 'small', 'medium', 'large' or 'opssight'
+      hubType: senthil # Required, possible values are 'master' or 'worker' or 'any custom value to filter the hubs corresponding to particular opssight'

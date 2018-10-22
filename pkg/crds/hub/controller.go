@@ -31,6 +31,7 @@ import (
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/informers/externalversions/hub/v1"
 	hubcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/hub/controller"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -38,6 +39,7 @@ import (
 
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -46,7 +48,6 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/plugins"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/webservice"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -102,6 +103,11 @@ func (c *Controller) Deploy() error {
 
 	// Perceptor configMap
 	hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.protoform.Config.Namespace, Name: "federator"})
+
+	if c.protoform.Config.HubFederatorConfig.HubConfig == nil {
+		panic("Cant start with nil federator configuration ! Set HubFederatorConfig with Port, User")
+	}
+
 	data := map[string]interface{}{
 		"HubConfig": map[string]interface{}{
 			"Port":                         c.protoform.Config.HubFederatorConfig.HubConfig.Port,
@@ -130,7 +136,7 @@ func (c *Controller) Deploy() error {
 	for {
 		blackduckSecret, err := util.GetSecret(c.protoform.KubeClientSet, c.protoform.Config.Namespace, "blackduck-secret")
 		if err != nil {
-			log.Infof("Aborting: You need to first create a 'blackduck-secret' in this namespace with HUB_PASSWORD and retry")
+			log.Infof("Aborting: You need to first create a 'blackduck-secret' in the %v namespace with HUB_PASSWORD and retry", c.protoform.Config.Namespace)
 		} else {
 			hubPassword = string(blackduckSecret.Data["HUB_PASSWORD"])
 			break
@@ -185,7 +191,7 @@ func (c *Controller) Deploy() error {
 // PostDeploy will call after deploying the CRD
 func (c *Controller) PostDeploy() {
 	hc := hub.NewCreater(c.protoform.Config, c.protoform.KubeConfig, c.protoform.KubeClientSet, c.protoform.customClientSet, nil, nil)
-	webservice.SetupHTTPServer(hc, c.protoform.Config.Namespace)
+	protoform.SetupHTTPServer(hc, c.protoform.Config.Namespace)
 }
 
 // CreateInformer will create a informer for the CRD

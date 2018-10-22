@@ -22,8 +22,6 @@ under the License.
 package opssight
 
 import (
-	"fmt"
-
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	"github.com/juju/errors"
@@ -42,14 +40,6 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 
 // GetComponents will return the list of components
 func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
-	p.configServiceAccounts()
-	err := p.sanityCheckServices()
-	if err != nil {
-		return nil, errors.Annotate(err, "Please set the service accounts correctly")
-	}
-
-	p.substituteDefaultImageVersion()
-
 	components := &api.ComponentList{}
 
 	// Add Perceptor
@@ -90,14 +80,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 
-	if p.config.PodPerceiver != nil && *p.config.PodPerceiver {
+	if p.config.Perceiver.EnablePodPerceiver {
 		rc, err := p.PodPerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create pod perceiver")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.PodPerceiverService())
-		perceiverConfigMap, err := p.PerceiverConfigMap()
+		perceiverConfigMap, err := p.PerceiverConfigMap(p.config.Perceiver.PodPerceiver.Name)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -108,14 +98,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(cr))
 	}
 
-	if p.config.ImagePerceiver != nil && *p.config.ImagePerceiver {
+	if p.config.Perceiver.EnableImagePerceiver {
 		rc, err := p.ImagePerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create image perceiver")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.ImagePerceiverService())
-		perceiverConfigMap, err := p.PerceiverConfigMap()
+		perceiverConfigMap, err := p.PerceiverConfigMap(p.config.Perceiver.ImagePerceiver.Name)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -126,7 +116,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(cr))
 	}
 
-	if p.config.PerceptorSkyfire != nil && *p.config.PerceptorSkyfire {
+	if p.config.EnableSkyfire {
 		rc, err := p.PerceptorSkyfireReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create skyfire")
@@ -140,65 +130,19 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(cr))
 	}
 
-	if p.config.Metrics != nil && *p.config.Metrics {
+	if p.config.EnableMetrics {
 		dep, err := p.PerceptorMetricsDeployment()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create metrics")
 		}
 		components.Deployments = append(components.Deployments, dep)
 		components.Services = append(components.Services, p.PerceptorMetricsService())
-		components.ConfigMaps = append(components.ConfigMaps, p.PerceptorMetricsConfigMap())
+		perceptorCm, err := p.PerceptorMetricsConfigMap()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create perceptor config map")
+		}
+		components.ConfigMaps = append(components.ConfigMaps, perceptorCm)
 	}
 
 	return components, nil
-}
-
-func (p *SpecConfig) substituteDefaultImageVersion() {
-	if len(p.config.PerceptorImageVersion) == 0 {
-		p.config.PerceptorImageVersion = p.config.DefaultVersion
-	}
-	if len(p.config.ScannerImageVersion) == 0 {
-		p.config.ScannerImageVersion = p.config.DefaultVersion
-	}
-	if len(p.config.PerceiverImageVersion) == 0 {
-		p.config.PerceiverImageVersion = p.config.DefaultVersion
-	}
-	if len(p.config.ImageFacadeImageVersion) == 0 {
-		p.config.ImageFacadeImageVersion = p.config.DefaultVersion
-	}
-	if len(p.config.SkyfireImageVersion) == 0 {
-		p.config.SkyfireImageVersion = p.config.DefaultVersion
-	}
-}
-
-func (p *SpecConfig) configServiceAccounts() {
-	// TODO Viperize these env vars.
-	if len(p.config.ServiceAccounts) == 0 {
-		svcAccounts := map[string]string{
-			// WARNING: These service accounts need to exist !
-			"pod-perceiver":          "perceiver",
-			"image-perceiver":        "perceiver",
-			"perceptor-image-facade": "perceptor-scanner",
-			"skyfire":                "skyfire",
-		}
-		p.config.ServiceAccounts = svcAccounts
-	}
-}
-
-// TODO programatically validate rather then sanity check.
-func (p *SpecConfig) sanityCheckServices() error {
-	serviceAccountNames := map[string]bool{
-		"perceptor":              true,
-		"pod-perceiver":          true,
-		"image-perceiver":        true,
-		"perceptor-scanner":      true,
-		"perceptor-image-facade": true,
-		"skyfire":                true,
-	}
-	for cn := range p.config.ServiceAccounts {
-		if _, ok := serviceAccountNames[cn]; !ok {
-			return fmt.Errorf("invalid service account name <%s>", cn)
-		}
-	}
-	return nil
 }

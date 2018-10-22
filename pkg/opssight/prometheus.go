@@ -22,11 +22,12 @@ under the License.
 package opssight
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/juju/errors"
 )
 
 // PerceptorMetricsDeployment creates a deployment for perceptor metrics
@@ -41,7 +42,7 @@ func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error
 
 	pod, err := p.perceptorMetricsPod()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metrics pod: %v", err)
+		return nil, errors.Annotate(err, "failed to create metrics pod")
 	}
 	deployment.AddPod(pod)
 
@@ -58,7 +59,7 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 
 	vols, err := p.perceptorMetricsVolumes()
 	if err != nil {
-		return nil, fmt.Errorf("error creating metrics volumes: %v", err)
+		return nil, errors.Annotate(err, "error creating metrics volumes")
 	}
 	for _, v := range vols {
 		pod.AddVolume(v)
@@ -104,7 +105,7 @@ func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 		Medium:     horizonapi.StorageMediumDefault,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create empty dir volume: %v", err)
+		return nil, errors.Annotate(err, "failed to create empty dir volume")
 	}
 	vols = append(vols, vol)
 
@@ -133,26 +134,72 @@ func (p *SpecConfig) PerceptorMetricsService() *components.Service {
 }
 
 // PerceptorMetricsConfigMap creates a config map for perceptor metrics
-func (p *SpecConfig) PerceptorMetricsConfigMap() *components.ConfigMap {
+func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "prometheus",
 		Namespace: p.config.Namespace,
 	})
 
-	var promConfig bytes.Buffer
-	promConfig.WriteString(fmt.Sprint(`{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["`, p.config.PerceptorImageName, `:`, *p.config.PerceptorPort, `","`, p.config.ScannerImageName, `:`, *p.config.ScannerPort, `","`, p.config.ImageFacadeImageName, `:`, *p.config.ImageFacadePort))
-	if p.config.ImagePerceiver != nil && *p.config.ImagePerceiver {
-		promConfig.WriteString(fmt.Sprint(`","`, p.config.ImagePerceiverImageName, `:`, *p.config.PerceiverPort))
-	}
-	if p.config.PodPerceiver != nil && *p.config.PodPerceiver {
-		promConfig.WriteString(fmt.Sprint(`","`, p.config.PodPerceiverImageName, `:`, *p.config.PerceiverPort))
-	}
-	if p.config.PerceptorSkyfire != nil && *p.config.PerceptorSkyfire {
-		promConfig.WriteString(fmt.Sprint(`","`, p.config.SkyfireImageName, `:`, *p.config.SkyfirePort))
+	/*
+			example:
 
+		{
+		  "global": {
+		    "scrape_interval": "5s"
+		  },
+		  "scrape_configs": [
+		    {
+		      "job_name": "perceptor-scrape",
+		      "scrape_interval": "5s",
+		      "static_configs": [
+		        {
+		          "targets": [
+		            "perceptor:3001",
+		            "perceptor-scanner:3003",
+		            "perceptor-imagefacade:3004",
+		            "pod-perceiver:3002"
+		          ]
+		        }
+		      ]
+		    }
+		  ]
+		}
+	*/
+	targets := []string{
+		fmt.Sprintf("%s:%d", p.config.Perceptor.Name, p.config.Perceptor.Port),
+		fmt.Sprintf("%s:%d", p.config.ScannerPod.Scanner.Name, p.config.ScannerPod.Scanner.Port),
+		fmt.Sprintf("%s:%d", p.config.ScannerPod.ImageFacade.Name, p.config.ScannerPod.ImageFacade.Port),
 	}
-	promConfig.WriteString(`"]}]}]}`)
-	configMap.AddData(map[string]string{"prometheus.yml": promConfig.String()})
+	if p.config.Perceiver.EnableImagePerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Perceiver.ImagePerceiver.Name, p.config.Perceiver.Port))
+	}
+	if p.config.Perceiver.EnablePodPerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Perceiver.PodPerceiver.Name, p.config.Perceiver.Port))
+	}
+	if p.config.EnableSkyfire {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Skyfire.Name, p.config.Skyfire.Port))
+	}
+	data := map[string]interface{}{
+		"global": map[string]interface{}{
+			"scrape_interval": "5s",
+		},
+		"scrape_configs": []interface{}{
+			map[string]interface{}{
+				"job_name":        "perceptor-scrape",
+				"scrape_interval": "5s",
+				"static_configs": []interface{}{
+					map[string]interface{}{
+						"targets": targets,
+					},
+				},
+			},
+		},
+	}
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	configMap.AddData(map[string]string{"prometheus.yml": string(bytes)})
 
-	return configMap
+	return configMap, nil
 }

@@ -23,16 +23,17 @@ package protoform
 
 import (
 	"flag"
-	"fmt"
 	"path/filepath"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/juju/errors"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -41,19 +42,15 @@ import (
 func NewController(configPath string) (*Deployer, error) {
 	config, err := model.GetConfig(configPath)
 	if err != nil {
-		log.Errorf("Failed to load configuration: %s", err.Error())
-		panic(err)
+		return nil, errors.Annotate(err, "Failed to load configuration")
 	}
 	if config == nil {
-		err = fmt.Errorf("expected non-nil config, but got nil")
-		log.Errorf(err.Error())
-		panic(err)
+		return nil, errors.Errorf("expected non-nil config, but got nil")
 	}
 
 	level, err := config.GetLogLevel()
 	if err != nil {
-		log.Errorf(err.Error())
-		panic(err)
+		return nil, errors.Annotate(err, "unable to get log level")
 	}
 	log.SetLevel(level)
 
@@ -62,20 +59,20 @@ func NewController(configPath string) (*Deployer, error) {
 	// creates the in-cluster config
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
-		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s", err)
+		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
 		kubeConfig, err = newKubeClientFromOutsideCluster()
 	}
 
 	if err != nil {
-		log.Panicf("error getting the default client config: %s", err.Error())
+		return nil, errors.Annotate(err, "unable to create config for both in-cluster and external to cluster")
 	}
 
 	kubeClientSet, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
-		log.Panicf("unable to create kubernetes clientset: %s", err.Error())
+		return nil, errors.Annotate(err, "unable to create kubernetes clientset")
 	}
 
-	return NewDeployer(config, kubeConfig, kubeClientSet), err
+	return NewDeployer(config, kubeConfig, kubeClientSet), nil
 }
 
 func newKubeClientFromOutsideCluster() (*rest.Config, error) {
@@ -88,9 +85,5 @@ func newKubeClientFromOutsideCluster() (*rest.Config, error) {
 	flag.Parse()
 
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
-	if err != nil {
-		log.Errorf("error creating default client config: %s", err)
-		return nil, err
-	}
-	return config, err
+	return config, errors.Annotate(err, "error creating default client config")
 }
