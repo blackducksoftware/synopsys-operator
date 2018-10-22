@@ -37,7 +37,7 @@ func (p *SpecConfig) PodPerceiverReplicationController() (*components.Replicatio
 
 	pod, err := p.perceiverPod(name, p.config.Perceiver.ServiceAccount)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pod perceiver pod: %v", err)
+		return nil, errors.Annotate(err, "failed to create pod perceiver pod")
 	}
 	rc.AddPod(pod)
 
@@ -51,7 +51,7 @@ func (p *SpecConfig) ImagePerceiverReplicationController() (*components.Replicat
 
 	pod, err := p.perceiverPod(name, p.config.Perceiver.ServiceAccount)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create image perceiver pod: %v", err)
+		return nil, errors.Annotate(err, "failed to create image perceiver pod")
 	}
 	rc.AddPod(pod)
 
@@ -133,7 +133,7 @@ func perceiverVolumes(name string) ([]*components.Volume, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create empty dir volume: %v", err)
+		return nil, errors.Annotate(err, "failed to create empty dir volume")
 	}
 	vols = append(vols, vol)
 

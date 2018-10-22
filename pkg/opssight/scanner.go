@@ -43,7 +43,7 @@ func (p *SpecConfig) ScannerReplicationController() (*components.ReplicationCont
 
 	pod, err := p.scannerPod()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create scanner pod: %v", err)
+		return nil, errors.Annotate(err, "failed to create scanner pod")
 	}
 	rc.AddPod(pod)
 
@@ -62,12 +62,12 @@ func (p *SpecConfig) scannerPod() (*components.Pod, error) {
 
 	vols, err := p.scannerVolumes()
 	if err != nil {
-		return nil, fmt.Errorf("error creating scanner volumes: %v", err)
+		return nil, errors.Annotate(err, "error creating scanner volumes")
 	}
 
 	newVols, err := p.imageFacadeVolumes()
 	if err != nil {
-		return nil, fmt.Errorf("error creating image facade volumes: %v", err)
+		return nil, errors.Annotate(err, "error creating image facade volumes")
 	}
 	for _, v := range append(vols, newVols...) {
 		pod.AddVolume(v)
@@ -161,7 +161,7 @@ func (p *SpecConfig) scannerVolumes() ([]*components.Volume, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create empty dir volume: %v", err)
+		return nil, errors.Annotate(err, "failed to create empty dir volume")
 	}
 	vols = append(vols, vol)
 
@@ -182,7 +182,7 @@ func (p *SpecConfig) imageFacadeVolumes() ([]*components.Volume, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create empty dir volume: %v", err)
+		return nil, errors.Annotate(err, "failed to create empty dir volume")
 	}
 	vols = append(vols, vol)
 

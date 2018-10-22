@@ -26,6 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/juju/errors"
 )
 
 // PerceptorSkyfireReplicationController creates a replication controller for perceptor skyfire
@@ -39,7 +40,7 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 	rc.AddLabelSelectors(map[string]string{"name": p.config.Skyfire.Name})
 	pod, err := p.perceptorSkyfirePod()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create skyfire volumes: %v", err)
+		return nil, errors.Annotate(err, "failed to create skyfire volumes")
 	}
 	rc.AddPod(pod)
 
@@ -59,17 +60,17 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	}
 	err = pod.AddContainer(cont)
 	if err != nil {
-		return nil, fmt.Errorf("unable to add skyfire container: %v", err)
+		return nil, errors.Annotate(err, "unable to add skyfire container")
 	}
 
 	vols, err := p.perceptorSkyfireVolumes()
 	if err != nil {
-		return nil, fmt.Errorf("error creating skyfire volumes: %v", err)
+		return nil, errors.Annotate(err, "error creating skyfire volumes")
 	}
 	for _, v := range vols {
 		err = pod.AddVolume(v)
 		if err != nil {
-			return nil, fmt.Errorf("error add pod volume: %v", err)
+			return nil, errors.Annotate(err, "error add pod volume")
 		}
 	}
 
@@ -132,7 +133,7 @@ func (p *SpecConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 		Medium:     horizonapi.StorageMediumDefault,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create empty dir volume: %v", err)
+		return nil, errors.Annotate(err, "failed to create empty dir volume")
 	}
 	vols = append(vols, vol)
 
