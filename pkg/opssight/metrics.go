@@ -43,7 +43,7 @@ func recordEvent(event string) {
 func init() {
 	errorsCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "protoform",
-		Subsystem: "opssight_controller",
+		Subsystem: "opssight",
 		Name:      "errors",
 		Help:      "error codes",
 	}, []string{"errorName"})
@@ -51,7 +51,7 @@ func init() {
 
 	eventCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "protoform",
-		Subsystem: "opssight_controller",
+		Subsystem: "opssight",
 		Name:      "events",
 		Help:      "events",
 	}, []string{"event"})
