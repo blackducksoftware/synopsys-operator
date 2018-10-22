@@ -117,7 +117,7 @@ func (c *Controller) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *Controller) CreateInformer() {
-	c.config.infomer = opssightinformerv1.NewOpsSightInformer(
+	c.config.informer = opssightinformerv1.NewOpsSightInformer(
 		c.config.customClientSet,
 		c.config.Config.Namespace,
 		c.config.resyncPeriod,
@@ -135,7 +135,7 @@ func (c *Controller) CreateQueue() {
 
 // AddInformerEventHandler will add the event handlers for the informers
 func (c *Controller) AddInformerEventHandler() {
-	c.config.infomer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.config.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			// convert the resource object into a key (in this case
 			// we are just doing it in the format of 'namespace/name')
@@ -224,7 +224,7 @@ func (c *Controller) CreateController() {
 			Logger:            log.NewEntry(log.New()),
 			Clientset:         c.config.KubeClientSet,
 			Queue:             c.config.queue,
-			Informer:          c.config.infomer,
+			Informer:          c.config.informer,
 			Handler:           c.config.handler,
 			OpsSightClientset: c.config.customClientSet,
 			Namespace:         c.config.Config.Namespace,
