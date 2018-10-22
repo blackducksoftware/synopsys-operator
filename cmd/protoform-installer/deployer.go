@@ -194,7 +194,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			InitialCount:                 1,
 			MaxCount:                     1,
 			DeleteHubThresholdPercentage: 50,
-			HubSpec:                      nil,
+			HubSpec:                      GetHubDefaultValue(),
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,
