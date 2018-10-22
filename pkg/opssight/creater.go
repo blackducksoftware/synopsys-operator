@@ -278,8 +278,7 @@ func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
 			hubErrs[name] = fmt.Errorf("unable to create the namespace due to %+v", err)
 		}
 
-		hubSpec := &hub_v1.HubSpec{}
-		hubSpec = createOpsSight.Hub.HubSpec
+		hubSpec := createOpsSight.Hub.HubSpec
 		hubSpec.Namespace = name
 		createHub := &hub_v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
 		log.Debugf("hub[%d]: %+v", i, createHub)
