@@ -41,7 +41,7 @@ type Config struct {
 	Defaults        interface{}
 	resyncPeriod    time.Duration
 	indexers        cache.Indexers
-	infomer         cache.SharedIndexInformer
+	informer        cache.SharedIndexInformer
 	queue           workqueue.RateLimitingInterface
 	handler         *opssightcontroller.OpsSightHandler
 	controller      *opssightcontroller.Controller

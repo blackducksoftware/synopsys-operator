@@ -90,11 +90,11 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 		// Verify whether the namespace was deleted
 		ns, err := util.GetNamespace(ac.kubeClient, namespace)
 		log.Infof("namespace: %v, status: %v", namespace, ns.Status)
-		time.Sleep(10 * time.Second)
 		if err != nil {
 			log.Infof("deleted the namespace %+v", namespace)
 			break
 		}
+		time.Sleep(10 * time.Second)
 	}
 
 	// Delete a Cluster Role
@@ -203,53 +203,54 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder string) (hubPassword string, err error) {
 	blackduckSecret, err := util.GetSecret(kubeClient, nsOfSecretHolder, "blackduck-secret")
 	if err != nil {
-		log.Infof("warning: You need to first create a 'blackduck-secret' in this namespace with HUB_PASSWORD")
-		return "", err
+		return "", errors.Annotate(err, "You need to first create a 'blackduck-secret' in this namespace with HUB_PASSWORD")
 	}
 	hubPassword = string(blackduckSecret.Data["HUB_PASSWORD"])
 
 	// default named return
-	return hubPassword, err
+	return hubPassword, nil
 }
 
 func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
 	// if OpenShift, get the registry auth informations
-	var internalRegistries []string
-	if ac.routeClient != nil {
-		route, err := util.GetOpenShiftRoutes(ac.routeClient, "default", "docker-registry")
-		if err != nil {
-			log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
-		} else {
-			internalRegistries = append(internalRegistries, route.Spec.Host)
-			internalRegistries = append(internalRegistries, fmt.Sprintf("%s:443", route.Spec.Host))
-		}
+	if ac.routeClient == nil {
+		return
+	}
 
-		registrySvc, err := util.GetService(ac.kubeClient, "default", "docker-registry")
-		if err != nil {
-			log.Errorf("unable to get docker-registry service in default namespace due to %+v", err)
-		} else {
-			if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
-				for _, port := range registrySvc.Spec.Ports {
-					internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port))))
-					internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port))))
-				}
+	internalRegistries := []string{}
+	route, err := util.GetOpenShiftRoutes(ac.routeClient, "default", "docker-registry")
+	if err != nil {
+		log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
+	} else {
+		internalRegistries = append(internalRegistries, route.Spec.Host)
+		internalRegistries = append(internalRegistries, fmt.Sprintf("%s:443", route.Spec.Host))
+	}
+
+	registrySvc, err := util.GetService(ac.kubeClient, "default", "docker-registry")
+	if err != nil {
+		log.Errorf("unable to get docker-registry service in default namespace due to %+v", err)
+	} else {
+		if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
+			for _, port := range registrySvc.Spec.Ports {
+				internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port))))
+				internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port))))
 			}
 		}
+	}
 
-		file, err := util.ReadFromFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
-		if err != nil {
-			log.Errorf("unable to read the service account token file due to %+v", err)
-		} else {
-			for _, internalRegistry := range internalRegistries {
-				registryAuth := v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
-				opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightSpec.ScannerPod.ImageFacade.InternalRegistries, registryAuth)
-			}
+	file, err := util.ReadFromFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err != nil {
+		log.Errorf("unable to read the service account token file due to %+v", err)
+	} else {
+		for _, internalRegistry := range internalRegistries {
+			registryAuth := v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
+			opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightSpec.ScannerPod.ImageFacade.InternalRegistries, registryAuth)
 		}
 	}
 }
 
 func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
-	// Need to add the perceptor-scanner service account to the privelged scc
+	// Need to add the perceptor-scanner service account to the privileged scc
 	if ac.osSecurityClient != nil {
 		scannerServiceAccount := opssight.ScannerServiceAccount()
 		perceiverServiceAccount := opssight.PodPerceiverServiceAccount()

@@ -28,24 +28,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type staticConfig struct {
-	perceptorContainerName string
-}
-
-var (
-	defaultStaticConfig = staticConfig{
-		perceptorContainerName: "perceptor"}
-)
-
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
 	config *v1.OpsSightSpec
-	//	staticConfig
 }
 
 // NewSpecConfig will create the OpsSight object
 func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
-	return &SpecConfig{config: config} //, staticConfig: defaultStaticConfig}
+	return &SpecConfig{config: config}
 }
 
 // GetComponents will return the list of components

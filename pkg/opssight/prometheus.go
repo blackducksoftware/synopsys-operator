@@ -42,7 +42,7 @@ func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error
 
 	pod, err := p.perceptorMetricsPod()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metrics pod: %v", err)
+		return nil, errors.Annotate(err, "failed to create metrics pod")
 	}
 	deployment.AddPod(pod)
 
@@ -59,7 +59,7 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 
 	vols, err := p.perceptorMetricsVolumes()
 	if err != nil {
-		return nil, fmt.Errorf("error creating metrics volumes: %v", err)
+		return nil, errors.Annotate(err, "error creating metrics volumes")
 	}
 	for _, v := range vols {
 		pod.AddVolume(v)
@@ -105,7 +105,7 @@ func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 		Medium:     horizonapi.StorageMediumDefault,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create empty dir volume: %v", err)
+		return nil, errors.Annotate(err, "failed to create empty dir volume")
 	}
 	vols = append(vols, vol)
 

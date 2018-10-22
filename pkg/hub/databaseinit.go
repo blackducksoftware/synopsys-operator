@@ -162,8 +162,5 @@ func execBdioDBStatements(db *sql.DB) {
 }
 
 func dispErr(err error) bool {
-	if err != nil {
-		return true
-	}
-	return false
+	return err != nil
 }
