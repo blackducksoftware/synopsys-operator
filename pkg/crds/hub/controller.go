@@ -102,6 +102,11 @@ func (c *Controller) Deploy() error {
 
 	// Perceptor configMap
 	hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.protoform.Config.Namespace, Name: "federator"})
+
+	if c.protoform.Config.HubFederatorConfig.HubConfig == nil {
+		panic("Cant start with nil federator configuration ! Set HubFederatorConfig with Port, User")
+	}
+
 	data := map[string]interface{}{
 		"HubConfig": map[string]interface{}{
 			"Port":                         c.protoform.Config.HubFederatorConfig.HubConfig.Port,
@@ -130,7 +135,7 @@ func (c *Controller) Deploy() error {
 	for {
 		blackduckSecret, err := util.GetSecret(c.protoform.KubeClientSet, c.protoform.Config.Namespace, "blackduck-secret")
 		if err != nil {
-			log.Infof("Aborting: You need to first create a 'blackduck-secret' in this namespace with HUB_PASSWORD and retry")
+			log.Infof("Aborting: You need to first create a 'blackduck-secret' in the %v namespace with HUB_PASSWORD and retry", c.protoform.Config.Namespace)
 		} else {
 			hubPassword = string(blackduckSecret.Data["HUB_PASSWORD"])
 			break

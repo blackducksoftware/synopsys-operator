@@ -36,7 +36,14 @@ type Config struct {
 	Threadiness           int
 	PostgresRestartInMins int
 	NFSPath               string
-	HubFederatorConfig    HubFederatorConfig
+	HubFederatorConfig    *HubFederatorConfig
+}
+
+// SelfSetDefaults ...
+func (config *Config) SelfSetDefaults() {
+	config.HubFederatorConfig = &HubFederatorConfig{}
+	config.HubFederatorConfig.HubConfig = &HubConfig{}
+	config.HubFederatorConfig = &HubFederatorConfig{}
 }
 
 // HubFederatorConfig will have the configuration related to hub federator

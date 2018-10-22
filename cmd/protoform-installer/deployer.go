@@ -32,12 +32,18 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/hub"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	configPath := os.Args[1]
-	fmt.Printf("Config path: %s", configPath)
-	runProtoform(configPath)
+	if len(os.Args) > 1 {
+		configPath := os.Args[1]
+		runProtoform(configPath)
+		fmt.Printf("Config path: %s", configPath)
+		return
+	}
+	fmt.Println("WARNING: Running protoform with defaults, no config file sent.")
+	runProtoform("")
 }
 
 func runProtoform(configPath string) {
@@ -87,6 +93,7 @@ func runProtoform(configPath string) {
 	}
 	deployer.AddController(opssSightController)
 
+	log.Info("Starting deployer.  All controllers have been added to horizon.")
 	if err = deployer.Deploy(); err != nil {
 		panic(err)
 	}

@@ -59,12 +59,12 @@ func NewController(configPath string) (*Deployer, error) {
 	// creates the in-cluster config
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
-		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s", err)
+		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
 		kubeConfig, err = newKubeClientFromOutsideCluster()
 	}
 
 	if err != nil {
-		return nil, errors.Annotate(err, "error getting the default client config")
+		return nil, errors.Annotate(err, "unable to create config for both in-cluster and external to cluster")
 	}
 
 	kubeClientSet, err := kubernetes.NewForConfig(kubeConfig)
