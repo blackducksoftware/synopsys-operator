@@ -26,7 +26,6 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-	opssightcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/controller"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -43,8 +42,8 @@ type Config struct {
 	indexers        cache.Indexers
 	informer        cache.SharedIndexInformer
 	queue           workqueue.RateLimitingInterface
-	handler         *opssightcontroller.OpsSightHandler
-	controller      *opssightcontroller.Controller
+	handler         *Handler
+	controller      *Controller
 	customClientSet *opssightclientset.Clientset
 	Threadiness     int
 	StopCh          <-chan struct{}

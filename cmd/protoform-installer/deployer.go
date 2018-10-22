@@ -30,7 +30,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/alert"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/opssight"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	log "github.com/sirupsen/logrus"
 )
@@ -80,7 +80,7 @@ func runProtoform(configPath string) {
 	}
 	deployer.AddController(hubController)
 
-	opssSightController, err := opssight.NewController(&opssight.Config{
+	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
 		Config:        deployer.Config,
 		KubeConfig:    deployer.KubeConfig,
 		KubeClientSet: deployer.KubeClientSet,

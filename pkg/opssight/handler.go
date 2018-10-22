@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package controller
+package opssight
 
 import (
 	"strings"
@@ -27,7 +27,6 @@ import (
 	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
@@ -39,15 +38,16 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Handler interface contains the methods that are required
-type Handler interface {
+// HandlerInterface contains the methods that are required
+// ... not really sure why we have this type
+type HandlerInterface interface {
 	ObjectCreated(obj interface{})
 	ObjectDeleted(obj string)
 	ObjectUpdated(objOld, objNew interface{})
 }
 
-// OpsSightHandler will store the configuration that is required to initiantiate the informers callback
-type OpsSightHandler struct {
+// Handler will store the configuration that is required to initiantiate the informers callback
+type Handler struct {
 	Config            *model.Config
 	KubeConfig        *rest.Config
 	Clientset         *kubernetes.Clientset
@@ -60,13 +60,13 @@ type OpsSightHandler struct {
 }
 
 // ObjectCreated will be called for create opssight events
-func (h *OpsSightHandler) ObjectCreated(obj interface{}) {
+func (h *Handler) ObjectCreated(obj interface{}) {
 	if err := h.handleObjectCreated(obj); err != nil {
 		log.Errorf("unable to handle object created: %s", err.Error())
 	}
 }
 
-func (h *OpsSightHandler) handleObjectCreated(obj interface{}) error {
+func (h *Handler) handleObjectCreated(obj interface{}) error {
 	recordEvent("objectCreated")
 	log.Debugf("objectCreated: %+v", obj)
 	opssightv1, ok := obj.(*opssight_v1.OpsSight)
@@ -92,7 +92,7 @@ func (h *OpsSightHandler) handleObjectCreated(obj interface{}) error {
 		recordError("unable to update state")
 		return errors.Annotate(err, "unable to update state")
 	}
-	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
+	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
 
 	err = opssightCreator.CreateOpsSight(&opssightv1.Spec)
 	if err != nil {
@@ -112,10 +112,10 @@ func (h *OpsSightHandler) handleObjectCreated(obj interface{}) error {
 }
 
 // ObjectDeleted will be called for delete opssight events
-func (h *OpsSightHandler) ObjectDeleted(name string) {
+func (h *Handler) ObjectDeleted(name string) {
 	recordEvent("objectDeleted")
 	log.Debugf("objectDeleted: %+v", name)
-	opssightCreator := opssight.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
+	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
 	err := opssightCreator.DeleteOpsSight(name)
 	if err != nil {
 		log.Errorf("unable to delete opssight: %v", err)
@@ -124,12 +124,12 @@ func (h *OpsSightHandler) ObjectDeleted(name string) {
 }
 
 // ObjectUpdated will be called for update opssight events
-func (h *OpsSightHandler) ObjectUpdated(objOld, objNew interface{}) {
+func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	recordEvent("objectUpdated")
 	log.Debugf("objectUpdated: %+v", objNew)
 }
 
-func (h *OpsSightHandler) updateState(specState string, statusState string, errorMessage string, opssight *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
+func (h *Handler) updateState(specState string, statusState string, errorMessage string, opssight *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
 	opssight.Spec.State = specState
 	opssight.Status.State = statusState
 	opssight.Status.ErrorMessage = errorMessage
@@ -137,6 +137,6 @@ func (h *OpsSightHandler) updateState(specState string, statusState string, erro
 	return opssight, errors.Annotate(err, "unable to update the state of opssight object")
 }
 
-func (h *OpsSightHandler) updateOpsSightObject(obj *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
+func (h *Handler) updateOpsSightObject(obj *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
 	return h.OpsSightClientset.SynopsysV1().OpsSights(h.Namespace).Update(obj)
 }
