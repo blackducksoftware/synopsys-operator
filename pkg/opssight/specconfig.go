@@ -28,10 +28,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type staticConfig struct {
-	perceptorContainerName string
-}
-
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
 	config *v1.OpsSightSpec
