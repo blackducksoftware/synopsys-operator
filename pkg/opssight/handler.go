@@ -22,6 +22,7 @@ under the License.
 package opssight
 
 import (
+	"encoding/json"
 	"strings"
 
 	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
@@ -84,7 +85,9 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 		h.updateState("error", "error", err.Error(), opssightv1)
 		return errors.Annotate(err, "unable to merge objects")
 	}
+	bytes, err := json.Marshal(newSpec)
 	log.Debugf("merged opssight details: %+v", newSpec)
+	log.Debugf("opssight json (%+v): %s", err, string(bytes))
 
 	opssightv1.Spec = newSpec
 	opssightv1, err = h.updateState("pending", "creating", "", opssightv1)
