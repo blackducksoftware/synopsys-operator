@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package controller
+package opssight
 
 import (
 	"fmt"
@@ -43,7 +43,7 @@ type Controller struct {
 	Clientset         kubernetes.Interface
 	Queue             workqueue.RateLimitingInterface
 	Informer          cache.SharedIndexInformer
-	Handler           Handler
+	Handler           HandlerInterface
 	OpsSightClientset *opssightclientset.Clientset
 	Namespace         string
 }
