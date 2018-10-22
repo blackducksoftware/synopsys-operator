@@ -48,7 +48,6 @@ type AlertHandler struct {
 	AlertClientset *alertclientset.Clientset
 	Defaults       *alert_v1.AlertSpec
 	Namespace      string
-	CmMutex        chan bool
 }
 
 // ObjectCreated will be called for create alert events

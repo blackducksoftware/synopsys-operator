@@ -210,7 +210,6 @@ func (c *Controller) CreateHandler() {
 		Clientset:         c.config.KubeClientSet,
 		OpsSightClientset: c.config.customClientSet,
 		Namespace:         c.config.Config.Namespace,
-		CmMutex:           make(chan bool, 1),
 		OSSecurityClient:  osClient,
 		RouteClient:       routeClient,
 		Defaults:          c.config.Defaults.(*v1.OpsSightSpec),

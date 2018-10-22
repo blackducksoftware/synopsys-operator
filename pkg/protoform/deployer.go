@@ -24,6 +24,7 @@ package protoform
 import (
 	crd "github.com/blackducksoftware/perceptor-protoform/pkg/crds"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/juju/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -53,11 +54,11 @@ func (d *Deployer) AddController(controller crd.ProtoformControllerInterface) {
 }
 
 // Deploy will deploy the controllers
-func (d *Deployer) Deploy() {
+func (d *Deployer) Deploy() error {
 	for _, controller := range d.controllers {
 		err := controller.CreateClientSet()
 		if err != nil {
-			panic(err)
+			return errors.Annotate(err, "unable to create clientset for controller")
 		}
 		controller.Deploy()
 		controller.PostDeploy()
@@ -69,4 +70,5 @@ func (d *Deployer) Deploy() {
 		controller.Run()
 		controller.PostRun()
 	}
+	return nil
 }

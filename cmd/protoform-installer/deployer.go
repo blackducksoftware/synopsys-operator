@@ -32,6 +32,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/hub"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -61,6 +62,9 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(alertController)
 
 	hubController, err := hub.NewController(&hub.ProtoformConfig{
@@ -71,6 +75,9 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(hubController)
 
 	opssSightController, err := opssight.NewController(&opssight.Config{
@@ -81,10 +88,15 @@ func runProtoform(configPath string) {
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
+	if err != nil {
+		panic(err)
+	}
 	deployer.AddController(opssSightController)
 
-	fmt.Printf("Starting deployer.  All controllers have been added to horizon.")
-	deployer.Deploy()
+	log.Info("Starting deployer.  All controllers have been added to horizon.")
+	if err = deployer.Deploy(); err != nil {
+		panic(err)
+	}
 
 	<-stopCh
 }
@@ -119,13 +131,15 @@ func GetHubDefaultValue() *hubv1.HubSpec {
 		Environs:        []hubv1.Environs{},
 		ImagePrefix:     "hub",
 	}
-} // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
+}
+
+// GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Perceptor: &opssightv1.Perceptor{
-			Name:  "perceptor",
-			Port:  3001,
-			Image: "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+			Name:                           "perceptor",
+			Port:                           3001,
+			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
 			CheckForStalledScansPauseHours: 999999,
 			StalledScanClientTimeoutHours:  999999,
 			ModelMetricsPauseSeconds:       15,
@@ -180,7 +194,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			InitialCount:                 1,
 			MaxCount:                     1,
 			DeleteHubThresholdPercentage: 50,
-			HubSpec: nil,
+			HubSpec:                      nil,
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,
