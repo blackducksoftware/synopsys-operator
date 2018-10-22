@@ -95,7 +95,7 @@ func runProtoform(configPath string) {
 
 	log.Info("Starting deployer.  All controllers have been added to horizon.")
 	if err = deployer.Deploy(); err != nil {
-		panic(err)
+		log.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
 	}
 
 	<-stopCh
