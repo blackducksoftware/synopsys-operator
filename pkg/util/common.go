@@ -89,7 +89,7 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 	}
 
 	for _, readinessProbe := range readinessProbeConfigs {
-		container.AddLivenessProbe(*readinessProbe)
+		container.AddReadinessProbe(*readinessProbe)
 	}
 
 	return container
@@ -400,6 +400,48 @@ func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize str
 	return postgresPVC, nil
 }
 
+func ValidateServiceEndpoint(clientset *kubernetes.Clientset, namespace string, name string) (*v1.Endpoints, error) {
+	var endpoint *v1.Endpoints
+	var err error
+	for i := 0; i < 20; i++ {
+		endpoint, err = GetServiceEndPoints(clientset, namespace, name)
+		if err != nil {
+			log.Infof("waiting for %s endpoint in %s", name, namespace)
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		break
+	}
+	return endpoint, err
+}
+
+// WaitForServiceEndpointReady will wait for the service endpoint to start the service
+func WaitForServiceEndpointReady(clientset *kubernetes.Clientset, namespace string, name string) error {
+	endpoint, err := ValidateServiceEndpoint(clientset, namespace, name)
+	if err != nil {
+		return fmt.Errorf("unable to get service endpoint %s in %s because %+v", name, namespace, err)
+	}
+	for _, subset := range endpoint.Subsets {
+		if len(subset.NotReadyAddresses) > 0 {
+			for {
+				log.Infof("waiting for %s in %s to be cloned/backed up", name, namespace)
+				svc, err := GetServiceEndPoints(clientset, namespace, name)
+				if err != nil {
+					return fmt.Errorf("unable to get service endpoint %s in %s because %+v", name, namespace, err)
+				}
+
+				for _, subset := range svc.Subsets {
+					if len(subset.Addresses) > 0 {
+						return nil
+					}
+				}
+				time.Sleep(10 * time.Second)
+			}
+		}
+	}
+	return nil
+}
+
 // ValidatePodsAreRunningInNamespace will validate whether the pods are running in a given namespace
 func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespace string) error {
 	pods, err := GetAllPodsForNamespace(clientset, namespace)
@@ -521,6 +563,11 @@ func GetKubeConfig() (*rest.Config, error) {
 // GetService will get the service information for the input service name inside the input namespace
 func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*v1.Service, error) {
 	return clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
+}
+
+// GetServiceEndPoints will get the service endpoint information for the input service name inside the input namespace
+func GetServiceEndPoints(clientset *kubernetes.Clientset, namespace string, serviceName string) (*v1.Endpoints, error) {
+	return clientset.CoreV1().Endpoints(namespace).Get(serviceName, metav1.GetOptions{})
 }
 
 // ListStorageClass will list all the storageClass in the cluster
