@@ -27,19 +27,19 @@ import (
 	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
-	"github.com/prometheus/client_golang/prometheus"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/gin-gonic/contrib/static"
 	gin "github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 // SetupHTTPServer will used to create all the http api
-func SetupHTTPServer(hc *hub.Creater, namespace string) {
+func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, namespace string) {
+
 	// prometheus metrics
 	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
 	prometheus.Unregister(prometheus.NewGoCollector())
@@ -65,14 +65,14 @@ func SetupHTTPServer(hc *hub.Creater, namespace string) {
 
 		router.GET("/sql-instances", func(c *gin.Context) {
 			// keys := []string{"pvc-000", "pvc-001", "pvc-002"}
-			keys, _ := util.ListHubPV(hc.HubClient, namespace)
+			keys, _ := util.ListHubPV(hubClient, namespace)
 			c.JSON(200, keys)
 		})
 
 		router.GET("/storage-classes", func(c *gin.Context) {
 			var storageList map[string]string
 			storageList = make(map[string]string)
-			storageClasses, err := util.ListStorageClass(hc.KubeClient)
+			storageClasses, err := util.ListStorageClass(kubeClient)
 			if err != nil {
 				log.Errorf("unable to list the storage classes due to %+v", err)
 				c.JSON(404, fmt.Sprintf("\"message\": \"Failed to List the storage class due to %+v\"", err))
@@ -86,7 +86,7 @@ func SetupHTTPServer(hc *hub.Creater, namespace string) {
 
 		router.GET("/hub", func(c *gin.Context) {
 			log.Debug("get hub request")
-			hubs, err := hc.HubClient.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
+			hubs, err := hubClient.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
 			if err != nil {
 				log.Errorf("unable to get the hub list due to %+v", err)
 				c.JSON(404, "\"message\": \"Failed to List the hub\"")
@@ -110,14 +110,14 @@ func SetupHTTPServer(hc *hub.Creater, namespace string) {
 				log.Debugf("Fatal failure binding the incoming request ! %v", c.Request)
 			}
 
-			ns, err := util.CreateNamespace(hc.KubeClient, hubSpec.Namespace)
+			ns, err := util.CreateNamespace(kubeClient, hubSpec.Namespace)
 			log.Debugf("created namespace: %+v", ns)
 			if err != nil {
 				log.Errorf("unable to create the namespace due to %+v", err)
 				c.JSON(404, "\"message\": \"Failed to create the namespace\"")
 				return
 			}
-			hc.HubClient.SynopsysV1().Hubs(hubSpec.Namespace).Create(&v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hubSpec.Namespace}, Spec: *hubSpec})
+			hubClient.SynopsysV1().Hubs(hubSpec.Namespace).Create(&v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hubSpec.Namespace}, Spec: *hubSpec})
 
 			c.JSON(200, "\"message\": \"Succeeded\"")
 		})
@@ -132,7 +132,7 @@ func SetupHTTPServer(hc *hub.Creater, namespace string) {
 			log.Debugf("delete hub request %v", hubSpec.Namespace)
 
 			// This is on the event loop.
-			hc.HubClient.SynopsysV1().Hubs(hubSpec.Namespace).Delete(hubSpec.Namespace, &metav1.DeleteOptions{})
+			hubClient.SynopsysV1().Hubs(hubSpec.Namespace).Delete(hubSpec.Namespace, &metav1.DeleteOptions{})
 
 			c.JSON(200, "\"message\": \"Succeeded\"")
 		})

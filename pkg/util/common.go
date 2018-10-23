@@ -400,6 +400,7 @@ func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize str
 	return postgresPVC, nil
 }
 
+// ValidateServiceEndpoint will validate whether the service endpoint is ready to serve
 func ValidateServiceEndpoint(clientset *kubernetes.Clientset, namespace string, name string) (*v1.Endpoints, error) {
 	var endpoint *v1.Endpoints
 	var err error

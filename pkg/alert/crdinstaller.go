@@ -22,59 +22,61 @@ under the License.
 package alert
 
 import (
-	"fmt"
 	"time"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 	alertinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/informers/externalversions/alert/v1"
-	alertcontroller "github.com/blackducksoftware/perceptor-protoform/pkg/alert/controller"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/juju/errors"
-
+	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-
-	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
-	log "github.com/sirupsen/logrus"
 )
 
-// Controller defines the specification for the controller
-type Controller struct {
-	config *Config
+// CRDInstaller defines the specification for the controller
+type CRDInstaller struct {
+	config       *model.Config
+	kubeConfig   *rest.Config
+	kubeClient   *kubernetes.Clientset
+	defaults     interface{}
+	resyncPeriod time.Duration
+	indexers     cache.Indexers
+	infomer      cache.SharedIndexInformer
+	queue        workqueue.RateLimitingInterface
+	handler      *Handler
+	controller   *Controller
+	alertClient  *alertclientset.Clientset
+	threadiness  int
+	stopCh       <-chan struct{}
 }
 
-// NewController will create a controller configuration
-func NewController(config interface{}) (*Controller, error) {
-	dependentConfig, ok := config.(*Config)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert alert defaults: %v", config)
-	}
-	c := &Controller{config: dependentConfig}
-
-	c.config.resyncPeriod = 0
-	c.config.indexers = cache.Indexers{}
-
-	return c, nil
+// NewCRDInstaller will create a installer configuration
+func NewCRDInstaller(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
+	crdInstaller.resyncPeriod = 0
+	crdInstaller.indexers = cache.Indexers{}
+	return crdInstaller
 }
 
 // CreateClientSet will create the CRD client
-func (c *Controller) CreateClientSet() error {
-	alertClient, err := alertclientset.NewForConfig(c.config.KubeConfig)
+func (c *CRDInstaller) CreateClientSet() error {
+	alertClient, err := alertclientset.NewForConfig(c.kubeConfig)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	c.config.customClientSet = alertClient
+	c.alertClient = alertClient
 	return nil
 }
 
 // Deploy will deploy the CRD
-func (c *Controller) Deploy() error {
-	deployer, err := horizon.NewDeployer(c.config.KubeConfig)
+func (c *CRDInstaller) Deploy() error {
+	deployer, err := horizon.NewDeployer(c.kubeConfig)
 	if err != nil {
 		return err
 	}
@@ -83,7 +85,7 @@ func (c *Controller) Deploy() error {
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
 		Name:       "alerts.synopsys.com",
-		Namespace:  c.config.Config.Namespace,
+		Namespace:  c.config.Namespace,
 		Group:      "synopsys.com",
 		CRDVersion: "v1",
 		Kind:       "Alert",
@@ -103,30 +105,30 @@ func (c *Controller) Deploy() error {
 }
 
 // PostDeploy will initialize before deploying the CRD
-func (c *Controller) PostDeploy() {
+func (c *CRDInstaller) PostDeploy() {
 }
 
 // CreateInformer will create a informer for the CRD
-func (c *Controller) CreateInformer() {
-	c.config.infomer = alertinformerv1.NewAlertInformer(
-		c.config.customClientSet,
-		c.config.Config.Namespace,
-		c.config.resyncPeriod,
-		c.config.indexers,
+func (c *CRDInstaller) CreateInformer() {
+	c.infomer = alertinformerv1.NewAlertInformer(
+		c.alertClient,
+		c.config.Namespace,
+		c.resyncPeriod,
+		c.indexers,
 	)
 }
 
 // CreateQueue will create a queue to process the CRD
-func (c *Controller) CreateQueue() {
+func (c *CRDInstaller) CreateQueue() {
 	// create a new queue so that when the informer gets a resource that is either
 	// a result of listing or watching, we can add an idenfitying key to the queue
 	// so that it can be handled in the handler
-	c.config.queue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	c.queue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 }
 
 // AddInformerEventHandler will add the event handlers for the informers
-func (c *Controller) AddInformerEventHandler() {
-	c.config.infomer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+func (c *CRDInstaller) AddInformerEventHandler() {
+	c.infomer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			// convert the resource object into a key (in this case
 			// we are just doing it in the format of 'namespace/name')
@@ -134,14 +136,14 @@ func (c *Controller) AddInformerEventHandler() {
 			log.Infof("add alert: %s", key)
 			if err == nil {
 				// add the key to the queue for the handler to get
-				c.config.queue.Add(key)
+				c.queue.Add(key)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
 			log.Infof("update alert: %s", key)
 			if err == nil {
-				c.config.queue.Add(key)
+				c.queue.Add(key)
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -154,42 +156,33 @@ func (c *Controller) AddInformerEventHandler() {
 			log.Infof("delete alert: %s: %+v", key, obj)
 
 			if err == nil {
-				c.config.queue.Add(key)
+				c.queue.Add(key)
 			}
 		},
 	})
 }
 
 // CreateHandler will create a CRD handler
-func (c *Controller) CreateHandler() {
-	c.config.handler = &alertcontroller.AlertHandler{
-		Config:         c.config.KubeConfig,
-		Clientset:      c.config.KubeClientSet,
-		AlertClientset: c.config.customClientSet,
-		Namespace:      c.config.Config.Namespace,
-		Defaults:       c.config.Defaults.(*v1.AlertSpec),
+func (c *CRDInstaller) CreateHandler() {
+	c.handler = &Handler{
+		config:      c.config,
+		kubeConfig:  c.kubeConfig,
+		kubeClient:  c.kubeClient,
+		alertClient: c.alertClient,
+		defaults:    c.defaults.(*v1.AlertSpec),
 	}
 }
 
 // CreateController will create a CRD controller
-func (c *Controller) CreateController() {
-	c.config.controller = alertcontroller.NewController(
-		&alertcontroller.Controller{
-			Logger:         log.NewEntry(log.New()),
-			Clientset:      c.config.KubeClientSet,
-			Queue:          c.config.queue,
-			Informer:       c.config.infomer,
-			Handler:        c.config.handler,
-			AlertClientset: c.config.customClientSet,
-			Namespace:      c.config.Config.Namespace,
-		})
+func (c *CRDInstaller) CreateController() {
+	c.controller = NewController(log.NewEntry(log.New()), c.queue, c.infomer, c.handler)
 }
 
 // Run will run the CRD controller
-func (c *Controller) Run() {
-	go c.config.controller.Run(c.config.Threadiness, c.config.StopCh)
+func (c *CRDInstaller) Run() {
+	go c.controller.Run(c.config.Threadiness, c.stopCh)
 }
 
 // PostRun will run post CRD controller execution
-func (c *Controller) PostRun() {
+func (c *CRDInstaller) PostRun() {
 }

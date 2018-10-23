@@ -25,11 +25,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
 	alertv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/alert"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/crds/hub"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	log "github.com/sirupsen/logrus"
@@ -54,30 +54,10 @@ func runProtoform(configPath string) {
 
 	stopCh := make(chan struct{})
 
-	alertController, err := alert.NewController(&alert.Config{
-		Config:        deployer.Config,
-		KubeConfig:    deployer.KubeConfig,
-		KubeClientSet: deployer.KubeClientSet,
-		Defaults:      GetAlertDefaultValue(),
-		Threadiness:   deployer.Config.Threadiness,
-		StopCh:        stopCh,
-	})
-	if err != nil {
-		panic(err)
-	}
+	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, GetAlertDefaultValue(), stopCh)
 	deployer.AddController(alertController)
 
-	hubController, err := hub.NewController(&hub.ProtoformConfig{
-		Config:        deployer.Config,
-		KubeConfig:    deployer.KubeConfig,
-		KubeClientSet: deployer.KubeClientSet,
-		Defaults:      GetHubDefaultValue(),
-		Threadiness:   deployer.Config.Threadiness,
-		StopCh:        stopCh,
-	})
-	if err != nil {
-		panic(err)
-	}
+	hubController := hub.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, GetHubDefaultValue(), stopCh)
 	deployer.AddController(hubController)
 
 	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{

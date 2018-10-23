@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package plugins
+package hub
 
 import (
 	"fmt"
@@ -27,7 +27,6 @@ import (
 	"time"
 
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -134,7 +133,7 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv1.HubSpec) c
 				log.Debugf("%v: running postgres schema repair check # %v...", hubSpec.Namespace, checks)
 				// name == namespace (before the namespace is set, it might be empty, but name wont be)
 				hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", hubSpec.Namespace)
-				_, _, postgresPassword, err := hub.GetDefaultPasswords(i.KubeClient, i.Config.Namespace)
+				_, _, postgresPassword, err := GetDefaultPasswords(i.KubeClient, i.Config.Namespace)
 				adminPassword, userPassword, err := i.getHubPasswords(hubSpec)
 				if err != nil {
 					log.Errorf("password mismatch for %s because %+v", hubSpec.Namespace, err)
@@ -142,7 +141,7 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv1.HubSpec) c
 				dbNeedsInitBecause := ""
 
 				log.Debugf("%v : Checking connection now...", hubSpec.Namespace)
-				db, err := hub.OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
+				db, err := OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
 				log.Debugf("%v : Done checking [ error status == %v ] ...", hubSpec.Namespace, err)
 				if err != nil {
 					dbNeedsInitBecause = "couldnt connect !"
@@ -156,7 +155,7 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv1.HubSpec) c
 
 				if dbNeedsInitBecause != "" {
 					log.Warnf("%v: database needs init because (%v), ::: %v ", hubSpec.Namespace, dbNeedsInitBecause, err)
-					err := hub.InitDatabase(hubSpec, adminPassword, userPassword, postgresPassword)
+					err := InitDatabase(hubSpec, adminPassword, userPassword, postgresPassword)
 					if err != nil {
 						log.Errorf("%v: error: %+v", hubSpec.Namespace, err)
 					}
