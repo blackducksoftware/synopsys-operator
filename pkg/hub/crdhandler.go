@@ -54,7 +54,7 @@ type HandlerInterface interface {
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
 	config           *model.Config
-	KubeConfig       *rest.Config
+	kubeConfig       *rest.Config
 	kubeClient       *kubernetes.Clientset
 	hubClient        *hubclientset.Clientset
 	defaults         *hub_v1.HubSpec
@@ -67,7 +67,7 @@ type Handler struct {
 // NewHandler will create the handler
 func NewHandler(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, defaults *hub_v1.HubSpec,
 	federatorBaseURL string, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
-	return &Handler{config: config, KubeConfig: kubeConfig, kubeClient: kubeClient, hubClient: hubClient, defaults: defaults,
+	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, hubClient: hubClient, defaults: defaults,
 		federatorBaseURL: federatorBaseURL, cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
@@ -94,7 +94,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 			hubv1, err := h.updateState("pending", "creating", nil, hubv1)
 
 			if err == nil {
-				hubCreator := NewCreater(h.config, h.KubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
+				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
 				ip, pvc, updateError, err := hubCreator.CreateHub(&hubv1.Spec)
 				if err != nil {
 					log.Errorf("unable to create hub for %s due to %+v", hubv1.Name, err)
@@ -122,7 +122,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
-	hubCreator := NewCreater(h.config, h.KubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
+	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
 	hubCreator.DeleteHub(name)
 	h.callHubFederator()
 
@@ -178,9 +178,9 @@ func (h *Handler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
 			req := util.CreateExecContainerRequest(h.kubeClient, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
 			if strings.HasPrefix(createHub.HubVersion, "4.") {
-				err = util.ExecContainer(h.KubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate"`, registrationKey)})
+				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate"`, registrationKey)})
 			} else {
-				err = util.ExecContainer(h.KubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
+				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
 			}
 
 			if err != nil {
