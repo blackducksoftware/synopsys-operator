@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package controller
+package hub
 
 import (
 	"fmt"
@@ -27,19 +27,15 @@ import (
 	"strings"
 	"time"
 
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-
-	// hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-
-	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // SecretReplicator will have the configuration related to replicate the secrets

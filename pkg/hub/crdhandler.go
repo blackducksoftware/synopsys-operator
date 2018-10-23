@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package controller
+package hub
 
 import (
 	"bytes"
@@ -33,7 +33,6 @@ import (
 	"time"
 
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -45,25 +44,30 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Handler interface contains the methods that are required
-type Handler interface {
+// HandlerInterface interface contains the methods that are required
+type HandlerInterface interface {
 	ObjectCreated(obj interface{})
 	ObjectDeleted(obj string)
 	ObjectUpdated(objOld, objNew interface{})
 }
 
-// HubHandler will store the configuration that is required to initiantiate the informers callback
-type HubHandler struct {
-	Config           *model.Config
+// Handler will store the configuration that is required to initiantiate the informers callback
+type Handler struct {
+	config           *model.Config
 	KubeConfig       *rest.Config
-	Clientset        *kubernetes.Clientset
-	HubClientset     *hubclientset.Clientset
-	Defaults         *hub_v1.HubSpec
-	Namespace        string
-	FederatorBaseURL string
-	CmMutex          chan bool
-	OSSecurityClient *securityclient.SecurityV1Client
-	RouteClient      *routeclient.RouteV1Client
+	kubeClient       *kubernetes.Clientset
+	hubClient        *hubclientset.Clientset
+	defaults         *hub_v1.HubSpec
+	federatorBaseURL string
+	cmMutex          chan bool
+	osSecurityClient *securityclient.SecurityV1Client
+	routeClient      *routeclient.RouteV1Client
+}
+
+func NewHandler(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, defaults *hub_v1.HubSpec,
+	federatorBaseURL string, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
+	return &Handler{config: config, KubeConfig: kubeConfig, kubeClient: kubeClient, hubClient: hubClient, defaults: defaults,
+		federatorBaseURL: federatorBaseURL, cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
 // APISetHubsRequest to set the Hub urls for Perceptor
@@ -72,12 +76,12 @@ type APISetHubsRequest struct {
 }
 
 // ObjectCreated will be called for create hub events
-func (h *HubHandler) ObjectCreated(obj interface{}) {
+func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("ObjectCreated: %+v", obj)
 	hubv1 := obj.(*hub_v1.Hub)
 	if strings.EqualFold(hubv1.Spec.State, "") {
 		newSpec := hubv1.Spec
-		hubDefaultSpec := h.Defaults
+		hubDefaultSpec := h.defaults
 		err := mergo.Merge(&newSpec, hubDefaultSpec)
 		log.Debugf("merged hub details %+v", newSpec)
 		if err != nil {
@@ -89,7 +93,7 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 			hubv1, err := h.updateState("pending", "creating", nil, hubv1)
 
 			if err == nil {
-				hubCreator := hub.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.HubClientset, h.OSSecurityClient, h.RouteClient)
+				hubCreator := NewCreater(h.config, h.KubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
 				ip, pvc, updateError, err := hubCreator.CreateHub(&hubv1.Spec)
 				if err != nil {
 					log.Errorf("unable to create hub for %s due to %+v", hubv1.Name, err)
@@ -114,10 +118,10 @@ func (h *HubHandler) ObjectCreated(obj interface{}) {
 }
 
 // ObjectDeleted will be called for delete hub events
-func (h *HubHandler) ObjectDeleted(name string) {
+func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
-	hubCreator := hub.NewCreater(h.Config, h.KubeConfig, h.Clientset, h.HubClientset, h.OSSecurityClient, h.RouteClient)
+	hubCreator := NewCreater(h.config, h.KubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
 	hubCreator.DeleteHub(name)
 	h.callHubFederator()
 
@@ -131,16 +135,16 @@ func (h *HubHandler) ObjectDeleted(name string) {
 }
 
 // ObjectUpdated will be called for update hub events
-func (h *HubHandler) ObjectUpdated(objOld, objNew interface{}) {
+func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	//if strings.Compare(objOld.Spec.State, objNew.Spec.State) != 0 {
 	//	log.Infof("%s - Changing state [%s] -> [%s] | Current: [%s]", objNew.Name, objOld.Spec.State, objNew.Spec.State, objNew.Status.State )
 	//	// TO DO
 	//	objNew.Status.State = objNew.Spec.State
-	//	h.hubClientset.SynopsysV1().Hubs(objNew.Namespace).Update(objNew)
+	//	h.hubClient.SynopsysV1().Hubs(objNew.Namespace).Update(objNew)
 	//}
 }
 
-func (h *HubHandler) updateState(specState string, statusState string, err error, hub *hub_v1.Hub) (*hub_v1.Hub, error) {
+func (h *Handler) updateState(specState string, statusState string, err error, hub *hub_v1.Hub) (*hub_v1.Hub, error) {
 	hub.Spec.State = specState
 	hub.Status.State = statusState
 	if err != nil {
@@ -153,13 +157,13 @@ func (h *HubHandler) updateState(specState string, statusState string, err error
 	return hub, err
 }
 
-func (h *HubHandler) updateHubObject(obj *hub_v1.Hub) (*hub_v1.Hub, error) {
-	return h.HubClientset.SynopsysV1().Hubs(h.Namespace).Update(obj)
+func (h *Handler) updateHubObject(obj *hub_v1.Hub) (*hub_v1.Hub, error) {
+	return h.hubClient.SynopsysV1().Hubs(h.config.Namespace).Update(obj)
 }
 
-func (h *HubHandler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
+func (h *Handler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod, err := util.FilterPodByNamePrefixInNamespace(h.Clientset, createHub.Namespace, "registration")
+	registrationPod, err := util.FilterPodByNamePrefixInNamespace(h.kubeClient, createHub.Namespace, "registration")
 	log.Debugf("registration pod: %+v", registrationPod)
 	if err != nil {
 		return err
@@ -170,7 +174,7 @@ func (h *HubHandler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
 	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
 		for i := 0; i < 20; i++ {
 			// Create the exec into kubernetes pod request
-			req := util.CreateExecContainerRequest(h.Clientset, registrationPod)
+			req := util.CreateExecContainerRequest(h.kubeClient, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
 			if strings.HasPrefix(createHub.HubVersion, "4.") {
 				err = util.ExecContainer(h.KubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate"`, registrationKey)})
@@ -190,11 +194,11 @@ func (h *HubHandler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
 	return err
 }
 
-func (h *HubHandler) callHubFederator() {
+func (h *Handler) callHubFederator() {
 	// IMPORTANT ! This will block.
-	h.CmMutex <- true
+	h.cmMutex <- true
 	defer func() {
-		<-h.CmMutex
+		<-h.cmMutex
 	}()
 	hubUrls, err := h.getHubUrls()
 	log.Debugf("hubUrls: %+v", hubUrls)
@@ -202,7 +206,7 @@ func (h *HubHandler) callHubFederator() {
 		log.Errorf("unable to get the hub urls due to %+v", err)
 		return
 	}
-	err = h.addHubFederatorEvents(fmt.Sprintf("%s/sethubs", h.FederatorBaseURL), hubUrls)
+	err = h.addHubFederatorEvents(fmt.Sprintf("%s/sethubs", h.federatorBaseURL), hubUrls)
 	if err != nil {
 		log.Errorf("unable to update the hub urls in perceptor due to %+v", err)
 		return
@@ -210,9 +214,9 @@ func (h *HubHandler) callHubFederator() {
 }
 
 // HubNamespaces will list the hub namespaces
-func (h *HubHandler) getHubUrls() (*APISetHubsRequest, error) {
+func (h *Handler) getHubUrls() (*APISetHubsRequest, error) {
 	// 1. get Hub CDR list from default ns
-	hubList, err := util.ListHubs(h.HubClientset, h.Namespace)
+	hubList, err := util.ListHubs(h.hubClient, h.config.Namespace)
 	if err != nil {
 		return &APISetHubsRequest{}, err
 	}
@@ -232,7 +236,7 @@ func (h *HubHandler) getHubUrls() (*APISetHubsRequest, error) {
 	return &APISetHubsRequest{HubURLs: hubURLs}, nil
 }
 
-func (h *HubHandler) verifyHub(hubURL string, name string) bool {
+func (h *Handler) verifyHub(hubURL string, name string) bool {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -247,7 +251,7 @@ func (h *HubHandler) verifyHub(hubURL string, name string) bool {
 		if err != nil {
 			log.Debugf("unable to talk with the hub %s", hubURL)
 			time.Sleep(10 * time.Second)
-			_, err := util.GetHub(h.HubClientset, h.Namespace, name)
+			_, err := util.GetHub(h.hubClient, h.config.Namespace, name)
 			if err != nil {
 				return false
 			}
@@ -266,7 +270,7 @@ func (h *HubHandler) verifyHub(hubURL string, name string) bool {
 	return false
 }
 
-func (h *HubHandler) addHubFederatorEvents(dest string, obj interface{}) error {
+func (h *Handler) addHubFederatorEvents(dest string, obj interface{}) error {
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
 		return fmt.Errorf("unable to serialize %v: %v", obj, err)

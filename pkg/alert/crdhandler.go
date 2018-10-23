@@ -19,15 +19,15 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package controller
+package alert
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
 	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 	alert_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -35,29 +35,33 @@ import (
 )
 
 // Handler interface contains the methods that are required
-type Handler interface {
+type HandlerInterface interface {
 	ObjectCreated(obj interface{})
 	ObjectDeleted(obj string)
 	ObjectUpdated(objOld, objNew interface{})
 }
 
 // AlertHandler will store the configuration that is required to initiantiate the informers callback
-type AlertHandler struct {
-	Config         *rest.Config
-	Clientset      *kubernetes.Clientset
-	AlertClientset *alertclientset.Clientset
-	Defaults       *alert_v1.AlertSpec
-	Namespace      string
+type Handler struct {
+	config      *model.Config
+	kubeConfig  *rest.Config
+	kubeClient  *kubernetes.Clientset
+	alertClient *alertclientset.Clientset
+	defaults    *alert_v1.AlertSpec
+}
+
+func NewHandler(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, defaults *alert_v1.AlertSpec) *Handler {
+	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, defaults: defaults}
 }
 
 // ObjectCreated will be called for create alert events
-func (h *AlertHandler) ObjectCreated(obj interface{}) {
+func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("objectCreated: %+v", obj)
 	alertv1 := obj.(*alert_v1.Alert)
 	if strings.EqualFold(alertv1.Spec.State, "") {
 		// merge with default values
 		newSpec := alertv1.Spec
-		alertDefaultSpec := h.Defaults
+		alertDefaultSpec := h.defaults
 		err := mergo.Merge(&newSpec, alertDefaultSpec)
 		log.Debugf("merged alert details %+v", newSpec)
 		if err != nil {
@@ -70,7 +74,7 @@ func (h *AlertHandler) ObjectCreated(obj interface{}) {
 			alertv1, err := h.updateState("pending", "creating", "", alertv1)
 
 			if err == nil {
-				alertCreator := alert.NewCreater(h.Config, h.Clientset, h.AlertClientset)
+				alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient)
 
 				// create alert instance
 				err = alertCreator.CreateAlert(&alertv1.Spec)
@@ -86,18 +90,18 @@ func (h *AlertHandler) ObjectCreated(obj interface{}) {
 }
 
 // ObjectDeleted will be called for delete alert events
-func (h *AlertHandler) ObjectDeleted(name string) {
+func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	alertCreator := alert.NewCreater(h.Config, h.Clientset, h.AlertClientset)
+	alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient)
 	alertCreator.DeleteAlert(name)
 }
 
 // ObjectUpdated will be called for update alert events
-func (h *AlertHandler) ObjectUpdated(objOld, objNew interface{}) {
+func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("objectUpdated: %+v", objNew)
 }
 
-func (h *AlertHandler) updateState(specState string, statusState string, errorMessage string, alert *alert_v1.Alert) (*alert_v1.Alert, error) {
+func (h *Handler) updateState(specState string, statusState string, errorMessage string, alert *alert_v1.Alert) (*alert_v1.Alert, error) {
 	alert.Spec.State = specState
 	alert.Status.State = statusState
 	alert.Status.ErrorMessage = errorMessage
@@ -108,6 +112,6 @@ func (h *AlertHandler) updateState(specState string, statusState string, errorMe
 	return alert, err
 }
 
-func (h *AlertHandler) updateAlertObject(obj *alert_v1.Alert) (*alert_v1.Alert, error) {
-	return h.AlertClientset.SynopsysV1().Alerts(h.Namespace).Update(obj)
+func (h *Handler) updateAlertObject(obj *alert_v1.Alert) (*alert_v1.Alert, error) {
+	return h.alertClient.SynopsysV1().Alerts(h.config.Namespace).Update(obj)
 }
