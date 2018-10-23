@@ -64,6 +64,7 @@ type Handler struct {
 	routeClient      *routeclient.RouteV1Client
 }
 
+// NewHandler will create the handler
 func NewHandler(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, defaults *hub_v1.HubSpec,
 	federatorBaseURL string, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
 	return &Handler{config: config, KubeConfig: kubeConfig, kubeClient: kubeClient, hubClient: hubClient, defaults: defaults,

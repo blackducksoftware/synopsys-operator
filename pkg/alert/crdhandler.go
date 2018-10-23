@@ -34,14 +34,14 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Handler interface contains the methods that are required
+// HandlerInterface contains the methods that are required
 type HandlerInterface interface {
 	ObjectCreated(obj interface{})
 	ObjectDeleted(obj string)
 	ObjectUpdated(objOld, objNew interface{})
 }
 
-// AlertHandler will store the configuration that is required to initiantiate the informers callback
+// Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
 	config      *model.Config
 	kubeConfig  *rest.Config
@@ -50,6 +50,7 @@ type Handler struct {
 	defaults    *alert_v1.AlertSpec
 }
 
+// NewHandler will create the handler
 func NewHandler(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, defaults *alert_v1.AlertSpec) *Handler {
 	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, defaults: defaults}
 }
