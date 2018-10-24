@@ -23,8 +23,6 @@ package protoform
 
 import (
 	"fmt"
-	"net/http"
-	"os"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
@@ -32,6 +30,7 @@ import (
 	"github.com/gin-gonic/contrib/static"
 	gin "github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -39,18 +38,6 @@ import (
 
 // SetupHTTPServer will used to create all the http api
 func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, namespace string) {
-
-	// prometheus metrics
-	prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
-	prometheus.Unregister(prometheus.NewGoCollector())
-
-	http.Handle("/metrics", prometheus.Handler())
-
-	addr := fmt.Sprintf(":%d", 8072)
-	log.Infof("about to start serving /metrics on %s", addr)
-	go func() {
-		http.ListenAndServe(addr, nil)
-	}()
 
 	// all other http traffic
 	go func() {
@@ -62,6 +49,14 @@ func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.C
 
 		// prints debug stuff out.
 		router.Use(GinRequestLogger())
+
+		// prometheus metrics
+		prometheus.Unregister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+		prometheus.Unregister(prometheus.NewGoCollector())
+		h := promhttp.Handler()
+		router.GET("/metrics", func(c *gin.Context) {
+			h.ServeHTTP(c.Writer, c.Request)
+		})
 
 		router.GET("/sql-instances", func(c *gin.Context) {
 			// keys := []string{"pvc-000", "pvc-001", "pvc-002"}
