@@ -29,11 +29,12 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/containers"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubContainerFlavor *ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
+func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
 
 	// Create a namespaces
 	_, err := util.GetNamespace(hc.KubeClient, createHub.Namespace)
@@ -50,12 +51,10 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 	}
 
 	// Create a service account
-	serviceAccount := util.CreateServiceAccount(createHub.Namespace, createHub.Namespace)
-	deployer.AddServiceAccount(serviceAccount)
+	deployer.AddServiceAccount(util.CreateServiceAccount(createHub.Namespace, createHub.Namespace))
 
 	// Create a cluster role binding and associated it to a service account
-	clusterRoleBinding := util.CreateClusterRoleBinding(createHub.Namespace, createHub.Namespace, createHub.Namespace, "", "ClusterRole", "cluster-admin")
-	deployer.AddClusterRoleBinding(clusterRoleBinding)
+	deployer.AddClusterRoleBinding(util.CreateClusterRoleBinding(createHub.Namespace, createHub.Namespace, createHub.Namespace, "", "ClusterRole", "cluster-admin"))
 
 	// Create ConfigMaps
 	configMaps := hc.createHubConfig(createHub, hubContainerFlavor)
@@ -84,23 +83,6 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 		}
 	}
 
-	postgresEnvs := allConfigEnv
-	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_USER", KeyOrVal: "blackduck"})
-	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_PASSWORD", KeyOrVal: "HUB_POSTGRES_USER_PASSWORD_FILE", FromName: "db-creds"})
-	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_DATABASE", KeyOrVal: "blackduck"})
-	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_ADMIN_PASSWORD", KeyOrVal: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", FromName: "db-creds"})
-
-	postgresVolumes := []*components.Volume{}
-	postgresEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("postgres-persistent-vol")
-	postgresInitConfigVol, _ := util.CreateConfigMapVolume("postgres-init-vol", "postgres-init", 0777)
-	postgresBootstrapConfigVol, _ := util.CreateConfigMapVolume("postgres-bootstrap-vol", "postgres-bootstrap", 0777)
-	postgresVolumes = append(postgresVolumes, postgresEmptyDir, postgresInitConfigVol, postgresBootstrapConfigVol)
-
-	postgresVolumeMounts := []*horizonapi.VolumeMountConfig{}
-	postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: "postgres-persistent-vol", MountPath: "/var/lib/pgsql/data"})
-	postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: "postgres-bootstrap-vol:pgbootstrap.sh", MountPath: "/usr/share/container-scripts/postgresql/pgbootstrap.sh"})
-	postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: "postgres-init-vol:pginit.sh", MountPath: "/usr/share/container-scripts/postgresql/pginit.sh"})
-
 	if strings.EqualFold(createHub.BackupSupport, "Yes") || !strings.EqualFold(createHub.DbPrototype, "empty") {
 		// Postgres PVC
 		postgresPVC, err := util.CreatePersistentVolumeClaim(createHub.Namespace, createHub.Namespace, createHub.PVCClaimSize, storageClass, horizonapi.ReadWriteOnce)
@@ -108,45 +90,12 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 			return fmt.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Namespace, err)
 		}
 		deployer.AddPVC(postgresPVC)
-
-		postgresBackupDir, _ := util.CreatePersistentVolumeClaimVolume("postgres-backup-vol", createHub.Namespace)
-		postgresVolumes = append(postgresVolumes, postgresBackupDir)
-		postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: "postgres-backup-vol", MountPath: hc.Config.NFSPath})
 	}
 
-	postgresExternalContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: horizonapi.PullAlways,
-			MinMem: hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: hubContainerFlavor.PostgresCPULimit, MaxCPU: "", Command: []string{"/usr/share/container-scripts/postgresql/pginit.sh"},
-		},
-		EnvConfigs:   postgresEnvs,
-		VolumeMounts: postgresVolumeMounts,
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: postgresPort, Protocol: horizonapi.ProtocolTCP},
-		ReadinessProbeConfigs: []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/bin/sh", "-c", `if [[ -f /tmp/BLACKDUCK_MIGRATING ]] ; then cat /tmp/BLACKDUCK_MIGRATING1; fi`}},
-			Delay:           1,
-			Interval:        5,
-			MinCountFailure: 100000,
-			Timeout:         100000,
-		}},
-	}
-	initContainers := []*util.Container{}
-	// If the PV storage is other than NFS or if the backup is enabled and PV storage is other than NFS, add the init container
-	if !strings.EqualFold(createHub.PVCStorageClass, "") && !strings.EqualFold(createHub.PVCStorageClass, "none") {
-		postgresInitContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", fmt.Sprintf("chmod -cR 777 %s", hc.Config.NFSPath)}},
-			VolumeMounts: []*horizonapi.VolumeMountConfig{
-				{Name: "postgres-backup-vol", MountPath: hc.Config.NFSPath},
-			},
-			PortConfig: &horizonapi.PortConfig{ContainerPort: "3001", Protocol: horizonapi.ProtocolTCP},
-		}
-		initContainers = append(initContainers, postgresInitContainerConfig)
-	}
+	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil)
 
-	postgres := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: createHub.Namespace, Name: "postgres", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{postgresExternalContainerConfig}, postgresVolumes, initContainers, []horizonapi.AffinityConfig{})
-	// log.Infof("postgres : %+v\n", postgres.GetObj())
-	deployer.AddReplicationController(postgres)
-	deployer.AddService(util.CreateService("postgres", "postgres", createHub.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeDefault))
+	deployer.AddReplicationController(containerCreater.GetPostgresDeployment())
+	deployer.AddService(containerCreater.GetPostgresService())
 	// deployer.AddService(util.CreateService("postgres-exposed", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeLoadBalancer))
 	return nil
 }
