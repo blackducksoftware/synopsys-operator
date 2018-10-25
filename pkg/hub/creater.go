@@ -32,6 +32,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/containers"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -126,7 +127,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	}
 
 	// Get Containers Flavor
-	hubContainerFlavor := GetContainersFlavor(createHub.Flavor)
+	hubContainerFlavor := containers.GetContainersFlavor(createHub.Flavor)
 	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
 
 	if hubContainerFlavor == nil {
@@ -264,7 +265,7 @@ func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string
 			return "", fmt.Errorf("unable to get service %s in %s namespace due to %s", serviceName, namespace, err.Error())
 		}
 
-		log.Debugf("Service: %v", service)
+		log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
 
 		if len(service.Status.LoadBalancer.Ingress) > 0 {
 			ipAddress := service.Status.LoadBalancer.Ingress[0].IP
@@ -282,7 +283,7 @@ func (hc *Creater) getNodePortIPAddress(namespace string, serviceName string) (s
 			return "", fmt.Errorf("unable to get service %s in %s namespace due to %s", serviceName, namespace, err.Error())
 		}
 
-		log.Debugf("Service: %v", service)
+		log.Debugf("[%s] service: %v", serviceName, service.Spec.ClusterIP)
 
 		if !strings.EqualFold(service.Spec.ClusterIP, "") {
 			ipAddress := service.Spec.ClusterIP

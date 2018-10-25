@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package hub
+package containers
 
 const (
 	gcloudAuthFilePath = "/var/secrets/google/key.json"
