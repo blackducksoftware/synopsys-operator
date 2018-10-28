@@ -10,4 +10,4 @@ RUN mv /app/build/ /views/
 COPY ./protoform-installer ./protoform
 
 # Run protoform
-CMD ["./protoform"]
+CMD ["./protoform","install-operator"]

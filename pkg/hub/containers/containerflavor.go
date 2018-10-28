@@ -65,7 +65,7 @@ type ContainerFlavor struct {
 	PostgresCPULimit           string
 }
 
-// GetContainersFlavor will return the default settings for the flavored Black Duck Hub
+// GetContainersFlavor will return the default settings for the flavored Black Duck Hub TODO Make this typesafe, make flavor const into an enum.
 func GetContainersFlavor(flavor string) *ContainerFlavor {
 	switch Flavor(strings.ToUpper(flavor)) {
 	case SMALL:

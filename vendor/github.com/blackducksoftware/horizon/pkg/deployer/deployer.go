@@ -22,6 +22,7 @@ under the License.
 package deployer
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
@@ -34,10 +35,13 @@ import (
 
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 
 	extensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 
 	log "github.com/sirupsen/logrus"
@@ -66,16 +70,22 @@ type Deployer struct {
 
 // NewDeployer creates a Deployer object
 func NewDeployer(kubeconfig *rest.Config) (*Deployer, error) {
-	// creates the client
-	client, err := kubernetes.NewForConfig(kubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("error creating the kubernetes client: %v", err)
-	}
-
-	// creates the extensions client
-	extensions, err := extensionsclient.NewForConfig(kubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("error creating the kubernetes api extensions client: %v", err)
+	var err error
+	var client *kubernetes.Clientset
+	var extensions *extensionsclient.Clientset
+	if kubeconfig == nil {
+		err = fmt.Errorf("Skipping kubeconfig.  Most operations won't work, but some (like export) will.")
+	} else {
+		// creates the client
+		client, err = kubernetes.NewForConfig(kubeconfig)
+		if err != nil {
+			err = fmt.Errorf("error creating the kubernetes client: %v", err)
+		}
+		// creates the extensions client
+		extensions, err = extensionsclient.NewForConfig(kubeconfig)
+		if err != nil {
+			err = fmt.Errorf("error creating the kubernetes api extensions client: %v", err)
+		}
 	}
 
 	d := Deployer{
@@ -95,7 +105,9 @@ func NewDeployer(kubeconfig *rest.Config) (*Deployer, error) {
 		controllers:         make(map[string]api.DeployerControllerInterface),
 		pvcs:                make(map[string]*shorttypes.PersistentVolumeClaim),
 	}
-	return &d, nil
+	// return a deployer even if error, because export or other functionality
+	// could still work even though the creation statements wont work.
+	return &d, err
 }
 
 // AddController will add a custom controller that will be run after all
@@ -605,7 +617,7 @@ func (d *Deployer) undeployRBAC() map[util.ComponentType][]error {
 
 	for name := range d.clusterRoleBindings {
 		log.Infof("Deleting cluster role binding %s", name)
-		err := d.client.Rbac().ClusterRoleBindings().Delete(name,  &meta_v1.DeleteOptions{})
+		err := d.client.Rbac().ClusterRoleBindings().Delete(name, &meta_v1.DeleteOptions{})
 		if err != nil {
 			errs[util.ClusterRoleBindingComponent] = append(errs[util.ClusterRoleComponent], err)
 		}
@@ -706,4 +718,77 @@ func (d *Deployer) undeployNamespaces() []error {
 	}
 
 	return errs
+}
+
+// Export returns api string objects for all types.
+func (d *Deployer) Export() map[string]string {
+	ser := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
+		scheme.Scheme)
+	m := map[string]string{}
+	// append more yaml
+	appender := func(s string, obj runtime.Object) {
+		buf := bytes.NewBufferString("")
+		err := ser.Encode(obj, buf)
+		if err != nil {
+			panic(err)
+		}
+		m[s] = fmt.Sprintf("%v \n---", buf.String())
+	}
+	for s, krc := range d.replicationControllers {
+		rcw := &shorttypes.ReplicationControllerWrapper{
+			ReplicationController: *krc,
+		}
+		rc, _ := converters.Convert_Koki_ReplicationController_to_Kube_v1_ReplicationController(rcw)
+		appender(s, rc)
+	}
+	for s, krc := range d.deployments {
+		rcw := &shorttypes.DeploymentWrapper{
+			Deployment: *krc,
+		}
+		rc, _ := converters.Convert_Koki_Deployment_to_Kube_apps_v1beta2_Deployment(rcw)
+		appender(s, rc)
+	}
+	for s, krc := range d.configMaps {
+		rcw := &shorttypes.ConfigMapWrapper{
+			ConfigMap: *krc,
+		}
+		rc, _ := converters.Convert_Koki_ConfigMap_to_Kube_v1_ConfigMap(rcw)
+		appender(s, rc)
+	}
+	for s, krc := range d.secrets {
+		rcw := &shorttypes.SecretWrapper{
+			Secret: *krc,
+		}
+		rc, _ := converters.Convert_Koki_Secret_to_Kube_v1_Secret(rcw)
+		appender(s, rc)
+	}
+	for s, krc := range d.namespaces {
+		rcw := &shorttypes.NamespaceWrapper{
+			Namespace: *krc,
+		}
+		rc, _ := converters.Convert_Koki_Namespace_to_Kube_Namespace(rcw)
+		appender(s, rc)
+	}
+	for s, krc := range d.serviceAccounts {
+		rcw := &shorttypes.ServiceAccountWrapper{
+			ServiceAccount: *krc,
+		}
+		rc, _ := converters.Convert_Koki_ServiceAccount_to_Kube_ServiceAccount(rcw)
+		appender(s, rc)
+	}
+	for s, krc := range d.clusterRoleBindings {
+		rcw := &shorttypes.ClusterRoleBindingWrapper{
+			ClusterRoleBinding: *krc,
+		}
+		rc, _ := converters.Convert_Koki_ClusterRoleBinding_to_Kube(rcw)
+		appender(s, rc)
+	}
+	for s, krc := range d.crds {
+		rcw := &shorttypes.CRDWrapper{
+			CRD: *krc,
+		}
+		rc, _ := converters.Convert_Koki_CRD_to_Kube(rcw)
+		appender(s, rc)
+	}
+	return m
 }

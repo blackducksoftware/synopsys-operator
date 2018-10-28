@@ -188,7 +188,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 
 	// Create all hub deployments
 	deployer, _ = horizon.NewDeployer(hc.KubeConfig)
-	hc.createDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	hc.AddToDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	log.Debugf("%+v", deployer)
 	// Deploy all hub containers
 	err = deployer.Run()
