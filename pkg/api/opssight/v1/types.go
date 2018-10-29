@@ -42,8 +42,8 @@ type OpsSight struct {
 // RegistryAuth will store the Openshift Internal Registries
 type RegistryAuth struct {
 	URL      string `json:"Url"`
-	User     string
-	Password string
+	User     string `json:"user"`
+	Password string `json:"password"`
 }
 
 // Hub ...
@@ -75,10 +75,11 @@ type Perceptor struct {
 
 // ScannerPod ...
 type ScannerPod struct {
-	Name         string       `json:"name"`
-	Scanner      *Scanner     `json:"scanner"`
-	ImageFacade  *ImageFacade `json:"imageFacade"`
-	ReplicaCount int          `json:"scannerReplicaCount"`
+	Name           string       `json:"name"`
+	Scanner        *Scanner     `json:"scanner"`
+	ImageFacade    *ImageFacade `json:"imageFacade"`
+	ReplicaCount   int          `json:"scannerReplicaCount"`
+	ImageDirectory string       `json:"imageDirectory"`
 }
 
 // Scanner ...
@@ -129,6 +130,11 @@ type Skyfire struct {
 	Image          string `json:"image"`
 	Port           int    `json:"port"`
 	ServiceAccount string `json:"serviceAccount"`
+
+	HubClientTimeoutSeconds      int `json:"hubClientTimeoutSeconds"`
+	HubDumpPauseSeconds          int `json:"hubDumpPauseSeconds"`
+	KubeDumpIntervalSeconds      int `json:"kubeDumpIntervalSeconds"`
+	PerceptorDumpIntervalSeconds int `json:"perceptorDumpIntervalSeconds"`
 }
 
 // OpsSightSpec is the spec for a OpsSight resource

@@ -157,7 +157,8 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
 				ClientTimeoutSeconds: 600,
 			},
-			ReplicaCount: 1,
+			ReplicaCount:   1,
+			ImageDirectory: "/var/images",
 		},
 		Skyfire: &opssightv1.Skyfire{
 			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
