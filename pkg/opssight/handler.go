@@ -27,8 +27,8 @@ import (
 
 	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
 	"github.com/juju/errors"
@@ -49,7 +49,7 @@ type HandlerInterface interface {
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	Config            *model.Config
+	Config            *protoform.Config
 	KubeConfig        *rest.Config
 	Clientset         *kubernetes.Clientset
 	OpsSightClientset *opssightclientset.Clientset

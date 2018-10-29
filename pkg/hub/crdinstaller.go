@@ -33,7 +33,6 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/informers/externalversions/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/juju/errors"
@@ -48,7 +47,7 @@ import (
 
 // CRDInstaller defines the specification for the CRD
 type CRDInstaller struct {
-	config       *model.Config
+	config       *protoform.Config
 	kubeConfig   *rest.Config
 	kubeClient   *kubernetes.Clientset
 	defaults     interface{}
@@ -64,7 +63,7 @@ type CRDInstaller struct {
 }
 
 // NewCRDInstaller will create a CRD installer configuration
-func NewCRDInstaller(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
 	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
 	crdInstaller.resyncPeriod = 0
 	crdInstaller.indexers = cache.Indexers{}

@@ -188,5 +188,6 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		DefaultMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
+		ConfigMapName: "opssight",
 	}
 }

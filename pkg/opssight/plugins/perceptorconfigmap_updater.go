@@ -39,8 +39,8 @@ import (
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/juju/errors"
 
@@ -82,7 +82,7 @@ type perceptorConfig struct {
 
 // ConfigMapUpdater ...
 type ConfigMapUpdater struct {
-	config         *model.Config
+	config         *protoform.Config
 	httpClient     *http.Client
 	kubeClient     *kubernetes.Clientset
 	hubClient      *hubclient.Clientset
@@ -90,7 +90,7 @@ type ConfigMapUpdater struct {
 }
 
 // NewConfigMapUpdater ...
-func NewConfigMapUpdater(config *model.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *ConfigMapUpdater {
+func NewConfigMapUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *ConfigMapUpdater {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -110,7 +110,7 @@ func NewConfigMapUpdater(config *model.Config, kubeClient *kubernetes.Clientset,
 
 // sendHubs is one possible way to configure the perceptor hub family.
 func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
-	configMapName := "perceptor"
+	configMapName := opsSightSpec.ConfigMapName
 	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(configMapName, metav1.GetOptions{})
 
 	if err != nil {

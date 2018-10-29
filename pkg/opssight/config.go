@@ -24,8 +24,8 @@ package opssight
 import (
 	"time"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -34,7 +34,7 @@ import (
 
 // Config defines the specification for the controller
 type Config struct {
-	Config          *model.Config
+	Config          *protoform.Config
 	KubeConfig      *rest.Config
 	KubeClientSet   *kubernetes.Clientset
 	Defaults        interface{}

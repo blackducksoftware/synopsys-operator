@@ -28,7 +28,7 @@ import (
 
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +40,7 @@ import (
 
 // InitDatabaseUpdater will hold the configuration to initialize the Postgres database
 type InitDatabaseUpdater struct {
-	Config     *model.Config
+	Config     *protoform.Config
 	KubeClient *kubernetes.Clientset
 	HubClient  *hubclient.Clientset
 	Hubs       map[string]chan struct{}

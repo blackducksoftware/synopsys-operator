@@ -82,7 +82,7 @@ func (p *SpecConfig) scannerContainer() *components.Container {
 		Name:       name,
 		Image:      p.config.ScannerPod.Scanner.Image,
 		Command:    []string{fmt.Sprintf("./%s", name)},
-		Args:       []string{fmt.Sprintf("/etc/%s/%s.yaml", name, name)},
+		Args:       []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
 		MinCPU:     p.config.DefaultCPU,
 		MinMem:     p.config.DefaultMem,
 		Privileged: &priv,
@@ -119,7 +119,7 @@ func (p *SpecConfig) imageFacadeContainer() *components.Container {
 		Name:       name,
 		Image:      p.config.ScannerPod.ImageFacade.Image,
 		Command:    []string{fmt.Sprintf("./%s", name)},
-		Args:       []string{fmt.Sprintf("/etc/%s/%s.json", name, name)},
+		Args:       []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
 		MinCPU:     p.config.DefaultCPU,
 		MinMem:     p.config.DefaultMem,
 		Privileged: &priv,
@@ -147,12 +147,7 @@ func (p *SpecConfig) imageFacadeContainer() *components.Container {
 }
 
 func (p *SpecConfig) scannerVolumes() ([]*components.Volume, error) {
-	vols := []*components.Volume{}
-
-	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      p.config.ScannerPod.Scanner.Name,
-		MapOrSecretName: p.config.ScannerPod.Scanner.Name,
-	}))
+	vols := []*components.Volume{p.configMapVolume(p.config.ScannerPod.Scanner.Name)}
 
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "var-images",
@@ -168,12 +163,7 @@ func (p *SpecConfig) scannerVolumes() ([]*components.Volume, error) {
 }
 
 func (p *SpecConfig) imageFacadeVolumes() ([]*components.Volume, error) {
-	vols := []*components.Volume{}
-
-	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      p.config.ScannerPod.ImageFacade.Name,
-		MapOrSecretName: p.config.ScannerPod.ImageFacade.Name,
-	}))
+	vols := []*components.Volume{p.configMapVolume(p.config.ScannerPod.ImageFacade.Name)}
 
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "var-images",
