@@ -117,7 +117,7 @@ type ConfigMap struct {
 }
 
 func (cm *ConfigMap) jsonString() (string, error) {
-	bytes, err := json.Marshal(cm)
+	bytes, err := json.MarshalIndent(cm, "", "  ")
 	if err != nil {
 		return "", errors.Annotate(err, "unable to serialize to json")
 	}
