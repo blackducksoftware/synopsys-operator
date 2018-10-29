@@ -161,7 +161,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			ImageDirectory: "/var/images",
 		},
 		Skyfire: &opssightv1.Skyfire{
-			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
+			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
 			Name:                         "skyfire",
 			Port:                         3005,
 			ServiceAccount:               "skyfire",
