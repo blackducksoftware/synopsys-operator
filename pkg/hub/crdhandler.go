@@ -34,7 +34,7 @@ import (
 
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -53,7 +53,7 @@ type HandlerInterface interface {
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	config           *model.Config
+	config           *protoform.Config
 	kubeConfig       *rest.Config
 	kubeClient       *kubernetes.Clientset
 	hubClient        *hubclientset.Clientset
@@ -65,7 +65,7 @@ type Handler struct {
 }
 
 // NewHandler will create the handler
-func NewHandler(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, defaults *hub_v1.HubSpec,
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, defaults *hub_v1.HubSpec,
 	federatorBaseURL string, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
 	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, hubClient: hubClient, defaults: defaults,
 		federatorBaseURL: federatorBaseURL, cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}

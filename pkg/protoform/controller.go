@@ -32,7 +32,6 @@ import (
 
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/juju/errors"
 
 	log "github.com/sirupsen/logrus"
@@ -40,7 +39,7 @@ import (
 
 // NewController will initialize the input config file, create the hub informers, initiantiate all rest api
 func NewController(configPath string) (*Deployer, error) {
-	config, err := model.GetConfig(configPath)
+	config, err := GetConfig(configPath)
 	if err != nil {
 		return nil, errors.Annotate(err, "Failed to load configuration")
 	}

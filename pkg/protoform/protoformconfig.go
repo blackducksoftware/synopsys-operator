@@ -19,20 +19,24 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package api
+package protoform
 
-import (
-	"github.com/blackducksoftware/horizon/pkg/components"
-)
+// ProtoformConfig defines the configuration for protoform
+type ProtoformConfig struct {
+	// Dry run wont actually install, but will print the objects definitions out.
+	DryRun bool `json:"dryRun,omitempty"`
 
-// ComponentList defines the list of components for an app
-type ComponentList struct {
-	ReplicationControllers []*components.ReplicationController
-	Services               []*components.Service
-	ConfigMaps             []*components.ConfigMap
-	ServiceAccounts        []*components.ServiceAccount
-	ClusterRoleBindings    []*components.ClusterRoleBinding
-	ClusterRoles           []*components.ClusterRole
-	Deployments            []*components.Deployment
-	Secrets                []*components.Secret
+	HubUserPassword string `json:"hubUserPassword"`
+
+	// Viper secrets
+	ViperSecret string `json:"viperSecret,omitempty"`
+
+	// Log level
+	DefaultLogLevel string `json:"defaultLogLevel,omitempty"`
+
+	Apps *ProtoformApps `json:"apps,omitempty"`
+}
+
+// ProtoformApps defines the configuration for supported apps
+type ProtoformApps struct {
 }
