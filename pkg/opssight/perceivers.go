@@ -22,7 +22,6 @@ under the License.
 package opssight
 
 import (
-	"encoding/json"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -165,31 +164,6 @@ func (p *SpecConfig) PodPerceiverService() *components.Service {
 // ImagePerceiverService creates a service for the image perceiver
 func (p *SpecConfig) ImagePerceiverService() *components.Service {
 	return p.perceiverService(p.config.Perceiver.ImagePerceiver.Name)
-}
-
-// PerceiverConfigMap creates a config map for perceivers
-func (p *SpecConfig) PerceiverConfigMap(name string) (*components.ConfigMap, error) {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      name,
-		Namespace: p.config.Namespace,
-	})
-
-	data := map[string]interface{}{
-		"PerceptorHost":             p.config.Perceptor.Name,
-		"PerceptorPort":             p.config.Perceptor.Port,
-		"AnnotationIntervalSeconds": p.config.Perceiver.AnnotationIntervalSeconds,
-		"DumpIntervalMinutes":       p.config.Perceiver.DumpIntervalMinutes,
-		"Port":                      p.config.Perceiver.Port,
-		"LogLevel":                  p.config.LogLevel,
-		"NamespaceFilter":           p.config.Perceiver.PodPerceiver.NamespaceFilter,
-	}
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	configMap.AddData(map[string]string{fmt.Sprintf("%s.yaml", name): string(bytes)})
-
-	return configMap, nil
 }
 
 func (p *SpecConfig) perceiverServiceAccount(name string) *components.ServiceAccount {

@@ -22,7 +22,6 @@ under the License.
 package opssight
 
 import (
-	"encoding/json"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -227,59 +226,6 @@ func (p *SpecConfig) ImageFacadeService() *components.Service {
 	})
 
 	return service
-}
-
-// ScannerConfigMap creates a config map for the perceptor scanner
-func (p *SpecConfig) ScannerConfigMap() (*components.ConfigMap, error) {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      p.config.ScannerPod.Scanner.Name,
-		Namespace: p.config.Namespace,
-	})
-	data := map[string]interface{}{
-		"Hub": map[string]interface{}{
-			"Port":                 p.config.Hub.Port,
-			"User":                 p.config.Hub.User,
-			"PasswordEnvVar":       p.config.Hub.PasswordEnvVar,
-			"ClientTimeoutSeconds": p.config.ScannerPod.Scanner.ClientTimeoutSeconds,
-		},
-		"ImageFacade": map[string]interface{}{
-			"Port": p.config.ScannerPod.ImageFacade.Port,
-			"Host": "localhost",
-		},
-		"Perceptor": map[string]interface{}{
-			"Port": p.config.Perceptor.Port,
-			"Host": p.config.Perceptor.Name,
-		},
-		"Port":     p.config.ScannerPod.Scanner.Port,
-		"LogLevel": p.config.LogLevel,
-	}
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	configMap.AddData(map[string]string{fmt.Sprintf("%s.yaml", p.config.ScannerPod.Scanner.Name): string(bytes)})
-
-	return configMap, nil
-}
-
-//ImageFacadeConfigMap creates a config map for the perceptor image-facade
-func (p *SpecConfig) ImageFacadeConfigMap() (*components.ConfigMap, error) {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      p.config.ScannerPod.ImageFacade.Name,
-		Namespace: p.config.Namespace,
-	})
-	data := map[string]interface{}{
-		"PrivateDockerRegistries": p.config.ScannerPod.ImageFacade.InternalRegistries,
-		"Port":                    p.config.ScannerPod.ImageFacade.Port,
-		"LogLevel":                p.config.LogLevel,
-	}
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	configMap.AddData(map[string]string{fmt.Sprintf("%s.json", p.config.ScannerPod.ImageFacade.Name): string(bytes)})
-
-	return configMap, nil
 }
 
 // ScannerServiceAccount creates a service account for the perceptor scanner

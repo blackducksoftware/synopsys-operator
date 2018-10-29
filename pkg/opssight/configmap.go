@@ -24,7 +24,8 @@ package opssight
 import (
 	"encoding/json"
 
-	"github.com/blackducksoftware/perceptor-scanner/pkg/docker"
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/juju/errors"
 )
 
@@ -79,12 +80,29 @@ type ScannerConfig struct {
 	HubClientTimeoutSeconds int
 }
 
+// RegistryAuth ...
+type RegistryAuth struct {
+	URL      string
+	User     string
+	Password string
+}
+
 // ImageFacadeConfig ...
 type ImageFacadeConfig struct {
 	Host                    string
 	Port                    int
-	PrivateDockerRegistries []docker.RegistryAuth
+	PrivateDockerRegistries []RegistryAuth
 	CreateImagesOnly        bool
+}
+
+// SkyfireConfig ...
+type SkyfireConfig struct {
+	UseInClusterConfig           bool
+	Port                         int
+	HubClientTimeoutSeconds      int
+	KubeDumpIntervalSeconds      int
+	PerceptorDumpIntervalSeconds int
+	HubDumpPauseSeconds          int
 }
 
 // ConfigMap ...
@@ -94,6 +112,7 @@ type ConfigMap struct {
 	Perceptor   PerceptorConfig
 	Scanner     ScannerConfig
 	ImageFacade ImageFacadeConfig
+	Skyfire     SkyfireConfig
 	LogLevel    string
 }
 
@@ -103,4 +122,18 @@ func (cm *ConfigMap) jsonString() (string, error) {
 		return "", errors.Annotate(err, "unable to serialize to json")
 	}
 	return string(bytes), nil
+}
+
+func (cm *ConfigMap) horizonConfigMap(name string, namespace string, filename string) (*components.ConfigMap, error) {
+	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
+		Name:      name,
+		Namespace: namespace,
+	})
+	configMapString, err := cm.jsonString()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	configMap.AddData(map[string]string{filename: configMapString})
+
+	return configMap, nil
 }

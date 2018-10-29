@@ -158,17 +158,6 @@ func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 	return service
 }
 
-// PerceptorSkyfireConfigMap creates a config map for perceptor skyfire
-func (p *SpecConfig) PerceptorSkyfireConfigMap() *components.ConfigMap {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      "skyfire",
-		Namespace: p.config.Namespace,
-	})
-	configMap.AddData(map[string]string{"skyfire.yaml": fmt.Sprint(`{"UseInClusterConfig": "`, "true", `","Port": "`, p.config.Skyfire.Port, `","HubHost": "`, "TODO -- remove", `","HubPort": "`, p.config.Hub.Port, `","HubUser": "`, p.config.Hub.User, `","HubUserPasswordEnvVar": "`, p.config.Hub.PasswordEnvVar, `","HubClientTimeoutSeconds": "`, p.config.ScannerPod.Scanner.ClientTimeoutSeconds, `","PerceptorHost": "`, p.config.Perceptor.Name, `","PerceptorPort": "`, p.config.Perceptor.Port, `","KubeDumpIntervalSeconds": "`, "15", `","PerceptorDumpIntervalSeconds": "`, "15", `","HubDumpPauseSeconds": "`, "30", `","ImageFacadePort": "`, p.config.ScannerPod.ImageFacade.Port, `","LogLevel": "`, p.config.LogLevel, `"}`)})
-
-	return configMap
-}
-
 // PerceptorSkyfireServiceAccount creates a service account for perceptor skyfire
 func (p *SpecConfig) PerceptorSkyfireServiceAccount() *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{

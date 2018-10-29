@@ -22,6 +22,8 @@ under the License.
 package opssight
 
 import (
+	"fmt"
+
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	"github.com/juju/errors"
@@ -30,12 +32,72 @@ import (
 
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
-	config *v1.OpsSightSpec
+	config    *v1.OpsSightSpec
+	configMap *ConfigMap
 }
 
 // NewSpecConfig will create the OpsSight object
 func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
-	return &SpecConfig{config: config}
+	privateRegistries := []RegistryAuth{}
+	for _, reg := range config.ScannerPod.ImageFacade.InternalRegistries {
+		privateRegistries = append(privateRegistries, RegistryAuth{
+			Password: reg.Password,
+			URL:      reg.URL,
+			User:     reg.User,
+		})
+	}
+	configMap := &ConfigMap{
+		LogLevel: config.LogLevel,
+		Hub: HubConfig{
+			Hosts:               []string{},
+			PasswordEnvVar:      config.Hub.PasswordEnvVar,
+			ConcurrentScanLimit: config.Hub.ConcurrentScanLimit,
+			Port:                config.Hub.Port,
+			TotalScanLimit:      config.Hub.TotalScanLimit,
+			User:                config.Hub.User,
+		},
+		ImageFacade: ImageFacadeConfig{
+			CreateImagesOnly:        false,
+			Host:                    "localhost",
+			Port:                    config.ScannerPod.ImageFacade.Port,
+			PrivateDockerRegistries: privateRegistries,
+		},
+		Perceiver: PerceiverConfig{
+			Image: ImagePerceiverConfig{},
+			Pod: PodPerceiverConfig{
+				NamespaceFilter: config.Perceiver.PodPerceiver.NamespaceFilter,
+			},
+			AnnotationIntervalSeconds: config.Perceiver.AnnotationIntervalSeconds,
+			DumpIntervalMinutes:       config.Perceiver.DumpIntervalMinutes,
+			Port:                      config.Perceiver.Port,
+		},
+		Perceptor: PerceptorConfig{
+			Timings: PerceptorTimingsConfig{
+				CheckForStalledScansPauseHours: config.Perceptor.CheckForStalledScansPauseHours,
+				HubClientTimeoutMilliseconds:   config.Perceptor.ClientTimeoutMilliseconds,
+				ModelMetricsPauseSeconds:       config.Perceptor.ModelMetricsPauseSeconds,
+				StalledScanClientTimeoutHours:  config.Perceptor.StalledScanClientTimeoutHours,
+				UnknownImagePauseMilliseconds:  config.Perceptor.UnknownImagePauseMilliseconds,
+			},
+			Host:        config.Perceptor.Name,
+			Port:        config.Perceptor.Port,
+			UseMockMode: false,
+		},
+		Scanner: ScannerConfig{
+			HubClientTimeoutSeconds: config.ScannerPod.Scanner.ClientTimeoutSeconds,
+			ImageDirectory:          config.ScannerPod.ImageDirectory,
+			Port:                    config.ScannerPod.Scanner.Port,
+		},
+		Skyfire: SkyfireConfig{
+			HubClientTimeoutSeconds:      config.Skyfire.HubClientTimeoutSeconds,
+			HubDumpPauseSeconds:          config.Skyfire.HubDumpPauseSeconds,
+			KubeDumpIntervalSeconds:      config.Skyfire.KubeDumpIntervalSeconds,
+			PerceptorDumpIntervalSeconds: config.Skyfire.PerceptorDumpIntervalSeconds,
+			Port:                         config.Skyfire.Port,
+			UseInClusterConfig:           true,
+		},
+	}
+	return &SpecConfig{config: config, configMap: configMap}
 }
 
 // GetComponents will return the list of components
@@ -53,7 +115,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, errors.Trace(err)
 	}
 	components.Services = append(components.Services, service)
-	cm, err := p.PerceptorConfigMap()
+	cm, err := p.configMap.horizonConfigMap(p.config.Perceptor.Name, p.config.Namespace, fmt.Sprintf("%s.yaml", p.config.Perceptor.Name))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -67,13 +129,21 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.ReplicationControllers = append(components.ReplicationControllers, scannerRC)
 	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
-	scannerCM, err := p.ScannerConfigMap()
+
+	scannerCM, err := p.configMap.horizonConfigMap(
+		p.config.ScannerPod.Scanner.Name,
+		p.config.Namespace,
+		fmt.Sprintf("%s.yaml", p.config.ScannerPod.Scanner.Name))
 	if err != nil {
-		return nil, errors.Annotate(err, "failed to create scanner replication controller")
+		return nil, errors.Annotate(err, "failed to create scanner config map")
 	}
-	ifCM, err := p.ImageFacadeConfigMap()
+
+	ifCM, err := p.configMap.horizonConfigMap(
+		p.config.ScannerPod.ImageFacade.Name,
+		p.config.Namespace,
+		fmt.Sprintf("%s.json", p.config.ScannerPod.ImageFacade.Name))
 	if err != nil {
-		return nil, errors.Annotate(err, "failed to create scanner replication controller")
+		return nil, errors.Annotate(err, "failed to create image facade config map")
 	}
 	components.ConfigMaps = append(components.ConfigMaps, scannerCM, ifCM)
 	log.Debugf("image facade configmap: %+v", ifCM.GetObj())
@@ -87,11 +157,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.PodPerceiverService())
-		perceiverConfigMap, err := p.PerceiverConfigMap(p.config.Perceiver.PodPerceiver.Name)
+		podPerceiverConfigMap, err := p.configMap.horizonConfigMap(
+			p.config.Perceiver.PodPerceiver.Name,
+			p.config.Namespace,
+			fmt.Sprintf("%s.yaml", p.config.Perceiver.PodPerceiver.Name))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		components.ConfigMaps = append(components.ConfigMaps, perceiverConfigMap)
+		components.ConfigMaps = append(components.ConfigMaps, podPerceiverConfigMap)
 		components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
 		cr := p.PodPerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, cr)
@@ -105,11 +178,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.ImagePerceiverService())
-		perceiverConfigMap, err := p.PerceiverConfigMap(p.config.Perceiver.ImagePerceiver.Name)
+		imagePerceiverConfigMap, err := p.configMap.horizonConfigMap(
+			p.config.Perceiver.ImagePerceiver.Name,
+			p.config.Namespace,
+			fmt.Sprintf("%s.yaml", p.config.Perceiver.ImagePerceiver.Name))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		components.ConfigMaps = append(components.ConfigMaps, perceiverConfigMap)
+		components.ConfigMaps = append(components.ConfigMaps, imagePerceiverConfigMap)
 		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
 		cr := p.ImagePerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, cr)
@@ -123,7 +199,14 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.PerceptorSkyfireService())
-		components.ConfigMaps = append(components.ConfigMaps, p.PerceptorSkyfireConfigMap())
+		configMap, err := p.configMap.horizonConfigMap(
+			p.config.Skyfire.Name,
+			p.config.Namespace,
+			fmt.Sprintf("%s.yaml", p.config.Skyfire.Name))
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create skyfire configmap")
+		}
+		components.ConfigMaps = append(components.ConfigMaps, configMap)
 		components.ServiceAccounts = append(components.ServiceAccounts, p.PerceptorSkyfireServiceAccount())
 		cr := p.PerceptorSkyfireClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, cr)
