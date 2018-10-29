@@ -63,7 +63,7 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	err = pod.AddVolume(p.perceptorVolume())
+	err = pod.AddVolume(p.configMapVolume(p.config.Perceptor.Name))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -77,7 +77,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		Name:    name,
 		Image:   p.config.Perceptor.Image,
 		Command: []string{fmt.Sprintf("./%s", name)},
-		Args:    []string{fmt.Sprintf("/etc/%s/%s.yaml", name, name)},
+		Args:    []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
 	})
@@ -104,14 +104,6 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 	}
 
 	return container, nil
-}
-
-func (p *SpecConfig) perceptorVolume() *components.Volume {
-	name := p.config.Perceptor.Name
-	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      name,
-		MapOrSecretName: name,
-	})
 }
 
 // PerceptorService creates a service for perceptor

@@ -161,6 +161,8 @@ type OpsSightSpec struct {
 	// Log level
 	LogLevel string `json:"logLevel,omitempty"`
 
+	ConfigMapName string `json:"configMapName"`
+
 	// Configuration secret
 	SecretName string `json:"secretName"`
 }

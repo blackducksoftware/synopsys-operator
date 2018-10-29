@@ -110,7 +110,7 @@ func NewConfigMapUpdater(config *protoform.Config, kubeClient *kubernetes.Client
 
 // sendHubs is one possible way to configure the perceptor hub family.
 func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
-	configMapName := "perceptor"
+	configMapName := opsSightSpec.ConfigMapName
 	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(configMapName, metav1.GetOptions{})
 
 	if err != nil {

@@ -82,7 +82,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 		Name:    p.config.Skyfire.Name,
 		Image:   p.config.Skyfire.Image,
 		Command: []string{fmt.Sprintf("./%s", p.config.Skyfire.Name)},
-		Args:    []string{"/etc/skyfire/skyfire.yaml"},
+		Args:    []string{fmt.Sprintf("/etc/skyfire/%s.json", p.config.ConfigMapName)},
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
 	})
@@ -121,12 +121,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 }
 
 func (p *SpecConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
-	vols := []*components.Volume{}
-
-	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "skyfire",
-		MapOrSecretName: "skyfire",
-	}))
+	vols := []*components.Volume{p.configMapVolume("skyfire")}
 
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "logs",
