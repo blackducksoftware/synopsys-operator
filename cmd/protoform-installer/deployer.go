@@ -161,10 +161,14 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			ImageDirectory: "/var/images",
 		},
 		Skyfire: &opssightv1.Skyfire{
-			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
-			Name:           "skyfire",
-			Port:           3005,
-			ServiceAccount: "skyfire",
+			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
+			Name:                         "skyfire",
+			Port:                         3005,
+			ServiceAccount:               "skyfire",
+			HubClientTimeoutSeconds:      100,
+			HubDumpPauseSeconds:          240,
+			KubeDumpIntervalSeconds:      60,
+			PerceptorDumpIntervalSeconds: 60,
 		},
 		Hub: &opssightv1.Hub{
 			User:                         "sysadmin",
