@@ -88,7 +88,7 @@ func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.C
 				c.JSON(404, "\"message\": \"Failed to List the hub\"")
 			}
 
-			log.Debugf("hubs: %+v", hubs)
+			log.Debugf("found %d hubs", len(hubs.Items))
 			returnVal := make(map[string]v1.Hub)
 
 			for _, v := range hubs.Items {

@@ -33,10 +33,4 @@ type ProtoformConfig struct {
 
 	// Log level
 	DefaultLogLevel string `json:"defaultLogLevel,omitempty"`
-
-	Apps *ProtoformApps `json:"apps,omitempty"`
-}
-
-// ProtoformApps defines the configuration for supported apps
-type ProtoformApps struct {
 }
