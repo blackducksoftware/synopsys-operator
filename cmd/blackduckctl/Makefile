@@ -1,5 +1,5 @@
 build:
-	go build -o blackduckctl ./cmd
+	go build -o blackduckctl ./
 test:
 	go test ./cmd
 	go test ./pkg
