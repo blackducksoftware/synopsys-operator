@@ -49,6 +49,7 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 	registration := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{registrationContainerConfig}, []*components.Volume{registrationEmptyDir}, []*util.Container{},
 		[]horizonapi.AffinityConfig{})
+	c.PostEditContainer(registrationContainerConfig)
 	return registration
 }
 

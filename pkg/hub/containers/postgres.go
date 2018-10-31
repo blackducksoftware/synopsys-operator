@@ -63,6 +63,7 @@ func (c *Creater) GetPostgresDeployment() *components.ReplicationController {
 		}
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
+	c.PostEditContainer(postgresExternalContainerConfig)
 
 	postgres := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "postgres", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{postgresExternalContainerConfig}, postgresVolumes, initContainers, []horizonapi.AffinityConfig{})

@@ -47,6 +47,7 @@ func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
 		// 	MinCountFailure: 10,
 		// }},
 	}
+	c.PostEditContainer(jobRunnerContainerConfig)
 
 	jobRunner := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "jobrunner", Replicas: c.hubContainerFlavor.JobRunnerReplicas}, "",
 		[]*util.Container{jobRunnerContainerConfig}, []*components.Volume{c.dbSecretVolume, c.dbEmptyDir}, []*util.Container{},

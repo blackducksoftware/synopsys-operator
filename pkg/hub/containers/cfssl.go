@@ -42,6 +42,8 @@ func (c *Creater) GetCfsslDeployment() *components.ReplicationController {
 	cfssl := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "cfssl", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{cfsslContainerConfig}, []*components.Volume{cfsslEmptyDir}, []*util.Container{},
 		[]horizonapi.AffinityConfig{})
+	c.PostEditContainer(cfsslContainerConfig)
+
 	return cfssl
 }
 

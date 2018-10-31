@@ -54,6 +54,8 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 	hubAuth := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "hub-authentication", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{hubAuthContainerConfig}, []*components.Volume{hubAuthEmptyDir, c.dbSecretVolume, c.dbEmptyDir}, []*util.Container{},
 		[]horizonapi.AffinityConfig{})
+	c.PostEditContainer(hubAuthContainerConfig)
+
 	return hubAuth
 }
 

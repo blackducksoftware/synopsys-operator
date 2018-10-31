@@ -53,6 +53,8 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 		// 	MinCountFailure: 1000,
 		// }},
 	}
+	c.PostEditContainer(webappContainerConfig)
+
 	logstashEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")
 	logstashContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: fmt.Sprintf("%s/%s/%s-logstash:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("logstash")),
@@ -68,6 +70,8 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 		// 	MinCountFailure: 1000,
 		// }},
 	}
+	c.PostEditContainer(logstashContainerConfig)
+
 	webappLogstash := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webapp-logstash", Replicas: util.IntToInt32(1)},
 		"", []*util.Container{webappContainerConfig, logstashContainerConfig}, []*components.Volume{webappEmptyDir, logstashEmptyDir, c.dbSecretVolume, c.dbEmptyDir},
 		[]*util.Container{}, []horizonapi.AffinityConfig{})

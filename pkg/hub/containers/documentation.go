@@ -46,6 +46,9 @@ func (c *Creater) GetDocumentationDeployment() *components.ReplicationController
 	}
 	documentation := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "documentation", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{documentationContainerConfig}, []*components.Volume{}, []*util.Container{}, []horizonapi.AffinityConfig{})
+
+	c.PostEditContainer(documentationContainerConfig)
+
 	return documentation
 }
 

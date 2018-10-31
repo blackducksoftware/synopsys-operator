@@ -50,6 +50,8 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 		// 	MinCountFailure: 10,
 		// }},
 	}
+	c.PostEditContainer(hubScanContainerConfig)
+
 	hubScan := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "hub-scan", Replicas: c.hubContainerFlavor.ScanReplicas}, "",
 		[]*util.Container{hubScanContainerConfig}, []*components.Volume{hubScanEmptyDir, c.dbSecretVolume, c.dbEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{})
 	return hubScan
