@@ -1,4 +1,4 @@
-package protoform-installer
+package operator
 
 // Copyright © 2017 NAME HERE <EMAIL ADDRESS>
 //
@@ -14,23 +14,15 @@ package protoform-installer
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This command encodes all the bootstrap components into the cluster.
-// It should be run once : When the user first installs the blackduck operator.
-
 import (
-	"fmt"
-
-	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/protoform-installer/blackduckctl/pkg/util"
+	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/blackduckctl/pkg/util"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	"github.com/sirupsen/logrus"
 
-	horizondep "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
-	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 func StartBlackduckOperator(configPath string) {

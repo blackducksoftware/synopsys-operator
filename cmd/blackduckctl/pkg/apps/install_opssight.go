@@ -19,7 +19,7 @@ import (
 
 	horizondep "github.com/blackducksoftware/horizon/pkg/deployer"
 
-	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/protoform-installer/blackduckctl/pkg/util"
+	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/blackduckctl/pkg/util"
 	versioned "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 
 	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"

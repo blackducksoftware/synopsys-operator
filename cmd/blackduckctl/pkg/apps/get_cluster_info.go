@@ -17,7 +17,7 @@ package apps
 import (
 	"fmt"
 
-	"github.com/blackducksoftware/perceptor-protoform/cmd/protoform-installer/blackduckctl/pkg/util"
+	"github.com/blackducksoftware/perceptor-protoform/cmd/blackduckctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 

@@ -20,7 +20,7 @@ package apps
 import (
 	"fmt"
 
-	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/protoform-installer/blackduckctl/pkg/util"
+	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/blackduckctl/pkg/util"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
