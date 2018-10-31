@@ -26,7 +26,7 @@ spec:
     imageFacade:
       name: "perceptor-imagefacade"
       port:               3004
-      internalRegistries: []opssightv1.RegistryAuth{}
+      internalRegistries: []
       image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master"
       serviceAccount:     "perceptor-scanner"
     replicaCount: 1

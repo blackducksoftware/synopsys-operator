@@ -5,9 +5,7 @@ metadata:
   name: hub-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
 spec:
   namespace: hub-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
-  backupSupport: "Yes" # Required, possible values are 'Yes', 'No'
-  backupInterval: "1" # Required only if the Backup support is 'Yes'. It should be integer value
-  backupUnit: Minute(s) # Required only if the Backup support is 'Yes'. Possible values are 'Minute(s)', 'Hour(s)', 'Day(s)', 'Week(s)'
+  backupSupport: "No" # Required, possible values are 'Yes', 'No'
   certificateName: default # Required, possible values are 'default', 'manual' or other hub names
   certificate: "" # Required if certificate name is manual
   certificateKey: "" # Required if certificate name is manual

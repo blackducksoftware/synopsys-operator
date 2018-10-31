@@ -77,8 +77,22 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) {
-	container := components.NewContainer(horizonapi.ContainerConfig{
+func (p *SpecConfig) pyfireContainer() *components.Container {
+	return components.NewContainer(horizonapi.ContainerConfig{
+		Name:    p.config.Skyfire.Name,
+		Image:   p.config.Skyfire.Image,
+		Command: []string{"python3"},
+		Args: []string{
+			"src/main.py",
+			fmt.Sprintf("/etc/skyfire/%s.json", p.config.ConfigMapName),
+		},
+		MinCPU: p.config.DefaultCPU,
+		MinMem: p.config.DefaultMem,
+	})
+}
+
+func (p *SpecConfig) golangSkyfireContainer() *components.Container {
+	return components.NewContainer(horizonapi.ContainerConfig{
 		Name:    p.config.Skyfire.Name,
 		Image:   p.config.Skyfire.Image,
 		Command: []string{fmt.Sprintf("./%s", p.config.Skyfire.Name)},
@@ -86,6 +100,10 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
 	})
+}
+
+func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) {
+	container := p.pyfireContainer()
 
 	container.AddPort(horizonapi.PortConfig{
 		ContainerPort: fmt.Sprintf("%d", p.config.Skyfire.Port),
