@@ -25,8 +25,6 @@ function clean(){
     rm -rf ./docker-compose/
 }
 
-
-
 clone
 printEnv | sort > hubenv
 printImage | sort > image
