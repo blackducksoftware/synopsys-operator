@@ -46,8 +46,21 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 		// 	MinCountFailure: 10,
 		// }},
 	}
+
+	registrationVolumes := []*components.Volume{registrationEmptyDir}
+
+	// Mount the HTTPS proxy certificate if provided
+	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
+		registrationContainerConfig.VolumeMounts = append(registrationContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
+			Name:      "blackduck-proxy-certificate",
+			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
+			SubPath:   "HUB_PROXY_CERT_FILE",
+		})
+		registrationVolumes = append(registrationVolumes, c.proxySecretVolume)
+	}
+
 	registration := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{registrationContainerConfig}, []*components.Volume{registrationEmptyDir}, []*util.Container{},
+		[]*util.Container{registrationContainerConfig}, registrationVolumes, []*util.Container{},
 		[]horizonapi.AffinityConfig{})
 	return registration
 }

@@ -56,7 +56,23 @@ func (hc *Creater) createDeployer(deployer *horizon.Deployer, createHub *v1.HubS
 
 	dbEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("cloudsql")
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, hubConfigEnv, allConfigEnv, dbSecretVolume, dbEmptyDir)
+	var proxySecretVolume *components.Volume
+
+	proxyCertSecret, err := util.GetSecret(hc.KubeClient, createHub.Namespace, "blackduck-proxy-certificate")
+	if err == nil {
+		if _, err := hc.stringToCertificate(string(proxyCertSecret.Data["HUB_PROXY_CERT_FILE"])); err == nil {
+			proxySecretVolume = components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
+				VolumeName:      "blackduck-proxy-certificate",
+				MapOrSecretName: "blackduck-proxy-certificate",
+				Items: map[string]horizonapi.KeyAndMode{
+					"HUB_PROXY_CERT_FILE": {KeyOrPath: "HUB_PROXY_CERT_FILE", Mode: util.IntToInt32(420)},
+				},
+				DefaultMode: util.IntToInt32(420),
+			})
+		}
+	}
+
+	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, hubConfigEnv, allConfigEnv, dbSecretVolume, dbEmptyDir, proxySecretVolume)
 
 	// cfssl
 	deployer.AddReplicationController(containerCreater.GetCfsslDeployment())

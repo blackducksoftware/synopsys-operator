@@ -41,9 +41,25 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 			MaxCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs: webappEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{Name: "db-passwords", MountPath: "/tmp/secrets"},
-			{Name: "dir-webapp", MountPath: "/opt/blackduck/hub/hub-webapp/security"},
-			{Name: "dir-logstash", MountPath: "/opt/blackduck/hub/logs"}},
+			{
+				Name:      "db-passwords",
+				MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+				SubPath:   "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+			},
+			{
+				Name:      "db-passwords",
+				MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE",
+				SubPath:   "HUB_POSTGRES_USER_PASSWORD_FILE",
+			},
+			{
+				Name:      "dir-webapp",
+				MountPath: "/opt/blackduck/hub/hub-webapp/security",
+			},
+			{
+				Name:      "dir-logstash",
+				MountPath: "/opt/blackduck/hub/logs",
+			},
+		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: webappPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
 		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/api/health-checks/liveness", "/opt/blackduck/hub/hub-webapp/security/root.crt"}},
@@ -68,8 +84,21 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 		// 	MinCountFailure: 1000,
 		// }},
 	}
+
+	webappLogstashVolumes := []*components.Volume{webappEmptyDir, logstashEmptyDir, c.dbSecretVolume, c.dbEmptyDir}
+
+	// Mount the HTTPS proxy certificate if provided
+	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
+		webappContainerConfig.VolumeMounts = append(webappContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
+			Name:      "blackduck-proxy-certificate",
+			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
+			SubPath:   "HUB_PROXY_CERT_FILE",
+		})
+		webappLogstashVolumes = append(webappLogstashVolumes, c.proxySecretVolume)
+	}
+
 	webappLogstash := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webapp-logstash", Replicas: util.IntToInt32(1)},
-		"", []*util.Container{webappContainerConfig, logstashContainerConfig}, []*components.Volume{webappEmptyDir, logstashEmptyDir, c.dbSecretVolume, c.dbEmptyDir},
+		"", []*util.Container{webappContainerConfig, logstashContainerConfig}, webappLogstashVolumes,
 		[]*util.Container{}, []horizonapi.AffinityConfig{})
 	return webappLogstash
 }

@@ -11,6 +11,7 @@ spec:
   certificateName: default # Required, possible values are 'default', 'manual' or other hub names
   certificate: "" # Required if certificate name is manual
   certificateKey: "" # Required if certificate name is manual
+  proxyCertificate: "wdawdadaw" # Required if using an HTTPS proxy
   dbPrototype: "empty" # Required, possible values are empty or other hub names
   dockerRegistry: docker.io # Required
   dockerRepo: blackducksoftware # Required
