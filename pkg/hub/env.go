@@ -7,42 +7,6 @@ import (
 )
 
 const envOptions = `
-# CATALINA_OPTS="-Dparameter1=value1 -Dparameter2=value2",
-# Change this to 1 if you are also using Hub Alert.
-# Change this to 1 if you are also using Hub Binary uploads
-# Cross Origin Resource Sharing (CORS) configuration
-# Define TLS_PROTOCOLS in order to override supported protocols (default: TLSv1.2)
-# Do not change
-# For NTLM Proxies
-# HUB_PROXY_PASSWORD=
-# Hosts that won't go through a proxy.
-# If IPv6 is disabled for a host machine, this flag should be set to '1' so that NGiNX
-# If the container port is changed, the Hub webserver port value should be equally changed.
-# If the host port is changed, the public Hub webserver port value should be equally changed.
-# JOBRUNNER_OPTS="-Dparameter1=value1 -Dparameter2=value2"
-# See Hub Alert documentation for details.
-# Set to true or false
-# Specific settings for Tomcat-based containers can set via:
-# Specify any property-specific overrides here
-# TO disable hub dashboard
-# The proxy password can be specified here if it is not specified in a
-# The public Hub webserver host will be served as a subject alternative name (SAN) within the 
-# This will enable Alert routes in 'webserver'
-# To access API documentation when using a reverse proxy with Hub mounted under a sub-path
-# Whether or not to include ignored components in the reports
-# default, served certificate.   This value should be changed to the publically-facing 
-# for instance:
-# hostname that users will enter in their browser in order to access Hub.
-# separate mounted file or secret.
-# specify where RabbitMQ is at
-# used by uploadcache service
-# used by worker and rabbitmq
-# while those for the Job Runner can be set via:
-# will not listen on an IPv6 address. By default NGiNX will listen on IPv4 and IPv6.
-#TLS_PROTOCOLS=TLSv1.1 TLSv1.2
-#hub-bdba.env
-#hub-postgres.env
-#hub-proxy.env
 ALLOW_ACCESS_DIRECTIVES=
 BLACKDUCK_CORS_ALLOWED_HEADERS_PROP_NAME=
 BLACKDUCK_CORS_ALLOWED_ORIGINS_PROP_NAME=
