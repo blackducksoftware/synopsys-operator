@@ -81,7 +81,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    p.config.Skyfire.Name,
 		Image:   p.config.Skyfire.Image,
-		Command: []string{"./src/main.py"}, // for golang-skyfire, this was: fmt.Sprintf("./%s", p.config.Skyfire.Name)},
+		Command: []string{fmt.Sprintf("./%s", p.config.Skyfire.Name)},
 		Args:    []string{fmt.Sprintf("/etc/skyfire/%s.json", p.config.ConfigMapName)},
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
