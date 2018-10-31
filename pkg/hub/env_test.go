@@ -12,4 +12,12 @@ func TestEnv(t *testing.T) {
 	if len(e) < 10 {
 		t.Fail()
 	}
+	for i, v := range e {
+		t.Log(i, v)
+	}
+
+	for ii, v := range i {
+		t.Log(ii, v)
+	}
+
 }

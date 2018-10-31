@@ -2,7 +2,6 @@ package hub
 
 import (
 	"strings"
-	"unicode"
 
 	"github.com/sirupsen/logrus"
 )
@@ -106,22 +105,14 @@ func GetHubKnobs() (env map[string]string, images []string) {
 	env = map[string]string{}
 	images = []string{}
 	logrus.Infof("%v", len(strings.Split(envOptions, "\n")))
-	SpaceMap := func(str string) string {
-		return strings.Map(func(r rune) rune {
-			if unicode.IsSpace(r) || unicode.IsControl(r) || unicode.IsGraphic(r) || unicode.IsMark(r) || unicode.IsPrint(r) {
-				return -1
-			}
-			return r
-		}, str)
-	}
 
 	for _, val := range strings.Split(envOptions, "\n") {
 		if strings.Contains(val, "=") {
 			keyval := strings.Split(val, "=")
-			env[keyval[0]] = SpaceMap(keyval[1])
+			env[keyval[0]] = keyval[1]
 		} else if strings.Contains(val, "image") {
 			fullImage := strings.Split(val, ": ")
-			images = append(images, SpaceMap(fullImage[1]))
+			images = append(images, fullImage[1])
 		} else {
 			logrus.Infof("Skipping line %v", val)
 		}
