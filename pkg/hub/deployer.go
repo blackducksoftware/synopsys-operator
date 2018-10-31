@@ -114,6 +114,7 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.HubSp
 	deployer.AddReplicationController(containerCreater.GetWebappLogstashDeployment())
 	deployer.AddService(containerCreater.GetWebAppService())
 	deployer.AddService(containerCreater.GetLogStashService())
+
 }
 
 // addAnyUIDToServiceAccount adds the capability to run as 1000 for nginx or other special IDs.  For example, the binaryscanner
