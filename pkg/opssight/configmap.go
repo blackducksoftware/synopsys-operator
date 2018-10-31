@@ -99,6 +99,7 @@ type ImageFacadeConfig struct {
 type SkyfireConfig struct {
 	UseInClusterConfig           bool
 	Port                         int
+	PrometheusPort               int
 	HubClientTimeoutSeconds      int
 	KubeDumpIntervalSeconds      int
 	PerceptorDumpIntervalSeconds int

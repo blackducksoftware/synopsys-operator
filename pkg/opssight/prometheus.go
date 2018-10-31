@@ -177,7 +177,7 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Perceiver.PodPerceiver.Name, p.config.Perceiver.Port))
 	}
 	if p.config.EnableSkyfire {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Skyfire.Name, p.config.Skyfire.Port))
+		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Skyfire.Name, p.config.Skyfire.PrometheusPort))
 	}
 	data := map[string]interface{}{
 		"global": map[string]interface{}{
