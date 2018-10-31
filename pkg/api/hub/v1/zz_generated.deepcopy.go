@@ -116,6 +116,13 @@ func (in *HubSpec) DeepCopyInto(out *HubSpec) {
 			(*out)[key] = val
 		}
 	}
+	if in.ImageUIDMap != nil {
+		in, out := &in.ImageUIDMap, &out.ImageUIDMap
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
