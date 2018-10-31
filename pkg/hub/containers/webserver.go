@@ -35,7 +35,7 @@ func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 	webServerSecretVol, _ := util.CreateSecretVolume("certificate", "blackduck-certificate", 0777)
 	webServerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: fmt.Sprintf("%s/%s/%s-nginx:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("nginx")),
-			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit, MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: "", UID: util.IntToInt64(1000)},
+			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit, MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: c.hubConfigEnv,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
 			{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security"},
