@@ -129,6 +129,7 @@ type Skyfire struct {
 	Name           string `json:"name"`
 	Image          string `json:"image"`
 	Port           int    `json:"port"`
+	PrometheusPort int    `json:"prometheusPort"`
 	ServiceAccount string `json:"serviceAccount"`
 
 	HubClientTimeoutSeconds      int `json:"hubClientTimeoutSeconds"`

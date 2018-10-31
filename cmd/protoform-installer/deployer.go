@@ -164,6 +164,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
 			Name:                         "skyfire",
 			Port:                         3005,
+			PrometheusPort:               3006,
 			ServiceAccount:               "skyfire",
 			HubClientTimeoutSeconds:      100,
 			HubDumpPauseSeconds:          240,
