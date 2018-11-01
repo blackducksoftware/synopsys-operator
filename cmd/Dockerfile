@@ -7,7 +7,7 @@ ADD ./frontend/client/ /app/
 RUN cd /app/ && npm i && npm run build
 RUN mv /app/build/ /views/
 
-COPY ./protoform-installer ./protoform
+COPY ./operator ./operator
 
 # Run protoform
-CMD ["./protoform","install-operator"]
+CMD ["./operator", "install-operator"]
