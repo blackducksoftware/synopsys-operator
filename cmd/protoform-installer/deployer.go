@@ -108,7 +108,7 @@ func GetHubDefaultValue() *hubv1.HubSpec {
 		DbPrototype:     "empty",
 		CertificateName: "default",
 		HubType:         "worker",
-		Environs:        []hubv1.Environs{},
+		Environs:        []string{},
 		ImagePrefix:     "hub",
 	}
 }

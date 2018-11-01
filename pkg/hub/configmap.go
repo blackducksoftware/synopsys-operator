@@ -24,6 +24,7 @@ package hub
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -47,8 +48,9 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *co
 		"HUB_PROXY_NON_PROXY_HOSTS": "solr",
 	}
 
-	for _, data := range createHub.Environs {
-		hubData[data.Key] = data.Value
+	for _, value := range createHub.Environs {
+		values := strings.SplitN(value, ":", 2)
+		hubData[values[0]] = values[1]
 	}
 	hubConfig.AddData(hubData)
 

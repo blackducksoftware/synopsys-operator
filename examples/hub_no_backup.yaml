@@ -2,9 +2,9 @@ apiVersion: synopsys.com/v1
 kind: Hub
 metadata:
   clusterName: ""
-  name: hub-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
+  name: hub-500 # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
 spec:
-  namespace: hub-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
+  namespace: hub-500 # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
   backupSupport: "No" # Required, possible values are 'Yes', 'No'
   certificateName: default # Required, possible values are 'default', 'manual' or other hub names
   dbPrototype: "empty" # Required, possible values are empty or other hub names
