@@ -35,7 +35,7 @@ var InstallOpsSight = &cobra.Command{
 		_, err1 := cmd.PersistentFlags().GetBool("dry-run")
 		_, err2 := cmd.PersistentFlags().GetString("namespace")
 		if err1 != nil || err2 != nil {
-			return fmt.Errorf("Args incorrect: %v %v %v", err1, err2)
+			return fmt.Errorf("Args incorrect: %v %v", err1, err2)
 		}
 		return nil
 	},
@@ -44,9 +44,9 @@ var InstallOpsSight = &cobra.Command{
 		namespace, _ := cmd.PersistentFlags().GetString("namespace")
 		spec := opssightv1.OpsSightSpec{
 			Perceptor: &opssightv1.Perceptor{
-				Name:  "perceptor",
-				Port:  3001,
-				Image: "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+				Name:                           "perceptor",
+				Port:                           3001,
+				Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
 				CheckForStalledScansPauseHours: 999999,
 				StalledScanClientTimeoutHours:  999999,
 				ModelMetricsPauseSeconds:       15,
@@ -102,7 +102,7 @@ var InstallOpsSight = &cobra.Command{
 				InitialCount:                 1,
 				MaxCount:                     1,
 				DeleteHubThresholdPercentage: 50,
-				HubSpec: bdutil.GetHubDefaultValue(),
+				HubSpec:                      bdutil.GetHubDefaultValue(),
 			},
 			EnableMetrics: true,
 			EnableSkyfire: false,

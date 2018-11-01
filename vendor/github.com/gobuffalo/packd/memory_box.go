@@ -74,7 +74,7 @@ func (m *MemoryBox) FindString(path string) (string, error) {
 }
 
 func (m *MemoryBox) Find(path string) ([]byte, error) {
-	res, ok := m.files.Load(path)
+	res, ok := m.files.Load(strings.ToLower(path))
 	if !ok {
 		return nil, os.ErrNotExist
 	}
@@ -90,7 +90,7 @@ func (m *MemoryBox) AddString(path string, t string) error {
 }
 
 func (m *MemoryBox) AddBytes(path string, t []byte) error {
-	m.files.Store(path, t)
+	m.files.Store(strings.ToLower(path), t)
 	return nil
 }
 

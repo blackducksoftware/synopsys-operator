@@ -2,13 +2,16 @@
 package highlight_go
 
 import (
-	"go/scanner"
-	"go/token"
 	"io"
+
+	"github.com/shurcooL/highlight_go/internal/go/scanner"
+	"github.com/shurcooL/highlight_go/internal/go/token"
 
 	"github.com/sourcegraph/annotate"
 	"github.com/sourcegraph/syntaxhighlight"
 )
+
+// TODO: Stop using internal copies of go/scanner and go/token in Go 1.12.
 
 // TokenKind returns a syntaxhighlight token kind value for the given tok and lit.
 func TokenKind(tok token.Token, lit string) syntaxhighlight.Kind {
@@ -37,46 +40,41 @@ func Print(src []byte, w io.Writer, p syntaxhighlight.Printer) error {
 	file := fset.AddFile("", fset.Base(), len(src))
 	s.Init(file, src, nil, scanner.ScanComments)
 
-	var lastOffset int
+	prevEndOffset := 0
 
 	for {
 		pos, tok, lit := s.Scan()
 		if tok == token.EOF {
 			break
 		}
-
-		var tokString string
-		if lit != "" {
-			tokString = lit
-		} else {
-			tokString = tok.String()
-		}
-
-		// TODO: Clean this up.
-		//if tok == token.SEMICOLON {
 		if tok == token.SEMICOLON && lit == "\n" {
 			continue
 		}
 
-		// Whitespace between previous and current tokens.
 		offset := fset.Position(pos).Offset
-		if whitespace := string(src[lastOffset:offset]); whitespace != "" {
-			err := p.Print(w, syntaxhighlight.Whitespace, whitespace)
+
+		// Print whitespace between previous token and current token, if any.
+		if prevEndOffset < offset {
+			err := p.Print(w, syntaxhighlight.Whitespace, string(src[prevEndOffset:offset]))
 			if err != nil {
 				return err
 			}
 		}
-		lastOffset = offset + len(tokString)
 
-		err := p.Print(w, TokenKind(tok, lit), tokString)
+		text := tokenText(tok, lit)
+
+		// Print token.
+		err := p.Print(w, TokenKind(tok, lit), text)
 		if err != nil {
 			return err
 		}
+
+		prevEndOffset = offset + len(text)
 	}
 
-	// Print final whitespace after the last token.
-	if whitespace := string(src[lastOffset:]); whitespace != "" {
-		err := p.Print(w, syntaxhighlight.Whitespace, whitespace)
+	// Print final whitespace between last token and EOF, if any.
+	if prevEndOffset < len(src) {
+		err := p.Print(w, syntaxhighlight.Whitespace, string(src[prevEndOffset:]))
 		if err != nil {
 			return err
 		}
@@ -98,30 +96,27 @@ func Annotate(src []byte, a syntaxhighlight.Annotator) (annotate.Annotations, er
 		if tok == token.EOF {
 			break
 		}
-
-		offset := fset.Position(pos).Offset
-
-		var tokString string
-		if lit != "" {
-			tokString = lit
-		} else {
-			tokString = tok.String()
-		}
-
-		// TODO: Clean this up.
-		//if tok == token.SEMICOLON {
 		if tok == token.SEMICOLON && lit == "\n" {
 			continue
 		}
 
-		ann, err := a.Annotate(offset, TokenKind(tok, lit), tokString)
+		// Annotate token.
+		ann, err := a.Annotate(fset.Position(pos).Offset, TokenKind(tok, lit), tokenText(tok, lit))
 		if err != nil {
 			return nil, err
 		}
-		if ann != nil {
-			anns = append(anns, ann)
+		if ann == nil {
+			continue
 		}
+		anns = append(anns, ann)
 	}
 
 	return anns, nil
+}
+
+func tokenText(tok token.Token, lit string) string {
+	if lit == "" {
+		return tok.String()
+	}
+	return lit
 }

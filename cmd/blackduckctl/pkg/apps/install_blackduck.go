@@ -22,7 +22,7 @@ import (
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -45,7 +45,7 @@ var InstallBlackduck = &cobra.Command{
 		_, err1 := cmd.PersistentFlags().GetBool("dry-run")
 		_, err2 := cmd.PersistentFlags().GetString("namespace")
 		if err1 != nil || err2 != nil {
-			return fmt.Errorf("Args incorrect: %v %v %v", err1, err2)
+			return fmt.Errorf("Args incorrect: %v %v", err1, err2)
 		}
 		return nil
 	},
@@ -56,7 +56,7 @@ var InstallBlackduck = &cobra.Command{
 		postgresRestartMinutes, _ := cmd.PersistentFlags().GetInt32("postgres-restart-minutes")
 		export, _ := cmd.PersistentFlags().GetBool("export")
 		creator := hub.Creater{
-			Config: &model.Config{
+			Config: &protoform.Config{
 				DryRun:                dryRun,
 				Namespace:             namespace,
 				NFSPath:               nfsPath,

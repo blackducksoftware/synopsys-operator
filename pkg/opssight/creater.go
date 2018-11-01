@@ -55,8 +55,7 @@ type Creater struct {
 }
 
 // NewCreater will instantiate the Creater
-<<<<<<< HEAD
-func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *hubclientset.Clientset) *Creater {
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *hubclientset.Clientset) *Creater {
 	return &Creater{
 		config:           config,
 		kubeConfig:       kubeConfig,
@@ -66,10 +65,6 @@ func NewCreater(config *model.Config, kubeConfig *rest.Config, kubeClient *kuber
 		routeClient:      routeClient,
 		hubClient:        hubClient,
 	}
-=======
-func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *hubclientset.Clientset) *Creater {
-	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, opssightClient: opssightClient, osSecurityClient: osSecurityClient, routeClient: routeClient, hubClient: hubClient}
->>>>>>> origin/gobuffalo
 }
 
 // DeleteOpsSight will delete the Black Duck OpsSight

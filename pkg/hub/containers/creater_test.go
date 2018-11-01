@@ -1,11 +1,31 @@
-package containers
+/*
+Copyright (C) 2018 Synopsys, Inc.
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
 
 package containers
- 
+
 import (
 	"testing"
 
-	horizonapi "github.com/jayunit100/horizon/pkg/api"
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/sirupsen/logrus"
 )
@@ -17,9 +37,11 @@ func (t *TG) getUID(s string) *int64 {
 	x := int64(100)
 	return &x
 }
+
 func (t *TG) getTag(s string) string {
 	return "CORRECT"
 }
+
 func TestC(t *testing.T) {
 	c := &TG{}
 	myCont := &util.Container{
@@ -36,7 +58,8 @@ func TestC(t *testing.T) {
 	}
 	if *myCont.ContainerConfig.UID != 100 {
 		t.Fail()
- 
+	}
+}
 
 func TestImageTag(t *testing.T) {
 	hubVersion := "5.0.0"
@@ -50,14 +73,14 @@ func TestImageTag(t *testing.T) {
 	internal50 := []string{"registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
 	for _, v := range external100 {
 		if creater.getTag(v) == externalVersion {
-			fmt.Printf("%s: %s\n", v, creater.getTag(v))
+			t.Logf("%s: %s", v, creater.getTag(v))
 		} else {
 			t.Fail()
 		}
 	}
 	for _, v := range internal50 {
 		if creater.getTag(v) == hubVersion {
-			fmt.Printf("%s: %s\n", v, creater.getTag(v))
+			t.Logf("%s: %s", v, creater.getTag(v))
 		} else {
 			t.Fail()
 		}
@@ -68,7 +91,7 @@ func TestImageTag(t *testing.T) {
 	all50 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl", "registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
 	for _, v := range all50 {
 		if creater.getTag(v) == "4.5.0" {
-			fmt.Printf("%s: %s\n", v, creater.getTag(v))
+			t.Logf("%s: %s", v, creater.getTag(v))
 		} else {
 			t.Fail()
 		}
