@@ -14,6 +14,7 @@ import (
 var openshift bool
 var kube bool
 
+// GetKubernetesClient will get the Kubernetes client
 func GetKubernetesClient() *kubernetes.Clientset {
 	config, err := clientcmd.BuildConfigFromFlags("", "/$HOME/.kube/config")
 	if err != nil {
@@ -39,7 +40,7 @@ func init() {
 	logrus.Infof("Clients: Openshift: %v, Kube: %v", openshift, kube)
 }
 
-// RunCmd is a simple wrapper to oc/kubectl exec that captures output.
+// RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
 // TODO consider replacing w/ go api but not crucial for now.
 func RunKubeCmd(args ...string) error {
 	var cmd2 *exec.Cmd
@@ -66,8 +67,8 @@ func RunKubeCmd(args ...string) error {
 	return nil
 }
 
-// runWithTimeout runs a command and times it out at the specified duration
-func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (error, string) {
+// RunWithTimeout runs a command and times it out at the specified duration
+func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (string, error) {
 	timeout := time.After(d)
 
 	// Use a bytes.Buffer to get the output
@@ -86,12 +87,8 @@ func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (error, string) {
 	case <-timeout:
 		// Timeout happened first, kill the process and print a message.
 		cmd.Process.Kill()
-		return fmt.Errorf("Killed due to timeout"), buf.String()
+		return buf.String(), fmt.Errorf("Killed due to timeout")
 	case err := <-done:
-		if err != nil {
-			return nil, buf.String()
-		} else {
-			return err, buf.String()
-		}
+		return buf.String(), err
 	}
 }

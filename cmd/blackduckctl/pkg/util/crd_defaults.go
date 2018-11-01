@@ -40,9 +40,9 @@ func GetHubDefaultValue() *hubv1.HubSpec {
 func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Perceptor: &opssightv1.Perceptor{
-			Name:  "perceptor",
-			Port:  3001,
-			Image: "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+			Name:                           "perceptor",
+			Port:                           3001,
+			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
 			CheckForStalledScansPauseHours: 999999,
 			StalledScanClientTimeoutHours:  999999,
 			ModelMetricsPauseSeconds:       15,
@@ -104,7 +104,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			InitialCount:                 1,
 			MaxCount:                     1,
 			DeleteHubThresholdPercentage: 50,
-			HubSpec: GetHubDefaultValue(),
+			HubSpec:                      GetHubDefaultValue(),
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,
