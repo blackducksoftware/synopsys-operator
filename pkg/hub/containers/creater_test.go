@@ -37,16 +37,16 @@ func TestImageTag(t *testing.T) {
 		"nginx": externalVersion, "solr": externalVersion, "zookeeper": externalVersion}, HubVersion: "4.5.0"}
 	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
 
-	external_1_0_0 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl"}
-	internal_50 := []string{"registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
-	for _, v := range external_1_0_0 {
+	external100 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl"}
+	internal50 := []string{"registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
+	for _, v := range external100 {
 		if creater.getTag(v) == externalVersion {
 			fmt.Printf("%s: %s\n", v, creater.getTag(v))
 		} else {
 			t.Fail()
 		}
 	}
-	for _, v := range internal_50 {
+	for _, v := range internal50 {
 		if creater.getTag(v) == hubVersion {
 			fmt.Printf("%s: %s\n", v, creater.getTag(v))
 		} else {
@@ -56,8 +56,8 @@ func TestImageTag(t *testing.T) {
 
 	hubSpec1 := &v1.HubSpec{HubVersion: "4.5.0"}
 	creater = NewCreater(nil, hubSpec1, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
-	all_50 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl", "registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
-	for _, v := range all_50 {
+	all50 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl", "registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
+	for _, v := range all50 {
 		if creater.getTag(v) == "4.5.0" {
 			fmt.Printf("%s: %s\n", v, creater.getTag(v))
 		} else {
