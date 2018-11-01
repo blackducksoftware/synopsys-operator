@@ -32,7 +32,10 @@ import (
 
 // PerceptorMetricsDeployment creates a deployment for perceptor metrics
 func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error) {
-	replicas := int32(1)
+	replicas := int32(0)
+	if p.config.EnableMetrics {
+		replicas = 1
+	}
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
 		Name:      "prometheus",
