@@ -1,0 +1,6 @@
+- id: "hub.created.success"
+  translation: "Hub was successfully created."
+- id: "hub.updated.success"
+  translation: "Hub was successfully updated."
+- id: "hub.destroyed.success"
+  translation: "Hub was successfully destroyed."
