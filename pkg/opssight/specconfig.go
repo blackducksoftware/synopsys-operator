@@ -183,19 +183,17 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.ClusterRoles = append(components.ClusterRoles, skyfireClusterRole)
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole))
 
-	if p.config.EnableMetrics {
-		dep, err := p.PerceptorMetricsDeployment()
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to create metrics")
-		}
-		components.Deployments = append(components.Deployments, dep)
-		components.Services = append(components.Services, p.PerceptorMetricsService())
-		perceptorCm, err := p.PerceptorMetricsConfigMap()
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to create perceptor config map")
-		}
-		components.ConfigMaps = append(components.ConfigMaps, perceptorCm)
+	dep, err := p.PerceptorMetricsDeployment()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create metrics")
 	}
+	components.Deployments = append(components.Deployments, dep)
+	components.Services = append(components.Services, p.PerceptorMetricsService())
+	perceptorCm, err := p.PerceptorMetricsConfigMap()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create perceptor config map")
+	}
+	components.ConfigMaps = append(components.ConfigMaps, perceptorCm)
 
 	return components, nil
 }
