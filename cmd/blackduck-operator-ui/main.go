@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/blackducksoftware/perceptor-protoform/cmd/blackduck_operator_ui/actions"
+	"github.com/blackducksoftware/perceptor-protoform/cmd/blackduck-operator-ui/actions"
 )
 
 // main is the starting point for your Buffalo application.
