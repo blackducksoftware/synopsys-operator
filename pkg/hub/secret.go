@@ -22,6 +22,10 @@ under the License.
 package hub
 
 import (
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -40,5 +44,31 @@ func (hc *Creater) createHubSecrets(createHub *v1.HubSpec, adminPassword string,
 		certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(createHub.Certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(createHub.CertificateKey)})
 	}
 	secrets = append(secrets, certificateSecret)
+
+	if len(createHub.ProxyCertificate) > 0 {
+		cert, err := hc.stringToCertificate(createHub.ProxyCertificate)
+		if err != nil {
+			logrus.Warnf("The proxy certificate provided is invalid")
+		} else {
+			logrus.Debugf("Adding Proxy certificate with SN: %x", cert.SerialNumber)
+			proxyCertificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: createHub.Namespace, Name: "blackduck-proxy-certificate", Type: horizonapi.SecretTypeOpaque})
+			proxyCertificateSecret.AddData(map[string][]byte{"HUB_PROXY_CERT_FILE": []byte(createHub.ProxyCertificate)})
+			secrets = append(secrets, proxyCertificateSecret)
+		}
+	}
 	return secrets
+}
+
+func (hc *Creater) stringToCertificate(certificate string) (*x509.Certificate, error) {
+	block, _ := pem.Decode([]byte(certificate))
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse certificate PEM")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, nil
 }
