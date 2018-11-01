@@ -31,7 +31,10 @@ import (
 
 // PerceptorSkyfireReplicationController creates a replication controller for perceptor skyfire
 func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.ReplicationController, error) {
-	replicas := int32(1)
+	replicas := int32(0)
+	if p.config.EnableSkyfire {
+		replicas = 1
+	}
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      p.config.Skyfire.Name,

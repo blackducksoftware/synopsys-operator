@@ -172,18 +172,16 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(cr))
 	}
 
-	if p.config.EnableSkyfire {
-		rc, err := p.PerceptorSkyfireReplicationController()
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to create skyfire")
-		}
-		components.ReplicationControllers = append(components.ReplicationControllers, rc)
-		components.Services = append(components.Services, p.PerceptorSkyfireService())
-		components.ServiceAccounts = append(components.ServiceAccounts, p.PerceptorSkyfireServiceAccount())
-		cr := p.PerceptorSkyfireClusterRole()
-		components.ClusterRoles = append(components.ClusterRoles, cr)
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(cr))
+	skyfireRC, err := p.PerceptorSkyfireReplicationController()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create skyfire")
 	}
+	components.ReplicationControllers = append(components.ReplicationControllers, skyfireRC)
+	components.Services = append(components.Services, p.PerceptorSkyfireService())
+	components.ServiceAccounts = append(components.ServiceAccounts, p.PerceptorSkyfireServiceAccount())
+	skyfireClusterRole := p.PerceptorSkyfireClusterRole()
+	components.ClusterRoles = append(components.ClusterRoles, skyfireClusterRole)
+	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole))
 
 	if p.config.EnableMetrics {
 		dep, err := p.PerceptorMetricsDeployment()
