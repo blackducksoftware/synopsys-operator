@@ -30,7 +30,7 @@ import (
 	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 	alertinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/informers/externalversions/alert/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -41,7 +41,7 @@ import (
 
 // CRDInstaller defines the specification for the controller
 type CRDInstaller struct {
-	config       *model.Config
+	config       *protoform.Config
 	kubeConfig   *rest.Config
 	kubeClient   *kubernetes.Clientset
 	defaults     interface{}
@@ -57,7 +57,7 @@ type CRDInstaller struct {
 }
 
 // NewCRDInstaller will create a installer configuration
-func NewCRDInstaller(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
 	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
 	crdInstaller.resyncPeriod = 0
 	crdInstaller.indexers = cache.Indexers{}

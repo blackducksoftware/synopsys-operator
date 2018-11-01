@@ -26,8 +26,10 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
+
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/sirupsen/logrus"
 )

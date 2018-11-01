@@ -23,7 +23,6 @@ package protoform
 
 import (
 	crd "github.com/blackducksoftware/perceptor-protoform/pkg/crds"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	"github.com/juju/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -31,14 +30,14 @@ import (
 
 // Deployer handles deploying configured components to a cluster
 type Deployer struct {
-	Config        *model.Config
+	Config        *Config
 	KubeConfig    *rest.Config
 	KubeClientSet *kubernetes.Clientset
 	controllers   []crd.ProtoformControllerInterface
 }
 
 // NewDeployer will create the specification that is used for deploying controllers
-func NewDeployer(config *model.Config, kubeConfig *rest.Config, kubeClientSet *kubernetes.Clientset) *Deployer {
+func NewDeployer(config *Config, kubeConfig *rest.Config, kubeClientSet *kubernetes.Clientset) *Deployer {
 	deployer := Deployer{
 		Config:        config,
 		KubeConfig:    kubeConfig,

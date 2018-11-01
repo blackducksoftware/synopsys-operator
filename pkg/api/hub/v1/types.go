@@ -32,9 +32,18 @@ import (
 type Hub struct {
 	meta_v1.TypeMeta   `json:",inline"`
 	meta_v1.ObjectMeta `json:"metadata,omitempty"`
+	View               HubView   `json:"view"`
+	Spec               HubSpec   `json:"spec"`
+	Status             HubStatus `json:"status,omitempty"`
+}
 
-	Spec   HubSpec   `json:"spec"`
-	Status HubStatus `json:"status,omitempty"`
+// HubView will be used to populate information for the Hub UI.
+type HubView struct {
+	Clones           map[string]string `json:"clones"`
+	StorageClasses   map[string]string `json:"storageClasses"`
+	CertificateNames []string          `json:"certificateNames"`
+	Environs         []string          `json:"environs"`
+	ContainerTags    map[string]string `json:"containerTags"`
 }
 
 // HubSpec will be CRD Hub definition's Spec
@@ -57,7 +66,7 @@ type HubSpec struct {
 	CertificateKey  string            `json:"certificateKey"`
 	HubType         string            `json:"hubType"`
 	State           string            `json:"state"`
-	Environs        []Environs        `json:"environs"`
+	Environs        []string          `json:"environs"`
 	ImagePrefix     string            `json:"imagePrefix"`
 	ImageTagMap     map[string]string `json:"imageTagMap"`
 	ImageUIDMap     map[string]int64  `json:"imageUidMap"`

@@ -37,8 +37,12 @@ import (
 
 // createDeployer will create an entire hub for you.  TODO add flavor parameters !
 // To create the returned hub, run 	CreateHub().Run().
+<<<<<<< HEAD
 // TODO doc what 'allConfigEnv' actually is ???
 func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.HubSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig) {
+=======
+func (hc *Creater) createDeployer(deployer *horizon.Deployer, createHub *v1.HubSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig) {
+>>>>>>> origin/gobuffalo
 
 	// Hub ConfigMap environment variables
 	hubConfigEnv := []*horizonapi.EnvConfig{
@@ -114,7 +118,10 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.HubSp
 	deployer.AddReplicationController(containerCreater.GetWebappLogstashDeployment())
 	deployer.AddService(containerCreater.GetWebAppService())
 	deployer.AddService(containerCreater.GetLogStashService())
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/gobuffalo
 }
 
 // addAnyUIDToServiceAccount adds the capability to run as 1000 for nginx or other special IDs.  For example, the binaryscanner

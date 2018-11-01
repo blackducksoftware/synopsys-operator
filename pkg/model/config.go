@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package model
+package controller
 
 import (
 	"fmt"
@@ -30,31 +30,19 @@ import (
 
 // Config type will used for protoform config
 type Config struct {
-	DryRun                bool
-	LogLevel              string
-	Namespace             string
-	Threadiness           int
-	PostgresRestartInMins int
-	NFSPath               string
-	HubFederatorConfig    *HubFederatorConfig
-}
-
-// SelfSetDefaults ...
-func (config *Config) SelfSetDefaults() {
-	config.HubFederatorConfig = &HubFederatorConfig{}
-	config.HubFederatorConfig.HubConfig = &HubConfig{}
-	config.HubFederatorConfig = &HubFederatorConfig{}
+	DryRun             bool
+	LogLevel           string
+	Namespace          string
+	Threadiness        int
+	HubFederatorConfig HubFederatorConfig
+	NFSPath            string
 }
 
 // HubFederatorConfig will have the configuration related to hub federator
 type HubFederatorConfig struct {
-	HubConfig    *HubConfig
-	UseMockMode  bool
-	Port         int
-	Registry     string
-	ImagePath    string
-	ImageName    string
-	ImageVersion string
+	HubConfig   HubConfig
+	UseMockMode bool
+	Port        int
 }
 
 // HubConfig will have the configuration related to Hub
