@@ -46,9 +46,10 @@ func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
 		// 	MinCountFailure: 10,
 		// }},
 	}
+	c.PostEditContainer(zookeeperContainerConfig)
+
 	zookeeper := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{zookeeperContainerConfig}, []*components.Volume{zookeeperEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{})
-	c.PostEditContainer(zookeeperContainerConfig)
 
 	return zookeeper
 }

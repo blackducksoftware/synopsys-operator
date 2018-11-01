@@ -58,11 +58,12 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 		})
 		registrationVolumes = append(registrationVolumes, c.proxySecretVolume)
 	}
+	c.PostEditContainer(registrationContainerConfig)
 
 	registration := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{registrationContainerConfig}, registrationVolumes, []*util.Container{},
 		[]horizonapi.AffinityConfig{})
-	c.PostEditContainer(registrationContainerConfig)
+
 	return registration
 }
 

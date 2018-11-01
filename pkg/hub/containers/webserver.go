@@ -50,7 +50,6 @@ func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 		// 	MinCountFailure: 10,
 		// }},
 	}
-
 	c.PostEditContainer(webServerContainerConfig)
 
 	webserver := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webserver",
