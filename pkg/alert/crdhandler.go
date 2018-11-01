@@ -27,7 +27,7 @@ import (
 
 	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
 	alert_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -43,7 +43,7 @@ type HandlerInterface interface {
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	config      *model.Config
+	config      *protoform.Config
 	kubeConfig  *rest.Config
 	kubeClient  *kubernetes.Clientset
 	alertClient *alertclientset.Clientset
@@ -51,7 +51,7 @@ type Handler struct {
 }
 
 // NewHandler will create the handler
-func NewHandler(config *model.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, defaults *alert_v1.AlertSpec) *Handler {
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, defaults *alert_v1.AlertSpec) *Handler {
 	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, defaults: defaults}
 }
 

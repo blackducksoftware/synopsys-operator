@@ -22,7 +22,6 @@ under the License.
 package opssight
 
 import (
-	"encoding/json"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -64,7 +63,7 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	err = pod.AddVolume(p.perceptorVolume())
+	err = pod.AddVolume(p.configMapVolume(p.config.Perceptor.Name))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -78,7 +77,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		Name:    name,
 		Image:   p.config.Perceptor.Image,
 		Command: []string{fmt.Sprintf("./%s", name)},
-		Args:    []string{fmt.Sprintf("/etc/%s/%s.yaml", name, name)},
+		Args:    []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
 	})
@@ -107,14 +106,6 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 	return container, nil
 }
 
-func (p *SpecConfig) perceptorVolume() *components.Volume {
-	name := p.config.Perceptor.Name
-	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      name,
-		MapOrSecretName: name,
-	})
-}
-
 // PerceptorService creates a service for perceptor
 func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
@@ -134,41 +125,6 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	service.AddSelectors(map[string]string{"name": p.config.Perceptor.Name})
 
 	return service, nil
-}
-
-// PerceptorConfigMap creates a config map for perceptor
-func (p *SpecConfig) PerceptorConfigMap() (*components.ConfigMap, error) {
-	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      p.config.Perceptor.Name,
-		Namespace: p.config.Namespace,
-	})
-	data := map[string]interface{}{
-		"Hub": map[string]interface{}{
-			"Hosts":                     []string{},
-			"Port":                      p.config.Hub.Port,
-			"User":                      p.config.Hub.User,
-			"PasswordEnvVar":            p.config.Hub.PasswordEnvVar,
-			"ClientTimeoutMilliseconds": p.config.Perceptor.ClientTimeoutMilliseconds,
-			"ConcurrentScanLimit":       p.config.Hub.ConcurrentScanLimit,
-			"TotalScanLimit":            p.config.Hub.TotalScanLimit,
-		},
-		"Port":        p.config.Perceptor.Port,
-		"LogLevel":    p.config.LogLevel,
-		"UseMockMode": false,
-		"Timings": map[string]interface{}{
-			"CheckForStalledScansPauseHours": p.config.Perceptor.CheckForStalledScansPauseHours,
-			"StalledScanClientTimeoutHours":  p.config.Perceptor.StalledScanClientTimeoutHours,
-			"ModelMetricsPauseSeconds":       p.config.Perceptor.ModelMetricsPauseSeconds,
-			"UnknownImagePauseMilliseconds":  p.config.Perceptor.UnknownImagePauseMilliseconds,
-		},
-	}
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	cm.AddData(map[string]string{fmt.Sprintf("%s.yaml", p.config.Perceptor.Name): string(bytes)})
-
-	return cm, nil
 }
 
 // PerceptorSecret create a secret for perceptor

@@ -29,15 +29,15 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"k8s.io/client-go/kubernetes"
 )
 
 // DeleteHub ...
 type DeleteHub struct {
-	Config         *model.Config
+	Config         *protoform.Config
 	KubeClient     *kubernetes.Clientset
 	OpsSightClient *opssightclientset.Clientset
 	HubClient      *hubclient.Clientset

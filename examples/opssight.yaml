@@ -26,7 +26,7 @@ spec:
     imageFacade:
       name: "perceptor-imagefacade"
       port:               3004
-      internalRegistries: []opssightv1.RegistryAuth{}
+      internalRegistries: []
       image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master"
       serviceAccount:     "perceptor-scanner"
     replicaCount: 1
@@ -47,10 +47,14 @@ spec:
 
   enableSkyfire: false
   skyfire:
-      image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master"
+      image:          "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master"
       name:           "skyfire"
       port:           3005
       serviceAccount: "skyfire"
+      hubClientTimeoutSeconds: 120
+      hubDumpPauseSeconds: 240
+      kubeDumpIntervalSeconds: 60
+      perceptorDumpIntervalSeconds: 60
 
   enableMetrics: true
   defaultCPU:    "300m"

@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package model
+package protoform
 
 import (
 	"fmt"
@@ -43,7 +43,6 @@ type Config struct {
 func (config *Config) SelfSetDefaults() {
 	config.HubFederatorConfig = &HubFederatorConfig{}
 	config.HubFederatorConfig.HubConfig = &HubConfig{}
-	config.HubFederatorConfig = &HubFederatorConfig{}
 }
 
 // HubFederatorConfig will have the configuration related to hub federator

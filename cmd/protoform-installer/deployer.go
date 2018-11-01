@@ -157,13 +157,19 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
 				ClientTimeoutSeconds: 600,
 			},
-			ReplicaCount: 1,
+			ReplicaCount:   1,
+			ImageDirectory: "/var/images",
 		},
 		Skyfire: &opssightv1.Skyfire{
-			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
-			Name:           "skyfire",
-			Port:           3005,
-			ServiceAccount: "skyfire",
+			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
+			Name:                         "skyfire",
+			Port:                         3005,
+			PrometheusPort:               3006,
+			ServiceAccount:               "skyfire",
+			HubClientTimeoutSeconds:      100,
+			HubDumpPauseSeconds:          240,
+			KubeDumpIntervalSeconds:      60,
+			PerceptorDumpIntervalSeconds: 60,
 		},
 		Hub: &opssightv1.Hub{
 			User:                         "sysadmin",
@@ -183,5 +189,6 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		DefaultMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
+		ConfigMapName: "opssight",
 	}
 }

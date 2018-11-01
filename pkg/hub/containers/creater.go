@@ -25,12 +25,12 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/model"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 )
 
 // Creater will store the configuration to create the hub containers
 type Creater struct {
-	config             *model.Config
+	config             *protoform.Config
 	hubSpec            *v1.HubSpec
 	hubContainerFlavor *ContainerFlavor
 	hubConfigEnv       []*horizonapi.EnvConfig
@@ -40,7 +40,7 @@ type Creater struct {
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *model.Config, hubSpec *v1.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
+func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
 	dbSecretVolume *components.Volume, dbEmptyDir *components.Volume) *Creater {
 	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, hubConfigEnv: hubConfigEnv, allConfigEnv: allConfigEnv, dbSecretVolume: dbSecretVolume,
 		dbEmptyDir: dbEmptyDir}

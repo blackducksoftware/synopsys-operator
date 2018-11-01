@@ -22,7 +22,6 @@ under the License.
 package opssight
 
 import (
-	"encoding/json"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -78,14 +77,17 @@ func (p *SpecConfig) perceiverPod(name string, account string) (*components.Pod,
 	pod.AddLabels(map[string]string{"name": name})
 	pod.AddContainer(p.perceiverContainer(name))
 
-	vols, err := perceiverVolumes(name)
+	vols, err := p.perceiverVolumes(name)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Annotate(err, "unable to create volumes")
 	}
 
 	for _, v := range vols {
-		pod.AddVolume(v)
+		err = pod.AddVolume(v)
+		if err != nil {
+			return nil, errors.Annotate(err, "unable to add volume to pod")
+		}
 	}
 
 	return pod, nil
@@ -97,7 +99,7 @@ func (p *SpecConfig) perceiverContainer(name string) *components.Container {
 		Name:    name,
 		Image:   p.config.Perceiver.PodPerceiver.Image,
 		Command: []string{cmd},
-		Args:    []string{fmt.Sprintf("/etc/%s/%s.yaml", name, name)},
+		Args:    []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
 		MinCPU:  p.config.DefaultCPU,
 		MinMem:  p.config.DefaultMem,
 	})
@@ -119,13 +121,8 @@ func (p *SpecConfig) perceiverContainer(name string) *components.Container {
 	return container
 }
 
-func perceiverVolumes(name string) ([]*components.Volume, error) {
-	vols := []*components.Volume{}
-
-	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      name,
-		MapOrSecretName: name,
-	}))
+func (p *SpecConfig) perceiverVolumes(name string) ([]*components.Volume, error) {
+	vols := []*components.Volume{p.configMapVolume(name)}
 
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "logs",
@@ -165,31 +162,6 @@ func (p *SpecConfig) PodPerceiverService() *components.Service {
 // ImagePerceiverService creates a service for the image perceiver
 func (p *SpecConfig) ImagePerceiverService() *components.Service {
 	return p.perceiverService(p.config.Perceiver.ImagePerceiver.Name)
-}
-
-// PerceiverConfigMap creates a config map for perceivers
-func (p *SpecConfig) PerceiverConfigMap(name string) (*components.ConfigMap, error) {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      name,
-		Namespace: p.config.Namespace,
-	})
-
-	data := map[string]interface{}{
-		"PerceptorHost":             p.config.Perceptor.Name,
-		"PerceptorPort":             p.config.Perceptor.Port,
-		"AnnotationIntervalSeconds": p.config.Perceiver.AnnotationIntervalSeconds,
-		"DumpIntervalMinutes":       p.config.Perceiver.DumpIntervalMinutes,
-		"Port":                      p.config.Perceiver.Port,
-		"LogLevel":                  p.config.LogLevel,
-		"NamespaceFilter":           p.config.Perceiver.PodPerceiver.NamespaceFilter,
-	}
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	configMap.AddData(map[string]string{fmt.Sprintf("%s.yaml", name): string(bytes)})
-
-	return configMap, nil
 }
 
 func (p *SpecConfig) perceiverServiceAccount(name string) *components.ServiceAccount {
