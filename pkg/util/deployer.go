@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Deployer will contain the deployer specification, it has wrapper methods for adding stuff
+// DeployerHelper will contain the deployer specification, it has wrapper methods for adding stuff
 // to a horizon deployer object.  TODO this shoudl go into jayunit100/horizon probably (or horizon core if we're allowed to).
 type DeployerHelper struct {
 	Deployer *deployer.Deployer
