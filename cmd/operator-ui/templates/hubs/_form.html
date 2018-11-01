@@ -1,0 +1,66 @@
+<style>
+  ul {
+	position: relative;
+	outline: 0;
+  }
+  
+  ul li {
+	position: relative;
+	padding: 20px 10px 20px 40px;
+	background: transparent;
+	box-shadow: 0 1px #EEE;
+  }
+  
+  ul li:before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 15px;
+	bottom: 0;
+	width: 10px;
+	height: 10px;
+	margin: auto;
+	border-radius: 100%;
+	background: #fff;
+	display: block;
+  }
+  
+  ul li:hover {
+	background: #FAFAFA;
+  }
+</style>
+<body class="container" onload="formLoad()" onsubmit="appendEnvirons()">
+  <%= f.InputTag("Spec.Namespace", {value: "", label: "Namespace"}) %>
+  <%= f.SelectTag("Spec.Flavor", {options: ["Small", "Medium", "Large", "OpsSight"], value: "Small", label: "Flavor"}) %>
+  <%= f.InputTag("Spec.DockerRegistry", {value: "docker.io", label: "Docker Registry"}) %>
+  <%= f.InputTag("Spec.DockerRepository", {value: "blackducksoftware", label: "Docker Repository"}) %>
+  <%= f.InputTag("Spec.HubVersion", {value: "5.0.0", label: "HubVersion"}) %>
+  <%= f.SelectTag("Spec.BackupSupport", {options: ["Yes", "No"], value: "Yes", label: "Backup Support", onchange: "checkBackUpSupport()"}) %>
+  <div id="backupSupportId">
+    <%= f.InputTag("Spec.BackupInterval", {value: "30", label: "Backup Interval"}) %>
+    <%= f.SelectTag("Spec.BackupUnit", {options: ["Minute(s)", "Hour(s)", "Day(s)", "Week(s)"], value: "Minute(s)", label: "Backup Unit"}) %>
+  </div>
+  <%= f.SelectTag("Spec.DbPrototype", {options: hub.View.Clones, value: "empty", onchange: "checkPVC()", label: "Clone DB"}) %>
+  <div id="pvcId">
+    <%= f.SelectTag("Spec.PVCStorageClass", {value: "none", label: "PVC StorageClass", options: hub.View.StorageClasses}) %>
+    <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: "Artifacts", label: "Scan Type", onchange: "checkScanType()"}) %>
+    <%= f.InputTag("Spec.PVCClaimSize", {value: "20Gi", label: "PVC ClaimSize"}) %>
+    <%= f.InputTag("Spec.NFSServer", {value: "", label: "NFS Server"}) %>
+  </div>
+  <%= f.SelectTag("Spec.CertificateName", {value: "default", options: hub.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
+  <div id="certificateId">
+    <%= f.TextAreaTag("Spec.Certificate", {value: "", label: "Certificate"}) %>
+    <%= f.TextAreaTag("Spec.CertificateKey", {value: "", label: "Certificate Key"}) %>
+  </div>
+  <label>Environment Variables</label>
+  <ul id="environs" name="environs" contenteditable="true">
+    <%= for (environ) in  hub.View.Environs { %>
+      <li value="<%= environ %>"><%= environ %></li>
+    <% } %>
+  </ul>
+  <select id="hub-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
+  <!-- <input id="hub-Spec.Environs" name="Spec.Environs" type="hidden" /> -->
+  <a href="<%= hubsPath() %>" class="btn btn-info">Back to all Hubs</a>
+  <button class="btn btn-success" role="submit">Save</button>
+  <a href="" class="btn btn-warning" data-confirm="Are you sure?">Cancel</a>
+</body>

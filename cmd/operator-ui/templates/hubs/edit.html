@@ -1,0 +1,8 @@
+<div class="page-header">
+  <h1>Edit Hub</h1>
+</div>
+
+<%= form_for(hub, {action: hubPath({ hub_id: hub.ID }), method: "PUT"}) { %>
+  <%= partial("hubs/form.html") %>
+  <a href="<%= hubPath({ hub_id: hub.ID }) %>" class="btn btn-warning" data-confirm="Are you sure?">Cancel</a>
+<% } %>

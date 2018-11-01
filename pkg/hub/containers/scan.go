@@ -75,9 +75,11 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 		})
 		hubScanVolumes = append(hubScanVolumes, c.proxySecretVolume)
 	}
+	c.PostEditContainer(hubScanContainerConfig)
 
 	hubScan := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "hub-scan", Replicas: c.hubContainerFlavor.ScanReplicas}, "",
 		[]*util.Container{hubScanContainerConfig}, hubScanVolumes, []*util.Container{}, []horizonapi.AffinityConfig{})
+
 	return hubScan
 }
 

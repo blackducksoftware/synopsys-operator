@@ -29,7 +29,6 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/containers"
@@ -37,11 +36,9 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
-
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Creater will store the configuration to create the Hub
@@ -188,7 +185,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 
 	// Create all hub deployments
 	deployer, _ = horizon.NewDeployer(hc.KubeConfig)
-	hc.createDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	hc.AddToDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
 	log.Debugf("%+v", deployer)
 	// Deploy all hub containers
 	err = deployer.Run()

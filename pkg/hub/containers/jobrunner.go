@@ -58,6 +58,7 @@ func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
 		// 	MinCountFailure: 10,
 		// }},
 	}
+	c.PostEditContainer(jobRunnerContainerConfig)
 
 	jobRunnerVolumes := []*components.Volume{c.dbSecretVolume, c.dbEmptyDir}
 
