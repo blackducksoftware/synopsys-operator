@@ -1,33 +1,39 @@
-package apps
+/*
+Copyright (C) 2018 Synopsys, Inc.
 
-// Copyright © 2017 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
+package apps
 
 import (
 	"fmt"
 
 	horizondep "github.com/blackducksoftware/horizon/pkg/deployer"
-
 	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/blackduckctl/pkg/util"
-	versioned "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-
 	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
+	versioned "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/spf13/cobra"
 )
 
+// InstallOpsSight ...
 var InstallOpsSight = &cobra.Command{
 	Use:   "install-opssight",
 	Short: "Install a opssight instance (or export the YAML file for doing so).",
@@ -35,7 +41,7 @@ var InstallOpsSight = &cobra.Command{
 		_, err1 := cmd.PersistentFlags().GetBool("dry-run")
 		_, err2 := cmd.PersistentFlags().GetString("namespace")
 		if err1 != nil || err2 != nil {
-			return fmt.Errorf("Args incorrect: %v %v %v", err1, err2)
+			return fmt.Errorf("Args incorrect: %v %v", err1, err2)
 		}
 		return nil
 	},
@@ -44,9 +50,9 @@ var InstallOpsSight = &cobra.Command{
 		namespace, _ := cmd.PersistentFlags().GetString("namespace")
 		spec := opssightv1.OpsSightSpec{
 			Perceptor: &opssightv1.Perceptor{
-				Name:  "perceptor",
-				Port:  3001,
-				Image: "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+				Name:                           "perceptor",
+				Port:                           3001,
+				Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
 				CheckForStalledScansPauseHours: 999999,
 				StalledScanClientTimeoutHours:  999999,
 				ModelMetricsPauseSeconds:       15,
@@ -102,7 +108,7 @@ var InstallOpsSight = &cobra.Command{
 				InitialCount:                 1,
 				MaxCount:                     1,
 				DeleteHubThresholdPercentage: 50,
-				HubSpec: bdutil.GetHubDefaultValue(),
+				HubSpec:                      bdutil.GetHubDefaultValue(),
 			},
 			EnableMetrics: true,
 			EnableSkyfire: false,
@@ -144,16 +150,14 @@ var InstallOpsSight = &cobra.Command{
 				fmt.Println(v)
 			}
 			return
-		} else {
-			// TODO catch errors
-			restconf, _ := util.GetKubeConfig()
-			cs, _ := versioned.NewForConfig(restconf)
-			opssight := &opssightv1.OpsSight{
-				Spec: spec,
-			}
-			cs.Synopsys().OpsSights(namespace).Create(opssight)
 		}
-
+		// TODO catch errors
+		restconf, _ := util.GetKubeConfig()
+		cs, _ := versioned.NewForConfig(restconf)
+		opssight := &opssightv1.OpsSight{
+			Spec: spec,
+		}
+		cs.Synopsys().OpsSights(namespace).Create(opssight)
 	},
 }
 

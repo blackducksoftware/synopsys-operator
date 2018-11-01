@@ -65,6 +65,7 @@ image: blackducksoftware/hub-webapp:5.0.2
 image: blackducksoftware/hub-zookeeper:5.0.2
 image: blackducksoftware/rabbitmq:1.0.0`
 
+// GetHubKnobs ...
 func GetHubKnobs() (env map[string]string, images []string) {
 	env = map[string]string{}
 	images = []string{}

@@ -1,3 +1,24 @@
+/*
+Copyright (C) 2018 Synopsys, Inc.
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
 package protoform
 
 import (
@@ -8,7 +29,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 )
 
-// GetAuthenticationDeployment will return the authentication deployment
+// GetBootstrapComponents will return the authentication deployment
 func GetBootstrapComponents(ns string, branch string, regKey string) (*components.ReplicationController, *components.Service, *components.ConfigMap, *components.ServiceAccount, *components.ClusterRoleBinding, *components.Service, *components.ReplicationController, *components.ConfigMap) {
 	protoformVolume, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("blackduck-protoform")
 	protoformContainer := &util.Container{
@@ -17,12 +38,7 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 			Image:      fmt.Sprintf("gcr.io/saas-hub-stg/blackducksoftware/protoform-installer:%v", regKey),
 			PullPolicy: horizonapi.PullAlways,
 		},
-		EnvConfigs: []*horizonapi.EnvConfig{
-			&horizonapi.EnvConfig{
-				Type:     horizonapi.EnvFromConfigMap,
-				FromName: "registration-key",
-			},
-		},
+		EnvConfigs: []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "registration-key"}},
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
 			{Name: "blackduck-protoform", MountPath: "/etc/blackduck-protoform"},
 		},

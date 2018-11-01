@@ -26,24 +26,24 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	model "github.com/blackducksoftware/perceptor-protoform/pkg/model"
-
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-
+	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/sirupsen/logrus"
 )
 
+// TagGetterInterface ...
 type TagGetterInterface interface {
 	getTag(s string) string
 	getUID(s string) *int64
 }
 
-// Post edits to containers (like tags, uids) go here!
+// PostEditContainer edits to containers (like tags, uids) go here!
 func (c *Creater) PostEditContainer(cc *util.Container) {
 	PostEdit(cc, c)
 }
 
+// PostEdit ...
 func PostEdit(cc *util.Container, c TagGetterInterface) {
 	// Replace the tag with any tag maps to individual containers.
 	// This is the "joe gamache wants to try a rogue jobrunner" feature.
@@ -63,12 +63,11 @@ func PostEdit(cc *util.Container, c TagGetterInterface) {
 		cc.ContainerConfig.UID = c.getUID(cc.ContainerConfig.Name)
 		logrus.Infof("Image UID %v was tag modded to %v", cc.ContainerConfig.Name, cc.ContainerConfig.UID)
 	}
-
 }
 
 // Creater will store the configuration to create the hub containers
 type Creater struct {
-	config             *model.Config
+	config             *protoform.Config
 	hubSpec            *v1.HubSpec
 	hubContainerFlavor *ContainerFlavor
 	hubConfigEnv       []*horizonapi.EnvConfig
@@ -78,7 +77,7 @@ type Creater struct {
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *model.Config, hubSpec *v1.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
+func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
 	dbSecretVolume *components.Volume, dbEmptyDir *components.Volume) *Creater {
 	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, hubConfigEnv: hubConfigEnv, allConfigEnv: allConfigEnv, dbSecretVolume: dbSecretVolume,
 		dbEmptyDir: dbEmptyDir}
