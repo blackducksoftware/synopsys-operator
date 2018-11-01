@@ -67,7 +67,7 @@ func TestImageTag(t *testing.T) {
 	hubSpec := &v1.HubSpec{ImageTagMap: map[string]string{"authentication": hubVersion, "documentation": hubVersion, "jobrunner": hubVersion,
 		"registration": hubVersion, "scan": hubVersion, "webapp": hubVersion, "cfssl": externalVersion, "logstash": externalVersion,
 		"nginx": externalVersion, "solr": externalVersion, "zookeeper": externalVersion}, HubVersion: "4.5.0"}
-	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
+	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil, nil)
 
 	external100 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl"}
 	internal50 := []string{"registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
@@ -87,7 +87,7 @@ func TestImageTag(t *testing.T) {
 	}
 
 	hubSpec1 := &v1.HubSpec{HubVersion: "4.5.0"}
-	creater = NewCreater(nil, hubSpec1, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
+	creater = NewCreater(nil, hubSpec1, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil, nil)
 	all50 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl", "registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
 	for _, v := range all50 {
 		if creater.getTag(v) == "4.5.0" {

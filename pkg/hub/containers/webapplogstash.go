@@ -98,8 +98,8 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 		})
 		webappLogstashVolumes = append(webappLogstashVolumes, c.proxySecretVolume)
 	}
-  
-  c.PostEditContainer(logstashContainerConfig)
+
+	c.PostEditContainer(logstashContainerConfig)
 
 	webappLogstash := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webapp-logstash", Replicas: util.IntToInt32(1)},
 		"", []*util.Container{webappContainerConfig, logstashContainerConfig}, webappLogstashVolumes,
