@@ -64,6 +64,7 @@ type HubSpec struct {
 	CertificateName string            `json:"certificateName"`
 	Certificate     string            `json:"certificate"`
 	CertificateKey  string            `json:"certificateKey"`
+  ProxyCertificate string           `json:"proxyCertificate"`
 	HubType         string            `json:"hubType"`
 	State           string            `json:"state"`
 	Environs        []string          `json:"environs"`

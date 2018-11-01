@@ -74,13 +74,22 @@ type Creater struct {
 	allConfigEnv       []*horizonapi.EnvConfig
 	dbSecretVolume     *components.Volume
 	dbEmptyDir         *components.Volume
+	proxySecretVolume  *components.Volume
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
-	dbSecretVolume *components.Volume, dbEmptyDir *components.Volume) *Creater {
-	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, hubConfigEnv: hubConfigEnv, allConfigEnv: allConfigEnv, dbSecretVolume: dbSecretVolume,
-		dbEmptyDir: dbEmptyDir}
+	dbSecretVolume *components.Volume, dbEmptyDir *components.Volume, proxySecretVolume *components.Volume) *Creater {
+	return &Creater{
+		config:             config,
+		hubSpec:            hubSpec,
+		hubContainerFlavor: hubContainerFlavor,
+		hubConfigEnv:       hubConfigEnv,
+		allConfigEnv:       allConfigEnv,
+		dbSecretVolume:     dbSecretVolume,
+		dbEmptyDir:         dbEmptyDir,
+		proxySecretVolume:  proxySecretVolume,
+	}
 }
 
 // getTag returns the tag that is specified for a container by trying to look in the custom tags provided,

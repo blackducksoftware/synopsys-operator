@@ -40,8 +40,21 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: authEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{Name: "db-passwords", MountPath: "/tmp/secrets"},
-			{Name: "dir-authentication", MountPath: "/opt/blackduck/hub/hub-authentication/security"}},
+			{
+				Name:      "db-passwords",
+				MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+				SubPath:   "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+			},
+			{
+				Name:      "db-passwords",
+				MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE",
+				SubPath:   "HUB_POSTGRES_USER_PASSWORD_FILE",
+			},
+			{
+				Name:      "dir-authentication",
+				MountPath: "/opt/blackduck/hub/hub-authentication/security",
+			},
+		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: authenticationPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
 		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/api/health-checks/liveness", "/opt/blackduck/hub/hub-authentication/security/root.crt"}},
@@ -51,8 +64,21 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 		// 	MinCountFailure: 10,
 		// }},
 	}
+
+	hubAuthVolumes := []*components.Volume{hubAuthEmptyDir, c.dbSecretVolume, c.dbEmptyDir}
+
+	// Mount the HTTPS proxy certificate if provided
+	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
+		hubAuthContainerConfig.VolumeMounts = append(hubAuthContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
+			Name:      "blackduck-proxy-certificate",
+			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
+			SubPath:   "HUB_PROXY_CERT_FILE",
+		})
+		hubAuthVolumes = append(hubAuthVolumes, c.proxySecretVolume)
+	}
+
 	hubAuth := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "hub-authentication", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{hubAuthContainerConfig}, []*components.Volume{hubAuthEmptyDir, c.dbSecretVolume, c.dbEmptyDir}, []*util.Container{},
+		[]*util.Container{hubAuthContainerConfig}, hubAuthVolumes, []*util.Container{},
 		[]horizonapi.AffinityConfig{})
 	c.PostEditContainer(hubAuthContainerConfig)
 

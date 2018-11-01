@@ -11,7 +11,8 @@ spec:
   certificateName: default # Required, possible values are 'default', 'manual' or other hub names
   certificate: "" # Required if certificate name is manual
   certificateKey: "" # Required if certificate name is manual
-  dbPrototype: "sen-nfs-test" # Required, possible values are empty or other hub names
+  proxyCertificate: ""
+  dbPrototype: "empty" # Required, possible values are empty or other hub names
   dockerRegistry: docker.io # Required
   dockerRepo: blackducksoftware # Required
   hubVersion: 5.0.0 # Required

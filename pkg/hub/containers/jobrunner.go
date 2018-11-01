@@ -36,9 +36,20 @@ func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
 	jobRunnerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "jobrunner", Image: fmt.Sprintf("%s/%s/%s-jobrunner:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("jobrunner")),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.JobRunnerMemoryLimit, MaxMem: c.hubContainerFlavor.JobRunnerMemoryLimit, MinCPU: jonRunnerMinCPUUsage, MaxCPU: jonRunnerMaxCPUUsage},
-		EnvConfigs:   jobRunnerEnvs,
-		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "db-passwords", MountPath: "/tmp/secrets"}},
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: jobRunnerPort, Protocol: horizonapi.ProtocolTCP},
+		EnvConfigs: jobRunnerEnvs,
+		VolumeMounts: []*horizonapi.VolumeMountConfig{
+			{
+				Name:      "db-passwords",
+				MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+				SubPath:   "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+			},
+			{
+				Name:      "db-passwords",
+				MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE",
+				SubPath:   "HUB_POSTGRES_USER_PASSWORD_FILE",
+			},
+		},
+		PortConfig: &horizonapi.PortConfig{ContainerPort: jobRunnerPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
 		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh"}},
 		// 	Delay:           240,
@@ -49,8 +60,20 @@ func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
 	}
 	c.PostEditContainer(jobRunnerContainerConfig)
 
+	jobRunnerVolumes := []*components.Volume{c.dbSecretVolume, c.dbEmptyDir}
+
+	// Mount the HTTPS proxy certificate if provided
+	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
+		jobRunnerContainerConfig.VolumeMounts = append(jobRunnerContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
+			Name:      "blackduck-proxy-certificate",
+			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
+			SubPath:   "HUB_PROXY_CERT_FILE",
+		})
+		jobRunnerVolumes = append(jobRunnerVolumes, c.proxySecretVolume)
+	}
+
 	jobRunner := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "jobrunner", Replicas: c.hubContainerFlavor.JobRunnerReplicas}, "",
-		[]*util.Container{jobRunnerContainerConfig}, []*components.Volume{c.dbSecretVolume, c.dbEmptyDir}, []*util.Container{},
+		[]*util.Container{jobRunnerContainerConfig}, jobRunnerVolumes, []*util.Container{},
 		[]horizonapi.AffinityConfig{})
 	return jobRunner
 }

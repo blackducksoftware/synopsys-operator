@@ -39,8 +39,21 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ScanMemoryLimit, MaxMem: c.hubContainerFlavor.ScanMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: scannerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{Name: "db-passwords", MountPath: "/tmp/secrets"},
-			{Name: "dir-scan", MountPath: "/opt/blackduck/hub/hub-scan/security"}},
+			{
+				Name:      "db-passwords",
+				MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+				SubPath:   "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+			},
+			{
+				Name:      "db-passwords",
+				MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE",
+				SubPath:   "HUB_POSTGRES_USER_PASSWORD_FILE",
+			},
+			{
+				Name:      "dir-scan",
+				MountPath: "/opt/blackduck/hub/hub-scan/security",
+			},
+		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: scannerPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
 		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/api/health-checks/liveness", "/opt/blackduck/hub/hub-scan/security/root.crt"}},
@@ -50,10 +63,23 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 		// 	MinCountFailure: 10,
 		// }},
 	}
-	c.PostEditContainer(hubScanContainerConfig)
+
+	hubScanVolumes := []*components.Volume{hubScanEmptyDir, c.dbSecretVolume, c.dbEmptyDir}
+
+	// Mount the HTTPS proxy certificate if provided
+	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
+		hubScanContainerConfig.VolumeMounts = append(hubScanContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
+			Name:      "blackduck-proxy-certificate",
+			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
+			SubPath:   "HUB_PROXY_CERT_FILE",
+		})
+		hubScanVolumes = append(hubScanVolumes, c.proxySecretVolume)
+	}
+  
+  c.PostEditContainer(hubScanContainerConfig)
 
 	hubScan := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "hub-scan", Replicas: c.hubContainerFlavor.ScanReplicas}, "",
-		[]*util.Container{hubScanContainerConfig}, []*components.Volume{hubScanEmptyDir, c.dbSecretVolume, c.dbEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{})
+		[]*util.Container{hubScanContainerConfig}, hubScanVolumes, []*util.Container{}, []horizonapi.AffinityConfig{})
 	return hubScan
 }
 
