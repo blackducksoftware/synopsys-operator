@@ -20,7 +20,7 @@ items:
       spec:
         containers:
         - name: blackduck-protoform
-          image: gcr.io/saas-hub-stg/blackducksoftware/protoform-installer:${BRANCHNAME}
+          image: gcr.io/saas-hub-stg/blackducksoftware/blackduck-operator:${BRANCHNAME}
           imagePullPolicy: Always
           ports:
           - containerPort: 8080
