@@ -114,27 +114,27 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(configMapName, metav1.GetOptions{})
 
 	if err != nil {
-		return fmt.Errorf("unable to find configmap %s in %s: %v", configMapName, opsSightSpec.Namespace, err)
+		return errors.Annotatef(err, "unable to get configmap %s in %s", configMapName, opsSightSpec.Namespace)
 	}
 
 	var value perceptorConfig
 	err = json.Unmarshal([]byte(configMap.Data[fmt.Sprintf("%s.yaml", configMapName)]), &value)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	value.Hub.Hosts = hubs
 
 	jsonBytes, err := json.Marshal(value)
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 
 	configMap.Data[fmt.Sprintf("%s.yaml", configMapName)] = string(jsonBytes)
-	log.Debugf("updated configmap in %s is %+v", opsSightSpec.Namespace, configMap)
+	log.Debugf("updated configmap %s in %s is %+v", configMapName, opsSightSpec.Namespace, configMap)
 	_, err = kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
 	if err != nil {
-		return fmt.Errorf("unable to update configmap %s in %s: %v", opsSightSpec.Perceptor.Name, opsSightSpec.Namespace, err)
+		return errors.Annotatef(err, "unable to update configmap %s in %s", configMapName, opsSightSpec.Namespace)
 	}
 	return nil
 }
@@ -213,9 +213,11 @@ func (p *ConfigMapUpdater) getAllHubs() []string {
 	for _, hub := range hubs {
 		if strings.EqualFold(hub.Spec.HubType, "worker") {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
-			status := p.verifyHub(hubURL, hub.Name)
-			if status {
+			err := p.verifyHub(hubURL, hub.Name)
+			if err == nil {
 				allHubNamespaces = append(allHubNamespaces, hubURL)
+			} else {
+				log.Errorf("skipping hub %s: %v", hubURL, err)
 			}
 			log.Infof("Hub config map controller, namespace is %s", hub.Name)
 		}
@@ -280,15 +282,15 @@ func (p *ConfigMapUpdater) updateOpsSight(obj interface{}) error {
 	return nil
 }
 
-func (p *ConfigMapUpdater) verifyHub(hubURL string, name string) bool {
+func (p *ConfigMapUpdater) verifyHub(hubURL string, name string) error {
 	for i := 0; i < 60; i++ {
 		resp, err := p.httpClient.Get(fmt.Sprintf("https://%s:443/api/current-version", hubURL))
 		if err != nil {
-			log.Debugf("unable to talk with the hub %s", hubURL)
+			log.Debugf("unable to GET current-version from hub %s", hubURL)
 			time.Sleep(10 * time.Second)
 			_, err := util.GetHub(p.hubClient, name, name)
 			if err != nil {
-				return false
+				return errors.Trace(err)
 			}
 			continue
 		}
@@ -296,15 +298,15 @@ func (p *ConfigMapUpdater) verifyHub(hubURL string, name string) bool {
 		_, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Errorf("unable to read the response from hub %s due to %+v", hubURL, err)
-			return false
+			return errors.Trace(err)
 		}
 		defer resp.Body.Close()
 		log.Debugf("hub response status for %s is %v", hubURL, resp.Status)
 
 		if resp.StatusCode == 200 {
-			return true
+			return nil
 		}
 		time.Sleep(10 * time.Second)
 	}
-	return false
+	return errors.Errorf("unable to get anything from hub %s", hubURL)
 }
