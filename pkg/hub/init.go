@@ -73,13 +73,13 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 	if strings.EqualFold(createHub.PVCStorageClass, "none") {
 		// Postgres PV
 		if strings.EqualFold(createHub.NFSServer, "") {
-			return fmt.Errorf("unable to create the PV %s due to missing NFS server path", createHub.Namespace)
+			return fmt.Errorf("unable to create the PV %s because missing NFS server path", createHub.Namespace)
 		}
 
 		_, err = util.CreatePersistentVolume(hc.KubeClient, createHub.Namespace, storageClass, createHub.PVCClaimSize, hc.Config.NFSPath, createHub.NFSServer)
 
 		if err != nil {
-			return fmt.Errorf("unable to create the PV %s due to %+v", createHub.Namespace, err)
+			return fmt.Errorf("unable to create the PV %s because %+v", createHub.Namespace, err)
 		}
 	}
 
@@ -87,7 +87,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 		// Postgres PVC
 		postgresPVC, err := util.CreatePersistentVolumeClaim(createHub.Namespace, createHub.Namespace, createHub.PVCClaimSize, storageClass, horizonapi.ReadWriteOnce)
 		if err != nil {
-			return fmt.Errorf("failed to create the postgres PVC for %s due to %+v", createHub.Namespace, err)
+			return fmt.Errorf("failed to create the postgres PVC for %s because %+v", createHub.Namespace, err)
 		}
 		deployer.AddPVC(postgresPVC)
 	}

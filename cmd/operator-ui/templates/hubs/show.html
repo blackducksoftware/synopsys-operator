@@ -9,169 +9,171 @@
 </header>
 <br/>
 
-<div class="page-header">
-  <h1><%= hub.Spec.Namespace %></h1>
-</div>
+<div class="list-container">
+  <div class="page-header">
+    <h1><%= hub.Spec.Namespace %></h1>
+  </div>
 
-<table class="Detail-table">
-  <tbody>
-    <tr>
-      <td>
-        <h5>Namespace</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.Namespace %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Flavor</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.Flavor %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Docker Registry</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.DockerRegistry %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Docker Repository</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.DockerRepo %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Hub Version</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.HubVersion %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Backup Support</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.BackupSupport %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Backup Interval</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.BackupInterval %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Backup Unit</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.BackupUnit %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Clone DB</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.DbPrototype %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>PVC Storage Class</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.PVCStorageClass %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Scan Type</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.ScanType %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>PVC Claim Size</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.PVCClaimSize %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>NFS Server</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.NFSServer %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Nginx Certificate Name</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Spec.CertificateName %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>IP</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <a href="https://<%= hub.Status.IP %>"><%= hub.Status.IP %></a>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Status</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Status.State %></h6>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <h5>Error Message</h5>
-      </td>
-      <td>&nbsp;</td>
-      <td>
-        <h6><%= hub.Status.ErrorMessage %></h6>
-      </td>
-    </tr>
-  </tbody>
-</table>
-<br/>
-<ul class="list-unstyled list-inline">
-  <li class="list-inline-item"><a href="<%= hubsPath() %>" class="btn btn-info">Back to all Hubs</a></li>
-  <li class="list-inline-item"><a href="<%= hubPath({ hub_id: hub.Spec.Namespace })%>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
-</ul>
+  <table class="Detail-table">
+    <tbody>
+      <tr>
+        <td>
+          <h5>Namespace</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.Namespace %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Flavor</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.Flavor %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Docker Registry</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.DockerRegistry %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Docker Repository</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.DockerRepo %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Hub Version</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.HubVersion %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Backup Support</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.BackupSupport %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Backup Interval</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.BackupInterval %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Backup Unit</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.BackupUnit %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Clone DB</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.DbPrototype %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>PVC Storage Class</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.PVCStorageClass %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Scan Type</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.ScanType %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>PVC Claim Size</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.PVCClaimSize %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>NFS Server</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.NFSServer %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Nginx Certificate Name</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Spec.CertificateName %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>IP</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <a href="https://<%= hub.Status.IP %>"><%= hub.Status.IP %></a>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Status</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Status.State %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Error Message</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= hub.Status.ErrorMessage %></h6>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <br/>
+  <ul class="list-unstyled list-inline">
+    <li class="list-inline-item"><a href="<%= hubsPath() %>" class="btn btn-info">Back to all Black Ducks</a></li>
+    <li class="list-inline-item"><a href="<%= hubPath({ hub_id: hub.Spec.Namespace })%>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
+  </ul>
+</div>

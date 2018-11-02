@@ -112,10 +112,8 @@ func (in *HubSpec) DeepCopyInto(out *HubSpec) {
 	}
 	if in.ImageTagMap != nil {
 		in, out := &in.ImageTagMap, &out.ImageTagMap
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.ImageUIDMap != nil {
 		in, out := &in.ImageUIDMap, &out.ImageUIDMap
@@ -182,10 +180,8 @@ func (in *HubView) DeepCopyInto(out *HubView) {
 	}
 	if in.ContainerTags != nil {
 		in, out := &in.ContainerTags, &out.ContainerTags
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	return
 }

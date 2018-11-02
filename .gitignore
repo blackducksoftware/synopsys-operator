@@ -13,3 +13,4 @@ cmd/hub-protoform/hub-protoform
 cmd/hub-federator/hub-federator
 cmd/protoform-installer/protform-installer
 cmd/coke/
+cmd/operator-build

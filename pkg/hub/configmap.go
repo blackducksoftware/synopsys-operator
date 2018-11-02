@@ -50,8 +50,15 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *co
 
 	for _, value := range createHub.Environs {
 		values := strings.SplitN(value, ":", 2)
-		hubData[values[0]] = values[1]
+		if len(values) == 2 {
+			mapKey := strings.Trim(values[0], " ")
+			mapValue := strings.Trim(values[1], " ")
+			if len(mapKey) > 0 && len(mapValue) > 0 {
+				hubData[mapKey] = mapValue
+			}
+		}
 	}
+
 	hubConfig.AddData(hubData)
 
 	configMaps["hub-config"] = hubConfig

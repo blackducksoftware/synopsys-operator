@@ -9,5 +9,5 @@ RUN mv /app/build/ /views/
 
 COPY ./operator-build ./operator
 
-# Run protoform
-CMD ["./operator", "install-operator"]
+# Run operator
+CMD ["./operator"]

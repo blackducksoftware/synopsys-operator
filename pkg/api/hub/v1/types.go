@@ -43,34 +43,34 @@ type HubView struct {
 	StorageClasses   map[string]string `json:"storageClasses"`
 	CertificateNames []string          `json:"certificateNames"`
 	Environs         []string          `json:"environs"`
-	ContainerTags    map[string]string `json:"containerTags"`
+	ContainerTags    []string          `json:"containerTags"`
 }
 
 // HubSpec will be CRD Hub definition's Spec
 type HubSpec struct {
-	Namespace        string            `json:"namespace"`
-	Flavor           string            `json:"flavor"`
-	DockerRegistry   string            `json:"dockerRegistry"`
-	DockerRepo       string            `json:"dockerRepo"`
-	HubVersion       string            `json:"hubVersion"`
-	DbPrototype      string            `json:"dbPrototype"`
-	BackupInterval   string            `json:"backupInterval"`
-	BackupUnit       string            `json:"backupUnit"`
-	PVCStorageClass  string            `json:"pvcStorageClass"`
-	BackupSupport    string            `json:"backupSupport"`
-	ScanType         string            `json:"scanType"`
-	PVCClaimSize     string            `json:"pvcClaimSize"`
-	NFSServer        string            `json:"nfsServer"`
-	CertificateName  string            `json:"certificateName"`
-	Certificate      string            `json:"certificate"`
-	CertificateKey   string            `json:"certificateKey"`
-	ProxyCertificate string            `json:"proxyCertificate"`
-	HubType          string            `json:"hubType"`
-	State            string            `json:"state"`
-	Environs         []string          `json:"environs"`
-	ImagePrefix      string            `json:"imagePrefix"`
-	ImageTagMap      map[string]string `json:"imageTagMap"`
-	ImageUIDMap      map[string]int64  `json:"imageUidMap"`
+	Namespace        string           `json:"namespace"`
+	Flavor           string           `json:"flavor"`
+	DockerRegistry   string           `json:"dockerRegistry"`
+	DockerRepo       string           `json:"dockerRepo"`
+	HubVersion       string           `json:"hubVersion"`
+	DbPrototype      string           `json:"dbPrototype"`
+	BackupInterval   string           `json:"backupInterval"`
+	BackupUnit       string           `json:"backupUnit"`
+	PVCStorageClass  string           `json:"pvcStorageClass"`
+	BackupSupport    string           `json:"backupSupport"`
+	ScanType         string           `json:"scanType"`
+	PVCClaimSize     string           `json:"pvcClaimSize"`
+	NFSServer        string           `json:"nfsServer"`
+	CertificateName  string           `json:"certificateName"`
+	Certificate      string           `json:"certificate"`
+	CertificateKey   string           `json:"certificateKey"`
+	ProxyCertificate string           `json:"proxyCertificate"`
+	HubType          string           `json:"hubType"`
+	State            string           `json:"state"`
+	Environs         []string         `json:"environs"`
+	ImagePrefix      string           `json:"imagePrefix"`
+	ImageTagMap      []string         `json:"imageTagMap"`
+	ImageUIDMap      map[string]int64 `json:"imageUidMap"`
 }
 
 // Environs will hold the list of Environment variables
