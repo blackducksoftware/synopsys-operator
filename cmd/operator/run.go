@@ -24,7 +24,7 @@ package operator
 import (
 	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/blackduckctl/pkg/util"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/installer"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/sirupsen/logrus"
@@ -42,7 +42,7 @@ func StartBlackduckOperator(configPath string) {
 	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetAlertDefaultValue(), stopCh)
 	deployer.AddController(alertController)
 
-	hubController := hub.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetHubDefaultValue(), stopCh)
+	hubController := installer.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetHubDefaultValue(), stopCh)
 	deployer.AddController(hubController)
 
 	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
