@@ -103,18 +103,34 @@ function checkScanType() {
 }
 
 // add or update environs and update the spec
-function appendEnvirons() {
-  var unorderedList = document.getElementById("environs");
-  var listItems = unorderedList.getElementsByTagName('li'); 
+function appendEnvironsAndContainerTags() {
+  var environsList = document.getElementById("environs");
+  var environsItems = environsList.getElementsByTagName('li'); 
   var environs = document.getElementById("hub-Spec.Environs")
-  for (var i = 0; i < listItems.length; i++) {
-    var data = listItems[i].firstChild.data;
+  for (var i = 0; i < environsItems.length; i++) {
+    var data = environsItems[i].firstChild.data;
     var opt = document.createElement('option');
     opt.text = data;
     opt.value = data;
     opt.setAttribute("selected", "selected");
     environs.add(opt);
   };
+
+  var containersList = document.getElementById("containerTags");
+  var containerItems = containersList.getElementsByTagName('li'); 
+  var containerTags = document.getElementById("hub-Spec.ImageTagMap")
+  for (var i = 0; i < containerItems.length; i++) {
+    var data = containerItems[i].firstChild.data;
+    var opt = document.createElement('option');
+    opt.text = data;
+    opt.value = data;
+    opt.setAttribute("selected", "selected");
+    containerTags.add(opt);
+  };
+}
+
+function validateBlackDuck() {
+  
 }
 </script>
 

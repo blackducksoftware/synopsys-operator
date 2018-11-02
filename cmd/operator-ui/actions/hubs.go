@@ -8,6 +8,7 @@ import (
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/gobuffalo/buffalo"
+	"github.com/gobuffalo/validate"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,40 +51,36 @@ func NewHubResource(kubeConfig *rest.Config) (*HubsResource, error) {
 // List gets all Hubs. This function is mapped to the path
 // GET /hubs
 func (v HubsResource) List(c buffalo.Context) error {
-	// Get the DB connection from the context
-	// tx, ok := c.Value("tx").(*pop.Connection)
-	// if !ok {
-	// 	return errors.WithStack(errors.New("no transaction found"))
-	// }
 	blackducks, _ := util.ListHubs(v.hubClient, "")
-
-	// // Paginate results. Params "page" and "per_page" control pagination.
-	// // Default values are "page=1" and "per_page=20".
-	// q := tx.PaginateFromParams(c.Params())
-
-	// // Retrieve all Blackducks from the DB
-	// if err := q.All(blackducks); err != nil {
-	// 	return errors.WithStack(err)
-	// }
-
-	// // Add the paginator to the context so it can be used in the template.
-	// c.Set("pagination", q.Paginator)
-	// c.Set("hubs", blackducks.Items)
-	return c.Render(200, r.Auto(c, blackducks.Items))
+	// Make blackducks available inside the html template
+	c.Set("hubs", blackducks.Items)
+	return c.Render(200, r.HTML("hubs/index.html", "old_application.html"))
 }
 
 // Show gets the data for one Hub. This function is mapped to
 // the path GET /hubs/{hub_id}
 func (v HubsResource) Show(c buffalo.Context) error {
 	blackduck, _ := util.GetHub(v.hubClient, c.Param("hub_id"), c.Param("hub_id"))
+	// Make blackduck available inside the html template
 	c.Set("hub", blackduck)
-	return c.Render(200, r.HTML("hubs/show.html"))
+	return c.Render(200, r.HTML("hubs/show.html", "old_application.html"))
 }
 
 // New renders the form for creating a new Hub.
 // This function is mapped to the path GET /hubs/new
 func (v HubsResource) New(c buffalo.Context) error {
-	hub := &v1.Hub{}
+	blackduck := &v1.Hub{}
+	err := v.common(c, blackduck)
+	if err != nil {
+		return err
+	}
+	// Make blackduck available inside the html template
+	c.Set("hub", blackduck)
+
+	return c.Render(200, r.HTML("hubs/new.html", "old_application.html"))
+}
+
+func (v HubsResource) common(c buffalo.Context, blackduck *v1.Hub) error {
 	var storageList map[string]string
 	storageList = make(map[string]string)
 	storageClasses, err := util.ListStorageClass(v.kubeClient)
@@ -94,26 +91,53 @@ func (v HubsResource) New(c buffalo.Context) error {
 		storageList[fmt.Sprintf("%s (%s)", storageClass.GetName(), storageClass.Provisioner)] = storageClass.GetName()
 	}
 	storageList[fmt.Sprintf("%s (%s)", "None", "Disable dynamic provisioner")] = "none"
-	hub.View.StorageClasses = storageList
-	// c.Set("storageClasses", storageList)
+	blackduck.View.StorageClasses = storageList
 
 	keys, _ := util.ListHubPV(v.hubClient, "")
-	hub.View.Clones = keys
-	// c.Set("clones", keys)
+	blackduck.View.Clones = keys
 
 	blackducks, _ := util.ListHubs(v.hubClient, "")
 	certificateNames := []string{"default", "manual"}
-	for _, blackduck := range blackducks.Items {
-		if strings.EqualFold(blackduck.Spec.CertificateName, "manual") {
-			certificateNames = append(certificateNames, blackduck.Spec.Namespace)
+	for _, hub := range blackducks.Items {
+		if strings.EqualFold(hub.Spec.CertificateName, "manual") {
+			certificateNames = append(certificateNames, hub.Spec.Namespace)
 		}
 	}
-	hub.View.CertificateNames = certificateNames
-	// c.Set("certificateNames", certificateNames)
-	environs := []string{"IPV4_ONLY:0", "HUB_PROXY_NON_PROXY_HOSTS:solr"}
-	hub.View.Environs = environs
+	blackduck.View.CertificateNames = certificateNames
+	// env, images := hub.GetHubKnobs()
+	env := map[string]string{}
+	images := []string{}
+	environs := []string{}
+	for key, value := range env {
+		environs = append(environs, fmt.Sprintf("%s:%s", key, value))
+	}
+	// environs := []string{"IPV4_ONLY:0", "HUB_PROXY_NON_PROXY_HOSTS:solr"}
+	blackduck.View.Environs = environs
 
-	return c.Render(200, r.Auto(c, hub))
+	blackduck.View.ContainerTags = images
+	return nil
+}
+
+func (v HubsResource) redirect(c buffalo.Context, blackduck *v1.Hub, err error) error {
+	if err != nil {
+		// Make blackduck available inside the html template
+		err := v.common(c, blackduck)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+		log.Infof("edit hub in create: %+v", blackduck)
+		c.Set("hub", blackduck)
+		log.Info("Before")
+		validateErrs := validate.NewErrors()
+		log.Info("After")
+		// validateErrs.Add("error", err.Error())
+		log.Infof("validateErrs: %+v", validateErrs)
+		// validateErrs.Errors = map[string][]string{"error": []string{errors.WithStack(err).Error()}}
+		c.Set("errors", validateErrs)
+		return c.Render(422, r.HTML("hubs/new.html", "old_application.html"))
+	}
+	return nil
 }
 
 // Create adds a Blackduck to the DB. This function is mapped to the
@@ -128,15 +152,18 @@ func (v HubsResource) Create(c buffalo.Context) error {
 		return errors.WithStack(err)
 	}
 
-	ns, _ := util.CreateNamespace(v.kubeClient, hub.Spec.Namespace)
-	log.Infof("created namespace for %s is %+v", hub.Spec.Namespace, ns)
 	log.Infof("create hub: %+v", hub)
 
-	hub, err := util.CreateHub(v.hubClient, hub.Spec.Namespace, &v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hub.Spec.Namespace}, Spec: hub.Spec})
+	ns, err := util.CreateNamespace(v.kubeClient, hub.Spec.Namespace)
+	if err != nil {
+		v.redirect(c, hub, err)
+	}
+	log.Infof("created namespace for %s is %+v", hub.Spec.Namespace, ns)
+
+	_, err = util.CreateHub(v.hubClient, hub.Spec.Namespace, &v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hub.Spec.Namespace}, Spec: hub.Spec})
 
 	if err != nil {
-		c.Set("errors", err)
-		return c.Render(422, r.Auto(c, hub))
+		v.redirect(c, hub, err)
 	}
 	// If there are no errors set a success message
 	c.Flash().Add("success", "Blackduck was created successfully")
@@ -144,7 +171,7 @@ func (v HubsResource) Create(c buffalo.Context) error {
 	blackducks, _ := util.ListHubs(v.hubClient, "")
 	c.Set("hubs", blackducks.Items)
 	// and redirect to the blackducks index page
-	return c.Render(200, r.HTML("hubs/index.html"))
+	return c.Redirect(302, "/hubs/%s", hub.Spec.Namespace)
 }
 
 // Edit renders a edit form for a Hub. This function is
@@ -213,11 +240,6 @@ func (v HubsResource) Update(c buffalo.Context) error {
 // Destroy deletes a Hub from the DB. This function is mapped
 // to the path DELETE /hubs/{hub_id}
 func (v HubsResource) Destroy(c buffalo.Context) error {
-	// Get the DB connection from the context
-	// tx, ok := c.Value("tx").(*pop.Connection)
-	// if !ok {
-	// 	return errors.WithStack(errors.New("no transaction found"))
-	// }
 
 	log.Infof("delete hub request %v", c.Param("hub_id"))
 
@@ -235,15 +257,12 @@ func (v HubsResource) Destroy(c buffalo.Context) error {
 		return c.Error(404, err)
 	}
 
-	// if err := tx.Destroy(blackduck); err != nil {
-	// 	return errors.WithStack(err)
-	// }
-
 	// If there are no errors set a flash message
 	c.Flash().Add("success", "Blackduck was deleted successfully")
 
-	blackducks, _ := util.ListHubs(v.hubClient, "")
-	c.Set("hubs", blackducks.Items)
+	// blackducks, _ := util.ListHubs(v.hubClient, "")
+	// c.Set("hubs", blackducks.Items)
+
 	// Redirect to the blackducks index page
-	return c.Render(200, r.HTML("hubs/index.html"))
+	return c.Redirect(302, "/hubs")
 }

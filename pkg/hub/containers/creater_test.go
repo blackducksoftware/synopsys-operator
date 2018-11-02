@@ -22,6 +22,7 @@ under the License.
 package containers
 
 import (
+	"fmt"
 	"testing"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -64,9 +65,11 @@ func TestC(t *testing.T) {
 func TestImageTag(t *testing.T) {
 	hubVersion := "5.0.0"
 	externalVersion := "1.0.0"
-	hubSpec := &v1.HubSpec{ImageTagMap: map[string]string{"authentication": hubVersion, "documentation": hubVersion, "jobrunner": hubVersion,
-		"registration": hubVersion, "scan": hubVersion, "webapp": hubVersion, "cfssl": externalVersion, "logstash": externalVersion,
-		"nginx": externalVersion, "solr": externalVersion, "zookeeper": externalVersion}, HubVersion: "4.5.0"}
+	hubSpec := &v1.HubSpec{ImageTagMap: []string{fmt.Sprintf("authentication:%s", hubVersion), fmt.Sprintf("documentation:%s", hubVersion),
+		fmt.Sprintf("jobrunner:%s", hubVersion), fmt.Sprintf("registration:%s", hubVersion), fmt.Sprintf("scan:%s", hubVersion),
+		fmt.Sprintf("webapp:%s", hubVersion), fmt.Sprintf("cfssl:%s", externalVersion), fmt.Sprintf("logstash:%s", externalVersion),
+		fmt.Sprintf("nginx:%s", externalVersion), fmt.Sprintf("solr:%s", externalVersion), fmt.Sprintf("zookeeper:%s", externalVersion)},
+		HubVersion: "4.5.0"}
 	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil, nil)
 
 	external100 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl"}

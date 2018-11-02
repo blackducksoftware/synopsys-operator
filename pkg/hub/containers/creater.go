@@ -75,11 +75,20 @@ type Creater struct {
 	dbSecretVolume     *components.Volume
 	dbEmptyDir         *components.Volume
 	proxySecretVolume  *components.Volume
+	containerTags      map[string]string
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
 	dbSecretVolume *components.Volume, dbEmptyDir *components.Volume, proxySecretVolume *components.Volume) *Creater {
+	containerTags := hubSpec.ImageTagMap
+	imageTags := map[string]string{}
+	for _, containerTag := range containerTags {
+		tags := strings.SplitN(containerTag, ":", 2)
+		if len(tags) == 2 {
+			imageTags[strings.Trim(tags[0], " ")] = strings.Trim(tags[1], " ")
+		}
+	}
 	return &Creater{
 		config:             config,
 		hubSpec:            hubSpec,
@@ -89,13 +98,14 @@ func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavo
 		dbSecretVolume:     dbSecretVolume,
 		dbEmptyDir:         dbEmptyDir,
 		proxySecretVolume:  proxySecretVolume,
+		containerTags:      imageTags,
 	}
 }
 
 // getTag returns the tag that is specified for a container by trying to look in the custom tags provided,
 // if those arent filled, it uses the "HubVersion" as a default, which works for blackduck < 5.1.0.
 func (c *Creater) getTag(baseContainer string) string {
-	if tag, ok := c.hubSpec.ImageTagMap[baseContainer]; ok {
+	if tag, ok := c.containerTags[baseContainer]; ok {
 		return tag
 	}
 	return c.hubSpec.HubVersion
