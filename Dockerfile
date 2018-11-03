@@ -12,6 +12,7 @@ RUN cd cmd/operator ; go build ./ ; cp operator /bin/blackduck-oper
 ### BUILD THE UI
 WORKDIR $BP/cmd/operator-ui
 RUN ls -altrh
+##### Jay Vyas Is Non Redundant...
 RUN npm rebuild node-sass 
 RUN buffalo build -v
 #COPY --from=builder /bin/app .
