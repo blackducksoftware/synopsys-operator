@@ -22,7 +22,7 @@ under the License.
 package main
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/cmd/blackduckctl/pkg/apps"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
 )
 
 func main() {

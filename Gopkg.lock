@@ -6,8 +6,8 @@
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
   pruneopts = "UT"
-  revision = "debcad1964693daf8ef4bc06292d7e828e075130"
-  version = "v0.31.0"
+  revision = "1fd54cf41e6e0e178ffe3c52b0e2260281f603e3"
+  version = "v0.32.0"
 
 [[projects]]
   digest = "1:b92928b73320648b38c93cacb9082c0fe3f8ac3383ad9bd537eef62c380e0e7a"
@@ -89,16 +89,17 @@
   version = "v3.5.1"
 
 [[projects]]
-  digest = "1:94a0e9062558cb8b417326a1939e9b9e8a66409615969d8b89d99f84a7ee3c1c"
+  digest = "1:65b0d980b428a6ad4425f2df4cd5410edd81f044cf527bd1c345368444649e58"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
     "gen-go/agent/common/v1",
     "gen-go/agent/trace/v1",
+    "gen-go/resource/v1",
     "gen-go/trace/v1",
   ]
   pruneopts = "UT"
-  revision = "24333298e36590ea0716598caacc8959fc393c48"
-  version = "v0.0.2"
+  revision = "7f2434bc10da710debe5c4315ed6d4df454b4024"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -213,7 +214,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:728ac603ced9bb410289c97821f823fcb9ed7a2b79dc9f617c2cd960e6c1ee8b"
+  digest = "1:15bec1827dbb3bff3b3f4022ba29d5e2b079908eb4fc9096aace1bb856a185d8"
   name = "github.com/gobuffalo/buffalo"
   packages = [
     ".",
@@ -223,8 +224,8 @@
     "worker",
   ]
   pruneopts = "UT"
-  revision = "d5862fc20d29c39050d15a2b9d82ac7677416161"
-  version = "v0.13.2"
+  revision = "219893eef8a189646dfbed6ce38e92248f31b4f1"
+  version = "v0.13.4"
 
 [[projects]]
   digest = "1:119549eb308e1417c2be6bdfa485ae07446a6c595a4db3d018e603e0b524c4b9"
@@ -367,19 +368,19 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:39b76cbb4d531667a4f538f5aa01fb38d62fa4434a1b90aa74355c9ed114a4b4"
+  digest = "1:e726decbaa30a307ce03a576eb29fdd6ede54c8fc494628231a36bde2dd2d1f1"
   name = "github.com/gobuffalo/packd"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c8273487026482b912d61bdbffd54705e96d1e8e"
+  revision = "16c4ed88b2967c484265fd27d9e9d38dde6b3581"
 
 [[projects]]
-  digest = "1:922fb21e58b0af47ea195f322c119df4e6d40bf934baf82e7e3604dde5cefe03"
+  digest = "1:24430e30c5fe94726058c1cb9c36f8fe891ae67c00ee73ee43da1e01528dad1c"
   name = "github.com/gobuffalo/packr"
   packages = ["."]
   pruneopts = "UT"
-  revision = "816688b5663f5e5b1ca22fe1f14bf568058dbc05"
-  version = "v1.17.0"
+  revision = "cf1833a64494f56baea836890e2ee5e69c2092dc"
+  version = "v1.19.0"
 
 [[projects]]
   digest = "1:07e10ef52f5f704dfd64c7fa5760cff981be537008df04b10f7c7c70ed34a7f5"
@@ -396,7 +397,7 @@
   version = "v3.7.22"
 
 [[projects]]
-  digest = "1:8a7d2eb27e3419c98a7b3dd1fa1fdccf95e425571bfefde7c95cc873050245d5"
+  digest = "1:c50c44f5d9522da6d62e85e390868105ed0d17922c3ef4c1be1227fb44d2ad65"
   name = "github.com/gobuffalo/pop"
   packages = [
     ".",
@@ -407,8 +408,8 @@
     "nulls",
   ]
   pruneopts = "UT"
-  revision = "9c8883450d22d078ee2daeacf47c37f9f213bde4"
-  version = "v4.8.7"
+  revision = "9d5dff8a5b85dcb7bcd19e6827c578c3c7eb40d6"
+  version = "v4.8.8"
 
 [[projects]]
   digest = "1:b7ec600153e9198cf5c509ad9ac7cef3f1699a224ff8698136b20e6324782967"
@@ -561,7 +562,7 @@
     "pagination",
   ]
   pruneopts = "UT"
-  revision = "0e69bafe1d790b820cef859dd0126893bdbd53ad"
+  revision = "aa00757ee3ab58e53520b6cb910ca0543116400a"
 
 [[projects]]
   digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
@@ -680,14 +681,6 @@
   pruneopts = "UT"
   revision = "89f1e6ac7276b61d885db5e5aed6fcbedd1c7e31"
   version = "v3.2.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:75aea04a7b0da41d8100d06287897a947d19a7d367f9dadb6117a285457b8928"
-  name = "github.com/jayunit100/horizon"
-  packages = ["pkg/api"]
-  pruneopts = "UT"
-  revision = "fa0acd7bd7a60ee3e9507eff4bb704a1aee70eae"
 
 [[projects]]
   digest = "1:6c41d4f998a03b6604227ccad36edaed6126c397e5d78709ef4814a1145a6757"
@@ -1104,7 +1097,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:20a8a18488bdef471795af0413d9a3c9c35dc24ca93342329b884ba3c15cbaab"
+  digest = "1:26663fafdea73a38075b07e8e9d82fc0056379d2be8bb4e13899e8fda7c7dd23"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
@@ -1112,8 +1105,8 @@
     "prometheus/promhttp",
   ]
   pruneopts = "UT"
-  revision = "1cafe34db7fdec6022e17e00e1c1ea501022f3e4"
-  version = "v0.9.0"
+  revision = "abad2d1bd44235a26707c172eab6bca5bf2dbad3"
+  version = "v0.9.1"
 
 [[projects]]
   branch = "master"
@@ -1192,42 +1185,6 @@
   packages = ["ident"]
   pruneopts = "UT"
   revision = "e4a3a37e6d42afa87afee2edeeced52300b63893"
-
-[[projects]]
-  branch = "master"
-  digest = "1:d32f7d66b5b3598d2d6651a457972e0149f3315d26426b6e0440cf14c816c93d"
-  name = "github.com/shurcooL/highlight_diff"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "09bb4053de1b1d872a9f25dc21378fa71dca4e4e"
-
-[[projects]]
-  branch = "master"
-  digest = "1:f20ce9c20053f78940f4f95b18bec74079ac8708d7cabc7c929e956928994b0f"
-  name = "github.com/shurcooL/highlight_go"
-  packages = [
-    ".",
-    "internal/go/scanner",
-    "internal/go/token",
-  ]
-  pruneopts = "UT"
-  revision = "98c3abbbae20a9fb3e3b218784855756b611656f"
-
-[[projects]]
-  branch = "master"
-  digest = "1:c9c9799995d397d4d24feadf5138a1399afd109ba471bbbf5a52b01fde602fda"
-  name = "github.com/shurcooL/octicon"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "fa4f57f9efb2a4c329dfe0f6d85e33b6c489ad70"
-
-[[projects]]
-  branch = "master"
-  digest = "1:def689e73e9252f6f7fe66834a76751a41b767e03daab299e607e7226c58a855"
-  name = "github.com/shurcooL/sanitized_anchor_name"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "86672fcb3f950f35f2e675df2240550f2a50762f"
 
 [[projects]]
   digest = "1:69b1cc331fca23d702bd72f860c6a647afd0aa9fcbc1d0659b1365e26546dd70"
@@ -1370,7 +1327,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:68a7fc624b3b848ee5bae9366b8ef2bb264f0451859ef661932721477ce67b09"
+  digest = "1:13bb70ffd0f77473919910dfc02c8fb288c93778a08b89db0f233be85541bad3"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -1386,11 +1343,11 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "c44066c5c816ec500d459a2a324a753f78531ae0"
+  revision = "c10e9556a7bc0e7c942242b606f0acf024ad5d6a"
 
 [[projects]]
   branch = "master"
-  digest = "1:a0f0e7ede7e38e6c26a683afdd5fbb868e2e1d2fc956c722a8590eeec53f899b"
+  digest = "1:a092b4d38fd89b648d8275a57bf94f8ab62d09224e83ba105dadab472dc71428"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
@@ -1400,7 +1357,7 @@
     "jwt",
   ]
   pruneopts = "UT"
-  revision = "8527f56f71077909d6ead7facfe18fbf05ebdf83"
+  revision = "232e45548389bd9357411a6922a07c5fd4068bda"
 
 [[projects]]
   branch = "master"
@@ -1473,7 +1430,7 @@
   name = "google.golang.org/api"
   packages = ["support/bundler"]
   pruneopts = "UT"
-  revision = "61ce27ee815477c00dd67999c908f22cbf3da017"
+  revision = "04bb50b6b83d0e72253821af8cf3252d8e866517"
 
 [[projects]]
   digest = "1:caa22aaff120905a9e4cd4ebb716f6a96f868f93c59e1cb1ab055439cd806778"
@@ -1501,7 +1458,7 @@
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "b69ba1387ce2108ac9bc8e8e5e5a46e7d5c72313"
+  revision = "c830210a61dfaa790e1920f8d0470fc27bc2efbe"
 
 [[projects]]
   digest = "1:c3ad9841823db6da420a5625b367913b4ff54bbe60e8e3c98bd20e243e62e2d2"
@@ -1782,452 +1739,72 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "contrib.go.opencensus.io/exporter/ocagent",
-    "dmitri.shuralyov.com/text/kebabcase",
-    "github.com/Azure/go-autorest/autorest",
-    "github.com/Azure/go-autorest/autorest/adal",
-    "github.com/Azure/go-autorest/autorest/azure",
-    "github.com/Azure/go-autorest/autorest/date",
-    "github.com/Azure/go-autorest/logger",
-    "github.com/Azure/go-autorest/tracing",
-    "github.com/Azure/go-autorest/version",
-    "github.com/BurntSushi/toml",
-    "github.com/ajg/form",
-    "github.com/beorn7/perks/quantile",
     "github.com/blackducksoftware/horizon/pkg/api",
     "github.com/blackducksoftware/horizon/pkg/components",
     "github.com/blackducksoftware/horizon/pkg/deployer",
-    "github.com/blackducksoftware/horizon/pkg/util",
-    "github.com/blackducksoftware/horizon/pkg/util/error",
-    "github.com/blang/semver",
-    "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1",
-    "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1",
-    "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1",
-    "github.com/cockroachdb/cockroach-go/crdb",
-    "github.com/davecgh/go-spew/spew",
-    "github.com/dgrijalva/jwt-go",
-    "github.com/docker/spdystream",
-    "github.com/docker/spdystream/spdy",
-    "github.com/dustin/go-humanize",
-    "github.com/fatih/color",
-    "github.com/fatih/structs",
-    "github.com/fsnotify/fsnotify",
-    "github.com/ghodss/yaml",
     "github.com/gin-gonic/contrib/static",
     "github.com/gin-gonic/gin",
-    "github.com/gin-gonic/gin/json",
-    "github.com/go-sql-driver/mysql",
     "github.com/gobuffalo/buffalo",
-    "github.com/gobuffalo/buffalo-plugins/plugins",
-    "github.com/gobuffalo/buffalo-plugins/plugins/plugdeps",
-    "github.com/gobuffalo/buffalo/binding",
     "github.com/gobuffalo/buffalo/render",
-    "github.com/gobuffalo/buffalo/servers",
-    "github.com/gobuffalo/buffalo/worker",
     "github.com/gobuffalo/envy",
-    "github.com/gobuffalo/events",
-    "github.com/gobuffalo/fizz",
-    "github.com/gobuffalo/fizz/translators",
-    "github.com/gobuffalo/flect",
-    "github.com/gobuffalo/flect/name",
-    "github.com/gobuffalo/genny",
-    "github.com/gobuffalo/genny/movinglater/gotools/gomods",
-    "github.com/gobuffalo/github_flavored_markdown",
-    "github.com/gobuffalo/github_flavored_markdown/internal/russross/blackfriday",
-    "github.com/gobuffalo/logger",
-    "github.com/gobuffalo/makr",
-    "github.com/gobuffalo/mapi",
-    "github.com/gobuffalo/meta",
     "github.com/gobuffalo/mw-csrf",
     "github.com/gobuffalo/mw-forcessl",
     "github.com/gobuffalo/mw-i18n",
     "github.com/gobuffalo/mw-paramlogger",
-    "github.com/gobuffalo/packd",
     "github.com/gobuffalo/packr",
-    "github.com/gobuffalo/plush",
-    "github.com/gobuffalo/plush/ast",
-    "github.com/gobuffalo/plush/lexer",
-    "github.com/gobuffalo/plush/parser",
-    "github.com/gobuffalo/plush/token",
-    "github.com/gobuffalo/pop",
-    "github.com/gobuffalo/pop/associations",
-    "github.com/gobuffalo/pop/columns",
-    "github.com/gobuffalo/pop/fix",
-    "github.com/gobuffalo/pop/logging",
-    "github.com/gobuffalo/pop/nulls",
     "github.com/gobuffalo/suite",
-    "github.com/gobuffalo/suite/fix",
-    "github.com/gobuffalo/tags",
-    "github.com/gobuffalo/tags/form",
-    "github.com/gobuffalo/tags/form/bootstrap",
-    "github.com/gobuffalo/uuid",
     "github.com/gobuffalo/validate",
-    "github.com/gobuffalo/validate/validators",
-    "github.com/gobuffalo/x/defaults",
-    "github.com/gobuffalo/x/httpx",
-    "github.com/gobuffalo/x/randx",
-    "github.com/gofrs/uuid",
-    "github.com/gogo/protobuf/proto",
-    "github.com/gogo/protobuf/sortkeys",
-    "github.com/golang/glog",
-    "github.com/golang/protobuf/proto",
-    "github.com/golang/protobuf/ptypes",
-    "github.com/golang/protobuf/ptypes/any",
-    "github.com/golang/protobuf/ptypes/duration",
-    "github.com/golang/protobuf/ptypes/timestamp",
-    "github.com/google/btree",
     "github.com/google/go-cmp/cmp",
-    "github.com/google/go-cmp/cmp/internal/diff",
-    "github.com/google/go-cmp/cmp/internal/function",
-    "github.com/google/go-cmp/cmp/internal/value",
-    "github.com/google/gofuzz",
-    "github.com/googleapis/gnostic/OpenAPIv2",
-    "github.com/googleapis/gnostic/compiler",
-    "github.com/googleapis/gnostic/extensions",
-    "github.com/gophercloud/gophercloud",
-    "github.com/gophercloud/gophercloud/openstack",
-    "github.com/gophercloud/gophercloud/openstack/identity/v2/tenants",
-    "github.com/gophercloud/gophercloud/openstack/identity/v2/tokens",
-    "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens",
-    "github.com/gophercloud/gophercloud/openstack/utils",
-    "github.com/gophercloud/gophercloud/pagination",
-    "github.com/gorilla/context",
-    "github.com/gorilla/mux",
-    "github.com/gorilla/securecookie",
-    "github.com/gorilla/sessions",
-    "github.com/gregjones/httpcache",
-    "github.com/gregjones/httpcache/diskcache",
-    "github.com/hashicorp/golang-lru",
-    "github.com/hashicorp/golang-lru/simplelru",
-    "github.com/hashicorp/hcl",
-    "github.com/hashicorp/hcl/hcl/ast",
-    "github.com/hashicorp/hcl/hcl/parser",
-    "github.com/hashicorp/hcl/hcl/printer",
-    "github.com/hashicorp/hcl/hcl/scanner",
-    "github.com/hashicorp/hcl/hcl/strconv",
-    "github.com/hashicorp/hcl/hcl/token",
-    "github.com/hashicorp/hcl/json/parser",
-    "github.com/hashicorp/hcl/json/scanner",
-    "github.com/hashicorp/hcl/json/token",
-    "github.com/hpcloud/tail",
-    "github.com/hpcloud/tail/ratelimiter",
-    "github.com/hpcloud/tail/util",
-    "github.com/hpcloud/tail/watch",
-    "github.com/hpcloud/tail/winfile",
     "github.com/imdario/mergo",
-    "github.com/inconshreveable/mousetrap",
-    "github.com/jackc/pgx",
-    "github.com/jackc/pgx/chunkreader",
-    "github.com/jackc/pgx/internal/sanitize",
-    "github.com/jackc/pgx/pgio",
-    "github.com/jackc/pgx/pgproto3",
-    "github.com/jackc/pgx/pgtype",
-    "github.com/jayunit100/horizon/pkg/api",
-    "github.com/jmoiron/sqlx",
-    "github.com/jmoiron/sqlx/reflectx",
-    "github.com/joho/godotenv",
-    "github.com/json-iterator/go",
     "github.com/juju/errors",
-    "github.com/karrick/godirwalk",
-    "github.com/kballard/go-shellquote",
-    "github.com/koki/json",
-    "github.com/koki/json/jsonutil",
-    "github.com/koki/short/converter/converters",
-    "github.com/koki/short/converter/converters/affinity",
-    "github.com/koki/short/parser",
-    "github.com/koki/short/parser/expressions",
     "github.com/koki/short/types",
-    "github.com/koki/short/util",
     "github.com/koki/short/util/floatstr",
     "github.com/koki/short/util/intbool",
-    "github.com/koki/short/yaml",
-    "github.com/koki/structurederrors",
-    "github.com/konsorten/go-windows-terminal-sequences",
-    "github.com/kr/pretty",
-    "github.com/kr/text",
     "github.com/lib/pq",
-    "github.com/lib/pq/oid",
-    "github.com/magiconair/properties",
-    "github.com/markbates/going/defaults",
-    "github.com/markbates/going/randx",
-    "github.com/markbates/grift/grift",
-    "github.com/markbates/hmax",
-    "github.com/markbates/inflect",
-    "github.com/markbates/oncer",
-    "github.com/markbates/refresh/refresh",
-    "github.com/markbates/refresh/refresh/web",
-    "github.com/markbates/safe",
-    "github.com/markbates/sigtx",
-    "github.com/markbates/willie",
-    "github.com/mattn/go-colorable",
-    "github.com/mattn/go-isatty",
-    "github.com/mattn/go-sqlite3",
-    "github.com/matttproud/golang_protobuf_extensions/pbutil",
-    "github.com/microcosm-cc/bluemonday",
     "github.com/mitchellh/go-homedir",
-    "github.com/mitchellh/mapstructure",
-    "github.com/modern-go/concurrent",
-    "github.com/modern-go/reflect2",
-    "github.com/monoculum/formam",
-    "github.com/nicksnyder/go-i18n/i18n",
-    "github.com/nicksnyder/go-i18n/i18n/bundle",
-    "github.com/nicksnyder/go-i18n/i18n/language",
-    "github.com/nicksnyder/go-i18n/i18n/translation",
     "github.com/onsi/ginkgo",
-    "github.com/onsi/ginkgo/config",
-    "github.com/onsi/ginkgo/internal/codelocation",
-    "github.com/onsi/ginkgo/internal/containernode",
-    "github.com/onsi/ginkgo/internal/failer",
-    "github.com/onsi/ginkgo/internal/leafnodes",
-    "github.com/onsi/ginkgo/internal/remote",
-    "github.com/onsi/ginkgo/internal/spec",
-    "github.com/onsi/ginkgo/internal/spec_iterator",
-    "github.com/onsi/ginkgo/internal/specrunner",
-    "github.com/onsi/ginkgo/internal/suite",
-    "github.com/onsi/ginkgo/internal/testingtproxy",
-    "github.com/onsi/ginkgo/internal/writer",
-    "github.com/onsi/ginkgo/reporters",
-    "github.com/onsi/ginkgo/reporters/stenographer",
-    "github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable",
-    "github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty",
-    "github.com/onsi/ginkgo/types",
     "github.com/onsi/gomega",
-    "github.com/onsi/gomega/format",
-    "github.com/onsi/gomega/internal/assertion",
-    "github.com/onsi/gomega/internal/asyncassertion",
-    "github.com/onsi/gomega/internal/oraclematcher",
-    "github.com/onsi/gomega/internal/testingtsupport",
-    "github.com/onsi/gomega/matchers",
-    "github.com/onsi/gomega/matchers/support/goraph/bipartitegraph",
-    "github.com/onsi/gomega/matchers/support/goraph/edge",
-    "github.com/onsi/gomega/matchers/support/goraph/node",
-    "github.com/onsi/gomega/matchers/support/goraph/util",
-    "github.com/onsi/gomega/types",
     "github.com/openshift/api/route/v1",
     "github.com/openshift/api/security/v1",
-    "github.com/openshift/client-go/route/clientset/versioned/scheme",
     "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1",
-    "github.com/openshift/client-go/security/clientset/versioned/scheme",
     "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1",
-    "github.com/pelletier/go-toml",
-    "github.com/petar/GoLLRB/llrb",
-    "github.com/peterbourgon/diskv",
     "github.com/pkg/errors",
-    "github.com/pmezard/go-difflib/difflib",
     "github.com/prometheus/client_golang/prometheus",
-    "github.com/prometheus/client_golang/prometheus/internal",
     "github.com/prometheus/client_golang/prometheus/promhttp",
-    "github.com/prometheus/client_model/go",
-    "github.com/prometheus/common/expfmt",
-    "github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg",
-    "github.com/prometheus/common/model",
-    "github.com/prometheus/procfs",
-    "github.com/prometheus/procfs/internal/util",
-    "github.com/prometheus/procfs/nfs",
-    "github.com/prometheus/procfs/xfs",
-    "github.com/serenize/snaker",
-    "github.com/sergi/go-diff/diffmatchpatch",
-    "github.com/shurcooL/go-goon",
-    "github.com/shurcooL/go/parserutil",
-    "github.com/shurcooL/go/printerutil",
-    "github.com/shurcooL/go/reflectfind",
-    "github.com/shurcooL/go/reflectsource",
-    "github.com/shurcooL/graphql/ident",
-    "github.com/shurcooL/highlight_diff",
-    "github.com/shurcooL/highlight_go",
-    "github.com/shurcooL/octicon",
-    "github.com/shurcooL/sanitized_anchor_name",
     "github.com/sirupsen/logrus",
-    "github.com/sourcegraph/annotate",
-    "github.com/sourcegraph/syntaxhighlight",
-    "github.com/spf13/afero",
-    "github.com/spf13/afero/mem",
-    "github.com/spf13/cast",
     "github.com/spf13/cobra",
-    "github.com/spf13/jwalterweatherman",
-    "github.com/spf13/pflag",
     "github.com/spf13/viper",
-    "github.com/stretchr/testify/assert",
-    "github.com/stretchr/testify/require",
-    "github.com/stretchr/testify/suite",
-    "github.com/ugorji/go/codec",
     "github.com/unrolled/secure",
-    "go.opencensus.io",
-    "go.opencensus.io/plugin/ochttp",
-    "go.opencensus.io/plugin/ochttp/propagation/tracecontext",
-    "go.opencensus.io/stats/view",
-    "go.opencensus.io/trace",
-    "go.opencensus.io/trace/tracestate",
-    "golang.org/x/crypto/bcrypt",
-    "golang.org/x/crypto/ssh/terminal",
-    "golang.org/x/net/context",
-    "golang.org/x/net/context/ctxhttp",
-    "golang.org/x/net/html",
-    "golang.org/x/net/html/atom",
-    "golang.org/x/net/html/charset",
-    "golang.org/x/net/http2",
-    "golang.org/x/net/http2/hpack",
-    "golang.org/x/net/idna",
-    "golang.org/x/oauth2",
-    "golang.org/x/oauth2/google",
-    "golang.org/x/oauth2/internal",
-    "golang.org/x/oauth2/jws",
-    "golang.org/x/sync/errgroup",
-    "golang.org/x/sync/semaphore",
-    "golang.org/x/sys/unix",
-    "golang.org/x/text/collate",
-    "golang.org/x/text/encoding",
-    "golang.org/x/text/encoding/charmap",
-    "golang.org/x/text/encoding/internal/identifier",
-    "golang.org/x/text/encoding/japanese",
-    "golang.org/x/text/encoding/korean",
-    "golang.org/x/text/encoding/simplifiedchinese",
-    "golang.org/x/text/encoding/traditionalchinese",
-    "golang.org/x/text/encoding/unicode",
-    "golang.org/x/text/internal/gen",
-    "golang.org/x/text/internal/ucd",
-    "golang.org/x/text/language",
-    "golang.org/x/text/transform",
-    "golang.org/x/text/unicode/bidi",
-    "golang.org/x/text/unicode/norm",
-    "golang.org/x/text/unicode/rangetable",
-    "golang.org/x/time/rate",
-    "google.golang.org/api/support/bundler",
-    "google.golang.org/appengine/cloudsql",
-    "google.golang.org/appengine/internal/base",
-    "google.golang.org/appengine/internal/datastore",
-    "google.golang.org/appengine/internal/log",
-    "google.golang.org/appengine/internal/remote_api",
-    "google.golang.org/appengine/urlfetch",
-    "google.golang.org/genproto/googleapis/rpc/status",
-    "google.golang.org/grpc",
-    "google.golang.org/grpc/balancer",
-    "google.golang.org/grpc/balancer/base",
-    "google.golang.org/grpc/codes",
-    "google.golang.org/grpc/connectivity",
-    "google.golang.org/grpc/credentials",
-    "google.golang.org/grpc/encoding",
-    "google.golang.org/grpc/grpclog",
-    "google.golang.org/grpc/internal/backoff",
-    "google.golang.org/grpc/internal/channelz",
-    "google.golang.org/grpc/internal/grpcrand",
-    "google.golang.org/grpc/keepalive",
-    "google.golang.org/grpc/metadata",
-    "google.golang.org/grpc/peer",
-    "google.golang.org/grpc/resolver",
-    "google.golang.org/grpc/stats",
-    "google.golang.org/grpc/status",
-    "google.golang.org/grpc/tap",
-    "gopkg.in/fsnotify.v1",
-    "gopkg.in/go-playground/validator.v8",
-    "gopkg.in/inf.v0",
-    "gopkg.in/tomb.v1",
-    "gopkg.in/yaml.v2",
-    "k8s.io/api/admissionregistration/v1alpha1",
-    "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/apps/v1beta1",
-    "k8s.io/api/apps/v1beta2",
-    "k8s.io/api/authentication/v1",
-    "k8s.io/api/authentication/v1beta1",
-    "k8s.io/api/authorization/v1",
-    "k8s.io/api/authorization/v1beta1",
-    "k8s.io/api/autoscaling/v1",
-    "k8s.io/api/autoscaling/v2beta1",
-    "k8s.io/api/batch/v1",
-    "k8s.io/api/batch/v1beta1",
-    "k8s.io/api/batch/v2alpha1",
-    "k8s.io/api/certificates/v1beta1",
     "k8s.io/api/core/v1",
-    "k8s.io/api/events/v1beta1",
-    "k8s.io/api/extensions/v1beta1",
-    "k8s.io/api/networking/v1",
-    "k8s.io/api/policy/v1beta1",
-    "k8s.io/api/rbac/v1",
-    "k8s.io/api/rbac/v1alpha1",
-    "k8s.io/api/rbac/v1beta1",
-    "k8s.io/api/scheduling/v1alpha1",
-    "k8s.io/api/scheduling/v1beta1",
-    "k8s.io/api/settings/v1alpha1",
-    "k8s.io/api/storage/v1",
-    "k8s.io/api/storage/v1alpha1",
     "k8s.io/api/storage/v1beta1",
-    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
-    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
-    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme",
-    "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
     "k8s.io/apimachinery/pkg/api/errors",
-    "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/api/resource",
-    "k8s.io/apimachinery/pkg/apis/meta/internalversion",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
-    "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
-    "k8s.io/apimachinery/pkg/apis/meta/v1beta1",
-    "k8s.io/apimachinery/pkg/conversion",
-    "k8s.io/apimachinery/pkg/fields",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
-    "k8s.io/apimachinery/pkg/runtime/serializer/json",
-    "k8s.io/apimachinery/pkg/runtime/serializer/protobuf",
-    "k8s.io/apimachinery/pkg/runtime/serializer/recognizer",
-    "k8s.io/apimachinery/pkg/runtime/serializer/streaming",
-    "k8s.io/apimachinery/pkg/runtime/serializer/versioning",
     "k8s.io/apimachinery/pkg/types",
-    "k8s.io/apimachinery/pkg/util/clock",
-    "k8s.io/apimachinery/pkg/util/errors",
-    "k8s.io/apimachinery/pkg/util/framer",
-    "k8s.io/apimachinery/pkg/util/httpstream",
-    "k8s.io/apimachinery/pkg/util/httpstream/spdy",
     "k8s.io/apimachinery/pkg/util/intstr",
-    "k8s.io/apimachinery/pkg/util/json",
-    "k8s.io/apimachinery/pkg/util/mergepatch",
-    "k8s.io/apimachinery/pkg/util/net",
     "k8s.io/apimachinery/pkg/util/runtime",
-    "k8s.io/apimachinery/pkg/util/sets",
-    "k8s.io/apimachinery/pkg/util/strategicpatch",
-    "k8s.io/apimachinery/pkg/util/validation/field",
     "k8s.io/apimachinery/pkg/util/wait",
-    "k8s.io/apimachinery/pkg/util/yaml",
-    "k8s.io/apimachinery/pkg/version",
     "k8s.io/apimachinery/pkg/watch",
-    "k8s.io/apimachinery/third_party/forked/golang/json",
-    "k8s.io/apimachinery/third_party/forked/golang/netutil",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/scheme",
-    "k8s.io/client-go/pkg/apis/clientauthentication",
-    "k8s.io/client-go/pkg/apis/clientauthentication/v1alpha1",
-    "k8s.io/client-go/pkg/apis/clientauthentication/v1beta1",
-    "k8s.io/client-go/pkg/version",
     "k8s.io/client-go/plugin/pkg/client/auth",
-    "k8s.io/client-go/plugin/pkg/client/auth/azure",
-    "k8s.io/client-go/plugin/pkg/client/auth/exec",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
-    "k8s.io/client-go/plugin/pkg/client/auth/oidc",
-    "k8s.io/client-go/plugin/pkg/client/auth/openstack",
     "k8s.io/client-go/rest",
-    "k8s.io/client-go/rest/watch",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
-    "k8s.io/client-go/tools/clientcmd/api",
-    "k8s.io/client-go/tools/clientcmd/api/v1",
-    "k8s.io/client-go/tools/metrics",
-    "k8s.io/client-go/tools/reference",
     "k8s.io/client-go/tools/remotecommand",
-    "k8s.io/client-go/transport",
-    "k8s.io/client-go/util/cert",
-    "k8s.io/client-go/util/connrotation",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/homedir",
-    "k8s.io/client-go/util/integer",
-    "k8s.io/client-go/util/jsonpath",
     "k8s.io/client-go/util/workqueue",
-    "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1",
-    "k8s.io/kube-openapi/pkg/util/proto",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
