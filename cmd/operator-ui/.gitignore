@@ -8,7 +8,7 @@ node_modules/
 .sass-cache/
 *-packr.go
 public/assets/
-operator_ui
+operator-ui
 .vscode/
 .grifter/
 .env
