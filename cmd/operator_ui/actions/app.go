@@ -39,7 +39,7 @@ func App() *buffalo.App {
 	if app == nil {
 		app = buffalo.New(buffalo.Options{
 			Env:         ENV,
-			SessionName: "_blackduck_operator_session",
+			SessionName: "_operator_ui_session",
 		})
 
 		// Automatically redirect to SSL

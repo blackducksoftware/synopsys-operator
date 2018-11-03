@@ -2,15 +2,15 @@
 # https://docs.docker.com/engine/userguide/eng-image/multistage-build/
 FROM gobuffalo/buffalo:v0.13.2 as builder
 
-RUN mkdir -p $GOPATH/src/github.com/blackducksoftware/perceptor-protoform/cmd/blackduck_operator_ui
-WORKDIR $GOPATH/src/github.com/blackducksoftware/perceptor-protoform/cmd/blackduck_operator_ui
+RUN mkdir -p $GOPATH/src/github.com/blackducksoftware/perceptor-protoform/cmd/operator_ui
+WORKDIR $GOPATH/src/github.com/blackducksoftware/perceptor-protoform/cmd/operator_ui
 
 # this will cache the npm install step, unless package.json changes
 ADD package.json .
 ADD yarn.lock .
 RUN yarn install --no-progress
 ADD . .
-RUN go get $(go list ./... | grep -v /vendor/)
+RUN dep ensure
 RUN buffalo build --static -o /bin/app
 
 FROM alpine

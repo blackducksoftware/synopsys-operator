@@ -1,3 +1,0 @@
-create_table("hubs") {
-	t.Column("id", "uuid", {"primary": true})
-}
