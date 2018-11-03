@@ -22,16 +22,14 @@ under the License.
 package plugins
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/hubutils"
-	"github.com/sirupsen/logrus"
-
 	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/hubutils"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,7 +38,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// InitDatabaseUpdater will hold the configuration to initialize the Postgres database
+// HubStatusUpdater will hold the configuration to update the hub status
 type HubStatusUpdater struct {
 	Config     *protoform.Config
 	KubeClient *kubernetes.Clientset
@@ -61,8 +59,8 @@ func (i *HubStatusUpdater) update() {
 
 		// if any entreis non running, its status is busted ...
 		if len(hisstorg) > 0 {
-			logrus.Warnf("Warning: Hub %v is down  %v", hub.GetNamespace, hisstorg)
-			hubutils.UpdateState(i.HubClient, "", "", errors.New(fmt.Sprintf("%v", hisstorg)), &hub)
+			logrus.Warnf("Warning: Hub %v is down  %v", hub.GetNamespace(), hisstorg)
+			hubutils.UpdateState(i.HubClient, "", "", fmt.Errorf("%v", hisstorg), &hub)
 		}
 	}
 }

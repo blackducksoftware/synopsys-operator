@@ -1,5 +1,3 @@
-package hub
-
 /*
 Copyright (C) 2018 Synopsys, Inc.
 
@@ -21,6 +19,8 @@ specific language governing permissions and limitations
 under the License.
 */
 
+package hub
+
 import (
 	"bytes"
 	"crypto/tls"
@@ -33,7 +33,6 @@ import (
 	"time"
 
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/hubutils"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
@@ -152,13 +151,19 @@ func (h *Handler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
 	registrationPod, err := util.FilterPodByNamePrefixInNamespace(h.kubeClient, createHub.Namespace, "registration")
 	log.Debugf("registration pod: %+v", registrationPod)
 	if err != nil {
+		log.Errorf("unable to filter the registration pod in %s because %+v", createHub.Namespace, err)
 		return err
 	}
 	registrationKey := os.Getenv("REGISTRATION_KEY")
-	// log.Debugf("registration key: %s", registrationKey)
 
 	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
 		for i := 0; i < 20; i++ {
+			registrationPod, err := util.GetPods(h.kubeClient, createHub.Namespace, registrationPod.Name)
+			if err != nil {
+				log.Errorf("unable to find the registration pod in %s because %+v", createHub.Namespace, err)
+				return err
+			}
+
 			// Create the exec into kubernetes pod request
 			req := util.CreateExecContainerRequest(h.kubeClient, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
@@ -168,16 +173,16 @@ func (h *Handler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
 				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
 			}
 
-			if err != nil {
-				log.Infof("error in Stream: %v", err)
-			} else {
+			if err == nil {
 				log.Infof("hub %s is created and auto registered. Exit!!!!", createHub.Namespace)
-				break
+				return nil
 			}
+			log.Infof("error in Stream: %v", err)
 			time.Sleep(10 * time.Second)
 		}
 	}
-	return err
+	log.Errorf("unable to register the hub for %s.... please manually auto register the hub", createHub.Namespace)
+	return fmt.Errorf("unable to register the hub for %s.... please manually auto register the hub", createHub.Namespace)
 }
 
 func (h *Handler) callHubFederator() {

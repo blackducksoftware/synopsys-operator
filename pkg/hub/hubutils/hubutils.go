@@ -31,6 +31,7 @@ func updateHubObject(h *hubClient.Clientset, obj *v1.Hub) (*v1.Hub, error) {
 	return h.SynopsysV1().Hubs(obj.Name).Update(obj)
 }
 
+// UpdateState will be used to update the hub object
 func UpdateState(h *hubClient.Clientset, specState string, statusState string, err error, hub *v1.Hub) (*v1.Hub, error) {
 	hub.Spec.State = specState
 	hub.Status.State = statusState
