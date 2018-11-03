@@ -1,3 +1,5 @@
+package hub
+
 /*
 Copyright (C) 2018 Synopsys, Inc.
 
@@ -19,8 +21,6 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package hub
-
 import (
 	"bytes"
 	"crypto/tls"
@@ -33,7 +33,9 @@ import (
 	"time"
 
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/hubutils"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"
@@ -87,11 +89,11 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		log.Debugf("merged hub details %+v", newSpec)
 		if err != nil {
 			log.Errorf("unable to merge the hub structs for %s due to %+v", hubv1.Name, err)
-			h.updateState("error", "error", err, hubv1)
+			hubutils.UpdateState(h.hubClient, "error", "error", err, hubv1)
 		} else {
 			hubv1.Spec = newSpec
 			// Update status
-			hubv1, err := h.updateState("pending", "creating", nil, hubv1)
+			hubv1, err := hubutils.UpdateState(h.hubClient, "pending", "creating", nil, hubv1)
 
 			if err == nil {
 				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
@@ -102,9 +104,9 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				hubv1.Status.IP = ip
 				hubv1.Status.PVCVolumeName = pvc
 				if updateError {
-					h.updateState("error", "error", err, hubv1)
+					hubutils.UpdateState(h.hubClient, "error", "error", err, hubv1)
 				} else {
-					h.updateState("running", "running", err, hubv1)
+					hubutils.UpdateState(h.hubClient, "running", "running", err, hubv1)
 					hubURL := fmt.Sprintf("webserver.%s.svc", hubv1.Spec.Namespace)
 					h.verifyHub(hubURL, hubv1.Spec.Namespace)
 					h.autoRegisterHub(&hubv1.Spec)
@@ -143,23 +145,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	//	objNew.Status.State = objNew.Spec.State
 	//	h.hubClient.SynopsysV1().Hubs(objNew.Namespace).Update(objNew)
 	//}
-}
-
-func (h *Handler) updateState(specState string, statusState string, err error, hub *hub_v1.Hub) (*hub_v1.Hub, error) {
-	hub.Spec.State = specState
-	hub.Status.State = statusState
-	if err != nil {
-		hub.Status.ErrorMessage = fmt.Sprintf("%+v", err)
-	}
-	hub, err = h.updateHubObject(hub)
-	if err != nil {
-		log.Errorf("couldn't update the state of hub object: %s", err.Error())
-	}
-	return hub, err
-}
-
-func (h *Handler) updateHubObject(obj *hub_v1.Hub) (*hub_v1.Hub, error) {
-	return h.hubClient.SynopsysV1().Hubs(h.config.Namespace).Update(obj)
 }
 
 func (h *Handler) autoRegisterHub(createHub *hub_v1.HubSpec) error {

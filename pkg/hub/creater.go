@@ -32,6 +32,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/containers"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/hubutils"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -96,23 +97,6 @@ func (hc *Creater) DeleteHub(namespace string) {
 	}
 }
 
-// GetDefaultPasswords returns admin,user,postgres passwords for db maintainance tasks.  Should only be used during
-// initialization, or for 'babysitting' ephemeral hub instances (which might have postgres restarts)
-// MAKE SURE YOU SEND THE NAMESPACE OF THE SECRET SOURCE (operator), NOT OF THE new hub  THAT YOUR TRYING TO CREATE !
-func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder string) (adminPassword string, userPassword string, postgresPassword string, err error) {
-	blackduckSecret, err := util.GetSecret(kubeClient, nsOfSecretHolder, "blackduck-secret")
-	if err != nil {
-		log.Infof("warning: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD, USER_PASSWORD, POSTGRES_PASSWORD")
-		return "", "", "", err
-	}
-	adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
-	userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
-	postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
-
-	// default named return
-	return adminPassword, userPassword, postgresPassword, err
-}
-
 // CreateHub will create the Black Duck Hub
 func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error) {
 	log.Debugf("Create Hub details for %s: %+v", createHub.Namespace, createHub)
@@ -142,7 +126,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 
 	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
 		// get the secret from the default operator namespace, then copy it into the hub namespace.
-		adminPassword, userPassword, postgresPassword, err = GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
+		adminPassword, userPassword, postgresPassword, err = hubutils.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
 		if err == nil {
 			break
 		} else {
