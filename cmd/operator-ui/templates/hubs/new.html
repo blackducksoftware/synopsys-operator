@@ -103,7 +103,7 @@ function checkScanType() {
 }
 
 // add or update environs and update the spec
-function appendEnvironsAndContainerTags() {
+function validateAndGetValues() {
   var environsList = document.getElementById("environs");
   var environsItems = environsList.getElementsByTagName('li'); 
   var environs = document.getElementById("hub-Spec.Environs")
@@ -127,10 +127,15 @@ function appendEnvironsAndContainerTags() {
     opt.setAttribute("selected", "selected");
     containerTags.add(opt);
   };
-}
 
-function validateBlackDuck() {
-  
+  var backupSupport = document.getElementById("hub-Spec.BackupSupport").value;
+  if (length(backupSupport) > 0 && length(document.getElementById("hub-Spec.BackupInterval").value) == 0) {
+    document.getElementById("backupIntervalError").hidden = false
+    return false
+  } else {
+    document.getElementById("backupIntervalError").hidden = true
+    return true
+  }
 }
 </script>
 
