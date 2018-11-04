@@ -9,6 +9,10 @@
 	unused-packages = true
 
 [[constraint]]
+  name = "github.com/blackducksoftware/perceptor-protoform"
+	branch = "master"
+
+[[constraint]]
   name = "k8s.io/client-go"
   version = "8.0.0"
 

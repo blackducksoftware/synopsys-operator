@@ -2,6 +2,9 @@ FROM gobuffalo/buffalo:v0.13.2 as builder
 
 # Set the environment
 ENV BP=$GOPATH/src/github.com/blackducksoftware/perceptor-protoform
+ENV CGO_ENABLED=0
+ENV GOOS=linux 
+ENV GOARCH=amd64
 
 # Add the whole directory
 ADD . $BP
@@ -9,15 +12,12 @@ ADD . $BP
 ### BUILD THE BINARIES...
 # COPY . $GOPATH/src/github.com/blackducksoftware/perceptor-protoform
 WORKDIR $BP
-RUN ls -altrh $BP
 
 RUN cd cmd/blackduckctl ; go build -o /bin/blackduckctl
 RUN cd cmd/operator ; go build -o /bin/operator
 
 ### BUILD THE UI
 WORKDIR $BP/pkg/operator-ui
-RUN ls -altrh
-##### Jay Vyas Is Non Redundant...
 # RUN npm rebuild node-sass
 RUN yarn install --no-progress
 # RUN go get $(go list ./... | grep -v /vendor/) 
@@ -37,4 +37,4 @@ COPY --from=builder /bin/operator .
 
 EXPOSE 3000
 
-CMD /bin/app
+CMD ./app
