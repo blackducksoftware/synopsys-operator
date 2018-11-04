@@ -1,7 +1,7 @@
 package grifts
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/cmd/operator-ui/actions"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/operator-ui/actions"
 	"github.com/gobuffalo/buffalo"
 )
 
