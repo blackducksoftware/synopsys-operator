@@ -1,0 +1,39 @@
+
+[[constraint]]
+	name = "github.com/gobuffalo/buffalo"
+	version = "v0.13.2"
+
+
+[prune]
+	go-tests = true
+	unused-packages = true
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "8.0.0"
+
+[[override]]
+  name = "k8s.io/api"
+  revision = "d216743eed4c3242b85d094d2a589f41a793652d"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  revision = "94ebb086c69b9fec4ddbfb6a1433d28ecca9292b"
+
+[[override]]
+  name = "k8s.io/apiextensions-apiserver"
+  revision = "b5a9dfcf0afdc336c921e56e70166b5e291e77f5"
+
+[[override]]
+  name = "k8s.io/kube-aggregator"
+  revision = "89512616b165a8d1280cf4b7dfdc266e96d8abe1"
+
+	# DO NOT DELETE
+	[[prune.project]] # buffalo
+		name = "github.com/gobuffalo/buffalo"
+		unused-packages = false
+
+	# DO NOT DELETE
+	[[prune.project]] # pop
+		name = "github.com/gobuffalo/pop"
+		unused-packages = false
