@@ -27,7 +27,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a2c80532e691d42b57a9a5ff54e6d3ef4a744cbb803a14f04569e60b2d25acf6"
+  digest = "1:3f40f94eee80e3058285635e194baf084594cd0db90bef88cb15226df7a8e713"
   name = "github.com/blackducksoftware/horizon"
   packages = [
     "pkg/api",
@@ -37,7 +37,7 @@
     "pkg/util/error",
   ]
   pruneopts = "UT"
-  revision = "7a126694af8a95f73c07a97d0ad4b98eed02acaf"
+  revision = "fa0acd7bd7a60ee3e9507eff4bb704a1aee70eae"
   source = "https://github.com/jayunit100/horizon"
 
 [[projects]]
@@ -59,7 +59,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "e1962dc1c4088ee0b9d767eab89ffda80e23b881"
+  revision = "41a29e60c32406c32a3be0298ebef10d3c65188e"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -198,14 +198,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:747529c256fce1967a71d3b7d9f92c5242643df766e25afa54fc81d73b275aea"
+  digest = "1:a0744982bd8707827eff522bb8bf2fcce6c86ee00d4a5820f83bfafbdcbf0526"
   name = "github.com/gobuffalo/flect"
   packages = [
     ".",
     "name",
   ]
   pruneopts = "UT"
-  revision = "8f6be1a8c6c28eee7b2c701eef468a2a1f971a33"
+  revision = "1f6e9779237a07d172c82fc407ec2e38ef5f8a88"
 
 [[projects]]
   branch = "master"
@@ -299,11 +299,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e726decbaa30a307ce03a576eb29fdd6ede54c8fc494628231a36bde2dd2d1f1"
+  digest = "1:3cefd2be286c70e8c6088f8ecb437469ba4e2ff5a8e7e7bc4eaf5b0eb1710d4c"
   name = "github.com/gobuffalo/packd"
   packages = ["."]
   pruneopts = "UT"
-  revision = "16c4ed88b2967c484265fd27d9e9d38dde6b3581"
+  revision = "d376b15f8e96be52ab5548297cda58713109e15d"
 
 [[projects]]
   digest = "1:24430e30c5fe94726058c1cb9c36f8fe891ae67c00ee73ee43da1e01528dad1c"

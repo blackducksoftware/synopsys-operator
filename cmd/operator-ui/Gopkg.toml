@@ -11,6 +11,14 @@
 [[constraint]]
   name = "github.com/blackducksoftware/perceptor-protoform"
 	branch = "master"
+	
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.0.5"
+	
+[[override]]
+  branch = "master"
+  name = "golang.org/x/crypto"
 
 [[constraint]]
   name = "k8s.io/client-go"

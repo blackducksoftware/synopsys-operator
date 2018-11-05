@@ -1,9 +1,8 @@
 package main
 
 import (
-	"log"
-
 	"github.com/blackducksoftware/perceptor-protoform/cmd/operator-ui/actions"
+	log "github.com/sirupsen/logrus"
 )
 
 // main is the starting point for your Buffalo application.
