@@ -19,19 +19,33 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package operator
+package main
 
 import (
-	bdutil "github.com/blackducksoftware/perceptor-protoform/cmd/blackduckctl/pkg/util"
+	"fmt"
+	"os"
+
 	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
+	bdutil "github.com/blackducksoftware/perceptor-protoform/pkg/apps/util"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/installer"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/sirupsen/logrus"
 )
 
-// StartBlackduckOperator ...
-func StartBlackduckOperator(configPath string) {
+func main() {
+	if len(os.Args) > 1 {
+		configPath := os.Args[1]
+		runProtoform(configPath)
+		fmt.Printf("Config path: %s", configPath)
+		return
+	}
+	fmt.Println("WARNING: Running protoform with defaults, no config file sent.")
+	runProtoform("")
+}
+
+// runProtoform ...
+func runProtoform(configPath string) {
 	deployer, err := protoform.NewController(configPath)
 	if err != nil {
 		panic(err)

@@ -29,15 +29,16 @@
 	background: #FAFAFA;
   }
 </style>
-<body onload="formLoad()" onsubmit="appendEnvironsAndContainerTags(); validateBlackDuck()">
+<body onload="formLoad()" onsubmit="return validateAndGetValues()">
   <div class="new-container">
-    <%= f.InputTag("Spec.Namespace", {value: "", label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.", pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}) %>
+    <%= f.InputTag("Spec.Namespace", {value: "", label: "Namespace *", required: true, placeholder: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen.", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
     <%= f.SelectTag("Spec.Flavor", {options: ["Small", "Medium", "Large", "OpsSight"], value: "Small", label: "Flavor"}) %>
     <%= f.InputTag("Spec.DockerRegistry", {value: "docker.io", label: "Docker Registry *", required: true, placeholder: "e.g. docker.io"}) %>
     <%= f.InputTag("Spec.DockerRepository", {value: "blackducksoftware", label: "Docker Repository *", required: true, placeholder: "e.g. blackducksoftware"}) %>
-    <%= f.InputTag("Spec.HubVersion", {value: "5.0.0", label: "HubVersion *", required: true, placeholder: "e.g. 5.0.0"}) %>
+    <%= f.InputTag("Spec.HubVersion", {value: "5.0.0", label: "Black Duck Version *", required: true, placeholder: "e.g. 5.0.0"}) %>
     <%= f.SelectTag("Spec.BackupSupport", {options: ["Yes", "No"], value: "Yes", label: "Backup Support", onchange: "checkBackUpSupport()"}) %>
     <div id="backupSupportId">
+      <label id="backupIntervalError" hidden="hidden">Backup interval is required when Backup is enabled</label>
       <%= f.InputTag("Spec.BackupInterval", {value: "30", label: "Backup Interval", placeholder: "Required only if the Backup support is 'Yes'. It should be integer value"}) %>
       <%= f.SelectTag("Spec.BackupUnit", {options: ["Minute(s)", "Hour(s)", "Day(s)", "Week(s)"], value: "Minute(s)", label: "Backup Unit"}) %>
     </div>

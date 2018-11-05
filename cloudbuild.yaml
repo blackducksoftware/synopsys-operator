@@ -1,19 +1,19 @@
 steps:
 - name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o', './cmd/operator-build', './cmd/operator/run.go']
+  args: ['build', '-o', './output/operator', './cmd/operator/']
   env:
   - 'PROJECT_ROOT=github.com/blackducksoftware/perceptor-protoform'
   - 'CGO_ENABLED=0'
   - 'GOOS=linux'
   - 'GOARCH=amd64'
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/blackduck-operator:$BRANCH_NAME', './cmd']
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/blackduck-operator:$BRANCH_NAME']
 
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
-  args:
-  - '-c'
-  - |
-    curl -d "" -X POST http://ec2-54-205-198-237.compute-1.amazonaws.com:8081/webhook-perceptor/$REPO_NAME || echo "Success"
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', "-t", 'gcr.io/$PROJECT_ID/blackducksoftware/opssight/blackduck-operator-ui:$BRANCH_NAME', "./cmd/operator-ui"]
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/opssight/blackduck-operator-ui:$BRANCH_NAME']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/opssight/blackduck-operator:$BRANCH_NAME']
+
+

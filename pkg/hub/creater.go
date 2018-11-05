@@ -64,12 +64,12 @@ func (hc *Creater) DeleteHub(namespace string) {
 	// Verify whether the namespace exist
 	_, err = util.GetNamespace(hc.KubeClient, namespace)
 	if err != nil {
-		log.Errorf("Unable to find the namespace %+v due to %+v", namespace, err)
+		log.Errorf("Unable to find the namespace %+v because %+v", namespace, err)
 	} else {
 		// Delete a namespace
 		err = util.DeleteNamespace(hc.KubeClient, namespace)
 		if err != nil {
-			log.Errorf("Unable to delete the namespace %+v due to %+v", namespace, err)
+			log.Errorf("Unable to delete the namespace %+v because %+v", namespace, err)
 		}
 
 		for {
@@ -104,7 +104,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.KubeConfig)
 	if err != nil {
-		return "", "", true, fmt.Errorf("unable to create the horizon deployer due to %+v", err)
+		return "", "", true, fmt.Errorf("unable to create the horizon deployer because %+v", err)
 	}
 
 	// Get Containers Flavor
@@ -130,7 +130,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		if err == nil {
 			break
 		} else {
-			log.Infof("wasn't able to init database, sleeping 5 seconds.  try = %v", dbInitTry)
+			log.Infof("[%s] wasn't able to init database, sleeping 5 seconds.  try = %v", createHub.Namespace, dbInitTry)
 			time.Sleep(5 * time.Second)
 		}
 	}
@@ -144,7 +144,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("deployments failed because %+v", err)
+		log.Errorf("init deployments failed for %s because %+v", createHub.Namespace, err)
 	}
 	// time.Sleep(20 * time.Second)
 
@@ -174,8 +174,8 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	// Deploy all hub containers
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("deployments failed because %+v", err)
-		return "", "", true, fmt.Errorf("unable to deploy the hub in %s due to %+v", createHub.Namespace, err)
+		log.Errorf("post deployments failed for %s because %+v", createHub.Namespace, err)
+		return "", "", true, fmt.Errorf("unable to deploy the hub in %s because %+v", createHub.Namespace, err)
 	}
 	time.Sleep(10 * time.Second)
 
@@ -224,7 +224,7 @@ func (hc *Creater) getPVCVolumeName(namespace string) (string, error) {
 		time.Sleep(10 * time.Second)
 		pvc, err := util.GetPVC(hc.KubeClient, namespace, namespace)
 		if err != nil {
-			return "", fmt.Errorf("unable to get pvc in %s namespace due to %s", namespace, err.Error())
+			return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
 		}
 
 		log.Debugf("pvc: %v", pvc)
@@ -243,7 +243,7 @@ func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string
 		time.Sleep(10 * time.Second)
 		service, err := util.GetService(hc.KubeClient, namespace, serviceName)
 		if err != nil {
-			return "", fmt.Errorf("unable to get service %s in %s namespace due to %s", serviceName, namespace, err.Error())
+			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
 		}
 
 		log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
@@ -261,7 +261,7 @@ func (hc *Creater) getNodePortIPAddress(namespace string, serviceName string) (s
 		time.Sleep(10 * time.Second)
 		service, err := util.GetService(hc.KubeClient, namespace, serviceName)
 		if err != nil {
-			return "", fmt.Errorf("unable to get service %s in %s namespace due to %s", serviceName, namespace, err.Error())
+			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
 		}
 
 		log.Debugf("[%s] service: %v", serviceName, service.Spec.ClusterIP)

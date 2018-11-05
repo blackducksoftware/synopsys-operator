@@ -33,30 +33,25 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-
 	opssight_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
-
+	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/api/storage/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
-
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -338,6 +333,11 @@ func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*v1.Namesp
 // DeleteNamespace will delete the namespace
 func DeleteNamespace(clientset *kubernetes.Clientset, namespace string) error {
 	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
+}
+
+// GetPods will get the input pods corresponding to a namespace
+func GetPods(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Pod, error) {
+	return clientset.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
 }
 
 // GetAllPodsForNamespace will get all the pods corresponding to a namespace
