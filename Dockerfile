@@ -17,7 +17,7 @@ RUN cd cmd/blackduckctl ; go build -o /bin/blackduckctl
 RUN cd cmd/operator ; go build -o /bin/operator
 
 ### BUILD THE UI
-WORKDIR $BP/pkg/operator-ui
+WORKDIR $BP/cmd/operator-ui
 # RUN npm rebuild node-sass
 RUN yarn install --no-progress
 # RUN go get $(go list ./... | grep -v /vendor/) 
