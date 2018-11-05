@@ -58,7 +58,11 @@ func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 // ObjectCreated will be called for create alert events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("objectCreated: %+v", obj)
-	alertv1 := obj.(*alert_v1.Alert)
+	alertv1, ok := obj.(*alert_v1.Alert)
+	if !ok {
+		log.Error("Unable to cast to Alert object")
+		return
+	}
 	if strings.EqualFold(alertv1.Spec.State, "") {
 		// merge with default values
 		newSpec := alertv1.Spec

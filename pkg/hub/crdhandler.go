@@ -81,7 +81,11 @@ type APISetHubsRequest struct {
 // ObjectCreated will be called for create hub events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("ObjectCreated: %+v", obj)
-	hubv1 := obj.(*hub_v1.Hub)
+	hubv1, ok := obj.(*hub_v1.Hub)
+	if !ok {
+		log.Error("Unable to cast Hub object")
+		return
+	}
 	if strings.EqualFold(hubv1.Spec.State, "") {
 		newSpec := hubv1.Spec
 		hubDefaultSpec := h.defaults
