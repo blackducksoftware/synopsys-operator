@@ -29,11 +29,12 @@ RUN apk add --no-cache ca-certificates
 # Bind the app to 0.0.0.0 so it can be seen from outside the container
 # ENV ADDR=0.0.0.0
 
-COPY --from=builder /bin/app .
-COPY --from=builder /bin/blackduckctl .
-COPY --from=builder /bin/operator .
+COPY --from=builder /bin/app /bin/
+COPY --from=builder /bin/blackduckctl /bin/
+COPY --from=builder /bin/operator /bin/
 
-RUN chmod 777 ./app
+RUN chmod 777 /bin/*
+
 EXPOSE 3000
 
-CMD [exec ./app]
+CMD /bin/app
