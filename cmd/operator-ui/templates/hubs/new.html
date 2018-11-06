@@ -17,12 +17,16 @@ function formLoad() {
 
 // set default backup values
 function backupDefaultValue() {
+  document.getElementById("hub-Spec.BackupInterval").required = true;
+  document.getElementById("hub-Spec.BackupUnit").required = true;
   document.getElementById("hub-Spec.BackupInterval").value = "30";
   document.getElementById("hub-Spec.BackupUnit").value = "Minute(s)";
 }
 
 // set empty backup values if the backup is not supported
 function backupEmptyValue() {
+  document.getElementById("hub-Spec.BackupInterval").required = false;
+  document.getElementById("hub-Spec.BackupUnit").required = false;
   document.getElementById("hub-Spec.BackupInterval").value = "";
   document.getElementById("hub-Spec.BackupUnit").value = "";
 }
@@ -69,10 +73,14 @@ function pvcDefaultValue() {
   document.getElementById("hub-Spec.PVCStorageClass").value = "none";
   document.getElementById("hub-Spec.ScanType").value = "Artifacts";
   document.getElementById("hub-Spec.NFSServer").value = "";
+  document.getElementById("hub-Spec.PVCClaimSize").required = true;
+  document.getElementById("hub-Spec.NFSServer").required = true;
 }
 
 // set empty pvc values if clone or backup is not supported
 function pvcEmptyValue() {
+  document.getElementById("hub-Spec.PVCClaimSize").required = false;
+  document.getElementById("hub-Spec.NFSServer").required = false;
   document.getElementById("hub-Spec.PVCClaimSize").value = "";
   document.getElementById("hub-Spec.PVCStorageClass").value = "";
   document.getElementById("hub-Spec.ScanType").value = "";
@@ -127,15 +135,6 @@ function validateAndGetValues() {
     opt.setAttribute("selected", "selected");
     containerTags.add(opt);
   };
-
-  var backupSupport = document.getElementById("hub-Spec.BackupSupport").value;
-  if (length(backupSupport) > 0 && length(document.getElementById("hub-Spec.BackupInterval").value) == 0) {
-    document.getElementById("backupIntervalError").hidden = false
-    return false
-  } else {
-    document.getElementById("backupIntervalError").hidden = true
-    return true
-  }
 }
 </script>
 

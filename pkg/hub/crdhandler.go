@@ -34,7 +34,7 @@ import (
 
 	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/hubutils"
+	hubutils "github.com/blackducksoftware/perceptor-protoform/pkg/hub/util"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/imdario/mergo"

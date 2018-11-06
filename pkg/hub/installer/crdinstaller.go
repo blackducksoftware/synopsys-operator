@@ -27,17 +27,14 @@ import (
 	"strings"
 	"time"
 
-	hub "github.com/blackducksoftware/perceptor-protoform/pkg/hub"
-	plugins "github.com/blackducksoftware/perceptor-protoform/pkg/hub/plugins"
-
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	hub "github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	hubinformerv1 "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/informers/externalversions/hub/v1"
+	plugins "github.com/blackducksoftware/perceptor-protoform/pkg/hub/plugins"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/juju/errors"

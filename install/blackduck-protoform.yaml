@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: List
 metadata:
-  name: blackduck-protoform
+  name: blackduck-operator
 items:
 - apiVersion: v1
   kind: ReplicationController
   metadata:
-    name: blackduck-protoform
+    name: blackduck-operator
     labels:
-      name: blackduck-protoform
+      name: blackduck-operator
   spec:
     replicas: 1
     selector:
-      name: blackduck-protoform
+      name: blackduck-operator
     template:
       metadata:
         labels:
-          name: blackduck-protoform
+          name: blackduck-operator
       spec:
         containers:
-        - name: blackduck-protoform
+        - name: blackduck-operator
           image: gcr.io/saas-hub-stg/blackducksoftware/blackduck-operator:${BRANCHNAME}
           imagePullPolicy: Always
           ports:
@@ -28,48 +28,59 @@ items:
           - name: REGISTRATION_KEY
             value: ${REGISTRATION_KEY}
           volumeMounts:
-          - mountPath: /etc/blackduck-protoform
-            name: blackduck-protoform
+          - mountPath: /etc/blackduck-operator
+            name: blackduck-operator
           args:
-          - /etc/blackduck-protoform/config.json
+          - /etc/blackduck-operator/config.json
           command:
           - ./operator
+        - name: blackduck-operator-ui
+          image: gcr.io/saas-hub-stg/blackducksoftware/blackduck-operator:${BRANCHNAME}
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 3000
+          command:
+          - ./app
         volumes:
         - configMap:
             defaultMode: 420
-            name: blackduck-protoform
-          name: blackduck-protoform
-        serviceAccount: blackduck-protoform
+            name: blackduck-operator
+          name: blackduck-operator
+        serviceAccount: blackduck-operator
 - apiVersion: v1
   kind: Service
   metadata:
-    name: blackduck-protoform
+    name: blackduck-operator
   spec:
     selector:
-      name: blackduck-protoform
+      name: blackduck-operator
     ports:
       - protocol: TCP
         port: 8080
         targetPort: 8080
-        name: blackduck-protoform
+        name: blackduck-operator
+      - protocol: TCP
+        port: 3000
+        targetPort: 3000
+        name: blackduck-operator-ui
 - apiVersion: v1
   kind: ConfigMap
   metadata:
-    name: blackduck-protoform
+    name: blackduck-operator
   data:
     config.json: '{"DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "PostgresRestartInMins": 10, "NFSPath" : "/kubenfs", "HubFederatorConfig": {"HubConfig": {"User": "sysadmin", "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "Port": 3016, "Registry": "gcr.io", "ImagePath": "saas-hub-stg/blackducksoftware", "ImageName": "federator", "ImageVersion": "master"}}'
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
-    name: blackduck-protoform
+    name: blackduck-operator
     namespace: ${NAMESPACE}
 - kind: ClusterRoleBinding
   apiVersion: rbac.authorization.k8s.io/v1beta1
   metadata:
-    name: protoform-admin
+    name: blackduck-operator-admin
   subjects:
   - kind: ServiceAccount
-    name: blackduck-protoform
+    name: blackduck-operator
     namespace: ${NAMESPACE}
   roleRef:
     kind: ClusterRole
@@ -133,4 +144,4 @@ items:
   metadata:
     name: prometheus
   data:
-    prometheus.yml: '{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"blackduck-protoform-scrape","scrape_interval":"5s","static_configs":[{"targets":["blackduck-protoform:8080"]}]}]}'
+    prometheus.yml: '{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"blackduck-operator-scrape","scrape_interval":"5s","static_configs":[{"targets":["blackduck-operator:8080"]}]}]}'

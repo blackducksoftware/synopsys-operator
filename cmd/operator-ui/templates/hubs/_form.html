@@ -39,15 +39,15 @@
     <%= f.SelectTag("Spec.BackupSupport", {options: ["Yes", "No"], value: "Yes", label: "Backup Support", onchange: "checkBackUpSupport()"}) %>
     <div id="backupSupportId">
       <label id="backupIntervalError" hidden="hidden">Backup interval is required when Backup is enabled</label>
-      <%= f.InputTag("Spec.BackupInterval", {value: "30", label: "Backup Interval", placeholder: "Required only if the Backup support is 'Yes'. It should be integer value"}) %>
-      <%= f.SelectTag("Spec.BackupUnit", {options: ["Minute(s)", "Hour(s)", "Day(s)", "Week(s)"], value: "Minute(s)", label: "Backup Unit"}) %>
+      <%= f.InputTag("Spec.BackupInterval", {value: "30", label: "Backup Interval", placeholder: "Required for Backup support. It should be of integer value", required: true}) %>
+      <%= f.SelectTag("Spec.BackupUnit", {options: ["Minute(s)", "Hour(s)", "Day(s)", "Week(s)"], value: "Minute(s)", label: "Backup Unit", required: true}) %>
     </div>
     <%= f.SelectTag("Spec.DbPrototype", {options: hub.View.Clones, value: "empty", onchange: "checkPVC()", label: "Clone DB"}) %>
     <div id="pvcId">
       <%= f.SelectTag("Spec.PVCStorageClass", {value: "none", label: "PVC StorageClass", options: hub.View.StorageClasses}) %>
       <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: "Artifacts", label: "Scan Type", onchange: "checkScanType()"}) %>
-      <%= f.InputTag("Spec.PVCClaimSize", {value: "20Gi", label: "PVC ClaimSize"}) %>
-      <%= f.InputTag("Spec.NFSServer", {value: "", label: "NFS Server", placeholder: "Required only if auto provision disabled in storage classes"}) %>
+      <%= f.InputTag("Spec.PVCClaimSize", {value: "20Gi", label: "PVC ClaimSize", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+      <%= f.InputTag("Spec.NFSServer", {value: "", label: "NFS Server", placeholder: "Required for disabled auto provision in storage classes", required: true}) %>
     </div>
     <%= f.SelectTag("Spec.CertificateName", {value: "default", options: hub.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
     <div id="certificateId">

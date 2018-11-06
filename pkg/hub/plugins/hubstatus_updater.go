@@ -25,9 +25,8 @@ import (
 	"fmt"
 	"time"
 
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/hubutils"
+	hubutils "github.com/blackducksoftware/perceptor-protoform/pkg/hub/util"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -49,7 +48,7 @@ type HubStatusUpdater struct {
 func (i *HubStatusUpdater) update() {
 	hL, _ := i.HubClient.SynopsysV1().Hubs("").List(metav1.ListOptions{})
 	for _, hub := range hL.Items {
-		podList, _ := i.KubeClient.Core().Pods("").List(metav1.ListOptions{})
+		podList, _ := i.KubeClient.Core().Pods(hub.Namespace).List(metav1.ListOptions{})
 		hisstorg := map[string]string{}
 		for _, pod := range podList.Items {
 			if pod.Status.Phase != v1.PodRunning {
@@ -76,7 +75,7 @@ func (i *HubStatusUpdater) Run(ch <-chan struct{}) {
 		},
 	}
 	_, ctrl := cache.NewInformer(lw,
-		&hubv1.Hub{},
+		&v1.Pod{},
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
