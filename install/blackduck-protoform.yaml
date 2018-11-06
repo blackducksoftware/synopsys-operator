@@ -144,4 +144,4 @@ items:
   metadata:
     name: prometheus
   data:
-    prometheus.yml: '{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"blackduck-operator-scrape","scrape_interval":"5s","static_configs":[{"targets":["blackduck-operator:8080"]}]}]}'
+    prometheus.yml: '{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"blackduck-operator-scrape","scrape_interval":"5s","static_configs":[{"targets":["blackduck-operator:8080", "blackduck-operator-ui:3000"]}]}]}'
