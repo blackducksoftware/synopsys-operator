@@ -1,7 +1,6 @@
 #!/bin/bash
 
 unset DYLD_INSERT_LIBRARIES
-
 echo "args = Namespace, Reg_key, branch"
 
 NS=$1
@@ -28,8 +27,8 @@ oc new-project $NS
 
 oc create -f /tmp/secret -n $NS
 
-cat ../blackduck-protoform.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' | sed 's/${BRANCHNAME}/'${BRANCH}'/g' | oc create --namespace=$NS -f -
+cat ../blackduck-operator.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' | sed 's/${BRANCHNAME}/'${BRANCH}'/g' | oc create --namespace=$NS -f -
 
-#oc expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-np --type=NodePort --namespace=$NS
+#oc expose rc blackduck-operator --port=8080 --target-port=8080 --name=blackduck-operator-np --type=NodePort --namespace=$NS
 
-#oc expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-lb --type=LoadBalancer --namespace=$NS
+#oc expose rc blackduck-operator --port=8080 --target-port=8080 --name=blackduck-operator-lb --type=LoadBalancer --namespace=$NS
