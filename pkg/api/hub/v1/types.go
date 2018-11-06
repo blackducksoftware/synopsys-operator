@@ -50,8 +50,6 @@ type HubView struct {
 type HubSpec struct {
 	Namespace        string           `json:"namespace"`
 	Flavor           string           `json:"flavor"`
-	DockerRegistry   string           `json:"dockerRegistry"`
-	DockerRepo       string           `json:"dockerRepo"`
 	HubVersion       string           `json:"hubVersion"`
 	DbPrototype      string           `json:"dbPrototype"`
 	BackupInterval   string           `json:"backupInterval"`
@@ -68,8 +66,7 @@ type HubSpec struct {
 	HubType          string           `json:"hubType"`
 	State            string           `json:"state"`
 	Environs         []string         `json:"environs"`
-	ImagePrefix      string           `json:"imagePrefix"`
-	ImageTagMap      []string         `json:"imageTagMap"`
+	ImageRegistries  []string         `json:"imageRegistries"`
 	ImageUIDMap      map[string]int64 `json:"imageUidMap"`
 }
 

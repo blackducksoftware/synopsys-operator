@@ -22,8 +22,6 @@ under the License.
 package containers
 
 import (
-	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -36,7 +34,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 	// hubAuthGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-authentication", fmt.Sprintf("%s-%s", "authentication-disk", c.hubSpec.Namespace), "ext4")
 	hubAuthEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")
 	hubAuthContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-authentication", Image: fmt.Sprintf("%s/%s/%s-authentication:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("authentication")),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-authentication", Image: c.getFullContainerName("authentication"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: authEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{

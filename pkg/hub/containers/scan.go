@@ -22,8 +22,6 @@ under the License.
 package containers
 
 import (
-	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -35,7 +33,7 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "scan-mem", FromName: "hub-config-resources"})
 	hubScanEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-scan")
 	hubScanContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-scan", Image: fmt.Sprintf("%s/%s/%s-scan:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("scan")),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-scan", Image: c.getFullContainerName("scan"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ScanMemoryLimit, MaxMem: c.hubContainerFlavor.ScanMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: scannerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{

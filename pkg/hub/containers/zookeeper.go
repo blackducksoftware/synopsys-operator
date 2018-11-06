@@ -22,8 +22,6 @@ under the License.
 package containers
 
 import (
-	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -33,7 +31,7 @@ import (
 func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
 	zookeeperEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper")
 	zookeeperContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: fmt.Sprintf("%s/%s/%s-zookeeper:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("zookeeper")),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: c.getFullContainerName("zookeeper"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: zookeeperMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "dir-zookeeper", MountPath: "/opt/blackduck/hub/logs"}},

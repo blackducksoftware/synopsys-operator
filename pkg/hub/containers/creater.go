@@ -22,6 +22,7 @@ under the License.
 package containers
 
 import (
+	"fmt"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -34,7 +35,7 @@ import (
 
 // TagGetterInterface ...
 type TagGetterInterface interface {
-	getTag(s string) string
+	getFullContainerName(s string) string
 	getUID(s string) *int64
 }
 
@@ -47,11 +48,11 @@ func (c *Creater) PostEditContainer(cc *util.Container) {
 func PostEdit(cc *util.Container, c TagGetterInterface) {
 	// Replace the tag with any tag maps to individual containers.
 	// This is the "joe gamache wants to try a rogue jobrunner" feature.
-	if c.getTag(cc.ContainerConfig.Name) != "" {
+	if c.getFullContainerName(cc.ContainerConfig.Name) != "" {
 		fields := strings.Split(cc.ContainerConfig.Image, ":")
-		if c.getTag(cc.ContainerConfig.Name) != "" {
+		if c.getFullContainerName(cc.ContainerConfig.Name) != "" {
 			tagIndex := len(fields) - 1
-			tagValue := c.getTag(cc.ContainerConfig.Name)
+			tagValue := c.getFullContainerName(cc.ContainerConfig.Name)
 			fields[tagIndex] = tagValue
 			//rejoin the split tags
 			image := strings.Join(fields, ":")
@@ -75,20 +76,11 @@ type Creater struct {
 	dbSecretVolume     *components.Volume
 	dbEmptyDir         *components.Volume
 	proxySecretVolume  *components.Volume
-	containerTags      map[string]string
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
 	dbSecretVolume *components.Volume, dbEmptyDir *components.Volume, proxySecretVolume *components.Volume) *Creater {
-	containerTags := hubSpec.ImageTagMap
-	imageTags := map[string]string{}
-	for _, containerTag := range containerTags {
-		tags := strings.SplitN(containerTag, ":", 2)
-		if len(tags) == 2 {
-			imageTags[strings.Trim(tags[0], " ")] = strings.Trim(tags[1], " ")
-		}
-	}
 	return &Creater{
 		config:             config,
 		hubSpec:            hubSpec,
@@ -98,17 +90,23 @@ func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavo
 		dbSecretVolume:     dbSecretVolume,
 		dbEmptyDir:         dbEmptyDir,
 		proxySecretVolume:  proxySecretVolume,
-		containerTags:      imageTags,
 	}
 }
 
 // getTag returns the tag that is specified for a container by trying to look in the custom tags provided,
 // if those arent filled, it uses the "HubVersion" as a default, which works for blackduck < 5.1.0.
-func (c *Creater) getTag(baseContainer string) string {
-	if tag, ok := c.containerTags[baseContainer]; ok {
-		return tag
+func (c *Creater) getFullContainerName(baseContainer string) string {
+	for _, reg := range c.hubSpec.ImageRegistries {
+		// normal case: we expect registries
+		if strings.Contains(reg, baseContainer) {
+			logrus.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, baseContainer)
+			return reg
+		}
 	}
-	return c.hubSpec.HubVersion
+	img := fmt.Sprintf("docker.io/blackducksoftware/blackduck-%v:%v", baseContainer, c.hubSpec.HubVersion)
+	logrus.Warn("Couldn't get container name for : %v, set it manually in the deployment, returning a reasonable default instead %v.", baseContainer, img)
+	logrus.Warn("In the future, you should provide fully qualified images for every single container when running the blackduck operator.")
+	return img
 }
 
 // getTag returns the tag that is specified for a container by trying to look in the custom tags provided,

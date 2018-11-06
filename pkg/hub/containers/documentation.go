@@ -22,8 +22,6 @@ under the License.
 package containers
 
 import (
-	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -32,7 +30,7 @@ import (
 // GetDocumentationDeployment will return the documentation deployment
 func (c *Creater) GetDocumentationDeployment() *components.ReplicationController {
 	documentationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: fmt.Sprintf("%s/%s/%s-documentation:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("documentation")),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: c.getFullContainerName("documentation"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.DocumentationMemoryLimit, MaxMem: c.hubContainerFlavor.DocumentationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: c.hubConfigEnv,
 		PortConfig: &horizonapi.PortConfig{ContainerPort: documentationPort, Protocol: horizonapi.ProtocolTCP},

@@ -33,7 +33,7 @@ import (
 func (c *Creater) GetCfsslDeployment() *components.ReplicationController {
 	cfsslEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-cfssl")
 	cfsslContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: fmt.Sprintf("%s/%s/%s-cfssl:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("cfssl")),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: fmt.Sprintf("%s/%s/%s-cfssl:%s", c.getFullContainerName("cfssl")),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.CfsslMemoryLimit, MaxMem: c.hubContainerFlavor.CfsslMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "dir-cfssl", MountPath: "/etc/cfssl"}},

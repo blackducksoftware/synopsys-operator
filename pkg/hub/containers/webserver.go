@@ -22,8 +22,6 @@ under the License.
 package containers
 
 import (
-	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -34,7 +32,7 @@ func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 	webServerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
 	webServerSecretVol, _ := util.CreateSecretVolume("certificate", "blackduck-certificate", 0777)
 	webServerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: fmt.Sprintf("%s/%s/%s-nginx:%s", c.hubSpec.DockerRegistry, c.hubSpec.DockerRepo, c.hubSpec.ImagePrefix, c.getTag("nginx")),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.getFullContainerName("nginx"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit, MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: c.hubConfigEnv,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
