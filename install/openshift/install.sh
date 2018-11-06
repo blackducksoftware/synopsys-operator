@@ -1,7 +1,6 @@
 #!/bin/bash
 
 unset DYLD_INSERT_LIBRARIES
-OC=/Users/manikan/Downloads/openshift-origin-client-tools-v3.9.0-191fece-mac/oc
 echo "args = Namespace, Reg_key, branch"
 
 NS=$1
@@ -24,12 +23,12 @@ metadata:
 type: Opaque
 EOF
 
-$OC new-project $NS
+oc new-project $NS
 
-$OC create -f /tmp/secret -n $NS
+oc create -f /tmp/secret -n $NS
 
-cat ../blackduck-operator.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' | sed 's/${BRANCHNAME}/'${BRANCH}'/g' | $OC create --namespace=$NS -f -
+cat ../blackduck-operator.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' | sed 's/${BRANCHNAME}/'${BRANCH}'/g' | oc create --namespace=$NS -f -
 
-#$OC expose rc blackduck-operator --port=8080 --target-port=8080 --name=blackduck-operator-np --type=NodePort --namespace=$NS
+#oc expose rc blackduck-operator --port=8080 --target-port=8080 --name=blackduck-operator-np --type=NodePort --namespace=$NS
 
-#$OC expose rc blackduck-operator --port=8080 --target-port=8080 --name=blackduck-operator-lb --type=LoadBalancer --namespace=$NS
+#oc expose rc blackduck-operator --port=8080 --target-port=8080 --name=blackduck-operator-lb --type=LoadBalancer --namespace=$NS
