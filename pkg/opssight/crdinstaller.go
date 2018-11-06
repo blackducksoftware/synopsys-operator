@@ -200,7 +200,8 @@ func (c *CRDInstaller) CreateHandler() {
 
 	hubClient, err := hubclient.NewForConfig(c.config.KubeConfig)
 	if err != nil {
-		log.Panicf("unable to create the hub client due to %+v", err)
+		log.Errorf("unable to create the hub client for opssight: %+v", err)
+		return
 	}
 
 	c.config.handler = &Handler{
