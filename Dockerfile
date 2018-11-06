@@ -37,6 +37,4 @@ RUN chmod 777 ./app
 RUN chmod 777 ./blackduckctl
 RUN chmod 777 ./operator
 
-EXPOSE 3000
-
 CMD /bin/app
