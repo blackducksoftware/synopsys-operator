@@ -32,7 +32,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/containers"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/hubutils"
+	hubutils "github.com/blackducksoftware/perceptor-protoform/pkg/hub/util"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
