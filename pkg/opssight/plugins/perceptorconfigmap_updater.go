@@ -128,7 +128,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 		return errors.Annotatef(err, "unable to get configmap %s in %s", configMapName, opsSightSpec.Namespace)
 	}
 
-	cmKey := fmt.Sprintf("%s.yaml", configMapName)
+	cmKey := fmt.Sprintf("%s.json", configMapName)
 	log.Infof("opssight send hubs: looking for key %s, found keys %+v", cmKey, getKeys(configMap.Data))
 
 	var value perceptorConfig
@@ -146,7 +146,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 		return errors.Trace(err)
 	}
 
-	configMap.Data[fmt.Sprintf("%s.yaml", configMapName)] = string(jsonBytes)
+	configMap.Data[cmKey] = string(jsonBytes)
 	log.Debugf("updated configmap %s in %s is %+v", configMapName, opsSightSpec.Namespace, configMap)
 	_, err = kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
 	if err != nil {
