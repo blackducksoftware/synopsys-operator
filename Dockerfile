@@ -33,7 +33,10 @@ COPY --from=builder /bin/app /bin/
 COPY --from=builder /bin/blackduckctl /bin/
 COPY --from=builder /bin/operator /bin/
 
-RUN chmod 777 /bin/*
+RUN chmod 777 /bin/app
+RUN chmod 777 /bin/blackduckctl
+RUN chmod 777 /bin/operator
+RUN ls -althr /bin/
 
 EXPOSE 3000
 
