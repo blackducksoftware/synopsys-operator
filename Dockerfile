@@ -33,6 +33,7 @@ COPY --from=builder /bin/app .
 COPY --from=builder /bin/blackduckctl .
 COPY --from=builder /bin/operator .
 
+RUN chmod 777 ./app
 EXPOSE 3000
 
 CMD [exec ./app]
