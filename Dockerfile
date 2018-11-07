@@ -15,6 +15,7 @@ RUN cd cmd/operator ; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/ope
 ### BUILD THE UI
 WORKDIR $BP/cmd/operator-ui
 RUN yarn install --no-progress
+RUN mkdir -p public/assets
 RUN buffalo build --static -o /bin/app
 
 FROM alpine
@@ -37,4 +38,4 @@ RUN chmod 777 ./app
 RUN chmod 777 ./blackduckctl
 RUN chmod 777 ./operator
 
-CMD /bin/app
+CMD ./app
