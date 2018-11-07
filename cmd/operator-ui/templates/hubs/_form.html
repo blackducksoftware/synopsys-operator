@@ -58,7 +58,6 @@
         <li value="<%= environ %>"><%= environ %></li>
       <% } %>
     </ul>
-    <%= f.InputTag("Spec.ImagePrefix", {value: "hub", required: true, label: "Image Prefix *", placeholder: "e.g. hub or blackduck"}) %>
     <label>Container Image Tags</label>
     <ul id="containerTags" name="containerTags" contenteditable="true">
       <%= for (containerTag) in  hub.View.ContainerTags { %>
