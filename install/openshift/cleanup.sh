@@ -16,6 +16,6 @@ oc delete clusterrolebinding blackduck-operator-admin
 oc delete clusterrole skyfire
 oc delete clusterrole pod-perceiver
 
-oc delete clusterrolebinding skyfire
-oc delete clusterrolebinding perceptor-scanner
-oc delete clusterrolebinding pod-perceiver
+#oc delete clusterrolebinding skyfire
+#oc delete clusterrolebinding perceptor-scanner
+#oc delete clusterrolebinding pod-perceiver
