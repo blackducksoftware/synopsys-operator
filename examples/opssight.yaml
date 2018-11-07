@@ -50,6 +50,7 @@ spec:
       image:          "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master"
       name:           "skyfire"
       port:           3005
+      prometheusPort: 3006
       serviceAccount: "skyfire"
       hubClientTimeoutSeconds: 120
       hubDumpPauseSeconds: 240
