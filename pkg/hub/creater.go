@@ -24,6 +24,7 @@ package hub
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"strings"
 	"time"
 
@@ -58,8 +59,16 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
-// DeleteHub will delete the Black Duck Hub
-func (hc *Creater) DeleteHub(namespace string) {
+// DeleteHub will delete the Black Duck Hub IF IT MATCHES THE DELETION REGEX, and only then.
+func (hc *Creater) DeleteHubIfMatchesDeletionRegex(namespace string) error {
+
+	// not outsourcing this to a separate function b/c its critical that we never delete a hub accidentally.
+	// MAKE SURE you know exactly what your doing if you modify this function.
+	log.Info("Only deleting hub %v if it matches the deletion regex.  IF you want to change the flexibility, redeploy protoform with AutoDeleteHubRegex='[a-z]([-a-z0-9]*[a-z0-9])?' which will allow auto delete of any hub.")
+	if match, e := regexp.MatchString(hc.Config.AutoDeleteHubRegex, namespace); !match {
+		return fmt.Errorf("DELETE HUB: %v : Didn't match the deletion regex %v.", hc.Config.AutoDeleteHubRegex, e)
+	}
+
 	var err error
 	// Verify whether the namespace exist
 	_, err = util.GetNamespace(hc.KubeClient, namespace)
@@ -95,6 +104,7 @@ func (hc *Creater) DeleteHub(namespace string) {
 	if err != nil {
 		log.Errorf("unable to delete the cluster role binding for %+v", namespace)
 	}
+	return nil
 }
 
 // CreateHub will create the Black Duck Hub

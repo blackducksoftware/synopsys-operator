@@ -128,7 +128,8 @@ func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
 	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
-	hubCreator.DeleteHub(name)
+
+	hubCreator.DeleteHubIfMatchesDeletionRegex(name)
 	h.callHubFederator()
 
 	//Set spec/state  and status/state to started
