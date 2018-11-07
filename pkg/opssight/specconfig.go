@@ -95,6 +95,7 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 			KubeDumpIntervalSeconds:      config.Skyfire.KubeDumpIntervalSeconds,
 			PerceptorDumpIntervalSeconds: config.Skyfire.PerceptorDumpIntervalSeconds,
 			Port:                         config.Skyfire.Port,
+			PrometheusPort:               config.Skyfire.PrometheusPort,
 			UseInClusterConfig:           true,
 		},
 	}
