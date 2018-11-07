@@ -167,6 +167,13 @@ func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 		Port:       int32(p.config.Skyfire.Port),
 		TargetPort: fmt.Sprintf("%d", p.config.Skyfire.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       "main-skyfire",
+	})
+	service.AddPort(horizonapi.ServicePortConfig{
+		Port:       int32(p.config.Skyfire.PrometheusPort),
+		TargetPort: fmt.Sprintf("%d", p.config.Skyfire.PrometheusPort),
+		Protocol:   horizonapi.ProtocolTCP,
+		Name:       "skyfire-prometheus",
 	})
 
 	service.AddSelectors(map[string]string{"name": p.config.Skyfire.Name})
