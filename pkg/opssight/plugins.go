@@ -152,7 +152,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 
 	value.Hub.Hosts = hubs
 
-	jsonBytes, err := json.Marshal(value)
+	jsonBytes, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
 		return errors.Trace(err)
 	}
