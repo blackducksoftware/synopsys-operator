@@ -142,7 +142,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 	cmKey := fmt.Sprintf("%s.json", configMapName)
 	log.Infof("opssight send hubs: looking for key %s, found keys %+v", cmKey, getKeys(configMap.Data))
 
-	var value OpssightConfigMap
+	var value MainOpssightConfigMap
 	data := configMap.Data[cmKey]
 	log.Debugf("found config map data: %s", data)
 	err = json.Unmarshal([]byte(data), &value)

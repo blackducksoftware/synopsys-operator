@@ -34,7 +34,7 @@ import (
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
 	config    *v1.OpsSightSpec
-	configMap *OpssightConfigMap
+	configMap *MainOpssightConfigMap
 }
 
 // NewSpecConfig will create the OpsSight object
@@ -47,7 +47,7 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 			User:     reg.User,
 		})
 	}
-	configMap := &OpssightConfigMap{
+	configMap := &MainOpssightConfigMap{
 		LogLevel: config.LogLevel,
 		Hub: HubConfig{
 			Hosts:               []string{},

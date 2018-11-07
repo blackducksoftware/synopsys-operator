@@ -106,8 +106,8 @@ type SkyfireConfig struct {
 	HubDumpPauseSeconds          int
 }
 
-// OpssightConfigMap ...
-type OpssightConfigMap struct {
+// MainOpssightConfigMap ...
+type MainOpssightConfigMap struct {
 	Perceiver   PerceiverConfig
 	Hub         HubConfig
 	Perceptor   PerceptorConfig
@@ -117,7 +117,7 @@ type OpssightConfigMap struct {
 	LogLevel    string
 }
 
-func (cm *OpssightConfigMap) jsonString() (string, error) {
+func (cm *MainOpssightConfigMap) jsonString() (string, error) {
 	bytes, err := json.MarshalIndent(cm, "", "  ")
 	if err != nil {
 		return "", errors.Annotate(err, "unable to serialize to json")
@@ -125,7 +125,7 @@ func (cm *OpssightConfigMap) jsonString() (string, error) {
 	return string(bytes), nil
 }
 
-func (cm *OpssightConfigMap) horizonConfigMap(name string, namespace string, filename string) (*components.ConfigMap, error) {
+func (cm *MainOpssightConfigMap) horizonConfigMap(name string, namespace string, filename string) (*components.ConfigMap, error) {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      name,
 		Namespace: namespace,
