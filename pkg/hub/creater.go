@@ -59,35 +59,35 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
-// DeleteHub will delete the Black Duck Hub IF IT MATCHES THE DELETION REGEX, and only then.
+// DeleteHubIfMatchesDeletionRegex will delete the Black Duck Hub IF IT MATCHES THE DELETION REGEX, and only then.
 func (hc *Creater) DeleteHubIfMatchesDeletionRegex(namespace string) error {
 
 	// not outsourcing this to a separate function b/c its critical that we never delete a hub accidentally.
 	// MAKE SURE you know exactly what your doing if you modify this function.
-	log.Info("Only deleting hub %v if it matches the deletion regex.  IF you want to change the flexibility, redeploy protoform with AutoDeleteHubRegex='[a-z]([-a-z0-9]*[a-z0-9])?' which will allow auto delete of any hub.")
+	log.Infof("only deleting hub %v if it matches the deletion regex.  IF you want to change the flexibility, redeploy protoform with AutoDeleteHubRegex='[a-z]([-a-z0-9]*[a-z0-9])?' which will allow auto delete of any hub.", namespace)
 	if match, e := regexp.MatchString(hc.Config.AutoDeleteHubRegex, namespace); !match {
-		return fmt.Errorf("DELETE HUB: %v : Didn't match the deletion regex %v.", hc.Config.AutoDeleteHubRegex, e)
+		return fmt.Errorf("DELETE HUB: %v : Didn't match the deletion regex %v", hc.Config.AutoDeleteHubRegex, e)
 	}
 
 	var err error
 	// Verify whether the namespace exist
 	_, err = util.GetNamespace(hc.KubeClient, namespace)
 	if err != nil {
-		log.Errorf("Unable to find the namespace %+v because %+v", namespace, err)
+		log.Errorf("unable to find the namespace %+v because %+v", namespace, err)
 	} else {
 		// Delete a namespace
 		err = util.DeleteNamespace(hc.KubeClient, namespace)
 		if err != nil {
-			log.Errorf("Unable to delete the namespace %+v because %+v", namespace, err)
+			log.Errorf("unable to delete the namespace %+v because %+v", namespace, err)
 		}
 
 		for {
 			// Verify whether the namespace deleted
 			ns, err := util.GetNamespace(hc.KubeClient, namespace)
-			log.Infof("Namespace: %v, status: %v", namespace, ns.Status)
+			log.Infof("namespace: %v, status: %v", namespace, ns.Status)
 			time.Sleep(10 * time.Second)
 			if err != nil {
-				log.Infof("Deleted the namespace %+v", namespace)
+				log.Infof("deleted the namespace %+v", namespace)
 				break
 			}
 		}
@@ -109,7 +109,7 @@ func (hc *Creater) DeleteHubIfMatchesDeletionRegex(namespace string) error {
 
 // CreateHub will create the Black Duck Hub
 func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error) {
-	log.Debugf("Create Hub details for %s: %+v", createHub.Namespace, createHub)
+	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.KubeConfig)
@@ -145,7 +145,7 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		}
 	}
 
-	log.Debugf("Before init: %+v", &createHub)
+	log.Debugf("before init: %+v", &createHub)
 	// Create the config-maps, secrets and postgres container
 	err = hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv, adminPassword, userPassword)
 	if err != nil {
