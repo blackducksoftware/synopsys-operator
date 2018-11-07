@@ -37,12 +37,16 @@ type Config struct {
 	PostgresRestartInMins int
 	NFSPath               string
 	HubFederatorConfig    *HubFederatorConfig
+	AutoDeleteHubRegex    string
 }
 
 // SelfSetDefaults ...
 func (config *Config) SelfSetDefaults() {
 	config.HubFederatorConfig = &HubFederatorConfig{}
 	config.HubFederatorConfig.HubConfig = &HubConfig{}
+
+	// by default, only delete namespaces with complicated prefixes :)
+	config.AutoDeleteHubRegex = "blackduck-ephemeral-[a-z]([-a-z0-9]*[a-z0-9])?"
 }
 
 // HubFederatorConfig will have the configuration related to hub federator
