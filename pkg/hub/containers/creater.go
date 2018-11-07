@@ -36,12 +36,6 @@ import (
 
 // PostEditContainer ...
 func (c *Creater) PostEditContainer(cc *util.Container) {
-	// Replace the tag with any tag maps to individual containers.
-	// This is the "joe gamache wants to try a rogue jobrunner" feature.
-	if c.getFullContainerName(cc.ContainerConfig.Name) != "" {
-		cc.ContainerConfig.Image = c.getFullContainerName(cc.ContainerConfig.Name)
-		log.Infof("Image for %v was tag modded to %v", cc.ContainerConfig.Name, cc.ContainerConfig.Image)
-	}
 	if c.getUID(cc.ContainerConfig.Name) != nil {
 		cc.ContainerConfig.UID = c.getUID(cc.ContainerConfig.Name)
 		log.Infof("Image UID %v was tag modded to %v", cc.ContainerConfig.Name, cc.ContainerConfig.UID)
