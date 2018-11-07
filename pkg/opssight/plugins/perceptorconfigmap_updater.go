@@ -108,17 +108,33 @@ func NewConfigMapUpdater(config *protoform.Config, kubeClient *kubernetes.Client
 	}
 }
 
+func getKeys(dict map[string]string) []string {
+	keys := make([]string, len(dict))
+	i := 0
+	for k := range dict {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
+
 // sendHubs is one possible way to configure the perceptor hub family.
 func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
 	configMapName := opsSightSpec.ConfigMapName
+	log.Infof("opssight send hubs: looking for config map %s", opsSightSpec.ConfigMapName)
 	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(configMapName, metav1.GetOptions{})
 
 	if err != nil {
 		return errors.Annotatef(err, "unable to get configmap %s in %s", configMapName, opsSightSpec.Namespace)
 	}
 
+	cmKey := fmt.Sprintf("%s.json", configMapName)
+	log.Infof("opssight send hubs: looking for key %s, found keys %+v", cmKey, getKeys(configMap.Data))
+
 	var value perceptorConfig
-	err = json.Unmarshal([]byte(configMap.Data[fmt.Sprintf("%s.yaml", configMapName)]), &value)
+	data := configMap.Data[cmKey]
+	log.Debugf("found config map data: %s", data)
+	err = json.Unmarshal([]byte(data), &value)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -130,7 +146,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 		return errors.Trace(err)
 	}
 
-	configMap.Data[fmt.Sprintf("%s.yaml", configMapName)] = string(jsonBytes)
+	configMap.Data[cmKey] = string(jsonBytes)
 	log.Debugf("updated configmap %s in %s is %+v", configMapName, opsSightSpec.Namespace, configMap)
 	_, err = kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
 	if err != nil {

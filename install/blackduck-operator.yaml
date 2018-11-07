@@ -39,6 +39,13 @@ items:
           imagePullPolicy: Always
           ports:
           - containerPort: 3000
+          env:
+          - name: "ADDR"
+            value: "0.0.0.0"
+          - name: "PORT"
+            value: "3000"
+          - name: "GO_ENV"
+            value: "development"
           command:
           - ./app
         volumes:
