@@ -42,7 +42,7 @@
             <td><%= hub.Spec.PVCStorageClass %> <%= hub.Spec.ScanType %> <%= hub.Spec.PVCClaimSize %></td>
             <td><%= hub.Spec.CertificateName %></td>
             <td><%= hub.Status.State %></td>
-            <td><a href="https://<%= hub.Status.IP %>"><%= hub.Status.IP %></a></td>
+            <td><a href="https://<%= hub.Status.IP %>" target="_blank"><%= hub.Status.IP %></a></td>
             <td colspan="3"><%= hub.Status.ErrorMessage %></td>
             <td>
               <a href="<%= hubPath({ hub_id: hub.Spec.Namespace }) %>" class="btn btn-info">View</a>
