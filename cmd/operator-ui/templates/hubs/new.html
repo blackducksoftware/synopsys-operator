@@ -126,7 +126,7 @@ function validateAndGetValues() {
 
   var containersList = document.getElementById("containerTags");
   var containerItems = containersList.getElementsByTagName('li'); 
-  var containerTags = document.getElementById("hub-Spec.ImageTagMap")
+  var containerTags = document.getElementById("hub-Spec.ImageRegistries")
   for (var i = 0; i < containerItems.length; i++) {
     var data = containerItems[i].firstChild.data;
     var opt = document.createElement('option');
