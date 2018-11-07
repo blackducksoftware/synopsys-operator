@@ -19,13 +19,9 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package plugins
+package opssight
 
-// This is a controller that updates the configmap
-// in perceptor periodically.
-// It is assumed that the configmap in perceptor will
-// roll over any time this is updated, and if not, that
-// there is a problem in the orchestration environment.
+// This is a controller that deletes the hub based on the delete threshold
 
 import (
 	"crypto/tls"
@@ -36,49 +32,64 @@ import (
 	"strings"
 	"time"
 
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/juju/errors"
-
-	//extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
-
 	log "github.com/sirupsen/logrus"
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+
+	//extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
+
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type hubConfig struct {
-	Hosts                     []string
-	User                      string
-	PasswordEnvVar            string
-	ClientTimeoutMilliseconds *int
-	Port                      *int
-	ConcurrentScanLimit       *int
-	TotalScanLimit            *int
+// DeleteHub ...
+type DeleteHub struct {
+	Config         *protoform.Config
+	KubeClient     *kubernetes.Clientset
+	OpsSightClient *opssightclientset.Clientset
+	HubClient      *hubclient.Clientset
+	OpsSightSpec   *v1.OpsSightSpec
 }
 
-type timings struct {
-	CheckForStalledScansPauseHours *int
-	StalledScanClientTimeoutHours  *int
-	ModelMetricsPauseSeconds       *int
-	UnknownImagePauseMilliseconds  *int
+// Run is a BLOCKING function which should be run by the framework .
+func (d *DeleteHub) Run(resources api.ControllerResources, ch chan struct{}) error {
+	hubCounts, err := d.getHubsCount()
+	if err != nil {
+		return err
+	}
+	// whether the max no of hub is reached?
+	if d.OpsSightSpec.Hub.MaxCount == hubCounts {
+
+	}
+
+	return nil
 }
 
-type perceptorConfig struct {
-	Hub         *hubConfig
-	Timings     *timings
-	UseMockMode bool
-	Port        *int
-	LogLevel    string
+func (d *DeleteHub) getHubsCount() (int, error) {
+	hubs, err := util.ListHubs(d.HubClient, d.Config.Namespace)
+	if err != nil {
+		return 0, fmt.Errorf("unable to get hubs due to %+v", err)
+	}
+	return len(hubs.Items), nil
 }
+
+// This is a controller that updates the configmap
+// in perceptor periodically.
+// It is assumed that the configmap in perceptor will
+// roll over any time this is updated, and if not, that
+// there is a problem in the orchestration environment.
 
 // ConfigMapUpdater ...
 type ConfigMapUpdater struct {
@@ -131,7 +142,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 	cmKey := fmt.Sprintf("%s.json", configMapName)
 	log.Infof("opssight send hubs: looking for key %s, found keys %+v", cmKey, getKeys(configMap.Data))
 
-	var value perceptorConfig
+	var value OpssightConfigMap
 	data := configMap.Data[cmKey]
 	log.Debugf("found config map data: %s", data)
 	err = json.Unmarshal([]byte(data), &value)
