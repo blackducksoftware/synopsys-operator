@@ -110,8 +110,8 @@ func (in *HubSpec) DeepCopyInto(out *HubSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.ImageTagMap != nil {
-		in, out := &in.ImageTagMap, &out.ImageTagMap
+	if in.ImageRegistries != nil {
+		in, out := &in.ImageRegistries, &out.ImageRegistries
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

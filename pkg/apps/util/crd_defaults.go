@@ -46,14 +46,11 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 func GetHubDefaultValue() *hubv1.HubSpec {
 	return &hubv1.HubSpec{
 		Flavor:          "small",
-		DockerRegistry:  "docker.io",
-		DockerRepo:      "blackducksoftware",
 		HubVersion:      "5.0.0",
 		DbPrototype:     "empty",
 		CertificateName: "default",
 		HubType:         "worker",
 		Environs:        []string{},
-		ImagePrefix:     "hub",
 	}
 }
 
