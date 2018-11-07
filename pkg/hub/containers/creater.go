@@ -28,41 +28,23 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	hubutils "github.com/blackducksoftware/perceptor-protoform/pkg/hub/util"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
-// TagGetterInterface ...
-type TagGetterInterface interface {
-	getFullContainerName(s string) string
-	getUID(s string) *int64
-}
-
-// PostEditContainer edits to containers (like tags, uids) go here!
+// PostEditContainer ...
 func (c *Creater) PostEditContainer(cc *util.Container) {
-	PostEdit(cc, c)
-}
-
-// PostEdit ...
-func PostEdit(cc *util.Container, c TagGetterInterface) {
 	// Replace the tag with any tag maps to individual containers.
 	// This is the "joe gamache wants to try a rogue jobrunner" feature.
 	if c.getFullContainerName(cc.ContainerConfig.Name) != "" {
-		fields := strings.Split(cc.ContainerConfig.Image, ":")
-		if c.getFullContainerName(cc.ContainerConfig.Name) != "" {
-			tagIndex := len(fields) - 1
-			tagValue := c.getFullContainerName(cc.ContainerConfig.Name)
-			fields[tagIndex] = tagValue
-			//rejoin the split tags
-			image := strings.Join(fields, ":")
-			cc.ContainerConfig.Image = image
-			logrus.Infof("Image for %v was tag modded to %v", cc.ContainerConfig.Name, cc.ContainerConfig.Image)
-		}
+		cc.ContainerConfig.Image = c.getFullContainerName(cc.ContainerConfig.Name)
+		log.Infof("Image for %v was tag modded to %v", cc.ContainerConfig.Name, cc.ContainerConfig.Image)
 	}
 	if c.getUID(cc.ContainerConfig.Name) != nil {
 		cc.ContainerConfig.UID = c.getUID(cc.ContainerConfig.Name)
-		logrus.Infof("Image UID %v was tag modded to %v", cc.ContainerConfig.Name, cc.ContainerConfig.UID)
+		log.Infof("Image UID %v was tag modded to %v", cc.ContainerConfig.Name, cc.ContainerConfig.UID)
 	}
 }
 
@@ -99,13 +81,18 @@ func (c *Creater) getFullContainerName(baseContainer string) string {
 	for _, reg := range c.hubSpec.ImageRegistries {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
-			logrus.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, baseContainer)
+			log.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, c.hubSpec.ImageRegistries, reg, baseContainer)
+			_, err := hubutils.ParseImageString(reg)
+			if err != nil {
+				log.Error(err)
+				break
+			}
 			return reg
 		}
 	}
-	img := fmt.Sprintf("docker.io/blackducksoftware/blackduck-%v:%v", baseContainer, c.hubSpec.HubVersion)
-	logrus.Warn("Couldn't get container name for : %v, set it manually in the deployment, returning a reasonable default instead %v.", baseContainer, img)
-	logrus.Warn("In the future, you should provide fully qualified images for every single container when running the blackduck operator.")
+	img := fmt.Sprintf("docker.io/blackducksoftware/hub-%v:%v", baseContainer, c.hubSpec.HubVersion)
+	log.Warnf("Couldn't get container name for : %v, set it manually in the deployment, returning a reasonable default instead %v.", baseContainer, img)
+	log.Warn("In the future, you should provide fully qualified images for every single container when running the blackduck operator.")
 	return img
 }
 

@@ -22,8 +22,6 @@ under the License.
 package containers
 
 import (
-	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -36,7 +34,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	// webappGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webapp", fmt.Sprintf("%s-%s", "webapp-disk", c.hubSpec.Namespace), "ext4")
 	webappEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
 	webappContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: fmt.Sprintf("%s/%s/%s-webapp:%s", c.getFullContainerName("webapp")),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.getFullContainerName("nginx"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit,
 			MaxCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs: webappEnvs,

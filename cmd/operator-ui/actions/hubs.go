@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/gobuffalo/buffalo"
@@ -104,13 +105,16 @@ func (v HubsResource) common(c buffalo.Context, blackduck *v1.Hub) error {
 		}
 	}
 	blackduck.View.CertificateNames = certificateNames
-	// env, images := hub.GetHubKnobs()
-	env := map[string]string{}
-	images := []string{}
+	env, images := hub.GetHubKnobs()
+	// env := map[string]string{}
+	// images := []string{}
 	environs := []string{}
 	for key, value := range env {
-		environs = append(environs, fmt.Sprintf("%s:%s", key, value))
+		if !strings.EqualFold(value, "") {
+			environs = append(environs, fmt.Sprintf("%s:%s", key, value))
+		}
 	}
+
 	// environs := []string{"IPV4_ONLY:0", "HUB_PROXY_NON_PROXY_HOSTS:solr"}
 	blackduck.View.Environs = environs
 
