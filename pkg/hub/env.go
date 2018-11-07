@@ -46,7 +46,7 @@ RABBIT_MQ_HOST=rabbitmq
 RABBIT_MQ_PORT=5671
 SCANNER_CONCURRENCY=1
 USE_ALERT=0
-USE_BINARY_UPLOADS=1
+USE_BINARY_UPLOADS=0
 ~/go/src/github.com/blackducksoftware/perceptor-protoform/hack
 ~/go/src/github.com/blackducksoftware/perceptor-protoform/hack/hub/docker-compose ~/go/src/github.com/blackducksoftware/perceptor-protoform/hack
 image: blackducksoftware/appcheck-worker:1.0.1
