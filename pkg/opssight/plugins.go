@@ -27,7 +27,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -236,22 +235,16 @@ func (p *ConfigMapUpdater) Run(ch <-chan struct{}) {
 	// make sure this is called from a go func -- it blocks!
 	go hubController.Run(ch)
 	go opssightController.Run(ch)
-
 }
 
-func (p *ConfigMapUpdater) getAllHubs() []string {
+func (p *ConfigMapUpdater) getAllHubs(hubType string) []string {
 	allHubNamespaces := []string{}
 	hubsList, _ := util.ListHubs(p.hubClient, p.config.Namespace)
 	hubs := hubsList.Items
 	for _, hub := range hubs {
-		if strings.EqualFold(hub.Spec.HubType, "worker") {
+		if strings.EqualFold(hub.Spec.HubType, hubType) {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
-			err := p.verifyHub(hubURL, hub.Name)
-			if err == nil {
-				allHubNamespaces = append(allHubNamespaces, hubURL)
-			} else {
-				logger.Errorf("skipping hub %s: %v", hubURL, err)
-			}
+			allHubNamespaces = append(allHubNamespaces, hubURL)
 			logger.Infof("Hub config map controller, namespace is %s", hub.Name)
 		}
 	}
@@ -269,26 +262,33 @@ func (p *ConfigMapUpdater) updateAllHubs() error {
 		return errors.Annotate(err, "unable to get opssights")
 	}
 
-	if len(opssights.Items) > 0 {
-		allHubNamespaces := p.getAllHubs()
-
-		// TODO, replace w/ configmap mutat ?
-		// curl perceptor w/ the latest hub list
-		for _, o := range opssights.Items {
-			err = sendHubs(p.kubeClient, &o.Spec, allHubNamespaces)
-			if err != nil {
-				return errors.Annotate(err, "unable to send hubs")
-			}
-		}
+	if len(opssights.Items) == 0 {
+		return nil
+	}
+	if len(opssights.Items) > 1 {
+		return errors.Errorf("cowardly refusing to update OpsSights: found %d", len(opssights.Items))
 	}
 
+	o := opssights.Items[0]
+	hubType := o.Spec.Hub.HubSpec.HubType
+
+	allHubNamespaces := p.getAllHubs(hubType)
+	for _, o := range opssights.Items {
+		err = sendHubs(p.kubeClient, &o.Spec, allHubNamespaces)
+		if err != nil {
+			return errors.Annotate(err, "unable to send hubs")
+		}
+	}
 	return nil
 }
 
-// updateAllHubs will list all hubs in the cluster, and send them to opssight as scan targets.
+// updateOpsSight will list all hubs in the cluster, and send them to opssight as scan targets.
 // TODO there may be hubs which we dont want opssight to use.  Not sure how to deal with that yet.
 func (p *ConfigMapUpdater) updateOpsSight(obj interface{}) error {
-	opssight := obj.(*opssightv1.OpsSight)
+	opssight, ok := obj.(*opssightv1.OpsSight)
+	if !ok {
+		return errors.Errorf("unable to cast object")
+	}
 	var err error
 	for j := 0; j < 20; j++ {
 		opssight, err = util.GetOpsSight(p.opssightClient, p.config.Namespace, opssight.Name)
@@ -303,43 +303,13 @@ func (p *ConfigMapUpdater) updateOpsSight(obj interface{}) error {
 		time.Sleep(10 * time.Second)
 	}
 
-	allHubNamespaces := p.getAllHubs()
+	hubType := opssight.Spec.Hub.HubSpec.HubType
+	allHubNamespaces := p.getAllHubs(hubType)
 
-	// TODO, replace w/ configmap mutat ?
-	// curl perceptor w/ the latest hub list
 	err = sendHubs(p.kubeClient, &opssight.Spec, allHubNamespaces)
 	if err != nil {
 		return errors.Annotate(err, "unable to send hubs")
 	}
 
 	return nil
-}
-
-func (p *ConfigMapUpdater) verifyHub(hubURL string, name string) error {
-	for i := 0; i < 60; i++ {
-		resp, err := p.httpClient.Get(fmt.Sprintf("https://%s:443/api/current-version", hubURL))
-		if err != nil {
-			logger.Debugf("unable to GET current-version from hub %s", hubURL)
-			time.Sleep(10 * time.Second)
-			_, err := util.GetHub(p.hubClient, name, name)
-			if err != nil {
-				return errors.Trace(err)
-			}
-			continue
-		}
-
-		_, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			logger.Errorf("unable to read the response from hub %s due to %+v", hubURL, err)
-			return errors.Trace(err)
-		}
-		defer resp.Body.Close()
-		logger.Debugf("hub response status for %s is %v", hubURL, resp.Status)
-
-		if resp.StatusCode == 200 {
-			return nil
-		}
-		time.Sleep(10 * time.Second)
-	}
-	return errors.Errorf("unable to get anything from hub %s", hubURL)
 }
