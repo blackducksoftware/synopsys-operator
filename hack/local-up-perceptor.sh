@@ -16,9 +16,11 @@ function verify() {
     if which go ; then
         echo "go found."
     else
-        exit 2
+	echo "no go found !!!"    
+    exit 2
     fi
 
+    echo "so far so good"
     if ! [ -x "$(command -v buffalo)" ]; then
         echo "setting up buffalo"
         brew install gobuffalo/tap/buffalo    
@@ -26,6 +28,7 @@ function verify() {
 }
 
 function run() {
+    echo "running buffalo"
     pushd $GOPATH/src/github.com/blackducksoftware/perceptor-protoform/cmd/operator-ui
         buffalo dev
     popd
