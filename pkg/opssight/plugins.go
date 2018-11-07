@@ -57,7 +57,7 @@ import (
 var logger *log.Entry
 
 func init() {
-	logger = logger.WithField("subsystem", "opssight-plugins")
+	logger = log.WithField("subsystem", "opssight-plugins")
 }
 
 // DeleteHub ...
