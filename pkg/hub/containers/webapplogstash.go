@@ -34,7 +34,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	// webappGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webapp", fmt.Sprintf("%s-%s", "webapp-disk", c.hubSpec.Namespace), "ext4")
 	webappEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
 	webappContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.getFullContainerName("nginx"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.getFullContainerName("webapp"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit,
 			MaxCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs: webappEnvs,
