@@ -76,7 +76,7 @@ func (hc *Creater) BeCareful() error {
 	return nil
 }
 
-// DeleteHubIfMatchesDeletionRegex will delete the Black Duck Hub IF IT MATCHES THE DELETION REGEX, and only then.
+// DeleteHubCarefully will delete the Black Duck Hub IF IT MATCHES THE DELETION REGEX, and only then.
 func (hc *Creater) DeleteHubCarefully(namespace string) error {
 
 	logrus.Infof("Delete hub request %v, will be careful (%v)", namespace, hc.Config.HubDeletionWaitTimeInSeconds)
