@@ -83,8 +83,18 @@ func runProtoform(configPath string) {
 			timeout := time.Duration(deployer.Config.OperatorTimeBombInSeconds) * time.Second
 			logrus.Warnf("Self timeout is enabled to %v seconds", timeout)
 			time.Sleep(timeout)
-			// trip the stop channel after done sleeping
-			stopCh <- struct{}{}
+
+			// trip the stop channel after done sleeping.  wait 20 seconds for debuggability.
+			logrus.Warnf("Timeout tripped.  Exiting In 20  seconds !", timeout)
+			time.Sleep(time.Duration(20) * time.Second)
+
+			// TODO: no idea why this doesnt actually cause the program to exit.  must be another
+			// channel open somewhere....
+			go func() {
+				stopCh <- struct{}{}
+			}()
+			// hard exit b/c of the above comment ^
+			os.Exit(0)
 		}()
 	}
 	<-stopCh
