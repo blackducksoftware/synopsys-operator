@@ -30,6 +30,9 @@ kubectl create -f /tmp/secret -n $NS
 
 cat ../blackduck-operator.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' |sed 's/${BRANCHNAME}/'${BRANCH}'/g' | kubectl create --namespace=$NS -f -
 
-#kubectl expose rc blackduck-operator --port=8080 --target-port=8080 --name=blackduck-operator-np --type=NodePort --namespace=$NS
 
-#kubectl expose rc blackduck-operator --port=8080 --target-port=8080 --name=blackduck-operator-lb --type=LoadBalancer --namespace=$NS
+echo "Done deploying... `kubectl get pods -n $NS`.  Click a key to expose the loadbalancer for (i.e. this will only work in supported kubernetes clouds)."
+read x
+
+kubectl expose rc blackduck-operator --port=80 --target-port=3000 --name=blackduck-operator-tcp --type=LoadBalancer --namespace=blackduck-operator
+kubectl get svc -n $NS
