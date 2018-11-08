@@ -9,7 +9,6 @@ import (
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	"github.com/gobuffalo/buffalo"
-	"github.com/gobuffalo/validate"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,6 +70,17 @@ func (v HubsResource) Show(c buffalo.Context) error {
 // This function is mapped to the path GET /hubs/new
 func (v HubsResource) New(c buffalo.Context) error {
 	blackduck := &v1.Hub{}
+	blackduck.Spec.Flavor = "Small"
+	blackduck.Spec.HubVersion = "5.0.2"
+	blackduck.Spec.DbPrototype = "empty"
+	blackduck.Spec.CertificateName = "default"
+	blackduck.Spec.HubType = "worker"
+	blackduck.Spec.BackupSupport = "Yes"
+	blackduck.Spec.BackupInterval = "30"
+	blackduck.Spec.BackupUnit = "Minutes(s)"
+	blackduck.Spec.PVCStorageClass = "none"
+	blackduck.Spec.ScanType = "Artifacts"
+	blackduck.Spec.PVCClaimSize = "20Gi"
 	err := v.common(c, blackduck)
 	if err != nil {
 		return err
@@ -116,29 +126,40 @@ func (v HubsResource) common(c buffalo.Context, blackduck *v1.Hub) error {
 	}
 
 	// environs := []string{"IPV4_ONLY:0", "HUB_PROXY_NON_PROXY_HOSTS:solr"}
-	blackduck.View.Environs = environs
 
-	blackduck.View.ContainerTags = images
+	if len(blackduck.Spec.Environs) > 0 {
+		blackduck.View.Environs = blackduck.Spec.Environs
+	} else {
+		blackduck.View.Environs = environs
+	}
+
+	if len(blackduck.Spec.ImageRegistries) > 0 {
+		blackduck.View.ContainerTags = blackduck.Spec.ImageRegistries
+	} else {
+		blackduck.View.ContainerTags = images
+	}
 	return nil
 }
 
 func (v HubsResource) redirect(c buffalo.Context, blackduck *v1.Hub, err error) error {
 	if err != nil {
+		blackduck.Status.ErrorMessage = err.Error()
 		// Make blackduck available inside the html template
-		err := v.common(c, blackduck)
+		err = v.common(c, blackduck)
 		if err != nil {
 			log.Error(err)
 			return err
 		}
-		log.Infof("edit hub in create: %+v", blackduck)
+		log.Debugf("edit hub in create: %+v", blackduck)
+
 		c.Set("hub", blackduck)
-		log.Info("Before")
-		validateErrs := validate.NewErrors()
-		log.Info("After")
+
+		// validateErrs := validate.NewErrors()
+		// log.Infof("Error: %s", err.Error())
 		// validateErrs.Add("error", err.Error())
-		log.Infof("validateErrs: %+v", validateErrs)
+		// log.Infof("validateErrs: %+v", validateErrs)
 		// validateErrs.Errors = map[string][]string{"error": []string{errors.WithStack(err).Error()}}
-		c.Set("errors", validateErrs)
+		// c.Set("errors", err.Error())
 		return c.Render(422, r.HTML("hubs/new.html", "old_application.html"))
 	}
 	return nil
@@ -158,16 +179,28 @@ func (v HubsResource) Create(c buffalo.Context) error {
 
 	log.Infof("create hub: %+v", hub)
 
+	_, err := util.GetHub(v.hubClient, hub.Spec.Namespace, hub.Spec.Namespace)
+
+	if err == nil {
+		return v.redirect(c, hub, fmt.Errorf("hub %s already exist", hub.Spec.Namespace))
+	}
+
+	_, err = util.GetNamespace(v.kubeClient, hub.Spec.Namespace)
+
+	if err == nil {
+		return v.redirect(c, hub, fmt.Errorf("namespace %s already exist", hub.Spec.Namespace))
+	}
+
 	ns, err := util.CreateNamespace(v.kubeClient, hub.Spec.Namespace)
 	if err != nil {
-		v.redirect(c, hub, err)
+		return v.redirect(c, hub, err)
 	}
 	log.Infof("created namespace for %s is %+v", hub.Spec.Namespace, ns)
 
 	_, err = util.CreateHub(v.hubClient, hub.Spec.Namespace, &v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hub.Spec.Namespace}, Spec: hub.Spec})
 
 	if err != nil {
-		v.redirect(c, hub, err)
+		return v.redirect(c, hub, err)
 	}
 	// If there are no errors set a success message
 	c.Flash().Add("success", "Blackduck was created successfully")

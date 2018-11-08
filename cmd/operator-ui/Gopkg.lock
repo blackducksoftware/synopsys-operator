@@ -50,21 +50,24 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bc4641a7669c65ac0533452c15af8308ca8e21defbb3f0bee6ac7f8d18e3c521"
+  digest = "1:f4896c16f24462a9a1f3089932e6437d191fa9748a309a49d8866f98ca057515"
   name = "github.com/blackducksoftware/perceptor-protoform"
   packages = [
     "pkg/api",
+    "pkg/api/alert",
+    "pkg/api/alert/v1",
     "pkg/api/hub",
     "pkg/api/hub/v1",
     "pkg/api/opssight",
     "pkg/api/opssight/v1",
+    "pkg/apps/util",
     "pkg/crds",
     "pkg/hub",
     "pkg/hub/client/clientset/versioned",
     "pkg/hub/client/clientset/versioned/scheme",
     "pkg/hub/client/clientset/versioned/typed/hub/v1",
     "pkg/hub/containers",
-    "pkg/hub/hubutils",
+    "pkg/hub/util",
     "pkg/opssight/client/clientset/versioned",
     "pkg/opssight/client/clientset/versioned/scheme",
     "pkg/opssight/client/clientset/versioned/typed/opssight/v1",
@@ -72,7 +75,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "41a29e60c32406c32a3be0298ebef10d3c65188e"
+  revision = "82e4ad526e170be417b46021c37f9043116cf0d0"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -193,7 +196,6 @@
     ".",
     "binding",
     "render",
-    "runtime",
     "servers",
     "worker",
   ]
@@ -1465,23 +1467,20 @@
   analyzer-version = 1
   input-imports = [
     "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1",
+    "github.com/blackducksoftware/perceptor-protoform/pkg/apps/util",
     "github.com/blackducksoftware/perceptor-protoform/pkg/hub",
     "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned",
     "github.com/blackducksoftware/perceptor-protoform/pkg/util",
     "github.com/gobuffalo/buffalo",
     "github.com/gobuffalo/buffalo/render",
-    "github.com/gobuffalo/buffalo/runtime",
     "github.com/gobuffalo/envy",
     "github.com/gobuffalo/mw-csrf",
     "github.com/gobuffalo/mw-forcessl",
     "github.com/gobuffalo/mw-i18n",
     "github.com/gobuffalo/mw-paramlogger",
     "github.com/gobuffalo/packr",
-    "github.com/gobuffalo/pop",
     "github.com/gobuffalo/suite",
     "github.com/gobuffalo/validate",
-    "github.com/markbates/grift/grift",
-    "github.com/markbates/inflect",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "github.com/unrolled/secure",
