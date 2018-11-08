@@ -24,7 +24,6 @@ package hub
 import (
 	"fmt"
 	"math"
-	"regexp"
 	"strings"
 	"time"
 
@@ -38,6 +37,7 @@ import (
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -59,14 +59,30 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
-// DeleteHubIfMatchesDeletionRegex will delete the Black Duck Hub IF IT MATCHES THE DELETION REGEX, and only then.
-func (hc *Creater) DeleteHubIfMatchesDeletionRegex(namespace string) error {
+// BeCareful makes sure we dont delete hubs instantly.  Logic is subject to change over time.
+func (hc *Creater) BeCareful() error {
+	// A wait time of >= one year is our way of saying "deletion disabled"
+	if hc.Config.HubDeletionWaitTimeInSeconds > 31557600 {
+		return fmt.Errorf("Deletion appears disabled (wait time is %v seconds)! Set HubDeletionWaitTimeInSeconds in protoforms configuration if you really want to automatically delete hubs", hc.Config.HubDeletionWaitTimeInSeconds)
+	}
 
-	// not outsourcing this to a separate function b/c its critical that we never delete a hub accidentally.
-	// MAKE SURE you know exactly what your doing if you modify this function.
-	log.Infof("only deleting hub %v if it matches the deletion regex.  IF you want to change the flexibility, redeploy protoform with AutoDeleteHubRegex='[a-z]([-a-z0-9]*[a-z0-9])?' which will allow auto delete of any hub.", namespace)
-	if match, e := regexp.MatchString(hc.Config.AutoDeleteHubRegex, namespace); !match {
-		return fmt.Errorf("DELETE HUB: %v : Didn't match the deletion regex %v", hc.Config.AutoDeleteHubRegex, e)
+	waitTime := time.Duration(hc.Config.HubDeletionWaitTimeInSeconds) * time.Second
+
+	logrus.Infof("Waiting %v till we delete !!!", waitTime)
+	// Now wait... , we never want to just delete immediately.
+	time.Sleep(waitTime)
+	logrus.Infof("Done waiting for deletion ! Ready to delete now.")
+	// ok, ready to delete now !
+	return nil
+}
+
+// DeleteHubIfMatchesDeletionRegex will delete the Black Duck Hub IF IT MATCHES THE DELETION REGEX, and only then.
+func (hc *Creater) DeleteHubCarefully(namespace string) error {
+
+	logrus.Infof("Delete hub request %v, will be careful (%v)", namespace, hc.Config.HubDeletionWaitTimeInSeconds)
+	// blocking call intentionally, we dont want to rush to DELETE a hub.
+	if err := hc.BeCareful(); err != nil {
+		return err
 	}
 
 	var err error

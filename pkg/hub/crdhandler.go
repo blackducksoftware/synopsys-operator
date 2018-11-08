@@ -129,7 +129,9 @@ func (h *Handler) ObjectDeleted(name string) {
 
 	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
 
-	hubCreator.DeleteHubIfMatchesDeletionRegex(name)
+	// Expected that logic for safe, delayed, possibly disabled deletion handled by hubCreater.
+	hubCreator.DeleteHubCarefully(name)
+
 	h.callHubFederator()
 
 	//Set spec/state  and status/state to started

@@ -24,6 +24,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
 	bdutil "github.com/blackducksoftware/perceptor-protoform/pkg/apps/util"
@@ -77,5 +78,14 @@ func runProtoform(configPath string) {
 		logrus.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
 	}
 
+	if deployer.Config.OperatorTimeBombInSeconds > 0 {
+		go func() {
+			timeout := time.Duration(deployer.Config.OperatorTimeBombInSeconds) * time.Second
+			logrus.Warnf("Self timeout is enabled to %v seconds", timeout)
+			time.Sleep(timeout)
+			// trip the stop channel after done sleeping
+			stopCh <- struct{}{}
+		}()
+	}
 	<-stopCh
 }

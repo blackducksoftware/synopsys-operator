@@ -23,30 +23,33 @@ package protoform
 
 import (
 	"fmt"
+	"math"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
-// Config type will used for protoform config
+// Config type will be used for protoform config that bootstraps everything
 type Config struct {
-	DryRun                bool
-	LogLevel              string
-	Namespace             string
-	Threadiness           int
-	PostgresRestartInMins int
-	NFSPath               string
-	HubFederatorConfig    *HubFederatorConfig
-	AutoDeleteHubRegex    string
+	DryRun                       bool
+	LogLevel                     string
+	Namespace                    string
+	Threadiness                  int
+	PostgresRestartInMins        int
+	NFSPath                      string
+	HubFederatorConfig           *HubFederatorConfig
+	HubDeletionWaitTimeInSeconds int64
+
+	// Not recommended production, just for testing, QA, resiliency, and CI/CD.
+	OperatorTimeBombInSeconds int64
 }
 
 // SelfSetDefaults ...
 func (config *Config) SelfSetDefaults() {
 	config.HubFederatorConfig = &HubFederatorConfig{}
 	config.HubFederatorConfig.HubConfig = &HubConfig{}
-
-	// by default, only delete namespaces with complicated prefixes :)
-	config.AutoDeleteHubRegex = "blackduck-ephemeral-[a-z]([-a-z0-9]*[a-z0-9])?"
+	config.HubDeletionWaitTimeInSeconds = math.MaxInt64
+	config.OperatorTimeBombInSeconds = math.MaxInt64
 }
 
 // HubFederatorConfig will have the configuration related to hub federator
