@@ -143,7 +143,7 @@ func (v HubsResource) common(c buffalo.Context, blackduck *v1.Hub) error {
 
 func (v HubsResource) redirect(c buffalo.Context, blackduck *v1.Hub, err error) error {
 	if err != nil {
-		blackduck.Status.ErrorMessage = err.Error()
+		c.Flash().Add("warning", err.Error())
 		// Make blackduck available inside the html template
 		err = v.common(c, blackduck)
 		if err != nil {

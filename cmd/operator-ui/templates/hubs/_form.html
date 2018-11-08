@@ -1,8 +1,5 @@
 <body onload="formLoad()" onsubmit="return validateAndGetValues()">
   <div class="new-container">
-    <label style="color: red">
-      <h5>* <%= hub.Status.ErrorMessage %></h5>
-    </label>
     <%= f.InputTag("Spec.Namespace", {value: hub.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen.", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
     <%= f.SelectTag("Spec.Flavor", {options: ["Small", "Medium", "Large", "OpsSight"], value: hub.Spec.Flavor, label: "Flavor"}) %>
     <%= f.InputTag("Spec.HubVersion", {value: hub.Spec.HubVersion, label: "Black Duck Version *", required: true, placeholder: "e.g. 5.0.0"}) %>
