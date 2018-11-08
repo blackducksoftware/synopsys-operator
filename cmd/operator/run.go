@@ -45,6 +45,17 @@ func main() {
 	runProtoform("")
 }
 
+func kill(stopCh chan struct{}) {
+	// TODO: no idea why this doesnt actually cause the program to exit.  must be another
+	// channel open somewhere....
+	go func() {
+		stopCh <- struct{}{}
+	}()
+	// hard exit b/c of the above comment ^
+	os.Exit(0)
+
+}
+
 // runProtoform ...
 func runProtoform(configPath string) {
 	deployer, err := protoform.NewController(configPath)
@@ -87,14 +98,7 @@ func runProtoform(configPath string) {
 			// trip the stop channel after done sleeping.  wait 20 seconds for debuggability.
 			logrus.Warnf("Timeout tripped.  Exiting In 20  seconds !", timeout)
 			time.Sleep(time.Duration(20) * time.Second)
-
-			// TODO: no idea why this doesnt actually cause the program to exit.  must be another
-			// channel open somewhere....
-			go func() {
-				stopCh <- struct{}{}
-			}()
-			// hard exit b/c of the above comment ^
-			os.Exit(0)
+			kill(stopCh)
 		}()
 	}
 	<-stopCh
