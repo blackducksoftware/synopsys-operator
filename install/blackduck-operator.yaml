@@ -63,13 +63,13 @@ items:
       name: blackduck-operator
     ports:
       - protocol: TCP
-        port: 8080
-        targetPort: 8080
-        name: blackduck-operator
-      - protocol: TCP
         port: 3000
         targetPort: 3000
         name: blackduck-operator-ui
+      - protocol: TCP
+        port: 80
+        targetPort: 3000
+        name: blackduck-operator-ui-standard-port
 - apiVersion: v1
   kind: ConfigMap
   metadata:
