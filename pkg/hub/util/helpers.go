@@ -49,7 +49,7 @@ func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder stri
 }
 
 func updateHubObject(h *hubClient.Clientset, obj *v1.Hub) (*v1.Hub, error) {
-	return h.SynopsysV1().Hubs(obj.Name).Update(obj)
+	return h.SynopsysV1().Hubs(obj.Namespace).Update(obj)
 }
 
 // UpdateState will be used to update the hub object
