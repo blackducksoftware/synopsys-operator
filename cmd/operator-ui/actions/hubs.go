@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	bdutil "github.com/blackducksoftware/perceptor-protoform/pkg/apps/util"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
 	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
@@ -69,12 +70,9 @@ func (v HubsResource) Show(c buffalo.Context) error {
 // New renders the form for creating a new Hub.
 // This function is mapped to the path GET /hubs/new
 func (v HubsResource) New(c buffalo.Context) error {
+	blackduckSpec := bdutil.GetHubDefaultValue()
 	blackduck := &v1.Hub{}
-	blackduck.Spec.Flavor = "Small"
-	blackduck.Spec.HubVersion = "5.0.2"
-	blackduck.Spec.DbPrototype = "empty"
-	blackduck.Spec.CertificateName = "default"
-	blackduck.Spec.HubType = "worker"
+	blackduck.Spec = *blackduckSpec
 	blackduck.Spec.BackupSupport = "Yes"
 	blackduck.Spec.BackupInterval = "30"
 	blackduck.Spec.BackupUnit = "Minutes(s)"
