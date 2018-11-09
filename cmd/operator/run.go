@@ -96,7 +96,7 @@ func runProtoform(configPath string) {
 			time.Sleep(timeout)
 
 			// trip the stop channel after done sleeping.  wait 20 seconds for debuggability.
-			logrus.Warnf("Timeout tripped.  Exiting In 20  seconds !", timeout)
+			logrus.Warn("Timeout tripped.  Exiting In 20 seconds !")
 			time.Sleep(time.Duration(20) * time.Second)
 			kill(stopCh)
 		}()
