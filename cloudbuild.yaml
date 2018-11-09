@@ -2,6 +2,12 @@ steps:
 - name: 'gcr.io/cloud-builders/go'
   args: ['build', '-o',' blackduckctl', './cmd/blackduckctl']
   env: ['PROJECT_ROOT=cmd/blackduckctl']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/blackduck-operator:$BRANCH_NAME', './']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/blackduck-operator:$BRANCH_NAME']
+options:
+  machineType: 'N1_HIGHCPU_32'
 artifacts:
   objects:
     location: 'gs://saas-hub-stg/perceptor/blackduckctl'
