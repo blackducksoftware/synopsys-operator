@@ -12,5 +12,5 @@ options:
   machineType: 'N1_HIGHCPU_32'
 artifacts:
   objects:
-    location: 'gs://saas-hub-stg/perceptor/blackduckctl'
+    location: 'gs://saas-dump-stg/perceptor/blackduckctl'
     paths: ['./cmd/blackduckctl/blackduckctl']
