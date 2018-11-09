@@ -5,3 +5,4 @@ steps:
 artifacts:
   objects:
     location: 'gs://saas-hub-stg/perceptor/blackduckctl'
+    paths: ['./cmd/blackduckctl/blackduckctl']
