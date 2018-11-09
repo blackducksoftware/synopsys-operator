@@ -1,7 +1,7 @@
 #### BUILD OPERATOR/BLACKDUCKCTL
 steps:
 - name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o','./outputs/blackduckctl-osx', './cmd/blackduckctl']
+  args: ['build', '-o','/tmp/outputs/blackduckctl-osx', './cmd/blackduckctl']
   env:
   - 'PROJECT_ROOT=github.com/blackducksoftware/perceptor-protoform'
   - 'CGO_ENABLED=0'
@@ -16,4 +16,4 @@ options:
 artifacts:
   objects:
     location: 'gs://perceptor/$BRANCH_NAME'
-    paths: ['./outputs']
+    paths: ['/tmp/outputs/']
