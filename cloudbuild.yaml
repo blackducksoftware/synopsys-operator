@@ -4,7 +4,6 @@ steps:
   env:
   - 'PROJECT_ROOT=github.com/blackducksoftware/perceptor-protoform'
   - 'CGO_ENABLED=0'
-  - 'GOOS=mac'
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/blackduck-operator:$BRANCH_NAME', './']
 - name: 'gcr.io/cloud-builders/docker'
