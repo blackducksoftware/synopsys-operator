@@ -36,8 +36,13 @@ func (c *Creater) GetPostgresDeployment() *components.ReplicationController {
 	postgresVolumes := c.getPostgresVolumes()
 	postgresVolumeMounts := c.getPostgresVolumeMounts()
 
+	postgresImage := c.getFullContainerName("postgres")
+	if len(postgresImage) == 0 {
+		postgresImage = "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1"
+	}
+
 	postgresExternalContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "postgres", Image: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1", PullPolicy: horizonapi.PullAlways,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "postgres", Image: postgresImage, PullPolicy: horizonapi.PullAlways,
 			MinMem: c.hubContainerFlavor.PostgresMemoryLimit, MaxMem: "", MinCPU: c.hubContainerFlavor.PostgresCPULimit, MaxCPU: "", Command: []string{"/usr/share/container-scripts/postgresql/pginit.sh"},
 		},
 		EnvConfigs:   postgresEnvs,
