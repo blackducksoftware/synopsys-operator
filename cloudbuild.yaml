@@ -14,5 +14,5 @@ options:
   machineType: 'N1_HIGHCPU_32'
 artifacts:
   objects:
-    location: 'gs://perceptor'
+    location: 'gs://perceptor/$BRANCH_NAME/'
     paths: ['./cmd/blackduckctl/blackduckctl']
