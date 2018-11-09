@@ -1,10 +1,11 @@
 #### BUILD OPERATOR/BLACKDUCKCTL
 steps:
 - name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o','cmd/blackduckctl/blackduckctl', './cmd/blackduckctl']
+  args: ['build', '-o','./outputs/blackduckctl-osx', './cmd/blackduckctl']
   env:
   - 'PROJECT_ROOT=github.com/blackducksoftware/perceptor-protoform'
   - 'CGO_ENABLED=0'
+  - 'GOOS=darwin'
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/blackduck-operator:$BRANCH_NAME', './']
 #### PUSH ARTIFACTS TO DOCKER HUB / GCS 
@@ -14,5 +15,5 @@ options:
   machineType: 'N1_HIGHCPU_32'
 artifacts:
   objects:
-    location: 'gs://perceptor/$BRANCH_NAME/'
-    paths: ['./cmd/blackduckctl/blackduckctl']
+    location: 'gs://perceptor/$BRANCH_NAME'
+    paths: ['./outputs']
