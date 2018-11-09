@@ -5,9 +5,3 @@ steps:
 artifacts:
   objects:
     location: 'gs://saas-hub-stg/perceptor/blackduckctl'
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/blackduck-operator:$BRANCH_NAME', './']
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/blackduck-operator:$BRANCH_NAME']
-options:
-  machineType: 'N1_HIGHCPU_32'
