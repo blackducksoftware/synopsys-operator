@@ -1,5 +1,5 @@
 Welcome to the Synopsys Operator Helm Chart!
-This is an UNSUPPORTED method to deploy the Black Duck Operator.
+This is an UNSUPPORTED method to deploy the Synopsys Operator.
 That said, it has been tested and works. Feedback and PR are welcome. :)
 
 To get started, configure the values file with your Black Duck configuration.
