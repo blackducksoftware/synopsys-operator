@@ -5,6 +5,7 @@ That said, it has been tested and works. Feedback and PR are welcome. :)
 To get started, configure the values file with your Black Duck configuration.
 
 Please provide:
+
   • Black Duck Admin Username (default sysadmin)
   • Black Duck Admin Password (default YmxhY2tkdWNr)
   • Black Duck Registration Key (no default provided)
