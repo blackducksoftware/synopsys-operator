@@ -24,7 +24,7 @@ package containers
 import (
 	"strings"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // Flavor will determine the size of the Black Duck Hub

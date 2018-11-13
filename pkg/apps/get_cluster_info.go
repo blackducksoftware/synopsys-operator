@@ -24,7 +24,7 @@ package apps
 import (
 	"fmt"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/apps/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/spf13/cobra"
 )
 

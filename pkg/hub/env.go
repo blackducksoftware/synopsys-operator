@@ -47,8 +47,8 @@ RABBIT_MQ_PORT=5671
 SCANNER_CONCURRENCY=1
 USE_ALERT=0
 USE_BINARY_UPLOADS=0
-~/go/src/github.com/blackducksoftware/perceptor-protoform/hack
-~/go/src/github.com/blackducksoftware/perceptor-protoform/hack/hub/docker-compose ~/go/src/github.com/blackducksoftware/perceptor-protoform/hack
+~/go/src/github.com/blackducksoftware/synopsys-operator/hack
+~/go/src/github.com/blackducksoftware/synopsys-operator/hack/hub/docker-compose ~/go/src/github.com/blackducksoftware/synopsys-operator/hack
 image: blackducksoftware/appcheck-worker:1.0.1
 image: blackducksoftware/blackduck-upload-cache:1.0.2
 image: blackducksoftware/hub-authentication:5.0.2

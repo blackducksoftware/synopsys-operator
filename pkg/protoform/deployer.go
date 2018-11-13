@@ -22,7 +22,7 @@ under the License.
 package protoform
 
 import (
-	crd "github.com/blackducksoftware/perceptor-protoform/pkg/crds"
+	crd "github.com/blackducksoftware/synopsys-operator/pkg/crds"
 	"github.com/juju/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

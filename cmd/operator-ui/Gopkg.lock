@@ -49,40 +49,35 @@
   source = "https://github.com/jayunit100/horizon"
 
 [[projects]]
-  digest = "1:11debe02dd75931c216f1318991e26a73d61b1fc39e8a7c14a07b6428daf411c"
+  digest = "1:4e5177197ecb9d68dee52452c85ad5a422d4684bebb71c09d4bd4227ba6bc445"
   name = "github.com/blackducksoftware/perceptor-protoform"
   packages = [
-    "cmd/operator-ui/actions",
     "pkg/api",
     "pkg/api/alert",
-    "pkg/api/alert/v1",
     "pkg/api/hub",
     "pkg/api/hub/v1",
     "pkg/api/opssight",
     "pkg/api/opssight/v1",
     "pkg/crds",
-    "pkg/hub",
     "pkg/hub/client/clientset/versioned",
     "pkg/hub/client/clientset/versioned/scheme",
     "pkg/hub/client/clientset/versioned/typed/hub/v1",
-    "pkg/hub/containers",
-    "pkg/hub/util",
     "pkg/opssight/client/clientset/versioned",
     "pkg/opssight/client/clientset/versioned/scheme",
     "pkg/opssight/client/clientset/versioned/typed/opssight/v1",
-    "pkg/protoform",
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "c0bf132b7c2b56995630ba16b75b9650b3ade054"
-  version = "3.0.0-ui-alpha-alpha"
+  revision = "0743e64e2393e357f46071bab1367a75859e7b48"
+  version = "3.1.1"
 
 [[projects]]
   branch = "master"
-  digest = "1:60b2e89bd3743796e2dc8b986ec7bc2707c4305b5f7a6af89dc8dbe7662e488a"
+  digest = "1:ad77188c05c048dc00feb7f6ab775ea1d5bb99640594bbd532ea157a43735528"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
+    "pkg/api/alert/v1",
     "pkg/api/hub/v1",
     "pkg/api/opssight/v1",
     "pkg/apps/util",
@@ -99,7 +94,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "07a3de6f808b5406273c6dd32daf606b65c86bbe"
+  revision = "f932339eb54120934077409b6492db1966f6498e"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -1489,7 +1484,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/blackducksoftware/perceptor-protoform/cmd/operator-ui/actions",
     "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1",
     "github.com/blackducksoftware/synopsys-operator/pkg/apps/util",
     "github.com/blackducksoftware/synopsys-operator/pkg/hub",

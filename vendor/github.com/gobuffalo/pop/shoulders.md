@@ -75,6 +75,8 @@ Thank you to the following **GIANTS**:
 
 * [github.com/gobuffalo/validate/validators](https://godoc.org/github.com/gobuffalo/validate/validators)
 
+* [github.com/gobuffalo/x/defaults](https://godoc.org/github.com/gobuffalo/x/defaults)
+
 * [github.com/gofrs/uuid](https://godoc.org/github.com/gofrs/uuid)
 
 * [github.com/jackc/pgx](https://godoc.org/github.com/jackc/pgx)

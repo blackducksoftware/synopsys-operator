@@ -4,23 +4,19 @@ sudo: false
 
 matrix:
   include:
-  - go: "1.9.x"
-  - go: "1.10.x"
-  - go: "1.11.x"
+  - os: linux
+    go: "1.9.x"
+  - os: linux
+    go: "1.10.x"
+  - os: linux
+    go: "1.11.x"
     env:
       - GO111MODULE=off
-  - go: "1.11.x"
+  - os: linux
+    go: "1.11.x"
     env:
       - GO111MODULE=on
-  - go: "tip"
-    env:
-      - GO111MODULE=off
-  - go: "tip"
-    env:
-      - GO111MODULE=on
-  allow_failures:
-    - go: "tip"
 
-install: make deps
+install: make ci-deps
 
 script: make ci-test

@@ -25,8 +25,12 @@ type Haser interface {
 	Has(string) bool
 }
 
-type Walkable interface {
+type Walker interface {
 	Walk(wf WalkFunc) error
+}
+
+type Walkable interface {
+	Walker
 	WalkPrefix(prefix string, wf WalkFunc) error
 }
 

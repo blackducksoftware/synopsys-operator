@@ -29,7 +29,7 @@ function verify() {
 
 function run() {
     echo "running buffalo"
-    pushd $GOPATH/src/github.com/blackducksoftware/perceptor-protoform/cmd/operator-ui
+    pushd $GOPATH/src/github.com/blackducksoftware/synopsys-operator/cmd/operator-ui
         buffalo dev
     popd
 }

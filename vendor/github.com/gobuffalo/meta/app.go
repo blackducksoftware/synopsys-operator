@@ -16,8 +16,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var modsOn = (strings.TrimSpace(envy.Get("GO111MODULE", "off")) == "on")
-
 // App represents meta data for a Buffalo application on disk
 type App struct {
 	Pwd         string     `json:"pwd" toml:"-"`
@@ -46,14 +44,14 @@ func (a App) IsZero() bool {
 	return a.String() == App{}.String()
 }
 
-func resolvePackageName(name string, pwd string, modsOn bool) string {
+func resolvePackageName(name string, pwd string) string {
 	result := envy.CurrentPackage()
 
 	if filepath.Base(result) != name {
 		result = path.Join(result, name)
 	}
 
-	if modsOn {
+	if envy.Mods() {
 		if !strings.HasPrefix(pwd, filepath.Join(envy.GoPath(), "src")) {
 			result = name
 		}
