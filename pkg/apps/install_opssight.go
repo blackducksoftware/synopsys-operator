@@ -25,11 +25,11 @@ import (
 	"fmt"
 
 	horizondep "github.com/blackducksoftware/horizon/pkg/deployer"
-	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
-	bdutil "github.com/blackducksoftware/perceptor-protoform/pkg/apps/util"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
-	versioned "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	versioned "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 )
 
