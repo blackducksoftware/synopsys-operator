@@ -49,38 +49,19 @@
   source = "https://github.com/jayunit100/horizon"
 
 [[projects]]
-  digest = "1:4e5177197ecb9d68dee52452c85ad5a422d4684bebb71c09d4bd4227ba6bc445"
-  name = "github.com/blackducksoftware/perceptor-protoform"
+  branch = "master"
+  digest = "1:099b5ab3319a7f26d21a470d4749c618ae6fc88ada4acd8717fbb07fbb183f15"
+  name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
     "pkg/api/alert",
+    "pkg/api/alert/v1",
     "pkg/api/hub",
     "pkg/api/hub/v1",
     "pkg/api/opssight",
     "pkg/api/opssight/v1",
-    "pkg/crds",
-    "pkg/hub/client/clientset/versioned",
-    "pkg/hub/client/clientset/versioned/scheme",
-    "pkg/hub/client/clientset/versioned/typed/hub/v1",
-    "pkg/opssight/client/clientset/versioned",
-    "pkg/opssight/client/clientset/versioned/scheme",
-    "pkg/opssight/client/clientset/versioned/typed/opssight/v1",
-    "pkg/util",
-  ]
-  pruneopts = "UT"
-  revision = "0743e64e2393e357f46071bab1367a75859e7b48"
-  version = "3.1.1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:ad77188c05c048dc00feb7f6ab775ea1d5bb99640594bbd532ea157a43735528"
-  name = "github.com/blackducksoftware/synopsys-operator"
-  packages = [
-    "pkg/api",
-    "pkg/api/alert/v1",
-    "pkg/api/hub/v1",
-    "pkg/api/opssight/v1",
     "pkg/apps/util",
+    "pkg/crds",
     "pkg/hub",
     "pkg/hub/client/clientset/versioned",
     "pkg/hub/client/clientset/versioned/scheme",
@@ -94,7 +75,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "f932339eb54120934077409b6492db1966f6498e"
+  revision = "941d917b8b47796a83fed3a1ab66361254c1a1a3"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
