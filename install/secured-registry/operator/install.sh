@@ -40,9 +40,9 @@ oc create --namespace="$_arg_namespace" -f -
 if [[ ! -z "$_arg_docker_config" ]]; then
   oc create secret generic custom-registry-pull-secret --from-file=.dockerconfigjson="$_arg_docker_config" --type=kubernetes.io/dockerconfigjson
   oc secrets link default custom-registry-pull-secret --for=pull
-  oc secrets link blackduck-operator custom-registry-pull-secret --for=pull; 
-  oc scale rc blackduck-operator --replicas=0
-  oc scale rc blackduck-operator --replicas=1
+  oc secrets link synopsys-operator custom-registry-pull-secret --for=pull; 
+  oc scale rc synopsys-operator --replicas=0
+  oc scale rc synopsys-operator --replicas=1
 fi
 
 #oc expose rc blackduck-protoform --port=8080 --target-port=8080 --name=blackduck-protoform-np --type=NodePort --namespace="$_arg_namespace"

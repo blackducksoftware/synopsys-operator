@@ -29,7 +29,7 @@ spec:
   podPerceiver: true  # Enable if there are Pods that need to be scanned; default true
   metrics: true  # Enable for prometheus metrics; default true
   
-  # Should be passed like: e.g "blackduck-operator"
+  # Should be passed like: e.g "synopsys-operator"
   #namespaceFilter: "" # Add the name of the specific namespace to be scanned. By default it will scan all namespaces
 
   # CPU and memory configurations

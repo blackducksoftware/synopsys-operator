@@ -105,8 +105,8 @@ var InstallOperatorCommand = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(InstallOperatorCommand)
 	InstallOperatorCommand.PersistentFlags().String("defaultPassword", "blackduck", "Default password to use for 'blackduck' instances.")
-	InstallOperatorCommand.PersistentFlags().String("namespace", "blackduck-operator", "Namespace to run the operator in.")
-	InstallOperatorCommand.PersistentFlags().String("containerVersion", "master", "Code branch to run blackduck-operator off of.")
+	InstallOperatorCommand.PersistentFlags().String("namespace", "synopsys-operator", "Namespace to run the operator in.")
+	InstallOperatorCommand.PersistentFlags().String("containerVersion", "master", "Code branch to run synopsys-operator off of.")
 	InstallOperatorCommand.PersistentFlags().String("configPath", "", "Path to YAML for custom config options.")
 	InstallOperatorCommand.PersistentFlags().String("bootstrap", "false", "Wether or not to bootstrap all operator components.")
 	InstallOperatorCommand.PersistentFlags().String("export", "false", "Wether or not to export bootstrap components as plain text (i.e. to create manually)")

@@ -3,9 +3,9 @@
 # This is a rather minimal example Argbash potential
 # Example taken from http://argbash.readthedocs.io/en/stable/example.html
 #
-# ARG_OPTIONAL_SINGLE([namespace],[n],[namespace where Black Duck operator to be installed],[blackduck-operator])
+# ARG_OPTIONAL_SINGLE([namespace],[n],[namespace where Synopsys operator to be installed],[synopsys-operator])
 # ARG_OPTIONAL_SINGLE([registration-key],[k],[registration key of Black Duck],[])
-# ARG_OPTIONAL_SINGLE([version],[v],[version of Black Duck operator],[latest])
+# ARG_OPTIONAL_SINGLE([version],[v],[version of Synopsys operator],[latest])
 # ARG_OPTIONAL_SINGLE([docker-config],[d],[file path to Docker configuration to create the image pull secret],[])
 # ARG_OPTIONAL_SINGLE([registry],[r],[Docker registry],[registry.connect.redhat.com])
 # ARG_OPTIONAL_SINGLE([project],[p],[Docker project/repository],[blackducksoftware])
@@ -37,7 +37,7 @@ begins_with_short_option()
 
 
 # THE DEFAULTS INITIALIZATION - OPTIONALS
-_arg_namespace="blackduck-operator"
+_arg_namespace="synopsys-operator"
 _arg_registration_key=
 _arg_version="latest"
 _arg_docker_config=
@@ -48,9 +48,9 @@ print_help ()
 {
 	printf '%s\n' "The general script's help msg"
 	printf 'Usage: %s [-n|--namespace <arg>] [-k|--registration-key <arg>] [-v|--version <arg>] [-d|--docker-config <arg>] [-r|--registry <arg>] [-p|--project <arg>] [-h|--help]\n' "$0"
-	printf '\t%s\n' "-n,--namespace: namespace where Black Duck operator to be installed (default: 'blackduck-operator')"
-	printf '\t%s\n' "-k,--registration-key: registration key of Black Duck (no default)"
-	printf '\t%s\n' "-v,--version: version of Black Duck operator (default: 'latest')"
+	printf '\t%s\n' "-n,--namespace: namespace where Synopsys operator to be installed (default: 'synopsys-operator')"
+	printf '\t%s\n' "-k,--registration-key: registration key of Synopsys (no default)"
+	printf '\t%s\n' "-v,--version: version of Synopsys operator (default: 'latest')"
 	printf '\t%s\n' "-d,--docker-config: file path to Docker configuration to create the image pull secret (no default)"
 	printf '\t%s\n' "-r,--registry: Docker registry (default: 'registry.connect.redhat.com')"
 	printf '\t%s\n' "-p,--project: Docker project/repository (default: 'blackducksoftware')"

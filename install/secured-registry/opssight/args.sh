@@ -3,7 +3,7 @@
 # This is a rather minimal example Argbash potential
 # Example taken from http://argbash.readthedocs.io/en/stable/example.html
 #
-# ARG_OPTIONAL_SINGLE([namespace],[n],[namespace where OpsSight to be installed],[blackduck-opssight])
+# ARG_OPTIONAL_SINGLE([namespace],[n],[namespace where OpsSight to be installed],[synopsys-opssight])
 # ARG_OPTIONAL_SINGLE([version],[v],[version of OpsSight to be installed],[latest])
 # ARG_OPTIONAL_SINGLE([docker-config],[d],[file path to Docker configuration to create the image pull secret],[])
 # ARG_OPTIONAL_SINGLE([registry],[r],[Docker registry],[registry.connect.redhat.com])
@@ -36,7 +36,7 @@ begins_with_short_option()
 
 
 # THE DEFAULTS INITIALIZATION - OPTIONALS
-_arg_namespace="blackduck-opssight"
+_arg_namespace="synopsys-opssight"
 _arg_version="latest"
 _arg_docker_config=
 _arg_registry="registry.connect.redhat.com"
@@ -46,7 +46,7 @@ print_help ()
 {
 	printf '%s\n' "The general script's help msg"
 	printf 'Usage: %s [-n|--namespace <arg>] [-v|--version <arg>] [-d|--docker-config <arg>] [-r|--registry <arg>] [-p|--project <arg>] [-h|--help]\n' "$0"
-	printf '\t%s\n' "-n,--namespace: namespace where OpsSight to be installed (default: 'blackduck-opssight')"
+	printf '\t%s\n' "-n,--namespace: namespace where OpsSight to be installed (default: 'synopsys-opssight')"
 	printf '\t%s\n' "-v,--version: version of OpsSight to be installed (default: 'latest')"
 	printf '\t%s\n' "-d,--docker-config: file path to Docker configuration to create the image pull secret (no default)"
 	printf '\t%s\n' "-r,--registry: Docker registry (default: 'registry.connect.redhat.com')"
