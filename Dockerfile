@@ -9,8 +9,8 @@ ADD . $BP
 ### BUILD THE BINARIES...
 WORKDIR $BP
 
-RUN cd cmd/blackduckctl ; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/blackduckctl
-RUN cd cmd/operator ; CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/operator
+RUN cd cmd/blackduckctl && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/blackduckctl
+RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/operator
 
 ### BUILD THE UI
 WORKDIR $BP/cmd/operator-ui
