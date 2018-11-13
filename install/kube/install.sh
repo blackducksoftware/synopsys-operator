@@ -8,7 +8,7 @@ NS=$1
 REG_KEY=$2
 BRANCH=$3
 
-echo "Using the secret encoded in this file.  Change it before running, or press enter..."
+echo "Using the secret encoded in this file.  Change it before running, or press enter."
 read x
 
 cat << EOF > /tmp/secret
@@ -30,9 +30,13 @@ kubectl create -f /tmp/secret -n $NS
 
 cat ../blackduck-operator.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' |sed 's/${BRANCHNAME}/'${BRANCH}'/g' | kubectl create --namespace=$NS -f -
 
-
-echo "Done deploying... `kubectl get pods -n $NS`.  Click a key to expose the loadbalancer for (i.e. this will only work in supported kubernetes clouds)."
+echo "Done deploying!"
+echo
+kubectl get pods -n $NS 
+echo
+echo "Click a key to expose the LoadBalancer. (This will only work in supported kubernetes clouds.)"
 read x
 
-kubectl expose rc blackduck-operator --port=80 --target-port=3000 --name=blackduck-operator-tcp --type=LoadBalancer --namespace=blackduck-operator
+kubectl expose rc blackduck-operator --port=80 --target-port=3000 --name=blackduck-operator-tcp --type=LoadBalancer --namespace=${NS}
+
 kubectl get svc -n $NS
