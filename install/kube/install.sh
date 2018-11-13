@@ -28,7 +28,16 @@ kubectl create ns $NS
 
 kubectl create -f /tmp/secret -n $NS
 
-cat ../synopsys-operator.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' |sed 's/${BRANCHNAME}/'${BRANCH}'/g' | kubectl create --namespace=$NS -f -
+DOCKER_REGISTRY=gcr.io
+DOCKER_REPO=saas-hub-stg/blackducksoftware
+
+cat ../synopsys-operator.yaml | \
+sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | \
+sed 's/${NAMESPACE}/'$NS'/g' | \
+sed 's/${TAG}/'${VERSION}'/g' | \
+sed 's/${DOCKER_REGISTRY}/'$DOCKER_REGISTRY'/g' | \
+sed 's/${DOCKER_REPO}/'$(echo $DOCKER_REPO | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
+kubectl create --namespace=$NS -f -
 
 echo "Done deploying!"
 echo

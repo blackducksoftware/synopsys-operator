@@ -1,1 +1,2 @@
 cmd/operator-build
+install/secured-registry/dockercfg.json

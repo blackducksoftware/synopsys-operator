@@ -1,6 +1,7 @@
 #!/bin/bash
 
 unset DYLD_INSERT_LIBRARIES
+
 echo "args = Namespace, Reg_key, branch"
 
 NS=$1
@@ -27,7 +28,16 @@ oc new-project $NS
 
 oc create -f /tmp/secret -n $NS
 
-cat ../synopsys-operator.yaml | sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | sed 's/${NAMESPACE}/'$NS'/g' | sed 's/${BRANCHNAME}/'${BRANCH}'/g' | oc create --namespace=$NS -f -
+DOCKER_REGISTRY=gcr.io
+DOCKER_REPO=saas-hub-stg/blackducksoftware
+
+cat ../synopsys-operator.yaml | \
+sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | \
+sed 's/${NAMESPACE}/'$NS'/g' | \
+sed 's/${TAG}/'${VERSION}'/g' | \
+sed 's/${DOCKER_REGISTRY}/'$DOCKER_REGISTRY'/g' | \
+sed 's/${DOCKER_REPO}/'$(echo $DOCKER_REPO | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
+oc create --namespace=$NS -f -
 
 echo "Done deploying!"
 echo
