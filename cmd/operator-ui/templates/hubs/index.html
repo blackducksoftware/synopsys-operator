@@ -1,0 +1,62 @@
+<header class="App-header">
+  <img src="<%= rootPath() %>assets/images/logo.png" class="Company-logo" alt="Synopsys" />
+  <section class="App-sub-header">
+    <section class="Icon-wrap-header">
+      <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
+    </section>
+    <h4>List Black Ducks</h4>
+  </section>
+</header>
+<br/>
+<div class="list-container">
+  <ul class="list-unstyled list-inline">
+    <li class="list-inline-item"><a href="<%= rootPath() %>" class="btn btn-info">Back to Blackduck Operator</a></li>
+    <li class="list-inline-item"><a href="<%= newHubsPath() %>" class="btn btn-primary">Create a Blackduck Instance</a></li>
+  </ul>
+  <table class="table table-striped">
+    <thead class="list-header-container">
+      <th>Namespace</th>
+      <th>Size</th>
+      <th>Black Duck Version</th>
+      <th>Backup Support</th>
+      <th>Backup Interval</th>
+      <th>Clone Database</th>
+      <th>PVC Storage</th>
+      <th>Certificate Name</th>
+      <th>Status</th>
+      <th>IP Address</th>
+      <th colspan="3">Error Message</th>
+      <th>&nbsp;</th>
+      <th>&nbsp;</th>
+    </thead>
+    <tbody>
+      <%= if (len(hubs) > 0) { %>
+        <%= for (hub) in hubs { %>
+          <tr>
+            <td><%= hub.Spec.Namespace %></td>
+            <td><%= hub.Spec.Flavor %></td>
+            <td><%= hub.Spec.HubVersion %></td>
+            <td><%= hub.Spec.BackupSupport %></td>
+            <td><%= hub.Spec.BackupInterval %> <%= hub.Spec.BackupUnit %></td>
+            <td><%= hub.Spec.DbPrototype %></td>
+            <td><%= hub.Spec.PVCStorageClass %> <%= hub.Spec.ScanType %> <%= hub.Spec.PVCClaimSize %></td>
+            <td><%= hub.Spec.CertificateName %></td>
+            <td><%= hub.Status.State %></td>
+            <td><a href="https://<%= hub.Status.IP %>" target="_blank"><%= hub.Status.IP %></a></td>
+            <td colspan="3"><%= hub.Status.ErrorMessage %></td>
+            <td>
+              <a href="<%= hubPath({ hub_id: hub.Spec.Namespace }) %>" class="btn btn-info">View</a>
+            </td>
+            <td>
+              <a href="<%= hubPath({ hub_id: hub.Spec.Namespace }) %>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
+            </td>
+          </tr>
+        <% } %>
+      <% } else { %>
+        <tr>
+          <td colspan="15"><center><h5>No Black Ducks found</h5></center></td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

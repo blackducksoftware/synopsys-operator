@@ -1,0 +1,22 @@
+apiVersion: synopsys.com/v1
+kind: OpsSight
+metadata:
+  clusterName: ""
+  name: opssight-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
+spec:
+  namespace: opssight-test # Must match .metadata.name
+
+  hub:
+    initialNoOfHubs: 1
+    maxNoOfHubs: 4
+    concurrentScanLimit: 2
+    totalScanLimit: 1000
+    hubSpec:
+      backupSupport: "No" # Required, possible values are 'Yes', 'No'
+      certificateName: default # Required, possible values are 'default', 'manual' or other hub names
+      dbPrototype: "empty" # Required, possible values are empty or other hub names
+      dockerRegistry: docker.io # Required
+      dockerRepo: blackducksoftware # Required
+      hubVersion: 5.0.0 # Required
+      flavor: small # Required, possible values are 'small', 'medium', 'large' or 'opssight'
+      hubType: worker # Required, possible values are 'master' or 'worker' or 'any custom value to filter the hubs corresponding to particular opssight'
