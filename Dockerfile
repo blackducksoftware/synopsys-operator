@@ -9,7 +9,7 @@ ADD . $BP
 ### BUILD THE BINARIES...
 WORKDIR $BP
 
-RUN cd cmd/blackduckctl && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/blackduckctl
+# RUN cd cmd/blackduckctl && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/blackduckctl
 RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/operator
 
 ### BUILD THE UI
@@ -39,12 +39,12 @@ RUN apk add --no-cache ca-certificates
 # ENV ADDR=0.0.0.0
 
 COPY --from=builder /bin/app .
-COPY --from=builder /bin/blackduckctl .
+# COPY --from=builder /bin/blackduckctl .
 COPY --from=builder /bin/operator .
 COPY --from=builder /bin/LICENSE /licenses/
 COPY --from=builder /bin/help.1 /help.1
 
-RUN chmod 777 ./app && chmod 777 ./blackduckctl && chmod 777 ./operator
+RUN chmod 777 ./app && chmod 777 ./operator
 
 LABEL name="Synopsys Operator" \
       vendor="Synopsys" \
