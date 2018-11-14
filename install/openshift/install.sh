@@ -2,11 +2,11 @@
 
 unset DYLD_INSERT_LIBRARIES
 
-echo "args = Namespace, Reg_key, branch"
+echo "args = Namespace, Reg_key, Version of Operator"
 
 NS=$1
 REG_KEY=$2
-BRANCH=$3
+VERSION=$3
 
 echo "Using the secret encoded in this file.  Change it before running, or press enter..."
 read x

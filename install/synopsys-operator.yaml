@@ -20,7 +20,7 @@ items:
       spec:
         containers:
         - name: synopsys-operator
-          image: gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:${BRANCHNAME}
+          image: ${DOCKER_REGISTRY}/${DOCKER_REPO}/synopsys-operator:${TAG}
           imagePullPolicy: Always
           ports:
           - containerPort: 8080
@@ -35,7 +35,7 @@ items:
           command:
           - ./operator
         - name: synopsys-operator-ui
-          image: gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:${BRANCHNAME}
+          image: ${DOCKER_REGISTRY}/${DOCKER_REPO}/synopsys-operator:${TAG}
           imagePullPolicy: Always
           ports:
           - containerPort: 3000
