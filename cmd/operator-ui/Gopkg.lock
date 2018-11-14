@@ -50,7 +50,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5162e03abb0f87febeeececf4771eadfe9028272af60c5fa547f3b8164219449"
+  digest = "1:98c0b66883b1dc8e097af4ed1127b84f0f8ec32007a123323496746f47095497"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
@@ -75,7 +75,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "a7b6c6aba76733bfd5adbcd3c1c6f43c2954cc09"
+  revision = "52c97c1ab22ce587fc956cbd7bf5000b9ec09f4b"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -182,12 +182,12 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:adea5a94903eb4384abef30f3d878dc9ff6b6b5b0722da25b82e5169216dfb61"
+  digest = "1:ec6f9bf5e274c833c911923c9193867f3f18788c461f76f05f62bb1510e0ae65"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d523deb1b23d913de5bdada721a6071e71283618"
-  version = "v1.4.0"
+  revision = "72cd26f257d44c1114970e19afddcd812016007e"
+  version = "v1.4.1"
 
 [[projects]]
   digest = "1:035ff909483ae31619923ebc0906972b827b90061a5c91ca3ae85670d7bd4f3a"
@@ -1052,7 +1052,7 @@
     "reflectsource",
   ]
   pruneopts = "UT"
-  revision = "9e1955d9fb6e1ee2345ba1f5e71669263e719e27"
+  revision = "58262d155ee0c659f3e3963bfccbac0f6a6a1d2b"
 
 [[projects]]
   branch = "master"
