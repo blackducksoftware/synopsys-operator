@@ -1,4 +1,4 @@
-FROM gobuffalo/buffalo:v1.20.0 as builder
+FROM gobuffalo/buffalo:v0.13.5 as builder
 
 # Set the environment
 ENV BP=$GOPATH/src/github.com/blackducksoftware/synopsys-operator
