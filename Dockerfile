@@ -14,7 +14,7 @@ RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/op
 
 ### BUILD THE UI
 WORKDIR $BP/cmd/operator-ui
-RUN yarn install --no-progress && mkdir -p public/assets && buffalo build --static -o /bin/app
+RUN yarn install --no-progress && mkdir -p public/assets && go get $(go list ./... | grep -v /vendor/) && buffalo build --static -o /bin/app
 
 # Container catalog requirements
 COPY ./LICENSE /bin/LICENSE 
