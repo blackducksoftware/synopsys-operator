@@ -14,11 +14,19 @@ RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/op
 
 ### BUILD THE UI
 WORKDIR $BP/cmd/operator-ui
-RUN yarn install --no-progress
-RUN mkdir -p public/assets
-RUN buffalo build --static -o /bin/app
+RUN yarn install --no-progress && mkdir -p public/assets && buffalo build --static -o /bin/app
+
+# Container catalog requirements
+COPY ./LICENSE /bin/LICENSE 
+COPY ./help.1 /bin/help.1
 
 FROM alpine
+
+MAINTAINER Synopsys Cloud Native Team
+
+ARG VERSION
+ARG BUILDTIME
+ARG LASTCOMMIT
 
 RUN apk add --no-cache curl
 RUN apk add --no-cache bash
@@ -33,9 +41,20 @@ RUN apk add --no-cache ca-certificates
 COPY --from=builder /bin/app .
 COPY --from=builder /bin/blackduckctl .
 COPY --from=builder /bin/operator .
+COPY --from=builder /bin/LICENSE /licenses/
+COPY --from=builder /bin/help.1 /help.1
 
-RUN chmod 777 ./app
-RUN chmod 777 ./blackduckctl
-RUN chmod 777 ./operator
+RUN chmod 777 ./app && chmod 777 ./blackduckctl && chmod 777 ./operator
+
+LABEL name="Synopsys Operator" \
+      vendor="Synopsys" \
+      release.version="$VERSION" \
+      summary="Synopsys Operator" \
+      description="This container is used to deploy the Synopsys Operators." \
+      lastcommit="$LASTCOMMIT" \
+      buildtime="$BUILDTIME" \
+      license="apache" \
+      release="$VERSION" \
+      version="$VERSION"
 
 CMD ./app
