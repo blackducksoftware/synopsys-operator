@@ -84,6 +84,9 @@ func (c *Creater) getFullContainerName(baseContainer string) string {
 			return reg
 		}
 	}
+	if strings.EqualFold(baseContainer, "postgres") {
+		return ""
+	}
 	img := fmt.Sprintf("docker.io/blackducksoftware/hub-%v:%v", baseContainer, c.hubSpec.HubVersion)
 	log.Warnf("Couldn't get container name for : %v, set it manually in the deployment, returning a reasonable default instead %v.", baseContainer, img)
 	log.Warn("In the future, you should provide fully qualified images for every single container when running the blackduck operator.")
