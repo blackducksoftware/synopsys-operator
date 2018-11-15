@@ -21,16 +21,16 @@
       <%= f.TextAreaTag("Spec.Certificate", {value: hub.Spec.Certificate, label: "Certificate"}) %>
       <%= f.TextAreaTag("Spec.CertificateKey", {value: hub.Spec.CertificateKey, label: "Certificate Key"}) %>
     </div>
-    <label>Environment Variables</label>
-    <ul id="environs" name="environs" contenteditable="true">
-      <%= for (environ) in  hub.View.Environs { %>
-        <li value="<%= environ %>"><%= environ %></li>
-      <% } %>
-    </ul>
     <label>Container Image Tags</label>
     <ul id="containerTags" name="containerTags" contenteditable="true">
       <%= for (containerTag) in  hub.View.ContainerTags { %>
         <li value="<%= containerTag %>"><%= containerTag %></li>
+      <% } %>
+    </ul>
+    <label>Environment Variables</label>
+    <ul id="environs" name="environs" contenteditable="true">
+      <%= for (environ) in  hub.View.Environs { %>
+        <li value="<%= environ %>"><%= environ %></li>
       <% } %>
     </ul>
     <select id="hub-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
