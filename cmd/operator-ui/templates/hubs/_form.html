@@ -1,42 +1,42 @@
 <body onload="formLoad()" onsubmit="return validateAndGetValues()">
   <div class="new-container">
-    <%= f.InputTag("Spec.Namespace", {value: hub.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen.", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
-    <%= f.SelectTag("Spec.Flavor", {options: ["Small", "Medium", "Large", "OpsSight"], value: hub.Spec.Flavor, label: "Flavor"}) %>
-    <%= f.InputTag("Spec.HubVersion", {value: hub.Spec.HubVersion, label: "Black Duck Version *", required: true, placeholder: "e.g. 5.0.0"}) %>
+    <%= f.InputTag("Spec.Namespace", {value: hub.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
+    <%= f.SelectTag("Spec.Flavor", {options: ["Small", "Medium", "Large", "X-Large"], value: hub.Spec.Flavor, label: "Size"}) %>
+    <%= f.InputTag("Spec.HubVersion", {value: hub.Spec.HubVersion, label: "Black Duck Version *", required: true, placeholder: "e.g. 2018.11.0"}) %>
     <%= f.SelectTag("Spec.BackupSupport", {options: ["Yes", "No"], value: hub.Spec.BackupSupport, label: "Backup Support", onchange: "checkBackUpSupport()"}) %>
     <div id="backupSupportId">
-      <label id="backupIntervalError" hidden="hidden">Backup interval is required when Backup is enabled</label>
-      <%= f.InputTag("Spec.BackupInterval", {value: hub.Spec.BackupInterval, label: "Backup Interval", placeholder: "Required for Backup support. It should be of integer value", required: true}) %>
+      <label id="backupIntervalError" hidden="hidden">Backup interval is required when DB Backup is enabled.</label>
+      <%= f.InputTag("Spec.BackupInterval", {value: hub.Spec.BackupInterval, label: "Backup Interval", placeholder: "Required for Backup support. It must be an integer.", required: true}) %>
       <%= f.SelectTag("Spec.BackupUnit", {options: ["Minute(s)", "Hour(s)", "Day(s)", "Week(s)"], value: hub.Spec.BackupUnit, label: "Backup Unit", required: true}) %>
     </div>
     <%= f.SelectTag("Spec.DbPrototype", {options: hub.View.Clones, value: hub.Spec.DbPrototype, onchange: "checkPVC()", label: "Clone DB"}) %>
     <div id="pvcId">
-      <%= f.SelectTag("Spec.PVCStorageClass", {value: hub.Spec.PVCStorageClass, label: "PVC StorageClass", options: hub.View.StorageClasses}) %>
+      <%= f.SelectTag("Spec.PVCStorageClass", {value: hub.Spec.PVCStorageClass, label: "PVC Storage Class", options: hub.View.StorageClasses}) %>
       <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: hub.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
-      <%= f.InputTag("Spec.PVCClaimSize", {value: hub.Spec.PVCClaimSize, label: "PVC ClaimSize", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
-      <%= f.InputTag("Spec.NFSServer", {value: hub.Spec.NFSServer, label: "NFS Server", placeholder: "Required for disabled auto provision in storage classes", required: true}) %>
+      <%= f.InputTag("Spec.PVCClaimSize", {value: hub.Spec.PVCClaimSize, label: "PVC Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+      <%= f.InputTag("Spec.NFSServer", {value: hub.Spec.NFSServer, label: "NFS Server", placeholder: "Required for disabled auto-provision in storage classes", required: true}) %>
     </div>
     <%= f.SelectTag("Spec.CertificateName", {value: hub.Spec.CertificateName, options: hub.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
     <div id="certificateId">
       <%= f.TextAreaTag("Spec.Certificate", {value: hub.Spec.Certificate, label: "Certificate"}) %>
       <%= f.TextAreaTag("Spec.CertificateKey", {value: hub.Spec.CertificateKey, label: "Certificate Key"}) %>
     </div>
-    <label>Environment Variables</label>
-    <ul id="environs" name="environs" contenteditable="true">
-      <%= for (environ) in  hub.View.Environs { %>
-        <li value="<%= environ %>"><%= environ %></li>
-      <% } %>
-    </ul>
     <label>Container Image Tags</label>
     <ul id="containerTags" name="containerTags" contenteditable="true">
       <%= for (containerTag) in  hub.View.ContainerTags { %>
         <li value="<%= containerTag %>"><%= containerTag %></li>
       <% } %>
     </ul>
+    <label>Environment Variables</label>
+    <ul id="environs" name="environs" contenteditable="true">
+      <%= for (environ) in  hub.View.Environs { %>
+        <li value="<%= environ %>"><%= environ %></li>
+      <% } %>
+    </ul>
     <select id="hub-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
     <select id="hub-Spec.ImageRegistries" name="Spec.ImageRegistries" multiple="multiple" hidden></select>
     <center>
-      <a href="<%= hubsPath() %>" class="btn btn-info">Back to Blackduck Instances</a>
+      <a href="<%= hubsPath() %>" class="btn btn-info">Back to Black Duck Instances</a>
       <button class="btn btn-success" role="submit">Save</button>
       <a href="" class="btn btn-warning" data-confirm="Are you sure?">Cancel</a>
     </center>

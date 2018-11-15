@@ -19,7 +19,7 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

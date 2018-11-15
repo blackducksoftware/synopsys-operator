@@ -35,7 +35,7 @@ HUB_PROXY_PORT=
 HUB_PROXY_SCHEME=
 HUB_PROXY_USER=
 HUB_PROXY_WORKSTATION=
-HUB_VERSION=5.0.2
+HUB_VERSION=2018.11.0
 HUB_WEBSERVER_PORT=8443
 IPV4_ONLY=0
 PUBLIC_HUB_WEBSERVER_HOST=localhost
@@ -47,22 +47,19 @@ RABBIT_MQ_PORT=5671
 SCANNER_CONCURRENCY=1
 USE_ALERT=0
 USE_BINARY_UPLOADS=0
-~/go/src/github.com/blackducksoftware/perceptor-protoform/hack
-~/go/src/github.com/blackducksoftware/perceptor-protoform/hack/hub/docker-compose ~/go/src/github.com/blackducksoftware/perceptor-protoform/hack
 image: blackducksoftware/appcheck-worker:1.0.1
 image: blackducksoftware/blackduck-upload-cache:1.0.2
-image: blackducksoftware/hub-authentication:5.0.2
-image: blackducksoftware/hub-cfssl:5.0.2
-image: blackducksoftware/hub-documentation:5.0.2
-image: blackducksoftware/hub-jobrunner:5.0.2
-image: blackducksoftware/hub-logstash:5.0.2
-image: blackducksoftware/hub-nginx:5.0.2
-image: blackducksoftware/hub-postgres:5.0.2
-image: blackducksoftware/hub-registration:5.0.2
-image: blackducksoftware/hub-scan:5.0.2
-image: blackducksoftware/hub-solr:5.0.2
-image: blackducksoftware/hub-webapp:5.0.2
-image: blackducksoftware/hub-zookeeper:5.0.2
+image: blackducksoftware/blackduck-authentication:2018.11.0
+image: blackducksoftware/blackduck-cfssl:1.0.0
+image: blackducksoftware/blackduck-documentation:2018.11.0
+image: blackducksoftware/blackduck-jobrunner:2018.11.0
+image: blackducksoftware/blackduck-logstash:1.0.0
+image: blackducksoftware/blackduck-nginx:1.0.0
+image: blackducksoftware/blackduck-registration:2018.11.0
+image: blackducksoftware/blackduck-scan:2018.11.0
+image: blackducksoftware/blackduck-solr:1.0.0
+image: blackducksoftware/blackduck-webapp:2018.11.0
+image: blackducksoftware/blackduck-zookeeper:1.0.0
 image: blackducksoftware/rabbitmq:1.0.0`
 
 // GetHubKnobs ...

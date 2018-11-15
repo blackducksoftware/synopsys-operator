@@ -27,10 +27,10 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	hubutils "github.com/blackducksoftware/perceptor-protoform/pkg/hub/util"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -83,6 +83,9 @@ func (c *Creater) getFullContainerName(baseContainer string) string {
 			}
 			return reg
 		}
+	}
+	if strings.EqualFold(baseContainer, "postgres") {
+		return ""
 	}
 	img := fmt.Sprintf("docker.io/blackducksoftware/hub-%v:%v", baseContainer, c.hubSpec.HubVersion)
 	log.Warnf("Couldn't get container name for : %v, set it manually in the deployment, returning a reasonable default instead %v.", baseContainer, img)

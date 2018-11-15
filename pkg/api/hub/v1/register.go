@@ -22,11 +22,10 @@ under the License.
 package v1
 
 import (
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub"
 )
 
 // SchemeGroupVersion will store CRD Api version

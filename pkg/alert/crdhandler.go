@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"strings"
 
-	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
-	alert_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	alert_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"

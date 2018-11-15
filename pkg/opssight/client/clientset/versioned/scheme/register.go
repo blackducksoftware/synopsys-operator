@@ -19,7 +19,7 @@ limitations under the License.
 package scheme
 
 import (
-	synopsysv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

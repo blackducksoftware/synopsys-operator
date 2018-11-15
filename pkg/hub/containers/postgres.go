@@ -27,7 +27,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetPostgresDeployment will return the postgres deployment

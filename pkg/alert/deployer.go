@@ -24,8 +24,8 @@ package alert
 import (
 	"fmt"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
 
 // SpecConfig will contain the specification of Alert

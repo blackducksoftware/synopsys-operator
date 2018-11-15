@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	v1 "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned/typed/alert/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned/typed/alert/v1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

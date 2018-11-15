@@ -19,8 +19,8 @@ limitations under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned/scheme"
-	v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned/scheme"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )

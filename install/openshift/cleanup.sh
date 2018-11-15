@@ -2,20 +2,20 @@ NS=$1
 
 # echo "ns" $NS
 
-oc delete ns $NS
+$OC delete ns $NS
 
-oc delete crd alerts.synopsys.com
-oc delete crd hubs.synopsys.com
-oc delete crd opssights.synopsys.com
+$OC delete crd alerts.synopsys.com
+$OC delete crd hubs.synopsys.com
+$OC delete crd opssights.synopsys.com
 
 
-oc delete clusterrolebinding blackduck-operator-admin
-#oc delete clusterrolebinding protoform-admin
-#oc delete clusterrolebinding blackduck-operator-cluster-admin
+$OC delete clusterrolebinding synopsys-operator-admin
+#$OC delete clusterrolebinding protoform-admin
+#$OC delete clusterrolebinding synopsys-operator-cluster-admin
 
-oc delete clusterrole skyfire
-oc delete clusterrole pod-perceiver
+$OC delete clusterrole skyfire
+$OC delete clusterrole pod-perceiver
 
-#oc delete clusterrolebinding skyfire
-#oc delete clusterrolebinding perceptor-scanner
-#oc delete clusterrolebinding pod-perceiver
+#$OC delete clusterrolebinding skyfire
+#$OC delete clusterrolebinding perceptor-scanner
+#$OC delete clusterrolebinding pod-perceiver

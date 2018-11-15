@@ -21,9 +21,9 @@ under the License.
 
 package util
 
-import alertv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
-import opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
-import hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+import alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+import opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+import hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
 
 // GetAlertDefaultValue creates a alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {
@@ -46,7 +46,7 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 func GetHubDefaultValue() *hubv1.HubSpec {
 	return &hubv1.HubSpec{
 		Flavor:          "Small",
-		HubVersion:      "5.0.2",
+		HubVersion:      "2018.11.0",
 		DbPrototype:     "empty",
 		CertificateName: "default",
 		HubType:         "worker",
@@ -118,7 +118,6 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			ConcurrentScanLimit:          2,
 			TotalScanLimit:               1000,
 			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
-			Password:                     "blackduck",
 			InitialCount:                 1,
 			MaxCount:                     1,
 			DeleteHubThresholdPercentage: 50,

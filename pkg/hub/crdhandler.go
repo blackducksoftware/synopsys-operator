@@ -32,11 +32,11 @@ import (
 	"strings"
 	"time"
 
-	hub_v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	hubutils "github.com/blackducksoftware/perceptor-protoform/pkg/hub/util"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	hub_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
@@ -92,11 +92,11 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		log.Debugf("merged hub details %+v", newSpec)
 		if err != nil {
 			log.Errorf("unable to merge the hub structs for %s due to %+v", hubv1.Name, err)
-			hubutils.UpdateState(h.hubClient, "error", "error", err, hubv1)
+			hubutils.UpdateState(h.hubClient, h.config.Namespace, "error", "error", err, hubv1)
 		} else {
 			hubv1.Spec = newSpec
 			// Update status
-			hubv1, err := hubutils.UpdateState(h.hubClient, "pending", "creating", nil, hubv1)
+			hubv1, err := hubutils.UpdateState(h.hubClient, h.config.Namespace, "pending", "creating", nil, hubv1)
 
 			if err == nil {
 				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
@@ -107,9 +107,9 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				hubv1.Status.IP = ip
 				hubv1.Status.PVCVolumeName = pvc
 				if updateError {
-					hubutils.UpdateState(h.hubClient, "error", "error", err, hubv1)
+					hubutils.UpdateState(h.hubClient, h.config.Namespace, "error", "error", err, hubv1)
 				} else {
-					hubutils.UpdateState(h.hubClient, "running", "running", err, hubv1)
+					hubutils.UpdateState(h.hubClient, h.config.Namespace, "running", "running", err, hubv1)
 					hubURL := fmt.Sprintf("webserver.%s.svc", hubv1.Spec.Namespace)
 					h.verifyHub(hubURL, hubv1.Spec.Namespace)
 					h.autoRegisterHub(&hubv1.Spec)

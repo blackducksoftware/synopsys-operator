@@ -28,11 +28,11 @@ import (
 	"fmt"
 
 	horizondep "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
-	bdutil "github.com/blackducksoftware/perceptor-protoform/pkg/apps/util"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/installer"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
+	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/hub/installer"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
@@ -105,8 +105,8 @@ var InstallOperatorCommand = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(InstallOperatorCommand)
 	InstallOperatorCommand.PersistentFlags().String("defaultPassword", "blackduck", "Default password to use for 'blackduck' instances.")
-	InstallOperatorCommand.PersistentFlags().String("namespace", "blackduck-operator", "Namespace to run the operator in.")
-	InstallOperatorCommand.PersistentFlags().String("containerVersion", "master", "Code branch to run blackduck-operator off of.")
+	InstallOperatorCommand.PersistentFlags().String("namespace", "synopsys-operator", "Namespace to run the operator in.")
+	InstallOperatorCommand.PersistentFlags().String("containerVersion", "master", "Code branch to run synopsys-operator off of.")
 	InstallOperatorCommand.PersistentFlags().String("configPath", "", "Path to YAML for custom config options.")
 	InstallOperatorCommand.PersistentFlags().String("bootstrap", "false", "Wether or not to bootstrap all operator components.")
 	InstallOperatorCommand.PersistentFlags().String("export", "false", "Wether or not to export bootstrap components as plain text (i.e. to create manually)")

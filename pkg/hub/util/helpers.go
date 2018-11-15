@@ -24,9 +24,9 @@ package util
 import (
 	"fmt"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	hubClient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	hubClient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )
@@ -48,18 +48,18 @@ func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder stri
 	return adminPassword, userPassword, postgresPassword, err
 }
 
-func updateHubObject(h *hubClient.Clientset, obj *v1.Hub) (*v1.Hub, error) {
-	return h.SynopsysV1().Hubs(obj.Namespace).Update(obj)
+func updateHubObject(h *hubClient.Clientset, namespace string, obj *v1.Hub) (*v1.Hub, error) {
+	return h.SynopsysV1().Hubs(namespace).Update(obj)
 }
 
 // UpdateState will be used to update the hub object
-func UpdateState(h *hubClient.Clientset, specState string, statusState string, err error, hub *v1.Hub) (*v1.Hub, error) {
+func UpdateState(h *hubClient.Clientset, namespace string, specState string, statusState string, err error, hub *v1.Hub) (*v1.Hub, error) {
 	hub.Spec.State = specState
 	hub.Status.State = statusState
 	if err != nil {
 		hub.Status.ErrorMessage = fmt.Sprintf("%+v", err)
 	}
-	hub, err = updateHubObject(h, hub)
+	hub, err = updateHubObject(h, namespace, hub)
 	if err != nil {
 		logrus.Errorf("couldn't update the state of hub object: %s", err.Error())
 	}

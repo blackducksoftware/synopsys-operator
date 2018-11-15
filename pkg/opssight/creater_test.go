@@ -27,9 +27,9 @@ import (
 	"testing"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
-	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/google/go-cmp/cmp"
 	"github.com/koki/short/types"
 	"github.com/koki/short/util/floatstr"
@@ -593,7 +593,6 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			ConcurrentScanLimit:          2,
 			TotalScanLimit:               1000,
 			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
-			Password:                     "blackduck",
 			InitialCount:                 1,
 			MaxCount:                     1,
 			DeleteHubThresholdPercentage: 50,

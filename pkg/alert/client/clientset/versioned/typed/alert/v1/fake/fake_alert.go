@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	alertv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

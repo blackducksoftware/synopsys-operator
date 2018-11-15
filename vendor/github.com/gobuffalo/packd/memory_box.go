@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 var _ Addable = NewMemoryBox()
@@ -73,7 +75,7 @@ func (m *MemoryBox) FindString(path string) (string, error) {
 	return string(bb), err
 }
 
-func (m *MemoryBox) Find(path string) ([]byte, error) {
+func (m *MemoryBox) Find(path string) (ret []byte, e error) {
 	res, ok := m.files.Load(path)
 	if !ok {
 
@@ -96,7 +98,6 @@ func (m *MemoryBox) Find(path string) ([]byte, error) {
 		if len(b) == 0 {
 			return b, os.ErrNotExist
 		}
-
 		return b, nil
 	}
 	b, ok := res.([]byte)
@@ -139,12 +140,19 @@ func (m *MemoryBox) Walk(wf WalkFunc) error {
 
 		err = wf(path, f)
 		if err != nil {
+			if errors.Cause(err) == filepath.SkipDir {
+				err = nil
+				return true
+			}
 			return false
 		}
 
 		return true
 	})
 
+	if errors.Cause(err) == filepath.SkipDir {
+		return nil
+	}
 	return err
 }
 

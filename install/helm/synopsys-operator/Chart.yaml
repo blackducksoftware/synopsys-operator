@@ -7,7 +7,7 @@ keywords:
   - coverity
   - synopsys
   - swip
-home: https://github.com/blackducksoftware/perceptor-protoform
+home: https://github.com/blackducksoftware/synopsys-operator
 maintainers:
   - name: Tomas Gonzalez (Synopsys)
     email: tomasg@synopsys.com

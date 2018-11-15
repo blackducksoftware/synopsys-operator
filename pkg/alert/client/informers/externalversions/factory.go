@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
-	alert "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/informers/externalversions/alert"
-	internalinterfaces "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/informers/externalversions/internalinterfaces"
+	versioned "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/alert"
+	internalinterfaces "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

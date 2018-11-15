@@ -26,12 +26,12 @@ import (
 	"strings"
 	"time"
 
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub"
-	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	hubutils "github.com/blackducksoftware/perceptor-protoform/pkg/hub/util"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/hub"
+	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -77,13 +77,7 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 					log.Errorf("unable to cast")
 					return
 				}
-				if stopCh, ok := i.Hubs[hub.Name]; ok {
-					close(stopCh)
-					delete(i.Hubs, hub.Name)
-					log.Infof("stopped hub %s", hub.Name)
-				} else {
-					log.Errorf("unable to stop Hub %s: not found", hub.Name)
-				}
+				i.deleteChannel(hub.Name)
 			},
 		},
 	)
@@ -92,6 +86,16 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 	// make sure this is called from a go func.
 	// This blocks!
 	go ctrl.Run(ch)
+}
+
+func (i *InitDatabaseUpdater) deleteChannel(name string) {
+	if stopCh, ok := i.Hubs[name]; ok {
+		close(stopCh)
+		delete(i.Hubs, name)
+		log.Infof("stopped hub %s", name)
+	} else {
+		log.Errorf("unable to stop Hub %s: not found", name)
+	}
 }
 
 func (i *InitDatabaseUpdater) addHub(obj interface{}) {
@@ -140,6 +144,18 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv1.HubSpec) c
 			case <-stopCh:
 				return
 			case <-time.After(time.Duration(i.Config.PostgresRestartInMins) * time.Minute):
+				_, err := util.GetNamespace(i.KubeClient, hubSpec.Namespace)
+				if err != nil {
+					i.deleteChannel(hubSpec.Namespace)
+					log.Debugf("%v : unable to find the namespace", hubSpec.Namespace)
+					return
+				}
+				_, err = util.GetHub(i.HubClient, i.Config.Namespace, hubSpec.Namespace)
+				if err != nil {
+					i.deleteChannel(hubSpec.Namespace)
+					log.Debugf("%v : unable to find the hub", hubSpec.Namespace)
+					return
+				}
 				log.Debugf("%v: running postgres schema repair check # %v...", hubSpec.Namespace, checks)
 				// name == namespace (before the namespace is set, it might be empty, but name wont be)
 				hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", hubSpec.Namespace)

@@ -14,8 +14,7 @@ import (
 	fname "github.com/gobuffalo/flect/name"
 )
 
-// New App based on the details found at the provided root path
-func New(root string) App {
+func Named(name string, root string) App {
 	pwd, _ := os.Getwd()
 	if root == "." {
 		root = pwd
@@ -39,22 +38,21 @@ func New(root string) App {
 	}()
 
 	// Gather meta data
-	name := filepath.Base(root)
-	pp := resolvePackageName(name, pwd, modsOn)
+	if len(name) == 0 {
+		name = filepath.Base(root)
+	}
+	pp := resolvePackageName(name, pwd)
 
 	app := App{
 		Pwd:         pwd,
 		Root:        root,
 		GoPath:      envy.GoPath(),
 		Name:        fname.New(name),
-		PackagePkg:  pp,
-		ActionsPkg:  pp + "/actions",
-		ModelsPkg:   pp + "/models",
-		GriftsPkg:   pp + "/grifts",
-		WithModules: modsOn,
+		WithModules: envy.Mods(),
 		AsAPI:       false,
 		AsWeb:       true,
 	}
+	app.PackageRoot(pp)
 
 	app.Bin = filepath.Join("bin", app.Name.String())
 
@@ -73,6 +71,11 @@ func New(root string) App {
 	}
 
 	return app
+}
+
+// New App based on the details found at the provided root path
+func New(root string) App {
+	return Named("", root)
 }
 
 func oldSchool(app App) App {

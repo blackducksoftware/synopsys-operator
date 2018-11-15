@@ -19,8 +19,8 @@ limitations under the License.
 package synopsys
 
 import (
-	internalinterfaces "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/informers/externalversions/opssight/v1"
+	internalinterfaces "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
 )
 
 // Interface provides access to each of this group's versions.

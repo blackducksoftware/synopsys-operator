@@ -1,1 +1,1 @@
-module github.com/blackducksoftware/perceptor-protoform/cmd/operator-ui
+module github.com/blackducksoftware/synopsys-operator/cmd/operator-ui

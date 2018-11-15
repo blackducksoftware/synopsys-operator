@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-	synopsysv1 "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned/typed/opssight/v1"
-	fakesynopsysv1 "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned/typed/opssight/v1/fake"
+	clientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/typed/opssight/v1"
+	fakesynopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/typed/opssight/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

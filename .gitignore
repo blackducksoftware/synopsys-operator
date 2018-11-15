@@ -1,16 +1,2 @@
-install/kube/protoform.yaml
-install/kube/rbac.yaml
-install/openshift/protoform.yaml
-.DS_Store
-cmd/protoform-bootstrapper/protoform-bootstrapper
-_output/protoform-bootstrapper
-cmd/hub-installer/hub-installer
-_output/hub-installer
-_output/protoform-installer
-cmd/protoform-installer/protoform-installer
-cmd/hub-installer/opssight-deployer
-cmd/hub-protoform/hub-protoform
-cmd/hub-federator/hub-federator
-cmd/protoform-installer/protform-installer
-cmd/coke/
 cmd/operator-build
+install/secured-registry/dockercfg.json
