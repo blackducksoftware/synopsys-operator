@@ -77,13 +77,7 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 					log.Errorf("unable to cast")
 					return
 				}
-				if stopCh, ok := i.Hubs[hub.Name]; ok {
-					close(stopCh)
-					delete(i.Hubs, hub.Name)
-					log.Infof("stopped hub %s", hub.Name)
-				} else {
-					log.Errorf("unable to stop Hub %s: not found", hub.Name)
-				}
+				i.deleteChannel(hub.Name)
 			},
 		},
 	)
@@ -92,6 +86,16 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 	// make sure this is called from a go func.
 	// This blocks!
 	go ctrl.Run(ch)
+}
+
+func (i *InitDatabaseUpdater) deleteChannel(name string) {
+	if stopCh, ok := i.Hubs[name]; ok {
+		close(stopCh)
+		delete(i.Hubs, name)
+		log.Infof("stopped hub %s", name)
+	} else {
+		log.Errorf("unable to stop Hub %s: not found", name)
+	}
 }
 
 func (i *InitDatabaseUpdater) addHub(obj interface{}) {
@@ -140,6 +144,16 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv1.HubSpec) c
 			case <-stopCh:
 				return
 			case <-time.After(time.Duration(i.Config.PostgresRestartInMins) * time.Minute):
+				_, err := util.GetNamespace(i.KubeClient, hubSpec.Namespace)
+				if err != nil {
+					i.deleteChannel(hubSpec.Namespace)
+					return
+				}
+				_, err = util.GetHub(i.HubClient, i.Config.Namespace, hubSpec.Namespace)
+				if err != nil {
+					i.deleteChannel(hubSpec.Namespace)
+					return
+				}
 				log.Debugf("%v: running postgres schema repair check # %v...", hubSpec.Namespace, checks)
 				// name == namespace (before the namespace is set, it might be empty, but name wont be)
 				hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", hubSpec.Namespace)
