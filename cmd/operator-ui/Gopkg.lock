@@ -50,7 +50,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:98c0b66883b1dc8e097af4ed1127b84f0f8ec32007a123323496746f47095497"
+  digest = "1:b2d136e4b240044ba17e642fe8a0f129154c2d70839e843d9af2e55a3782d330"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
@@ -75,7 +75,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "52c97c1ab22ce587fc956cbd7bf5000b9ec09f4b"
+  revision = "45604042669458d91a64f17ba6227d4bef94c73d"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -204,23 +204,23 @@
   version = "v0.13.5"
 
 [[projects]]
-  digest = "1:21684c00733eb8b996c315c2707b9133f00b887c1274c766ec0d2c2c454d3297"
+  digest = "1:ef76ca8a822cf2b2c8b04efe20d446aa21fd1c4f72a4283988640057e02ca55a"
   name = "github.com/gobuffalo/buffalo-plugins"
   packages = [
     "plugins",
     "plugins/plugdeps",
   ]
   pruneopts = "UT"
-  revision = "b3d6af1f5bc9b172829e675e87900f99bac3e716"
-  version = "v1.6.10"
+  revision = "cfab938b7e3543b6207615714bd60641e99c2495"
+  version = "v1.6.11"
 
 [[projects]]
-  digest = "1:9d89edd2ba8f85df7735cd89dd5d76dfb9672c85fb813f5bfaca654e026be806"
+  digest = "1:ba4a13c1846fc9df263e43e61854e2ce530eadfdc10a7ea394cc3b76b42ddaed"
   name = "github.com/gobuffalo/envy"
   packages = ["."]
   pruneopts = "UT"
-  revision = "910ef88c9d32c6e779231577dfcf6ed8959bea2f"
-  version = "v1.6.8"
+  revision = "b29bf6b8134f3398b9333ba1893c58620152edb0"
+  version = "v1.6.9"
 
 [[projects]]
   digest = "1:bed368e3f50b0bfde6f3c0b0052a80eea34eb885481f308d290839a9a1dad183"
@@ -243,25 +243,25 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bdfbf6725a7d83fdbb1ddea341ad09a2cffe560bedb8c9eefe8f38a4fa4b1a12"
+  digest = "1:8d77dba62e39e710f9e71f6c6405c45000b17011291339360b7411fa92e43390"
   name = "github.com/gobuffalo/flect"
   packages = [
     ".",
     "name",
   ]
   pruneopts = "UT"
-  revision = "179d36177b5bad302ff6f77569588d92a73447c0"
+  revision = "47375f6d832895843594c60e150fc0a2d2ef87df"
 
 [[projects]]
   branch = "master"
-  digest = "1:8effc7b882a94e1c82b3357d30beedca15f9f7fd04047f11db613183c2ec5f35"
+  digest = "1:0bf92f7e2580f38beb8f944148d8fc75a2cb15cb7687d49584af97a4714137af"
   name = "github.com/gobuffalo/genny"
   packages = [
     ".",
     "movinglater/gotools/gomods",
   ]
   pruneopts = "UT"
-  revision = "599b33630ab4b5c2eeca309e23f285c5439d5337"
+  revision = "0a4decd77f5de703cd36ce57531046847b8638fb"
 
 [[projects]]
   digest = "1:114fbde5ab0239bddb4e8733d3174f8f4008ff84d7161c549e501a4339bdc75c"
@@ -312,11 +312,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4f790df80eacfce6d3fcf96c5a715a449d304a154c72b54696d8908bf71398c1"
+  digest = "1:5ff54105efd5f601d573568b2e4305c7fa4b6b559fbb67ffeb0efd79695543be"
   name = "github.com/gobuffalo/meta"
   packages = ["."]
   pruneopts = "UT"
-  revision = "f76929ccd5fa79c6733d6694dcfac68b2ef66ceb"
+  revision = "b130ebedd2f7bf42e7f32eaef79a2546a7aa0526"
 
 [[projects]]
   branch = "master"
@@ -352,19 +352,19 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bf377cd32dcb6da950337c26839fd59554e89a789b68d3b28fc2fda2dd9510bc"
+  digest = "1:b73defe35e1810e7b7960c9515a99063c004751c11eb80432c987fb983cb7de4"
   name = "github.com/gobuffalo/packd"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b2e760a5f0ff7ebdac92dc43c2af310351dbc03f"
+  revision = "f25c5d2471d797647acdd6179365a5c4a88cf534"
 
 [[projects]]
-  digest = "1:4c133e12414e9d9bc577690556f17bd544559373a2968e28c6c17d2e6043b7bb"
+  digest = "1:4d3eacaf36227ae90a35bf4d36887298183ea481387992413c9efad57734c92f"
   name = "github.com/gobuffalo/packr"
   packages = ["."]
   pruneopts = "UT"
-  revision = "04ea9bbf60d4f0e275bcd529eac2d1055db7396b"
-  version = "v1.20.0"
+  revision = "c3de6602e9f189d038a83a91c570c38a290bbe43"
+  version = "v1.21.0"
 
 [[projects]]
   digest = "1:07e10ef52f5f704dfd64c7fa5760cff981be537008df04b10f7c7c70ed34a7f5"
@@ -1198,7 +1198,7 @@
     "idna",
   ]
   pruneopts = "UT"
-  revision = "88d92db4c548972d942ac2a3531a8a9a34c82ca6"
+  revision = "adae6a3d119ae4890b46832a2e88a95adc62b8e7"
 
 [[projects]]
   branch = "master"

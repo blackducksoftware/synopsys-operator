@@ -70,6 +70,10 @@ items:
         port: 80
         targetPort: 3000
         name: synopsys-operator-ui-standard-port
+      - protocol: TCP
+        port: 8080
+        targetPort: 8080
+        name: synopsys-operator
 - apiVersion: v1
   kind: ConfigMap
   metadata:
