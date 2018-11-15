@@ -32,25 +32,21 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
-	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1" //extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
-
-	//extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
-
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var logger *log.Entry

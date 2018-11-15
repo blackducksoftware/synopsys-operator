@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

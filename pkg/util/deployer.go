@@ -27,7 +27,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"k8s.io/client-go/rest"
 )
 

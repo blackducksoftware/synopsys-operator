@@ -21,7 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )

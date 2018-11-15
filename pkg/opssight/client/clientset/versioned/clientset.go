@@ -19,7 +19,7 @@ limitations under the License.
 package versioned
 
 import (
-	synopsysv1 "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned/typed/opssight/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/typed/opssight/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

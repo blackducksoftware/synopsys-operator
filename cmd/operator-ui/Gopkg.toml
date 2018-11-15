@@ -1,16 +1,15 @@
 
 [[constraint]]
-	name = "github.com/gobuffalo/buffalo"
-	version = "v0.13.2"
-
+  name = "github.com/gobuffalo/buffalo"
+  version = "v0.13.5"
 
 [prune]
-	go-tests = true
-	unused-packages = true
+  go-tests = true
+  unused-packages = true
 
 [[constraint]]
-  name = "github.com/blackducksoftware/perceptor-protoform"
-	branch = "master"
+  name = "github.com/blackducksoftware/synopsys-operator"
+  branch = "master"
 	
 [[constraint]]
   name = "github.com/sirupsen/logrus"
@@ -40,12 +39,12 @@
   name = "k8s.io/kube-aggregator"
   revision = "89512616b165a8d1280cf4b7dfdc266e96d8abe1"
 
-	# DO NOT DELETE
-	[[prune.project]] # buffalo
-		name = "github.com/gobuffalo/buffalo"
-		unused-packages = false
+# DO NOT DELETE
+[[prune.project]] # buffalo
+  name = "github.com/gobuffalo/buffalo"
+  unused-packages = false
 
-	# DO NOT DELETE
-	[[prune.project]] # pop
-		name = "github.com/gobuffalo/pop"
-		unused-packages = false
+# DO NOT DELETE
+[[prune.project]] # pop
+  name = "github.com/gobuffalo/pop"
+  unused-packages = false

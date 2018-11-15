@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	opssightv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

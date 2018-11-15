@@ -26,11 +26,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/blackducksoftware/perceptor-protoform/pkg/alert"
-	bdutil "github.com/blackducksoftware/perceptor-protoform/pkg/apps/util"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/hub/installer"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/opssight"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
+	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/hub/installer"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/sirupsen/logrus"
 )
 
@@ -53,7 +53,6 @@ func kill(stopCh chan struct{}) {
 	}()
 	// hard exit b/c of the above comment ^
 	os.Exit(0)
-
 }
 
 // runProtoform ...

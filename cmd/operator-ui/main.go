@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/cmd/operator-ui/actions"
+	"github.com/blackducksoftware/synopsys-operator/cmd/operator-ui/actions"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -26,21 +26,21 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetBootstrapComponents will return the authentication deployment
 func GetBootstrapComponents(ns string, branch string, regKey string) (*components.ReplicationController, *components.Service, *components.ConfigMap, *components.ServiceAccount, *components.ClusterRoleBinding, *components.Service, *components.ReplicationController, *components.ConfigMap) {
-	protoformVolume, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("blackduck-protoform")
+	protoformVolume, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("synopsys-operator")
 	protoformContainer := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
-			Name:       "blackduck-operator",
-			Image:      fmt.Sprintf("gcr.io/saas-hub-stg/blackducksoftware/protoform-installer:%v", regKey),
+			Name:       "synopsys-operator",
+			Image:      fmt.Sprintf("gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:%v", regKey),
 			PullPolicy: horizonapi.PullAlways,
 		},
 		EnvConfigs: []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "registration-key"}},
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{Name: "blackduck-protoform", MountPath: "/etc/blackduck-protoform"},
+			{Name: "synopsys-operator", MountPath: "/etc/synopsys-operator"},
 		},
 		PortConfig: &horizonapi.PortConfig{
 			ContainerPort: "8080",
@@ -51,7 +51,7 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 	protoformRC := util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{
 			Namespace: ns,
-			Name:      "blackduck-protoform",
+			Name:      "synopsys-operator",
 			Replicas:  util.IntToInt32(1),
 		},
 		"default",
@@ -60,14 +60,14 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 		[]*util.Container{},
 		[]horizonapi.AffinityConfig{})
 
-	protoformsvc := util.CreateService("blackduck-protoform", "blackduck-protoform", ns, "8080", "8080", horizonapi.ClusterIPServiceTypeDefault)
+	protoformsvc := util.CreateService("synopsys-operator", "synopsys-operator", ns, "8080", "8080", horizonapi.ClusterIPServiceTypeDefault)
 
 	// Config map
 
-	protoformcfg := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: ns, Name: "blackduck-protoform"})
+	protoformcfg := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: ns, Name: "synopsys-operator"})
 	protoformcfg.AddData(map[string]string{
 		"config.json": fmt.Sprintf(`"DryRun": false,
-		 "LogLevel":              "debug",
+		"LogLevel":              "debug",
 		"Namespace":             "%v",
 		"Threadiness":           5,
 		"PostgresRestartInMins": 10,
@@ -90,14 +90,14 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 
 	// RBAC
 	svcAcct := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
-		Name:      "blackduck-protoform",
+		Name:      "synopsys-operator",
 		Namespace: ns})
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name: "protoform-admin",
 	})
 	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
 		Kind:      "ServiceAccount",
-		Name:      "blackduck-protoform",
+		Name:      "synopsys-operator",
 		Namespace: ns,
 	})
 	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
@@ -133,7 +133,7 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 	prometheusVol2, _ := util.CreateConfigMapVolume("config-volume", "prometheus-config", 777)
 	promCfg := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: ns, Name: "prometheus-config"})
 	protoformcfg.AddData(map[string]string{
-		"prometheus.yml": `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"blackduck-protoform-scrape","scrape_interval":"5s","static_configs":[{"targets":["blackduck-protoform:8080"]}]}]}`})
+		"prometheus.yml": `{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"synopsys-operator-scrape","scrape_interval":"5s","static_configs":[{"targets":["synopsys-operator:8080"]}]}]}`})
 
 	prometheusRC := util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{

@@ -19,8 +19,8 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	scheme "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned/scheme"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	scheme "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

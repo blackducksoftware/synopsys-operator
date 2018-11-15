@@ -26,8 +26,8 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/juju/errors"
 )
 

@@ -27,8 +27,8 @@ import (
 	"strings"
 	"time"
 
-	hubclientset "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
+	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

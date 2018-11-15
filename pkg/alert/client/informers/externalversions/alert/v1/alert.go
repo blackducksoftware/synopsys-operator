@@ -21,10 +21,10 @@ package v1
 import (
 	time "time"
 
-	versioned "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
-	internalinterfaces "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/listers/alert/v1"
-	alertv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
+	versioned "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	internalinterfaces "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/listers/alert/v1"
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

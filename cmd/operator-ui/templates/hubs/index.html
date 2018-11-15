@@ -4,14 +4,14 @@
     <section class="Icon-wrap-header">
       <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
     </section>
-    <h4>List Black Ducks</h4>
+    <h4>Black Duck Instances</h4>
   </section>
 </header>
 <br/>
 <div class="list-container">
   <ul class="list-unstyled list-inline">
-    <li class="list-inline-item"><a href="<%= rootPath() %>" class="btn btn-info">Back to Blackduck Operator</a></li>
-    <li class="list-inline-item"><a href="<%= newHubsPath() %>" class="btn btn-primary">Create a Blackduck Instance</a></li>
+    <li class="list-inline-item"><a href="<%= rootPath() %>" class="btn btn-info">Home</a></li>
+    <li class="list-inline-item"><a href="<%= newHubsPath() %>" class="btn btn-primary">Create</a></li>
   </ul>
   <table class="table table-striped">
     <thead class="list-header-container">
@@ -54,7 +54,7 @@
         <% } %>
       <% } else { %>
         <tr>
-          <td colspan="15"><center><h5>No Black Ducks found</h5></center></td>
+          <td colspan="15"><center><h5>No Black Duck instances found</h5></center></td>
         </tr>
       <% } %>
     </tbody>

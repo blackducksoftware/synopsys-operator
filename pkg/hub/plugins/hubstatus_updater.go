@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"time"
 
-	hubclient "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	hubutils "github.com/blackducksoftware/perceptor-protoform/pkg/hub/util"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +46,7 @@ type HubStatusUpdater struct {
 }
 
 func (i *HubStatusUpdater) update() {
-	hL, _ := i.HubClient.SynopsysV1().Hubs("").List(metav1.ListOptions{})
+	hL, _ := i.HubClient.SynopsysV1().Hubs(i.Config.Namespace).List(metav1.ListOptions{})
 	for _, hub := range hL.Items {
 		podList, _ := i.KubeClient.Core().Pods(hub.Namespace).List(metav1.ListOptions{})
 		hisstorg := map[string]string{}
@@ -59,7 +59,7 @@ func (i *HubStatusUpdater) update() {
 		// if any entreis non running, its status is busted ...
 		if len(hisstorg) > 0 {
 			logrus.Warnf("Warning: Hub %v is down  %v", hub.GetNamespace(), hisstorg)
-			hubutils.UpdateState(i.HubClient, "", "", fmt.Errorf("%v", hisstorg), &hub)
+			hubutils.UpdateState(i.HubClient, i.Config.Namespace, "", "", fmt.Errorf("%v", hisstorg), &hub)
 		}
 	}
 }

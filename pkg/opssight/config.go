@@ -24,8 +24,8 @@ package opssight
 import (
 	"time"
 
-	opssightclientset "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/protoform"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"

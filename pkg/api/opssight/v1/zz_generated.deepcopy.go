@@ -21,7 +21,7 @@ limitations under the License.
 package v1
 
 import (
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 

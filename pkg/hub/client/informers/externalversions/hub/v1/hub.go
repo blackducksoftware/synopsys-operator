@@ -21,10 +21,10 @@ package v1
 import (
 	time "time"
 
-	hubv1 "github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
-	versioned "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/clientset/versioned"
-	internalinterfaces "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/blackducksoftware/perceptor-protoform/pkg/hub/client/listers/hub/v1"
+	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	versioned "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	internalinterfaces "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/listers/hub/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

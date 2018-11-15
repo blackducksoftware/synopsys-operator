@@ -1,16 +1,23 @@
 package genny
 
 import (
+	"math/rand"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/gobuffalo/events"
 	"github.com/gobuffalo/packd"
 	"github.com/pkg/errors"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 // Generator is the basic type for generators to use
 type Generator struct {
+	StepName     string
 	Should       func(*Runner) bool
 	Root         string
 	ErrorFn      func(error)
@@ -22,6 +29,7 @@ type Generator struct {
 // New, well-formed, generator
 func New() *Generator {
 	g := &Generator{
+		StepName:     stepName(),
 		runners:      []RunFn{},
 		moot:         &sync.RWMutex{},
 		transformers: []Transformer{},
@@ -72,7 +80,7 @@ func (g *Generator) Command(cmd *exec.Cmd) {
 
 // Box walks through a packr.Box and adds Files for each entry
 // in the box.
-func (g *Generator) Box(box packd.Walkable) error {
+func (g *Generator) Box(box packd.Walker) error {
 	return box.Walk(func(path string, f packd.File) error {
 		g.File(NewFile(path, f))
 		return nil

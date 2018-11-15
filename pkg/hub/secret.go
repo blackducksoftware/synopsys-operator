@@ -25,12 +25,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/sirupsen/logrus"
 )
 
 func (hc *Creater) createHubSecrets(createHub *v1.HubSpec, adminPassword string, userPassword string) []*components.Secret {

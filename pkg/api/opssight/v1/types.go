@@ -22,7 +22,7 @@ under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -50,7 +50,6 @@ type RegistryAuth struct {
 type Hub struct {
 	User                string `json:"user"`
 	Port                int    `json:"port"`
-	Password            string `json:"password"`
 	ConcurrentScanLimit int    `json:"concurrentScanLimit"`
 	TotalScanLimit      int    `json:"totalScanLimit"`
 	PasswordEnvVar      string `json:"passwordEnvVar"`

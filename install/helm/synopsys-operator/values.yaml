@@ -16,7 +16,7 @@ bdConfig:
 container:
   registry: gcr.io
   repository: saas-hub-stg/blackducksoftware
-  image: blackduck-operator
+  image: synopsys-operator
   branch: master
   pullPolicy: Always
 

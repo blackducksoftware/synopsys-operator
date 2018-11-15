@@ -22,7 +22,7 @@ under the License.
 package main
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/pkg/apps"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 )
 
 func main() {

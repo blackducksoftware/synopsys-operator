@@ -1,10 +1,11 @@
-# Perceptor-protoform: a cloud native administration utility for Black Duck ecosystem components:
+# Synopsys-operator: a cloud native administration utility for Synopsys ecosystem components:
 
-- perceptor
-- perceivers (openshift, kube, ..., )
-- perceptor-image-facade
-- perceptor-scanner
-- blackduck hub
+- Perceptor
+- Perceivers (openshift, kube, ..., )
+- Perceptor image facade
+- Perceptor scanner
+- Black Duck
+- Black Duck alert
 
 # Quick start
 
@@ -17,8 +18,8 @@
  - Clone this repo
 
 ```
-git clone git@github.com:blackducksoftware/perceptor-protoform.git
-cd perceptor-protoform
+git clone git@github.com:blackducksoftware/synopsys-operator.git
+cd synopsys-operator
 ```
 
 ### Kubernetes
@@ -114,4 +115,4 @@ Run the `hack/update-crds.sh` shell script any time you change the CRDs so that 
 ## Generating CRD code
 
  1. `cd $GOPATH/src/k8s.io/code-generator`
- 2. `./generate-groups.sh "deepcopy,client,informer,lister" "github.com/blackducksoftware/perceptor-protoform/pkg/opssight/client" "github.com/blackducksoftware/perceptor-protoform/pkg/api" opssight:v1`
+ 2. `./generate-groups.sh "deepcopy,client,informer,lister" "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client" "github.com/blackducksoftware/synopsys-operator/pkg/api" opssight:v1`

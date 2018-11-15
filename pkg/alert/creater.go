@@ -24,14 +24,12 @@ package alert
 import (
 	"time"
 
-	alertclientset "github.com/blackducksoftware/perceptor-protoform/pkg/alert/client/clientset/versioned"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/api/alert/v1"
-	"github.com/blackducksoftware/perceptor-protoform/pkg/util"
-
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Creater will store the configuration to create the Hub
