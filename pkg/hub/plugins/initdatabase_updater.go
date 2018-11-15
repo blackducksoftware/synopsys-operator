@@ -147,11 +147,13 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv1.HubSpec) c
 				_, err := util.GetNamespace(i.KubeClient, hubSpec.Namespace)
 				if err != nil {
 					i.deleteChannel(hubSpec.Namespace)
+					log.Debugf("%v : unable to find the namespace", hubSpec.Namespace)
 					return
 				}
 				_, err = util.GetHub(i.HubClient, i.Config.Namespace, hubSpec.Namespace)
 				if err != nil {
 					i.deleteChannel(hubSpec.Namespace)
+					log.Debugf("%v : unable to find the hub", hubSpec.Namespace)
 					return
 				}
 				log.Debugf("%v: running postgres schema repair check # %v...", hubSpec.Namespace, checks)
