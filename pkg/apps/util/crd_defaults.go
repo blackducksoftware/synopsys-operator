@@ -46,7 +46,7 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 func GetHubDefaultValue() *hubv1.HubSpec {
 	return &hubv1.HubSpec{
 		Flavor:          "Small",
-		HubVersion:      "5.0.2",
+		HubVersion:      "2018.11.0",
 		DbPrototype:     "empty",
 		CertificateName: "default",
 		HubType:         "worker",
