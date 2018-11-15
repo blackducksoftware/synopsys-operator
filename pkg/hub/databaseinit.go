@@ -142,6 +142,9 @@ func execBdsHubDBStatements(db *sql.DB) {
 	exec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA st to blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;")
+	exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_idle TO 600;")
+	exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_interval TO 30;")
+	exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_count TO 10;")
 	// db.Close()
 }
 
@@ -152,12 +155,18 @@ func execBdsHubReportDBStatements(db *sql.DB) {
 	exec(db, "GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA public TO blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;")
+	exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_idle TO 600;")
+	exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_interval TO 30;")
+	exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_count TO 10;")
 	// db.Close()
 }
 
 func execBdioDBStatements(db *sql.DB) {
 	exec(db, "CREATE EXTENSION pgcrypto;")
 	exec(db, "GRANT ALL PRIVILEGES ON DATABASE bdio TO blackduck_user;")
+	exec(db, "ALTER DATABASE bdio SET tcp_keepalives_idle TO 600;")
+	exec(db, "ALTER DATABASE bdio SET tcp_keepalives_interval TO 30;")
+	exec(db, "ALTER DATABASE bdio SET tcp_keepalives_count TO 10;")
 	// db.Close()
 }
 
