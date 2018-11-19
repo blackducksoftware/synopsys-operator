@@ -92,7 +92,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 		deployer.AddPVC(postgresPVC)
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil, nil)
+	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil)
 
 	deployer.AddReplicationController(containerCreater.GetPostgresDeployment())
 	deployer.AddService(containerCreater.GetPostgresService())
