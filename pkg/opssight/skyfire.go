@@ -199,8 +199,8 @@ func (p *SpecConfig) PerceptorSkyfireClusterRole() *components.ClusterRole {
 	})
 	clusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		APIGroups: []string{"*"},
-		Resources: []string{"pods", "nodes"},
-		Verbs:     []string{"get", "watch", "list"},
+		Resources: []string{"pods", "nodes", "namespaces"},
+		Verbs:     []string{"get", "watch", "list", "create", "delete"},
 	})
 
 	return clusterRole
