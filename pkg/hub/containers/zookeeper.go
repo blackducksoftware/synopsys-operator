@@ -29,13 +29,17 @@ import (
 
 // GetZookeeperDeployment will return the zookeeper deployment
 func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
-	zookeeperEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper")
+	zookeeperDataEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-data")
+	zookeeperDataLogEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")
 	zookeeperContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: c.getFullContainerName("zookeeper"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: zookeeperMinCPUUsage, MaxCPU: ""},
-		EnvConfigs:   c.hubConfigEnv,
-		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "dir-zookeeper", MountPath: "/opt/blackduck/hub/logs"}},
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: zookeeperPort, Protocol: horizonapi.ProtocolTCP},
+		EnvConfigs: c.hubConfigEnv,
+		VolumeMounts: []*horizonapi.VolumeMountConfig{
+			{Name: "dir-zookeeper-data", MountPath: "/opt/blackduck/zookeeper/data"},
+			{Name: "dir-zookeeper-datalog", MountPath: "/opt/blackduck/zookeeper/datalog"},
+		},
+		PortConfig: &horizonapi.PortConfig{ContainerPort: zookeeperPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
 		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"zkServer.sh", "status", "/opt/blackduck/zookeeper/conf/zoo.cfg"}},
 		// 	Delay:           240,
@@ -47,7 +51,7 @@ func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
 	c.PostEditContainer(zookeeperContainerConfig)
 
 	zookeeper := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{zookeeperContainerConfig}, []*components.Volume{zookeeperEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{})
+		[]*util.Container{zookeeperContainerConfig}, []*components.Volume{zookeeperDataEmptyDir, zookeeperDataLogEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{})
 
 	return zookeeper
 }

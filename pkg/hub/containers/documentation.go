@@ -29,10 +29,14 @@ import (
 
 // GetDocumentationDeployment will return the documentation deployment
 func (c *Creater) GetDocumentationDeployment() *components.ReplicationController {
+	documentationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-documentation")
 	documentationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: c.getFullContainerName("documentation"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.DocumentationMemoryLimit, MaxMem: c.hubContainerFlavor.DocumentationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: c.hubConfigEnv,
+		VolumeMounts: []*horizonapi.VolumeMountConfig{
+			{Name: "dir-documentation", MountPath: "/opt/blackduck/hub/hub-documentation/security"},
+		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: documentationPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
 		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/hubdoc/health-checks/liveness", "/opt/blackduck/hub/hub-documentation/security/root.crt"}},
@@ -45,7 +49,7 @@ func (c *Creater) GetDocumentationDeployment() *components.ReplicationController
 	c.PostEditContainer(documentationContainerConfig)
 
 	documentation := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "documentation", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{documentationContainerConfig}, []*components.Volume{}, []*util.Container{}, []horizonapi.AffinityConfig{})
+		[]*util.Container{documentationContainerConfig}, []*components.Volume{documentationEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{})
 
 	return documentation
 }

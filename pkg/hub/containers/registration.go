@@ -30,12 +30,16 @@ import (
 // GetRegistrationDeployment will return the registration deployment
 func (c *Creater) GetRegistrationDeployment() *components.ReplicationController {
 	registrationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")
+	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
 	registrationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: c.getFullContainerName("registration"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
-		EnvConfigs:   c.hubConfigEnv,
-		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config"}},
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP},
+		EnvConfigs: c.hubConfigEnv,
+		VolumeMounts: []*horizonapi.VolumeMountConfig{
+			{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config"},
+			{Name: "dir-registration-security", MountPath: "/opt/blackduck/hub/hub-registration/security"},
+		},
+		PortConfig: &horizonapi.PortConfig{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
 		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/registration/health-checks/liveness", "/opt/blackduck/hub/hub-registration/security/root.crt"}},
 		// 	Delay:           240,
@@ -45,7 +49,7 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 		// }},
 	}
 
-	registrationVolumes := []*components.Volume{registrationEmptyDir}
+	registrationVolumes := []*components.Volume{registrationEmptyDir, registrationSecurityEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided
 	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
