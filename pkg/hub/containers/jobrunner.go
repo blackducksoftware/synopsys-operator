@@ -29,6 +29,7 @@ import (
 
 // GetJobRunnerDeployment will return the job runner deployment
 func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
+	jobRunnerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-jobrunner")
 	jobRunnerEnvs := c.allConfigEnv
 	jobRunnerEnvs = append(jobRunnerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "jobrunner-mem", FromName: "hub-config-resources"})
 	jobRunnerContainerConfig := &util.Container{
@@ -36,16 +37,9 @@ func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.JobRunnerMemoryLimit, MaxMem: c.hubContainerFlavor.JobRunnerMemoryLimit, MinCPU: jonRunnerMinCPUUsage, MaxCPU: jonRunnerMaxCPUUsage},
 		EnvConfigs: jobRunnerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{
-				Name:      "db-passwords",
-				MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE",
-				SubPath:   "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
-			},
-			{
-				Name:      "db-passwords",
-				MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE",
-				SubPath:   "HUB_POSTGRES_USER_PASSWORD_FILE",
-			},
+			{Name: "db-passwords", MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE", SubPath: "HUB_POSTGRES_ADMIN_PASSWORD_FILE"},
+			{Name: "db-passwords", MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE", SubPath: "HUB_POSTGRES_USER_PASSWORD_FILE"},
+			{Name: "dir-jobrunner", MountPath: "/opt/blackduck/hub/jobrunner/security"},
 		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: jobRunnerPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
@@ -58,7 +52,7 @@ func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
 	}
 	c.PostEditContainer(jobRunnerContainerConfig)
 
-	jobRunnerVolumes := []*components.Volume{c.dbSecretVolume, c.dbEmptyDir}
+	jobRunnerVolumes := []*components.Volume{c.dbSecretVolume, jobRunnerEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided
 	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {

@@ -33,30 +33,18 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "webapp-mem", FromName: "hub-config-resources"})
 	// webappGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-webapp", fmt.Sprintf("%s-%s", "webapp-disk", c.hubSpec.Namespace), "ext4")
 	webappEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
+	webappSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp-security")
 	webappContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.getFullContainerName("webapp"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit,
 			MaxCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs: webappEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{
-				Name:      "db-passwords",
-				MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE",
-				SubPath:   "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
-			},
-			{
-				Name:      "db-passwords",
-				MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE",
-				SubPath:   "HUB_POSTGRES_USER_PASSWORD_FILE",
-			},
-			{
-				Name:      "dir-webapp",
-				MountPath: "/opt/blackduck/hub/hub-webapp/security",
-			},
-			{
-				Name:      "dir-logstash",
-				MountPath: "/opt/blackduck/hub/logs",
-			},
+			{Name: "db-passwords", MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE", SubPath: "HUB_POSTGRES_ADMIN_PASSWORD_FILE"},
+			{Name: "db-passwords", MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE", SubPath: "HUB_POSTGRES_USER_PASSWORD_FILE"},
+			{Name: "dir-webapp", MountPath: "/opt/blackduck/hub/hub-webapp/ldap"},
+			{Name: "dir-webapp-security", MountPath: "/opt/blackduck/hub/hub-webapp/security"},
+			{Name: "dir-logstash", MountPath: "/opt/blackduck/hub/logs"},
 		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: webappPort, Protocol: horizonapi.ProtocolTCP},
 		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
@@ -85,7 +73,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 		// }},
 	}
 
-	webappLogstashVolumes := []*components.Volume{webappEmptyDir, logstashEmptyDir, c.dbSecretVolume, c.dbEmptyDir}
+	webappLogstashVolumes := []*components.Volume{webappEmptyDir, webappSecurityEmptyDir, logstashEmptyDir, c.dbSecretVolume}
 
 	// Mount the HTTPS proxy certificate if provided
 	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {

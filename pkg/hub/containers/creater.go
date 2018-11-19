@@ -50,13 +50,12 @@ type Creater struct {
 	hubConfigEnv       []*horizonapi.EnvConfig
 	allConfigEnv       []*horizonapi.EnvConfig
 	dbSecretVolume     *components.Volume
-	dbEmptyDir         *components.Volume
 	proxySecretVolume  *components.Volume
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
-	dbSecretVolume *components.Volume, dbEmptyDir *components.Volume, proxySecretVolume *components.Volume) *Creater {
+	dbSecretVolume *components.Volume, proxySecretVolume *components.Volume) *Creater {
 	return &Creater{
 		config:             config,
 		hubSpec:            hubSpec,
@@ -64,7 +63,6 @@ func NewCreater(config *protoform.Config, hubSpec *v1.HubSpec, hubContainerFlavo
 		hubConfigEnv:       hubConfigEnv,
 		allConfigEnv:       allConfigEnv,
 		dbSecretVolume:     dbSecretVolume,
-		dbEmptyDir:         dbEmptyDir,
 		proxySecretVolume:  proxySecretVolume,
 	}
 }

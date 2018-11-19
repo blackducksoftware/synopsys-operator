@@ -55,7 +55,7 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.HubSp
 		DefaultMode: util.IntToInt32(420),
 	})
 
-	dbEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("cloudsql")
+	// dbEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("cloudsql")
 
 	var proxySecretVolume *components.Volume
 
@@ -73,7 +73,7 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.HubSp
 		}
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, hubConfigEnv, allConfigEnv, dbSecretVolume, dbEmptyDir, proxySecretVolume)
+	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, hubConfigEnv, allConfigEnv, dbSecretVolume, proxySecretVolume)
 
 	// cfssl
 	deployer.AddReplicationController(containerCreater.GetCfsslDeployment())

@@ -62,7 +62,7 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 		// }},
 	}
 
-	hubScanVolumes := []*components.Volume{hubScanEmptyDir, c.dbSecretVolume, c.dbEmptyDir}
+	hubScanVolumes := []*components.Volume{hubScanEmptyDir, c.dbSecretVolume}
 
 	// Mount the HTTPS proxy certificate if provided
 	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
