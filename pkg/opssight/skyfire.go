@@ -86,7 +86,7 @@ func (p *SpecConfig) pyfireContainer() *components.Container {
 		Image:   p.config.Skyfire.Image,
 		Command: []string{"python3"},
 		Args: []string{
-			"src/main.py",
+			"main.py",
 			fmt.Sprintf("/etc/skyfire/%s.json", p.config.ConfigMapName),
 		},
 		MinCPU: p.config.DefaultCPU,
