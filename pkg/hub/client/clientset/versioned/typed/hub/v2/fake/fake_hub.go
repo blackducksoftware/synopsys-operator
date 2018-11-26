@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,29 +30,29 @@ import (
 
 // FakeHubs implements HubInterface
 type FakeHubs struct {
-	Fake *FakeSynopsysV1
+	Fake *FakeSynopsysV2
 	ns   string
 }
 
-var hubsResource = schema.GroupVersionResource{Group: "synopsys", Version: "v1", Resource: "hubs"}
+var hubsResource = schema.GroupVersionResource{Group: "synopsys", Version: "v2", Resource: "hubs"}
 
-var hubsKind = schema.GroupVersionKind{Group: "synopsys", Version: "v1", Kind: "Hub"}
+var hubsKind = schema.GroupVersionKind{Group: "synopsys", Version: "v2", Kind: "Hub"}
 
 // Get takes name of the hub, and returns the corresponding hub object, and an error if there is any.
-func (c *FakeHubs) Get(name string, options v1.GetOptions) (result *hubv1.Hub, err error) {
+func (c *FakeHubs) Get(name string, options v1.GetOptions) (result *v2.Hub, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(hubsResource, c.ns, name), &hubv1.Hub{})
+		Invokes(testing.NewGetAction(hubsResource, c.ns, name), &v2.Hub{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*hubv1.Hub), err
+	return obj.(*v2.Hub), err
 }
 
 // List takes label and field selectors, and returns the list of Hubs that match those selectors.
-func (c *FakeHubs) List(opts v1.ListOptions) (result *hubv1.HubList, err error) {
+func (c *FakeHubs) List(opts v1.ListOptions) (result *v2.HubList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(hubsResource, hubsKind, c.ns, opts), &hubv1.HubList{})
+		Invokes(testing.NewListAction(hubsResource, hubsKind, c.ns, opts), &v2.HubList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeHubs) List(opts v1.ListOptions) (result *hubv1.HubList, err error) 
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &hubv1.HubList{ListMeta: obj.(*hubv1.HubList).ListMeta}
-	for _, item := range obj.(*hubv1.HubList).Items {
+	list := &v2.HubList{ListMeta: obj.(*v2.HubList).ListMeta}
+	for _, item := range obj.(*v2.HubList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -79,31 +79,31 @@ func (c *FakeHubs) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a hub and creates it.  Returns the server's representation of the hub, and an error, if there is any.
-func (c *FakeHubs) Create(hub *hubv1.Hub) (result *hubv1.Hub, err error) {
+func (c *FakeHubs) Create(hub *v2.Hub) (result *v2.Hub, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(hubsResource, c.ns, hub), &hubv1.Hub{})
+		Invokes(testing.NewCreateAction(hubsResource, c.ns, hub), &v2.Hub{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*hubv1.Hub), err
+	return obj.(*v2.Hub), err
 }
 
 // Update takes the representation of a hub and updates it. Returns the server's representation of the hub, and an error, if there is any.
-func (c *FakeHubs) Update(hub *hubv1.Hub) (result *hubv1.Hub, err error) {
+func (c *FakeHubs) Update(hub *v2.Hub) (result *v2.Hub, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(hubsResource, c.ns, hub), &hubv1.Hub{})
+		Invokes(testing.NewUpdateAction(hubsResource, c.ns, hub), &v2.Hub{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*hubv1.Hub), err
+	return obj.(*v2.Hub), err
 }
 
 // Delete takes name of the hub and deletes it. Returns an error if one occurs.
 func (c *FakeHubs) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(hubsResource, c.ns, name), &hubv1.Hub{})
+		Invokes(testing.NewDeleteAction(hubsResource, c.ns, name), &v2.Hub{})
 
 	return err
 }
@@ -112,17 +112,17 @@ func (c *FakeHubs) Delete(name string, options *v1.DeleteOptions) error {
 func (c *FakeHubs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(hubsResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &hubv1.HubList{})
+	_, err := c.Fake.Invokes(action, &v2.HubList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched hub.
-func (c *FakeHubs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *hubv1.Hub, err error) {
+func (c *FakeHubs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v2.Hub, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(hubsResource, c.ns, name, data, subresources...), &hubv1.Hub{})
+		Invokes(testing.NewPatchSubresourceAction(hubsResource, c.ns, name, data, subresources...), &v2.Hub{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*hubv1.Hub), err
+	return obj.(*v2.Hub), err
 }

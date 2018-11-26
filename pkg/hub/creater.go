@@ -29,7 +29,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
@@ -124,7 +124,7 @@ func (hc *Creater) DeleteHubCarefully(namespace string) error {
 }
 
 // CreateHub will create the Black Duck Hub
-func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error) {
+func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error) {
 	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
 	// Create a horizon deployer for each hub
@@ -180,11 +180,20 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 		return "", "", true, err
 	}
 
-	if strings.EqualFold(createHub.DbPrototype, "empty") {
+	if len(createHub.DbPrototype) == 0 {
 		err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 		if err != nil {
 			log.Errorf("%v: error: %+v", createHub.Namespace, err)
 			return "", "", true, fmt.Errorf("%v: error: %+v", createHub.Namespace, err)
+		}
+	} else {
+		_, fromPw, err := hubutils.GetHubDBPassword(hc.KubeClient, createHub.DbPrototype)
+		if err != nil {
+			return "", "", true, err
+		}
+		err = hubutils.CloneJob(hc.KubeClient, hc.Config.Namespace, createHub.DbPrototype, createHub.Namespace, fromPw)
+		if err != nil {
+			return "", "", true, err
 		}
 	}
 
@@ -213,8 +222,8 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 
 	// Retrieve the PVC volume name
 	pvcVolumeName := ""
-	if strings.EqualFold(createHub.BackupSupport, "Yes") || !strings.EqualFold(createHub.DbPrototype, "empty") {
-		pvcVolumeName, err = hc.getPVCVolumeName(createHub.Namespace)
+	if createHub.PersistentStorage {
+		pvcVolumeName, err = hc.getPVCVolumeName(createHub.Namespace, "blackduck-postgres")
 		if err != nil {
 			return "", "", false, err
 		}
@@ -245,10 +254,10 @@ func (hc *Creater) CreateHub(createHub *v1.HubSpec) (string, string, bool, error
 	return ipAddress, pvcVolumeName, false, nil
 }
 
-func (hc *Creater) getPVCVolumeName(namespace string) (string, error) {
+func (hc *Creater) getPVCVolumeName(namespace string, name string) (string, error) {
 	for i := 0; i < 60; i++ {
 		time.Sleep(10 * time.Second)
-		pvc, err := util.GetPVC(hc.KubeClient, namespace, namespace)
+		pvc, err := util.GetPVC(hc.KubeClient, namespace, name)
 		if err != nil {
 			return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
 		}

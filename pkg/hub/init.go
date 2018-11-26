@@ -23,18 +23,16 @@ package hub
 
 import (
 	"fmt"
-	"strings"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
+func (hc *Creater) init(deployer *horizon.Deployer, createHub *v2.HubSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
 
 	// Create a namespaces
 	_, err := util.GetNamespace(hc.KubeClient, createHub.Namespace)
@@ -63,29 +61,24 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.HubSpec, hubCo
 		deployer.AddConfigMap(configMap)
 	}
 
-	var storageClass string
-	if strings.EqualFold(createHub.PVCStorageClass, "none") {
-		storageClass = ""
-	} else {
-		storageClass = createHub.PVCStorageClass
-	}
-
-	if strings.EqualFold(createHub.PVCStorageClass, "none") {
-		// Postgres PV
-		if strings.EqualFold(createHub.NFSServer, "") {
-			return fmt.Errorf("unable to create the PV %s because missing NFS server path", createHub.Namespace)
-		}
-
-		_, err = util.CreatePersistentVolume(hc.KubeClient, createHub.Namespace, storageClass, createHub.PVCClaimSize, hc.Config.NFSPath, createHub.NFSServer)
-
-		if err != nil {
-			return fmt.Errorf("unable to create the PV %s because %+v", createHub.Namespace, err)
-		}
-	}
-
-	if strings.EqualFold(createHub.BackupSupport, "Yes") || !strings.EqualFold(createHub.DbPrototype, "empty") {
+	if createHub.PersistentStorage {
 		// Postgres PVC
-		postgresPVC, err := util.CreatePersistentVolumeClaim(createHub.Namespace, createHub.Namespace, createHub.PVCClaimSize, storageClass, horizonapi.ReadWriteOnce)
+		size := "10Gi"
+		storageClass := createHub.PVCStorageClass
+
+		for _, claim := range createHub.PVCClaims {
+			if claim.Name == "blackduck-postgres" {
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+				if len(claim.StorageClass) > 0 {
+					storageClass = claim.StorageClass
+				}
+				break
+			}
+		}
+
+		postgresPVC, err := util.CreatePersistentVolumeClaim("blackduck-postgres", createHub.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
 		if err != nil {
 			return fmt.Errorf("failed to create the postgres PVC for %s because %+v", createHub.Namespace, err)
 		}

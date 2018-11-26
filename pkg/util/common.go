@@ -35,7 +35,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	hub_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	opssight_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
@@ -384,12 +384,21 @@ func DeletePersistentVolume(clientset *kubernetes.Clientset, name string) error 
 
 // CreatePersistentVolumeClaim will create the persistent volume claim
 func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize string, storageClass string, accessMode horizonapi.PVCAccessModeType) (*components.PersistentVolumeClaim, error) {
+
+	// Workaround so that storageClass does not get set to "", which prevent Kube from using the default storageClass
+	var class *string
+	if len(storageClass) == 0 {
+		class = nil
+	} else {
+		class = &storageClass
+	}
+
 	postgresPVC, err := components.NewPersistentVolumeClaim(horizonapi.PVCConfig{
 		Name:      name,
 		Namespace: namespace,
 		// VolumeName: createHub.Name,
 		Size:  pvcClaimSize,
-		Class: &storageClass,
+		Class: class,
 	})
 	if err != nil {
 		return nil, err
@@ -596,23 +605,23 @@ func GetOpsSights(clientSet *opssightclientset.Clientset) (*opssight_v1.OpsSight
 }
 
 // ListHubs will list all hubs in the cluster
-func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v1.HubList, error) {
-	return hubClientset.SynopsysV1().Hubs(namespace).List(metav1.ListOptions{})
+func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v2.HubList, error) {
+	return hubClientset.SynopsysV2().Hubs(namespace).List(metav1.ListOptions{})
 }
 
 // WatchHubs will watch for hub events in the cluster
 func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.Interface, error) {
-	return hubClientset.SynopsysV1().Hubs(namespace).Watch(metav1.ListOptions{})
+	return hubClientset.SynopsysV2().Hubs(namespace).Watch(metav1.ListOptions{})
 }
 
 // CreateHub will create hub in the cluster
-func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v1.Hub) (*hub_v1.Hub, error) {
-	return hubClientset.SynopsysV1().Hubs(namespace).Create(createHub)
+func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v2.Hub) (*hub_v2.Hub, error) {
+	return hubClientset.SynopsysV2().Hubs(namespace).Create(createHub)
 }
 
 // GetHub will get hubs in the cluster
-func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*hub_v1.Hub, error) {
-	return hubClientset.SynopsysV1().Hubs(namespace).Get(name, metav1.GetOptions{})
+func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*hub_v2.Hub, error) {
+	return hubClientset.SynopsysV2().Hubs(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListHubPV will list all the persistent volumes attached to each hub in the cluster
@@ -625,11 +634,10 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 		return pvList, err
 	}
 	for _, hub := range hubs.Items {
-		if !strings.EqualFold(hub.Status.PVCVolumeName, "") && strings.EqualFold(hub.Spec.PVCStorageClass, "none") {
-			pvList[hub.Name] = fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName)
+		if hub.Spec.PersistentStorage {
+			pvList[hub.Name] = fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName["blackduck-postgres"])
 		}
 	}
-	pvList["empty"] = "empty"
 	return pvList, nil
 }
 

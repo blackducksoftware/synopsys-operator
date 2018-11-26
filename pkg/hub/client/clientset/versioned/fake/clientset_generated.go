@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned/typed/hub/v1"
-	fakesynopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned/typed/hub/v1/fake"
+	synopsysv2 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned/typed/hub/v2"
+	fakesynopsysv2 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned/typed/hub/v2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -71,12 +71,12 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 var _ clientset.Interface = &Clientset{}
 
-// SynopsysV1 retrieves the SynopsysV1Client
-func (c *Clientset) SynopsysV1() synopsysv1.SynopsysV1Interface {
-	return &fakesynopsysv1.FakeSynopsysV1{Fake: &c.Fake}
+// SynopsysV2 retrieves the SynopsysV2Client
+func (c *Clientset) SynopsysV2() synopsysv2.SynopsysV2Interface {
+	return &fakesynopsysv2.FakeSynopsysV2{Fake: &c.Fake}
 }
 
-// Synopsys retrieves the SynopsysV1Client
-func (c *Clientset) Synopsys() synopsysv1.SynopsysV1Interface {
-	return &fakesynopsysv1.FakeSynopsysV1{Fake: &c.Fake}
+// Synopsys retrieves the SynopsysV2Client
+func (c *Clientset) Synopsys() synopsysv2.SynopsysV2Interface {
+	return &fakesynopsysv2.FakeSynopsysV2{Fake: &c.Fake}
 }

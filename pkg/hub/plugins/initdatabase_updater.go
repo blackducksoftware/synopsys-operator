@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	hubv2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub"
 	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
@@ -55,14 +55,14 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return i.HubClient.SynopsysV1().Hubs(i.Config.Namespace).List(options)
+			return i.HubClient.SynopsysV2().Hubs(i.Config.Namespace).List(options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return i.HubClient.SynopsysV1().Hubs(i.Config.Namespace).Watch(options)
+			return i.HubClient.SynopsysV2().Hubs(i.Config.Namespace).Watch(options)
 		},
 	}
 	_, ctrl := cache.NewInformer(lw,
-		&hubv1.Hub{},
+		&hubv2.Hub{},
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -72,7 +72,7 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 
 			DeleteFunc: func(obj interface{}) {
 				log.Debugf("init database hub deleted event ! %v ", obj)
-				hub, ok := obj.(*hubv1.Hub)
+				hub, ok := obj.(*hubv2.Hub)
 				if !ok {
 					log.Errorf("unable to cast")
 					return
@@ -99,11 +99,11 @@ func (i *InitDatabaseUpdater) deleteChannel(name string) {
 }
 
 func (i *InitDatabaseUpdater) addHub(obj interface{}) {
-	hub := obj.(*hubv1.Hub)
+	hub := obj.(*hubv2.Hub)
 	if i.isHubThreadAlreadyExist(hub) {
 		return
 	}
-	if strings.EqualFold(hub.Spec.BackupSupport, "No") {
+	if !hub.Spec.PersistentStorage {
 		for j := 0; j < 20; j++ {
 			hub, err := util.GetHub(i.HubClient, i.Config.Namespace, hub.Name)
 			if err != nil {
@@ -121,7 +121,7 @@ func (i *InitDatabaseUpdater) addHub(obj interface{}) {
 }
 
 // getHubPasswords will get the hub password from the db-creds secret
-func (i *InitDatabaseUpdater) getHubPasswords(hubSpec *hubv1.HubSpec) (adminPassword string, userPassword string, err error) {
+func (i *InitDatabaseUpdater) getHubPasswords(hubSpec *hubv2.HubSpec) (adminPassword string, userPassword string, err error) {
 	secret, err := util.GetSecret(i.KubeClient, hubSpec.Namespace, "db-creds")
 
 	if err != nil {
@@ -134,7 +134,7 @@ func (i *InitDatabaseUpdater) getHubPasswords(hubSpec *hubv1.HubSpec) (adminPass
 }
 
 // startInitDatabaseUpdater will check every 3 minutes for Hub postgres restart, if so, then initialize the DB
-func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv1.HubSpec) chan struct{} {
+func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv2.HubSpec) chan struct{} {
 	stopCh := make(chan struct{})
 	go func() {
 		var checks int32
@@ -207,13 +207,13 @@ func (i *InitDatabaseUpdater) verifyHubsPostgresRestart() {
 		if i.isHubThreadAlreadyExist(&verifyHub) {
 			continue
 		}
-		if strings.EqualFold(hub.Spec.BackupSupport, "No") {
+		if !hub.Spec.PersistentStorage {
 			i.Hubs[hub.Name] = i.startInitDatabaseUpdater(&verifyHub.Spec)
 		}
 	}
 }
 
-func (i *InitDatabaseUpdater) isHubThreadAlreadyExist(hub *hubv1.Hub) bool {
+func (i *InitDatabaseUpdater) isHubThreadAlreadyExist(hub *hubv2.Hub) bool {
 	if _, ok := i.Hubs[hub.Name]; ok {
 		return true
 	}

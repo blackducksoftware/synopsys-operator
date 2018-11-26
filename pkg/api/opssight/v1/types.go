@@ -22,7 +22,7 @@ under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -57,7 +57,7 @@ type Hub struct {
 	InitialCount                 int         `json:"initialCount"`
 	MaxCount                     int         `json:"maxCount"`
 	DeleteHubThresholdPercentage int         `json:"deleteHubThresholdPercentage"`
-	HubSpec                      *v1.HubSpec `json:"hubSpec"`
+	HubSpec                      *v2.HubSpec `json:"hubSpec"`
 }
 
 // Perceptor ...

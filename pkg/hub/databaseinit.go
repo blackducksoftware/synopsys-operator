@@ -26,14 +26,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	// This is required to access the Postgres database
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
 // InitDatabase will init the database
-func InitDatabase(createHub *v1.HubSpec, adminPassword string, userPassword string, postgresPassword string) error {
+func InitDatabase(createHub *v2.HubSpec, adminPassword string, userPassword string, postgresPassword string) error {
 	databaseName := "postgres"
 	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Namespace)
 	postgresDB, err := OpenDatabaseConnection(hostName, databaseName, "postgres", postgresPassword, "postgres")

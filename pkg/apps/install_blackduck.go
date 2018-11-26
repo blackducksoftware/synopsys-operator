@@ -25,7 +25,7 @@ import (
 	"fmt"
 
 	horizondep "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -83,13 +83,12 @@ var InstallBlackduck = &cobra.Command{
 		} else {
 			restconf, _ := util.GetKubeConfig()
 			deployer, _ := horizondep.NewDeployer(restconf)
-			hubSpec := &v1.HubSpec{
-				Namespace:     namespace,
-				Flavor:        "small",
-				HubVersion:    "5.0.0.",
-				BackupSupport: "none",
-				ScanType:      "master",
-				HubType:       "small",
+			hubSpec := &v2.HubSpec{
+				Namespace:  namespace,
+				Flavor:     "small",
+				HubVersion: "5.0.0.",
+				ScanType:   "master",
+				HubType:    "small",
 			}
 
 			creator.AddToDeployer(deployer, hubSpec, containers.GetContainersFlavor("SMALL"), nil)

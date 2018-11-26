@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
 )
@@ -39,7 +39,7 @@ func getUID(s int) *int64 {
 func TestC(t *testing.T) {
 	hubVersion := "5.0.0"
 	externalVersion := "1.0.0"
-	hubSpec := &v1.HubSpec{ImageRegistries: []string{
+	hubSpec := &v2.HubSpec{ImageRegistries: []string{
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-authentication:%s", hubVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-documentation:%s", hubVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-jobrunner:%s", hubVersion),
@@ -71,7 +71,7 @@ func TestC(t *testing.T) {
 func TestImageTag(t *testing.T) {
 	hubVersion := "5.0.0"
 	externalVersion := "1.0.0"
-	hubSpec := &v1.HubSpec{ImageRegistries: []string{
+	hubSpec := &v2.HubSpec{ImageRegistries: []string{
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-authentication:%s", hubVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-documentation:%s", hubVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-jobrunner:%s", hubVersion),
@@ -105,7 +105,7 @@ func TestImageTag(t *testing.T) {
 		}
 	}
 
-	hubSpec1 := &v1.HubSpec{HubVersion: "4.5.0"}
+	hubSpec1 := &v2.HubSpec{HubVersion: "4.5.0"}
 	creater = NewCreater(nil, hubSpec1, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
 	all50 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl", "registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
 	for _, v := range all50 {

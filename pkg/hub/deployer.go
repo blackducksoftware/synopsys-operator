@@ -29,7 +29,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -38,7 +38,7 @@ import (
 // AddToDeployer will create an entire hub for you.  TODO add flavor parameters !
 // To create the returned hub, run 	CreateHub().Run().
 // TODO doc what 'allConfigEnv' actually is ???
-func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.HubSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig) {
+func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v2.HubSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig) {
 
 	// Hub ConfigMap environment variables
 	hubConfigEnv := []*horizonapi.EnvConfig{
@@ -134,7 +134,7 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.HubSp
 
 // addAnyUIDToServiceAccount adds the capability to run as 1000 for nginx or other special IDs.  For example, the binaryscanner
 // needs to run as root and we plan to add that into protoform in 2.1 / 3.0.
-func (hc *Creater) addAnyUIDToServiceAccount(createHub *v1.HubSpec) error {
+func (hc *Creater) addAnyUIDToServiceAccount(createHub *v2.HubSpec) error {
 	if hc.osSecurityClient != nil {
 		log.Debugf("Adding anyuid securitycontextconstraint to the service account %s", createHub.Namespace)
 		scc, err := util.GetOpenShiftSecurityConstraint(hc.osSecurityClient, "anyuid")

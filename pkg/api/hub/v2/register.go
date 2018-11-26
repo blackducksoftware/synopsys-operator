@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package v1
+package v2
 
 import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub"
@@ -31,7 +31,7 @@ import (
 // SchemeGroupVersion will store CRD Api version
 var SchemeGroupVersion = schema.GroupVersion{
 	Group:   hub.GroupName,
-	Version: "v1",
+	Version: "v2",
 }
 
 var (

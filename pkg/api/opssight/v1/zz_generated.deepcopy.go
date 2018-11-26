@@ -21,7 +21,7 @@ limitations under the License.
 package v1
 
 import (
-	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -30,7 +30,7 @@ func (in *Hub) DeepCopyInto(out *Hub) {
 	*out = *in
 	if in.HubSpec != nil {
 		in, out := &in.HubSpec, &out.HubSpec
-		*out = new(hubv1.HubSpec)
+		*out = new(v2.HubSpec)
 		(*in).DeepCopyInto(*out)
 	}
 	return
