@@ -8,7 +8,7 @@ NS=$1
 REG_KEY=$2
 VERSION=$3
 
-echo "Using the secret encoded in this file.  Change it before running, or press enter..."
+echo "Using the secret encoded in this file.  Change it before running, or press enter to continue:"
 read x
 
 cat << EOF > /tmp/secret
@@ -43,7 +43,7 @@ echo "Done deploying!"
 echo
 oc get pods -n $NS 
 echo
-echo "Click a key to expose the LoadBalancer. (This will only work in supported kubernetes clouds.)"
+echo "Press any key to expose the LoadBalancer. (This will only work in supported openshift clouds.)"
 read x
 
 oc expose rc synopsys-operator --port=80 --target-port=3000 --name=synopsys-operator-tcp --type=LoadBalancer --namespace=${NS}
