@@ -24,10 +24,13 @@ package util
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -769,4 +772,24 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 		}
 	}
 	return err
+}
+
+// PatchReplicationController patch a replication controller
+func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.ReplicationController, new corev1.ReplicationController) {
+	oldData, err := json.Marshal(old)
+	if err != nil {
+		return
+	}
+	newData, err := json.Marshal(new)
+	if err != nil {
+		return
+	}
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.ReplicationController{})
+	if err != nil {
+		return
+	}
+	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return
+	}
 }

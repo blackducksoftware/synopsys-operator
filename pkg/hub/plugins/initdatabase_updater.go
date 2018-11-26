@@ -181,10 +181,36 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv2.HubSpec) c
 
 				if dbNeedsInitBecause != "" {
 					log.Warnf("%v: database needs init because (%v), ::: %v ", hubSpec.Namespace, dbNeedsInitBecause, err)
-					err := hub.InitDatabase(hubSpec, adminPassword, userPassword, postgresPassword)
+
+					// Get a list of all the replication controllers that aren't postgres
+					list, err := i.KubeClient.CoreV1().ReplicationControllers(hubSpec.Namespace).List(metav1.ListOptions{
+						LabelSelector: "app!=postgres",
+					})
+					if err != nil {
+						log.Errorf("Couldn't list the replication controllers: %v", err)
+						return
+					}
+
+					// Scale down to 0 replicas
+					for _, v := range list.Items {
+						r := v.DeepCopy()
+						r.Spec.Replicas = util.IntToInt32(0)
+						util.PatchReplicationController(i.KubeClient, v, *r)
+					}
+
+					// Init DB
+					err = hub.InitDatabase(hubSpec, adminPassword, userPassword, postgresPassword)
 					if err != nil {
 						log.Errorf("%v: error: %+v", hubSpec.Namespace, err)
 					}
+
+					// Restart the containers
+					for _, v := range list.Items {
+						r := v.DeepCopy()
+						r.Spec.Replicas = util.IntToInt32(0)
+						util.PatchReplicationController(i.KubeClient, *r, v)
+					}
+
 				} else {
 					log.Debugf("%v Database connection and USER table query  succeeded, not fixing ", hubSpec.Namespace)
 				}
