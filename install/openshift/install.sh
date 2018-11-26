@@ -8,25 +8,12 @@ NS=$1
 REG_KEY=$2
 VERSION=$3
 
-echo "Using the secret encoded in this file.  Change it before running, or press enter to continue:"
+echo "Using the secret encoded in ../common/secret.yaml.  Edit the file before running, or press enter to continue with the defaults."
 read x
-
-cat << EOF > /tmp/secret
-apiVersion: v1
-data:
-  ADMIN_PASSWORD: YmxhY2tkdWNr
-  POSTGRES_PASSWORD: YmxhY2tkdWNr
-  USER_PASSWORD: YmxhY2tkdWNr
-  HUB_PASSWORD: YmxhY2tkdWNr
-kind: Secret
-metadata:
-  name: blackduck-secret
-type: Opaque
-EOF
 
 oc new-project $NS
 
-oc create -f /tmp/secret -n $NS
+oc create -f ../common/secret.yaml -n $NS
 
 DOCKER_REGISTRY=gcr.io
 DOCKER_REPO=saas-hub-stg/blackducksoftware
