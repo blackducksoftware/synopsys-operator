@@ -1,9 +1,6 @@
 # Synopsys-operator: a cloud native administration utility for Synopsys ecosystem components:
 
-- Perceptor
-- Perceivers (openshift, kube, ..., )
-- Perceptor image facade
-- Perceptor scanner
+- OpsSight
 - Black Duck
 - Black Duck alert
 
