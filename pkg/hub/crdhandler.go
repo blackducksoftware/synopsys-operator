@@ -27,6 +27,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"os"
 	"strings"
@@ -129,8 +131,16 @@ func (h *Handler) ObjectDeleted(name string) {
 
 	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
 
-	// Expected that logic for safe, delayed, possibly disabled deletion handled by hubCreater.
-	hubCreator.DeleteHubCarefully(name)
+	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
+	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("hubs.synopsys.com", v1.GetOptions{})
+	if err != nil || crd.DeletionTimestamp != nil {
+		// We do not delete the Hub instance if the CRD doesn't exist or that it is in the process of being deleted
+		log.Warnf("Ignoring request to delete %s because the CRD doesn't exist or is being deleted", name)
+		return
+	}
+
+	// Voluntary deletion. The CRD still exists but the Hub resource has been deleted
+	hubCreator.DeleteHub(name)
 
 	h.callHubFederator()
 

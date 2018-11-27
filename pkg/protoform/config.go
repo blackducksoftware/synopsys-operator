@@ -31,14 +31,13 @@ import (
 
 // Config type will be used for protoform config that bootstraps everything
 type Config struct {
-	DryRun                       bool
-	LogLevel                     string
-	Namespace                    string
-	Threadiness                  int
-	PostgresRestartInMins        int
-	NFSPath                      string
-	HubFederatorConfig           *HubFederatorConfig
-	HubDeletionWaitTimeInSeconds int64
+	DryRun                bool
+	LogLevel              string
+	Namespace             string
+	Threadiness           int
+	PostgresRestartInMins int
+	NFSPath               string
+	HubFederatorConfig    *HubFederatorConfig
 
 	// Not recommended production, just for testing, QA, resiliency, and CI/CD.
 	OperatorTimeBombInSeconds int64
@@ -48,7 +47,6 @@ type Config struct {
 func (config *Config) SelfSetDefaults() {
 	config.HubFederatorConfig = &HubFederatorConfig{}
 	config.HubFederatorConfig.HubConfig = &HubConfig{}
-	config.HubDeletionWaitTimeInSeconds = math.MaxInt64
 	config.OperatorTimeBombInSeconds = math.MaxInt64
 }
 

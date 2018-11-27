@@ -72,7 +72,7 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-config
 data:
-  config.json: '{"OperatorTimeBombInSeconds":"315576000","HubDeletionWaitTimeInSeconds":"31557600", "DryRun": false, "LogLevel": "debug", "Namespace": {{ quote .Release.Namespace }}, "Threadiness": 5, "PostgresRestartInMins": 10, "NFSPath" : "/kubenfs", "HubFederatorConfig": {"HubConfig": {"User": {{ quote .Values.bdConfig.adminUsername }}, "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "Port": 3016, "Registry": "gcr.io", "ImagePath": "saas-hub-stg/blackducksoftware", "ImageName": "federator", "ImageVersion": "master"}}'
+  config.json: '{"OperatorTimeBombInSeconds":"315576000", "DryRun": false, "LogLevel": "debug", "Namespace": {{ quote .Release.Namespace }}, "Threadiness": 5, "PostgresRestartInMins": 10, "NFSPath" : "/kubenfs", "HubFederatorConfig": {"HubConfig": {"User": {{ quote .Values.bdConfig.adminUsername }}, "PasswordEnvVar": "HUB_PASSWORD", "ClientTimeoutMilliseconds": 5000, "Port": 443, "FetchAllProjectsPauseSeconds": 60}, "UseMockMode": false, "Port": 3016, "Registry": "gcr.io", "ImagePath": "saas-hub-stg/blackducksoftware", "ImageName": "federator", "ImageVersion": "master"}}'
 ---
 apiVersion: v1
 kind: ServiceAccount
