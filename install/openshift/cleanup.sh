@@ -2,7 +2,7 @@ NS=$1
 
 # echo "ns" $NS
 
-$OC delete ns $NS
+oc delete ns $NS
 
 oc delete crd alerts.synopsys.com
 oc delete crd hubs.synopsys.com
