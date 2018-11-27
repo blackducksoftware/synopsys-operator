@@ -59,31 +59,10 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
-// BeCareful makes sure we dont delete hubs instantly.  Logic is subject to change over time.
-func (hc *Creater) BeCareful() error {
-	// A wait time of >= one year is our way of saying "deletion disabled"
-	if hc.Config.HubDeletionWaitTimeInSeconds > 31557600 {
-		return fmt.Errorf("Deletion appears disabled (wait time is %v seconds)! Set HubDeletionWaitTimeInSeconds in protoforms configuration if you really want to automatically delete hubs", hc.Config.HubDeletionWaitTimeInSeconds)
-	}
+// DeleteHub will delete the Black Duck Hub
+func (hc *Creater) DeleteHub(namespace string) error {
 
-	waitTime := time.Duration(hc.Config.HubDeletionWaitTimeInSeconds) * time.Second
-
-	logrus.Infof("Waiting %v till we delete !!!", waitTime)
-	// Now wait... , we never want to just delete immediately.
-	time.Sleep(waitTime)
-	logrus.Infof("Done waiting for deletion ! Ready to delete now.")
-	// ok, ready to delete now !
-	return nil
-}
-
-// DeleteHubCarefully will delete the Black Duck Hub IF IT MATCHES THE DELETION REGEX, and only then.
-func (hc *Creater) DeleteHubCarefully(namespace string) error {
-
-	logrus.Infof("Delete hub request %v, will be careful (%v)", namespace, hc.Config.HubDeletionWaitTimeInSeconds)
-	// blocking call intentionally, we dont want to rush to DELETE a hub.
-	if err := hc.BeCareful(); err != nil {
-		return err
-	}
+	logrus.Infof("Deleting hub: %s", namespace)
 
 	var err error
 	// Verify whether the namespace exist
