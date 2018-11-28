@@ -52,7 +52,10 @@ func NewHubResource(kubeConfig *rest.Config) (*HubsResource, error) {
 // List gets all Hubs. This function is mapped to the path
 // GET /hubs
 func (v HubsResource) List(c buffalo.Context) error {
-	blackducks, _ := util.ListHubs(v.hubClient, "")
+	blackducks, err := util.ListHubs(v.hubClient, "")
+	if err != nil {
+		return c.Error(500, err)
+	}
 	// Make blackducks available inside the html template
 	c.Set("hubs", blackducks.Items)
 	return c.Render(200, r.HTML("hubs/index.html", "old_application.html"))
@@ -61,7 +64,10 @@ func (v HubsResource) List(c buffalo.Context) error {
 // Show gets the data for one Hub. This function is mapped to
 // the path GET /hubs/{hub_id}
 func (v HubsResource) Show(c buffalo.Context) error {
-	blackduck, _ := util.GetHub(v.hubClient, c.Param("hub_id"), c.Param("hub_id"))
+	blackduck, err := util.GetHub(v.hubClient, c.Param("hub_id"), c.Param("hub_id"))
+	if err != nil {
+		return c.Error(500, err)
+	}
 	// Make blackduck available inside the html template
 	c.Set("hub", blackduck)
 	return c.Render(200, r.HTML("hubs/show.html", "old_application.html"))
