@@ -46,7 +46,7 @@ type HubStatusUpdater struct {
 }
 
 func (i *HubStatusUpdater) update() {
-	hL, _ := i.HubClient.SynopsysV1().Hubs(i.Config.Namespace).List(metav1.ListOptions{})
+	hL, _ := i.HubClient.SynopsysV2().Hubs(i.Config.Namespace).List(metav1.ListOptions{})
 	for _, hub := range hL.Items {
 		podList, _ := i.KubeClient.Core().Pods(hub.Namespace).List(metav1.ListOptions{})
 		hisstorg := map[string]string{}

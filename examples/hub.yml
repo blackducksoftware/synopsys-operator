@@ -1,0 +1,27 @@
+apiVersion: synopsys.com/v2
+kind: Hub
+metadata:
+  clusterName: ""
+  name: hub-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
+spec:
+  namespace: hub-test # Required, lowercase letters, numbers, and hyphens only. Cannot start or end with hypens.
+  certificateName: default # Required, possible values are 'default', 'manual' or other hub names
+  dbPrototype: "" # Required, possible values are empty or other hub names
+  dockerRegistry: docker.io # Required
+  dockerRepo: blackducksoftware # Required
+  hubVersion: 2018.11.0 # Required
+  flavor: small # Required, possible values are 'small', 'medium', 'large' or 'opssight'
+  persistentStorage: true # Required, possible values are 'true' or 'false'
+  pvcStorageClass: standard # Optional, Will be used to to create the PVCs only if persistentStorage is set to 'true'
+  imageRegistries:
+    - "docker.io/blackducksoftware/blackduck-authentication:2018.11.0"
+    - "docker.io/blackducksoftware/blackduck-documentation:2018.11.0"
+    - "docker.io/blackducksoftware/blackduck-jobrunner:2018.11.0"
+    - "docker.io/blackducksoftware/blackduck-registration:2018.11.0"
+    - "docker.io/blackducksoftware/blackduck-scan:2018.11.0"
+    - "docker.io/blackducksoftware/blackduck-webapp:2018.11.0"
+    - "docker.io/blackducksoftware/blackduck-cfssl:1.0.0"
+    - "docker.io/blackducksoftware/blackduck-logstash:1.0.0"
+    - "docker.io/blackducksoftware/blackduck-nginx:1.0.0"
+    - "docker.io/blackducksoftware/blackduck-solr:1.0.0"
+    - "docker.io/blackducksoftware/blackduck-zookeeper:1.0.0"

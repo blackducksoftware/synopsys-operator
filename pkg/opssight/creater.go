@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	hub_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
@@ -288,7 +288,7 @@ func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
 
 		hubSpec := createOpsSight.Hub.HubSpec
 		hubSpec.Namespace = name
-		createHub := &hub_v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
+		createHub := &hub_v2.Hub{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
 		log.Debugf("hub[%d]: %+v", i, createHub)
 		_, err = util.CreateHub(ac.hubClient, name, createHub)
 		if err != nil {

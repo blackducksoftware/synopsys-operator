@@ -30,10 +30,10 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	hub "github.com/blackducksoftware/synopsys-operator/pkg/hub"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
-	hubinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/informers/externalversions/hub/v1"
+	hubinformerv2 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/informers/externalversions/hub/v2"
 	plugins "github.com/blackducksoftware/synopsys-operator/pkg/hub/plugins"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -95,7 +95,7 @@ func (c *CRDInstaller) Deploy() error {
 		Name:       "hubs.synopsys.com",
 		Namespace:  c.config.Namespace,
 		Group:      "synopsys.com",
-		CRDVersion: "v1",
+		CRDVersion: "v2",
 		Kind:       "Hub",
 		Plural:     "hubs",
 		Singular:   "hub",
@@ -207,7 +207,7 @@ func (c *CRDInstaller) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *CRDInstaller) CreateInformer() {
-	c.infomer = hubinformerv1.NewHubInformer(
+	c.infomer = hubinformerv2.NewHubInformer(
 		c.hubClient,
 		c.config.Namespace,
 		c.resyncPeriod,
@@ -284,7 +284,7 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	c.handler = hub.NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.HubSpec), fmt.Sprintf("http://federator:%d", c.config.HubFederatorConfig.Port), make(chan bool, 1), osClient, routeClient)
+	c.handler = hub.NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v2.HubSpec), fmt.Sprintf("http://federator:%d", c.config.HubFederatorConfig.Port), make(chan bool, 1), osClient, routeClient)
 }
 
 // CreateController will create a CRD controller

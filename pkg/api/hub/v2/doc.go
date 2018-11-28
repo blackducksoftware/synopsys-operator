@@ -22,4 +22,4 @@ under the License.
 // +k8s:deepcopy-gen=package
 // +groupName=synopsys
 
-package v1
+package v2

@@ -23,12 +23,15 @@ package util
 
 import (
 	"fmt"
-
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	hubClient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
+	"k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"time"
 )
 
 // GetDefaultPasswords returns admin,user,postgres passwords for db maintainance tasks.  Should only be used during
@@ -48,12 +51,12 @@ func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder stri
 	return adminPassword, userPassword, postgresPassword, err
 }
 
-func updateHubObject(h *hubClient.Clientset, namespace string, obj *v1.Hub) (*v1.Hub, error) {
-	return h.SynopsysV1().Hubs(namespace).Update(obj)
+func updateHubObject(h *hubClient.Clientset, namespace string, obj *v2.Hub) (*v2.Hub, error) {
+	return h.SynopsysV2().Hubs(namespace).Update(obj)
 }
 
 // UpdateState will be used to update the hub object
-func UpdateState(h *hubClient.Clientset, namespace string, specState string, statusState string, err error, hub *v1.Hub) (*v1.Hub, error) {
+func UpdateState(h *hubClient.Clientset, namespace string, specState string, statusState string, err error, hub *v2.Hub) (*v2.Hub, error) {
 	hub.Spec.State = specState
 	hub.Status.State = statusState
 	if err != nil {
@@ -64,4 +67,87 @@ func UpdateState(h *hubClient.Clientset, namespace string, specState string, sta
 		logrus.Errorf("couldn't update the state of hub object: %s", err.Error())
 	}
 	return hub, err
+}
+
+// GetHubDBPassword will retrieve the blackduck and blackduck_user db password
+func GetHubDBPassword(kubeClient *kubernetes.Clientset, namespace string) (string, string, error) {
+	var userPw, adminPw string
+
+	secret, err := util.GetSecret(kubeClient, namespace, "db-creds")
+	if err != nil {
+		return userPw, adminPw, err
+	}
+
+	s, ok := secret.Data["HUB_POSTGRES_USER_PASSWORD_FILE"]
+	if !ok {
+		return "", "", fmt.Errorf("HUB_POSTGRES_USER_PASSWORD_FILE is missing")
+	}
+	userPw = string(s)
+
+	s, ok = secret.Data["HUB_POSTGRES_ADMIN_PASSWORD_FILE"]
+	if !ok {
+		return "", "", fmt.Errorf("HUB_POSTGRES_ADMIN_PASSWORD_FILE is missing")
+	}
+	adminPw = string(s)
+	return userPw, adminPw, nil
+}
+
+// CloneJob create a Kube job to clone a postgres instance
+func CloneJob(clientset *kubernetes.Clientset, namespace string, from string, to string, password string) error {
+	command := fmt.Sprintf("pg_dumpall -h postgres.%s.svc.cluster.local -U postgres | psql -h postgres.%s.svc.cluster.local -U postgres", from, to)
+
+	cloneJob := &v1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("clone-job-%s", to),
+		},
+		Spec: v1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    "clone",
+							Image:   "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+							Command: []string{"/bin/bash"},
+							Args: []string{
+								"-c",
+								command,
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "PGPASSWORD",
+									Value: password,
+								},
+							},
+						},
+					},
+					RestartPolicy: corev1.RestartPolicyNever,
+				},
+			},
+		},
+	}
+
+	job, err := clientset.BatchV1().Jobs(namespace).Create(cloneJob)
+	if err != nil {
+		return err
+	}
+
+	timeout := time.After(30 * time.Minute)
+	tick := time.Tick(10 * time.Second)
+
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("the clone operation timed out")
+
+		case <-tick:
+			job, err = clientset.BatchV1().Jobs(job.Namespace).Get(job.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			if job.Status.Succeeded > 0 {
+				//clientset.BatchV1().Jobs(job.Namespace).Delete(job.Name, &metav1.DeleteOptions{})
+				return nil
+			}
+		}
+	}
 }
