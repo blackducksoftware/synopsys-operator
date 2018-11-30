@@ -9,12 +9,11 @@
     "namespace": "hub-backup-test",
     "certificateName": "default",
     "dbPrototype": "",
-    "dockerRegistry": "docker.io",
-    "dockerRepo": "blackducksoftware",
     "hubVersion": "2018.11.0",
     "flavor": "small",
     "persistentStorage": true,
     "pvcStorageClass": "standard",
+    "hubType": "worker",
     "imageRegistries": [
       "docker.io/blackducksoftware/blackduck-authentication:2018.11.0",
       "docker.io/blackducksoftware/blackduck-documentation:2018.11.0",
