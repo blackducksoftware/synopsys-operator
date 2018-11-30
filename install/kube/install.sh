@@ -2,13 +2,17 @@
 
 unset DYLD_INSERT_LIBRARIES
 
-echo "args = Namespace, Reg_key, Version of Operator"
+DEFAULT_FILE_PATH="../common/default-values.json"
 
-NS=$1
-REG_KEY=$2
-VERSION=$3
+if [[ ! -z "$1" ]]; then
+  DEFAULT_FILE_PATH="$1"
+fi
 
-echo "Using the secret encoded in ../common/secret.yaml.  Edit the file before running, or press enter to continue with the defaults."
+array=( $(sed -n '/{/,/}/{s/[^:]*:[^"]*"\([^"]*\).*/\1/p;}' "$DEFAULT_FILE_PATH") ) 
+NS=${array[0]}
+REG_KEY=${array[1]}
+
+echo "Using the secret encoded in ../common/secret.json and default values in ../common/default-values.json.  Edit the file before running, or press enter to continue with the defaults."
 read x
 
 CLUSTER_BINDING_NS=$(kubectl get clusterrolebindings synopsys-operator-admin -o go-template='{{range .subjects}}{{.namespace}}{{" "}}{{end}}' 2> /dev/null)
@@ -20,18 +24,21 @@ fi
 
 kubectl create ns $NS
 
-kubectl create -f ../common/secret.yaml -n $NS
+kubectl create -f ../common/secret.json -n $NS
 
-DOCKER_REGISTRY=gcr.io
-DOCKER_REPO=saas-hub-stg/blackducksoftware
-
-cat ../synopsys-operator.yaml | \
+cat ../common/synopsys-operator.yaml | \
 sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | \
 sed 's/${NAMESPACE}/'$NS'/g' | \
-sed 's/${TAG}/'${VERSION}'/g' | \
-sed 's/${DOCKER_REGISTRY}/'$DOCKER_REGISTRY'/g' | \
-sed 's/${DOCKER_REPO}/'$(echo $DOCKER_REPO | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
+sed 's/${IMAGE}/'$(echo ${array[2]} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
 kubectl create --namespace=$NS -f -
+
+if [[ ! -z "${array[3]}" ]]; then
+  kubectl create secret generic custom-registry-pull-secret --from-file=.dockerconfigjson="${array[3]}" --type=kubernetes.io/dockerconfigjson
+  kubectl secrets link default custom-registry-pull-secret --for=pull
+  kubectl secrets link synopsys-operator custom-registry-pull-secret --for=pull; 
+  kubectl scale rc synopsys-operator --replicas=0
+  kubectl scale rc synopsys-operator --replicas=1
+fi
 
 echo "Done deploying!"
 echo

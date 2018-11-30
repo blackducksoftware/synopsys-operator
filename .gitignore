@@ -1,2 +1,5 @@
 cmd/operator-build
 install/secured-registry/dockercfg.json
+cmd/blackduckctl/blackduckctl
+pkg/.DS_Store
+pkg/api/.DS_Store

@@ -3,19 +3,16 @@
   "kind": "Hub",
   "metadata": {
     "clusterName": "",
-    "name": "hub-test"
+    "name": "hub-backup-test"
   },
   "spec": {
-    "namespace": "hub-test",
+    "namespace": "hub-backup-test",
     "certificateName": "default",
-    "environs": [
-      "IPV4_ONLY:1",
-      "BLACKDUCK_HUB_SERVER_ADDRESS:0.0.0.0"
-    ],
     "dbPrototype": "",
     "hubVersion": "2018.11.0",
     "flavor": "small",
-    "persistentStorage": false,
+    "persistentStorage": true,
+    "pvcStorageClass": "standard",
     "hubType": "worker",
     "imageRegistries": [
       "docker.io/blackducksoftware/blackduck-authentication:2018.11.0",

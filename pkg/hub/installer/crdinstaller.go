@@ -22,7 +22,6 @@ under the License.
 package installer
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -102,65 +101,65 @@ func (c *CRDInstaller) Deploy() error {
 		Scope:      horizonapi.CRDClusterScoped,
 	}))
 
-	// Perceptor configMap
-	hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.config.Namespace, Name: "federator"})
+	// // Perceptor configMap
+	// hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.config.Namespace, Name: "federator"})
 
-	if c.config.HubFederatorConfig.HubConfig == nil {
-		panic("Cant start with nil federator configuration ! Set HubFederatorConfig with Port, User")
-	}
+	// if c.config.HubFederatorConfig.HubConfig == nil {
+	// 	panic("Cant start with nil federator configuration ! Set HubFederatorConfig with Port, User")
+	// }
 
-	data := map[string]interface{}{
-		"HubConfig": map[string]interface{}{
-			"Port":                         c.config.HubFederatorConfig.HubConfig.Port,
-			"User":                         c.config.HubFederatorConfig.HubConfig.User,
-			"PasswordEnvVar":               c.config.HubFederatorConfig.HubConfig.PasswordEnvVar,
-			"ClientTimeoutMilliseconds":    c.config.HubFederatorConfig.HubConfig.ClientTimeoutMilliseconds,
-			"FetchAllProjectsPauseSeconds": c.config.HubFederatorConfig.HubConfig.FetchAllProjectsPauseSeconds,
-		},
-		"Port":        c.config.HubFederatorConfig.Port,
-		"LogLevel":    c.config.LogLevel,
-		"UseMockMode": c.config.HubFederatorConfig.UseMockMode,
-	}
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return errors.Trace(err)
-	}
-	hubFederatorConfig.AddData(map[string]string{"config.json": string(bytes)})
-	deployer.AddConfigMap(hubFederatorConfig)
+	// data := map[string]interface{}{
+	// 	"HubConfig": map[string]interface{}{
+	// 		"Port":                         c.config.HubFederatorConfig.HubConfig.Port,
+	// 		"User":                         c.config.HubFederatorConfig.HubConfig.User,
+	// 		"PasswordEnvVar":               c.config.HubFederatorConfig.HubConfig.PasswordEnvVar,
+	// 		"ClientTimeoutMilliseconds":    c.config.HubFederatorConfig.HubConfig.ClientTimeoutMilliseconds,
+	// 		"FetchAllProjectsPauseSeconds": c.config.HubFederatorConfig.HubConfig.FetchAllProjectsPauseSeconds,
+	// 	},
+	// 	"Port":        c.config.HubFederatorConfig.Port,
+	// 	"LogLevel":    c.config.LogLevel,
+	// 	"UseMockMode": c.config.HubFederatorConfig.UseMockMode,
+	// }
+	// bytes, err := json.Marshal(data)
+	// if err != nil {
+	// 	return errors.Trace(err)
+	// }
+	// hubFederatorConfig.AddData(map[string]string{"config.json": string(bytes)})
+	// deployer.AddConfigMap(hubFederatorConfig)
 
-	// Perceptor service
-	deployer.AddService(util.CreateService("federator", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeDefault))
-	deployer.AddService(util.CreateService("federator-np", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeNodePort))
-	deployer.AddService(util.CreateService("federator-lb", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeLoadBalancer))
+	// // Perceptor service
+	// deployer.AddService(util.CreateService("federator", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeDefault))
+	// deployer.AddService(util.CreateService("federator-np", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeNodePort))
+	// deployer.AddService(util.CreateService("federator-lb", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeLoadBalancer))
 
-	var hubPassword string
-	for {
-		blackduckSecret, err := util.GetSecret(c.kubeClient, c.config.Namespace, "blackduck-secret")
-		if err != nil {
-			log.Infof("Aborting: You need to first create a 'blackduck-secret' in the %v namespace with HUB_PASSWORD and retry", c.config.Namespace)
-		} else {
-			hubPassword = string(blackduckSecret.Data["HUB_PASSWORD"])
-			break
-		}
-		time.Sleep(5 * time.Second)
-	}
+	// var hubPassword string
+	// for {
+	// 	blackduckSecret, err := util.GetSecret(c.kubeClient, c.config.Namespace, "blackduck-secret")
+	// 	if err != nil {
+	// 		log.Infof("Aborting: You need to first create a 'blackduck-secret' in the %v namespace with HUB_PASSWORD and retry", c.config.Namespace)
+	// 	} else {
+	// 		hubPassword = string(blackduckSecret.Data["HUB_PASSWORD"])
+	// 		break
+	// 	}
+	// 	time.Sleep(5 * time.Second)
+	// }
 
 	// Hub federator deployment
-	hubFederatorContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "federator", Image: fmt.Sprintf("%s/%s/%s:%s", c.config.HubFederatorConfig.Registry, c.config.HubFederatorConfig.ImagePath, c.config.HubFederatorConfig.ImageName, c.config.HubFederatorConfig.ImageVersion),
-			PullPolicy: horizonapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/federator/config.json"}},
-		EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: c.config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: hubPassword}},
-		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "federator", MountPath: "/etc/federator"}},
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: fmt.Sprint(c.config.HubFederatorConfig.Port), Protocol: horizonapi.ProtocolTCP},
-	}
-	hubFederatorVolume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "federator",
-		MapOrSecretName: "federator",
-		DefaultMode:     util.IntToInt32(420),
-	})
-	hubFederator := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.config.Namespace, Name: "federator", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*util.Container{}, []horizonapi.AffinityConfig{})
-	deployer.AddReplicationController(hubFederator)
+	// hubFederatorContainerConfig := &util.Container{
+	// 	ContainerConfig: &horizonapi.ContainerConfig{Name: "federator", Image: fmt.Sprintf("%s/%s/%s:%s", c.config.HubFederatorConfig.Registry, c.config.HubFederatorConfig.ImagePath, c.config.HubFederatorConfig.ImageName, c.config.HubFederatorConfig.ImageVersion),
+	// 		PullPolicy: horizonapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/federator/config.json"}},
+	// 	EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: c.config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: hubPassword}},
+	// 	VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "federator", MountPath: "/etc/federator"}},
+	// 	PortConfig:   &horizonapi.PortConfig{ContainerPort: fmt.Sprint(c.config.HubFederatorConfig.Port), Protocol: horizonapi.ProtocolTCP},
+	// }
+	// hubFederatorVolume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
+	// 	VolumeName:      "federator",
+	// 	MapOrSecretName: "federator",
+	// 	DefaultMode:     util.IntToInt32(420),
+	// })
+	// hubFederator := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.config.Namespace, Name: "federator", Replicas: util.IntToInt32(1)}, "",
+	// 	[]*util.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*util.Container{}, []horizonapi.AffinityConfig{})
+	// deployer.AddReplicationController(hubFederator)
 
 	certificate, key := hub.CreateSelfSignedCert()
 
@@ -284,7 +283,7 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	c.handler = hub.NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v2.HubSpec), fmt.Sprintf("http://federator:%d", c.config.HubFederatorConfig.Port), make(chan bool, 1), osClient, routeClient)
+	c.handler = hub.NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v2.HubSpec), fmt.Sprint("http://federator:3016"), make(chan bool, 1), osClient, routeClient)
 }
 
 // CreateController will create a CRD controller
