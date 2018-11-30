@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
-	hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	hubv2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1" //extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
 	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -182,14 +182,14 @@ func (p *ConfigMapUpdater) Run(ch <-chan struct{}) {
 
 	hubListWatch := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return p.hubClient.SynopsysV1().Hubs(p.config.Namespace).List(options)
+			return p.hubClient.SynopsysV2().Hubs(p.config.Namespace).List(options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return p.hubClient.SynopsysV1().Hubs(p.config.Namespace).Watch(options)
+			return p.hubClient.SynopsysV2().Hubs(p.config.Namespace).Watch(options)
 		},
 	}
 	_, hubController := cache.NewInformer(hubListWatch,
-		&hubv1.Hub{},
+		&hubv2.Hub{},
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			// TODO kinda dumb, we just do a complete re-list of all hubs,

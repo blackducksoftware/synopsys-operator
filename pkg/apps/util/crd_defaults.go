@@ -23,7 +23,7 @@ package util
 
 import alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 import opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-import hubv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+import hubv2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 
 // GetAlertDefaultValue creates a alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {
@@ -43,13 +43,13 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 }
 
 // GetHubDefaultValue creates a hub crd configuration object with defaults
-func GetHubDefaultValue() *hubv1.HubSpec {
-	return &hubv1.HubSpec{
+func GetHubDefaultValue() *hubv2.HubSpec {
+	return &hubv2.HubSpec{
 		Flavor:          "Small",
 		HubVersion:      "2018.11.0",
-		DbPrototype:     "empty",
+		DbPrototype:     "",
 		CertificateName: "default",
-		HubType:         "worker",
+		HubType:         "",
 		Environs:        []string{},
 	}
 }

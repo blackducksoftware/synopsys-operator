@@ -19,7 +19,7 @@ limitations under the License.
 package versioned
 
 import (
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned/typed/hub/v1"
+	synopsysv2 "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned/typed/hub/v2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -27,27 +27,27 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	SynopsysV1() synopsysv1.SynopsysV1Interface
+	SynopsysV2() synopsysv2.SynopsysV2Interface
 	// Deprecated: please explicitly pick a version if possible.
-	Synopsys() synopsysv1.SynopsysV1Interface
+	Synopsys() synopsysv2.SynopsysV2Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	synopsysV1 *synopsysv1.SynopsysV1Client
+	synopsysV2 *synopsysv2.SynopsysV2Client
 }
 
-// SynopsysV1 retrieves the SynopsysV1Client
-func (c *Clientset) SynopsysV1() synopsysv1.SynopsysV1Interface {
-	return c.synopsysV1
+// SynopsysV2 retrieves the SynopsysV2Client
+func (c *Clientset) SynopsysV2() synopsysv2.SynopsysV2Interface {
+	return c.synopsysV2
 }
 
 // Deprecated: Synopsys retrieves the default version of SynopsysClient.
 // Please explicitly pick a version.
-func (c *Clientset) Synopsys() synopsysv1.SynopsysV1Interface {
-	return c.synopsysV1
+func (c *Clientset) Synopsys() synopsysv2.SynopsysV2Interface {
+	return c.synopsysV2
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -66,7 +66,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.synopsysV1, err = synopsysv1.NewForConfig(&configShallowCopy)
+	cs.synopsysV2, err = synopsysv2.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.synopsysV1 = synopsysv1.NewForConfigOrDie(c)
+	cs.synopsysV2 = synopsysv2.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -91,7 +91,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.synopsysV1 = synopsysv1.New(c)
+	cs.synopsysV2 = synopsysv2.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

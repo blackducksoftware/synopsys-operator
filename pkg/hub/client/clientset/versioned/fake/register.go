@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	synopsysv2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,7 +31,7 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	synopsysv1.AddToScheme,
+	synopsysv2.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

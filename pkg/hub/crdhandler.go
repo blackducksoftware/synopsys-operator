@@ -32,7 +32,7 @@ import (
 	"strings"
 	"time"
 
-	hub_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -60,7 +60,7 @@ type Handler struct {
 	kubeConfig       *rest.Config
 	kubeClient       *kubernetes.Clientset
 	hubClient        *hubclientset.Clientset
-	defaults         *hub_v1.HubSpec
+	defaults         *hub_v2.HubSpec
 	federatorBaseURL string
 	cmMutex          chan bool
 	osSecurityClient *securityclient.SecurityV1Client
@@ -68,7 +68,7 @@ type Handler struct {
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, defaults *hub_v1.HubSpec,
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, defaults *hub_v2.HubSpec,
 	federatorBaseURL string, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
 	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, hubClient: hubClient, defaults: defaults,
 		federatorBaseURL: federatorBaseURL, cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
@@ -82,39 +82,44 @@ type APISetHubsRequest struct {
 // ObjectCreated will be called for create hub events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("ObjectCreated: %+v", obj)
-	hubv1, ok := obj.(*hub_v1.Hub)
+	hubv2, ok := obj.(*hub_v2.Hub)
 	if !ok {
 		log.Error("Unable to cast Hub object")
 		return
 	}
-	if strings.EqualFold(hubv1.Spec.State, "") {
-		newSpec := hubv1.Spec
+	if strings.EqualFold(hubv2.Spec.State, "") {
+		newSpec := hubv2.Spec
 		hubDefaultSpec := h.defaults
 		err := mergo.Merge(&newSpec, hubDefaultSpec)
 		log.Debugf("merged hub details %+v", newSpec)
 		if err != nil {
-			log.Errorf("unable to merge the hub structs for %s due to %+v", hubv1.Name, err)
-			hubutils.UpdateState(h.hubClient, h.config.Namespace, "error", "error", err, hubv1)
+			log.Errorf("unable to merge the hub structs for %s due to %+v", hubv2.Name, err)
+			hubutils.UpdateState(h.hubClient, h.config.Namespace, "error", "error", err, hubv2)
 		} else {
-			hubv1.Spec = newSpec
+			hubv2.Spec = newSpec
 			// Update status
-			hubv1, err := hubutils.UpdateState(h.hubClient, h.config.Namespace, "pending", "creating", nil, hubv1)
+			hubv2, err := hubutils.UpdateState(h.hubClient, h.config.Namespace, "pending", "creating", nil, hubv2)
 
 			if err == nil {
 				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
-				ip, pvc, updateError, err := hubCreator.CreateHub(&hubv1.Spec)
+				ip, pvc, updateError, err := hubCreator.CreateHub(&hubv2.Spec)
 				if err != nil {
-					log.Errorf("unable to create hub for %s due to %+v", hubv1.Name, err)
+					log.Errorf("unable to create hub for %s due to %+v", hubv2.Name, err)
 				}
-				hubv1.Status.IP = ip
-				hubv1.Status.PVCVolumeName = pvc
+
+				hubv2.Status.IP = ip
+				if len(pvc) > 0 {
+					hubv2.Status.PVCVolumeName = make(map[string]string)
+					hubv2.Status.PVCVolumeName["blackduck-postgres"] = pvc
+				}
+
 				if updateError {
-					hubutils.UpdateState(h.hubClient, h.config.Namespace, "error", "error", err, hubv1)
+					hubutils.UpdateState(h.hubClient, h.config.Namespace, "error", "error", err, hubv2)
 				} else {
-					hubutils.UpdateState(h.hubClient, h.config.Namespace, "running", "running", err, hubv1)
-					hubURL := fmt.Sprintf("webserver.%s.svc", hubv1.Spec.Namespace)
-					h.verifyHub(hubURL, hubv1.Spec.Namespace)
-					h.autoRegisterHub(&hubv1.Spec)
+					hubutils.UpdateState(h.hubClient, h.config.Namespace, "running", "running", err, hubv2)
+					hubURL := fmt.Sprintf("webserver.%s.svc", hubv2.Spec.Namespace)
+					h.verifyHub(hubURL, hubv2.Spec.Namespace)
+					h.autoRegisterHub(&hubv2.Spec)
 					// h.callHubFederator()
 				}
 			}
@@ -163,7 +168,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	//}
 }
 
-func (h *Handler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
+func (h *Handler) autoRegisterHub(createHub *hub_v2.HubSpec) error {
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
 	registrationPod, err := util.FilterPodByNamePrefixInNamespace(h.kubeClient, createHub.Namespace, "registration")
 	log.Debugf("registration pod: %+v", registrationPod)

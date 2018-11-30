@@ -18,8 +18,6 @@
       <th>Namespace</th>
       <th>Size</th>
       <th>Black Duck Version</th>
-      <th>Backup Support</th>
-      <th>Backup Interval</th>
       <th>Clone Database</th>
       <th>PVC Storage</th>
       <th>Certificate Name</th>
@@ -36,10 +34,8 @@
             <td><%= hub.Spec.Namespace %></td>
             <td><%= hub.Spec.Flavor %></td>
             <td><%= hub.Spec.HubVersion %></td>
-            <td><%= hub.Spec.BackupSupport %></td>
-            <td><%= hub.Spec.BackupInterval %> <%= hub.Spec.BackupUnit %></td>
             <td><%= hub.Spec.DbPrototype %></td>
-            <td><%= hub.Spec.PVCStorageClass %> <%= hub.Spec.ScanType %> <%= hub.Spec.PVCClaimSize %></td>
+            <td><%= hub.Spec.PVCStorageClass %> <%= hub.Spec.ScanType %> </td>
             <td><%= hub.Spec.CertificateName %></td>
             <td><%= hub.Status.State %></td>
             <td><a href="https://<%= hub.Status.IP %>" target="_blank"><%= hub.Status.IP %></a></td>

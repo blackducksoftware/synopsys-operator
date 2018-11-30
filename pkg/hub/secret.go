@@ -29,11 +29,11 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	"github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) createHubSecrets(createHub *v1.HubSpec, adminPassword string, userPassword string) []*components.Secret {
+func (hc *Creater) createHubSecrets(createHub *v2.HubSpec, adminPassword string, userPassword string) []*components.Secret {
 	var secrets []*components.Secret
 	hubSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: createHub.Namespace, Name: "db-creds", Type: horizonapi.SecretTypeOpaque})
 	hubSecret.AddStringData(map[string]string{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": adminPassword, "HUB_POSTGRES_USER_PASSWORD_FILE": userPassword})

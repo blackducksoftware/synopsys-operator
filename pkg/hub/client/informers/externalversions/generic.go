@@ -21,7 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -52,9 +52,9 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=synopsys, Version=v1
-	case v1.SchemeGroupVersion.WithResource("hubs"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Synopsys().V1().Hubs().Informer()}, nil
+	// Group=synopsys, Version=v2
+	case v2.SchemeGroupVersion.WithResource("hubs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Synopsys().V2().Hubs().Informer()}, nil
 
 	}
 

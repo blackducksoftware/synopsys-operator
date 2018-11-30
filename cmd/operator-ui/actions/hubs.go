@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
@@ -52,7 +52,10 @@ func NewHubResource(kubeConfig *rest.Config) (*HubsResource, error) {
 // List gets all Hubs. This function is mapped to the path
 // GET /hubs
 func (v HubsResource) List(c buffalo.Context) error {
-	blackducks, _ := util.ListHubs(v.hubClient, "")
+	blackducks, err := util.ListHubs(v.hubClient, "")
+	if err != nil {
+		return c.Error(500, err)
+	}
 	// Make blackducks available inside the html template
 	c.Set("hubs", blackducks.Items)
 	return c.Render(200, r.HTML("hubs/index.html", "old_application.html"))
@@ -61,7 +64,10 @@ func (v HubsResource) List(c buffalo.Context) error {
 // Show gets the data for one Hub. This function is mapped to
 // the path GET /hubs/{hub_id}
 func (v HubsResource) Show(c buffalo.Context) error {
-	blackduck, _ := util.GetHub(v.hubClient, c.Param("hub_id"), c.Param("hub_id"))
+	blackduck, err := util.GetHub(v.hubClient, c.Param("hub_id"), c.Param("hub_id"))
+	if err != nil {
+		return c.Error(500, err)
+	}
 	// Make blackduck available inside the html template
 	c.Set("hub", blackduck)
 	return c.Render(200, r.HTML("hubs/show.html", "old_application.html"))
@@ -71,14 +77,11 @@ func (v HubsResource) Show(c buffalo.Context) error {
 // This function is mapped to the path GET /hubs/new
 func (v HubsResource) New(c buffalo.Context) error {
 	blackduckSpec := bdutil.GetHubDefaultValue()
-	blackduck := &v1.Hub{}
+	blackduck := &v2.Hub{}
 	blackduck.Spec = *blackduckSpec
-	blackduck.Spec.BackupSupport = "Yes"
-	blackduck.Spec.BackupInterval = "30"
-	blackduck.Spec.BackupUnit = "Minutes(s)"
-	blackduck.Spec.PVCStorageClass = "none"
+	blackduck.Spec.PersistentStorage = true
+	blackduck.Spec.PVCStorageClass = ""
 	blackduck.Spec.ScanType = "Artifacts"
-	blackduck.Spec.PVCClaimSize = "20Gi"
 	err := v.common(c, blackduck)
 	if err != nil {
 		return err
@@ -89,7 +92,7 @@ func (v HubsResource) New(c buffalo.Context) error {
 	return c.Render(200, r.HTML("hubs/new.html", "old_application.html"))
 }
 
-func (v HubsResource) common(c buffalo.Context, blackduck *v1.Hub) error {
+func (v HubsResource) common(c buffalo.Context, blackduck *v2.Hub) error {
 	var storageList map[string]string
 	storageList = make(map[string]string)
 	storageClasses, err := util.ListStorageClass(v.kubeClient)
@@ -99,10 +102,18 @@ func (v HubsResource) common(c buffalo.Context, blackduck *v1.Hub) error {
 	for _, storageClass := range storageClasses.Items {
 		storageList[fmt.Sprintf("%s (%s)", storageClass.GetName(), storageClass.Provisioner)] = storageClass.GetName()
 	}
-	storageList[fmt.Sprintf("%s (%s)", "None", "Disable dynamic provisioner")] = "none"
+	storageList[fmt.Sprintf("%s (%s)", "None", "Disable dynamic provisioner")] = ""
 	blackduck.View.StorageClasses = storageList
 
-	keys, _ := util.ListHubPV(v.hubClient, "")
+	// Hub instances
+	keys := make(map[string]string)
+	hubs, _ := util.ListHubs(v.hubClient, "")
+	for _, v := range hubs.Items {
+		if strings.EqualFold(v.Status.State, "running") {
+			keys[v.Name] = v.Name
+		}
+	}
+	keys["None"] = ""
 	blackduck.View.Clones = keys
 
 	blackducks, _ := util.ListHubs(v.hubClient, "")
@@ -139,7 +150,7 @@ func (v HubsResource) common(c buffalo.Context, blackduck *v1.Hub) error {
 	return nil
 }
 
-func (v HubsResource) redirect(c buffalo.Context, blackduck *v1.Hub, err error) error {
+func (v HubsResource) redirect(c buffalo.Context, blackduck *v2.Hub, err error) error {
 	if err != nil {
 		c.Flash().Add("warning", err.Error())
 		// Make blackduck available inside the html template
@@ -167,7 +178,7 @@ func (v HubsResource) redirect(c buffalo.Context, blackduck *v1.Hub, err error) 
 // path POST /hubs
 func (v HubsResource) Create(c buffalo.Context) error {
 	// Allocate an empty Blackduck
-	hub := &v1.Hub{}
+	hub := &v2.Hub{}
 
 	// Bind blackduck to the html form elements
 	if err := c.Bind(hub); err != nil {
@@ -195,7 +206,7 @@ func (v HubsResource) Create(c buffalo.Context) error {
 	}
 	log.Infof("created namespace for %s is %+v", hub.Spec.Namespace, ns)
 
-	_, err = util.CreateHub(v.hubClient, hub.Spec.Namespace, &v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hub.Spec.Namespace}, Spec: hub.Spec})
+	_, err = util.CreateHub(v.hubClient, hub.Spec.Namespace, &v2.Hub{ObjectMeta: metav1.ObjectMeta{Name: hub.Spec.Namespace}, Spec: hub.Spec})
 
 	if err != nil {
 		return v.redirect(c, hub, err)
@@ -285,7 +296,7 @@ func (v HubsResource) Destroy(c buffalo.Context) error {
 	}
 
 	// This is on the event loop.
-	err = v.hubClient.SynopsysV1().Hubs(c.Param("hub_id")).Delete(c.Param("hub_id"), &metav1.DeleteOptions{})
+	err = v.hubClient.SynopsysV2().Hubs(c.Param("hub_id")).Delete(c.Param("hub_id"), &metav1.DeleteOptions{})
 
 	// To find the Blackduck the parameter blackduck_id is used.
 	if err != nil {
