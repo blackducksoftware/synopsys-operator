@@ -7,8 +7,7 @@ if [[ "$_arg_push"  == "on" && "$_arg_project"  == "" ]]; then
     exit 1
 fi
 
-OPSSIGHT_IMAGES=("synopsys-operator" \
-"opssight-core" \
+OPSSIGHT_IMAGES=("opssight-core" \
 "opssight-scanner" \
 "opssight-image-getter" \
 "opssight-pod-processor" \
