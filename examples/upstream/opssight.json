@@ -6,67 +6,67 @@
   },
   "spec": {
     "namespace": "${OPSSIGHT_NAMESPACE}",
-		"perceptor": {
-			"name": "perceptor",
-			"port": 3001,
-			"image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
-			"checkForStalledScansPauseHours": 999999,
-			"stalledScanClientTimeoutHours": 999999,
-			"modelMetricsPauseSeconds": 15,
-			"unknownImagePauseMilliseconds": 15000,
-			"clientTimeoutMilliseconds": 100000
-		},
-		"scannerPod": {
-			"name": "perceptor-scanner",
-			"scanner": {
-				"name": "perceptor-scanner",
-				"port": 3003,
-				"image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
-				"clientTimeoutSeconds": 600
-			},
-			"imageFacade": {
-				"name": "perceptor-imagefacade",
-				"port": 3004,
-				"internalRegistries": [],
-				"image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-				"serviceAccount": "perceptor-scanner"
-			},
-			"replicaCount": 1
-		},
-		"perceiver": {
-			"enableImagePerceiver": false,
-			"enablePodPerceiver": true,
-			"port": 3002,
-			"imagePerceiver": {
-				"name": "image-perceiver",
-				"image": "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master"
-			},
-			"podPerceiver": {
-				"name": "pod-perceiver",
-				"image": "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master"
-			},
-			"serviceAccount": "perceiver",
-			"annotationIntervalSeconds": 30,
-			"dumpIntervalMinutes": 30
-		},
-		"enableSkyfire": false,
-		"skyfire": {
-			"image": "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
-			"name": "skyfire",
-			"port": 3005,
-			"prometheusPort": 3006,
-			"serviceAccount": "skyfire",
-			"hubClientTimeoutSeconds": 120,
-			"hubDumpPauseSeconds": 240,
-			"kubeDumpIntervalSeconds": 60,
-			"perceptorDumpIntervalSeconds": 60
-		},
-		"enableMetrics": true,
-		"defaultCPU": "300m",
-		"defaultMem": "1300Mi",
-		"logLevel": "debug",
-		"secretName": "perceptor",
-    "hub" : {
+    "perceptor": {
+      "name": "perceptor",
+      "port": 3001,
+      "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+      "checkForStalledScansPauseHours": 999999,
+      "stalledScanClientTimeoutHours": 999999,
+      "modelMetricsPauseSeconds": 15,
+      "unknownImagePauseMilliseconds": 15000,
+      "clientTimeoutMilliseconds": 100000
+    },
+    "scannerPod": {
+      "name": "perceptor-scanner",
+      "scanner": {
+        "name": "perceptor-scanner",
+        "port": 3003,
+        "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
+        "clientTimeoutSeconds": 600
+      },
+      "imageFacade": {
+        "name": "perceptor-imagefacade",
+        "port": 3004,
+        "internalRegistries": [],
+        "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
+        "serviceAccount": "perceptor-scanner"
+      },
+      "replicaCount": 1
+    },
+    "perceiver": {
+      "enableImagePerceiver": false,
+      "enablePodPerceiver": true,
+      "port": 3002,
+      "imagePerceiver": {
+        "name": "image-perceiver",
+        "image": "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master"
+      },
+      "podPerceiver": {
+        "name": "pod-perceiver",
+        "image": "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master"
+      },
+      "serviceAccount": "perceiver",
+      "annotationIntervalSeconds": 30,
+      "dumpIntervalMinutes": 30
+    },
+    "enableSkyfire": false,
+    "skyfire": {
+      "image": "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
+      "name": "skyfire",
+      "port": 3005,
+      "prometheusPort": 3006,
+      "serviceAccount": "skyfire",
+      "hubClientTimeoutSeconds": 120,
+      "hubDumpPauseSeconds": 240,
+      "kubeDumpIntervalSeconds": 60,
+      "perceptorDumpIntervalSeconds": 60
+    },
+    "enableMetrics": true,
+    "defaultCPU": "300m",
+    "defaultMem": "1300Mi",
+    "logLevel": "debug",
+    "secretName": "perceptor",
+    "hub": {
       "initialCount": 0,
       "maxCount": 4,
       "concurrentScanLimit": 2,
