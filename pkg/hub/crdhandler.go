@@ -27,8 +27,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"os"
 	"strings"
@@ -43,6 +41,8 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -115,7 +115,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 					hubURL := fmt.Sprintf("webserver.%s.svc", hubv1.Spec.Namespace)
 					h.verifyHub(hubURL, hubv1.Spec.Namespace)
 					h.autoRegisterHub(&hubv1.Spec)
-					h.callHubFederator()
+					// h.callHubFederator()
 				}
 			}
 		}
@@ -142,7 +142,7 @@ func (h *Handler) ObjectDeleted(name string) {
 	// Voluntary deletion. The CRD still exists but the Hub resource has been deleted
 	hubCreator.DeleteHub(name)
 
-	h.callHubFederator()
+	// h.callHubFederator()
 
 	//Set spec/state  and status/state to started
 	// obj.Spec.State = "deleted"
