@@ -32,9 +32,10 @@ import (
 // PodPerceiverReplicationController creates a replication controller for the pod perceiver
 func (p *SpecConfig) PodPerceiverReplicationController() (*components.ReplicationController, error) {
 	name := p.config.Perceiver.PodPerceiver.Name
+	image := p.config.Perceiver.PodPerceiver.Image
 	rc := p.perceiverReplicationController(name, 1)
 
-	pod, err := p.perceiverPod(name, p.config.Perceiver.ServiceAccount)
+	pod, err := p.perceiverPod(name, image, p.config.Perceiver.ServiceAccount)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create pod perceiver pod")
 	}
@@ -46,9 +47,10 @@ func (p *SpecConfig) PodPerceiverReplicationController() (*components.Replicatio
 // ImagePerceiverReplicationController creates a replication controller for the image perceiver
 func (p *SpecConfig) ImagePerceiverReplicationController() (*components.ReplicationController, error) {
 	name := p.config.Perceiver.ImagePerceiver.Name
+	image := p.config.Perceiver.ImagePerceiver.Image
 	rc := p.perceiverReplicationController(name, 1)
 
-	pod, err := p.perceiverPod(name, p.config.Perceiver.ServiceAccount)
+	pod, err := p.perceiverPod(name, image, p.config.Perceiver.ServiceAccount)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create image perceiver pod")
 	}
@@ -68,14 +70,14 @@ func (p *SpecConfig) perceiverReplicationController(name string, replicas int32)
 	return rc
 }
 
-func (p *SpecConfig) perceiverPod(name string, account string) (*components.Pod, error) {
+func (p *SpecConfig) perceiverPod(name string, image string, account string) (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name:           name,
 		ServiceAccount: account,
 	})
 
 	pod.AddLabels(map[string]string{"name": name})
-	pod.AddContainer(p.perceiverContainer(name))
+	pod.AddContainer(p.perceiverContainer(name, image))
 
 	vols, err := p.perceiverVolumes(name)
 
@@ -93,11 +95,11 @@ func (p *SpecConfig) perceiverPod(name string, account string) (*components.Pod,
 	return pod, nil
 }
 
-func (p *SpecConfig) perceiverContainer(name string) *components.Container {
+func (p *SpecConfig) perceiverContainer(name string, image string) *components.Container {
 	cmd := fmt.Sprintf("./%s", name)
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    name,
-		Image:   p.config.Perceiver.PodPerceiver.Image,
+		Image:   image,
 		Command: []string{cmd},
 		Args:    []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
 		MinCPU:  p.config.DefaultCPU,
