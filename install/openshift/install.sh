@@ -4,27 +4,36 @@ unset DYLD_INSERT_LIBRARIES
 
 echo "args = Namespace, Reg_key, Version of Operator"
 
-NS=$1
-REG_KEY=$2
-VERSION=$3
+DEFAULT_FILE_PATH="../common/default-values.json"
 
-echo "Using the secret encoded in ../common/secret.yaml.  Edit the file before running, or press enter to continue with the defaults."
+if [[ ! -z "$1" ]]; then
+  DEFAULT_FILE_PATH="$1"
+fi
+
+array=( $(sed -n '/{/,/}/{s/[^:]*:[^"]*"\([^"]*\).*/\1/p;}' "$DEFAULT_FILE_PATH") ) 
+NS=${array[0]}
+REG_KEY=${array[1]}
+
+echo "Using the secret encoded in ../common/secret.json and default values in ../common/default-values.json.  Edit the file before running, or press enter to continue with the defaults."
 read x
 
 oc new-project $NS
 
-oc create -f ../common/secret.yaml -n $NS
+oc create -f ../common/secret.json -n $NS
 
-DOCKER_REGISTRY=gcr.io
-DOCKER_REPO=saas-hub-stg/blackducksoftware
-
-cat ../synopsys-operator.yaml | \
+cat ../common/synopsys-operator.yaml | \
 sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | \
 sed 's/${NAMESPACE}/'$NS'/g' | \
-sed 's/${TAG}/'${VERSION}'/g' | \
-sed 's/${DOCKER_REGISTRY}/'$DOCKER_REGISTRY'/g' | \
-sed 's/${DOCKER_REPO}/'$(echo $DOCKER_REPO | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
+sed 's/${IMAGE}/'$(echo ${array[2]} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
 oc create --namespace=$NS -f -
+
+if [[ ! -z "${array[3]}" ]]; then
+  oc create secret generic custom-registry-pull-secret --from-file=.dockerconfigjson="${array[3]}" --type=kubernetes.io/dockerconfigjson
+  oc secrets link default custom-registry-pull-secret --for=pull
+  oc secrets link synopsys-operator custom-registry-pull-secret --for=pull; 
+  oc scale rc synopsys-operator --replicas=0
+  oc scale rc synopsys-operator --replicas=1
+fi
 
 echo "Done deploying!"
 echo
