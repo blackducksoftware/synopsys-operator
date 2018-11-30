@@ -64,8 +64,8 @@ spec:
   secretName:    "perceptor"
 
   hub:
-    initialNoOfHubs: 1
-    maxNoOfHubs: 4
+    initialNoOfHubs: 0
+    maxNoOfHubs: 0
     concurrentScanLimit: 2
     totalScanLimit: 1000
     hubSpec:
