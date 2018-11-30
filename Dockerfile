@@ -44,7 +44,7 @@ COPY --from=builder /bin/operator .
 COPY --from=builder /bin/LICENSE /licenses/
 COPY --from=builder /bin/help.1 /help.1
 
-RUN chmod 777 ./app && chmod 777 ./operator
+# RUN chmod 777 ./app && chmod 777 ./operator
 
 LABEL name="Synopsys Operator" \
       vendor="Synopsys" \
