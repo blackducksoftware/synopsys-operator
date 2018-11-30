@@ -1,2 +1,3 @@
-opssight/opssight-images/*.tar
-blackduck/blackduck-images/*.tar
+opssight/opssight-images/*
+blackduck/blackduck-images/*
+operator/operator-images/*
