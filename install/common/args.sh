@@ -32,7 +32,7 @@ begins_with_short_option()
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
 
-DEFAULT_FILE_PATH="default-values.json"
+DEFAULT_FILE_PATH="../common/default-values.json"
 
 array=( $(sed -n '/{/,/}/{s/[^:]*:[^"]*"\([^"]*\).*/\1/p;}' "$DEFAULT_FILE_PATH") ) 
 NS="${array[0]}"
@@ -52,8 +52,8 @@ print_help ()
 	printf 'Usage: %s [-n|--namespace <arg>] [-d|--docker-config <arg>] [-k|--blackduck-registration-key <arg>] [-i|--image <arg>] [-h|--help]\n' "$0"
 	printf '\t%s\n' "-n,--namespace: namespace where Synopsys operator to be installed (default: '$NS')"
 	printf '\t%s\n' "-i,--image: Synopsys Operator image (default: '$IMAGE')"
-    printf '\t%s\n' "-k,--blackduck-registration-key: Black Duck registration key (default: '$REG_KEY')"
-    printf '\t%s\n' "-d,--docker-config: file path to Docker configuration to create the image pull secret (default: '$DOCKER_CONFIG_PATH')"
+        printf '\t%s\n' "-k,--blackduck-registration-key: Black Duck registration key (default: '$REG_KEY')"
+        printf '\t%s\n' "-d,--docker-config: file path to Docker configuration to create the image pull secret (default: '$DOCKER_CONFIG_PATH')"
 	printf '\t%s\n' "-h,--help: Prints help"
 }
 
