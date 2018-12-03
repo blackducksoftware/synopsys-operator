@@ -32,7 +32,7 @@ begins_with_short_option()
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
 
-DEFAULT_FILE_PATH="default-values.json"
+DEFAULT_FILE_PATH="../common/default-values.json"
 
 array=( $(sed -n '/{/,/}/{s/[^:]*:[^"]*"\([^"]*\).*/\1/p;}' "$DEFAULT_FILE_PATH") ) 
 NS="${array[0]}"
