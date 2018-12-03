@@ -73,7 +73,7 @@ type Environs struct {
 	Value string `json:"value"`
 }
 
-// PVCClaims will contain the specifications of the different PVC.
+// PVC will contain the specifications of the different PVC.
 // This will overwrite the default claim configuration
 type PVC struct {
 	Name         string `json:"name"`
