@@ -33,5 +33,6 @@ echo "Press any key to expose a route to the Synopsys Operator. (This will only 
 read x
 
 oc expose rc synopsys-operator --port=80 --target-port=3000 --name=synopsys-operator-tcp --type=LoadBalancer --namespace=${_arg_namespace}
+oc create route edge --service=synopsys-operator-tcp -n $_arg_namespace
 
 oc get svc -n $_arg_namespace
