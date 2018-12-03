@@ -1,26 +1,19 @@
 {
-  "apiVersion": "synopsys.com/v1",
+  "apiVersion": "synopsys.com/v2",
   "kind": "Hub",
   "metadata": {
+    "clusterName": "",
     "name": "hub-backup-test"
   },
   "spec": {
     "namespace": "hub-backup-test",
-    "backupSupport": "Yes",
-    "backupInterval": "30",
-    "backupUnit": "Minute(s)",
     "certificateName": "default",
-    "certificate": "",
-    "certificateKey": "",
-    "proxyCertificate": "",
-    "dbPrototype": "empty",
+    "dbPrototype": "",
     "hubVersion": "2018.11.0",
     "flavor": "small",
-    "nfsServer": "<<NFS_SERVER>>",
-    "pvcClaimSize": "10Gi",
-    "pvcStorageClass": "none",
-    "scanType": "Custom",
-    "hubType": "master",
+    "persistentStorage": true,
+    "pvcStorageClass": "standard",
+    "hubType": "worker",
     "imageRegistries": [
       "docker.io/blackducksoftware/blackduck-authentication:2018.11.0",
       "docker.io/blackducksoftware/blackduck-documentation:2018.11.0",

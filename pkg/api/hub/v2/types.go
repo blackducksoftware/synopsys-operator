@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package v1
+package v2
 
 import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,26 +48,23 @@ type HubView struct {
 
 // HubSpec will be CRD Hub definition's Spec
 type HubSpec struct {
-	Namespace        string           `json:"namespace"`
-	Flavor           string           `json:"flavor"`
-	HubVersion       string           `json:"hubVersion"`
-	DbPrototype      string           `json:"dbPrototype"`
-	BackupInterval   string           `json:"backupInterval"`
-	BackupUnit       string           `json:"backupUnit"`
-	PVCStorageClass  string           `json:"pvcStorageClass"`
-	BackupSupport    string           `json:"backupSupport"`
-	ScanType         string           `json:"scanType"`
-	PVCClaimSize     string           `json:"pvcClaimSize"`
-	NFSServer        string           `json:"nfsServer"`
-	CertificateName  string           `json:"certificateName"`
-	Certificate      string           `json:"certificate"`
-	CertificateKey   string           `json:"certificateKey"`
-	ProxyCertificate string           `json:"proxyCertificate"`
-	HubType          string           `json:"hubType"`
-	State            string           `json:"state"`
-	Environs         []string         `json:"environs"`
-	ImageRegistries  []string         `json:"imageRegistries"`
-	ImageUIDMap      map[string]int64 `json:"imageUidMap"`
+	Namespace         string           `json:"namespace"`
+	Flavor            string           `json:"flavor"`
+	HubVersion        string           `json:"hubVersion"`
+	DbPrototype       string           `json:"dbPrototype,omitempty"`
+	PVCStorageClass   string           `json:"pvcStorageClass,omitempty"`
+	ScanType          string           `json:"scanType,omitempty"`
+	PersistentStorage bool             `json:"persistentStorage"`
+	PVC               []PVC            `json:"pvc,omitempty"`
+	CertificateName   string           `json:"certificateName"`
+	Certificate       string           `json:"certificate,omitempty"`
+	CertificateKey    string           `json:"certificateKey,omitempty"`
+	ProxyCertificate  string           `json:"proxyCertificate,omitempty"`
+	HubType           string           `json:"hubType,omitempty"`
+	State             string           `json:"state"`
+	Environs          []string         `json:"environs,omitempty"`
+	ImageRegistries   []string         `json:"imageRegistries,omitempty"`
+	ImageUIDMap       map[string]int64 `json:"imageUidMap,omitempty"`
 }
 
 // Environs will hold the list of Environment variables
@@ -76,13 +73,21 @@ type Environs struct {
 	Value string `json:"value"`
 }
 
+// PVC will contain the specifications of the different PVC.
+// This will overwrite the default claim configuration
+type PVC struct {
+	Name         string `json:"name"`
+	Size         string `json:"size,omitempty"`
+	StorageClass string `json:"storageClass,omitempty"`
+}
+
 // HubStatus will be CRD Hub definition's Status
 type HubStatus struct {
-	State         string `json:"state"`
-	IP            string `json:"ip"`
-	PVCVolumeName string `json:"pvcVolumeName"`
-	Fqdn          string `json:"fqdn"`
-	ErrorMessage  string `json:"errorMessage"`
+	State         string            `json:"state"`
+	IP            string            `json:"ip"`
+	PVCVolumeName map[string]string `json:"pvcVolumeName,omitempty"`
+	Fqdn          string            `json:"fqdn,omitempty"`
+	ErrorMessage  string            `json:"errorMessage,omitempty"`
 }
 
 // HubList will store the list of Hubs

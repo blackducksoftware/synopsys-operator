@@ -7,6 +7,13 @@ source ../common/args.sh "${@}"
 echo "Using the secret encoded in ../common/secret.json.  Edit the file before running, or press enter to continue with the defaults."
 read x
 
+CLUSTER_BINDING_NS=$(oc get clusterrolebindings synopsys-operator-admin -o go-template='{{range .subjects}}{{.namespace}}{{" "}}{{end}}' 2> /dev/null)
+if [[ $? -eq 0 ]]; then
+    SCRIPT_DIR=$(dirname "$0")
+    echo "You have already installed the operator in namespace $CLUSTER_BINDING_NS. Please run the cleanup script ($SCRIPT_DIR/cleanup.sh) before attempting to install the operator in $1"
+    exit 1
+fi
+
 oc new-project $_arg_namespace
 
 oc create -f ../common/secret.json -n $_arg_namespace

@@ -1,16 +1,17 @@
 {
-  "apiVersion": "synopsys.com/v1",
+  "apiVersion": "synopsys.com/v2",
   "kind": "Hub",
   "metadata": {
+    "clusterName": "",
     "name": "hub-test"
   },
   "spec": {
     "namespace": "hub-test",
-    "backupSupport": "No",
     "certificateName": "default",
-    "dbPrototype": "empty",
+    "dbPrototype": "",
     "hubVersion": "2018.11.0",
     "flavor": "small",
+    "persistentStorage": false,
     "hubType": "worker",
     "imageRegistries": [
       "docker.io/blackducksoftware/blackduck-authentication:2018.11.0",
