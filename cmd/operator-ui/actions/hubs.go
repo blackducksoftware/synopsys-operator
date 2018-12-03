@@ -82,6 +82,12 @@ func (v HubsResource) New(c buffalo.Context) error {
 	blackduck.Spec.PersistentStorage = true
 	blackduck.Spec.PVCStorageClass = ""
 	blackduck.Spec.ScanType = "Artifacts"
+	blackduck.Spec.PVC = []v2.PVC{
+		{
+			Name: "blackduck-postgres",
+			Size: "150Gi",
+		},
+	}
 	err := v.common(c, blackduck)
 	if err != nil {
 		return err

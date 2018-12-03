@@ -55,7 +55,7 @@ type HubSpec struct {
 	PVCStorageClass   string           `json:"pvcStorageClass,omitempty"`
 	ScanType          string           `json:"scanType,omitempty"`
 	PersistentStorage bool             `json:"persistentStorage"`
-	PVCClaims         []PVCClaims      `json:"pvcClaims,omitempty"`
+	PVC               []PVC            `json:"pvc,omitempty"`
 	CertificateName   string           `json:"certificateName"`
 	Certificate       string           `json:"certificate,omitempty"`
 	CertificateKey    string           `json:"certificateKey,omitempty"`
@@ -73,9 +73,9 @@ type Environs struct {
 	Value string `json:"value"`
 }
 
-// PVCClaims will contain the specifications of the different PVC.
+// PVC will contain the specifications of the different PVC.
 // This will overwrite the default claim configuration
-type PVCClaims struct {
+type PVC struct {
 	Name         string `json:"name"`
 	Size         string `json:"size,omitempty"`
 	StorageClass string `json:"storageClass,omitempty"`

@@ -8,6 +8,10 @@
     <div id="pvcId">
       <%= f.SelectTag("Spec.PVCStorageClass", {value: hub.Spec.PVCStorageClass, label: "PVC Storage Class", options: hub.View.StorageClasses}) %>
       <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: hub.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
+        <%= for (index, claim) in  hub.Spec.PVC { %>
+        <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
+        <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: claim.Name, value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+        <% } %>
     </div>
     <%= f.SelectTag("Spec.CertificateName", {value: hub.Spec.CertificateName, options: hub.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
     <div id="certificateId">
@@ -128,15 +132,15 @@ function checkPVC() {
 }
 
 // based on the scan type value, populate the default pvc claim size values
-// function checkScanType() {
-//   if (document.getElementById("hub-Spec.ScanType").value == "Custom") {
-//     document.getElementById("hub-Spec.PVCClaimSize").value = "10Gi"
-//   } else if (document.getElementById("hub-Spec.ScanType").value == "Images") {
-//     document.getElementById("hub-Spec.PVCClaimSize").value = "1000Gi"
-//   } else {
-//     document.getElementById("hub-Spec.PVCClaimSize").value = "20Gi"
-//   }
-// }
+function checkScanType() {
+    if (document.getElementById("hub-Spec.ScanType").value == "Custom") {
+        document.getElementById("blackduck-postgres").value = "10Gi"
+    } else if (document.getElementById("hub-Spec.ScanType").value == "Images") {
+        document.getElementById("blackduck-postgres").value = "1000Gi"
+    } else {
+        document.getElementById("blackduck-postgres").value = "20Gi"
+    }
+}
 
 // add or update environs and update the spec
 function validateAndGetValues() {
