@@ -20,7 +20,7 @@ RUN yarn install --no-progress && mkdir -p public/assets && dep ensure && buffal
 COPY ./LICENSE /bin/LICENSE 
 COPY ./help.1 /bin/help.1
 
-FROM alpine
+FROM scratch
 
 MAINTAINER Synopsys Cloud Native Team
 
@@ -28,9 +28,9 @@ ARG VERSION
 ARG BUILDTIME
 ARG LASTCOMMIT
 
-RUN apk add --no-cache curl
-RUN apk add --no-cache bash
-RUN apk add --no-cache ca-certificates
+# RUN apk add --no-cache curl
+# RUN apk add --no-cache bash
+# RUN apk add --no-cache ca-certificates
 
 # Uncomment to run the binary in "production" mode:
 # ENV GO_ENV=production
@@ -44,7 +44,7 @@ COPY --from=builder /bin/operator .
 COPY --from=builder /bin/LICENSE /licenses/
 COPY --from=builder /bin/help.1 /help.1
 
-RUN chmod 777 ./app && chmod 777 ./operator
+# RUN chmod 777 ./app && chmod 777 ./operator
 
 LABEL name="Synopsys Operator" \
       vendor="Synopsys" \
