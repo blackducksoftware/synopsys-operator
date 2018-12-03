@@ -63,10 +63,10 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v2.HubSpec, hubCo
 
 	if createHub.PersistentStorage {
 		// Postgres PVC
-		size := "10Gi"
+		size := "150Gi"
 		storageClass := createHub.PVCStorageClass
 
-		for _, claim := range createHub.PVCClaims {
+		for _, claim := range createHub.PVC {
 			if claim.Name == "blackduck-postgres" {
 				if len(claim.Size) > 0 {
 					size = claim.Size
