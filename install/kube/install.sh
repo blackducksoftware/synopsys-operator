@@ -2,31 +2,23 @@
 
 unset DYLD_INSERT_LIBRARIES
 
-DEFAULT_FILE_PATH="../common/default-values.json"
+source ../common/args.sh "${@}"
 
-if [[ ! -z "$1" ]]; then
-  DEFAULT_FILE_PATH="$1"
-fi
-
-array=( $(sed -n '/{/,/}/{s/[^:]*:[^"]*"\([^"]*\).*/\1/p;}' "$DEFAULT_FILE_PATH") ) 
-NS=${array[0]}
-REG_KEY=${array[1]}
-
-echo "Using the secret encoded in ../common/secret.json and default values in ../common/default-values.json.  Edit the file before running, or press enter to continue with the defaults."
+echo "Using the secret encoded in ../common/secret.json.  Edit the file before running, or press enter to continue with the defaults."
 read x
 
-kubectl create ns $NS
+kubectl create ns $_arg_namespace
 
-kubectl create -f ../common/secret.json -n $NS
+kubectl create -f ../common/secret.json -n $_arg_namespace
 
 cat ../common/synopsys-operator.yaml | \
-sed 's/${REGISTRATION_KEY}/'$REG_KEY'/g' | \
-sed 's/${NAMESPACE}/'$NS'/g' | \
-sed 's/${IMAGE}/'$(echo ${array[2]} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
-kubectl create --namespace=$NS -f -
+sed 's/${REGISTRATION_KEY}/'$_arg_blackduck_registration_key'/g' | \
+sed 's/${NAMESPACE}/'$_arg_namespace'/g' | \
+sed 's/${IMAGE}/'$(echo $_arg_image | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
+kubectl create --namespace=$_arg_namespace -f -
 
-if [[ ! -z "${array[3]}" ]]; then
-  kubectl create secret generic custom-registry-pull-secret --from-file=.dockerconfigjson="${array[3]}" --type=kubernetes.io/dockerconfigjson
+if [[ ! -z "$_arg_docker_config" ]]; then
+  kubectl create secret generic custom-registry-pull-secret --from-file=.dockerconfigjson="$_arg_docker_config" --type=kubernetes.io/dockerconfigjson
   kubectl secrets link default custom-registry-pull-secret --for=pull
   kubectl secrets link synopsys-operator custom-registry-pull-secret --for=pull; 
   kubectl scale rc synopsys-operator --replicas=0
@@ -35,11 +27,11 @@ fi
 
 echo "Done deploying!"
 echo
-kubectl get pods -n $NS 
+kubectl get pods -n $_arg_namespace 
 echo
 echo "Click a key to expose the LoadBalancer. (This will only work in supported kubernetes clouds.)"
 read x
 
-kubectl expose rc synopsys-operator --port=80 --target-port=3000 --name=synopsys-operator-tcp --type=LoadBalancer --namespace=${NS}
+kubectl expose rc synopsys-operator --port=80 --target-port=3000 --name=synopsys-operator-tcp --type=LoadBalancer --namespace=${_arg_namespace}
 
-kubectl get svc -n $NS
+kubectl get svc -n $_arg_namespace
