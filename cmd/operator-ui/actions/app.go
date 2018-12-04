@@ -70,6 +70,12 @@ func App() *buffalo.App {
 		}
 		app.Resource("/hubs", blackDuckResource)
 		app.ServeFiles("/", assetsBox) // serve files from the public directory
+
+		vasilyResource, err := NewVasilyResource(kubeConfig)
+		if err != nil {
+			log.Panic(err)
+		}
+		app.Resource("/vasily", vasilyResource)
 	}
 
 	return app
