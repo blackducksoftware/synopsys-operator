@@ -18,6 +18,7 @@
       <%= f.TextAreaTag("Spec.Certificate", {value: hub.Spec.Certificate, label: "Certificate"}) %>
       <%= f.TextAreaTag("Spec.CertificateKey", {value: hub.Spec.CertificateKey, label: "Certificate Key"}) %>
     </div>
+    <%= f.TextAreaTag("Spec.ProxyCertificate", {value: hub.Spec.ProxyCertificate, label: "Proxy Root Certificate"}) %>
     <label>Container Image Tags</label>
     <ul id="containerTags" name="containerTags" contenteditable="true">
       <%= for (containerTag) in  hub.View.ContainerTags { %>
