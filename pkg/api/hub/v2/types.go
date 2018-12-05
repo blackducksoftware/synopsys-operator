@@ -44,13 +44,13 @@ type HubView struct {
 	CertificateNames []string          `json:"certificateNames"`
 	Environs         []string          `json:"environs"`
 	ContainerTags    []string          `json:"containerTags"`
+	Version          string            `json:"version"`
 }
 
 // HubSpec will be CRD Hub definition's Spec
 type HubSpec struct {
 	Namespace         string           `json:"namespace"`
-	Flavor            string           `json:"flavor"`
-	HubVersion        string           `json:"hubVersion"`
+	Size              string           `json:"size"`
 	DbPrototype       string           `json:"dbPrototype,omitempty"`
 	PVCStorageClass   string           `json:"pvcStorageClass,omitempty"`
 	ScanType          string           `json:"scanType,omitempty"`

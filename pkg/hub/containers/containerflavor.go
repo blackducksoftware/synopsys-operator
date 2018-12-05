@@ -37,8 +37,8 @@ const (
 	MEDIUM Flavor = "MEDIUM"
 	// LARGE Black Duck Hub
 	LARGE Flavor = "LARGE"
-	// OPSSIGHT Black Duck Hub
-	OPSSIGHT Flavor = "OPSSIGHT"
+	// XLARGE Black Duck Hub
+	XLARGE Flavor = "X-LARGE"
 )
 
 // ContainerFlavor configuration will have the settings for flavored Black Duck Hub
@@ -137,19 +137,19 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			PostgresCPULimit:           largePostgresCPULimit,
 			PostgresMemoryLimit:        largePostgresMemoryLimit,
 		}
-	case OPSSIGHT:
+	case XLARGE:
 		return &ContainerFlavor{
-			WebserverMemoryLimit:       opsSightWebServerMemoryLimit,
-			SolrMemoryLimit:            opsSightSolrMemoryLimit,
-			WebappCPULimit:             opsSightWebappCPULimit,
-			WebappMemoryLimit:          opsSightWebappMemoryLimit,
-			WebappHubMaxMemory:         opsSightWebappHubMaxMemory,
-			ScanReplicas:               util.IntToInt32(opsSightScanReplicas),
-			ScanMemoryLimit:            opsSightScanMemoryLimit,
-			ScanHubMaxMemory:           opsSightScanHubMaxMemory,
-			JobRunnerReplicas:          util.IntToInt32(opsSightJobRunnerReplicas),
-			JobRunnerMemoryLimit:       opsSightJobRunnerMemoryLimit,
-			JobRunnerHubMaxMemory:      opsSightJobRunnerHubMaxMemory,
+			WebserverMemoryLimit:       xLargeWebServerMemoryLimit,
+			SolrMemoryLimit:            xLargeSolrMemoryLimit,
+			WebappCPULimit:             xLargeWebappCPULimit,
+			WebappMemoryLimit:          xLargeWebappMemoryLimit,
+			WebappHubMaxMemory:         xLargeWebappHubMaxMemory,
+			ScanReplicas:               util.IntToInt32(xLargeScanReplicas),
+			ScanMemoryLimit:            xLargeScanMemoryLimit,
+			ScanHubMaxMemory:           xLargeScanHubMaxMemory,
+			JobRunnerReplicas:          util.IntToInt32(xLargeJobRunnerReplicas),
+			JobRunnerMemoryLimit:       xLargeJobRunnerMemoryLimit,
+			JobRunnerHubMaxMemory:      xLargeJobRunnerHubMaxMemory,
 			CfsslMemoryLimit:           cfsslMemoryLimit,
 			LogstashMemoryLimit:        logstashMemoryLimit,
 			RegistrationMemoryLimit:    registrationMemoryLimit,
@@ -157,8 +157,8 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			AuthenticationMemoryLimit:  authenticationMemoryLimit,
 			AuthenticationHubMaxMemory: authenticationHubMaxMemory,
 			DocumentationMemoryLimit:   documentationMemoryLimit,
-			PostgresCPULimit:           opsSightPostgresCPULimit,
-			PostgresMemoryLimit:        opsSightPostgresMemoryLimit,
+			PostgresCPULimit:           xLargePostgresCPULimit,
+			PostgresMemoryLimit:        xLargePostgresMemoryLimit,
 		}
 	default:
 		return nil

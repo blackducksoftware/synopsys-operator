@@ -45,12 +45,10 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 // GetHubDefaultValue creates a hub crd configuration object with defaults
 func GetHubDefaultValue() *hubv2.HubSpec {
 	return &hubv2.HubSpec{
-		Flavor:          "Small",
-		HubVersion:      "2018.11.0",
+		Size:            "Small",
 		DbPrototype:     "",
 		CertificateName: "default",
 		HubType:         "",
-		Environs:        []string{},
 	}
 }
 

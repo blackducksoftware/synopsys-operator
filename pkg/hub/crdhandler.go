@@ -101,6 +101,9 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 			hubv2, err := hubutils.UpdateState(h.hubClient, h.config.Namespace, "pending", "creating", nil, hubv2)
 
 			if err == nil {
+				hubVersion := hubutils.GetHubVersion(hubv2.Spec.Environs)
+				hubv2.View.Version = hubVersion
+
 				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.hubClient, h.osSecurityClient, h.routeClient)
 				ip, pvc, updateError, err := hubCreator.CreateHub(&hubv2.Spec)
 				if err != nil {
@@ -189,7 +192,7 @@ func (h *Handler) autoRegisterHub(createHub *hub_v2.HubSpec) error {
 			// Create the exec into kubernetes pod request
 			req := util.CreateExecContainerRequest(h.kubeClient, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
-			if strings.HasPrefix(createHub.HubVersion, "4.") {
+			if strings.HasPrefix(hubutils.GetHubVersion(createHub.Environs), "4.") {
 				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate"`, registrationKey)})
 			} else {
 				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})

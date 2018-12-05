@@ -14,8 +14,11 @@ popd
 
 pushd $GOPATH/src/k8s.io/code-generator
 crds=( hub opssight alert )
+crdVersions=( v2 v1 v1 )
+j=0
   for i in "${crds[@]}" ; do
 	set +x
-	./generate-groups.sh "deepcopy,client,informer,lister" "github.com/blackducksoftware/perceptor-protoform/pkg/${i}/client" "github.com/blackducksoftware/perceptor-protoform/pkg/api" ${i}:v1
+	./generate-groups.sh "deepcopy,client,informer,lister" "github.com/blackducksoftware/synopsys-operator/pkg/${i}/client" "github.com/blackducksoftware/synopsys-operator/pkg/api" ${i}:${crdVersions[j]}
+  	let "j++"
   done
 popd

@@ -113,11 +113,11 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 	}
 
 	// Get Containers Flavor
-	hubContainerFlavor := containers.GetContainersFlavor(createHub.Flavor)
+	hubContainerFlavor := containers.GetContainersFlavor(createHub.Size)
 	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
 
 	if hubContainerFlavor == nil {
-		return "", "", true, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) OpsSight, Actual: %s", createHub.Flavor)
+		return "", "", true, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Size)
 	}
 
 	// All ConfigMap environment variables
