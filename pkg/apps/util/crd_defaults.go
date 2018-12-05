@@ -49,7 +49,6 @@ func GetHubDefaultValue() *hubv2.HubSpec {
 		DbPrototype:     "",
 		CertificateName: "default",
 		HubType:         "",
-		Environs:        []string{"HUB_VERSION:2018.11.0"},
 	}
 }
 
