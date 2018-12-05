@@ -1,8 +1,7 @@
 <body onload="formLoad()" onsubmit="return validateAndGetValues()">
   <div class="new-container">
     <%= f.InputTag("Spec.Namespace", {value: hub.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
-    <%= f.SelectTag("Spec.Flavor", {options: ["Small", "Medium", "Large", "X-Large"], value: hub.Spec.Flavor, label: "Size"}) %>
-    <%= f.InputTag("Spec.HubVersion", {value: hub.Spec.HubVersion, label: "Black Duck Version *", required: true, placeholder: "e.g. 2018.11.0"}) %>
+    <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: hub.Spec.Size, label: "Size"}) %>
     <%= f.CheckboxTag("Spec.PersistentStorage", {value: hub.Spec.PersistentStorage, label: "Persistent Storage", onchange: "checkPVC()"}) %>
     <%= f.SelectTag("Spec.DbPrototype", {options: hub.View.Clones, value: hub.Spec.DbPrototype, label: "Clone DB"}) %>
     <div id="pvcId">
@@ -47,14 +46,14 @@
 	position: relative;
 	outline: 0;
   }
-  
+
   ul li {
 	position: relative;
 	padding: 20px 10px 20px 40px;
 	background: transparent;
 	box-shadow: 0 1px #EEE;
   }
-  
+
   ul li:before {
 	content: '';
 	position: absolute;
@@ -68,7 +67,7 @@
 	background: #fff;
 	display: block;
   }
-  
+
   ul li:hover {
 	background: #FAFAFA;
   }
@@ -145,7 +144,7 @@ function checkScanType() {
 // add or update environs and update the spec
 function validateAndGetValues() {
   var environsList = document.getElementById("environs");
-  var environsItems = environsList.getElementsByTagName('li'); 
+  var environsItems = environsList.getElementsByTagName('li');
   var environs = document.getElementById("hub-Spec.Environs")
   for (var i = 0; i < environsItems.length; i++) {
     var data = environsItems[i].firstChild.data;
@@ -157,7 +156,7 @@ function validateAndGetValues() {
   };
 
   var containersList = document.getElementById("containerTags");
-  var containerItems = containersList.getElementsByTagName('li'); 
+  var containerItems = containersList.getElementsByTagName('li');
   var containerTags = document.getElementById("hub-Spec.ImageRegistries")
   for (var i = 0; i < containerItems.length; i++) {
     var data = containerItems[i].firstChild.data;

@@ -51,7 +51,7 @@ func TestC(t *testing.T) {
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-nginx:%s", externalVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-solr:%s", externalVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-zookeeper:%s", externalVersion)},
-		HubVersion: "5.0.0"}
+		Environs: []string{"HUB_VERSION:5.0.0"}}
 
 	myCont := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: fmt.Sprintf("docker.io/blackducksoftware/blackduck-documentation:%s", hubVersion), UID: getUID(100)},
@@ -83,7 +83,7 @@ func TestImageTag(t *testing.T) {
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-nginx:%s", externalVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-solr:%s", externalVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-zookeeper:%s", externalVersion)},
-		HubVersion: "4.5.0"}
+		Environs: []string{"HUB_VERSION:4.5.0"}}
 	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
 
 	external100 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl"}
@@ -105,7 +105,7 @@ func TestImageTag(t *testing.T) {
 		}
 	}
 
-	hubSpec1 := &v2.HubSpec{HubVersion: "4.5.0"}
+	hubSpec1 := &v2.HubSpec{Environs: []string{"HUB_VERSION:4.5.0"}}
 	creater = NewCreater(nil, hubSpec1, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
 	all50 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl", "registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
 	for _, v := range all50 {

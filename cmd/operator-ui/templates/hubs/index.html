@@ -32,7 +32,7 @@
         <%= for (hub) in hubs { %>
           <tr>
             <td><%= hub.Spec.Namespace %></td>
-            <td><%= hub.Spec.Flavor %></td>
+            <td><%= hub.Spec.Size %></td>
             <td><%= hub.Spec.HubVersion %></td>
             <td><%= hub.Spec.DbPrototype %></td>
             <td><%= hub.Spec.PVCStorageClass %> <%= hub.Spec.ScanType %> </td>

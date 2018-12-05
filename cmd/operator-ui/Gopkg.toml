@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/blackducksoftware/synopsys-operator"
-  branch = "pvc"
+  branch = "flavor"
 	
 [[constraint]]
   name = "github.com/sirupsen/logrus"

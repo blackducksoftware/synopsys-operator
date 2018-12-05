@@ -23,6 +23,9 @@ package util
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	hubClient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -31,8 +34,22 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"time"
 )
+
+// GetHubVersion will return the Hub version from the list of Hub environment variables
+func GetHubVersion(environs []string) string {
+	for _, value := range environs {
+		if strings.Contains(value, "HUB_VERSION") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				return strings.Trim(values[1], " ")
+			}
+			break
+		}
+	}
+
+	return ""
+}
 
 // GetDefaultPasswords returns admin,user,postgres passwords for db maintainance tasks.  Should only be used during
 // initialization, or for 'babysitting' ephemeral hub instances (which might have postgres restarts)

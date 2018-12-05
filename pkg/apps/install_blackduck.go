@@ -84,11 +84,11 @@ var InstallBlackduck = &cobra.Command{
 			restconf, _ := util.GetKubeConfig()
 			deployer, _ := horizondep.NewDeployer(restconf)
 			hubSpec := &v2.HubSpec{
-				Namespace:  namespace,
-				Flavor:     "small",
-				HubVersion: "5.0.0.",
-				ScanType:   "master",
-				HubType:    "small",
+				Namespace: namespace,
+				Size:      "small",
+				ScanType:  "master",
+				HubType:   "small",
+				Environs:  []string{"HUB_VERSION:5.0.0"},
 			}
 
 			creator.AddToDeployer(deployer, hubSpec, containers.GetContainersFlavor("SMALL"), nil)
