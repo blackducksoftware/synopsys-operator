@@ -50,7 +50,7 @@
 
 [[projects]]
   branch = "flavor"
-  digest = "1:20159f1b086821f393163c1af895cec58df019cdda64029845016ce3abcf4275"
+  digest = "1:cc62c6f44f42f845546d1a49d988cdcbc4c3ac44fedd0df8b39b3a3d9cce05bb"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
@@ -75,7 +75,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "bfad3b548d9879035048da0a1403799c7c28db0f"
+  revision = "f4cd3c0ab1cb8dbd61a362da072d40bd9a95a6ea"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
