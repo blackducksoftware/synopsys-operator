@@ -85,7 +85,7 @@ var InstallBlackduck = &cobra.Command{
 			deployer, _ := horizondep.NewDeployer(restconf)
 			hubSpec := &v1.HubSpec{
 				Namespace:     namespace,
-				Flavor:        "small",
+				Size:          "small",
 				BackupSupport: "none",
 				ScanType:      "master",
 				HubType:       "small",
