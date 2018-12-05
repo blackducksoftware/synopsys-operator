@@ -2,8 +2,7 @@
   "apiVersion": "synopsys.com/v1",
   "kind": "Alert",
   "metadata": {
-    "clusterName": "",
-	"name": "alert-test"
+    "name": "alert-test"
   },
   "spec": {
     "namespace": "alert-test",

@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/blackducksoftware/synopsys-operator"
-  branch = "master"
+  branch = "release-2018.12.x"
 	
 [[constraint]]
   name = "github.com/sirupsen/logrus"

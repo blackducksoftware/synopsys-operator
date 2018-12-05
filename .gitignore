@@ -1,3 +1,4 @@
 cmd/operator-build
 install/secured-registry/dockercfg.json
 cmd/blackduckctl/blackduckctl
+.DS_Store

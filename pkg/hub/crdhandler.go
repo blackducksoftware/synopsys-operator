@@ -97,6 +97,8 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 			hubutils.UpdateState(h.hubClient, h.config.Namespace, "error", "error", err, hubv1)
 		} else {
 			hubv1.Spec = newSpec
+			hubVersion := hubutils.GetHubVersion(hubv1.Spec.Environs)
+			hubv1.View.Version = hubVersion
 			// Update status
 			hubv1, err := hubutils.UpdateState(h.hubClient, h.config.Namespace, "pending", "creating", nil, hubv1)
 
@@ -184,7 +186,7 @@ func (h *Handler) autoRegisterHub(createHub *hub_v1.HubSpec) error {
 			// Create the exec into kubernetes pod request
 			req := util.CreateExecContainerRequest(h.kubeClient, registrationPod)
 			// Exec into the kubernetes pod and execute the commands
-			if strings.HasPrefix(createHub.HubVersion, "4.") {
+			if strings.HasPrefix(hubutils.GetHubVersion(createHub.Environs), "4.") {
 				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate"`, registrationKey)})
 			} else {
 				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})

@@ -86,10 +86,10 @@ var InstallBlackduck = &cobra.Command{
 			hubSpec := &v1.HubSpec{
 				Namespace:     namespace,
 				Flavor:        "small",
-				HubVersion:    "5.0.0.",
 				BackupSupport: "none",
 				ScanType:      "master",
 				HubType:       "small",
+				Environs:      []string{"HUB_VERSION:5.0.0"},
 			}
 
 			creator.AddToDeployer(deployer, hubSpec, containers.GetContainersFlavor("SMALL"), nil)

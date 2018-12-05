@@ -1,6 +1,5 @@
 /*
 Copyright (C) 2018 Synopsys, Inc.
-
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
 distributed with this work for additional information
@@ -8,9 +7,7 @@ regarding copyright ownership. The ASF licenses this file
 to you under the Apache License, Version 2.0 (the
 "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
-
 http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing,
 software distributed under the License is distributed on an
 "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -97,7 +94,7 @@ const (
 
 	largeSolrMemoryLimit = "1024M"
 
-	largeWebappCPULimit     = "1"
+	largeWebappCPULimit     = "2"
 	largeWebappMemoryLimit  = "9728M"
 	largeWebappHubMaxMemory = "8192m"
 
@@ -112,23 +109,23 @@ const (
 	largePostgresCPULimit    = "2"
 	largePostgresMemoryLimit = "12288M"
 
-	// OpsSight Flavor
-	opsSightWebServerMemoryLimit = "2048M"
+	// XLarge Flavor
+	xLargeWebServerMemoryLimit = "2048M"
 
-	opsSightSolrMemoryLimit = "1024M"
+	xLargeSolrMemoryLimit = "1024M"
 
-	opsSightWebappCPULimit     = "3"
-	opsSightWebappMemoryLimit  = "19728M"
-	opsSightWebappHubMaxMemory = "8192m"
+	xLargeWebappCPULimit     = "3"
+	xLargeWebappMemoryLimit  = "19728M"
+	xLargeWebappHubMaxMemory = "8192m"
 
-	opsSightScanReplicas     = 5
-	opsSightScanMemoryLimit  = "9728M"
-	opsSightScanHubMaxMemory = "8192m"
+	xLargeScanReplicas     = 5
+	xLargeScanMemoryLimit  = "9728M"
+	xLargeScanHubMaxMemory = "8192m"
 
-	opsSightJobRunnerReplicas     = 10
-	opsSightJobRunnerMemoryLimit  = "13824M"
-	opsSightJobRunnerHubMaxMemory = "12288m"
+	xLargeJobRunnerReplicas     = 10
+	xLargeJobRunnerMemoryLimit  = "13824M"
+	xLargeJobRunnerHubMaxMemory = "12288m"
 
-	opsSightPostgresCPULimit    = "3"
-	opsSightPostgresMemoryLimit = "12288M"
+	xLargePostgresCPULimit    = "3"
+	xLargePostgresMemoryLimit = "12288M"
 )

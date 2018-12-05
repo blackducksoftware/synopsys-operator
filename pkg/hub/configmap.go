@@ -44,7 +44,6 @@ func (hc *Creater) createHubConfig(createHub *v1.HubSpec, hubContainerFlavor *co
 		"HUB_WEBSERVER_PORT":        "8443",
 		"IPV4_ONLY":                 "0",
 		"RUN_SECRETS_DIR":           "/tmp/secrets",
-		"HUB_VERSION":               createHub.HubVersion,
 		"HUB_PROXY_NON_PROXY_HOSTS": "solr",
 	}
 

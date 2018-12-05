@@ -1,8 +1,7 @@
 <body onload="formLoad()" onsubmit="return validateAndGetValues()">
   <div class="new-container">
     <%= f.InputTag("Spec.Namespace", {value: hub.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
-    <%= f.SelectTag("Spec.Flavor", {options: ["Small", "Medium", "Large", "X-Large"], value: hub.Spec.Flavor, label: "Size"}) %>
-    <%= f.InputTag("Spec.HubVersion", {value: hub.Spec.HubVersion, label: "Black Duck Version *", required: true, placeholder: "e.g. 2018.11.0"}) %>
+    <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: hub.Spec.Size, label: "Size"}) %>
     <%= f.SelectTag("Spec.BackupSupport", {options: ["Yes", "No"], value: hub.Spec.BackupSupport, label: "Backup Support", onchange: "checkBackUpSupport()"}) %>
     <div id="backupSupportId">
       <label id="backupIntervalError" hidden="hidden">Backup interval is required when DB Backup is enabled.</label>

@@ -34,8 +34,8 @@
         <%= for (hub) in hubs { %>
           <tr>
             <td><%= hub.Spec.Namespace %></td>
-            <td><%= hub.Spec.Flavor %></td>
-            <td><%= hub.Spec.HubVersion %></td>
+            <td><%= hub.Spec.Size %></td>
+            <td><%= hub.View.Version %></td>
             <td><%= hub.Spec.BackupSupport %></td>
             <td><%= hub.Spec.BackupInterval %> <%= hub.Spec.BackupUnit %></td>
             <td><%= hub.Spec.DbPrototype %></td>
