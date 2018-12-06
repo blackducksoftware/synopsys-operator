@@ -2,7 +2,6 @@
   "apiVersion": "synopsys.com/v2",
   "kind": "Hub",
   "metadata": {
-    "clusterName": "",
     "name": "hub-test"
   },
   "spec": {

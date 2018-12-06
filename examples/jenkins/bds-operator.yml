@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: hub-template
+objects:
+- apiVersion: synopsys.com/v1
+  kind: Hub
+  metadata:
+    name: ${HUB_NAME}
+  spec:
+    backupSupport: "No"
+    certificateName: default
+    dbPrototype: empty
+    hubType: master
+    environs:
+    - HTTPS_VERIFY_CERTS:yes
+    - HUB_POSTGRES_ENABLE_SSL:"false"
+    - BROKER_URL:amqps://rabbitmq/protecodesc
+    - DISABLE_HUB_DASHBOARD:#hub-webserver.env
+    - BLACKDUCK_REPORT_IGNORED_COMPONENTS:false
+    - HUB_PROXY_NON_PROXY_HOSTS:solr
+    - HUB_VERSION:${ACTUAL_HUB_VERSION}
+    - RABBIT_MQ_HOST:rabbitmq
+    - BROKER_USE_SSL:yes
+    - CLIENT_CERT_CN:binaryscanner
+    - HUB_LOGSTASH_HOST:logstash
+    - RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT:false
+    - SCANNER_CONCURRENCY:1
+    - USE_BINARY_UPLOADS:0
+    - IPV4_ONLY:0
+    - RABBITMQ_DEFAULT_VHOST:protecodesc
+    - RABBIT_MQ_PORT:5671
+    - HUB_POSTGRES_USER:blackduck_user
+    - HUB_WEBSERVER_PORT:8443
+    - PUBLIC_HUB_WEBSERVER_HOST:localhost
+    - PUBLIC_HUB_WEBSERVER_PORT:443
+    - USE_ALERT:0
+    - CFSSL:cfssl:8888
+    - HUB_POSTGRES_ADMIN:blackduck
+    size: ${HUB_TYPE}
+    imageRegistries:
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/appcheck-worker:1.0.1
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-upload-cache:1.0.2
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-authentication:${HUB_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-cfssl:${EXTERNAL_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-documentation:${HUB_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-jobrunner:${HUB_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-logstash:${EXTERNAL_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-nginx:${EXTERNAL_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-registration:${HUB_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-scan:${HUB_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-solr:${EXTERNAL_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-webapp:${HUB_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/blackduck-zookeeper:${EXTERNAL_VERSION}
+    - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/rabbitmq:${EXTERNAL_VERSION}
+    namespace: ${HUB_NAME}
+parameters:
+- description: Size of the hub instance
+  name: HUB_TYPE
+- description: Name of the hub instance
+  name: HUB_NAME
+- description: Version of internal docker images
+  name: HUB_VERSION
+- description: Actual Hub version, without the build number
+  name: ACTUAL_HUB_VERSION
+- description: Version of 3rd party docker images
+  name: EXTERNAL_VERSION
+- description: Docker registry to pull images from
+  name: DOCKER_REGISTRY
+- description: Docker repository to pull images from
+  name: DOCKER_REPOSITORY
