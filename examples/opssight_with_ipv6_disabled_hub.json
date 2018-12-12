@@ -2,10 +2,10 @@
   "apiVersion": "synopsys.com/v1",
   "kind": "OpsSight",
   "metadata": {
-    "name": "${OPSSIGHT_NAMESPACE}"
+    "name": "opssight-test"
   },
   "spec": {
-    "namespace": "${OPSSIGHT_NAMESPACE}",
+    "namespace": "opssight-test",
     "perceptor": {
       "name": "opssight-core",
       "port": 3001,
@@ -67,6 +67,7 @@
     "logLevel": "debug",
     "secretName": "blackduck",
     "hub": {
+      "user": "sysadmin",
       "initialCount": 0,
       "maxCount": 0,
       "concurrentScanLimit": 2,

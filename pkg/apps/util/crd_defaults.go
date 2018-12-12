@@ -117,7 +117,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			TotalScanLimit:               1000,
 			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
 			InitialCount:                 0,
-			MaxCount:                     1,
+			MaxCount:                     0,
 			DeleteHubThresholdPercentage: 50,
 			HubSpec:                      GetHubDefaultValue(),
 		},
