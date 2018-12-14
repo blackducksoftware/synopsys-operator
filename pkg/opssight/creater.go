@@ -262,11 +262,12 @@ func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 	if ac.osSecurityClient != nil {
 		scannerServiceAccount := opssight.ScannerServiceAccount()
 		perceiverServiceAccount := opssight.PodPerceiverServiceAccount()
-		serviceAccounts := []string{fmt.Sprintf("system:serviceaccount:%s:%s", namespace, scannerServiceAccount.GetName()),
-			fmt.Sprintf("system:serviceaccount:%s:%s", namespace, perceiverServiceAccount.GetName())}
+		serviceAccounts := []string{fmt.Sprintf("system:serviceaccount:%s:%s", namespace, perceiverServiceAccount.GetName())}
+		if !strings.EqualFold(opssight.config.ScannerPod.ImageFacade.ImagePullerType, "skopeo") {
+			serviceAccounts = append(serviceAccounts, fmt.Sprintf("system:serviceaccount:%s:%s", namespace, scannerServiceAccount.GetName()))
+		}
 		return util.UpdateOpenShiftSecurityConstraint(ac.osSecurityClient, serviceAccounts, "privileged")
 	}
-
 	return nil
 }
 
