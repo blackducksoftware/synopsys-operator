@@ -2,10 +2,10 @@
   "apiVersion": "synopsys.com/v1",
   "kind": "OpsSight",
   "metadata": {
-    "name": "${OPSSIGHT_NAMESPACE}"
+    "name": "opssight-test"
   },
   "spec": {
-    "namespace": "${OPSSIGHT_NAMESPACE}",
+    "namespace": "opssight-test",
     "perceptor": {
       "name": "perceptor",
       "port": 3001,
@@ -68,32 +68,36 @@
     "logLevel": "debug",
     "secretName": "perceptor",
     "hub": {
+      "user": "sysadmin",
       "initialCount": 0,
-      "maxCount": 4,
+      "maxCount": 0,
       "concurrentScanLimit": 2,
       "totalScanLimit": 1000,
       "hubSpec": {
-        "persistentStorage": false,
         "certificateName": "default",
         "dbPrototype": "",
         "size": "small",
         "hubType": "worker",
+        "persistentStorage": false,
         "imageRegistries": [
-          "docker.io/blackducksoftware/blackduck-authentication:${BLACKDUCK_VERSION}",
-          "docker.io/blackducksoftware/blackduck-documentation:${BLACKDUCK_VERSION}",
-          "docker.io/blackducksoftware/blackduck-jobrunner:${BLACKDUCK_VERSION}",
-          "docker.io/blackducksoftware/blackduck-registration:${BLACKDUCK_VERSION}",
-          "docker.io/blackducksoftware/blackduck-scan:${BLACKDUCK_VERSION}",
-          "docker.io/blackducksoftware/blackduck-webapp:${BLACKDUCK_VERSION}",
-          "docker.io/blackducksoftware/blackduck-cfssl:${THIRDPARTY_VERSION}",
-          "docker.io/blackducksoftware/blackduck-logstash:${THIRDPARTY_VERSION}",
-          "docker.io/blackducksoftware/blackduck-nginx:${THIRDPARTY_VERSION}",
-          "docker.io/blackducksoftware/blackduck-solr:${THIRDPARTY_VERSION}",
-          "docker.io/blackducksoftware/blackduck-zookeeper:${THIRDPARTY_VERSION}"
+          "docker.io/blackducksoftware/hub-authentication:4.8.3",
+          "docker.io/blackducksoftware/hub-documentation:4.8.3",
+          "docker.io/blackducksoftware/hub-jobrunner:4.8.3",
+          "docker.io/blackducksoftware/hub-registration:4.8.3",
+          "docker.io/blackducksoftware/hub-scan:4.8.3",
+          "docker.io/blackducksoftware/hub-webapp:4.8.3",
+          "docker.io/blackducksoftware/hub-cfssl:4.8.3",
+          "docker.io/blackducksoftware/hub-logstash:4.8.3",
+          "docker.io/blackducksoftware/hub-nginx:4.8.3",
+          "docker.io/blackducksoftware/hub-solr:4.8.3",
+          "docker.io/blackducksoftware/hub-zookeeper:4.8.3"
         ],
         "environs": [
-          "HUB_VERSION:${BLACKDUCK_VERSION}"
-        ]
+          "HUB_VERSION:4.8.3"
+        ],
+        "imageUidMap": {
+          "webserver": 1000
+        }
       }
     }
   }

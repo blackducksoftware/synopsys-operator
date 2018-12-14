@@ -29,7 +29,8 @@
         "port": 3004,
         "internalRegistries": [],
         "image": "docker.io/blackducksoftware/opssight-image-getter:${TAG}",
-        "serviceAccount": "opssight-scanner"
+        "serviceAccount": "opssight-scanner",
+        "imagePullerType": "skopeo"
       },
       "replicaCount": 1
     },
@@ -73,14 +74,14 @@
       "concurrentScanLimit": 2,
       "totalScanLimit": 1000,
       "hubSpec": {
-        "backupSupport": "No",
+        "persistentStorage": false,
         "certificateName": "default",
         "environs": [
           "IPV4_ONLY:1",
           "BLACKDUCK_HUB_SERVER_ADDRESS:0.0.0.0",
           "HUB_VERSION:2018.11.0"
         ],
-        "dbPrototype": "empty",
+        "dbPrototype": "",
         "size": "small",
         "hubType": "worker",
         "imageRegistries": [
