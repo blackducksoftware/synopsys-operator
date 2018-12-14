@@ -92,6 +92,7 @@ type ImageFacadeConfig struct {
 	Host                    string
 	Port                    int
 	PrivateDockerRegistries []RegistryAuth
+	ImagePullerType         string
 	CreateImagesOnly        bool
 }
 

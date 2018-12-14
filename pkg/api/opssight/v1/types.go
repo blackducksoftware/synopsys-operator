@@ -95,6 +95,7 @@ type ImageFacade struct {
 	Image              string         `json:"image"`
 	Port               int            `json:"port"`
 	InternalRegistries []RegistryAuth `json:"internalRegistries"`
+	ImagePullerType    string         `json:"imagePullerType"`
 	ServiceAccount     string         `json:"serviceAccount"`
 }
 

@@ -62,6 +62,7 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 			Host:                    "localhost",
 			Port:                    config.ScannerPod.ImageFacade.Port,
 			PrivateDockerRegistries: privateRegistries,
+			ImagePullerType:         config.ScannerPod.ImageFacade.ImagePullerType,
 		},
 		Perceiver: PerceiverConfig{
 			Image: ImagePerceiverConfig{},
