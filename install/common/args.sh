@@ -34,6 +34,7 @@ begins_with_short_option()
 }
 
 DEFAULT_FILE_PATH="../common/default-values.json"
+
 array=( $(sed -n '/{/,/}/{s/[^:]*:[^"]*"\([^"]*\).*/\1/p;}' "$DEFAULT_FILE_PATH") ) 
 NS="${array[0]}"
 IMAGE="${array[1]}"
