@@ -21,7 +21,8 @@ oc create -f ../common/secret.json -n $_arg_namespace
 cat ../common/synopsys-operator.yaml | \
 sed 's/${REGISTRATION_KEY}/'$_arg_blackduck_registration_key'/g' | \
 sed 's/${NAMESPACE}/'$_arg_namespace'/g' | \
-sed 's/${IMAGE}/'$(echo $_arg_image | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
+sed 's/${IMAGE}/'$(echo $_arg_synopsys_operator_image | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
+sed 's/${PROMETHEUS_IMAGE}/'$(echo $_arg_prometheus_image | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')'/g' | \
 oc create --namespace=$_arg_namespace -f -
 
 if [[ ! -z "$_arg_docker_config" ]]; then
