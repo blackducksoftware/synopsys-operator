@@ -73,13 +73,13 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 
 func (p *SpecConfig) perceptorMetricsContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:  "prometheus",
-		Image: "prom/prometheus:v2.1.0",
+		Name:  p.config.Prometheus.Name,
+		Image: p.config.Prometheus.Image,
 		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d"},
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: "9090",
+		ContainerPort: fmt.Sprintf("%d", p.config.Prometheus.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 		Name:          "web",
 	})

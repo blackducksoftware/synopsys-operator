@@ -138,6 +138,13 @@ type Skyfire struct {
 	PerceptorDumpIntervalSeconds int `json:"perceptorDumpIntervalSeconds"`
 }
 
+// Prometheus container definition
+type Prometheus struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
+	Port  int    `json:"port"`
+}
+
 // OpsSightSpec is the spec for a OpsSight resource
 type OpsSightSpec struct {
 	Namespace string `json:"namespace"`
@@ -146,6 +153,7 @@ type OpsSightSpec struct {
 	Perceptor     *Perceptor  `json:"perceptor"`
 	ScannerPod    *ScannerPod `json:"scannerPod"`
 	Perceiver     *Perceiver  `json:"perceiver"`
+	Prometheus    *Prometheus `json:"prometheus"`
 	EnableSkyfire bool        `json:"enableSkyfire"`
 	Skyfire       *Skyfire    `json:"skyfire"`
 

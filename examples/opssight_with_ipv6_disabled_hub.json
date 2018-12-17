@@ -50,6 +50,11 @@
       "annotationIntervalSeconds": 30,
       "dumpIntervalMinutes": 30
     },
+    "prometheus": {
+      "name": "prometheus",
+      "port": 9090,
+      "image": "docker.io/prom/prometheus:v2.1.0"
+    },
     "enableSkyfire": false,
     "skyfire": {
       "image": "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
