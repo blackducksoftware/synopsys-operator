@@ -23,6 +23,7 @@ package opssight
 
 import (
 	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -138,10 +139,13 @@ func (p *SpecConfig) imageFacadeContainer() *components.Container {
 		Name:      "var-images",
 		MountPath: "/var/images",
 	})
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
-		Name:      "dir-docker-socket",
-		MountPath: "/var/run/docker.sock",
-	})
+
+	if !strings.EqualFold(p.config.ScannerPod.ImageFacade.ImagePullerType, "skopeo") {
+		container.AddVolumeMount(horizonapi.VolumeMountConfig{
+			Name:      "dir-docker-socket",
+			MountPath: "/var/run/docker.sock",
+		})
+	}
 
 	return container
 }
@@ -175,10 +179,12 @@ func (p *SpecConfig) imageFacadeVolumes() ([]*components.Volume, error) {
 	}
 	vols = append(vols, vol)
 
-	vols = append(vols, components.NewHostPathVolume(horizonapi.HostPathVolumeConfig{
-		VolumeName: "dir-docker-socket",
-		Path:       "/var/run/docker.sock",
-	}))
+	if !strings.EqualFold(p.config.ScannerPod.ImageFacade.ImagePullerType, "skopeo") {
+		vols = append(vols, components.NewHostPathVolume(horizonapi.HostPathVolumeConfig{
+			VolumeName: "dir-docker-socket",
+			Path:       "/var/run/docker.sock",
+		}))
+	}
 
 	return vols, nil
 }

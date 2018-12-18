@@ -131,7 +131,7 @@ items:
       spec:
         containers:
         - name: prometheus
-          image: prom/prometheus:v2.1.0
+          image: ${PROMETHEUS_IMAGE}
           args:
           - '--log.level=debug'
           - '--config.file=/etc/prometheus/prometheus.yml'

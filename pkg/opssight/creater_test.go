@@ -581,6 +581,11 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			},
 			ReplicaCount: 1,
 		},
+		Prometheus: &opssightv1.Prometheus{
+			Name:  "prometheus",
+			Image: "docker.io/prom/prometheus:v2.1.0",
+			Port:  9090,
+		},
 		Skyfire: &opssightv1.Skyfire{
 			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
 			Name:           "skyfire",

@@ -29,7 +29,8 @@
         "port": 3004,
         "internalRegistries": [],
         "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-        "serviceAccount": "perceptor-scanner"
+        "serviceAccount": "perceptor-scanner",
+        "imagePullerType": "skopeo"
       },
       "replicaCount": 1
     },
@@ -61,6 +62,11 @@
       "kubeDumpIntervalSeconds": 60,
       "perceptorDumpIntervalSeconds": 60
     },
+    "prometheus": {
+      "name": "prometheus",
+      "port": 9090,
+      "image": "docker.io/prom/prometheus:v2.1.0"
+    },
     "enableMetrics": true,
     "defaultCPU": "300m",
     "defaultMem": "1300Mi",
@@ -72,9 +78,9 @@
       "concurrentScanLimit": 2,
       "totalScanLimit": 1000,
       "hubSpec": {
-        "backupSupport": "No",
+        "persistentStorage": false,
         "certificateName": "default",
-        "dbPrototype": "empty",
+        "dbPrototype": "",
         "size": "small",
         "hubType": "worker",
         "imageRegistries": [
