@@ -47,14 +47,26 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 			{Name: "dir-logstash", MountPath: "/opt/blackduck/hub/logs"},
 		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: webappPort, Protocol: horizonapi.ProtocolTCP},
-		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
-		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/api/health-checks/liveness", "/opt/blackduck/hub/hub-webapp/security/root.crt"}},
-		// 	Delay:           360,
-		// 	Interval:        30,
-		// 	Timeout:         10,
-		// 	MinCountFailure: 1000,
-		// }},
 	}
+
+	if c.hubSpec.Healthchecks {
+		webappContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
+			ActionConfig: horizonapi.ActionConfig{
+				Command: []string{
+					"/usr/local/bin/docker-healthcheck.sh",
+					"https://127.0.0.1:8443/api/health-checks/liveness",
+					"/opt/blackduck/hub/hub-webapp/security/root.crt",
+					"/opt/blackduck/hub/hub-webapp/security/blackduck_system.crt",
+					"/opt/blackduck/hub/hub-webapp/security/blackduck_system.key",
+				},
+			},
+			Delay:           360,
+			Interval:        30,
+			Timeout:         10,
+			MinCountFailure: 1000,
+		}}
+	}
+
 	c.PostEditContainer(webappContainerConfig)
 
 	logstashEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")
@@ -64,13 +76,16 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "dir-logstash", MountPath: "/var/lib/logstash/data"}},
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: logstashPort, Protocol: horizonapi.ProtocolTCP},
-		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
-		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:9600/"}},
-		// 	Delay:           240,
-		// 	Interval:        30,
-		// 	Timeout:         10,
-		// 	MinCountFailure: 1000,
-		// }},
+	}
+
+	if c.hubSpec.Healthchecks {
+		logstashContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
+			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:9600/"}},
+			Delay:           240,
+			Interval:        30,
+			Timeout:         10,
+			MinCountFailure: 1000,
+		}}
 	}
 
 	webappLogstashVolumes := []*components.Volume{webappEmptyDir, webappSecurityEmptyDir, logstashEmptyDir, c.dbSecretVolume}

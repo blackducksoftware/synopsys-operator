@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:5ad08b0e14866764a6d7475eb11c9cf05cad9a52c442593bdfa544703ff77f61"
+  name = "cloud.google.com/go"
+  packages = ["compute/metadata"]
+  pruneopts = "UT"
+  revision = "0ebda48a7f143b1cce9eb37a8c1106ac762a3430"
+  version = "v0.34.0"
+
+[[projects]]
   branch = "master"
   digest = "1:b9ed0475a5f2702704fba2d1f50dcaae426f090b05b4509ec86ddf7b0965cd5c"
   name = "dmitri.shuralyov.com/text/kebabcase"
@@ -49,8 +57,8 @@
   source = "https://github.com/jayunit100/horizon"
 
 [[projects]]
-  branch = "flavor"
-  digest = "1:cc62c6f44f42f845546d1a49d988cdcbc4c3ac44fedd0df8b39b3a3d9cce05bb"
+  branch = "jd-healthchecks"
+  digest = "1:93170981cc89f8f185517ae4b9e1f4d9bbc4cae9e1131eda0f6e0d9395d2a74f"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
@@ -75,7 +83,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "f4cd3c0ab1cb8dbd61a362da072d40bd9a95a6ea"
+  revision = "f6975303126bcce394d8e54765b99984d1ca8c7b"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -1207,9 +1215,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:1521d0022ea86a3f7df5c3e25a6720b770f11ace1369b1a59ee38a3e9ba3dd2f"
+  digest = "1:d7dae1a84151e36ed909d5fbac64ec7c59aadd5a1c1fa61187bdd5b21f5d2df8"
   name = "golang.org/x/net"
   packages = [
+    "context",
+    "context/ctxhttp",
     "html",
     "html/atom",
     "http/httpguts",
@@ -1219,6 +1229,20 @@
   ]
   pruneopts = "UT"
   revision = "351d144fa1fc0bd934e2408202be0c29f25e35a0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:23443edff0740e348959763085df98400dcfd85528d7771bb0ce9f5f2754ff4a"
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt",
+  ]
+  pruneopts = "UT"
+  revision = "d668ce993890a79bda886613ee587a69dd5da7a6"
 
 [[projects]]
   branch = "master"
@@ -1271,9 +1295,21 @@
   revision = "85acf8d2951cb2a3bde7632f9ff273ef0379bcbd"
 
 [[projects]]
-  digest = "1:c25289f43ac4a68d88b02245742347c94f1e108c534dda442188015ff80669b3"
+  digest = "1:caa22aaff120905a9e4cd4ebb716f6a96f868f93c59e1cb1ab055439cd806778"
   name = "google.golang.org/appengine"
-  packages = ["cloudsql"]
+  packages = [
+    ".",
+    "cloudsql",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch",
+  ]
   pruneopts = "UT"
   revision = "4a4468ece617fc8205e99368fa2200e9d1fad421"
   version = "v1.3.0"
@@ -1406,7 +1442,7 @@
   revision = "94ebb086c69b9fec4ddbfb6a1433d28ecca9292b"
 
 [[projects]]
-  digest = "1:e34eb2e6db2f8e2ad6f72e981f687dba7aaa7a7f187027364cdcf29c9c7757d3"
+  digest = "1:1b8300410dc104555b577ea8f600ec58febbfc8ecc5cc53850877e2c4bd317c1"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1446,8 +1482,10 @@
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth/exec",
+    "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
+    "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -1467,6 +1505,7 @@
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
+    "util/jsonpath",
     "util/retry",
     "util/workqueue",
   ]
@@ -1515,6 +1554,7 @@
     "github.com/unrolled/secure",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/client-go/kubernetes",
+    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
   ]
