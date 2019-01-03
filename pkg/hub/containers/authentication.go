@@ -45,13 +45,23 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 			{Name: "dir-authentication-security", MountPath: "/opt/blackduck/hub/hub-authentication/security"},
 		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: authenticationPort, Protocol: horizonapi.ProtocolTCP},
-		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
-		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/api/health-checks/liveness", "/opt/blackduck/hub/hub-authentication/security/root.crt"}},
-		// 	Delay:           240,
-		// 	Interval:        30,
-		// 	Timeout:         10,
-		// 	MinCountFailure: 10,
-		// }},
+	}
+	if c.hubSpec.Healthchecks {
+		hubAuthContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
+			ActionConfig: horizonapi.ActionConfig{
+				Command: []string{
+					"/usr/local/bin/docker-healthcheck.sh",
+					"https://127.0.0.1:8443/api/health-checks/liveness",
+					"/opt/blackduck/hub/hub-authentication/security/root.crt",
+					"/opt/blackduck/hub/hub-authentication/security/blackduck_system.crt",
+					"/opt/blackduck/hub/hub-authentication/security/blackduck_system.key",
+				},
+			},
+			Delay:           240,
+			Interval:        30,
+			Timeout:         10,
+			MinCountFailure: 10,
+		}}
 	}
 
 	hubAuthVolumes := []*components.Volume{hubAuthEmptyDir, c.dbSecretVolume, hubAuthSecurityEmptyDir}

@@ -53,13 +53,24 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 			},
 		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: scannerPort, Protocol: horizonapi.ProtocolTCP},
-		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
-		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/api/health-checks/liveness", "/opt/blackduck/hub/hub-scan/security/root.crt"}},
-		// 	Delay:           240,
-		// 	Interval:        30,
-		// 	Timeout:         10,
-		// 	MinCountFailure: 10,
-		// }},
+	}
+
+	if c.hubSpec.Healthchecks {
+		hubScanContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
+			ActionConfig: horizonapi.ActionConfig{
+				Command: []string{
+					"/usr/local/bin/docker-healthcheck.sh",
+					"https://127.0.0.1:8443/api/health-checks/liveness",
+					"/opt/blackduck/hub/hub-scan/security/root.crt",
+					"/opt/blackduck/hub/hub-scan/security/blackduck_system.crt",
+					"/opt/blackduck/hub/hub-scan/security/blackduck_system.key",
+				},
+			},
+			Delay:           240,
+			Interval:        30,
+			Timeout:         10,
+			MinCountFailure: 10,
+		}}
 	}
 
 	hubScanVolumes := []*components.Volume{hubScanEmptyDir, c.dbSecretVolume}

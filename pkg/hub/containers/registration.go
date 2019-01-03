@@ -40,13 +40,24 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 			{Name: "dir-registration-security", MountPath: "/opt/blackduck/hub/hub-registration/security"},
 		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP},
-		// LivenessProbeConfigs: []*horizonapi.ProbeConfig{{
-		// 	ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/registration/health-checks/liveness", "/opt/blackduck/hub/hub-registration/security/root.crt"}},
-		// 	Delay:           240,
-		// 	Interval:        30,
-		// 	Timeout:         10,
-		// 	MinCountFailure: 10,
-		// }},
+	}
+
+	if c.hubSpec.Healthchecks {
+		registrationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
+			ActionConfig: horizonapi.ActionConfig{
+				Command: []string{
+					"/usr/local/bin/docker-healthcheck.sh",
+					"https://localhost:8443/registration/health-checks/liveness",
+					"/opt/blackduck/hub/hub-registration/security/root.crt",
+					"/opt/blackduck/hub/hub-registration/security/blackduck_system.crt",
+					"/opt/blackduck/hub/hub-registration/security/blackduck_system.key",
+				},
+			},
+			Delay:           240,
+			Interval:        30,
+			Timeout:         10,
+			MinCountFailure: 10,
+		}}
 	}
 
 	registrationVolumes := []*components.Volume{registrationEmptyDir, registrationSecurityEmptyDir}
