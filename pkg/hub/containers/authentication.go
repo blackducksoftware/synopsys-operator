@@ -46,7 +46,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 		},
 		PortConfig: &horizonapi.PortConfig{ContainerPort: authenticationPort, Protocol: horizonapi.ProtocolTCP},
 	}
-	if c.hubSpec.Healthchecks {
+	if c.hubSpec.LivenessProbes {
 		hubAuthContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Command: []string{
