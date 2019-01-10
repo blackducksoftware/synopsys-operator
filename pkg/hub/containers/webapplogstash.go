@@ -49,7 +49,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 		PortConfig: &horizonapi.PortConfig{ContainerPort: webappPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
-	if c.hubSpec.Healthchecks {
+	if c.hubSpec.LivenessProbes {
 		webappContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Command: []string{
@@ -78,7 +78,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: logstashPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
-	if c.hubSpec.Healthchecks {
+	if c.hubSpec.LivenessProbes {
 		logstashContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:9600/"}},
 			Delay:           240,

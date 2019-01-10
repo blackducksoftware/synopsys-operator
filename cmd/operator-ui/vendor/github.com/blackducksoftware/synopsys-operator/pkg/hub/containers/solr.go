@@ -38,7 +38,7 @@ func (c *Creater) GetSolrDeployment() *components.ReplicationController {
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: solrPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
-	if c.hubSpec.Healthchecks {
+	if c.hubSpec.LivenessProbes {
 		solrContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:8983/solr/project/admin/ping?wt=json"}},
 			Delay:           240,

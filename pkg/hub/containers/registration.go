@@ -42,7 +42,7 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 		PortConfig: &horizonapi.PortConfig{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
-	if c.hubSpec.Healthchecks {
+	if c.hubSpec.LivenessProbes {
 		registrationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Command: []string{

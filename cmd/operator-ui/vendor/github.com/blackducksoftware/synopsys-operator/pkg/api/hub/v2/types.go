@@ -53,7 +53,7 @@ type HubSpec struct {
 	Size              string           `json:"size"`
 	DbPrototype       string           `json:"dbPrototype,omitempty"`
 	PVCStorageClass   string           `json:"pvcStorageClass,omitempty"`
-	Healthchecks	  bool 			   `json:"healthchecks"`
+	LivenessProbes    bool             `json:"livenessProbes"`
 	ScanType          string           `json:"scanType,omitempty"`
 	PersistentStorage bool             `json:"persistentStorage"`
 	PVC               []PVC            `json:"pvc,omitempty"`

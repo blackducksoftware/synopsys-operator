@@ -40,7 +40,7 @@ func (c *Creater) GetDocumentationDeployment() *components.ReplicationController
 		PortConfig: &horizonapi.PortConfig{ContainerPort: documentationPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
-	if c.hubSpec.Healthchecks {
+	if c.hubSpec.LivenessProbes {
 		documentationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/hubdoc/health-checks/liveness", "/opt/blackduck/hub/hub-documentation/security/root.crt"}},
 			Delay:           240,

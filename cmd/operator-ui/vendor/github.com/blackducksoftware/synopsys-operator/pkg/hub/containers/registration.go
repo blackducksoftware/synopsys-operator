@@ -42,9 +42,17 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 		PortConfig: &horizonapi.PortConfig{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
-	if c.hubSpec.Healthchecks {
+	if c.hubSpec.LivenessProbes {
 		registrationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/registration/health-checks/liveness", "/opt/blackduck/hub/hub-registration/security/root.crt"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Command: []string{
+					"/usr/local/bin/docker-healthcheck.sh",
+					"https://localhost:8443/registration/health-checks/liveness",
+					"/opt/blackduck/hub/hub-registration/security/root.crt",
+					"/opt/blackduck/hub/hub-registration/security/blackduck_system.crt",
+					"/opt/blackduck/hub/hub-registration/security/blackduck_system.key",
+				},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,

@@ -55,9 +55,17 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 		PortConfig: &horizonapi.PortConfig{ContainerPort: scannerPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
-	if c.hubSpec.Healthchecks {
+	if c.hubSpec.LivenessProbes {
 		hubScanContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/api/health-checks/liveness", "/opt/blackduck/hub/hub-scan/security/root.crt"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Command: []string{
+					"/usr/local/bin/docker-healthcheck.sh",
+					"https://127.0.0.1:8443/api/health-checks/liveness",
+					"/opt/blackduck/hub/hub-scan/security/root.crt",
+					"/opt/blackduck/hub/hub-scan/security/blackduck_system.crt",
+					"/opt/blackduck/hub/hub-scan/security/blackduck_system.key",
+				},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,
