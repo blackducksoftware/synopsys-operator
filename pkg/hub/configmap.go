@@ -22,6 +22,7 @@ under the License.
 package hub
 
 import (
+	"strconv"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -60,12 +61,22 @@ func (hc *Creater) createHubConfig(createHub *v2.HubSpec, hubContainerFlavor *co
 	configMaps["hub-config"] = hubConfig
 
 	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-db-config"})
-	hubDbConfig.AddData(map[string]string{
-		"HUB_POSTGRES_ADMIN": "blackduck",
-		"HUB_POSTGRES_USER":  "blackduck_user",
-		"HUB_POSTGRES_PORT":  "5432",
-		"HUB_POSTGRES_HOST":  "postgres",
-	})
+
+	if createHub.ExternalPostgres != (v2.PostgresExternalDBConfig{}) {
+		hubDbConfig.AddData(map[string]string{
+			"HUB_POSTGRES_ADMIN": createHub.ExternalPostgres.PostgresAdmin,
+			"HUB_POSTGRES_USER":  createHub.ExternalPostgres.PostgresUser,
+			"HUB_POSTGRES_PORT":  strconv.Itoa(createHub.ExternalPostgres.PostgresPort),
+			"HUB_POSTGRES_HOST":  createHub.ExternalPostgres.PostgresHost,
+		})
+	} else {
+		hubDbConfig.AddData(map[string]string{
+			"HUB_POSTGRES_ADMIN": "blackduck",
+			"HUB_POSTGRES_USER":  "blackduck_user",
+			"HUB_POSTGRES_PORT":  "5432",
+			"HUB_POSTGRES_HOST":  "postgres",
+		})
+	}
 
 	configMaps["hub-db-config"] = hubDbConfig
 
@@ -79,7 +90,11 @@ func (hc *Creater) createHubConfig(createHub *v2.HubSpec, hubContainerFlavor *co
 	configMaps["hub-config-resources"] = hubConfigResources
 
 	hubDbConfigGranular := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-db-config-granular"})
-	hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
+	if createHub.ExternalPostgres != (v2.PostgresExternalDBConfig{}) {
+		hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": strconv.FormatBool(createHub.ExternalPostgres.PostgresSsl)})
+	} else {
+		hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
+	}
 
 	configMaps["hub-db-config-granular"] = hubDbConfigGranular
 

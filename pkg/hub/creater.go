@@ -153,26 +153,28 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 	}
 	// time.Sleep(20 * time.Second)
 
-	// Validate postgres pod is cloned/backed up
-	err = util.WaitForServiceEndpointReady(hc.KubeClient, createHub.Namespace, "postgres")
-	if err != nil {
-		return "", "", true, err
-	}
+	if createHub.ExternalPostgres == (v2.PostgresExternalDBConfig{}) {
+		// Validate postgres pod is cloned/backed up
+		err = util.WaitForServiceEndpointReady(hc.KubeClient, createHub.Namespace, "postgres")
+		if err != nil {
+			return "", "", true, err
+		}
 
-	if len(createHub.DbPrototype) == 0 {
-		err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
-		if err != nil {
-			log.Errorf("%v: error: %+v", createHub.Namespace, err)
-			return "", "", true, fmt.Errorf("%v: error: %+v", createHub.Namespace, err)
-		}
-	} else {
-		_, fromPw, err := hubutils.GetHubDBPassword(hc.KubeClient, createHub.DbPrototype)
-		if err != nil {
-			return "", "", true, err
-		}
-		err = hubutils.CloneJob(hc.KubeClient, hc.Config.Namespace, createHub.DbPrototype, createHub.Namespace, fromPw)
-		if err != nil {
-			return "", "", true, err
+		if len(createHub.DbPrototype) == 0 {
+			err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
+			if err != nil {
+				log.Errorf("%v: error: %+v", createHub.Namespace, err)
+				return "", "", true, fmt.Errorf("%v: error: %+v", createHub.Namespace, err)
+			}
+		} else {
+			_, fromPw, err := hubutils.GetHubDBPassword(hc.KubeClient, createHub.DbPrototype)
+			if err != nil {
+				return "", "", true, err
+			}
+			err = hubutils.CloneJob(hc.KubeClient, hc.Config.Namespace, createHub.DbPrototype, createHub.Namespace, fromPw)
+			if err != nil {
+				return "", "", true, err
+			}
 		}
 	}
 
@@ -201,7 +203,7 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 
 	// Retrieve the PVC volume name
 	pvcVolumeName := ""
-	if createHub.PersistentStorage {
+	if createHub.PersistentStorage && createHub.ExternalPostgres == (v2.PostgresExternalDBConfig{}) {
 		pvcVolumeName, err = hc.getPVCVolumeName(createHub.Namespace, "blackduck-postgres")
 		if err != nil {
 			return "", "", false, err

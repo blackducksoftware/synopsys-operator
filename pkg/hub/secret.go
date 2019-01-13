@@ -36,7 +36,12 @@ import (
 func (hc *Creater) createHubSecrets(createHub *v2.HubSpec, adminPassword string, userPassword string) []*components.Secret {
 	var secrets []*components.Secret
 	hubSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: createHub.Namespace, Name: "db-creds", Type: horizonapi.SecretTypeOpaque})
-	hubSecret.AddStringData(map[string]string{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": adminPassword, "HUB_POSTGRES_USER_PASSWORD_FILE": userPassword})
+
+	if createHub.ExternalPostgres != (v2.PostgresExternalDBConfig{}) {
+		hubSecret.AddStringData(map[string]string{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": createHub.ExternalPostgres.PostgresAdminPassword, "HUB_POSTGRES_USER_PASSWORD_FILE": createHub.ExternalPostgres.PostgresUserPassword})
+	} else {
+		hubSecret.AddStringData(map[string]string{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": adminPassword, "HUB_POSTGRES_USER_PASSWORD_FILE": userPassword})
+	}
 	secrets = append(secrets, hubSecret)
 
 	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: createHub.Namespace, Name: "blackduck-certificate", Type: horizonapi.SecretTypeOpaque})

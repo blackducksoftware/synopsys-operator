@@ -61,34 +61,37 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v2.HubSpec, hubCo
 		deployer.AddConfigMap(configMap)
 	}
 
-	if createHub.PersistentStorage {
-		// Postgres PVC
-		size := "150Gi"
-		storageClass := createHub.PVCStorageClass
+	// We only start the postgres container if the external DB configuration struct is empty
+	if createHub.ExternalPostgres == (v2.PostgresExternalDBConfig{}) {
+		if createHub.PersistentStorage {
+			// Postgres PVC
+			size := "150Gi"
+			storageClass := createHub.PVCStorageClass
 
-		for _, claim := range createHub.PVC {
-			if claim.Name == "blackduck-postgres" {
-				if len(claim.Size) > 0 {
-					size = claim.Size
+			for _, claim := range createHub.PVC {
+				if claim.Name == "blackduck-postgres" {
+					if len(claim.Size) > 0 {
+						size = claim.Size
+					}
+					if len(claim.StorageClass) > 0 {
+						storageClass = claim.StorageClass
+					}
+					break
 				}
-				if len(claim.StorageClass) > 0 {
-					storageClass = claim.StorageClass
-				}
-				break
 			}
+
+			postgresPVC, err := util.CreatePersistentVolumeClaim("blackduck-postgres", createHub.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
+			if err != nil {
+				return fmt.Errorf("failed to create the postgres PVC for %s because %+v", createHub.Namespace, err)
+			}
+			deployer.AddPVC(postgresPVC)
 		}
 
-		postgresPVC, err := util.CreatePersistentVolumeClaim("blackduck-postgres", createHub.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
-		if err != nil {
-			return fmt.Errorf("failed to create the postgres PVC for %s because %+v", createHub.Namespace, err)
-		}
-		deployer.AddPVC(postgresPVC)
+		containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil)
+
+		deployer.AddReplicationController(containerCreater.GetPostgresDeployment())
+		deployer.AddService(containerCreater.GetPostgresService())
+		// deployer.AddService(util.CreateService("postgres-exposed", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeLoadBalancer))
 	}
-
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil)
-
-	deployer.AddReplicationController(containerCreater.GetPostgresDeployment())
-	deployer.AddService(containerCreater.GetPostgresService())
-	// deployer.AddService(util.CreateService("postgres-exposed", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeLoadBalancer))
 	return nil
 }

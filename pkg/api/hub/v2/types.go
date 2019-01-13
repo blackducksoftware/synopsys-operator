@@ -49,23 +49,24 @@ type HubView struct {
 
 // HubSpec will be CRD Hub definition's Spec
 type HubSpec struct {
-	Namespace         string           `json:"namespace"`
-	Size              string           `json:"size"`
-	DbPrototype       string           `json:"dbPrototype,omitempty"`
-	PVCStorageClass   string           `json:"pvcStorageClass,omitempty"`
-	LivenessProbes    bool             `json:"livenessProbes"`
-	ScanType          string           `json:"scanType,omitempty"`
-	PersistentStorage bool             `json:"persistentStorage"`
-	PVC               []PVC            `json:"pvc,omitempty"`
-	CertificateName   string           `json:"certificateName"`
-	Certificate       string           `json:"certificate,omitempty"`
-	CertificateKey    string           `json:"certificateKey,omitempty"`
-	ProxyCertificate  string           `json:"proxyCertificate,omitempty"`
-	HubType           string           `json:"hubType,omitempty"`
-	State             string           `json:"state"`
-	Environs          []string         `json:"environs,omitempty"`
-	ImageRegistries   []string         `json:"imageRegistries,omitempty"`
-	ImageUIDMap       map[string]int64 `json:"imageUidMap,omitempty"`
+	Namespace         string                   `json:"namespace"`
+	Size              string                   `json:"size"`
+	DbPrototype       string                   `json:"dbPrototype,omitempty"`
+	ExternalPostgres  PostgresExternalDBConfig `json:"externalPostgres"`
+	PVCStorageClass   string                   `json:"pvcStorageClass,omitempty"`
+	LivenessProbes    bool                     `json:"livenessProbes"`
+	ScanType          string                   `json:"scanType,omitempty"`
+	PersistentStorage bool                     `json:"persistentStorage"`
+	PVC               []PVC                    `json:"pvc,omitempty"`
+	CertificateName   string                   `json:"certificateName"`
+	Certificate       string                   `json:"certificate,omitempty"`
+	CertificateKey    string                   `json:"certificateKey,omitempty"`
+	ProxyCertificate  string                   `json:"proxyCertificate,omitempty"`
+	HubType           string                   `json:"hubType,omitempty"`
+	State             string                   `json:"state"`
+	Environs          []string                 `json:"environs,omitempty"`
+	ImageRegistries   []string                 `json:"imageRegistries,omitempty"`
+	ImageUIDMap       map[string]int64         `json:"imageUidMap,omitempty"`
 }
 
 // Environs will hold the list of Environment variables
@@ -80,6 +81,17 @@ type PVC struct {
 	Name         string `json:"name"`
 	Size         string `json:"size,omitempty"`
 	StorageClass string `json:"storageClass,omitempty"`
+}
+
+// PostgresExternalDBConfig contain the external database configuration
+type PostgresExternalDBConfig struct {
+	PostgresHost          string `json:"postgresHost"`
+	PostgresPort          int    `json:"postgresPort"`
+	PostgresAdmin         string `json:"postgresAdmin"`
+	PostgresUser          string `json:"postgresUser"`
+	PostgresSsl           bool   `json:"postgresSsl"`
+	PostgresAdminPassword string `json:"postgresAdminPassword"`
+	PostgresUserPassword  string `json:"postgresUserPassword"`
 }
 
 // HubStatus will be CRD Hub definition's Status
