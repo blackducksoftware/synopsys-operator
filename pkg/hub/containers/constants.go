@@ -22,10 +22,8 @@ under the License.
 package containers
 
 const (
-	gcloudAuthFilePath = "/var/secrets/google/key.json"
-
 	// SHARED VALUES
-	cfsslMemoryLimit           = "1G"
+	cfsslMemoryLimit           = "640M"
 	logstashMemoryLimit        = "1G"
 	registrationMemoryLimit    = "640M"
 	zookeeperMemoryLimit       = "640M"
@@ -53,24 +51,24 @@ const (
 	postgresPort       = "5432"
 
 	// Small Flavor
-	smallWebServerMemoryLimit = "1024M"
+	smallWebServerMemoryLimit = "512M"
 
-	smallSolrMemoryLimit = "1024M"
+	smallSolrMemoryLimit = "640M"
 
-	smallWebappCPULimit     = "2"
-	smallWebappMemoryLimit  = "5120M"
-	smallWebappHubMaxMemory = "4096m"
+	smallWebappCPULimit     = "1"
+	smallWebappMemoryLimit  = "2560M"
+	smallWebappHubMaxMemory = "2048m"
 
 	smallScanReplicas     = 1
-	smallScanMemoryLimit  = "5120M"
-	smallScanHubMaxMemory = "4096m"
+	smallScanMemoryLimit  = "2560M"
+	smallScanHubMaxMemory = "2048m"
 
 	smallJobRunnerReplicas     = 1
-	smallJobRunnerMemoryLimit  = "7168M"
-	smallJobRunnerHubMaxMemory = "6144m"
+	smallJobRunnerMemoryLimit  = "4608M"
+	smallJobRunnerHubMaxMemory = "4096m"
 
 	smallPostgresCPULimit    = "1"
-	smallPostgresMemoryLimit = "4096M"
+	smallPostgresMemoryLimit = "3072M"
 
 	// Medium Flavor
 	mediumWebServerMemoryLimit = "2048M"
