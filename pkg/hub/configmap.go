@@ -92,6 +92,9 @@ func (hc *Creater) createHubConfig(createHub *v2.HubSpec, hubContainerFlavor *co
 	hubDbConfigGranular := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-db-config-granular"})
 	if createHub.ExternalPostgres != (v2.PostgresExternalDBConfig{}) {
 		hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": strconv.FormatBool(createHub.ExternalPostgres.PostgresSsl)})
+		if createHub.ExternalPostgres.PostgresSsl {
+			hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL_CERT_AUTH": "false"})
+		}
 	} else {
 		hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 	}
