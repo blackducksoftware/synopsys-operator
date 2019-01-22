@@ -88,6 +88,8 @@ func (v HubsResource) New(c buffalo.Context) error {
 			Size: "150Gi",
 		},
 	}
+
+	// Required so that the UI can update the fields
 	blackduck.Spec.ExternalPostgres = &v2.PostgresExternalDBConfig{}
 	err := v.common(c, blackduck)
 	if err != nil {
@@ -213,6 +215,11 @@ func (v HubsResource) Create(c buffalo.Context) error {
 	}
 	log.Infof("created namespace for %s is %+v", hub.Spec.Namespace, ns)
 
+	// Change back to nil if the configuration is empty
+	if *hub.Spec.ExternalPostgres == (v2.PostgresExternalDBConfig{}) {
+		log.Info("External Database configuration is empty")
+		hub.Spec.ExternalPostgres = nil
+	}
 	_, err = util.CreateHub(v.hubClient, hub.Spec.Namespace, &v2.Hub{ObjectMeta: metav1.ObjectMeta{Name: hub.Spec.Namespace}, Spec: hub.Spec})
 
 	if err != nil {
