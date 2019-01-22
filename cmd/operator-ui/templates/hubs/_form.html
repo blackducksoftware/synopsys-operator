@@ -1,172 +1,192 @@
 <body onload="formLoad()" onsubmit="return validateAndGetValues()">
-  <div class="new-container">
-    <%= f.InputTag("Spec.Namespace", {value: hub.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
-    <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: hub.Spec.Size, label: "Size"}) %>
-    <%= f.CheckboxTag("Spec.LivenessProbes", {value: hub.Spec.LivenessProbes, label: "Liveness Probes"}) %>
-    <%= f.CheckboxTag("Spec.PersistentStorage", {value: hub.Spec.PersistentStorage, label: "Persistent Storage", onchange: "checkPVC()"}) %>
-    <%= f.SelectTag("Spec.DbPrototype", {options: hub.View.Clones, value: hub.Spec.DbPrototype, label: "Clone DB"}) %>
-    <div id="pvcId">
-      <%= f.SelectTag("Spec.PVCStorageClass", {value: hub.Spec.PVCStorageClass, label: "PVC Storage Class", options: hub.View.StorageClasses}) %>
-      <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: hub.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
-        <%= for (index, claim) in  hub.Spec.PVC { %>
-        <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
-        <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: claim.Name, value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
-        <% } %>
-    </div>
-    <%= f.SelectTag("Spec.CertificateName", {value: hub.Spec.CertificateName, options: hub.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
-    <div id="certificateId">
-      <%= f.TextAreaTag("Spec.Certificate", {value: hub.Spec.Certificate, label: "Certificate"}) %>
-      <%= f.TextAreaTag("Spec.CertificateKey", {value: hub.Spec.CertificateKey, label: "Certificate Key"}) %>
-    </div>
-    <%= f.TextAreaTag("Spec.ProxyCertificate", {value: hub.Spec.ProxyCertificate, label: "Proxy Root Certificate"}) %>
-    <label>Container Image Tags</label>
-    <ul id="containerTags" name="containerTags" contenteditable="true">
-      <%= for (containerTag) in  hub.View.ContainerTags { %>
-        <li value="<%= containerTag %>"><%= containerTag %></li>
-      <% } %>
-    </ul>
-    <label>Environment Variables</label>
-    <ul id="environs" name="environs" contenteditable="true">
-      <%= for (environ) in  hub.View.Environs { %>
-        <li value="<%= environ %>"><%= environ %></li>
-      <% } %>
-    </ul>
-    <select id="hub-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
-    <select id="hub-Spec.ImageRegistries" name="Spec.ImageRegistries" multiple="multiple" hidden></select>
-    <center>
-      <a href="<%= hubsPath() %>" class="btn btn-info">Cancel</a>
-      <button class="btn btn-success" role="submit">Create</button>
-      <a href="" class="btn btn-warning" data-confirm="Are you sure?">Clear</a>
-    </center>
-    <br/>
-    <br/>
+<div class="new-container">
+  <%= f.InputTag("Spec.Namespace", {value: hub.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
+  <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: hub.Spec.Size, label: "Size"}) %>
+  <%= f.CheckboxTag("Spec.LivenessProbes", {value: hub.Spec.LivenessProbes, label: "Liveness Probes"}) %>
+  <%= f.CheckboxTag("Spec.PersistentStorage", {value: hub.Spec.PersistentStorage, label: "Persistent Storage", onchange: "checkPVC()"}) %>
+  <%= f.SelectTag("Spec.DbPrototype", {options: hub.View.Clones, value: hub.Spec.DbPrototype, label: "Clone DB"}) %>
+  <div id="pvcId">
+    <%= f.SelectTag("Spec.PVCStorageClass", {value: hub.Spec.PVCStorageClass, label: "PVC Storage Class", options: hub.View.StorageClasses}) %>
+    <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: hub.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
+    <%= for (index, claim) in  hub.Spec.PVC { %>
+    <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
+    <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: claim.Name, value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+    <% } %>
   </div>
+  <%= f.CheckboxTag("externalDbCheckbox", {label: "External Database", onchange: "toggleDbCheckbox(this)"}) %>
+  <div id="externalDbId">
+    <%= f.InputTag("Spec.ExternalPostgres.PostgresHost", {value: hub.Spec.ExternalPostgres.PostgresHost, label: "PostgreSQL Host"}) %>
+    <%= f.InputTag("Spec.ExternalPostgres.PostgresPort", {value: hub.Spec.ExternalPostgres.PostgresPort, label: "PostgreSQL Port"}) %>
+    <%= f.InputTag("Spec.ExternalPostgres.PostgresAdmin", {value: hub.Spec.ExternalPostgres.PostgresAdmin, label: "PostgreSQL Admin User", placeholder: "blackduck"}) %>
+    <%= f.InputTag("Spec.ExternalPostgres.PostgresAdminPassword", {value: hub.Spec.ExternalPostgres.PostgresAdminPassword, label: "PostgreSQL Admin Password"}) %>
+    <%= f.InputTag("Spec.ExternalPostgres.PostgresUser", {value: hub.Spec.ExternalPostgres.PostgresUser, label: "PostgreSQL User", placeholder: "blackduck_user"}) %>
+    <%= f.InputTag("Spec.ExternalPostgres.PostgresUserPassword", {value: hub.Spec.ExternalPostgres.PostgresUserPassword, label: "PostgreSQL User Password"}) %>
+    <%= f.CheckboxTag("Spec.ExternalPostgres.PostgresSsl", {value: hub.Spec.ExternalPostgres.PostgresSsl, label: "Enable SSL"}) %>
+  </div>
+  <%= f.SelectTag("Spec.CertificateName", {value: hub.Spec.CertificateName, options: hub.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
+  <div id="certificateId">
+    <%= f.TextAreaTag("Spec.Certificate", {value: hub.Spec.Certificate, label: "Certificate"}) %>
+    <%= f.TextAreaTag("Spec.CertificateKey", {value: hub.Spec.CertificateKey, label: "Certificate Key"}) %>
+  </div>
+  <%= f.TextAreaTag("Spec.ProxyCertificate", {value: hub.Spec.ProxyCertificate, label: "Proxy Root Certificate"}) %>
+  <label>Container Image Tags</label>
+  <ul id="containerTags" name="containerTags" contenteditable="true">
+    <%= for (containerTag) in  hub.View.ContainerTags { %>
+    <li value="<%= containerTag %>"><%= containerTag %></li>
+    <% } %>
+  </ul>
+  <label>Environment Variables</label>
+  <ul id="environs" name="environs" contenteditable="true">
+    <%= for (environ) in  hub.View.Environs { %>
+    <li value="<%= environ %>"><%= environ %></li>
+    <% } %>
+  </ul>
+  <select id="hub-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
+  <select id="hub-Spec.ImageRegistries" name="Spec.ImageRegistries" multiple="multiple" hidden></select>
+  <center>
+    <a href="<%= hubsPath() %>" class="btn btn-info">Cancel</a>
+    <button class="btn btn-success" role="submit">Create</button>
+    <a href="" class="btn btn-warning" data-confirm="Are you sure?">Clear</a>
+  </center>
+  <br/>
+  <br/>
+</div>
 </body>
 
 <style>
   ul {
-	position: relative;
-	outline: 0;
+    position: relative;
+    outline: 0;
   }
 
   ul li {
-	position: relative;
-	padding: 20px 10px 20px 40px;
-	background: transparent;
-	box-shadow: 0 1px #EEE;
+    position: relative;
+    padding: 20px 10px 20px 40px;
+    background: transparent;
+    box-shadow: 0 1px #EEE;
   }
 
   ul li:before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 15px;
-	bottom: 0;
-	width: 10px;
-	height: 10px;
-	margin: auto;
-	border-radius: 100%;
-	background: #fff;
-	display: block;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 15px;
+    bottom: 0;
+    width: 10px;
+    height: 10px;
+    margin: auto;
+    border-radius: 100%;
+    background: #fff;
+    display: block;
   }
 
   ul li:hover {
-	background: #FAFAFA;
+    background: #FAFAFA;
   }
 </style>
 
 <script>
-// check during form load
-function formLoad() {
-  checkNginxCertificate();
-  checkScanType();
-  // if (document.getElementById("hub-Status.ErrorMessage").value.length > 0) {
-  //   document.getElementById("hub-Status.ErrorMessage").hidden = false;
-  // }
-}
-
-// set empty certificate values if the certificate is not manual
-function certificateEmptyValue() {
-  document.getElementById("hub-Spec.Certificate").value = "";
-  document.getElementById("hub-Spec.CertificateKey").value = "";
-}
-
-// check the nginx certificate name, if manual display certificate and certificate key
-function checkNginxCertificate(){
-  certificateId=document.getElementById("certificateId");
-  certificate=document.getElementById("hub-Spec.Certificate");
-  certificateKey=document.getElementById("hub-Spec.CertificateKey");
-  if (document.getElementById("hub-Spec.CertificateName").value == "manual") {
-    certificateId.style.display = '';
-    certificate.style.display = '';
-    certificateKey.style.display = '';
-  } else {
-    certificateId.style.display = 'none';
-    certificate.style.display = 'none';
-    certificateKey.style.display = 'none';
+  // check during form load
+  function formLoad() {
+    checkNginxCertificate();
+    checkScanType();
+    document.getElementById("externalDbId").style.display= 'none';
+    // if (document.getElementById("hub-Status.ErrorMessage").value.length > 0) {
+    //   document.getElementById("hub-Status.ErrorMessage").hidden = false;
+    // }
   }
-  certificateEmptyValue();
-}
 
-// set default pvc values
-function pvcDefaultValue() {
-  document.getElementById("hub-Spec.PVCStorageClass").value = "";
-  document.getElementById("hub-Spec.ScanType").value = "Artifacts";
-}
+  // set empty certificate values if the certificate is not manual
+  function certificateEmptyValue() {
+    document.getElementById("hub-Spec.Certificate").value = "";
+    document.getElementById("hub-Spec.CertificateKey").value = "";
+  }
 
-// set empty pvc values if clone or backup is not supported
-function pvcEmptyValue() {
-  document.getElementById("hub-Spec.PVCStorageClass").value = "";
-  document.getElementById("hub-Spec.ScanType").value = "";
-}
+  // check the nginx certificate name, if manual display certificate and certificate key
+  function checkNginxCertificate(){
+    certificateId=document.getElementById("certificateId");
+    certificate=document.getElementById("hub-Spec.Certificate");
+    certificateKey=document.getElementById("hub-Spec.CertificateKey");
+    if (document.getElementById("hub-Spec.CertificateName").value == "manual") {
+      certificateId.style.display = '';
+      certificate.style.display = '';
+      certificateKey.style.display = '';
+    } else {
+      certificateId.style.display = 'none';
+      certificate.style.display = 'none';
+      certificateKey.style.display = 'none';
+    }
+    certificateEmptyValue();
+  }
 
-// check the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
-function checkPVC() {
-  pvcId=document.getElementById("pvcId")
-  if (document.getElementById("hub-Spec.PersistentStorage").checked == true) {
+  // set default pvc values
+  function pvcDefaultValue() {
+    document.getElementById("hub-Spec.PVCStorageClass").value = "";
+    document.getElementById("hub-Spec.ScanType").value = "Artifacts";
+  }
+
+  // set empty pvc values if clone or backup is not supported
+  function pvcEmptyValue() {
+    document.getElementById("hub-Spec.PVCStorageClass").value = "";
+    document.getElementById("hub-Spec.ScanType").value = "";
+  }
+
+  // check the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
+  function checkPVC() {
+    pvcId=document.getElementById("pvcId")
+    if (document.getElementById("hub-Spec.PersistentStorage").checked == true) {
       pvcId.style.display = '';
       pvcDefaultValue();
-  } else {
+    } else {
       pvcId.style.display = 'none';
       pvcEmptyValue();
-  }
-}
-
-// based on the scan type value, populate the default pvc claim size values
-function checkScanType() {
-    if (document.getElementById("hub-Spec.ScanType").value == "Custom") {
-        document.getElementById("blackduck-postgres").value = "10Gi"
-    } else if (document.getElementById("hub-Spec.ScanType").value == "Images") {
-        document.getElementById("blackduck-postgres").value = "1000Gi"
-    } else {
-        document.getElementById("blackduck-postgres").value = "20Gi"
     }
-}
+  }
 
-// add or update environs and update the spec
-function validateAndGetValues() {
-  var environsList = document.getElementById("environs");
-  var environsItems = environsList.getElementsByTagName('li');
-  var environs = document.getElementById("hub-Spec.Environs")
-  for (var i = 0; i < environsItems.length; i++) {
-    var data = environsItems[i].firstChild.data;
-    var opt = document.createElement('option');
-    opt.text = data;
-    opt.value = data;
-    opt.setAttribute("selected", "selected");
-    environs.add(opt);
-  };
+  // based on the scan type value, populate the default pvc claim size values
+  function checkScanType() {
+    if (document.getElementById("hub-Spec.ScanType").value == "Custom") {
+      document.getElementById("blackduck-postgres").value = "10Gi"
+    } else if (document.getElementById("hub-Spec.ScanType").value == "Images") {
+      document.getElementById("blackduck-postgres").value = "1000Gi"
+    } else {
+      document.getElementById("blackduck-postgres").value = "20Gi"
+    }
+  }
 
-  var containersList = document.getElementById("containerTags");
-  var containerItems = containersList.getElementsByTagName('li');
-  var containerTags = document.getElementById("hub-Spec.ImageRegistries")
-  for (var i = 0; i < containerItems.length; i++) {
-    var data = containerItems[i].firstChild.data;
-    var opt = document.createElement('option');
-    opt.text = data;
-    opt.value = data;
-    opt.setAttribute("selected", "selected");
-    containerTags.add(opt);
-  };
-}
+  // add or update environs and update the spec
+  function validateAndGetValues() {
+    var environsList = document.getElementById("environs");
+    var environsItems = environsList.getElementsByTagName('li');
+    var environs = document.getElementById("hub-Spec.Environs")
+    for (var i = 0; i < environsItems.length; i++) {
+      var data = environsItems[i].firstChild.data;
+      var opt = document.createElement('option');
+      opt.text = data;
+      opt.value = data;
+      opt.setAttribute("selected", "selected");
+      environs.add(opt);
+    };
+
+    var containersList = document.getElementById("containerTags");
+    var containerItems = containersList.getElementsByTagName('li');
+    var containerTags = document.getElementById("hub-Spec.ImageRegistries")
+    for (var i = 0; i < containerItems.length; i++) {
+      var data = containerItems[i].firstChild.data;
+      var opt = document.createElement('option');
+      opt.text = data;
+      opt.value = data;
+      opt.setAttribute("selected", "selected");
+      containerTags.add(opt);
+    };
+  }
+
+  function toggleDbCheckbox(element) {
+    externalDbId=document.getElementById("externalDbId");
+    if (element.checked) {
+      externalDbId.style.display = '';
+    } else {
+      externalDbId.style.display = 'none';
+    }
+  }
 </script>

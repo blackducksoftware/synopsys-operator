@@ -49,8 +49,8 @@
   source = "https://github.com/jayunit100/horizon"
 
 [[projects]]
-  branch = "jd-healthchecks"
-  digest = "1:85128f6810a429785c8c4beeada745bc307f97dd758aec768ed1a4634ae7d122"
+  branch = "master"
+  digest = "1:eca346aa540029208334db9189f94f99e2e659a94e1ed76783db6c49d9009a64"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
@@ -75,7 +75,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "6573d8289a791ea9db926f7fe8d2ac739633393e"
+  revision = "7a2533274a8d899a097dc30de731b3747ac03d0b"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
