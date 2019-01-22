@@ -88,6 +88,7 @@ func (v HubsResource) New(c buffalo.Context) error {
 			Size: "150Gi",
 		},
 	}
+	blackduck.Spec.ExternalPostgres = &v2.PostgresExternalDBConfig{}
 	err := v.common(c, blackduck)
 	if err != nil {
 		return err
