@@ -62,7 +62,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v2.HubSpec, hubCo
 	}
 
 	// We only start the postgres container if the external DB configuration struct is empty
-	if createHub.ExternalPostgres == (v2.PostgresExternalDBConfig{}) {
+	if createHub.ExternalPostgres == nil {
 		if createHub.PersistentStorage {
 			// Postgres PVC
 			size := "150Gi"

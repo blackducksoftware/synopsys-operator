@@ -153,7 +153,7 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 	}
 	// time.Sleep(20 * time.Second)
 
-	if createHub.ExternalPostgres == (v2.PostgresExternalDBConfig{}) {
+	if createHub.ExternalPostgres == nil {
 		// Validate postgres pod is cloned/backed up
 		err = util.WaitForServiceEndpointReady(hc.KubeClient, createHub.Namespace, "postgres")
 		if err != nil {
@@ -203,7 +203,7 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 
 	// Retrieve the PVC volume name
 	pvcVolumeName := ""
-	if createHub.PersistentStorage && createHub.ExternalPostgres == (v2.PostgresExternalDBConfig{}) {
+	if createHub.PersistentStorage && createHub.ExternalPostgres == nil {
 		pvcVolumeName, err = hc.getPVCVolumeName(createHub.Namespace, "blackduck-postgres")
 		if err != nil {
 			return "", "", false, err

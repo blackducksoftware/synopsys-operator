@@ -104,7 +104,7 @@ func (i *InitDatabaseUpdater) addHub(obj interface{}) {
 		return
 	}
 	// Only if the we don't use persistent storage and that we don't use an external database
-	if !hub.Spec.PersistentStorage && hub.Spec.ExternalPostgres == (hubv2.PostgresExternalDBConfig{}) {
+	if !hub.Spec.PersistentStorage && hub.Spec.ExternalPostgres == nil {
 		for j := 0; j < 20; j++ {
 			hub, err := util.GetHub(i.HubClient, i.Config.Namespace, hub.Name)
 			if err != nil {
