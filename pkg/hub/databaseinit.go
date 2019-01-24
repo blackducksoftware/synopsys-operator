@@ -42,7 +42,6 @@ func InitDatabase(createHub *v2.HubSpec, adminPassword string, userPassword stri
 		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
 	}
 	execPostGresDBStatements(postgresDB, adminPassword, userPassword)
-	postgresDB.Close()
 
 	databaseName = "bds_hub"
 	bdsHubDB, err := OpenDatabaseConnection(hostName, databaseName, "postgres", postgresPassword, "postgres")
@@ -70,6 +69,10 @@ func InitDatabase(createHub *v2.HubSpec, adminPassword string, userPassword stri
 	}
 	execBdioDBStatements(bdioDB)
 	bdioDB.Close()
+
+	execSystemDBStatements(postgresDB)
+	postgresDB.Close()
+
 	return nil
 }
 
@@ -168,6 +171,40 @@ func execBdioDBStatements(db *sql.DB) {
 	// exec(db, "ALTER DATABASE bdio SET tcp_keepalives_idle TO 600;")
 	// exec(db, "ALTER DATABASE bdio SET tcp_keepalives_interval TO 30;")
 	// exec(db, "ALTER DATABASE bdio SET tcp_keepalives_count TO 10;")
+	// db.Close()
+}
+
+func execSystemDBStatements(db *sql.DB) {
+	exec(db, "ALTER SYSTEM SET autovacuum TO 'on';")
+	exec(db, "ALTER SYSTEM SET autovacuum_max_workers TO '20';")
+	exec(db, "ALTER SYSTEM SET autovacuum_vacuum_cost_limit TO '2000';")
+	exec(db, "ALTER SYSTEM SET autovacuum_vacuum_cost_delay TO '10ms';")
+	exec(db, "ALTER SYSTEM SET checkpoint_completion_target TO '0.8';")
+	exec(db, "ALTER SYSTEM SET checkpoint_segments TO '256';")
+	exec(db, "ALTER SYSTEM SET checkpoint_timeout TO '30min';")
+	exec(db, "ALTER SYSTEM SET constraint_exclusion TO 'partition';")
+	exec(db, "ALTER SYSTEM SET default_statistics_target TO '100';")
+	exec(db, "ALTER SYSTEM SET effective_cache_size TO '256MB';")
+	exec(db, "ALTER SYSTEM SET escape_string_warning TO 'off';")
+	exec(db, "ALTER SYSTEM SET log_destination TO 'stderr';")
+	exec(db, "ALTER SYSTEM SET log_directory TO 'pg_log';")
+	exec(db, "ALTER SYSTEM SET log_filename TO 'postgresql_%a.log';")
+	exec(db, "ALTER SYSTEM SET log_line_prefix TO '%m %p ';")
+	exec(db, "ALTER SYSTEM SET log_rotation_age TO '1440';")
+	exec(db, "ALTER SYSTEM SET log_truncate_on_rotation TO 'on';")
+	exec(db, "ALTER SYSTEM SET logging_collector TO 'on';")
+	exec(db, "ALTER SYSTEM SET maintenance_work_mem TO '32MB';")
+	exec(db, "ALTER SYSTEM SET max_connections TO '300';")
+	exec(db, "ALTER SYSTEM SET max_locks_per_transaction TO '256';")
+	exec(db, "ALTER SYSTEM SET random_page_cost TO '4.0';")
+	exec(db, "ALTER SYSTEM SET shared_buffers TO '1024MB';")
+	exec(db, "ALTER SYSTEM SET ssl TO 'on';")
+	exec(db, "ALTER SYSTEM SET ssl_ca_file TO 'root.crt';")
+	exec(db, "ALTER SYSTEM SET ssl_cert_file TO 'hub-database.crt';")
+	exec(db, "ALTER SYSTEM SET ssl_key_file TO 'hub-database.key';")
+	exec(db, "ALTER SYSTEM SET standard_conforming_strings TO 'off';")
+	exec(db, "ALTER SYSTEM SET temp_buffers TO '16MB';")
+	exec(db, "ALTER SYSTEM SET work_mem TO '32MB';")
 	// db.Close()
 }
 
