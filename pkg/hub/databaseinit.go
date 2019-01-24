@@ -128,9 +128,9 @@ func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword str
 	}
 	exec(db, fmt.Sprintf("ALTER USER blackduck WITH password '%s';", adminPassword))
 	exec(db, "GRANT blackduck TO postgres;")
-	exec(db, "CREATE DATABASE bds_hub owner blackduck ENCODING SQL_ASCII;")
-	exec(db, "CREATE DATABASE bds_hub_report owner blackduck ENCODING SQL_ASCII;")
-	exec(db, "CREATE DATABASE bdio owner blackduck ENCODING SQL_ASCII;")
+	exec(db, "CREATE DATABASE bds_hub owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
+	exec(db, "CREATE DATABASE bds_hub_report owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
+	exec(db, "CREATE DATABASE bdio owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
 	exec(db, "CREATE USER blackduck_user;")
 	exec(db, fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", userPassword))
 	exec(db, "CREATE USER blackduck_reporter;")
