@@ -26,8 +26,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
-	// This is required to access the Postgres database
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2" // This is required to access the Postgres database
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
@@ -125,9 +124,9 @@ func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword str
 	}
 	exec(db, fmt.Sprintf("ALTER USER blackduck WITH password '%s';", adminPassword))
 	exec(db, "GRANT blackduck TO postgres;")
-	exec(db, "CREATE DATABASE bds_hub owner blackduck;")
-	exec(db, "CREATE DATABASE bds_hub_report owner blackduck;")
-	exec(db, "CREATE DATABASE bdio owner blackduck;")
+	exec(db, "CREATE DATABASE bds_hub owner blackduck ENCODING SQL_ASCII;")
+	exec(db, "CREATE DATABASE bds_hub_report owner blackduck ENCODING SQL_ASCII;")
+	exec(db, "CREATE DATABASE bdio owner blackduck ENCODING SQL_ASCII;")
 	exec(db, "CREATE USER blackduck_user;")
 	exec(db, fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", userPassword))
 	exec(db, "CREATE USER blackduck_reporter;")
@@ -142,31 +141,32 @@ func execBdsHubDBStatements(db *sql.DB) {
 	exec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA st to blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;")
-	exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_idle TO 600;")
-	exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_interval TO 30;")
-	exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_count TO 10;")
+	// exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_idle TO 600;")
+	// exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_interval TO 30;")
+	// exec(db, "ALTER DATABASE bds_hub SET tcp_keepalives_count TO 10;")
 	// db.Close()
 }
 
 func execBdsHubReportDBStatements(db *sql.DB) {
-	exec(db, "CREATE EXTENSION pgcrypto;")
+	// exec(db, "CREATE EXTENSION pgcrypto;")
 	exec(db, "GRANT SELECT ON ALL TABLES IN SCHEMA public TO blackduck_reporter;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO blackduck_reporter;")
 	exec(db, "GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA public TO blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;")
-	exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_idle TO 600;")
-	exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_interval TO 30;")
-	exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_count TO 10;")
+	// exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_idle TO 600;")
+	// exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_interval TO 30;")
+	// exec(db, "ALTER DATABASE bds_hub_report SET tcp_keepalives_count TO 10;")
 	// db.Close()
 }
 
 func execBdioDBStatements(db *sql.DB) {
-	exec(db, "CREATE EXTENSION pgcrypto;")
+	// exec(db, "CREATE EXTENSION pgcrypto;")
 	exec(db, "GRANT ALL PRIVILEGES ON DATABASE bdio TO blackduck_user;")
-	exec(db, "ALTER DATABASE bdio SET tcp_keepalives_idle TO 600;")
-	exec(db, "ALTER DATABASE bdio SET tcp_keepalives_interval TO 30;")
-	exec(db, "ALTER DATABASE bdio SET tcp_keepalives_count TO 10;")
+	exec(db, "ALTER DATABASE bdio SET standard_conforming_strings TO ON;")
+	// exec(db, "ALTER DATABASE bdio SET tcp_keepalives_idle TO 600;")
+	// exec(db, "ALTER DATABASE bdio SET tcp_keepalives_interval TO 30;")
+	// exec(db, "ALTER DATABASE bdio SET tcp_keepalives_count TO 10;")
 	// db.Close()
 }
 
