@@ -26,7 +26,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2" // This is required to access the Postgres database
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	// This is required to access the Postgres database
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
