@@ -128,6 +128,7 @@ func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword str
 	}
 	exec(db, fmt.Sprintf("ALTER USER blackduck WITH password '%s';", adminPassword))
 	exec(db, "GRANT blackduck TO postgres;")
+	exec(db, "createdb -O owner -E SQL_ASCII -T template0 database;")
 	exec(db, "CREATE DATABASE bds_hub owner blackduck ENCODING SQL_ASCII;")
 	exec(db, "CREATE DATABASE bds_hub_report owner blackduck ENCODING SQL_ASCII;")
 	exec(db, "CREATE DATABASE bdio owner blackduck ENCODING SQL_ASCII;")
