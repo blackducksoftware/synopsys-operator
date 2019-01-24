@@ -179,7 +179,13 @@ func (h *Handler) autoRegisterHub(createHub *hub_v2.HubSpec) error {
 		log.Errorf("unable to filter the registration pod in %s because %+v", createHub.Namespace, err)
 		return err
 	}
-	registrationKey := os.Getenv("REGISTRATION_KEY")
+
+	var registrationKey string
+	if strings.EqualFold(createHub.LicenseKey, "") {
+		registrationKey = os.Getenv("REGISTRATION_KEY")
+	} else {
+		registrationKey = createHub.LicenseKey
+	}
 
 	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
 		for i := 0; i < 20; i++ {
