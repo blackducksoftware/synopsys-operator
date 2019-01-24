@@ -50,7 +50,7 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 	configMap := &MainOpssightConfigMap{
 		LogLevel: config.LogLevel,
 		Hub: HubConfig{
-			Hosts:               []string{},
+			Hosts:               config.Hub.Hosts,
 			PasswordEnvVar:      config.Hub.PasswordEnvVar,
 			ConcurrentScanLimit: config.Hub.ConcurrentScanLimit,
 			Port:                config.Hub.Port,

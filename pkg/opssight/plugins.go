@@ -151,7 +151,7 @@ func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSigh
 		return errors.Trace(err)
 	}
 
-	value.Hub.Hosts = hubs
+	value.Hub.Hosts = util.UniqueValues(append(hubs, value.Hub.Hosts...))
 
 	jsonBytes, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
@@ -251,31 +251,33 @@ func (p *ConfigMapUpdater) getAllHubs(hubType string) []string {
 
 // updateAllHubs will list all hubs in the cluster, and send them to opssight as scan targets.
 // TODO there may be hubs which we dont want opssight to use.  Not sure how to deal with that yet.
-func (p *ConfigMapUpdater) updateAllHubs() error {
+func (p *ConfigMapUpdater) updateAllHubs() []error {
 	// for opssight 3.0, only support one opssight
 	opssights, err := util.GetOpsSights(p.opssightClient)
 	if err != nil {
-		return errors.Annotate(err, "unable to get opssights")
+		return []error{errors.Annotate(err, "unable to get opssights")}
 	}
 
 	if len(opssights.Items) == 0 {
 		return nil
 	}
-	if len(opssights.Items) > 1 {
-		return errors.Errorf("cowardly refusing to update OpsSights: found %d", len(opssights.Items))
-	}
+	// if len(opssights.Items) > 1 {
+	// 	return errors.Errorf("cowardly refusing to update OpsSights: found %d", len(opssights.Items))
+	// }
 
-	o := opssights.Items[0]
-	hubType := o.Spec.Hub.HubSpec.HubType
-
-	allHubNamespaces := p.getAllHubs(hubType)
+	errList := []error{}
 	for _, o := range opssights.Items {
-		err = sendHubs(p.kubeClient, &o.Spec, allHubNamespaces)
-		if err != nil {
-			return errors.Annotate(err, "unable to send hubs")
+		hubType := o.Spec.Hub.HubSpec.HubType
+		allHubNamespaces := p.getAllHubs(hubType)
+
+		for _, o := range opssights.Items {
+			err = sendHubs(p.kubeClient, &o.Spec, allHubNamespaces)
+			if err != nil {
+				errList = append(errList, errors.Annotate(err, "unable to send hubs"))
+			}
 		}
 	}
-	return nil
+	return errList
 }
 
 // updateOpsSight will list all hubs in the cluster, and send them to opssight as scan targets.

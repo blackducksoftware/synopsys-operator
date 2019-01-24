@@ -48,11 +48,12 @@ type RegistryAuth struct {
 
 // Hub ...
 type Hub struct {
-	User                string `json:"user"`
-	Port                int    `json:"port"`
-	ConcurrentScanLimit int    `json:"concurrentScanLimit"`
-	TotalScanLimit      int    `json:"totalScanLimit"`
-	PasswordEnvVar      string `json:"passwordEnvVar"`
+	Hosts               []string `json:"hosts"`
+	User                string   `json:"user"`
+	Port                int      `json:"port"`
+	ConcurrentScanLimit int      `json:"concurrentScanLimit"`
+	TotalScanLimit      int      `json:"totalScanLimit"`
+	PasswordEnvVar      string   `json:"passwordEnvVar"`
 	// Auto scaling parameters
 	InitialCount                 int         `json:"initialCount"`
 	MaxCount                     int         `json:"maxCount"`
