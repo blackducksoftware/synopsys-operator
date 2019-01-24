@@ -8,14 +8,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
-	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/gobuffalo/envy"
 	"github.com/gobuffalo/flect/name"
 	"github.com/markbates/oncer"
 	"github.com/pkg/errors"
+	"github.com/rogpeppe/go-internal/modfile"
 )
 
 // App represents meta data for a Buffalo application on disk
@@ -49,28 +48,21 @@ func (a App) IsZero() bool {
 }
 
 func resolvePackageName(name string, pwd string) string {
-	result := envy.CurrentPackage()
+	result, _ := envy.CurrentModule()
 
 	if filepath.Base(result) != name {
 		result = path.Join(result, name)
 	}
-
 	if envy.Mods() {
-		if !strings.HasPrefix(pwd, filepath.Join(envy.GoPath(), "src")) {
-			result = name
+		moddata, err := ioutil.ReadFile(filepath.Join(pwd, name, "go.mod"))
+		if err != nil {
+			return result
 		}
-
-		//Extract package from go.mod
-		if f, err := os.Open(filepath.Join(pwd, "go.mod")); err == nil {
-			if s, err := ioutil.ReadAll(f); err == nil {
-				re := regexp.MustCompile("module (.*)")
-				res := re.FindAllStringSubmatch(string(s), 1)
-
-				if len(res) == 1 && len(res[0]) == 2 {
-					result = res[0][1]
-				}
-			}
+		packagePath := modfile.ModulePath(moddata)
+		if packagePath == "" {
+			return name
 		}
+		return packagePath
 	}
 
 	return result

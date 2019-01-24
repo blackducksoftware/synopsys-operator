@@ -29,8 +29,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -53,7 +51,9 @@ import (
 	"k8s.io/api/storage/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -792,4 +792,19 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 	if err != nil {
 		return
 	}
+}
+
+// UniqueValues returns a unique subset of the string slice provided.
+func UniqueValues(input []string) []string {
+	u := make([]string, 0, len(input))
+	m := make(map[string]bool)
+
+	for _, val := range input {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+			u = append(u, val)
+		}
+	}
+
+	return u
 }
