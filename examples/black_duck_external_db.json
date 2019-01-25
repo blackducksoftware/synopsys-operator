@@ -2,14 +2,23 @@
   "apiVersion": "synopsys.com/v2",
   "kind": "Hub",
   "metadata": {
-    "name": "hub-test"
+    "name": "blackduck-externaldb"
   },
   "spec": {
-    "namespace": "hub-test",
+    "namespace": "blackduck-externaldb",
     "certificateName": "default",
     "dbPrototype": "",
     "size": "small",
     "persistentStorage": false,
+    "externalPostgres": {
+      "postgresHost": "146.148.58.0",
+      "postgresPort": 5432,
+      "postgresAdmin": "blackduck",
+      "postgresUser": "blackduck_user",
+      "postgresSsl": false,
+      "postgresAdminPassword": "mypassword",
+      "postgresUserPassword": "mypassword"
+    },
     "hubType": "worker",
     "imageRegistries": [
       "docker.io/blackducksoftware/blackduck-authentication:2018.12.2",

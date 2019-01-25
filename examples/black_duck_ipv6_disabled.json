@@ -3,15 +3,19 @@
   "kind": "Hub",
   "metadata": {
     "clusterName": "",
-    "name": "hub-backup-test"
+    "name": "blackduck-ipv6disabled"
   },
   "spec": {
-    "namespace": "hub-backup-test",
+    "namespace": "blackduck-ipv6disabled",
     "certificateName": "default",
+    "environs": [
+      "IPV4_ONLY:1",
+      "BLACKDUCK_HUB_SERVER_ADDRESS:0.0.0.0",
+      "HUB_VERSION:2018.12.2"
+    ],
     "dbPrototype": "",
     "size": "small",
-    "persistentStorage": true,
-    "pvcStorageClass": "standard",
+    "persistentStorage": false,
     "hubType": "worker",
     "imageRegistries": [
       "docker.io/blackducksoftware/blackduck-authentication:2018.12.2",
@@ -25,9 +29,6 @@
       "docker.io/blackducksoftware/blackduck-nginx:1.0.0",
       "docker.io/blackducksoftware/blackduck-solr:1.0.0",
       "docker.io/blackducksoftware/blackduck-zookeeper:1.0.0"
-    ],
-    "environs": [
-      "HUB_VERSION:2018.12.2"
     ]
   }
 }
