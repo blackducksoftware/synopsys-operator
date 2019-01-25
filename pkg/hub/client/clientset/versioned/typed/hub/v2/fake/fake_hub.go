@@ -119,7 +119,7 @@ func (c *FakeHubs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.Li
 // Patch applies the patch and returns the patched hub.
 func (c *FakeHubs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v2.Hub, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(hubsResource, c.ns, name, data, subresources...), &v2.Hub{})
+		Invokes(testing.NewPatchSubresourceAction(hubsResource, c.ns, name, pt, data, subresources...), &v2.Hub{})
 
 	if obj == nil {
 		return nil, err

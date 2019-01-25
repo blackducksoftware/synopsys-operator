@@ -19,6 +19,8 @@ limitations under the License.
 package v2
 
 import (
+	"time"
+
 	v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
 	scheme "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,11 +77,16 @@ func (c *hubs) Get(name string, options v1.GetOptions) (result *v2.Hub, err erro
 
 // List takes label and field selectors, and returns the list of Hubs that match those selectors.
 func (c *hubs) List(opts v1.ListOptions) (result *v2.HubList, err error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	result = &v2.HubList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("hubs").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Do().
 		Into(result)
 	return
@@ -87,11 +94,16 @@ func (c *hubs) List(opts v1.ListOptions) (result *v2.HubList, err error) {
 
 // Watch returns a watch.Interface that watches the requested hubs.
 func (c *hubs) Watch(opts v1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
 		Resource("hubs").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Watch()
 }
 
@@ -133,10 +145,15 @@ func (c *hubs) Delete(name string, options *v1.DeleteOptions) error {
 
 // DeleteCollection deletes a collection of objects.
 func (c *hubs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+	var timeout time.Duration
+	if listOptions.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("hubs").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
+		Timeout(timeout).
 		Body(options).
 		Do().
 		Error()
