@@ -7,9 +7,13 @@ echo "cloning generators, might fail, no big deal"
 mkdir -p $GOPATH/src/k8s.io
 
 pushd $GOPATH/src/k8s.io
-  git clone git@github.com:kubernetes/code-generator.git 
-  git clone git@github.com:kubernetes/apimachinery.git
-  git clone git@github.com:kubernetes/api.git
+  for REPO in code-generator apimachinery api
+  do
+    git clone git@github.com:kubernetes/${REPO}.git
+    pushd $REPO
+    git pull
+    popd
+  done
 popd 
 
 pushd $GOPATH/src/k8s.io/code-generator
