@@ -33,7 +33,13 @@ import (
 func (p *SpecConfig) PodPerceiverReplicationController() (*components.ReplicationController, error) {
 	name := p.config.Perceiver.PodPerceiver.Name
 	image := p.config.Perceiver.PodPerceiver.Image
-	rc := p.perceiverReplicationController(name, 1)
+
+	var rc *components.ReplicationController
+	if p.config.Perceiver.EnablePodPerceiver {
+		rc = p.perceiverReplicationController(name, 1)
+	} else {
+		rc = p.perceiverReplicationController(name, 0)
+	}
 
 	pod, err := p.perceiverPod(name, image, p.config.Perceiver.ServiceAccount)
 	if err != nil {
@@ -48,7 +54,13 @@ func (p *SpecConfig) PodPerceiverReplicationController() (*components.Replicatio
 func (p *SpecConfig) ImagePerceiverReplicationController() (*components.ReplicationController, error) {
 	name := p.config.Perceiver.ImagePerceiver.Name
 	image := p.config.Perceiver.ImagePerceiver.Image
-	rc := p.perceiverReplicationController(name, 1)
+
+	var rc *components.ReplicationController
+	if p.config.Perceiver.EnableImagePerceiver {
+		rc = p.perceiverReplicationController(name, 1)
+	} else {
+		rc = p.perceiverReplicationController(name, 0)
+	}
 
 	pod, err := p.perceiverPod(name, image, p.config.Perceiver.ServiceAccount)
 	if err != nil {
