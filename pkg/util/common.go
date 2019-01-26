@@ -76,7 +76,10 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 		container.AddVolumeMount(*volumeMount)
 	}
 
-	container.AddPort(*port)
+	if port != nil {
+		container.AddPort(*port)
+	}
+
 	if actionConfig != nil {
 		container.AddPostStartAction(*actionConfig)
 	}
