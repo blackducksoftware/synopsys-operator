@@ -180,7 +180,7 @@ func execSystemDBStatements(db *sql.DB) {
 	exec(db, "ALTER SYSTEM SET autovacuum_vacuum_cost_limit TO '2000';")
 	exec(db, "ALTER SYSTEM SET autovacuum_vacuum_cost_delay TO '10ms';")
 	exec(db, "ALTER SYSTEM SET checkpoint_completion_target TO '0.8';")
-	exec(db, "ALTER SYSTEM SET checkpoint_segments TO '256';")
+	exec(db, "ALTER SYSTEM SET max_wal_size TO '8GB';")
 	exec(db, "ALTER SYSTEM SET checkpoint_timeout TO '30min';")
 	exec(db, "ALTER SYSTEM SET constraint_exclusion TO 'partition';")
 	exec(db, "ALTER SYSTEM SET default_statistics_target TO '100';")
