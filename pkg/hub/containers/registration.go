@@ -29,17 +29,13 @@ import (
 
 // GetRegistrationDeployment will return the registration deployment
 func (c *Creater) GetRegistrationDeployment() *components.ReplicationController {
-	registrationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")
-	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
+
 	registrationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: c.getFullContainerName("registration"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
-		EnvConfigs: c.hubConfigEnv,
-		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config"},
-			{Name: "dir-registration-security", MountPath: "/opt/blackduck/hub/hub-registration/security"},
-		},
-		PortConfig: &horizonapi.PortConfig{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP},
+		EnvConfigs:   c.hubConfigEnv,
+		VolumeMounts: c.getRegistrationVolumeMounts(),
+		PortConfig:   &horizonapi.PortConfig{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
 	if c.hubSpec.LivenessProbes {
@@ -60,24 +56,52 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 		}}
 	}
 
-	registrationVolumes := []*components.Volume{registrationEmptyDir, registrationSecurityEmptyDir}
+	c.PostEditContainer(registrationContainerConfig)
+
+	registration := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
+		[]*util.Container{registrationContainerConfig}, c.getRegistrationVolumes(), []*util.Container{},
+		[]horizonapi.AffinityConfig{})
+
+	return registration
+}
+
+// getRegistrationVolumes will return the authentication volumes
+func (c *Creater) getRegistrationVolumes() []*components.Volume {
+	var registrationVolume *components.Volume
+	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
+
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-registration") {
+		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", "blackduck-registration")
+	} else {
+		registrationVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")
+	}
+
+	volumes := []*components.Volume{registrationVolume, registrationSecurityEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided
 	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
-		registrationContainerConfig.VolumeMounts = append(registrationContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
+		volumes = append(volumes, c.proxySecretVolume)
+	}
+	return volumes
+}
+
+// getRegistrationVolumeMounts will return the authentication volume mounts
+func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig {
+	volumesMounts := []*horizonapi.VolumeMountConfig{
+		{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config"},
+		{Name: "dir-registration-security", MountPath: "/opt/blackduck/hub/hub-registration/security"},
+	}
+
+	// Mount the HTTPS proxy certificate if provided
+	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
+		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "blackduck-proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
 			SubPath:   "HUB_PROXY_CERT_FILE",
 		})
-		registrationVolumes = append(registrationVolumes, c.proxySecretVolume)
 	}
-	c.PostEditContainer(registrationContainerConfig)
 
-	registration := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{registrationContainerConfig}, registrationVolumes, []*util.Container{},
-		[]horizonapi.AffinityConfig{})
-
-	return registration
+	return volumesMounts
 }
 
 // GetRegistrationService will return the registration service
