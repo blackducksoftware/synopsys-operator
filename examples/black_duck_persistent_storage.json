@@ -52,6 +52,38 @@
       {
         "name": "blackduck-postgres",
         "size": "200Gi"
+      },
+      {
+        "name": "blackduck-authentication",
+        "size": "2Gi"
+      },
+      {
+        "name": "blackduck-cfssl",
+        "size": "2Gi"
+      },
+      {
+        "name": "blackduck-registration",
+        "size": "2Gi"
+      },
+      {
+        "name": "blackduck-solr",
+        "size": "2Gi"
+      },
+      {
+        "name": "blackduck-webapp",
+        "size": "2Gi"
+      },
+      {
+        "name": "blackduck-logstash",
+        "size": "20Gi"
+      },
+      {
+        "name": "blackduck-zookeeper-data",
+        "size": "2Gi"
+      },
+      {
+        "name": "blackduck-zookeeper-datalog",
+        "size": "2Gi"
       }
     ],
     "scanType": "Artifacts",
