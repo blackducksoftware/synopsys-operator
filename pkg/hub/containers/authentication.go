@@ -29,15 +29,15 @@ import (
 
 // GetAuthenticationDeployment will return the authentication deployment
 func (c *Creater) GetAuthenticationDeployment() *components.ReplicationController {
+	volumeMounts := c.getAuthenticationVolumeMounts()
 	authEnvs := c.allConfigEnv
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.AuthenticationHubMaxMemory})
-	// hubAuthGCEPersistentDiskVol := CreateGCEPersistentDiskVolume("dir-authentication", fmt.Sprintf("%s-%s", "authentication-disk", c.hubSpec.Namespace), "ext4")
 
 	hubAuthContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-authentication", Image: c.getFullContainerName("authentication"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   authEnvs,
-		VolumeMounts: c.getAuthenticationVolumeMounts(),
+		VolumeMounts: volumeMounts,
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: authenticationPort, Protocol: horizonapi.ProtocolTCP},
 	}
 	if c.hubSpec.LivenessProbes {
@@ -58,10 +58,19 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 		}}
 	}
 
+	var initContainers []*util.Container
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-authentication") {
+		initContainerConfig := &util.Container{
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-authentication/ldap"}},
+			VolumeMounts:    volumeMounts,
+		}
+		initContainers = append(initContainers, initContainerConfig)
+	}
+
 	c.PostEditContainer(hubAuthContainerConfig)
 
 	hubAuth := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "hub-authentication", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{hubAuthContainerConfig}, c.getAuthenticationVolumes(), []*util.Container{},
+		[]*util.Container{hubAuthContainerConfig}, c.getAuthenticationVolumes(), initContainers,
 		[]horizonapi.AffinityConfig{})
 
 	return hubAuth

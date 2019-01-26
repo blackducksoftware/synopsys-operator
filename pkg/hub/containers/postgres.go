@@ -52,7 +52,7 @@ func (c *Creater) GetPostgresDeployment() *components.ReplicationController {
 		VolumeMounts: postgresVolumeMounts,
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: postgresPort, Protocol: horizonapi.ProtocolTCP},
 	}
-	initContainers := []*util.Container{}
+	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-postgres") {
 		postgresInitContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/pgsql/data"}},
@@ -75,7 +75,7 @@ func (c *Creater) GetPostgresService() *components.Service {
 
 // getPostgresVolumes will return the postgres volumes
 func (c *Creater) getPostgresVolumes() []*components.Volume {
-	postgresVolumes := []*components.Volume{}
+	var postgresVolumes []*components.Volume
 	var postgresDataVolume *components.Volume
 	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-postgres") {
 		postgresDataVolume, _ = util.CreatePersistentVolumeClaimVolume("postgres-data-volume", "blackduck-postgres")
@@ -89,7 +89,7 @@ func (c *Creater) getPostgresVolumes() []*components.Volume {
 
 // getPostgresVolumeMounts will return the postgres volume mounts
 func (c *Creater) getPostgresVolumeMounts() []*horizonapi.VolumeMountConfig {
-	postgresVolumeMounts := []*horizonapi.VolumeMountConfig{}
+	var postgresVolumeMounts []*horizonapi.VolumeMountConfig
 	postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: "postgres-data-volume", MountPath: "/var/lib/pgsql/data"})
 	return postgresVolumeMounts
 }

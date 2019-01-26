@@ -30,6 +30,8 @@ import (
 // GetRegistrationDeployment will return the registration deployment
 func (c *Creater) GetRegistrationDeployment() *components.ReplicationController {
 
+	volumeMounts := c.getRegistrationVolumeMounts()
+
 	registrationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: c.getFullContainerName("registration"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
@@ -56,16 +58,25 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 		}}
 	}
 
+	var initContainers []*util.Container
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-registration") {
+		initContainerConfig := &util.Container{
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-registration/config"}},
+			VolumeMounts:    volumeMounts,
+		}
+		initContainers = append(initContainers, initContainerConfig)
+	}
+
 	c.PostEditContainer(registrationContainerConfig)
 
 	registration := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{registrationContainerConfig}, c.getRegistrationVolumes(), []*util.Container{},
+		[]*util.Container{registrationContainerConfig}, c.getRegistrationVolumes(), initContainers,
 		[]horizonapi.AffinityConfig{})
 
 	return registration
 }
 
-// getRegistrationVolumes will return the authentication volumes
+// getRegistrationVolumes will return the registration volumes
 func (c *Creater) getRegistrationVolumes() []*components.Volume {
 	var registrationVolume *components.Volume
 	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
@@ -85,7 +96,7 @@ func (c *Creater) getRegistrationVolumes() []*components.Volume {
 	return volumes
 }
 
-// getRegistrationVolumeMounts will return the authentication volume mounts
+// getRegistrationVolumeMounts will return the registration volume mounts
 func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig {
 	volumesMounts := []*horizonapi.VolumeMountConfig{
 		{Name: "dir-registration", MountPath: "/opt/blackduck/hub/hub-registration/config"},
