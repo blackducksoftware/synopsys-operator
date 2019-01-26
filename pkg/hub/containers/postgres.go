@@ -53,7 +53,7 @@ func (c *Creater) GetPostgresDeployment() *components.ReplicationController {
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: postgresPort, Protocol: horizonapi.ProtocolTCP},
 	}
 	initContainers := []*util.Container{}
-	if c.hubSpec.PersistentStorage {
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-postgres") {
 		postgresInitContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/pgsql/data"}},
 			VolumeMounts:    postgresVolumeMounts,
@@ -77,7 +77,7 @@ func (c *Creater) GetPostgresService() *components.Service {
 func (c *Creater) getPostgresVolumes() []*components.Volume {
 	postgresVolumes := []*components.Volume{}
 	var postgresDataVolume *components.Volume
-	if c.hubSpec.PersistentStorage {
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-postgres") {
 		postgresDataVolume, _ = util.CreatePersistentVolumeClaimVolume("postgres-data-volume", "blackduck-postgres")
 	} else {
 		postgresDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("postgres-data-volume")

@@ -100,3 +100,13 @@ func (c *Creater) getUID(baseContainer string) *int64 {
 	}
 	return nil
 }
+
+// hasPVC will return true if the PVC is configured in Spec.PVC
+func (c *Creater) hasPVC(name string) bool {
+	for _, v := range c.hubSpec.PVC {
+		if strings.Compare(v.Name, name) == 0 {
+			return true
+		}
+	}
+	return false
+}
