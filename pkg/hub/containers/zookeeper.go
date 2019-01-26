@@ -79,9 +79,9 @@ func (c *Creater) getZookeeperVolumes() []*components.Volume {
 	}
 
 	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-zookeeeper-datalog") {
-		zookeeperDataVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", "blackduck-zookeeper-datalog")
+		zookeeperDatalogVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", "blackduck-zookeeper-datalog")
 	} else {
-		zookeeperDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")
+		zookeeperDatalogVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")
 	}
 
 	volumes := []*components.Volume{zookeeperDataVolume, zookeeperDatalogVolume}
