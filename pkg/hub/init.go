@@ -78,11 +78,13 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v2.HubSpec, hubCo
 				if len(claim.Size) > 0 {
 					size = claim.Size
 				}
+			default:
+				size = claim.Size
 			}
 
 			pvc, err := util.CreatePersistentVolumeClaim(claim.Name, createHub.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
 			if err != nil {
-				return fmt.Errorf("failed to create the postgres PVC for %s because %+v", createHub.Namespace, err)
+				return fmt.Errorf("failed to create the postgres PVC %s in namespace %s because %+v", claim.Name, createHub.Namespace, err)
 			}
 			deployer.AddPVC(pvc)
 
