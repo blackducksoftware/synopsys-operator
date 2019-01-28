@@ -26,7 +26,7 @@ import (
 	"time"
 
 	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"

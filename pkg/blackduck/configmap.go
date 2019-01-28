@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package hub
+package blackduck
 
 import (
 	"strconv"
@@ -28,7 +28,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/containers"
 )
 
 // CreateHubConfig will create the hub configMaps

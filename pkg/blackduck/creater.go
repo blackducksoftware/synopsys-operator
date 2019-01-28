@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package hub
+package blackduck
 
 import (
 	"fmt"
@@ -31,8 +31,8 @@ import (
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
-	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/containers"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"

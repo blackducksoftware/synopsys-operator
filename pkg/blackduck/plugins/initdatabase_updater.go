@@ -27,9 +27,9 @@ import (
 	"time"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/hub"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -168,7 +168,7 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *blackduckv1.Blac
 				dbNeedsInitBecause := ""
 
 				log.Debugf("%v : Checking connection now...", hubSpec.Namespace)
-				db, err := hub.OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
+				db, err := blackduck.OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
 				log.Debugf("%v : Done checking [ error status == %v ] ...", hubSpec.Namespace, err)
 				if err != nil {
 					dbNeedsInitBecause = "couldnt connect !"
@@ -200,7 +200,7 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *blackduckv1.Blac
 					}
 
 					// Init DB
-					err = hub.InitDatabase(hubSpec, adminPassword, userPassword, postgresPassword)
+					err = blackduck.InitDatabase(hubSpec, adminPassword, userPassword, postgresPassword)
 					if err != nil {
 						log.Errorf("%v: error: %+v", hubSpec.Namespace, err)
 					}
