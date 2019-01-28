@@ -34,7 +34,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.AuthenticationHubMaxMemory})
 
 	hubAuthContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-authentication", Image: c.getFullContainerName("authentication"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: c.getFullContainerName("authentication"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   authEnvs,
 		VolumeMounts: volumeMounts,
@@ -69,7 +69,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 
 	c.PostEditContainer(hubAuthContainerConfig)
 
-	hubAuth := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "hub-authentication", Replicas: util.IntToInt32(1)}, "",
+	hubAuth := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "authentication", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{hubAuthContainerConfig}, c.getAuthenticationVolumes(), initContainers,
 		[]horizonapi.AffinityConfig{})
 
@@ -119,5 +119,5 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 
 // GetAuthenticationService will return the authentication service
 func (c *Creater) GetAuthenticationService() *components.Service {
-	return util.CreateService("authentication", "hub-authentication", c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("authentication", "authentication", c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ClusterIPServiceTypeDefault)
 }
