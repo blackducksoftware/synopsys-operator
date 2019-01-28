@@ -1,6 +1,6 @@
 {
-  "apiVersion": "synopsys.com/v2",
-  "kind": "Hub",
+  "apiVersion": "synopsys.com/v1",
+  "kind": "Blackduck",
   "metadata": {
     "name": "blackduck-pvc"
   },
