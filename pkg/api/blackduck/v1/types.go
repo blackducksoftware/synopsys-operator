@@ -32,13 +32,13 @@ import (
 type Blackduck struct {
 	meta_v1.TypeMeta   `json:",inline"`
 	meta_v1.ObjectMeta `json:"metadata,omitempty"`
-	View               HubView         `json:"view"`
+	View               BlackduckView   `json:"view"`
 	Spec               BlackduckSpec   `json:"spec"`
 	Status             BlackduckStatus `json:"status,omitempty"`
 }
 
-// HubView will be used to populate information for the Blackduck UI.
-type HubView struct {
+// BlackduckView will be used to populate information for the Blackduck UI.
+type BlackduckView struct {
 	Clones           map[string]string `json:"clones"`
 	StorageClasses   map[string]string `json:"storageClasses"`
 	CertificateNames []string          `json:"certificateNames"`
@@ -62,7 +62,7 @@ type BlackduckSpec struct {
 	Certificate       string                    `json:"certificate,omitempty"`
 	CertificateKey    string                    `json:"certificateKey,omitempty"`
 	ProxyCertificate  string                    `json:"proxyCertificate,omitempty"`
-	HubType           string                    `json:"hubType,omitempty"`
+	Type              string                    `json:"type,omitempty"`
 	State             string                    `json:"state"`
 	Environs          []string                  `json:"environs,omitempty"`
 	ImageRegistries   []string                  `json:"imageRegistries,omitempty"`
