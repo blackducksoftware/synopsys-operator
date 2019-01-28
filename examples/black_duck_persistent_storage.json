@@ -86,7 +86,7 @@
         "size": "2Gi"
       }
     ],
-    "scanType": "Artifacts",
+    "type": "Artifacts",
     "size": "Small"
   }
 }

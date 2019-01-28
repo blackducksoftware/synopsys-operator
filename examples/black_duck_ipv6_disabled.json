@@ -16,7 +16,7 @@
     "dbPrototype": "",
     "size": "small",
     "persistentStorage": false,
-    "hubType": "worker",
+    "type": "worker",
     "imageRegistries": [
       "docker.io/blackducksoftware/blackduck-authentication:2018.12.2",
       "docker.io/blackducksoftware/blackduck-documentation:2018.12.2",
