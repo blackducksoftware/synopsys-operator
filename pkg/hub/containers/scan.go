@@ -33,7 +33,7 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "scan-mem", FromName: "hub-config-resources"})
 	hubScanEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-scan")
 	hubScanContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "hub-scan", Image: c.getFullContainerName("scan"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "scan", Image: c.getFullContainerName("scan"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ScanMemoryLimit, MaxMem: c.hubContainerFlavor.ScanMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: scannerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
@@ -86,7 +86,7 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 	}
 	c.PostEditContainer(hubScanContainerConfig)
 
-	hubScan := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "hub-scan", Replicas: c.hubContainerFlavor.ScanReplicas}, "",
+	hubScan := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "scan", Replicas: c.hubContainerFlavor.ScanReplicas}, "",
 		[]*util.Container{hubScanContainerConfig}, hubScanVolumes, []*util.Container{}, []horizonapi.AffinityConfig{})
 
 	return hubScan
@@ -94,5 +94,5 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 
 // GetScanService will return the scan service
 func (c *Creater) GetScanService() *components.Service {
-	return util.CreateService("scan", "hub-scan", c.hubSpec.Namespace, scannerPort, scannerPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("scan", "scan", c.hubSpec.Namespace, scannerPort, scannerPort, horizonapi.ClusterIPServiceTypeDefault)
 }

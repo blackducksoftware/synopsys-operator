@@ -29,12 +29,12 @@ import (
 
 // GetCfsslDeployment will return the cfssl deployment
 func (c *Creater) GetCfsslDeployment() *components.ReplicationController {
-	cfsslEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-cfssl")
+	cfsslVolumeMounts := c.getCfsslolumeMounts()
 	cfsslContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: c.getFullContainerName("cfssl"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.CfsslMemoryLimit, MaxMem: c.hubContainerFlavor.CfsslMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
-		VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "dir-cfssl", MountPath: "/etc/cfssl"}},
+		VolumeMounts: cfsslVolumeMounts,
 		PortConfig:   &horizonapi.PortConfig{ContainerPort: cfsslPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
@@ -48,13 +48,43 @@ func (c *Creater) GetCfsslDeployment() *components.ReplicationController {
 		}}
 	}
 
+	var initContainers []*util.Container
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-cfssl") {
+		initContainerConfig := &util.Container{
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /etc/cfssl"}},
+			VolumeMounts:    cfsslVolumeMounts,
+		}
+		initContainers = append(initContainers, initContainerConfig)
+	}
+
 	c.PostEditContainer(cfsslContainerConfig)
 
 	cfssl := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "cfssl", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{cfsslContainerConfig}, []*components.Volume{cfsslEmptyDir}, []*util.Container{},
+		[]*util.Container{cfsslContainerConfig}, c.getCfsslVolumes(), initContainers,
 		[]horizonapi.AffinityConfig{})
 
 	return cfssl
+}
+
+// getCfsslVolumes will return the cfssl volumes
+func (c *Creater) getCfsslVolumes() []*components.Volume {
+	var cfsslVolume *components.Volume
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-cfssl") {
+		cfsslVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-cfssl", "blackduck-cfssl")
+	} else {
+		cfsslVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-cfssl")
+	}
+
+	volumes := []*components.Volume{cfsslVolume}
+	return volumes
+}
+
+// getCfsslolumeMounts will return the cfssl volume mounts
+func (c *Creater) getCfsslolumeMounts() []*horizonapi.VolumeMountConfig {
+	volumesMounts := []*horizonapi.VolumeMountConfig{
+		{Name: "dir-cfssl", MountPath: "/etc/cfssl"},
+	}
+	return volumesMounts
 }
 
 // GetCfsslService will return the cfssl service

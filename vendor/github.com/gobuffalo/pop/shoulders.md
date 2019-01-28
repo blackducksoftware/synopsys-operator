@@ -63,6 +63,8 @@ Thank you to the following **GIANTS**:
 
 * [github.com/gobuffalo/pop/nulls](https://godoc.org/github.com/gobuffalo/pop/nulls)
 
+* [github.com/gobuffalo/syncx](https://godoc.org/github.com/gobuffalo/syncx)
+
 * [github.com/gobuffalo/tags](https://godoc.org/github.com/gobuffalo/tags)
 
 * [github.com/gobuffalo/tags/form](https://godoc.org/github.com/gobuffalo/tags/form)
@@ -111,9 +113,19 @@ Thank you to the following **GIANTS**:
 
 * [github.com/markbates/oncer](https://godoc.org/github.com/markbates/oncer)
 
+* [github.com/mattn/go-colorable](https://godoc.org/github.com/mattn/go-colorable)
+
+* [github.com/mattn/go-isatty](https://godoc.org/github.com/mattn/go-isatty)
+
 * [github.com/microcosm-cc/bluemonday](https://godoc.org/github.com/microcosm-cc/bluemonday)
 
 * [github.com/pkg/errors](https://godoc.org/github.com/pkg/errors)
+
+* [github.com/rogpeppe/go-internal/modfile](https://godoc.org/github.com/rogpeppe/go-internal/modfile)
+
+* [github.com/rogpeppe/go-internal/module](https://godoc.org/github.com/rogpeppe/go-internal/module)
+
+* [github.com/rogpeppe/go-internal/semver](https://godoc.org/github.com/rogpeppe/go-internal/semver)
 
 * [github.com/serenize/snaker](https://godoc.org/github.com/serenize/snaker)
 
@@ -122,8 +134,6 @@ Thank you to the following **GIANTS**:
 * [github.com/sourcegraph/annotate](https://godoc.org/github.com/sourcegraph/annotate)
 
 * [github.com/sourcegraph/syntaxhighlight](https://godoc.org/github.com/sourcegraph/syntaxhighlight)
-
-* [golang.org/x/net/context](https://godoc.org/golang.org/x/net/context)
 
 * [golang.org/x/net/html](https://godoc.org/golang.org/x/net/html)
 

@@ -103,13 +103,13 @@ func (hc *Creater) DeleteHub(namespace string) error {
 }
 
 // CreateHub will create the Black Duck Hub
-func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error) {
+func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, map[string]string, bool, error) {
 	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.KubeConfig)
 	if err != nil {
-		return "", "", true, fmt.Errorf("unable to create the horizon deployer because %+v", err)
+		return "", nil, true, fmt.Errorf("unable to create the horizon deployer because %+v", err)
 	}
 
 	// Get Containers Flavor
@@ -117,7 +117,7 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
 
 	if hubContainerFlavor == nil {
-		return "", "", true, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Size)
+		return "", nil, true, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Size)
 	}
 
 	// All ConfigMap environment variables
@@ -144,7 +144,7 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 	// Create the config-maps, secrets and postgres container
 	err = hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv, adminPassword, userPassword)
 	if err != nil {
-		return "", "", true, err
+		return "", nil, true, err
 	}
 	// Deploy config-maps, secrets and postgres container
 	err = deployer.Run()
@@ -157,23 +157,23 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 		// Validate postgres pod is cloned/backed up
 		err = util.WaitForServiceEndpointReady(hc.KubeClient, createHub.Namespace, "postgres")
 		if err != nil {
-			return "", "", true, err
+			return "", nil, true, err
 		}
 
 		if len(createHub.DbPrototype) == 0 {
 			err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
 			if err != nil {
 				log.Errorf("%v: error: %+v", createHub.Namespace, err)
-				return "", "", true, fmt.Errorf("%v: error: %+v", createHub.Namespace, err)
+				return "", nil, true, fmt.Errorf("%v: error: %+v", createHub.Namespace, err)
 			}
 		} else {
 			_, fromPw, err := hubutils.GetHubDBPassword(hc.KubeClient, createHub.DbPrototype)
 			if err != nil {
-				return "", "", true, err
+				return "", nil, true, err
 			}
 			err = hubutils.CloneJob(hc.KubeClient, hc.Config.Namespace, createHub.DbPrototype, createHub.Namespace, fromPw)
 			if err != nil {
-				return "", "", true, err
+				return "", nil, true, err
 			}
 		}
 	}
@@ -191,22 +191,25 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("post deployments failed for %s because %+v", createHub.Namespace, err)
-		return "", "", true, fmt.Errorf("unable to deploy the hub in %s because %+v", createHub.Namespace, err)
+		return "", nil, true, fmt.Errorf("unable to deploy the hub in %s because %+v", createHub.Namespace, err)
 	}
 	time.Sleep(10 * time.Second)
 
 	// Validate all pods are in running state
 	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Namespace)
 	if err != nil {
-		return "", "", true, err
+		return "", nil, true, err
 	}
 
 	// Retrieve the PVC volume name
-	pvcVolumeName := ""
-	if createHub.PersistentStorage && createHub.ExternalPostgres == nil {
-		pvcVolumeName, err = hc.getPVCVolumeName(createHub.Namespace, "blackduck-postgres")
-		if err != nil {
-			return "", "", false, err
+	pvcVolumeNames := map[string]string{}
+	if createHub.PersistentStorage {
+		for _, v := range createHub.PVC {
+			pvName, err := hc.getPVCVolumeName(createHub.Namespace, v.Name)
+			if err != nil {
+				return "", nil, false, err
+			}
+			pvcVolumeNames[v.Name] = pvName
 		}
 	}
 
@@ -215,7 +218,7 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 	if hc.routeClient != nil {
 		route, err := util.CreateOpenShiftRoutes(hc.routeClient, createHub.Namespace, createHub.Namespace, "Service", "webserver")
 		if err != nil {
-			return "", pvcVolumeName, false, err
+			return "", pvcVolumeNames, false, err
 		}
 		log.Debugf("openshift route host: %s", route.Spec.Host)
 		ipAddress = route.Spec.Host
@@ -226,13 +229,13 @@ func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error
 		if err != nil {
 			ipAddress, err = hc.getNodePortIPAddress(createHub.Namespace, "webserver-np")
 			if err != nil {
-				return "", pvcVolumeName, false, err
+				return "", pvcVolumeNames, false, err
 			}
 		}
 	}
 	log.Infof("hub Ip address: %s", ipAddress)
 
-	return ipAddress, pvcVolumeName, false, nil
+	return ipAddress, pvcVolumeNames, false, nil
 }
 
 func (hc *Creater) getPVCVolumeName(namespace string, name string) (string, error) {

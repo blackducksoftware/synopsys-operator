@@ -61,32 +61,38 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v2.HubSpec, hubCo
 		deployer.AddConfigMap(configMap)
 	}
 
+	if createHub.PersistentStorage {
+		for _, claim := range createHub.PVC {
+			storageClass := createHub.PVCStorageClass
+			if len(claim.StorageClass) > 0 {
+				storageClass = claim.StorageClass
+			}
+
+			var size string
+
+			// Set default value if size isn't specified
+			// TODO JD - check the if the size is using a support format Gi, etc
+			switch claim.Name {
+			case "blackduck-postgres":
+				size = "150Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			default:
+				size = claim.Size
+			}
+
+			pvc, err := util.CreatePersistentVolumeClaim(claim.Name, createHub.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
+			if err != nil {
+				return fmt.Errorf("failed to create the postgres PVC %s in namespace %s because %+v", claim.Name, createHub.Namespace, err)
+			}
+			deployer.AddPVC(pvc)
+
+		}
+	}
+
 	// We only start the postgres container if the external DB configuration struct is empty
 	if createHub.ExternalPostgres == nil {
-		if createHub.PersistentStorage {
-			// Postgres PVC
-			size := "150Gi"
-			storageClass := createHub.PVCStorageClass
-
-			for _, claim := range createHub.PVC {
-				if claim.Name == "blackduck-postgres" {
-					if len(claim.Size) > 0 {
-						size = claim.Size
-					}
-					if len(claim.StorageClass) > 0 {
-						storageClass = claim.StorageClass
-					}
-					break
-				}
-			}
-
-			postgresPVC, err := util.CreatePersistentVolumeClaim("blackduck-postgres", createHub.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
-			if err != nil {
-				return fmt.Errorf("failed to create the postgres PVC for %s because %+v", createHub.Namespace, err)
-			}
-			deployer.AddPVC(postgresPVC)
-		}
-
 		containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil)
 
 		deployer.AddReplicationController(containerCreater.GetPostgresDeployment())

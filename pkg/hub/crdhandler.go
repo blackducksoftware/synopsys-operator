@@ -112,8 +112,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 
 				hubv2.Status.IP = ip
 				if len(pvc) > 0 {
-					hubv2.Status.PVCVolumeName = make(map[string]string)
-					hubv2.Status.PVCVolumeName["blackduck-postgres"] = pvc
+					hubv2.Status.PVCVolumeName = pvc
 				}
 
 				if updateError {

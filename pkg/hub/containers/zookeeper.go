@@ -29,17 +29,15 @@ import (
 
 // GetZookeeperDeployment will return the zookeeper deployment
 func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
-	zookeeperDataEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-data")
-	zookeeperDataLogEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")
+
+	volumeMounts := c.getZookeeperVolumeMounts()
+
 	zookeeperContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: c.getFullContainerName("zookeeper"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: zookeeperMinCPUUsage, MaxCPU: ""},
-		EnvConfigs: c.hubConfigEnv,
-		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{Name: "dir-zookeeper-data", MountPath: "/opt/blackduck/zookeeper/data"},
-			{Name: "dir-zookeeper-datalog", MountPath: "/opt/blackduck/zookeeper/datalog"},
-		},
-		PortConfig: &horizonapi.PortConfig{ContainerPort: zookeeperPort, Protocol: horizonapi.ProtocolTCP},
+		EnvConfigs:   c.hubConfigEnv,
+		VolumeMounts: volumeMounts,
+		PortConfig:   &horizonapi.PortConfig{ContainerPort: zookeeperPort, Protocol: horizonapi.ProtocolTCP},
 	}
 
 	if c.hubSpec.LivenessProbes {
@@ -52,12 +50,51 @@ func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
 		}}
 	}
 
+	var initContainers []*util.Container
+	if c.hubSpec.PersistentStorage && (c.hasPVC("blackduck-zookeeper-data") || c.hasPVC("blackduck-zookeeper-datalog")) {
+		initContainerConfig := &util.Container{
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/zookeeper/data && chmod -cR 777 /opt/blackduck/zookeeper/datalog"}},
+			VolumeMounts:    volumeMounts,
+		}
+		initContainers = append(initContainers, initContainerConfig)
+	}
+
 	c.PostEditContainer(zookeeperContainerConfig)
 
 	zookeeper := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{zookeeperContainerConfig}, []*components.Volume{zookeeperDataEmptyDir, zookeeperDataLogEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{})
+		[]*util.Container{zookeeperContainerConfig}, c.getZookeeperVolumes(), initContainers, []horizonapi.AffinityConfig{})
 
 	return zookeeper
+}
+
+// getZookeeperVolumes will return the zookeeper volumes
+func (c *Creater) getZookeeperVolumes() []*components.Volume {
+	var zookeeperDataVolume *components.Volume
+	var zookeeperDatalogVolume *components.Volume
+
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-zookeeper-data") {
+		zookeeperDataVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-data", "blackduck-zookeeper-data")
+	} else {
+		zookeeperDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-data")
+	}
+
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-zookeeper-datalog") {
+		zookeeperDatalogVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", "blackduck-zookeeper-datalog")
+	} else {
+		zookeeperDatalogVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")
+	}
+
+	volumes := []*components.Volume{zookeeperDataVolume, zookeeperDatalogVolume}
+	return volumes
+}
+
+// getZookeeperVolumeMounts will return the zookeeper volume mounts
+func (c *Creater) getZookeeperVolumeMounts() []*horizonapi.VolumeMountConfig {
+	volumesMounts := []*horizonapi.VolumeMountConfig{
+		{Name: "dir-zookeeper-data", MountPath: "/opt/blackduck/zookeeper/data"},
+		{Name: "dir-zookeeper-datalog", MountPath: "/opt/blackduck/zookeeper/datalog"},
+	}
+	return volumesMounts
 }
 
 // GetZookeeperService will return the zookeeper service
