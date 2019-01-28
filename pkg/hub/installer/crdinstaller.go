@@ -91,7 +91,7 @@ func (c *CRDInstaller) Deploy() error {
 	// Hub CRD
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
-		Name:       "hubs.synopsys.com",
+		Name:       "blackducks.synopsys.com",
 		Namespace:  c.config.Namespace,
 		Group:      "synopsys.com",
 		CRDVersion: "v1",
