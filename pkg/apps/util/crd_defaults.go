@@ -48,7 +48,7 @@ func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 		Size:            "Small",
 		DbPrototype:     "",
 		CertificateName: "default",
-		HubType:         "",
+		Type:         "",
 	}
 }
 

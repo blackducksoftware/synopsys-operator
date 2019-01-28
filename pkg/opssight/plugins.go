@@ -238,7 +238,7 @@ func (p *ConfigMapUpdater) getAllHubs(hubType string) []string {
 	hubsList, _ := util.ListHubs(p.hubClient, p.config.Namespace)
 	hubs := hubsList.Items
 	for _, hub := range hubs {
-		if strings.EqualFold(hub.Spec.HubType, hubType) {
+		if strings.EqualFold(hub.Spec.Type, hubType) {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
 			allHubNamespaces = append(allHubNamespaces, hubURL)
 			logger.Infof("Blackduck config map controller, namespace is %s", hub.Name)
@@ -267,7 +267,7 @@ func (p *ConfigMapUpdater) updateAllHubs() []error {
 
 	errList := []error{}
 	for _, o := range opssights.Items {
-		hubType := o.Spec.Hub.HubSpec.HubType
+		hubType := o.Spec.Hub.HubSpec.Type
 		allHubNamespaces := p.getAllHubs(hubType)
 
 		for _, o := range opssights.Items {
@@ -301,7 +301,7 @@ func (p *ConfigMapUpdater) updateOpsSight(obj interface{}) error {
 		time.Sleep(10 * time.Second)
 	}
 
-	hubType := opssight.Spec.Hub.HubSpec.HubType
+	hubType := opssight.Spec.Hub.HubSpec.Type
 	allHubNamespaces := p.getAllHubs(hubType)
 
 	err = sendHubs(p.kubeClient, &opssight.Spec, allHubNamespaces)

@@ -25,9 +25,9 @@ import (
 	"fmt"
 
 	horizondep "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
-	"github.com/blackducksoftware/synopsys-operator/pkg/hub"
-	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
@@ -63,7 +63,7 @@ var InstallBlackduck = &cobra.Command{
 		nfsPath, _ := cmd.PersistentFlags().GetString("nfs-path")
 		postgresRestartMinutes, _ := cmd.PersistentFlags().GetInt32("postgres-restart-minutes")
 		export, _ := cmd.PersistentFlags().GetBool("export")
-		creator := hub.Creater{
+		creator := blackduck.Creater{
 			Config: &protoform.Config{
 				DryRun:                dryRun,
 				Namespace:             namespace,
@@ -83,11 +83,11 @@ var InstallBlackduck = &cobra.Command{
 		} else {
 			restconf, _ := util.GetKubeConfig()
 			deployer, _ := horizondep.NewDeployer(restconf)
-			hubSpec := &v2.HubSpec{
+			hubSpec := &v1.BlackduckSpec{
 				Namespace: namespace,
 				Size:      "small",
 				ScanType:  "master",
-				HubType:   "small",
+				Type:   "small",
 				Environs:  []string{"HUB_VERSION:5.0.0"},
 			}
 
