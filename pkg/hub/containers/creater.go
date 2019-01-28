@@ -27,7 +27,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -45,7 +45,7 @@ func (c *Creater) PostEditContainer(cc *util.Container) {
 // Creater will store the configuration to create the hub containers
 type Creater struct {
 	config             *protoform.Config
-	hubSpec            *v2.HubSpec
+	hubSpec            *v1.BlackduckSpec
 	hubContainerFlavor *ContainerFlavor
 	hubConfigEnv       []*horizonapi.EnvConfig
 	allConfigEnv       []*horizonapi.EnvConfig
@@ -54,7 +54,7 @@ type Creater struct {
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *protoform.Config, hubSpec *v2.HubSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
+func NewCreater(config *protoform.Config, hubSpec *v1.BlackduckSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig, allConfigEnv []*horizonapi.EnvConfig,
 	dbSecretVolume *components.Volume, proxySecretVolume *components.Volume) *Creater {
 	return &Creater{
 		config:             config,

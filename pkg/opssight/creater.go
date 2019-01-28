@@ -28,9 +28,9 @@ import (
 	"strings"
 	"time"
 
-	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -51,11 +51,11 @@ type Creater struct {
 	opssightClient   *opssightclientset.Clientset
 	osSecurityClient *securityclient.SecurityV1Client
 	routeClient      *routeclient.RouteV1Client
-	hubClient        *hubclientset.Clientset
+	hubClient        *blackduckclientset.Clientset
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *hubclientset.Clientset) *Creater {
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *blackduckclientset.Clientset) *Creater {
 	return &Creater{
 		config:           config,
 		kubeConfig:       kubeConfig,
@@ -289,7 +289,7 @@ func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
 
 		hubSpec := createOpsSight.Hub.HubSpec
 		hubSpec.Namespace = name
-		createHub := &hub_v2.Hub{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
+		createHub := &blackduckv1.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
 		log.Debugf("hub[%d]: %+v", i, createHub)
 		_, err = util.CreateHub(ac.hubClient, name, createHub)
 		if err != nil {

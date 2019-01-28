@@ -22,7 +22,7 @@ under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -46,7 +46,7 @@ type RegistryAuth struct {
 	Password string `json:"password"`
 }
 
-// Hub ...
+// Blackduck ...
 type Hub struct {
 	Hosts               []string `json:"hosts"`
 	User                string   `json:"user"`
@@ -58,7 +58,7 @@ type Hub struct {
 	InitialCount                 int         `json:"initialCount"`
 	MaxCount                     int         `json:"maxCount"`
 	DeleteHubThresholdPercentage int         `json:"deleteHubThresholdPercentage"`
-	HubSpec                      *v2.HubSpec `json:"hubSpec"`
+	HubSpec                      *v1.BlackduckSpec `json:"hubSpec"`
 }
 
 // Perceptor ...

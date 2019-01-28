@@ -26,13 +26,13 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) init(deployer *horizon.Deployer, createHub *v2.HubSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
+func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
 
 	// Create a namespaces
 	_, err := util.GetNamespace(hc.KubeClient, createHub.Namespace)

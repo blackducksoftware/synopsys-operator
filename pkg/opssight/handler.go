@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	opssight_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -57,7 +57,7 @@ type Handler struct {
 	Namespace         string
 	OSSecurityClient  *securityclient.SecurityV1Client
 	RouteClient       *routeclient.RouteV1Client
-	HubClient         *hubclientset.Clientset
+	HubClient         *blackduckclientset.Clientset
 }
 
 // ObjectCreated will be called for create opssight events

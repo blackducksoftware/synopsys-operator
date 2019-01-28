@@ -27,12 +27,12 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
 )
 
 // CreateHubConfig will create the hub configMaps
-func (hc *Creater) createHubConfig(createHub *v2.HubSpec, hubContainerFlavor *containers.ContainerFlavor) map[string]*components.ConfigMap {
+func (hc *Creater) createHubConfig(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
 	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-config"})

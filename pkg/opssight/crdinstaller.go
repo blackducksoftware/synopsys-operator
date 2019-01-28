@@ -29,7 +29,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	opssightinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -99,7 +99,7 @@ func (c *CRDInstaller) Deploy() error {
 	time.Sleep(5 * time.Second)
 
 	// Any new, pluggable maintainance stuff should go in here...
-	hubClientset, err := hubclient.NewForConfig(c.config.KubeConfig)
+	hubClientset, err := blackduckclient.NewForConfig(c.config.KubeConfig)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -197,7 +197,7 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	hubClient, err := hubclient.NewForConfig(c.config.KubeConfig)
+	hubClient, err := blackduckclient.NewForConfig(c.config.KubeConfig)
 	if err != nil {
 		log.Errorf("unable to create the hub client for opssight: %+v", err)
 		return

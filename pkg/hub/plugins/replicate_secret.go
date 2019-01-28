@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -40,22 +40,22 @@ import (
 
 // SecretReplicator will have the configuration related to replicate the secrets
 type SecretReplicator struct {
-	client        *kubernetes.Clientset
-	hubClient     *hubclientset.Clientset
-	namespace     string
-	controller    cache.Controller
-	dependencyMap map[string][]string
+	client          *kubernetes.Clientset
+	blackduckClient *blackduckclientset.Clientset
+	namespace       string
+	controller      cache.Controller
+	dependencyMap   map[string][]string
 }
 
 // NewSecretReplicator creates a new secret replicator
-func NewSecretReplicator(client *kubernetes.Clientset, hubClient *hubclientset.Clientset, namespace string, resyncPeriod time.Duration) *SecretReplicator {
-	dependencyMap, _ := getMapOfNginxCertificatesToHubs(hubClient, namespace)
+func NewSecretReplicator(client *kubernetes.Clientset, blackduckClient *blackduckclientset.Clientset, namespace string, resyncPeriod time.Duration) *SecretReplicator {
+	dependencyMap, _ := getMapOfNginxCertificatesToHubs(blackduckClient, namespace)
 
 	repl := SecretReplicator{
-		client:        client,
-		hubClient:     hubClient,
-		namespace:     namespace,
-		dependencyMap: dependencyMap,
+		client:          client,
+		blackduckClient: blackduckClient,
+		namespace:       namespace,
+		dependencyMap:   dependencyMap,
 	}
 
 	_, controller := cache.NewInformer(
@@ -92,7 +92,7 @@ func (r *SecretReplicator) secretAdded(obj interface{}) {
 	secret := obj.(*v1.Secret)
 
 	if strings.EqualFold(secret.Name, "blackduck-certificate") {
-		hubList, err := util.ListHubs(r.hubClient, r.namespace)
+		hubList, err := util.ListHubs(r.blackduckClient, r.namespace)
 		if err != nil {
 			log.Errorf("unable to list the hubs due to %+v", err)
 		}
@@ -118,7 +118,7 @@ func (r *SecretReplicator) secretUpdated(oldObj interface{}, newobj interface{})
 	secret := newobj.(*v1.Secret)
 
 	if strings.EqualFold(secret.Name, "blackduck-certificate") {
-		hubList, err := util.ListHubs(r.hubClient, r.namespace)
+		hubList, err := util.ListHubs(r.blackduckClient, r.namespace)
 		if err != nil {
 			log.Errorf("unable to list the hubs due to %+v", err)
 		}
@@ -219,7 +219,7 @@ func (r *SecretReplicator) updateDependents(secret *v1.Secret, dependents []stri
 // cert1 -> hub1, hub2
 // cert2 -> hub3, hub4, hub5
 // etc...
-func getMapOfNginxCertificatesToHubs(hubClient *hubclientset.Clientset, namespace string) (map[string][]string, error) {
+func getMapOfNginxCertificatesToHubs(hubClient *blackduckclientset.Clientset, namespace string) (map[string][]string, error) {
 	hubList, err := util.ListHubs(hubClient, namespace)
 	if err != nil {
 		log.Errorf("unable to list the hubs due to %+v", err)

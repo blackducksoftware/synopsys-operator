@@ -22,7 +22,7 @@ under the License.
 package protoform
 
 import (
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/gin-gonic/contrib/static"
 	gin "github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,7 +31,7 @@ import (
 )
 
 // SetupHTTPServer will used to create all the http api
-func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, namespace string) {
+func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset, namespace string) {
 
 	// all other http traffic
 	go func() {

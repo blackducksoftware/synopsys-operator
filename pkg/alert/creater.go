@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Creater will store the configuration to create the Hub
+// Creater will store the configuration to create the Blackduck
 type Creater struct {
 	kubeConfig  *rest.Config
 	kubeClient  *kubernetes.Clientset

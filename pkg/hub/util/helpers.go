@@ -26,11 +26,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
-	hubClient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckClient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -68,22 +68,22 @@ func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder stri
 	return adminPassword, userPassword, postgresPassword, err
 }
 
-func updateHubObject(h *hubClient.Clientset, namespace string, obj *v2.Hub) (*v2.Hub, error) {
-	return h.SynopsysV2().Hubs(namespace).Update(obj)
+func updateBlackduckObject(h *blackduckClient.Clientset, namespace string, obj *v1.Blackduck) (*v1.Blackduck, error) {
+	return h.SynopsysV1().Blackducks(namespace).Update(obj)
 }
 
 // UpdateState will be used to update the hub object
-func UpdateState(h *hubClient.Clientset, namespace string, specState string, statusState string, err error, hub *v2.Hub) (*v2.Hub, error) {
-	hub.Spec.State = specState
-	hub.Status.State = statusState
+func UpdateState(h *blackduckClient.Clientset, namespace string, specState string, statusState string, err error, blackduck *v1.Blackduck) (*v1.Blackduck, error) {
+	blackduck.Spec.State = specState
+	blackduck.Status.State = statusState
 	if err != nil {
-		hub.Status.ErrorMessage = fmt.Sprintf("%+v", err)
+		blackduck.Status.ErrorMessage = fmt.Sprintf("%+v", err)
 	}
-	hub, err = updateHubObject(h, namespace, hub)
+	blackduck, err = updateBlackduckObject(h, namespace, blackduck)
 	if err != nil {
-		logrus.Errorf("couldn't update the state of hub object: %s", err.Error())
+		logrus.Errorf("couldn't update the state of blackduck object: %s", err.Error())
 	}
-	return hub, err
+	return blackduck, err
 }
 
 // GetHubDBPassword will retrieve the blackduck and blackduck_user db password
@@ -113,11 +113,11 @@ func GetHubDBPassword(kubeClient *kubernetes.Clientset, namespace string) (strin
 func CloneJob(clientset *kubernetes.Clientset, namespace string, from string, to string, password string) error {
 	command := fmt.Sprintf("pg_dumpall -h postgres.%s.svc.cluster.local -U postgres | psql -h postgres.%s.svc.cluster.local -U postgres", from, to)
 
-	cloneJob := &v1.Job{
+	cloneJob := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("clone-job-%s", to),
 		},
-		Spec: v1.JobSpec{
+		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{

@@ -26,9 +26,9 @@ import (
 	"strings"
 	"time"
 
-	hubv2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub"
-	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -42,10 +42,10 @@ import (
 
 // InitDatabaseUpdater will hold the configuration to initialize the Postgres database
 type InitDatabaseUpdater struct {
-	Config     *protoform.Config
-	KubeClient *kubernetes.Clientset
-	HubClient  *hubclient.Clientset
-	Hubs       map[string]chan struct{}
+	Config          *protoform.Config
+	KubeClient      *kubernetes.Clientset
+	BlackduckClient *blackduckclient.Clientset
+	Hubs            map[string]chan struct{}
 }
 
 // Run is a BLOCKING function which should be run by the framework .
@@ -55,14 +55,14 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return i.HubClient.SynopsysV2().Hubs(i.Config.Namespace).List(options)
+			return i.BlackduckClient.SynopsysV1().Blackducks(i.Config.Namespace).List(options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return i.HubClient.SynopsysV2().Hubs(i.Config.Namespace).Watch(options)
+			return i.BlackduckClient.SynopsysV1().Blackducks(i.Config.Namespace).Watch(options)
 		},
 	}
 	_, ctrl := cache.NewInformer(lw,
-		&hubv2.Hub{},
+		&blackduckv1.Blackduck{},
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -72,7 +72,7 @@ func (i *InitDatabaseUpdater) Run(ch <-chan struct{}) {
 
 			DeleteFunc: func(obj interface{}) {
 				log.Debugf("init database hub deleted event ! %v ", obj)
-				hub, ok := obj.(*hubv2.Hub)
+				hub, ok := obj.(*blackduckv1.Blackduck)
 				if !ok {
 					log.Errorf("unable to cast")
 					return
@@ -99,14 +99,14 @@ func (i *InitDatabaseUpdater) deleteChannel(name string) {
 }
 
 func (i *InitDatabaseUpdater) addHub(obj interface{}) {
-	hub := obj.(*hubv2.Hub)
+	hub := obj.(*blackduckv1.Blackduck)
 	if i.isHubThreadAlreadyExist(hub) {
 		return
 	}
 	// Only if the we don't use persistent storage and that we don't use an external database
 	if !hub.Spec.PersistentStorage && hub.Spec.ExternalPostgres == nil {
 		for j := 0; j < 20; j++ {
-			hub, err := util.GetHub(i.HubClient, i.Config.Namespace, hub.Name)
+			hub, err := util.GetHub(i.BlackduckClient, i.Config.Namespace, hub.Name)
 			if err != nil {
 				log.Errorf("unable to get hub %s due to %+v", hub.Name, err)
 			}
@@ -122,7 +122,7 @@ func (i *InitDatabaseUpdater) addHub(obj interface{}) {
 }
 
 // getHubPasswords will get the hub password from the db-creds secret
-func (i *InitDatabaseUpdater) getHubPasswords(hubSpec *hubv2.HubSpec) (adminPassword string, userPassword string, err error) {
+func (i *InitDatabaseUpdater) getHubPasswords(hubSpec *blackduckv1.BlackduckSpec) (adminPassword string, userPassword string, err error) {
 	secret, err := util.GetSecret(i.KubeClient, hubSpec.Namespace, "db-creds")
 
 	if err != nil {
@@ -135,7 +135,7 @@ func (i *InitDatabaseUpdater) getHubPasswords(hubSpec *hubv2.HubSpec) (adminPass
 }
 
 // startInitDatabaseUpdater will check every 3 minutes for Hub postgres restart, if so, then initialize the DB
-func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv2.HubSpec) chan struct{} {
+func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *blackduckv1.BlackduckSpec) chan struct{} {
 	stopCh := make(chan struct{})
 	go func() {
 		var checks int32
@@ -151,7 +151,7 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv2.HubSpec) c
 					log.Debugf("%v : unable to find the namespace", hubSpec.Namespace)
 					return
 				}
-				_, err = util.GetHub(i.HubClient, i.Config.Namespace, hubSpec.Namespace)
+				_, err = util.GetHub(i.BlackduckClient, i.Config.Namespace, hubSpec.Namespace)
 				if err != nil {
 					i.deleteChannel(hubSpec.Namespace)
 					log.Debugf("%v : unable to find the hub", hubSpec.Namespace)
@@ -224,7 +224,7 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *hubv2.HubSpec) c
 
 // verifyHubsPostgresRestart will retrieve all Backup disabled hubs and send it to startInitDatabaseUpdater
 func (i *InitDatabaseUpdater) verifyHubsPostgresRestart() {
-	hubs, err := util.ListHubs(i.HubClient, i.Config.Namespace)
+	hubs, err := util.ListHubs(i.BlackduckClient, i.Config.Namespace)
 	if err != nil {
 		log.Errorf("unable to list the hubs due to %+v", err)
 	}
@@ -240,7 +240,7 @@ func (i *InitDatabaseUpdater) verifyHubsPostgresRestart() {
 	}
 }
 
-func (i *InitDatabaseUpdater) isHubThreadAlreadyExist(hub *hubv2.Hub) bool {
+func (i *InitDatabaseUpdater) isHubThreadAlreadyExist(hub *blackduckv1.Blackduck) bool {
 	if _, ok := i.Hubs[hub.Name]; ok {
 		return true
 	}

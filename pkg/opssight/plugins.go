@@ -32,11 +32,11 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
-	hubv2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1" //extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
 	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -60,7 +60,7 @@ type DeleteHub struct {
 	Config         *protoform.Config
 	KubeClient     *kubernetes.Clientset
 	OpsSightClient *opssightclientset.Clientset
-	HubClient      *hubclient.Clientset
+	HubClient      *blackduckclient.Clientset
 	OpsSightSpec   *v1.OpsSightSpec
 }
 
@@ -97,12 +97,12 @@ type ConfigMapUpdater struct {
 	config         *protoform.Config
 	httpClient     *http.Client
 	kubeClient     *kubernetes.Clientset
-	hubClient      *hubclient.Clientset
+	hubClient      *blackduckclient.Clientset
 	opssightClient *opssightclientset.Clientset
 }
 
 // NewConfigMapUpdater ...
-func NewConfigMapUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *ConfigMapUpdater {
+func NewConfigMapUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclient.Clientset, opssightClient *opssightclientset.Clientset) *ConfigMapUpdater {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -182,14 +182,14 @@ func (p *ConfigMapUpdater) Run(ch <-chan struct{}) {
 
 	hubListWatch := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return p.hubClient.SynopsysV2().Hubs(p.config.Namespace).List(options)
+			return p.hubClient.SynopsysV1().Blackducks(p.config.Namespace).List(options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return p.hubClient.SynopsysV2().Hubs(p.config.Namespace).Watch(options)
+			return p.hubClient.SynopsysV1().Blackducks(p.config.Namespace).Watch(options)
 		},
 	}
 	_, hubController := cache.NewInformer(hubListWatch,
-		&hubv2.Hub{},
+		&blackduckv1.Blackduck{},
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			// TODO kinda dumb, we just do a complete re-list of all hubs,
@@ -241,7 +241,7 @@ func (p *ConfigMapUpdater) getAllHubs(hubType string) []string {
 		if strings.EqualFold(hub.Spec.HubType, hubType) {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
 			allHubNamespaces = append(allHubNamespaces, hubURL)
-			logger.Infof("Hub config map controller, namespace is %s", hub.Name)
+			logger.Infof("Blackduck config map controller, namespace is %s", hub.Name)
 		}
 	}
 

@@ -29,8 +29,8 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/hub/containers"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -48,13 +48,13 @@ type Creater struct {
 	Config           *protoform.Config
 	KubeConfig       *rest.Config
 	KubeClient       *kubernetes.Clientset
-	HubClient        *hubclientset.Clientset
+	HubClient        *blackduckclientset.Clientset
 	osSecurityClient *securityclient.SecurityV1Client
 	routeClient      *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset,
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
 	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, HubClient: hubClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
@@ -103,7 +103,7 @@ func (hc *Creater) DeleteHub(namespace string) error {
 }
 
 // CreateHub will create the Black Duck Hub
-func (hc *Creater) CreateHub(createHub *v2.HubSpec) (string, string, bool, error) {
+func (hc *Creater) CreateHub(createHub *v1.BlackduckSpec) (string, string, bool, error) {
 	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
 	// Create a horizon deployer for each hub

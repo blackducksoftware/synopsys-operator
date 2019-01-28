@@ -32,8 +32,8 @@ import (
 	"strings"
 	"time"
 
-	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/hub/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -59,8 +59,8 @@ type Handler struct {
 	config           *protoform.Config
 	kubeConfig       *rest.Config
 	kubeClient       *kubernetes.Clientset
-	hubClient        *hubclientset.Clientset
-	defaults         *hub_v2.HubSpec
+	hubClient        *blackduckclientset.Clientset
+	defaults         *blackduckv1.BlackduckSpec
 	federatorBaseURL string
 	cmMutex          chan bool
 	osSecurityClient *securityclient.SecurityV1Client
@@ -68,7 +68,7 @@ type Handler struct {
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *hubclientset.Clientset, defaults *hub_v2.HubSpec,
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset, defaults *blackduckv1.BlackduckSpec,
 	federatorBaseURL string, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
 	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, hubClient: hubClient, defaults: defaults,
 		federatorBaseURL: federatorBaseURL, cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
@@ -82,7 +82,7 @@ type APISetHubsRequest struct {
 // ObjectCreated will be called for create hub events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("ObjectCreated: %+v", obj)
-	hubv2, ok := obj.(*hub_v2.Hub)
+	hubv2, ok := obj.(*blackduckv1.Blackduck)
 	if !ok {
 		log.Error("Unable to cast Hub object")
 		return
@@ -171,7 +171,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	//}
 }
 
-func (h *Handler) autoRegisterHub(createHub *hub_v2.HubSpec) error {
+func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
 	registrationPod, err := util.FilterPodByNamePrefixInNamespace(h.kubeClient, createHub.Namespace, "registration")
 	log.Debugf("registration pod: %+v", registrationPod)
