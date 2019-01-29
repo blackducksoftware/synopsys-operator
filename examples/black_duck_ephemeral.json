@@ -8,7 +8,7 @@
     "certificateName": "default",
     "environs": [
       "HTTPS_VERIFY_CERTS:yes",
-      "HUB_POSTGRES_ENABLE_SSL:\"false\"",
+      "HUB_POSTGRES_ENABLE_SSL:false",
       "HUB_VERSION:2018.12.2",
       "IPV4_ONLY:0",
       "RABBITMQ_DEFAULT_VHOST:protecodesc",

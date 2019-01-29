@@ -11,7 +11,7 @@
       "BROKER_URL:amqps://rabbitmq/protecodesc",
       "HTTPS_VERIFY_CERTS:yes",
       "HUB_POSTGRES_ADMIN:blackduck",
-      "HUB_POSTGRES_ENABLE_SSL:\"false\"",
+      "HUB_POSTGRES_ENABLE_SSL:false",
       "HUB_WEBSERVER_PORT:8443",
       "IPV4_ONLY:0",
       "USE_ALERT:0",
