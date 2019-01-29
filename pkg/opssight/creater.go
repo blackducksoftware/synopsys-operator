@@ -272,12 +272,12 @@ func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 }
 
 func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
-	if createOpsSight.Hub.InitialCount > createOpsSight.Hub.MaxCount {
-		createOpsSight.Hub.InitialCount = createOpsSight.Hub.MaxCount
+	if createOpsSight.Blackduck.InitialCount > createOpsSight.Blackduck.MaxCount {
+		createOpsSight.Blackduck.InitialCount = createOpsSight.Blackduck.MaxCount
 	}
 
 	hubErrs := map[string]error{}
-	for i := 0; i < createOpsSight.Hub.InitialCount; i++ {
+	for i := 0; i < createOpsSight.Blackduck.InitialCount; i++ {
 		name := fmt.Sprintf("%s-%v", createOpsSight.Namespace, i)
 
 		ns, err := util.CreateNamespace(ac.kubeClient, name)
@@ -287,7 +287,7 @@ func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
 			hubErrs[name] = fmt.Errorf("unable to create the namespace due to %+v", err)
 		}
 
-		hubSpec := createOpsSight.Hub.HubSpec
+		hubSpec := createOpsSight.Blackduck.BlackduckSpec
 		hubSpec.Namespace = name
 		createHub := &hub_v2.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
 		log.Debugf("hub[%d]: %+v", i, createHub)

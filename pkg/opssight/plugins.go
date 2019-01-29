@@ -71,7 +71,7 @@ func (d *DeleteHub) Run(resources api.ControllerResources, ch chan struct{}) err
 		return errors.Trace(err)
 	}
 	// whether the max no of hub is reached?
-	if d.OpsSightSpec.Hub.MaxCount == hubCounts {
+	if d.OpsSightSpec.Blackduck.MaxCount == hubCounts {
 
 	}
 
@@ -267,7 +267,7 @@ func (p *ConfigMapUpdater) updateAllHubs() []error {
 
 	errList := []error{}
 	for _, o := range opssights.Items {
-		hubType := o.Spec.Hub.HubSpec.Type
+		hubType := o.Spec.Blackduck.BlackduckSpec.Type
 		allHubNamespaces := p.getAllHubs(hubType)
 
 		for _, o := range opssights.Items {
@@ -301,7 +301,7 @@ func (p *ConfigMapUpdater) updateOpsSight(obj interface{}) error {
 		time.Sleep(10 * time.Second)
 	}
 
-	hubType := opssight.Spec.Hub.HubSpec.Type
+	hubType := opssight.Spec.Blackduck.BlackduckSpec.Type
 	allHubNamespaces := p.getAllHubs(hubType)
 
 	err = sendHubs(p.kubeClient, &opssight.Spec, allHubNamespaces)

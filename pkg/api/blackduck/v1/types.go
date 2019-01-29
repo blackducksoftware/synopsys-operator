@@ -25,7 +25,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Blackduck will be CRD hub definition
+// Blackduck will be CRD blackduck definition
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -104,7 +104,7 @@ type BlackduckStatus struct {
 	ErrorMessage  string            `json:"errorMessage,omitempty"`
 }
 
-// BlackduckList will store the list of Hubs
+// BlackduckList will store the list of Blackducks
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type BlackduckList struct {
 	meta_v1.TypeMeta `json:",inline"`

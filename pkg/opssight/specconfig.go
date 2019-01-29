@@ -50,12 +50,12 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 	configMap := &MainOpssightConfigMap{
 		LogLevel: config.LogLevel,
 		Hub: HubConfig{
-			Hosts:               config.Hub.Hosts,
-			PasswordEnvVar:      config.Hub.PasswordEnvVar,
-			ConcurrentScanLimit: config.Hub.ConcurrentScanLimit,
-			Port:                config.Hub.Port,
-			TotalScanLimit:      config.Hub.TotalScanLimit,
-			User:                config.Hub.User,
+			Hosts:               config.Blackduck.Hosts,
+			PasswordEnvVar:      config.Blackduck.PasswordEnvVar,
+			ConcurrentScanLimit: config.Blackduck.ConcurrentScanLimit,
+			Port:                config.Blackduck.Port,
+			TotalScanLimit:      config.Blackduck.TotalScanLimit,
+			User:                config.Blackduck.User,
 		},
 		ImageFacade: ImageFacadeConfig{
 			CreateImagesOnly:        false,

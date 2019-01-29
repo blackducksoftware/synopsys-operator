@@ -47,7 +47,7 @@ type RegistryAuth struct {
 }
 
 // Blackduck ...
-type Hub struct {
+type Blackduck struct {
 	Hosts               []string `json:"hosts"`
 	User                string   `json:"user"`
 	Port                int      `json:"port"`
@@ -58,7 +58,7 @@ type Hub struct {
 	InitialCount                 int               `json:"initialCount"`
 	MaxCount                     int               `json:"maxCount"`
 	DeleteHubThresholdPercentage int               `json:"deleteHubThresholdPercentage"`
-	HubSpec                      *v1.BlackduckSpec `json:"hubSpec"`
+	BlackduckSpec                *v1.BlackduckSpec `json:"blackduckSpec"`
 }
 
 // Perceptor ...
@@ -158,7 +158,7 @@ type OpsSightSpec struct {
 	EnableSkyfire bool        `json:"enableSkyfire"`
 	Skyfire       *Skyfire    `json:"skyfire"`
 
-	Hub *Hub `json:"hub"`
+	Blackduck *Blackduck `json:"blackduck"`
 
 	EnableMetrics bool `json:"enableMetrics"`
 

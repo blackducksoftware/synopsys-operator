@@ -21,5 +21,5 @@ under the License.
 
 package blackduck
 
-// GroupName will store the CRD Hub group name
+// GroupName will store the CRD Blackduck group name
 const GroupName = "synopsys.com"

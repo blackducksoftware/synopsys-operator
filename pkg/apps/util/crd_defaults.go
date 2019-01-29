@@ -33,7 +33,7 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 
 	return &alertv1.AlertSpec{
 		Port:           &port,
-		HubPort:        &hubPort,
+		BlackduckPort:  &hubPort,
 		StandAlone:     &standAlone,
 		AlertMemory:    "512M",
 		CfsslMemory:    "640M",
@@ -115,7 +115,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			KubeDumpIntervalSeconds:      60,
 			PerceptorDumpIntervalSeconds: 60,
 		},
-		Hub: &opssightv1.Hub{
+		Blackduck: &opssightv1.Blackduck{
 			User:                         "sysadmin",
 			Port:                         443,
 			ConcurrentScanLimit:          2,
@@ -124,7 +124,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			InitialCount:                 0,
 			MaxCount:                     0,
 			DeleteHubThresholdPercentage: 50,
-			HubSpec:                      GetHubDefaultValue(),
+			BlackduckSpec:                GetHubDefaultValue(),
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,

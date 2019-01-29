@@ -164,8 +164,8 @@ func (a *SpecConfig) alertConfigMap() *components.ConfigMap {
 
 	configMap.AddData(map[string]string{
 		"ALERT_SERVER_PORT":         fmt.Sprintf("%d", *a.config.Port),
-		"PUBLIC_HUB_WEBSERVER_HOST": a.config.HubHost,
-		"PUBLIC_HUB_WEBSERVER_PORT": fmt.Sprintf("%d", *a.config.HubPort),
+		"PUBLIC_HUB_WEBSERVER_HOST": a.config.BlackduckHost,
+		"PUBLIC_HUB_WEBSERVER_PORT": fmt.Sprintf("%d", *a.config.BlackduckPort),
 	})
 
 	return configMap

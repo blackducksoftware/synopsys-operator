@@ -27,21 +27,21 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
-// Flavor will determine the size of the Black Duck Hub
+// Flavor will determine the size of the Black Duck Blackduck
 type Flavor string
 
 const (
-	// SMALL Black Duck Hub
+	// SMALL Black Duck Blackduck
 	SMALL Flavor = "SMALL"
-	// MEDIUM Black Duck Hub
+	// MEDIUM Black Duck Blackduck
 	MEDIUM Flavor = "MEDIUM"
-	// LARGE Black Duck Hub
+	// LARGE Black Duck Blackduck
 	LARGE Flavor = "LARGE"
-	// XLARGE Black Duck Hub
+	// XLARGE Black Duck Blackduck
 	XLARGE Flavor = "X-LARGE"
 )
 
-// ContainerFlavor configuration will have the settings for flavored Black Duck Hub
+// ContainerFlavor configuration will have the settings for flavored Black Duck Blackduck
 type ContainerFlavor struct {
 	WebserverMemoryLimit       string
 	SolrMemoryLimit            string
@@ -65,7 +65,7 @@ type ContainerFlavor struct {
 	PostgresCPULimit           string
 }
 
-// GetContainersFlavor will return the default settings for the flavored Black Duck Hub TODO Make this typesafe, make flavor const into an enum.
+// GetContainersFlavor will return the default settings for the flavored Black Duck Blackduck TODO Make this typesafe, make flavor const into an enum.
 func GetContainersFlavor(flavor string) *ContainerFlavor {
 	switch Flavor(strings.ToUpper(flavor)) {
 	case SMALL:

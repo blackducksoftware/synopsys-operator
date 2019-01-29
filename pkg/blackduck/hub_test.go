@@ -27,7 +27,7 @@ import (
 
 func TestAddHub(t *testing.T) {
 	// deployer, _ := NewHubInstaller()
-	// createHub := &Hub{
+	// createHub := &Blackduck{
 	// 	Namespace:      "blackduck-hub",
 	// 	DockerRegistry: "docker.io",
 	// 	DockerRepo:     "blackducksoftware",

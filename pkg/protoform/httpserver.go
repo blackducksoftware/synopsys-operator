@@ -83,7 +83,7 @@ func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.C
 		// 	}
 
 		// 	log.Debugf("found %d hubs", len(hubs.Items))
-		// 	returnVal := make(map[string]v1.Hub)
+		// 	returnVal := make(map[string]v1.Blackduck)
 
 		// 	for _, v := range hubs.Items {
 		// 		//l og.Debugf("hub %v: %+v", k, v)
@@ -95,7 +95,7 @@ func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.C
 
 		// router.POST("/hub", func(c *gin.Context) {
 		// 	log.Debug("create hub request")
-		// 	hubSpec := &v1.HubSpec{}
+		// 	hubSpec := &v1.BlackduckSpec{}
 		// 	if err := c.BindJSON(hubSpec); err != nil {
 		// 		log.Debugf("Fatal failure binding the incoming request ! %v", c.Request)
 		// 	}
@@ -107,13 +107,13 @@ func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.C
 		// 		c.JSON(404, "\"message\": \"Failed to create the namespace\"")
 		// 		return
 		// 	}
-		// 	hubClient.SynopsysV1().Hubs(hubSpec.Namespace).Create(&v1.Hub{ObjectMeta: metav1.ObjectMeta{Name: hubSpec.Namespace}, Spec: *hubSpec})
+		// 	hubClient.SynopsysV1().Hubs(hubSpec.Namespace).Create(&v1.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: hubSpec.Namespace}, Spec: *hubSpec})
 
 		// 	c.JSON(200, "\"message\": \"Succeeded\"")
 		// })
 
 		// router.DELETE("/hub", func(c *gin.Context) {
-		// 	hubSpec := &v1.HubSpec{}
+		// 	hubSpec := &v1.BlackduckSpec{}
 		// 	if err := c.BindJSON(hubSpec); err != nil {
 		// 		log.Debugf("Fatal failure binding the incoming request ! %v", c.Request)
 		// 		return
