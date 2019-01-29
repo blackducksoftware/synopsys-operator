@@ -57,7 +57,7 @@ func (v BlackducksResource) List(c buffalo.Context) error {
 		return c.Error(500, err)
 	}
 	// Make blackducks available inside the html template
-	c.Set("hubs", blackducks.Items)
+	c.Set("blackducks", blackducks.Items)
 	return c.Render(200, r.HTML("blackducks/index.html", "old_application.html"))
 }
 
@@ -69,7 +69,7 @@ func (v BlackducksResource) Show(c buffalo.Context) error {
 		return c.Error(500, err)
 	}
 	// Make blackduck available inside the html template
-	c.Set("hub", blackduck)
+	c.Set("blackduck", blackduck)
 	return c.Render(200, r.HTML("blackducks/show.html", "old_application.html"))
 }
 
