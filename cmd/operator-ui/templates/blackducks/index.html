@@ -1,0 +1,58 @@
+<header class="App-header">
+  <img src="<%= rootPath() %>assets/images/logo.png" class="Company-logo" alt="Synopsys" />
+  <section class="App-sub-header">
+    <section class="Icon-wrap-header">
+      <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
+    </section>
+    <h4>Black Duck Instances</h4>
+  </section>
+</header>
+<br/>
+<div class="list-container">
+  <ul class="list-unstyled list-inline">
+    <li class="list-inline-item"><a href="<%= rootPath() %>" class="btn btn-info">Home</a></li>
+    <li class="list-inline-item"><a href="<%= newBlackducksPath() %>" class="btn btn-primary">Create</a></li>
+  </ul>
+  <table class="table table-striped">
+    <thead class="list-header-container">
+      <th>Namespace</th>
+      <th>Size</th>
+      <th>Black Duck Version</th>
+      <th>Clone Database</th>
+      <th>PVC Storage</th>
+      <th>Certificate Name</th>
+      <th>Status</th>
+      <th>IP Address</th>
+      <th colspan="3">Error Message</th>
+      <th>&nbsp;</th>
+      <th>&nbsp;</th>
+    </thead>
+    <tbody>
+      <%= if (len(blackducks) > 0) { %>
+        <%= for (blackduck) in blackducks { %>
+          <tr>
+            <td><%= blackduck.Spec.Namespace %></td>
+            <td><%= blackduck.Spec.Size %></td>
+            <td><%= blackduck.View.Version %></td>
+            <td><%= blackduck.Spec.DbPrototype %></td>
+            <td><%= blackduck.Spec.PVCStorageClass %> <%= hub.Spec.ScanType %> </td>
+            <td><%= blackduck.Spec.CertificateName %></td>
+            <td><%= blackduck.Status.State %></td>
+            <td><a href="https://<%= blackduck.Status.IP %>" target="_blank"><%= blackduck.Status.IP %></a></td>
+            <td colspan="3"><%= blackduck.Status.ErrorMessage %></td>
+            <td>
+              <a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" class="btn btn-info">View</a>
+            </td>
+            <td>
+              <a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
+            </td>
+          </tr>
+        <% } %>
+      <% } else { %>
+        <tr>
+          <td colspan="15"><center><h5>No Black Duck instances found</h5></center></td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
