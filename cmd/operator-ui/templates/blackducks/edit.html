@@ -1,0 +1,14 @@
+<header class="App-header">
+  <img src="<%= rootPath() %>assets/images/logo.png" class="Company-logo" alt="Synopsys" />
+  <section class="App-sub-header">
+    <section class="Icon-wrap-header">
+      <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
+    </section>
+    <h4>Edit a Blackduck instance</h4>
+  </section>
+</header>
+<br/>
+
+<%= form_for(blackduck, {action: blackduckPath({ blackduck_id: blackduck.Spec.Namespace }), method: "POST"}) { %>
+  <%= partial("blackducks/form.html") %>
+<% } %>

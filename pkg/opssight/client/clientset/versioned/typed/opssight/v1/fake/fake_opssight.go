@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	opssight_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,20 +39,20 @@ var opssightsResource = schema.GroupVersionResource{Group: "synopsys", Version: 
 var opssightsKind = schema.GroupVersionKind{Group: "synopsys", Version: "v1", Kind: "OpsSight"}
 
 // Get takes name of the opsSight, and returns the corresponding opsSight object, and an error if there is any.
-func (c *FakeOpsSights) Get(name string, options v1.GetOptions) (result *opssightv1.OpsSight, err error) {
+func (c *FakeOpsSights) Get(name string, options v1.GetOptions) (result *opssight_v1.OpsSight, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(opssightsResource, c.ns, name), &opssightv1.OpsSight{})
+		Invokes(testing.NewGetAction(opssightsResource, c.ns, name), &opssight_v1.OpsSight{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*opssightv1.OpsSight), err
+	return obj.(*opssight_v1.OpsSight), err
 }
 
 // List takes label and field selectors, and returns the list of OpsSights that match those selectors.
-func (c *FakeOpsSights) List(opts v1.ListOptions) (result *opssightv1.OpsSightList, err error) {
+func (c *FakeOpsSights) List(opts v1.ListOptions) (result *opssight_v1.OpsSightList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(opssightsResource, opssightsKind, c.ns, opts), &opssightv1.OpsSightList{})
+		Invokes(testing.NewListAction(opssightsResource, opssightsKind, c.ns, opts), &opssight_v1.OpsSightList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeOpsSights) List(opts v1.ListOptions) (result *opssightv1.OpsSightLi
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &opssightv1.OpsSightList{ListMeta: obj.(*opssightv1.OpsSightList).ListMeta}
-	for _, item := range obj.(*opssightv1.OpsSightList).Items {
+	list := &opssight_v1.OpsSightList{ListMeta: obj.(*opssight_v1.OpsSightList).ListMeta}
+	for _, item := range obj.(*opssight_v1.OpsSightList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -79,31 +79,31 @@ func (c *FakeOpsSights) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a opsSight and creates it.  Returns the server's representation of the opsSight, and an error, if there is any.
-func (c *FakeOpsSights) Create(opsSight *opssightv1.OpsSight) (result *opssightv1.OpsSight, err error) {
+func (c *FakeOpsSights) Create(opsSight *opssight_v1.OpsSight) (result *opssight_v1.OpsSight, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(opssightsResource, c.ns, opsSight), &opssightv1.OpsSight{})
+		Invokes(testing.NewCreateAction(opssightsResource, c.ns, opsSight), &opssight_v1.OpsSight{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*opssightv1.OpsSight), err
+	return obj.(*opssight_v1.OpsSight), err
 }
 
 // Update takes the representation of a opsSight and updates it. Returns the server's representation of the opsSight, and an error, if there is any.
-func (c *FakeOpsSights) Update(opsSight *opssightv1.OpsSight) (result *opssightv1.OpsSight, err error) {
+func (c *FakeOpsSights) Update(opsSight *opssight_v1.OpsSight) (result *opssight_v1.OpsSight, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(opssightsResource, c.ns, opsSight), &opssightv1.OpsSight{})
+		Invokes(testing.NewUpdateAction(opssightsResource, c.ns, opsSight), &opssight_v1.OpsSight{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*opssightv1.OpsSight), err
+	return obj.(*opssight_v1.OpsSight), err
 }
 
 // Delete takes name of the opsSight and deletes it. Returns an error if one occurs.
 func (c *FakeOpsSights) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(opssightsResource, c.ns, name), &opssightv1.OpsSight{})
+		Invokes(testing.NewDeleteAction(opssightsResource, c.ns, name), &opssight_v1.OpsSight{})
 
 	return err
 }
@@ -112,17 +112,17 @@ func (c *FakeOpsSights) Delete(name string, options *v1.DeleteOptions) error {
 func (c *FakeOpsSights) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(opssightsResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &opssightv1.OpsSightList{})
+	_, err := c.Fake.Invokes(action, &opssight_v1.OpsSightList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched opsSight.
-func (c *FakeOpsSights) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *opssightv1.OpsSight, err error) {
+func (c *FakeOpsSights) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *opssight_v1.OpsSight, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(opssightsResource, c.ns, name, data, subresources...), &opssightv1.OpsSight{})
+		Invokes(testing.NewPatchSubresourceAction(opssightsResource, c.ns, name, data, subresources...), &opssight_v1.OpsSight{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*opssightv1.OpsSight), err
+	return obj.(*opssight_v1.OpsSight), err
 }

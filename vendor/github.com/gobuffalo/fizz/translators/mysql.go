@@ -11,7 +11,8 @@ import (
 
 // MySQL is a MySQL-specific translator.
 type MySQL struct {
-	Schema SchemaQuery
+	Schema         SchemaQuery
+	strDefaultSize int
 }
 
 // NewMySQL constructs a new MySQL translator.
@@ -19,7 +20,8 @@ func NewMySQL(url, name string) *MySQL {
 	schema := &mysqlSchema{Schema{URL: url, Name: name, schema: map[string]*fizz.Table{}}}
 	schema.Builder = schema
 	return &MySQL{
-		Schema: schema,
+		Schema:         schema,
+		strDefaultSize: 255,
 	}
 }
 
@@ -219,7 +221,7 @@ func (p *MySQL) buildColumn(c fizz.Column) string {
 func (p *MySQL) colType(c fizz.Column) string {
 	switch strings.ToLower(c.ColType) {
 	case "string":
-		s := "255"
+		s := fmt.Sprintf("%d", p.strDefaultSize)
 		if c.Options["size"] != nil {
 			s = fmt.Sprintf("%d", c.Options["size"])
 		}
@@ -233,6 +235,15 @@ func (p *MySQL) colType(c fizz.Column) string {
 	case "int", "integer":
 		return "INTEGER"
 	case "float", "decimal":
+		if c.Options["precision"] != nil {
+			precision := c.Options["precision"]
+			if c.Options["scale"] != nil {
+				scale := c.Options["scale"]
+				return fmt.Sprintf("FLOAT(%d,%d)", precision, scale)
+			}
+			return fmt.Sprintf("FLOAT(%d)", precision)
+		}
+
 		return "FLOAT"
 	case "json":
 		return "JSON"

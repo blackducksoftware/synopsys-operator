@@ -23,7 +23,7 @@ package util
 
 import alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 import opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-import hubv2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+import blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 
 // GetAlertDefaultValue creates a alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {
@@ -33,7 +33,7 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 
 	return &alertv1.AlertSpec{
 		Port:           &port,
-		HubPort:        &hubPort,
+		BlackduckPort:  &hubPort,
 		StandAlone:     &standAlone,
 		AlertMemory:    "512M",
 		CfsslMemory:    "640M",
@@ -43,12 +43,12 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 }
 
 // GetHubDefaultValue creates a hub crd configuration object with defaults
-func GetHubDefaultValue() *hubv2.HubSpec {
-	return &hubv2.HubSpec{
+func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
+	return &blackduckv1.BlackduckSpec{
 		Size:            "Small",
 		DbPrototype:     "",
 		CertificateName: "default",
-		HubType:         "",
+		Type:            "",
 	}
 }
 
@@ -115,7 +115,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			KubeDumpIntervalSeconds:      60,
 			PerceptorDumpIntervalSeconds: 60,
 		},
-		Hub: &opssightv1.Hub{
+		Blackduck: &opssightv1.Blackduck{
 			User:                         "sysadmin",
 			Port:                         443,
 			ConcurrentScanLimit:          2,
@@ -124,7 +124,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			InitialCount:                 0,
 			MaxCount:                     0,
 			DeleteHubThresholdPercentage: 50,
-			HubSpec:                      GetHubDefaultValue(),
+			BlackduckSpec:                GetHubDefaultValue(),
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,

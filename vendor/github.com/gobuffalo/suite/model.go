@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gobuffalo/plush"
+
 	"github.com/gobuffalo/envy"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/pop"
@@ -72,6 +74,12 @@ func NewModel() *Model {
 type Box interface {
 	packd.Finder
 	packd.Walkable
+}
+
+func NewModelWithFixturesAndContext(box packd.Box, ctx *plush.Context) (*Model, error) {
+	m := NewModel()
+	m.Fixtures = box
+	return m, fix.InitWithContext(box, ctx)
 }
 
 func NewModelWithFixtures(box packd.Box) (*Model, error) {

@@ -592,7 +592,7 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			Port:           3005,
 			ServiceAccount: "skyfire",
 		},
-		Hub: &opssightv1.Hub{
+		Blackduck: &opssightv1.Blackduck{
 			User:                         "sysadmin",
 			Port:                         443,
 			ConcurrentScanLimit:          2,
@@ -601,7 +601,7 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			InitialCount:                 1,
 			MaxCount:                     1,
 			DeleteHubThresholdPercentage: 50,
-			HubSpec:                      nil,
+			BlackduckSpec:                nil,
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,

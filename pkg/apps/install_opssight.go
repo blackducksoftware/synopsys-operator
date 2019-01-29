@@ -103,7 +103,7 @@ var InstallOpsSight = &cobra.Command{
 				Port:           3005,
 				ServiceAccount: "skyfire",
 			},
-			Hub: &opssightv1.Hub{
+			Blackduck: &opssightv1.Blackduck{
 				User:                         "sysadmin",
 				Port:                         443,
 				ConcurrentScanLimit:          2,
@@ -112,7 +112,7 @@ var InstallOpsSight = &cobra.Command{
 				InitialCount:                 1,
 				MaxCount:                     1,
 				DeleteHubThresholdPercentage: 50,
-				HubSpec:                      bdutil.GetHubDefaultValue(),
+				BlackduckSpec:                bdutil.GetHubDefaultValue(),
 			},
 			EnableMetrics: true,
 			EnableSkyfire: false,

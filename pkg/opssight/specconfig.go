@@ -50,12 +50,12 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 	configMap := &MainOpssightConfigMap{
 		LogLevel: config.LogLevel,
 		Hub: HubConfig{
-			Hosts:               config.Hub.Hosts,
-			PasswordEnvVar:      config.Hub.PasswordEnvVar,
-			ConcurrentScanLimit: config.Hub.ConcurrentScanLimit,
-			Port:                config.Hub.Port,
-			TotalScanLimit:      config.Hub.TotalScanLimit,
-			User:                config.Hub.User,
+			Hosts:               config.Blackduck.Hosts,
+			PasswordEnvVar:      config.Blackduck.PasswordEnvVar,
+			ConcurrentScanLimit: config.Blackduck.ConcurrentScanLimit,
+			Port:                config.Blackduck.Port,
+			TotalScanLimit:      config.Blackduck.TotalScanLimit,
+			User:                config.Blackduck.User,
 		},
 		ImageFacade: ImageFacadeConfig{
 			CreateImagesOnly:        false,
@@ -148,31 +148,31 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 
-	if p.config.Perceiver.EnablePodPerceiver {
-		rc, err := p.PodPerceiverReplicationController()
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to create pod perceiver")
-		}
-		components.ReplicationControllers = append(components.ReplicationControllers, rc)
-		components.Services = append(components.Services, p.PodPerceiverService())
-		components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
-		cr := p.PodPerceiverClusterRole()
-		components.ClusterRoles = append(components.ClusterRoles, cr)
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(cr))
+	//if p.config.Perceiver.EnablePodPerceiver {
+	rc, err = p.PodPerceiverReplicationController()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create pod perceiver")
 	}
+	components.ReplicationControllers = append(components.ReplicationControllers, rc)
+	components.Services = append(components.Services, p.PodPerceiverService())
+	components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
+	cr := p.PodPerceiverClusterRole()
+	components.ClusterRoles = append(components.ClusterRoles, cr)
+	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(cr))
+	//}
 
-	if p.config.Perceiver.EnableImagePerceiver {
-		rc, err := p.ImagePerceiverReplicationController()
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to create image perceiver")
-		}
-		components.ReplicationControllers = append(components.ReplicationControllers, rc)
-		components.Services = append(components.Services, p.ImagePerceiverService())
-		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
-		cr := p.ImagePerceiverClusterRole()
-		components.ClusterRoles = append(components.ClusterRoles, cr)
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(cr))
+	//if p.config.Perceiver.EnableImagePerceiver {
+	rc, err = p.ImagePerceiverReplicationController()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create image perceiver")
 	}
+	components.ReplicationControllers = append(components.ReplicationControllers, rc)
+	components.Services = append(components.Services, p.ImagePerceiverService())
+	components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
+	cr = p.ImagePerceiverClusterRole()
+	components.ClusterRoles = append(components.ClusterRoles, cr)
+	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(cr))
+	//}
 
 	skyfireRC, err := p.PerceptorSkyfireReplicationController()
 	if err != nil {

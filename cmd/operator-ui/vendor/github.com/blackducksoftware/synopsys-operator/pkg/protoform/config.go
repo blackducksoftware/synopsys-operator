@@ -61,7 +61,7 @@ type HubFederatorConfig struct {
 	ImageVersion string
 }
 
-// HubConfig will have the configuration related to Hub
+// HubConfig will have the configuration related to Blackduck
 type HubConfig struct {
 	User                         string
 	PasswordEnvVar               string

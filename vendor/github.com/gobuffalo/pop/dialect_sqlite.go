@@ -5,7 +5,6 @@ package pop
 import (
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,6 +27,7 @@ func init() {
 	AvailableDialects = append(AvailableDialects, nameSQLite3)
 	dialectSynonyms["sqlite"] = nameSQLite3
 	urlParser[nameSQLite3] = urlParserSQLite3
+	newConnection[nameSQLite3] = newSQLite
 }
 
 var _ dialect = &sqlite{}
@@ -210,6 +210,10 @@ func (m *sqlite) TruncateAll(tx *Connection) error {
 	return tx.RawQuery(strings.Join(stmts, "; ")).Exec()
 }
 
+func (m *sqlite) afterOpen(c *Connection) error {
+	return nil
+}
+
 func newSQLite(deets *ConnectionDetails) (dialect, error) {
 	deets.URL = fmt.Sprintf("sqlite3://%s", deets.Database)
 	cd := &sqlite{
@@ -222,11 +226,7 @@ func newSQLite(deets *ConnectionDetails) (dialect, error) {
 }
 
 func urlParserSQLite3(cd *ConnectionDetails) error {
-	u, err := url.Parse(cd.URL)
-	if err != nil {
-		return errors.Wrapf(err, "could not parse url '%v'", cd.URL)
-	}
-	cd.Database = u.Path
-
+	db := strings.TrimPrefix(cd.URL, "sqlite://")
+	cd.Database = strings.TrimPrefix(db, "sqlite3://")
 	return nil
 }

@@ -15,13 +15,15 @@ import (
 	"github.com/gobuffalo/meta"
 	"github.com/karrick/godirwalk"
 	"github.com/markbates/oncer"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 const timeoutEnv = "BUFFALO_PLUGIN_TIMEOUT"
 
+var t = time.Second * 2
+
 func timeout() time.Duration {
-	t := time.Second
 	oncer.Do("plugins.timeout", func() {
 		rawTimeout, err := envy.MustGet(timeoutEnv)
 		if err == nil {
@@ -63,6 +65,11 @@ var _list List
 func Available() (List, error) {
 	var err error
 	oncer.Do("plugins.Available", func() {
+		defer func() {
+			if err := saveCache(); err != nil {
+				logrus.Error(err)
+			}
+		}()
 
 		app := meta.New(".")
 
@@ -131,7 +138,29 @@ func Available() (List, error) {
 }
 
 func askBin(ctx context.Context, path string) Commands {
+	start := time.Now()
+	defer func() {
+		logrus.Debugf("askBin %s=%.4f s", path, time.Since(start).Seconds())
+	}()
+
 	commands := Commands{}
+	defer func() {
+		addToCache(path, cachedPlugin{
+			Commands: commands,
+		})
+	}()
+	if cp, ok := findInCache(path); ok {
+		s := sum(path)
+		if s == cp.CheckSum {
+			logrus.Debugf("cache hit: %s", path)
+			commands = cp.Commands
+			return commands
+		}
+	}
+	logrus.Debugf("cache miss: %s", path)
+	if strings.HasPrefix(filepath.Base(path), "buffalo-no-sqlite") {
+		return commands
+	}
 
 	cmd := exec.CommandContext(ctx, path, "available")
 	bb := &bytes.Buffer{}
@@ -170,9 +199,17 @@ func listPlugDeps(app meta.App) (List, error) {
 	}
 	for _, p := range plugs.List() {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout())
+		defer cancel()
 		bin := p.Binary
 		if len(p.Local) != 0 {
 			bin = p.Local
+		}
+		bin, err := LookPath(bin)
+		if err != nil {
+			if errors.Cause(err) != ErrPlugMissing {
+				return list, err
+			}
+			continue
 		}
 		commands := askBin(ctx, bin)
 		cancel()
