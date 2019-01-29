@@ -81,7 +81,7 @@ func (c *CRDInstaller) Deploy() error {
 		return err
 	}
 
-	// Hub CRD
+	// Blackduck CRD
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
 		Name:       "alerts.synopsys.com",

@@ -36,9 +36,9 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssight_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
@@ -611,23 +611,23 @@ func GetOpsSights(clientSet *opssightclientset.Clientset) (*opssight_v1.OpsSight
 }
 
 // ListHubs will list all hubs in the cluster
-func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v2.HubList, error) {
-	return hubClientset.SynopsysV2().Hubs(namespace).List(metav1.ListOptions{})
+func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v2.BlackduckList, error) {
+	return hubClientset.SynopsysV1().Blackducks(namespace).List(metav1.ListOptions{})
 }
 
 // WatchHubs will watch for hub events in the cluster
 func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.Interface, error) {
-	return hubClientset.SynopsysV2().Hubs(namespace).Watch(metav1.ListOptions{})
+	return hubClientset.SynopsysV1().Blackducks(namespace).Watch(metav1.ListOptions{})
 }
 
 // CreateHub will create hub in the cluster
-func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v2.Hub) (*hub_v2.Hub, error) {
-	return hubClientset.SynopsysV2().Hubs(namespace).Create(createHub)
+func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v2.Blackduck) (*hub_v2.Blackduck, error) {
+	return hubClientset.SynopsysV1().Blackducks(namespace).Create(createHub)
 }
 
 // GetHub will get hubs in the cluster
-func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*hub_v2.Hub, error) {
-	return hubClientset.SynopsysV2().Hubs(namespace).Get(name, metav1.GetOptions{})
+func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*hub_v2.Blackduck, error) {
+	return hubClientset.SynopsysV1().Blackducks(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListHubPV will list all the persistent volumes attached to each hub in the cluster

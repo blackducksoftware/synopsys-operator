@@ -23,7 +23,7 @@ import (
 // edit this file.
 
 // Following naming logic is implemented in Buffalo:
-// Model: Singular (Hub)
+// Model: Singular (Blackduck)
 // DB Table: Plural (Hubs)
 // Resource: Plural (Hubs)
 // Path: Plural (/hubs)
@@ -61,7 +61,7 @@ func (v HubsResource) List(c buffalo.Context) error {
 	return c.Render(200, r.HTML("hubs/index.html", "old_application.html"))
 }
 
-// Show gets the data for one Hub. This function is mapped to
+// Show gets the data for one Blackduck. This function is mapped to
 // the path GET /hubs/{hub_id}
 func (v HubsResource) Show(c buffalo.Context) error {
 	blackduck, err := util.GetHub(v.hubClient, c.Param("hub_id"), c.Param("hub_id"))
@@ -73,7 +73,7 @@ func (v HubsResource) Show(c buffalo.Context) error {
 	return c.Render(200, r.HTML("hubs/show.html", "old_application.html"))
 }
 
-// New renders the form for creating a new Hub.
+// New renders the form for creating a new Blackduck.
 // This function is mapped to the path GET /hubs/new
 func (v HubsResource) New(c buffalo.Context) error {
 	blackduckSpec := bdutil.GetHubDefaultValue()
@@ -114,7 +114,7 @@ func (v HubsResource) common(c buffalo.Context, blackduck *v2.Hub) error {
 	storageList[fmt.Sprintf("%s (%s)", "None", "Disable dynamic provisioner")] = ""
 	blackduck.View.StorageClasses = storageList
 
-	// Hub instances
+	// Blackduck instances
 	keys := make(map[string]string)
 	hubs, _ := util.ListHubs(v.hubClient, "")
 	for _, v := range hubs.Items {
@@ -234,7 +234,7 @@ func (v HubsResource) Create(c buffalo.Context) error {
 	return c.Redirect(302, "/hubs/%s", hub.Spec.Namespace)
 }
 
-// Edit renders a edit form for a Hub. This function is
+// Edit renders a edit form for a Blackduck. This function is
 // mapped to the path GET /hubs/{hub_id}/edit
 func (v HubsResource) Edit(c buffalo.Context) error {
 	// Get the DB connection from the context
@@ -244,7 +244,7 @@ func (v HubsResource) Edit(c buffalo.Context) error {
 	// }
 
 	// // Allocate an empty Blackduck
-	// blackduck := &v1.Hub{}
+	// blackduck := &v1.Blackduck{}
 
 	// if err := tx.Find(blackduck, c.Param("blackduck_id")); err != nil {
 	// 	return c.Error(404, err)
@@ -265,7 +265,7 @@ func (v HubsResource) Update(c buffalo.Context) error {
 	// }
 
 	// // Allocate an empty Blackduck
-	// blackduck := &v1.Hub{}
+	// blackduck := &v1.Blackduck{}
 
 	// if err := tx.Find(blackduck, c.Param("blackduck_id")); err != nil {
 	// 	return c.Error(404, err)
@@ -297,7 +297,7 @@ func (v HubsResource) Update(c buffalo.Context) error {
 	return c.Error(404, errors.New("resource not implemented"))
 }
 
-// Destroy deletes a Hub from the DB. This function is mapped
+// Destroy deletes a Blackduck from the DB. This function is mapped
 // to the path DELETE /hubs/{hub_id}
 func (v HubsResource) Destroy(c buffalo.Context) error {
 

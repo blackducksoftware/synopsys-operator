@@ -129,7 +129,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 	}
 
 	err = container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: p.config.Hub.PasswordEnvVar,
+		NameOrPrefix: p.config.Blackduck.PasswordEnvVar,
 		Type:         horizonapi.EnvFromSecret,
 		KeyOrVal:     "HubUserPassword",
 		FromName:     p.config.SecretName,
