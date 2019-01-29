@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alert_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,20 +39,20 @@ var alertsResource = schema.GroupVersionResource{Group: "synopsys", Version: "v1
 var alertsKind = schema.GroupVersionKind{Group: "synopsys", Version: "v1", Kind: "Alert"}
 
 // Get takes name of the alert, and returns the corresponding alert object, and an error if there is any.
-func (c *FakeAlerts) Get(name string, options v1.GetOptions) (result *alertv1.Alert, err error) {
+func (c *FakeAlerts) Get(name string, options v1.GetOptions) (result *alert_v1.Alert, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(alertsResource, c.ns, name), &alertv1.Alert{})
+		Invokes(testing.NewGetAction(alertsResource, c.ns, name), &alert_v1.Alert{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*alertv1.Alert), err
+	return obj.(*alert_v1.Alert), err
 }
 
 // List takes label and field selectors, and returns the list of Alerts that match those selectors.
-func (c *FakeAlerts) List(opts v1.ListOptions) (result *alertv1.AlertList, err error) {
+func (c *FakeAlerts) List(opts v1.ListOptions) (result *alert_v1.AlertList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(alertsResource, alertsKind, c.ns, opts), &alertv1.AlertList{})
+		Invokes(testing.NewListAction(alertsResource, alertsKind, c.ns, opts), &alert_v1.AlertList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeAlerts) List(opts v1.ListOptions) (result *alertv1.AlertList, err e
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &alertv1.AlertList{ListMeta: obj.(*alertv1.AlertList).ListMeta}
-	for _, item := range obj.(*alertv1.AlertList).Items {
+	list := &alert_v1.AlertList{}
+	for _, item := range obj.(*alert_v1.AlertList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -79,31 +79,31 @@ func (c *FakeAlerts) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a alert and creates it.  Returns the server's representation of the alert, and an error, if there is any.
-func (c *FakeAlerts) Create(alert *alertv1.Alert) (result *alertv1.Alert, err error) {
+func (c *FakeAlerts) Create(alert *alert_v1.Alert) (result *alert_v1.Alert, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(alertsResource, c.ns, alert), &alertv1.Alert{})
+		Invokes(testing.NewCreateAction(alertsResource, c.ns, alert), &alert_v1.Alert{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*alertv1.Alert), err
+	return obj.(*alert_v1.Alert), err
 }
 
 // Update takes the representation of a alert and updates it. Returns the server's representation of the alert, and an error, if there is any.
-func (c *FakeAlerts) Update(alert *alertv1.Alert) (result *alertv1.Alert, err error) {
+func (c *FakeAlerts) Update(alert *alert_v1.Alert) (result *alert_v1.Alert, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(alertsResource, c.ns, alert), &alertv1.Alert{})
+		Invokes(testing.NewUpdateAction(alertsResource, c.ns, alert), &alert_v1.Alert{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*alertv1.Alert), err
+	return obj.(*alert_v1.Alert), err
 }
 
 // Delete takes name of the alert and deletes it. Returns an error if one occurs.
 func (c *FakeAlerts) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(alertsResource, c.ns, name), &alertv1.Alert{})
+		Invokes(testing.NewDeleteAction(alertsResource, c.ns, name), &alert_v1.Alert{})
 
 	return err
 }
@@ -112,17 +112,17 @@ func (c *FakeAlerts) Delete(name string, options *v1.DeleteOptions) error {
 func (c *FakeAlerts) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(alertsResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &alertv1.AlertList{})
+	_, err := c.Fake.Invokes(action, &alert_v1.AlertList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched alert.
-func (c *FakeAlerts) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *alertv1.Alert, err error) {
+func (c *FakeAlerts) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *alert_v1.Alert, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(alertsResource, c.ns, name, pt, data, subresources...), &alertv1.Alert{})
+		Invokes(testing.NewPatchSubresourceAction(alertsResource, c.ns, name, data, subresources...), &alert_v1.Alert{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*alertv1.Alert), err
+	return obj.(*alert_v1.Alert), err
 }

@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduck_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,20 +39,20 @@ var blackducksResource = schema.GroupVersionResource{Group: "synopsys", Version:
 var blackducksKind = schema.GroupVersionKind{Group: "synopsys", Version: "v1", Kind: "Blackduck"}
 
 // Get takes name of the blackduck, and returns the corresponding blackduck object, and an error if there is any.
-func (c *FakeBlackducks) Get(name string, options v1.GetOptions) (result *blackduckv1.Blackduck, err error) {
+func (c *FakeBlackducks) Get(name string, options v1.GetOptions) (result *blackduck_v1.Blackduck, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(blackducksResource, c.ns, name), &blackduckv1.Blackduck{})
+		Invokes(testing.NewGetAction(blackducksResource, c.ns, name), &blackduck_v1.Blackduck{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*blackduckv1.Blackduck), err
+	return obj.(*blackduck_v1.Blackduck), err
 }
 
 // List takes label and field selectors, and returns the list of Blackducks that match those selectors.
-func (c *FakeBlackducks) List(opts v1.ListOptions) (result *blackduckv1.BlackduckList, err error) {
+func (c *FakeBlackducks) List(opts v1.ListOptions) (result *blackduck_v1.BlackduckList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(blackducksResource, blackducksKind, c.ns, opts), &blackduckv1.BlackduckList{})
+		Invokes(testing.NewListAction(blackducksResource, blackducksKind, c.ns, opts), &blackduck_v1.BlackduckList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeBlackducks) List(opts v1.ListOptions) (result *blackduckv1.Blackduc
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &blackduckv1.BlackduckList{ListMeta: obj.(*blackduckv1.BlackduckList).ListMeta}
-	for _, item := range obj.(*blackduckv1.BlackduckList).Items {
+	list := &blackduck_v1.BlackduckList{}
+	for _, item := range obj.(*blackduck_v1.BlackduckList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -79,31 +79,31 @@ func (c *FakeBlackducks) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a blackduck and creates it.  Returns the server's representation of the blackduck, and an error, if there is any.
-func (c *FakeBlackducks) Create(blackduck *blackduckv1.Blackduck) (result *blackduckv1.Blackduck, err error) {
+func (c *FakeBlackducks) Create(blackduck *blackduck_v1.Blackduck) (result *blackduck_v1.Blackduck, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(blackducksResource, c.ns, blackduck), &blackduckv1.Blackduck{})
+		Invokes(testing.NewCreateAction(blackducksResource, c.ns, blackduck), &blackduck_v1.Blackduck{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*blackduckv1.Blackduck), err
+	return obj.(*blackduck_v1.Blackduck), err
 }
 
 // Update takes the representation of a blackduck and updates it. Returns the server's representation of the blackduck, and an error, if there is any.
-func (c *FakeBlackducks) Update(blackduck *blackduckv1.Blackduck) (result *blackduckv1.Blackduck, err error) {
+func (c *FakeBlackducks) Update(blackduck *blackduck_v1.Blackduck) (result *blackduck_v1.Blackduck, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(blackducksResource, c.ns, blackduck), &blackduckv1.Blackduck{})
+		Invokes(testing.NewUpdateAction(blackducksResource, c.ns, blackduck), &blackduck_v1.Blackduck{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*blackduckv1.Blackduck), err
+	return obj.(*blackduck_v1.Blackduck), err
 }
 
 // Delete takes name of the blackduck and deletes it. Returns an error if one occurs.
 func (c *FakeBlackducks) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(blackducksResource, c.ns, name), &blackduckv1.Blackduck{})
+		Invokes(testing.NewDeleteAction(blackducksResource, c.ns, name), &blackduck_v1.Blackduck{})
 
 	return err
 }
@@ -112,17 +112,17 @@ func (c *FakeBlackducks) Delete(name string, options *v1.DeleteOptions) error {
 func (c *FakeBlackducks) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(blackducksResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &blackduckv1.BlackduckList{})
+	_, err := c.Fake.Invokes(action, &blackduck_v1.BlackduckList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched blackduck.
-func (c *FakeBlackducks) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *blackduckv1.Blackduck, err error) {
+func (c *FakeBlackducks) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *blackduck_v1.Blackduck, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(blackducksResource, c.ns, name, pt, data, subresources...), &blackduckv1.Blackduck{})
+		Invokes(testing.NewPatchSubresourceAction(blackducksResource, c.ns, name, data, subresources...), &blackduck_v1.Blackduck{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*blackduckv1.Blackduck), err
+	return obj.(*blackduck_v1.Blackduck), err
 }
