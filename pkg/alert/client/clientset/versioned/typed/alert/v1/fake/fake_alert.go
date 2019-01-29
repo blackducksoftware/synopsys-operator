@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func (c *FakeAlerts) List(opts v1.ListOptions) (result *alert_v1.AlertList, err 
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &alert_v1.AlertList{}
+	list := &alert_v1.AlertList{ListMeta: obj.(*alert_v1.AlertList).ListMeta}
 	for _, item := range obj.(*alert_v1.AlertList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)

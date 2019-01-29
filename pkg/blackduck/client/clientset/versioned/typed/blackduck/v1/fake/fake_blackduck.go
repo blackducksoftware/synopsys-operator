@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func (c *FakeBlackducks) List(opts v1.ListOptions) (result *blackduck_v1.Blackdu
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &blackduck_v1.BlackduckList{}
+	list := &blackduck_v1.BlackduckList{ListMeta: obj.(*blackduck_v1.BlackduckList).ListMeta}
 	for _, item := range obj.(*blackduck_v1.BlackduckList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)

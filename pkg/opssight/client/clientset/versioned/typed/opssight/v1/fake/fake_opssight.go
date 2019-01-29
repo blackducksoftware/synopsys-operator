@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func (c *FakeOpsSights) List(opts v1.ListOptions) (result *opssight_v1.OpsSightL
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &opssight_v1.OpsSightList{}
+	list := &opssight_v1.OpsSightList{ListMeta: obj.(*opssight_v1.OpsSightList).ListMeta}
 	for _, item := range obj.(*opssight_v1.OpsSightList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
