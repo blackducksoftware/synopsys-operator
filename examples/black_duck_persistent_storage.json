@@ -48,6 +48,7 @@
     "livenessProbes": false,
     "namespace": "blackduck-pvc",
     "persistentStorage": true,
+    "pvcStorageClass": "standard",
     "pvc": [
       {
         "name": "blackduck-postgres",
