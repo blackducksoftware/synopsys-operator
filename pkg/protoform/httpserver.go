@@ -22,7 +22,7 @@ under the License.
 package protoform
 
 import (
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/hub/client/clientset/versioned"
+	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/gin-gonic/contrib/static"
 	gin "github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
