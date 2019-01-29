@@ -22,7 +22,7 @@ under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/hub/v2"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -46,8 +46,8 @@ type RegistryAuth struct {
 	Password string `json:"password"`
 }
 
-// Hub ...
-type Hub struct {
+// Blackduck ...
+type Blackduck struct {
 	Hosts               []string `json:"hosts"`
 	User                string   `json:"user"`
 	Port                int      `json:"port"`
@@ -55,10 +55,10 @@ type Hub struct {
 	TotalScanLimit      int      `json:"totalScanLimit"`
 	PasswordEnvVar      string   `json:"passwordEnvVar"`
 	// Auto scaling parameters
-	InitialCount                 int         `json:"initialCount"`
-	MaxCount                     int         `json:"maxCount"`
-	DeleteHubThresholdPercentage int         `json:"deleteHubThresholdPercentage"`
-	HubSpec                      *v2.HubSpec `json:"hubSpec"`
+	InitialCount                 int               `json:"initialCount"`
+	MaxCount                     int               `json:"maxCount"`
+	DeleteHubThresholdPercentage int               `json:"deleteHubThresholdPercentage"`
+	BlackduckSpec                *v1.BlackduckSpec `json:"blackduckSpec"`
 }
 
 // Perceptor ...
@@ -158,7 +158,7 @@ type OpsSightSpec struct {
 	EnableSkyfire bool        `json:"enableSkyfire"`
 	Skyfire       *Skyfire    `json:"skyfire"`
 
-	Hub *Hub `json:"hub"`
+	Blackduck *Blackduck `json:"blackduck"`
 
 	EnableMetrics bool `json:"enableMetrics"`
 
