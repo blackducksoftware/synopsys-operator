@@ -189,7 +189,7 @@ func (c *CRDInstaller) Deploy() error {
 	// statusUpdater := plugins.HubStatusUpdater{
 	// 	Config:     c.config,
 	// 	KubeClient: c.kubeClient,
-	// 	HubClient:  c.hubClient,
+	// 	BlackduckClient:  c.hubClient,
 	// }
 
 	// call the run method to verify all hubs postgres and initialize the database if it restarts
