@@ -54,6 +54,13 @@ type HandlerInterface interface {
 	ObjectUpdated(objOld, objNew interface{})
 }
 
+type HubState string
+const (
+	Running         HubState = "Running"
+	Stopped         HubState = "Stopped"
+	UnexpectedState HubState = "UnexpectedState"
+)
+
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
 	config           *protoform.Config
@@ -126,9 +133,12 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				}
 			}
 		}
+		log.Infof("Done w/ install, starting post-install nanny monitors...")
+	} else {
+		h.ObjectUpdated(nil, obj)
 	}
 
-	log.Infof("Done w/ install, starting post-install nanny monitors...")
+
 
 }
 
@@ -162,12 +172,37 @@ func (h *Handler) ObjectDeleted(name string) {
 
 // ObjectUpdated will be called for update hub events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	//if strings.Compare(objOld.Spec.State, objNew.Spec.State) != 0 {
-	//	log.Infof("%s - Changing state [%s] -> [%s] | Current: [%s]", objNew.Name, objOld.Spec.State, objNew.Spec.State, objNew.Status.State )
-	//	// TO DO
-	//	objNew.Status.State = objNew.Spec.State
-	//	h.blackduckClient.SynopsysV1().Hubs(objNew.Namespace).Update(objNew)
-	//}
+	blackduck, ok := objNew.(*blackduckv1.Blackduck)
+	if !ok {
+		log.Error("Unable to cast Hub object")
+		return
+	}
+	state, err := h.getCurrentState(blackduck.Spec)
+	if err != nil {
+		log.Errorf("Couldn't get the Hub state of %s: %v", blackduck.Name, err)
+		return
+	}
+
+	if !strings.EqualFold(string(state), blackduck.Spec.State) {
+		hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient)
+		switch blackduck.Spec.State {
+		case "Running":
+			log.Infof("Starting Hub: %s", blackduck.Name)
+			if err := hubCreator.Start(&blackduck.Spec); err != nil {
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.State, err.Error(), err, blackduck)
+			} else {
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.State, blackduck.Spec.State, err, blackduck)
+			}
+
+		case "Stopped":
+			log.Infof("Stopping Hub: %s", blackduck.Name)
+			if err := hubCreator.Stop(&blackduck.Spec); err != nil {
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.State, err.Error(), err, blackduck)
+			} else {
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.State, blackduck.Spec.State, err, blackduck)
+			}
+		}
+	}
 }
 
 func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
@@ -312,4 +347,22 @@ func (h *Handler) addHubFederatorEvents(dest string, obj interface{}) error {
 		return fmt.Errorf("http POST request to %s failed with status code %d", dest, resp.StatusCode)
 	}
 	return nil
+}
+
+func (h *Handler) getCurrentState(blackduckSpec blackduckv1.BlackduckSpec) (HubState, error) {
+	rc, err := h.kubeClient.CoreV1().ReplicationControllers(blackduckSpec.Namespace).List(v1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	if len(rc.Items) == 0 {
+		return Stopped, nil
+	}
+
+	// 10 if ext-db  | 11 if using postgres container
+	if (len(rc.Items) < 10 && blackduckSpec.ExternalPostgres != nil) || (len(rc.Items) < 11 && blackduckSpec.ExternalPostgres == nil) {
+		return UnexpectedState, nil
+	}
+
+	return Running, nil
 }
