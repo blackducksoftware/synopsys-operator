@@ -24,10 +24,10 @@ import (
 
 // Following naming logic is implemented in Buffalo:
 // Model: Singular (Blackduck)
-// DB Table: Plural (Hubs)
-// Resource: Plural (Hubs)
-// Path: Plural (/hubs)
-// View Template Folder: Plural (/templates/hubs/)
+// DB Table: Plural (Blackducks)
+// Resource: Plural (Blackducks)
+// Path: Plural (/blackducks)
+// View Template Folder: Plural (/templates/blackducks/)
 
 // BlackducksResource is the resource for the Blackduck model
 type BlackducksResource struct {
@@ -36,8 +36,8 @@ type BlackducksResource struct {
 	blackduckClient *blackduckclientset.Clientset
 }
 
-// NewHubResource will instantiate the Black Duck Resource
-func NewHubResource(kubeConfig *rest.Config) (*BlackducksResource, error) {
+// NewBlackduckResource will instantiate the Black Duck Resource
+func NewBlackduckResource(kubeConfig *rest.Config) (*BlackducksResource, error) {
 	kubeClient, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create kube client due to %+v", err)
@@ -50,7 +50,7 @@ func NewHubResource(kubeConfig *rest.Config) (*BlackducksResource, error) {
 }
 
 // List gets all Hubs. This function is mapped to the path
-// GET /hubs
+// GET /blackducks
 func (v BlackducksResource) List(c buffalo.Context) error {
 	blackducks, err := util.ListHubs(v.blackduckClient, "")
 	if err != nil {
@@ -58,23 +58,23 @@ func (v BlackducksResource) List(c buffalo.Context) error {
 	}
 	// Make blackducks available inside the html template
 	c.Set("hubs", blackducks.Items)
-	return c.Render(200, r.HTML("hubs/index.html", "old_application.html"))
+	return c.Render(200, r.HTML("blackducks/index.html", "old_application.html"))
 }
 
 // Show gets the data for one Blackduck. This function is mapped to
 // the path GET /hubs/{hub_id}
 func (v BlackducksResource) Show(c buffalo.Context) error {
-	blackduck, err := util.GetHub(v.blackduckClient, c.Param("hub_id"), c.Param("hub_id"))
+	blackduck, err := util.GetHub(v.blackduckClient, c.Param("blackduck_id"), c.Param("blackduck_id"))
 	if err != nil {
 		return c.Error(500, err)
 	}
 	// Make blackduck available inside the html template
 	c.Set("hub", blackduck)
-	return c.Render(200, r.HTML("hubs/show.html", "old_application.html"))
+	return c.Render(200, r.HTML("blackducks/show.html", "old_application.html"))
 }
 
 // New renders the form for creating a new Blackduck.
-// This function is mapped to the path GET /hubs/new
+// This function is mapped to the path GET /blackducks/new
 func (v BlackducksResource) New(c buffalo.Context) error {
 	blackduckSpec := bdutil.GetHubDefaultValue()
 	blackduck := &blackduckv1.Blackduck{}
@@ -96,9 +96,9 @@ func (v BlackducksResource) New(c buffalo.Context) error {
 		return err
 	}
 	// Make blackduck available inside the html template
-	c.Set("hub", blackduck)
+	c.Set("blackduck", blackduck)
 
-	return c.Render(200, r.HTML("hubs/new.html", "old_application.html"))
+	return c.Render(200, r.HTML("blackducks/new.html", "old_application.html"))
 }
 
 func (v BlackducksResource) common(c buffalo.Context, bd *blackduckv1.Blackduck) error {
@@ -170,7 +170,7 @@ func (v BlackducksResource) redirect(c buffalo.Context, blackduck *blackduckv1.B
 		}
 		log.Debugf("edit hub in create: %+v", blackduck)
 
-		c.Set("hub", blackduck)
+		c.Set("blackduck", blackduck)
 
 		// validateErrs := validate.NewErrors()
 		// log.Infof("Error: %s", err.Error())
@@ -178,64 +178,64 @@ func (v BlackducksResource) redirect(c buffalo.Context, blackduck *blackduckv1.B
 		// log.Infof("validateErrs: %+v", validateErrs)
 		// validateErrs.Errors = map[string][]string{"error": []string{errors.WithStack(err).Error()}}
 		// c.Set("errors", err.Error())
-		return c.Render(422, r.HTML("hubs/new.html", "old_application.html"))
+		return c.Render(422, r.HTML("blackducks/new.html", "old_application.html"))
 	}
 	return nil
 }
 
 // Create adds a Blackduck to the DB. This function is mapped to the
-// path POST /hubs
+// path POST /blackducks
 func (v BlackducksResource) Create(c buffalo.Context) error {
 	// Allocate an empty Blackduck
-	hub := &blackduckv1.Blackduck{}
+	blackduck := &blackduckv1.Blackduck{}
 
 	// Bind blackduck to the html form elements
-	if err := c.Bind(hub); err != nil {
+	if err := c.Bind(blackduck); err != nil {
 		log.Errorf("unable to bind blackduck %+v because %+v", c, err)
 		return errors.WithStack(err)
 	}
 
-	log.Infof("create hub: %+v", hub)
+	log.Infof("create blackduck: %+v", blackduck)
 
-	_, err := util.GetHub(v.blackduckClient, hub.Spec.Namespace, hub.Spec.Namespace)
-
-	if err == nil {
-		return v.redirect(c, hub, fmt.Errorf("hub %s already exist", hub.Spec.Namespace))
-	}
-
-	_, err = util.GetNamespace(v.kubeClient, hub.Spec.Namespace)
+	_, err := util.GetHub(v.blackduckClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
 
 	if err == nil {
-		return v.redirect(c, hub, fmt.Errorf("namespace %s already exist", hub.Spec.Namespace))
+		return v.redirect(c, blackduck, fmt.Errorf("blackduck %s already exist", blackduck.Spec.Namespace))
 	}
 
-	ns, err := util.CreateNamespace(v.kubeClient, hub.Spec.Namespace)
+	_, err = util.GetNamespace(v.kubeClient, blackduck.Spec.Namespace)
+
+	if err == nil {
+		return v.redirect(c, blackduck, fmt.Errorf("namespace %s already exist", blackduck.Spec.Namespace))
+	}
+
+	ns, err := util.CreateNamespace(v.kubeClient, blackduck.Spec.Namespace)
 	if err != nil {
-		return v.redirect(c, hub, err)
+		return v.redirect(c, blackduck, err)
 	}
-	log.Infof("created namespace for %s is %+v", hub.Spec.Namespace, ns)
+	log.Infof("created namespace for %s is %+v", blackduck.Spec.Namespace, ns)
 
 	// Change back to nil if the configuration is empty
-	if *hub.Spec.ExternalPostgres == (blackduckv1.PostgresExternalDBConfig{}) {
+	if *blackduck.Spec.ExternalPostgres == (blackduckv1.PostgresExternalDBConfig{}) {
 		log.Info("External Database configuration is empty")
-		hub.Spec.ExternalPostgres = nil
+		blackduck.Spec.ExternalPostgres = nil
 	}
-	_, err = util.CreateHub(v.blackduckClient, hub.Spec.Namespace, &blackduckv1.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: hub.Spec.Namespace}, Spec: hub.Spec})
+	_, err = util.CreateHub(v.blackduckClient, blackduck.Spec.Namespace, &blackduckv1.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackduck.Spec.Namespace}, Spec: blackduck.Spec})
 
 	if err != nil {
-		return v.redirect(c, hub, err)
+		return v.redirect(c, blackduck, err)
 	}
 	// If there are no errors set a success message
 	c.Flash().Add("success", "Blackduck was created successfully")
 
 	blackducks, _ := util.ListHubs(v.blackduckClient, "")
-	c.Set("hubs", blackducks.Items)
+	c.Set("blackducks", blackducks.Items)
 	// and redirect to the blackducks index page
-	return c.Redirect(302, "/hubs/%s", hub.Spec.Namespace)
+	return c.Redirect(302, "/blackducks/%s", blackduck.Spec.Namespace)
 }
 
 // Edit renders a edit form for a Blackduck. This function is
-// mapped to the path GET /hubs/{hub_id}/edit
+// mapped to the path GET /blackducks/{blackduck_id}/edit
 func (v BlackducksResource) Edit(c buffalo.Context) error {
 	// Get the DB connection from the context
 	// tx, ok := c.Value("tx").(*pop.Connection)
@@ -256,7 +256,7 @@ func (v BlackducksResource) Edit(c buffalo.Context) error {
 }
 
 // Update changes a Blackduck in the DB. This function is mapped to
-// the path PUT /hubs/{hub_id}
+// the path PUT /blackducks/{blackduck_id}
 func (v BlackducksResource) Update(c buffalo.Context) error {
 	// Get the DB connection from the context
 	// tx, ok := c.Value("tx").(*pop.Connection)
@@ -298,19 +298,19 @@ func (v BlackducksResource) Update(c buffalo.Context) error {
 }
 
 // Destroy deletes a Blackduck from the DB. This function is mapped
-// to the path DELETE /hubs/{hub_id}
+// to the path DELETE /blackducks/{blackduck_id}
 func (v BlackducksResource) Destroy(c buffalo.Context) error {
 
-	log.Infof("delete hub request %v", c.Param("hub_id"))
+	log.Infof("delete blackduck request %v", c.Param("blackduck"))
 
-	_, err := util.GetHub(v.blackduckClient, c.Param("hub_id"), c.Param("hub_id"))
+	_, err := util.GetHub(v.blackduckClient, c.Param("blackduck_id"), c.Param("blackduck_id"))
 	// To find the Blackduck the parameter blackduck_id is used.
 	if err != nil {
 		return c.Error(404, err)
 	}
 
 	// This is on the event loop.
-	err = v.blackduckClient.SynopsysV1().Blackducks(c.Param("hub_id")).Delete(c.Param("hub_id"), &metav1.DeleteOptions{})
+	err = v.blackduckClient.SynopsysV1().Blackducks(c.Param("blackduck_id")).Delete(c.Param("blackduck_id"), &metav1.DeleteOptions{})
 
 	// To find the Blackduck the parameter blackduck_id is used.
 	if err != nil {
@@ -324,5 +324,5 @@ func (v BlackducksResource) Destroy(c buffalo.Context) error {
 	// c.Set("hubs", blackducks.Items)
 
 	// Redirect to the blackducks index page
-	return c.Redirect(302, "/hubs")
+	return c.Redirect(302, "/blackducks")
 }

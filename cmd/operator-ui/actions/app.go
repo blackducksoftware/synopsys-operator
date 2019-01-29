@@ -64,7 +64,7 @@ func App() *buffalo.App {
 			kubeConfig, err = newKubeClientFromOutsideCluster()
 		}
 
-		blackDuckResource, err := NewHubResource(kubeConfig)
+		blackDuckResource, err := NewBlackduckResource(kubeConfig)
 		if err != nil {
 			log.Panic(err)
 		}
