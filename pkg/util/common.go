@@ -271,7 +271,7 @@ func CreateServiceWithMultiplePort(name string, label string, namespace string, 
 	for _, port := range ports {
 		portVal, _ := strconv.Atoi(port)
 		myPort := &horizonapi.ServicePortConfig{
-			Name:       fmt.Sprintf("port-" + name),
+			Name:       fmt.Sprintf("port-" + port),
 			Port:       int32(portVal),
 			TargetPort: port,
 			Protocol:   horizonapi.ProtocolTCP,
