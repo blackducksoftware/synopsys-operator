@@ -64,11 +64,11 @@ func App() *buffalo.App {
 			kubeConfig, err = newKubeClientFromOutsideCluster()
 		}
 
-		blackDuckResource, err := NewHubResource(kubeConfig)
+		blackDuckResource, err := NewBlackduckResource(kubeConfig)
 		if err != nil {
 			log.Panic(err)
 		}
-		app.Resource("/hubs", blackDuckResource)
+		app.Resource("/blackducks", blackDuckResource)
 		app.ServeFiles("/", assetsBox) // serve files from the public directory
 	}
 

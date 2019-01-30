@@ -31,6 +31,11 @@ type Logger interface {
 	Panic(...interface{})
 }
 
+func ParseLevel(level string) (Level, error) {
+	l, err := logrus.ParseLevel(level)
+	return Level(l), err
+}
+
 // NewLogger based on the specified log level, defaults to "debug".
 // See `New` for more details.
 func NewLogger(level string) FieldLogger {

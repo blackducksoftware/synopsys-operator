@@ -30,7 +30,7 @@ import (
 	horizondep "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
-	"github.com/blackducksoftware/synopsys-operator/pkg/hub/installer"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/installer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/sirupsen/logrus"

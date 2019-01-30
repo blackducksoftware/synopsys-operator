@@ -47,9 +47,9 @@ type AlertSpec struct {
 	AlertImageVersion string `json:"alertImageVersion,omitempty"`
 	CfsslImageName    string `json:"cfsslImageName,omitempty"`
 	CfsslImageVersion string `json:"cfsslImageVersion,omitempty"`
-	HubHost           string `json:"hubHost,omitempty"`
-	HubUser           string `json:"hubUser,omitempty"`
-	HubPort           *int   `json:"hubPort,omitempty"`
+	BlackduckHost     string `json:"blackduckHost,omitempty"`
+	BlackduckUser     string `json:"blackduckUser,omitempty"`
+	BlackduckPort     *int   `json:"blackduckPort,omitempty"`
 	Port              *int   `json:"port"`
 	StandAlone        *bool  `json:"standAlone"`
 
