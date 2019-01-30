@@ -78,6 +78,46 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 				if len(claim.Size) > 0 {
 					size = claim.Size
 				}
+			case "blackduck-authentication":
+				size = "2Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-cfssl":
+				size = "2Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-registration":
+				size = "2Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-solr":
+				size = "2Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-webapp":
+				size = "2Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-logstash":
+				size = "20Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-zookeeper-data":
+				size = "2Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-zookeeper-datalog":
+				size = "2Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
 			default:
 				size = claim.Size
 			}
