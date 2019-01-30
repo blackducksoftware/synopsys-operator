@@ -10,8 +10,10 @@
     <%= f.SelectTag("Spec.PVCStorageClass", {value: blackduck.Spec.PVCStorageClass, label: "PVC Storage Class", options: blackduck.View.StorageClasses}) %>
     <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
     <%= for (index, claim) in  blackduck.Spec.PVC { %>
-    <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
-    <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: claim.Name, value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+      <%= if (claim.Name=="blackduck-postgres") { %>
+        <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
+        <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: claim.Name, value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+      <% } %>
     <% } %>
   </div>
   <%= f.CheckboxTag("externalDbCheckbox", {label: "External Database", onchange: "toggleDbCheckbox(this)"}) %>
@@ -147,11 +149,11 @@
   // based on the scan type value, populate the default pvc claim size values
   function checkScanType() {
     if (document.getElementById("blackduck-Spec.ScanType").value == "Custom") {
-      document.getElementById("blackduck-postgres").value = "10Gi"
+      document.getElementById("blackduck-postgres").value = "150Gi"
     } else if (document.getElementById("blackduck-Spec.ScanType").value == "Images") {
       document.getElementById("blackduck-postgres").value = "1000Gi"
     } else {
-      document.getElementById("blackduck-postgres").value = "20Gi"
+      document.getElementById("blackduck-postgres").value = "150Gi"
     }
   }
 
