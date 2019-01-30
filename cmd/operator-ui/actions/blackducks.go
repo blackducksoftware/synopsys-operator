@@ -225,6 +225,7 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-authentication"})
 		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-cfssl"})
 		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-registration"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-solr"})
 		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-webapp"})
 		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-logstash"})
 		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-zookeeper-data"})
