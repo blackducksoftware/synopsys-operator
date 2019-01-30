@@ -215,6 +215,22 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 	}
 	log.Infof("created namespace for %s is %+v", blackduck.Spec.Namespace, ns)
 
+	if !blackduck.Spec.PersistentStorage {
+		blackduck.Spec.PVC = nil
+	} else {
+		// Remove postgres volume if we use an external db
+		if *blackduck.Spec.ExternalPostgres != (blackduckv1.PostgresExternalDBConfig{}) {
+			blackduck.Spec.PVC = nil
+		}
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-authentication"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-cfssl"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-registration"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-webapp"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-logstash"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-zookeeper-data"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-zookeeper-datalog"})
+	}
+
 	// Change back to nil if the configuration is empty
 	if *blackduck.Spec.ExternalPostgres == (blackduckv1.PostgresExternalDBConfig{}) {
 		log.Info("External Database configuration is empty")
