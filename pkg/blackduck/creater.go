@@ -141,8 +141,10 @@ func (hc *Creater) CreateHub(createHub *v1.BlackduckSpec) (string, map[string]st
 	}
 
 	log.Debugf("before init: %+v", &createHub)
+
+	isBinaryAnalysisEnabled := hc.isBinaryAnalysisEnabled(createHub.Environs)
 	// Create the config-maps, secrets and postgres container
-	err = hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv, adminPassword, userPassword)
+	err = hc.init(deployer, createHub, hubContainerFlavor, allConfigEnv, adminPassword, userPassword, isBinaryAnalysisEnabled)
 	if err != nil {
 		return "", nil, true, err
 	}
@@ -185,7 +187,7 @@ func (hc *Creater) CreateHub(createHub *v1.BlackduckSpec) (string, map[string]st
 
 	// Create all hub deployments
 	deployer, _ = horizon.NewDeployer(hc.KubeConfig)
-	hc.AddToDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
+	hc.AddToDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv, isBinaryAnalysisEnabled)
 	log.Debugf("%+v", deployer)
 	// Deploy all hub containers
 	err = deployer.Run()
@@ -291,4 +293,20 @@ func (hc *Creater) getNodePortIPAddress(namespace string, serviceName string) (s
 		}
 	}
 	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
+}
+
+func (hc *Creater) isBinaryAnalysisEnabled(envs []string) bool {
+	for _, value := range envs {
+		if strings.Contains(value, "USE_BINARY_UPLOADS") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				mapValue := strings.Trim(values[1], " ")
+				if strings.EqualFold(mapValue, "1") {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
 }

@@ -5,6 +5,8 @@
     "name": "blackduck-pvc"
   },
   "spec": {
+    "namespace": "blackduck-pvc",
+    "licenseKey": "<BLACKDUCK_LICENSE_KEY>",
     "certificateName": "default",
     "environs": [
       "BLACKDUCK_REPORT_IGNORED_COMPONENTS:false",
@@ -46,7 +48,6 @@
       "docker.io/blackducksoftware/blackduck-zookeeper:1.0.0"
     ],
     "livenessProbes": false,
-    "namespace": "blackduck-pvc",
     "persistentStorage": true,
     "pvcStorageClass": "standard",
     "pvc": [

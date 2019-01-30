@@ -32,7 +32,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string) error {
+func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor,
+	allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string, isBinaryAnalysisEnabled bool) error {
 
 	// Create a namespaces
 	_, err := util.GetNamespace(hc.KubeClient, createHub.Namespace)
@@ -55,7 +56,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 	deployer.AddClusterRoleBinding(util.CreateClusterRoleBinding(createHub.Namespace, createHub.Namespace, createHub.Namespace, "", "ClusterRole", "cluster-admin"))
 
 	// Create ConfigMaps
-	configMaps := hc.createHubConfig(createHub, hubContainerFlavor)
+	configMaps := hc.createHubConfig(createHub, hubContainerFlavor, isBinaryAnalysisEnabled)
 
 	for _, configMap := range configMaps {
 		deployer.AddConfigMap(configMap)
@@ -133,7 +134,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 
 	// We only start the postgres container if the external DB configuration struct is empty
 	if createHub.ExternalPostgres == nil {
-		containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil)
+		containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil, nil)
 
 		deployer.AddReplicationController(containerCreater.GetPostgresDeployment())
 		deployer.AddService(containerCreater.GetPostgresService())

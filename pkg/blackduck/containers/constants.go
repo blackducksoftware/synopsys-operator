@@ -30,11 +30,16 @@ const (
 	authenticationMemoryLimit  = "1024M"
 	authenticationHubMaxMemory = "512m"
 	documentationMemoryLimit   = "512M"
+	binaryScannerMemoryLimit   = "4608M"
+	rabbitmqMemoryLimit        = "512M"
+	uploadCacheMemoryLimit     = "512M"
 
-	registrationMinCPUUsage = "1"
-	zookeeperMinCPUUsage    = "1"
-	jonRunnerMinCPUUsage    = "1"
-	jonRunnerMaxCPUUsage    = "1"
+	registrationMinCPUUsage  = "1"
+	zookeeperMinCPUUsage     = "1"
+	jobRunnerMinCPUUsage     = "1"
+	jobRunnerMaxCPUUsage     = "1"
+	binaryScannerMinCPUUsage = "1"
+	binaryScannerMaxCPUUsage = "1"
 
 	// Ports
 	cfsslPort          = "8888"
@@ -49,6 +54,10 @@ const (
 	webappPort         = "8443"
 	logstashPort       = "5044"
 	postgresPort       = "5432"
+	binaryScannerPort  = "3001"
+	rabbitmqPort       = "5671"
+	uploadCachePort1   = "9443"
+	uploadCachePort2   = "9444"
 
 	// Small Flavor
 	smallWebServerMemoryLimit = "512M"

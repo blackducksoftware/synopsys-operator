@@ -79,6 +79,7 @@
       "concurrentScanLimit": 2,
       "totalScanLimit": 1000,
       "blackduckSpec": {
+        "licenseKey": "<BLACKDUCK_LICENSE_KEY>",
         "persistentStorage": false,
         "certificateName": "default",
         "environs": [

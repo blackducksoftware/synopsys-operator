@@ -63,7 +63,7 @@ import (
 )
 
 // CreateContainer will create the container
-func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, port *horizonapi.PortConfig,
+func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, ports []*horizonapi.PortConfig,
 	actionConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
 
 	container := components.NewContainer(*config)
@@ -76,7 +76,7 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 		container.AddVolumeMount(*volumeMount)
 	}
 
-	if port != nil {
+	for _, port := range ports {
 		container.AddPort(*port)
 	}
 
@@ -253,6 +253,32 @@ func CreateService(name string, label string, namespace string, port string, tar
 	}
 
 	mySvc.AddPort(*myPort)
+	mySvc.AddSelectors(map[string]string{"app": label})
+
+	return mySvc
+}
+
+// CreateServiceWithMultiplePort will create the service with multiple port
+func CreateServiceWithMultiplePort(name string, label string, namespace string, ports []string, serviceType horizonapi.ClusterIPServiceType) *components.Service {
+	svcConfig := horizonapi.ServiceConfig{
+		Name:          name,
+		Namespace:     namespace,
+		IPServiceType: serviceType,
+	}
+
+	mySvc := components.NewService(svcConfig)
+
+	for _, port := range ports {
+		portVal, _ := strconv.Atoi(port)
+		myPort := &horizonapi.ServicePortConfig{
+			Name:       fmt.Sprintf("port-" + name),
+			Port:       int32(portVal),
+			TargetPort: port,
+			Protocol:   horizonapi.ProtocolTCP,
+		}
+		mySvc.AddPort(*myPort)
+	}
+
 	mySvc.AddSelectors(map[string]string{"app": label})
 
 	return mySvc

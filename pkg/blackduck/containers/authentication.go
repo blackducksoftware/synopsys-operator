@@ -38,7 +38,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   authEnvs,
 		VolumeMounts: volumeMounts,
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: authenticationPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: authenticationPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 	if c.hubSpec.LivenessProbes {
 		hubAuthContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{

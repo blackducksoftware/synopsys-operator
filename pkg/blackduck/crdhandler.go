@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -179,12 +178,7 @@ func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
 		return err
 	}
 
-	var registrationKey string
-	if strings.EqualFold(createHub.LicenseKey, "") {
-		registrationKey = os.Getenv("REGISTRATION_KEY")
-	} else {
-		registrationKey = createHub.LicenseKey
-	}
+	registrationKey := createHub.LicenseKey
 
 	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
 		for i := 0; i < 20; i++ {

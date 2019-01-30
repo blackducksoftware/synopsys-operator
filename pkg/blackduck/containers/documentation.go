@@ -37,7 +37,7 @@ func (c *Creater) GetDocumentationDeployment() *components.ReplicationController
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
 			{Name: "dir-documentation", MountPath: "/opt/blackduck/hub/hub-documentation/security"},
 		},
-		PortConfig: &horizonapi.PortConfig{ContainerPort: documentationPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig: []*horizonapi.PortConfig{{ContainerPort: documentationPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	if c.hubSpec.LivenessProbes {

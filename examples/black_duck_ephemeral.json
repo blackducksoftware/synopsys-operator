@@ -5,6 +5,8 @@
     "name": "blackduck-ephemeral"
   },
   "spec": {
+    "namespace": "blackduck-ephemeral",
+    "licenseKey": "<BLACKDUCK_LICENSE_KEY>",
     "certificateName": "default",
     "environs": [
       "HTTPS_VERIFY_CERTS:yes",
@@ -46,7 +48,6 @@
       "docker.io/blackducksoftware/blackduck-zookeeper:1.0.0"
     ],
     "livenessProbes": false,
-    "namespace": "blackduck-ephemeral",
     "persistentStorage": false,
     "size": "Small"
   }

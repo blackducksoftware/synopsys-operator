@@ -91,7 +91,7 @@ var InstallBlackduck = &cobra.Command{
 				Environs:  []string{"HUB_VERSION:5.0.0"},
 			}
 
-			creator.AddToDeployer(deployer, hubSpec, containers.GetContainersFlavor("SMALL"), nil)
+			creator.AddToDeployer(deployer, hubSpec, containers.GetContainersFlavor("SMALL"), nil, false)
 		}
 	},
 }

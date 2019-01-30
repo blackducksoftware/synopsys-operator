@@ -50,14 +50,14 @@ func (c *Creater) GetPostgresDeployment() *components.ReplicationController {
 		},
 		EnvConfigs:   postgresEnvs,
 		VolumeMounts: postgresVolumeMounts,
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: postgresPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: postgresPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-postgres") {
 		postgresInitContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/pgsql/data"}},
 			VolumeMounts:    postgresVolumeMounts,
-			PortConfig:      &horizonapi.PortConfig{ContainerPort: "3001", Protocol: horizonapi.ProtocolTCP},
+			PortConfig:      []*horizonapi.PortConfig{{ContainerPort: "3001", Protocol: horizonapi.ProtocolTCP}},
 		}
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
