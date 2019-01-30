@@ -54,10 +54,15 @@ type HandlerInterface interface {
 	ObjectUpdated(objOld, objNew interface{})
 }
 
+// HubState contains the state of the Hub
 type HubState string
+
 const (
-	Running         HubState = "Running"
-	Stopped         HubState = "Stopped"
+	// Running is used when Hub is running
+	Running HubState = "Running"
+	// Stopped is used when Hub is Stopped
+	Stopped HubState = "Stopped"
+	// UnexpectedState is used there is an unexpected number of pod
 	UnexpectedState HubState = "UnexpectedState"
 )
 
@@ -137,8 +142,6 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 	} else {
 		h.ObjectUpdated(nil, obj)
 	}
-
-
 
 }
 

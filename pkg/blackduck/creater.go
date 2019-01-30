@@ -103,7 +103,7 @@ func (hc *Creater) DeleteHub(namespace string) error {
 }
 
 // CreateHub will create the Black Duck Blackduck
-func (hc *Creater) CreateHub(createHub *v1.BlackduckSpec) (string, map[string]string, bool, error)  {
+func (hc *Creater) CreateHub(createHub *v1.BlackduckSpec) (string, map[string]string, bool, error) {
 	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
 	// Create a horizon deployer for each hub
@@ -197,6 +197,7 @@ func (hc *Creater) CreateHub(createHub *v1.BlackduckSpec) (string, map[string]st
 	return ipAddress, pvcVolumeNames, false, nil
 }
 
+// Start the instance
 func (hc *Creater) Start(createHub *v1.BlackduckSpec) error {
 	// Create CM, secrets
 	deployer, err := hc.getHubConfigDeployer(createHub)
@@ -238,6 +239,7 @@ func (hc *Creater) Start(createHub *v1.BlackduckSpec) error {
 	return deployer.Run()
 }
 
+// Stop the instance
 func (hc *Creater) Stop(createHub *v1.BlackduckSpec) error {
 	// Stop Hub
 	deployer, err := hc.getHubDeployer(createHub)
@@ -273,8 +275,8 @@ func (hc *Creater) Stop(createHub *v1.BlackduckSpec) error {
 		return err
 	}
 
-	return err}
-
+	return err
+}
 
 func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
 
