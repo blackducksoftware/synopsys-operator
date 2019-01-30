@@ -223,7 +223,7 @@ func (hc *Creater) Start(createHub *v1.BlackduckSpec) error {
 		}
 
 		// Initialize the DB if we don't use persistent storage or that it starts for the first time
-		if !createHub.PersistentStorage || (createHub.PersistentStorage && strings.EqualFold(createHub.State, "pending")) {
+		if !createHub.PersistentStorage || (createHub.PersistentStorage && strings.EqualFold(createHub.DesiredState, "creating")) {
 			err = hc.initPostgres(createHub)
 			if err != nil {
 				return err

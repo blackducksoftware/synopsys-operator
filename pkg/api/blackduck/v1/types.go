@@ -63,7 +63,7 @@ type BlackduckSpec struct {
 	CertificateKey    string                    `json:"certificateKey,omitempty"`
 	ProxyCertificate  string                    `json:"proxyCertificate,omitempty"`
 	Type              string                    `json:"type,omitempty"`
-	State             string                    `json:"state"`
+	DesiredState      string                    `json:"desiredState"`
 	Environs          []string                  `json:"environs,omitempty"`
 	ImageRegistries   []string                  `json:"imageRegistries,omitempty"`
 	ImageUIDMap       map[string]int64          `json:"imageUidMap,omitempty"`

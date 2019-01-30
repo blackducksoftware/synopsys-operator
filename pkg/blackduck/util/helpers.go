@@ -73,8 +73,7 @@ func updateHubObject(h *hubClient.Clientset, namespace string, obj *blackduckv1.
 }
 
 // UpdateState will be used to update the hub object
-func UpdateState(h *hubClient.Clientset, namespace string, specState string, statusState string, err error, hub *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
-	hub.Spec.State = specState
+func UpdateState(h *hubClient.Clientset, namespace string, statusState string, err error, hub *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
 	hub.Status.State = statusState
 	if err != nil {
 		hub.Status.ErrorMessage = fmt.Sprintf("%+v", err)

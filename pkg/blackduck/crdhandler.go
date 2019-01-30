@@ -99,18 +99,18 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		log.Error("Unable to cast Blackduck object")
 		return
 	}
-	if strings.EqualFold(hubv2.Spec.State, "") {
+	if strings.EqualFold(hubv2.Spec.DesiredState, "") {
 		newSpec := hubv2.Spec
 		hubDefaultSpec := h.defaults
 		err := mergo.Merge(&newSpec, hubDefaultSpec)
 		log.Debugf("merged hub details %+v", newSpec)
 		if err != nil {
 			log.Errorf("unable to merge the hub structs for %s due to %+v", hubv2.Name, err)
-			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", "error", err, hubv2)
+			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, hubv2)
 		} else {
 			hubv2.Spec = newSpec
 			// Update status
-			hubv2, err := hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "pending", "creating", nil, hubv2)
+			hubv2, err := hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "creating", nil, hubv2)
 
 			if err == nil {
 				hubVersion := hubutils.GetHubVersion(hubv2.Spec.Environs)
@@ -128,9 +128,9 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				}
 
 				if updateError {
-					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", "error", err, hubv2)
+					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, hubv2)
 				} else {
-					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "running", "running", err, hubv2)
+					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "running", err, hubv2)
 					hubURL := fmt.Sprintf("webserver.%s.svc", hubv2.Spec.Namespace)
 					h.verifyHub(hubURL, hubv2.Spec.Namespace)
 					h.autoRegisterHub(&hubv2.Spec)
@@ -165,8 +165,8 @@ func (h *Handler) ObjectDeleted(name string) {
 	// h.callHubFederator()
 
 	//Set spec/state  and status/state to started
-	// obj.Spec.State = "deleted"
-	// obj.Status.State = "deleted"
+	// obj.Spec.DesiredState = "deleted"
+	// obj.Status.DesiredState = "deleted"
 	// obj, err = h.updateHubObject(obj)
 	// if err != nil {
 	// 	log.Errorf("Couldn't update Blackduck object: %s", err.Error())
@@ -186,23 +186,23 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
-	if !strings.EqualFold(string(state), blackduck.Spec.State) {
+	if !strings.EqualFold(string(state), blackduck.Spec.DesiredState) {
 		hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient)
-		switch blackduck.Spec.State {
+		switch blackduck.Spec.DesiredState {
 		case "Running":
 			log.Infof("Starting Hub: %s", blackduck.Name)
 			if err := hubCreator.Start(&blackduck.Spec); err != nil {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.State, err.Error(), err, blackduck)
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, err.Error(), err, blackduck)
 			} else {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.State, blackduck.Spec.State, err, blackduck)
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
 			}
 
 		case "Stopped":
 			log.Infof("Stopping Hub: %s", blackduck.Name)
 			if err := hubCreator.Stop(&blackduck.Spec); err != nil {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.State, err.Error(), err, blackduck)
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, err.Error(), err, blackduck)
 			} else {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.State, blackduck.Spec.State, err, blackduck)
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
 			}
 		}
 	}
@@ -283,7 +283,7 @@ func (h *Handler) getHubUrls() (*APISetHubsRequest, error) {
 	// 2. extract the namespaces
 	hubURLs := []string{}
 	for _, hub := range hubList.Items {
-		if len(hub.Spec.Namespace) > 0 && strings.EqualFold(hub.Spec.State, "running") {
+		if len(hub.Spec.Namespace) > 0 && strings.EqualFold(hub.Spec.DesiredState, "running") {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Spec.Namespace)
 			status := h.verifyHub(hubURL, hub.Spec.Namespace)
 			if status {
