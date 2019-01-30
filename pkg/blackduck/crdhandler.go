@@ -117,7 +117,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				hubv2.View.Version = hubVersion
 
 				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient)
-				ip, pvc, updateError, err := hubCreator.CreateHub(&hubv2.Spec)
+				ip, pvc, updateError, err := hubCreator.CreateHub(hubv2)
 				if err != nil {
 					log.Errorf("unable to create hub for %s due to %+v", hubv2.Name, err)
 				}
@@ -130,7 +130,12 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				if updateError {
 					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, hubv2)
 				} else {
-					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "running", err, hubv2)
+					hubv2.Spec.DesiredState = "Running"
+					hubv2.Status.State = "Running"
+					_, err := h.blackduckClient.SynopsysV1().Blackducks(h.config.Namespace).Update(hubv2)
+					if err != nil {
+						log.Errorf("Failed to update blackduck [%s] due to %+v", hubv2.Name, err)
+					}
 					hubURL := fmt.Sprintf("webserver.%s.svc", hubv2.Spec.Namespace)
 					h.verifyHub(hubURL, hubv2.Spec.Namespace)
 					h.autoRegisterHub(&hubv2.Spec)
@@ -191,7 +196,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		switch blackduck.Spec.DesiredState {
 		case "Running":
 			log.Infof("Starting Hub: %s", blackduck.Name)
-			if err := hubCreator.Start(&blackduck.Spec); err != nil {
+			if err := hubCreator.Start(blackduck); err != nil {
 				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, err.Error(), err, blackduck)
 			} else {
 				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
