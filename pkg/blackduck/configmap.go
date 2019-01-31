@@ -32,7 +32,7 @@ import (
 )
 
 // CreateHubConfig will create the hub configMaps
-func (hc *Creater) createHubConfig(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor, isBinaryAnalysisEnabled bool) map[string]*components.ConfigMap {
+func (hc *Creater) createHubConfig(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
 	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-config"})
@@ -101,7 +101,7 @@ func (hc *Creater) createHubConfig(createHub *v1.BlackduckSpec, hubContainerFlav
 
 	configMaps["hub-db-config-granular"] = hubDbConfigGranular
 
-	if isBinaryAnalysisEnabled {
+	if hc.isBinaryAnalysisEnabled {
 
 		binaryAnalysisConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "binary-analysis-config"})
 

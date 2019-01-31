@@ -362,7 +362,7 @@ func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec) (*horizon.D
 
 	// Create ConfigMaps
 	hubContainerFlavor := containers.GetContainersFlavor(createHub.Size)
-	configMaps := hc.createHubConfig(createHub, hubContainerFlavor, hc.isBinaryAnalysisEnabled)
+	configMaps := hc.createHubConfig(createHub, hubContainerFlavor)
 
 	for _, configMap := range configMaps {
 		deployer.AddConfigMap(configMap)
