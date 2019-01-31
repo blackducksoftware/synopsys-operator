@@ -41,11 +41,30 @@ func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 			{ContainerPort: uploadCachePort2, Protocol: horizonapi.ProtocolTCP}},
 	}
 
+	if c.hubSpec.LivenessProbes {
+		uploadCacheContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
+			ActionConfig:    horizonapi.ActionConfig{Command: []string{"curl", "--insecure", "-X", "GET", "--verbose", "http://localhost:8086/live?full=1"}},
+			Delay:           240,
+			Interval:        30,
+			Timeout:         10,
+			MinCountFailure: 5,
+		}}
+	}
+
+	var initContainers []*util.Container
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-uploadcache") {
+		initContainerConfig := &util.Container{
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-upload-cache/uploads"}},
+			VolumeMounts:    volumeMounts,
+		}
+		initContainers = append(initContainers, initContainerConfig)
+	}
+
 	c.PostEditContainer(uploadCacheContainerConfig)
 
 	uploadCache := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
-		Name: "uploadcache", Replicas: util.IntToInt32(1)}, "", []*util.Container{uploadCacheContainerConfig}, c.getUploadCacheVolumes(), []*util.Container{},
-		[]horizonapi.AffinityConfig{})
+		Name: "uploadcache", Replicas: util.IntToInt32(1)}, "", []*util.Container{uploadCacheContainerConfig}, c.getUploadCacheVolumes(),
+		initContainers, []horizonapi.AffinityConfig{})
 
 	return uploadCache
 }

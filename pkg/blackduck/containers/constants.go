@@ -30,8 +30,8 @@ const (
 	authenticationMemoryLimit  = "1024M"
 	authenticationHubMaxMemory = "512m"
 	documentationMemoryLimit   = "512M"
-	binaryScannerMemoryLimit   = "4608M"
-	rabbitmqMemoryLimit        = "512M"
+	binaryScannerMemoryLimit   = "2048M"
+	rabbitmqMemoryLimit        = "1024M"
 	uploadCacheMemoryLimit     = "512M"
 
 	registrationMinCPUUsage  = "1"
