@@ -5,7 +5,7 @@ NS=$1
 kubectl delete ns $NS
 
 kubectl delete crd alerts.synopsys.com
-kubectl delete crd hubs.synopsys.com
+kubectl delete crd blackducks.synopsys.com
 kubectl delete crd opssights.synopsys.com
 
 

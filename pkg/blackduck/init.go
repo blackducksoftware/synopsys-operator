@@ -23,6 +23,8 @@ package blackduck
 
 import (
 	"fmt"
+	"strings"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
@@ -52,6 +54,10 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 			storageClass := createHub.PVCStorageClass
 			if len(claim.StorageClass) > 0 {
 				storageClass = claim.StorageClass
+			}
+
+			if !hc.isBinaryAnalysisEnabled && (strings.Contains(claim.Name, "blackduck-rabbitmq") || strings.Contains(claim.Name, "blackduck-uploadcache")) {
+				continue
 			}
 
 			var size string
@@ -101,6 +107,16 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 				}
 			case "blackduck-zookeeper-datalog":
 				size = "2Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-rabbitmq":
+				size = "5Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-uploadcache":
+				size = "100Gi"
 				if len(claim.Size) > 0 {
 					size = claim.Size
 				}

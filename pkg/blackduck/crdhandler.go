@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -116,7 +115,9 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				hubVersion := hubutils.GetHubVersion(hubv2.Spec.Environs)
 				hubv2.View.Version = hubVersion
 
-				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient)
+				isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(hubv2.Spec.Environs)
+
+				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
 				ip, pvc, updateError, err := hubCreator.CreateHub(hubv2)
 				if err != nil {
 					log.Errorf("unable to create hub for %s due to %+v", hubv2.Name, err)
@@ -154,7 +155,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
-	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient)
+	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, false)
 
 	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
 	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("hubs.synopsys.com", v1.GetOptions{})
@@ -192,7 +193,8 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	}
 
 	if !strings.EqualFold(string(state), blackduck.Spec.DesiredState) {
-		hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient)
+		isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(blackduck.Spec.Environs)
+		hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
 		switch blackduck.Spec.DesiredState {
 		case "Running":
 			log.Infof("Starting Hub: %s", blackduck.Name)
@@ -222,12 +224,7 @@ func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
 		return err
 	}
 
-	var registrationKey string
-	if strings.EqualFold(createHub.LicenseKey, "") {
-		registrationKey = os.Getenv("REGISTRATION_KEY")
-	} else {
-		registrationKey = createHub.LicenseKey
-	}
+	registrationKey := createHub.LicenseKey
 
 	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
 		for i := 0; i < 20; i++ {
@@ -373,4 +370,20 @@ func (h *Handler) getCurrentState(blackduckSpec blackduckv1.BlackduckSpec) (HubS
 	}
 
 	return Running, nil
+}
+
+func (h *Handler) isBinaryAnalysisEnabled(envs []string) bool {
+	for _, value := range envs {
+		if strings.Contains(value, "USE_BINARY_UPLOADS") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				mapValue := strings.Trim(values[1], " ")
+				if strings.EqualFold(mapValue, "1") {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
 }

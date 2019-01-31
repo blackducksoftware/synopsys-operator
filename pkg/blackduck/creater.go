@@ -45,18 +45,20 @@ import (
 
 // Creater will store the configuration to create the Blackduck
 type Creater struct {
-	Config           *protoform.Config
-	KubeConfig       *rest.Config
-	KubeClient       *kubernetes.Clientset
-	BlackduckClient  *blackduckclientset.Clientset
-	osSecurityClient *securityclient.SecurityV1Client
-	routeClient      *routeclient.RouteV1Client
+	Config                  *protoform.Config
+	KubeConfig              *rest.Config
+	KubeClient              *kubernetes.Clientset
+	BlackduckClient         *blackduckclientset.Clientset
+	osSecurityClient        *securityclient.SecurityV1Client
+	routeClient             *routeclient.RouteV1Client
+	isBinaryAnalysisEnabled bool
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
-	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, BlackduckClient: hubClient, osSecurityClient: osSecurityClient, routeClient: routeClient}
+	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, isBinaryAnalysisEnabled bool) *Creater {
+	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, BlackduckClient: hubClient, osSecurityClient: osSecurityClient,
+		routeClient: routeClient, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
 }
 
 // DeleteHub will delete the Black Duck Blackduck
@@ -121,6 +123,7 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	}
 
 	log.Debugf("before init: %+v", &createHub)
+
 	// Create namespace, service account, clusterrolebinding and pvc
 	err = hc.init(deployer, &createHub.Spec, hubContainerFlavor)
 	if err != nil {
@@ -334,7 +337,7 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec) (*horizon.De
 		return nil, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Size)
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, nil, nil, nil)
+	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, nil, nil, nil, nil)
 	deployer.AddReplicationController(containerCreater.GetPostgresDeployment())
 	deployer.AddService(containerCreater.GetPostgresService())
 
