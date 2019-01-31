@@ -5,7 +5,7 @@
 #
 # ARG_OPTIONAL_SINGLE([namespace],[n],[namespace where Synopsys operator to be installed],[synopsys-operator])
 # ARG_OPTIONAL_SINGLE([docker-config],[d],[file path to Docker configuration to create the image pull secret],[])
-# ARG_OPTIONAL_SINGLE([synopsys-operator-image],[i],[Synopsys Operator image],[docker.io/blackducksoftware/synopsys-operator:2018.12.0])
+# ARG_OPTIONAL_SINGLE([synopsys-operator-image],[i],[Synopsys Operator image],[docker.io/blackducksoftware/synopsys-operator:2019.1.0])
 # ARG_OPTIONAL_SINGLE([prometheus-image],[p],[Prometheus image],[docker.io/prom/prometheus:v2.1.0])
 # ARG_HELP([The general script's help msg])
 # ARGBASH_GO()
