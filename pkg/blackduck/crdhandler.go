@@ -197,7 +197,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		case "Running":
 			log.Infof("Starting Hub: %s", blackduck.Name)
 			if err := hubCreator.Start(blackduck); err != nil {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, err.Error(), err, blackduck)
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
 			} else {
 				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
 			}
@@ -205,7 +205,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		case "Stopped":
 			log.Infof("Stopping Hub: %s", blackduck.Name)
 			if err := hubCreator.Stop(&blackduck.Spec); err != nil {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, err.Error(), err, blackduck)
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
 			} else {
 				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
 			}
