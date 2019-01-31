@@ -34,6 +34,7 @@ import (
 	shorttypes "github.com/koki/short/types"
 
 	"k8s.io/api/core/v1"
+
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -70,27 +71,31 @@ type Deployer struct {
 
 // NewDeployer creates a Deployer object
 func NewDeployer(kubeconfig *rest.Config) (*Deployer, error) {
-	var err error
-	var client *kubernetes.Clientset
-	var extensions *extensionsclient.Clientset
-	if kubeconfig == nil {
-		err = fmt.Errorf("Skipping kubeconfig.  Most operations won't work, but some (like export) will.")
-	} else {
-		// creates the client
-		client, err = kubernetes.NewForConfig(kubeconfig)
-		if err != nil {
-			err = fmt.Errorf("error creating the kubernetes client: %v", err)
-		}
-		// creates the extensions client
-		extensions, err = extensionsclient.NewForConfig(kubeconfig)
-		if err != nil {
-			err = fmt.Errorf("error creating the kubernetes api extensions client: %v", err)
-		}
+	// creates the client
+	client, err := kubernetes.NewForConfig(kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating the kubernetes client: %v", err)
 	}
 
-	d := Deployer{
-		client:                 client,
-		apiextensions:          extensions,
+	// creates the extensions client
+	extensions, err := extensionsclient.NewForConfig(kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating the kubernetes api extensions client: %v", err)
+	}
+
+	d := createDeployer()
+	d.client = client
+	d.apiextensions = extensions
+	return d, nil
+}
+
+// NewDeployerExporter creates a Deployer object that only supports exporting
+func NewDeployerExporter() *Deployer {
+	return createDeployer()
+}
+
+func createDeployer() *Deployer {
+	return &Deployer{
 		replicationControllers: make(map[string]*shorttypes.ReplicationController),
 		pods:                make(map[string]*shorttypes.Pod),
 		configMaps:          make(map[string]*shorttypes.ConfigMap),
@@ -105,9 +110,6 @@ func NewDeployer(kubeconfig *rest.Config) (*Deployer, error) {
 		controllers:         make(map[string]api.DeployerControllerInterface),
 		pvcs:                make(map[string]*shorttypes.PersistentVolumeClaim),
 	}
-	// return a deployer even if error, because export or other functionality
-	// could still work even though the creation statements wont work.
-	return &d, err
 }
 
 // AddController will add a custom controller that will be run after all
@@ -187,8 +189,23 @@ func (d *Deployer) AddPVC(obj *components.PersistentVolumeClaim) {
 	d.pvcs[obj.GetName()] = obj.GetObj()
 }
 
+func (d *Deployer) exporterOnly() bool {
+	if d.client == nil {
+		return true
+	}
+
+	if d.apiextensions == nil {
+		return true
+	}
+	return false
+}
+
 // Run starts the deployer and deploys all components to the cluster
 func (d *Deployer) Run() error {
+	if d.exporterOnly() {
+		return fmt.Errorf("deployer has no clients defined and can only be used to export")
+	}
+
 	allErrs := map[util.ComponentType][]error{}
 
 	err := d.deployNamespaces()
@@ -254,6 +271,11 @@ func (d *Deployer) Run() error {
 // StartControllers will start all the configured controllers
 func (d *Deployer) StartControllers(stopCh chan struct{}) map[string][]error {
 	errs := make(map[string][]error)
+
+	if d.exporterOnly() {
+		errs["deployerCore"] = []error{fmt.Errorf("deployer has no clients defined and can only be used to export")}
+		return errs
+	}
 
 	// Run the controllers if there are any configured
 	if len(d.controllers) > 0 {
@@ -520,7 +542,11 @@ func (d *Deployer) deployPVCs() []error {
 	return errs
 }
 
+// Undeploy will remove all components from the cluster
 func (d *Deployer) Undeploy() error {
+	if d.exporterOnly() {
+		return fmt.Errorf("deployer has no clients defined and can only be used to export")
+	}
 	allErrs := map[util.ComponentType][]error{}
 
 	err := d.undeployServices()
@@ -656,7 +682,10 @@ func (d *Deployer) undeployReplicationControllers() []error {
 
 	for name, rcObj := range d.replicationControllers {
 		log.Infof("Deleting replication controller %s", name)
-		err := d.client.Core().ReplicationControllers(rcObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		propagationPolicy := meta_v1.DeletePropagationBackground
+		err := d.client.Core().ReplicationControllers(rcObj.Namespace).Delete(name, &meta_v1.DeleteOptions{
+			PropagationPolicy: &propagationPolicy,
+		})
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -720,7 +749,7 @@ func (d *Deployer) undeployNamespaces() []error {
 	return errs
 }
 
-// Export returns api string objects for all types.
+// Export returns api string objects for all types
 func (d *Deployer) Export() map[string]string {
 	ser := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
 		scheme.Scheme)

@@ -35,20 +35,12 @@ import (
 )
 
 func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor,
-	allConfigEnv []*horizonapi.EnvConfig, adminPassword string, userPassword string, isBinaryAnalysisEnabled bool) error {
-
+	isBinaryAnalysisEnabled bool) error {
 	// Create a namespaces
 	_, err := util.GetNamespace(hc.KubeClient, createHub.Namespace)
 	if err != nil {
 		log.Debugf("unable to find the namespace %s", createHub.Namespace)
 		deployer.AddNamespace(components.NewNamespace(horizonapi.NamespaceConfig{Name: createHub.Namespace}))
-	}
-
-	// Create a secret
-	secrets := hc.createHubSecrets(createHub, adminPassword, userPassword)
-
-	for _, secret := range secrets {
-		deployer.AddSecret(secret)
 	}
 
 	// Create a service account
@@ -57,13 +49,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 	// Create a cluster role binding and associated it to a service account
 	deployer.AddClusterRoleBinding(util.CreateClusterRoleBinding(createHub.Namespace, createHub.Namespace, createHub.Namespace, "", "ClusterRole", "cluster-admin"))
 
-	// Create ConfigMaps
-	configMaps := hc.createHubConfig(createHub, hubContainerFlavor, isBinaryAnalysisEnabled)
-
-	for _, configMap := range configMaps {
-		deployer.AddConfigMap(configMap)
-	}
-
+	// We only start the postgres container if the external DB configuration struct is empty
 	if createHub.PersistentStorage {
 		for _, claim := range createHub.PVC {
 			storageClass := createHub.PVCStorageClass
@@ -148,13 +134,5 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 		}
 	}
 
-	// We only start the postgres container if the external DB configuration struct is empty
-	if createHub.ExternalPostgres == nil {
-		containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, allConfigEnv, nil, nil, nil)
-
-		deployer.AddReplicationController(containerCreater.GetPostgresDeployment())
-		deployer.AddService(containerCreater.GetPostgresService())
-		// deployer.AddService(util.CreateService("postgres-exposed", "postgres", createHub.Spec.Namespace, postgresPort, postgresPort, horizonapi.ClusterIPServiceTypeLoadBalancer))
-	}
 	return nil
 }

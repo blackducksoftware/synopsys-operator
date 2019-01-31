@@ -61,7 +61,12 @@ func (c *Creater) GetRabbitmqDeployment() *components.ReplicationController {
 // getRabbitmqVolumes will return the rabbitmq volumes
 func (c *Creater) getRabbitmqVolumes() []*components.Volume {
 	rabbitmqSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-security")
-	rabbitmqDataEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-data")
+	var rabbitmqDataEmptyDir *components.Volume
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-rabbitmq") {
+		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", "blackduck-rabbitmq")
+	} else {
+		rabbitmqDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-data")
+	}
 	volumes := []*components.Volume{rabbitmqSecurityEmptyDir, rabbitmqDataEmptyDir}
 	return volumes
 }

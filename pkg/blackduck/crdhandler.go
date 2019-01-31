@@ -53,6 +53,18 @@ type HandlerInterface interface {
 	ObjectUpdated(objOld, objNew interface{})
 }
 
+// HubState contains the state of the Hub
+type HubState string
+
+const (
+	// Running is used when Hub is running
+	Running HubState = "Running"
+	// Stopped is used when Hub is Stopped
+	Stopped HubState = "Stopped"
+	// UnexpectedState is used there is an unexpected number of pod
+	UnexpectedState HubState = "UnexpectedState"
+)
+
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
 	config           *protoform.Config
@@ -86,25 +98,27 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		log.Error("Unable to cast Blackduck object")
 		return
 	}
-	if strings.EqualFold(hubv2.Spec.State, "") {
+	if strings.EqualFold(hubv2.Spec.DesiredState, "") {
 		newSpec := hubv2.Spec
 		hubDefaultSpec := h.defaults
 		err := mergo.Merge(&newSpec, hubDefaultSpec)
 		log.Debugf("merged hub details %+v", newSpec)
 		if err != nil {
 			log.Errorf("unable to merge the hub structs for %s due to %+v", hubv2.Name, err)
-			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", "error", err, hubv2)
+			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, hubv2)
 		} else {
 			hubv2.Spec = newSpec
 			// Update status
-			hubv2, err := hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "pending", "creating", nil, hubv2)
+			hubv2, err := hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "creating", nil, hubv2)
 
 			if err == nil {
 				hubVersion := hubutils.GetHubVersion(hubv2.Spec.Environs)
 				hubv2.View.Version = hubVersion
 
-				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient)
-				ip, pvc, updateError, err := hubCreator.CreateHub(&hubv2.Spec)
+				isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(hubv2.Spec.Environs)
+
+				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
+				ip, pvc, updateError, err := hubCreator.CreateHub(hubv2)
 				if err != nil {
 					log.Errorf("unable to create hub for %s due to %+v", hubv2.Name, err)
 				}
@@ -115,9 +129,14 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				}
 
 				if updateError {
-					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", "error", err, hubv2)
+					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, hubv2)
 				} else {
-					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "running", "running", err, hubv2)
+					hubv2.Spec.DesiredState = "Running"
+					hubv2.Status.State = "Running"
+					_, err := h.blackduckClient.SynopsysV1().Blackducks(h.config.Namespace).Update(hubv2)
+					if err != nil {
+						log.Errorf("Failed to update blackduck [%s] due to %+v", hubv2.Name, err)
+					}
 					hubURL := fmt.Sprintf("webserver.%s.svc", hubv2.Spec.Namespace)
 					h.verifyHub(hubURL, hubv2.Spec.Namespace)
 					h.autoRegisterHub(&hubv2.Spec)
@@ -125,9 +144,10 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				}
 			}
 		}
+		log.Infof("Done w/ install, starting post-install nanny monitors...")
+	} else {
+		h.ObjectUpdated(nil, obj)
 	}
-
-	log.Infof("Done w/ install, starting post-install nanny monitors...")
 
 }
 
@@ -135,7 +155,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
-	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient)
+	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, false)
 
 	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
 	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("hubs.synopsys.com", v1.GetOptions{})
@@ -151,8 +171,8 @@ func (h *Handler) ObjectDeleted(name string) {
 	// h.callHubFederator()
 
 	//Set spec/state  and status/state to started
-	// obj.Spec.State = "deleted"
-	// obj.Status.State = "deleted"
+	// obj.Spec.DesiredState = "deleted"
+	// obj.Status.DesiredState = "deleted"
 	// obj, err = h.updateHubObject(obj)
 	// if err != nil {
 	// 	log.Errorf("Couldn't update Blackduck object: %s", err.Error())
@@ -161,12 +181,38 @@ func (h *Handler) ObjectDeleted(name string) {
 
 // ObjectUpdated will be called for update hub events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	//if strings.Compare(objOld.Spec.State, objNew.Spec.State) != 0 {
-	//	log.Infof("%s - Changing state [%s] -> [%s] | Current: [%s]", objNew.Name, objOld.Spec.State, objNew.Spec.State, objNew.Status.State )
-	//	// TO DO
-	//	objNew.Status.State = objNew.Spec.State
-	//	h.blackduckClient.SynopsysV1().Hubs(objNew.Namespace).Update(objNew)
-	//}
+	blackduck, ok := objNew.(*blackduckv1.Blackduck)
+	if !ok {
+		log.Error("Unable to cast Hub object")
+		return
+	}
+	state, err := h.getCurrentState(blackduck.Spec)
+	if err != nil {
+		log.Errorf("Couldn't get the Hub state of %s: %v", blackduck.Name, err)
+		return
+	}
+
+	if !strings.EqualFold(string(state), blackduck.Spec.DesiredState) {
+		isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(blackduck.Spec.Environs)
+		hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
+		switch blackduck.Spec.DesiredState {
+		case "Running":
+			log.Infof("Starting Hub: %s", blackduck.Name)
+			if err := hubCreator.Start(blackduck); err != nil {
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
+			} else {
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
+			}
+
+		case "Stopped":
+			log.Infof("Stopping Hub: %s", blackduck.Name)
+			if err := hubCreator.Stop(&blackduck.Spec); err != nil {
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
+			} else {
+				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
+			}
+		}
+	}
 }
 
 func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
@@ -239,7 +285,7 @@ func (h *Handler) getHubUrls() (*APISetHubsRequest, error) {
 	// 2. extract the namespaces
 	hubURLs := []string{}
 	for _, hub := range hubList.Items {
-		if len(hub.Spec.Namespace) > 0 && strings.EqualFold(hub.Spec.State, "running") {
+		if len(hub.Spec.Namespace) > 0 && strings.EqualFold(hub.Spec.DesiredState, "running") {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Spec.Namespace)
 			status := h.verifyHub(hubURL, hub.Spec.Namespace)
 			if status {
@@ -306,4 +352,38 @@ func (h *Handler) addHubFederatorEvents(dest string, obj interface{}) error {
 		return fmt.Errorf("http POST request to %s failed with status code %d", dest, resp.StatusCode)
 	}
 	return nil
+}
+
+func (h *Handler) getCurrentState(blackduckSpec blackduckv1.BlackduckSpec) (HubState, error) {
+	rc, err := h.kubeClient.CoreV1().ReplicationControllers(blackduckSpec.Namespace).List(v1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	if len(rc.Items) == 0 {
+		return Stopped, nil
+	}
+
+	// 10 if ext-db  | 11 if using postgres container
+	if (len(rc.Items) < 10 && blackduckSpec.ExternalPostgres != nil) || (len(rc.Items) < 11 && blackduckSpec.ExternalPostgres == nil) {
+		return UnexpectedState, nil
+	}
+
+	return Running, nil
+}
+
+func (h *Handler) isBinaryAnalysisEnabled(envs []string) bool {
+	for _, value := range envs {
+		if strings.Contains(value, "USE_BINARY_UPLOADS") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				mapValue := strings.Trim(values[1], " ")
+				if strings.EqualFold(mapValue, "1") {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
 }

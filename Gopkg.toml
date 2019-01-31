@@ -28,7 +28,6 @@
 [[constraint]]
   branch = "master"
   name = "github.com/blackducksoftware/horizon"
-  source = "https://github.com/jayunit100/horizon"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"

@@ -72,7 +72,12 @@ func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 // getUploadCacheVolumes will return the uploadCache volumes
 func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
-	uploadCacheDataEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
+	var uploadCacheDataEmptyDir *components.Volume
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-uploadcache") {
+		uploadCacheDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", "blackduck-uploadcache")
+	} else {
+		uploadCacheDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
+	}
 	volumes := []*components.Volume{uploadCacheSecurityEmptyDir, uploadCacheDataEmptyDir}
 	return volumes
 }

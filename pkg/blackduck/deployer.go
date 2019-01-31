@@ -97,8 +97,6 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 	// nginx
 	deployer.AddReplicationController(containerCreater.GetWebserverDeployment())
 	deployer.AddService(containerCreater.GetWebServerService())
-	deployer.AddService(containerCreater.GetWebServerNodePortService())
-	deployer.AddService(containerCreater.GetWebServerLoadBalancerService())
 
 	// documentation
 	deployer.AddReplicationController(containerCreater.GetDocumentationDeployment())
@@ -177,4 +175,11 @@ func (hc *Creater) addAnyUIDToServiceAccount(createHub *v1.BlackduckSpec) error 
 		}
 	}
 	return nil
+}
+
+// AddExposeServices add the nodeport / LB services
+func (hc *Creater) AddExposeServices(deployer *horizon.Deployer, createHub *v1.BlackduckSpec) {
+	containerCreater := containers.NewCreater(hc.Config, createHub, nil, nil, nil, nil, nil, nil)
+	deployer.AddService(containerCreater.GetWebServerNodePortService())
+	deployer.AddService(containerCreater.GetWebServerLoadBalancerService())
 }
