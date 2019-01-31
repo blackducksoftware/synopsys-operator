@@ -2,10 +2,10 @@
   "apiVersion": "synopsys.com/v1",
   "kind": "Blackduck",
   "metadata": {
-    "name": "blackduck-ephemeral"
+    "name": "blackduck-bdba"
   },
   "spec": {
-    "namespace": "blackduck-ephemeral",
+    "namespace": "blackduck-bdba",
     "licenseKey": "<BLACKDUCK_LICENSE_KEY>",
     "certificateName": "default",
     "environs": [
@@ -24,7 +24,7 @@
       "DISABLE_HUB_DASHBOARD:#hub-webserver.env",
       "HUB_LOGSTASH_HOST:logstash",
       "RABBIT_MQ_PORT:5671",
-      "USE_BINARY_UPLOADS:0",
+      "USE_BINARY_UPLOADS:1",
       "BROKER_USE_SSL:yes",
       "RABBIT_MQ_HOST:rabbitmq",
       "CLIENT_CERT_CN:binaryscanner",
@@ -45,7 +45,10 @@
       "docker.io/blackducksoftware/blackduck-logstash:1.0.2",
       "docker.io/blackducksoftware/blackduck-nginx:1.0.0",
       "docker.io/blackducksoftware/blackduck-solr:1.0.0",
-      "docker.io/blackducksoftware/blackduck-zookeeper:1.0.0"
+      "docker.io/blackducksoftware/blackduck-zookeeper:1.0.0",
+      "docker.io/blackducksoftware/appcheck-worker:1.0.1",
+      "docker.io/blackducksoftware/rabbitmq:1.0.0",
+      "docker.io/blackducksoftware/blackduck-upload-cache:1.0.3"
     ],
     "livenessProbes": false,
     "persistentStorage": false,
