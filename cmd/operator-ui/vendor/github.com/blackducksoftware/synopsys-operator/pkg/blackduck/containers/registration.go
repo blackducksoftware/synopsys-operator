@@ -37,7 +37,7 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: c.getRegistrationVolumeMounts(),
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	if c.hubSpec.LivenessProbes {

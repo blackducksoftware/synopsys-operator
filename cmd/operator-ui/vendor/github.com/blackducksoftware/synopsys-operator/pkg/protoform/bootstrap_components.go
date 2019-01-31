@@ -42,10 +42,7 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
 			{Name: "synopsys-operator", MountPath: "/etc/synopsys-operator"},
 		},
-		PortConfig: &horizonapi.PortConfig{
-			ContainerPort: "8080",
-			Protocol:      horizonapi.ProtocolTCP,
-		},
+		PortConfig: []*horizonapi.PortConfig{{ContainerPort: "8080", Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	protoformRC := util.CreateReplicationControllerFromContainer(
@@ -124,10 +121,7 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 				MountPath: "/etc/prometheus",
 			},
 		},
-		PortConfig: &horizonapi.PortConfig{
-			ContainerPort: "8080",
-			Protocol:      horizonapi.ProtocolTCP,
-		},
+		PortConfig: []*horizonapi.PortConfig{{ContainerPort: "8080", Protocol: horizonapi.ProtocolTCP}},
 	}
 	prometheusVol1, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("data")
 	prometheusVol2, _ := util.CreateConfigMapVolume("config-volume", "prometheus-config", 777)

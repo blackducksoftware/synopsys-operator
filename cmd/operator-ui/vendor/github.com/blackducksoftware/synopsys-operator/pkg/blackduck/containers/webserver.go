@@ -39,7 +39,7 @@ func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 			{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security"},
 			{Name: "certificate", MountPath: "/tmp/secrets"},
 		},
-		PortConfig: &horizonapi.PortConfig{ContainerPort: webserverPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig: []*horizonapi.PortConfig{{ContainerPort: webserverPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	if c.hubSpec.LivenessProbes {
