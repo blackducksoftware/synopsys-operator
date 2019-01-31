@@ -121,7 +121,7 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	}
 
 	log.Debugf("before init: %+v", &createHub)
-	// Create the config-maps, secrets and postgres container
+	// Create namespace, service account, clusterrolebinding and pvc
 	err = hc.init(deployer, &createHub.Spec, hubContainerFlavor)
 	if err != nil {
 		return "", nil, true, err
