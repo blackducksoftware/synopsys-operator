@@ -33,7 +33,9 @@ import (
 	"github.com/koki/short/converter/converters"
 	shorttypes "github.com/koki/short/types"
 
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
+
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -61,6 +63,11 @@ type Deployer struct {
 	crds                   map[string]*shorttypes.CustomResourceDefinition
 	namespaces             map[string]*shorttypes.Namespace
 	pvcs                   map[string]*shorttypes.PersistentVolumeClaim
+	hpas                   map[string]*shorttypes.HorizontalPodAutoscaler
+	ingress                map[string]*shorttypes.Ingress
+	jobs                   map[string]*shorttypes.Job
+	statefulSets           map[string]*shorttypes.StatefulSet
+	daemonSets             map[string]*shorttypes.DaemonSet
 
 	controllers map[string]api.DeployerControllerInterface
 
@@ -70,44 +77,50 @@ type Deployer struct {
 
 // NewDeployer creates a Deployer object
 func NewDeployer(kubeconfig *rest.Config) (*Deployer, error) {
-	var err error
-	var client *kubernetes.Clientset
-	var extensions *extensionsclient.Clientset
-	if kubeconfig == nil {
-		err = fmt.Errorf("Skipping kubeconfig.  Most operations won't work, but some (like export) will.")
-	} else {
-		// creates the client
-		client, err = kubernetes.NewForConfig(kubeconfig)
-		if err != nil {
-			err = fmt.Errorf("error creating the kubernetes client: %v", err)
-		}
-		// creates the extensions client
-		extensions, err = extensionsclient.NewForConfig(kubeconfig)
-		if err != nil {
-			err = fmt.Errorf("error creating the kubernetes api extensions client: %v", err)
-		}
+	// creates the client
+	client, err := kubernetes.NewForConfig(kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating the kubernetes client: %v", err)
 	}
 
-	d := Deployer{
-		client:                 client,
-		apiextensions:          extensions,
-		replicationControllers: make(map[string]*shorttypes.ReplicationController),
-		pods:                make(map[string]*shorttypes.Pod),
-		configMaps:          make(map[string]*shorttypes.ConfigMap),
-		secrets:             make(map[string]*shorttypes.Secret),
-		services:            make(map[string]*shorttypes.Service),
-		serviceAccounts:     make(map[string]*shorttypes.ServiceAccount),
-		deployments:         make(map[string]*shorttypes.Deployment),
-		clusterRoles:        make(map[string]*shorttypes.ClusterRole),
-		clusterRoleBindings: make(map[string]*shorttypes.ClusterRoleBinding),
-		crds:                make(map[string]*shorttypes.CustomResourceDefinition),
-		namespaces:          make(map[string]*shorttypes.Namespace),
-		controllers:         make(map[string]api.DeployerControllerInterface),
-		pvcs:                make(map[string]*shorttypes.PersistentVolumeClaim),
+	// creates the extensions client
+	extensions, err := extensionsclient.NewForConfig(kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating the kubernetes api extensions client: %v", err)
 	}
-	// return a deployer even if error, because export or other functionality
-	// could still work even though the creation statements wont work.
-	return &d, err
+
+	d := createDeployer()
+	d.client = client
+	d.apiextensions = extensions
+	return d, nil
+}
+
+// NewDeployerExporter creates a Deployer object that only supports exporting
+func NewDeployerExporter() *Deployer {
+	return createDeployer()
+}
+
+func createDeployer() *Deployer {
+	return &Deployer{
+		replicationControllers: make(map[string]*shorttypes.ReplicationController),
+		pods:                   make(map[string]*shorttypes.Pod),
+		configMaps:             make(map[string]*shorttypes.ConfigMap),
+		secrets:                make(map[string]*shorttypes.Secret),
+		services:               make(map[string]*shorttypes.Service),
+		serviceAccounts:        make(map[string]*shorttypes.ServiceAccount),
+		deployments:            make(map[string]*shorttypes.Deployment),
+		clusterRoles:           make(map[string]*shorttypes.ClusterRole),
+		clusterRoleBindings:    make(map[string]*shorttypes.ClusterRoleBinding),
+		crds:                   make(map[string]*shorttypes.CustomResourceDefinition),
+		namespaces:             make(map[string]*shorttypes.Namespace),
+		controllers:            make(map[string]api.DeployerControllerInterface),
+		pvcs:                   make(map[string]*shorttypes.PersistentVolumeClaim),
+		hpas:                   make(map[string]*shorttypes.HorizontalPodAutoscaler),
+		ingress:                make(map[string]*shorttypes.Ingress),
+		jobs:                   make(map[string]*shorttypes.Job),
+		statefulSets:           make(map[string]*shorttypes.StatefulSet),
+		daemonSets:             make(map[string]*shorttypes.DaemonSet),
+	}
 }
 
 // AddController will add a custom controller that will be run after all
@@ -187,8 +200,53 @@ func (d *Deployer) AddPVC(obj *components.PersistentVolumeClaim) {
 	d.pvcs[obj.GetName()] = obj.GetObj()
 }
 
+// AddJob will add the provided job to the
+// jobs that will be deployed
+func (d *Deployer) AddJob(obj *components.Job) {
+	d.jobs[obj.GetName()] = obj.GetObj()
+}
+
+// AddHorizontalPodAutoscaler will add the provided horizontal pod autoscaler to the
+// horizontal pod autoscalers that will be deployed
+func (d *Deployer) AddHorizontalPodAutoscaler(obj *components.HorizontalPodAutoscaler) {
+	d.hpas[obj.GetName()] = obj.GetObj()
+}
+
+// AddIngress will add the provided ingress to the
+// ingresses that will be deployed
+func (d *Deployer) AddIngress(obj *components.Ingress) {
+	d.ingress[obj.GetName()] = obj.GetObj()
+}
+
+// AddStatefulSet will add the provided stateful set to the
+// stateful sets that will be deployed
+func (d *Deployer) AddStatefulSet(obj *components.StatefulSet) {
+	d.statefulSets[obj.GetName()] = obj.GetObj()
+}
+
+// AddDaemonSet will add the provided daemon set to the
+// daemon sets that will be deployed
+func (d *Deployer) AddDaemonSet(obj *components.DaemonSet) {
+	d.daemonSets[obj.GetName()] = obj.GetObj()
+}
+
+func (d *Deployer) exporterOnly() bool {
+	if d.client == nil {
+		return true
+	}
+
+	if d.apiextensions == nil {
+		return true
+	}
+	return false
+}
+
 // Run starts the deployer and deploys all components to the cluster
 func (d *Deployer) Run() error {
+	if d.exporterOnly() {
+		return fmt.Errorf("deployer has no clients defined and can only be used to export")
+	}
+
 	allErrs := map[util.ComponentType][]error{}
 
 	err := d.deployNamespaces()
@@ -248,12 +306,42 @@ func (d *Deployer) Run() error {
 		allErrs[util.ServiceComponent] = err
 	}
 
+	err = d.deployJobs()
+	if len(err) > 0 {
+		allErrs[util.JobComponent] = err
+	}
+
+	err = d.deployHPAs()
+	if len(err) > 0 {
+		allErrs[util.HorizontalPodAutoscalerComponent] = err
+	}
+
+	err = d.deployIngress()
+	if len(err) > 0 {
+		allErrs[util.IngressComponent] = err
+	}
+
+	err = d.deployStatefulSets()
+	if len(err) > 0 {
+		allErrs[util.StatefulSetComponent] = err
+	}
+
+	err = d.deployDaemonSets()
+	if len(err) > 0 {
+		allErrs[util.DaemonSetComponent] = err
+	}
+
 	return utilserror.NewDeployErrors(allErrs)
 }
 
 // StartControllers will start all the configured controllers
 func (d *Deployer) StartControllers(stopCh chan struct{}) map[string][]error {
 	errs := make(map[string][]error)
+
+	if d.exporterOnly() {
+		errs["deployerCore"] = []error{fmt.Errorf("deployer has no clients defined and can only be used to export")}
+		return errs
+	}
 
 	// Run the controllers if there are any configured
 	if len(d.controllers) > 0 {
@@ -520,10 +608,144 @@ func (d *Deployer) deployPVCs() []error {
 	return errs
 }
 
+func (d *Deployer) deployJobs() []error {
+	errs := []error{}
+
+	for name, jobObj := range d.jobs {
+		wrapper := &shorttypes.JobWrapper{Job: *jobObj}
+		job, err := converters.Convert_Koki_Job_to_Kube_Job(wrapper)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		log.Infof("Creating job %s", name)
+		j, ok := job.(*batchv1.Job)
+		if !ok {
+			errs = append(errs, fmt.Errorf("failed to convert job %s", name))
+			continue
+		}
+		_, err = d.client.Batch().Jobs(j.Namespace).Create(j)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func (d *Deployer) deployHPAs() []error {
+	errs := []error{}
+
+	for name, hpaObj := range d.hpas {
+		wrapper := &shorttypes.HorizontalPodAutoscalerWrapper{HPA: *hpaObj}
+		hpa, err := converters.Convert_Koki_HPA_to_Kube(wrapper)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		log.Infof("Creating horizontal pod autoscaler %s", name)
+		_, err = d.client.Autoscaling().HorizontalPodAutoscalers(hpa.Namespace).Create(hpa)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func (d *Deployer) deployIngress() []error {
+	errs := []error{}
+
+	for name, ingressObj := range d.ingress {
+		wrapper := &shorttypes.IngressWrapper{Ingress: *ingressObj}
+		ingress, err := converters.Convert_Koki_Ingress_to_Kube_Ingress(wrapper)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		log.Infof("Creating ingress %s", name)
+		_, err = d.client.Extensions().Ingresses(ingress.Namespace).Create(ingress)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func (d *Deployer) deployStatefulSets() []error {
+	errs := []error{}
+
+	for name, ssObj := range d.statefulSets {
+		wrapper := &shorttypes.StatefulSetWrapper{StatefulSet: *ssObj}
+		statefulSet, err := converters.Convert_Koki_StatefulSet_to_Kube_apps_v1beta2_StatefulSet(wrapper)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		log.Infof("Creating stateful set %s", name)
+		_, err = d.client.AppsV1beta2().StatefulSets(statefulSet.Namespace).Create(statefulSet)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+func (d *Deployer) deployDaemonSets() []error {
+	errs := []error{}
+
+	for name, dsObj := range d.daemonSets {
+		wrapper := &shorttypes.DaemonSetWrapper{DaemonSet: *dsObj}
+		daemonSet, err := converters.Convert_Koki_DaemonSet_to_Kube_apps_v1beta2_DaemonSet(wrapper)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		log.Infof("Creating daemon set %s", name)
+		_, err = d.client.AppsV1beta2().DaemonSets(daemonSet.Namespace).Create(daemonSet)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// Undeploy will remove all components from the cluster
 func (d *Deployer) Undeploy() error {
+	if d.exporterOnly() {
+		return fmt.Errorf("deployer has no clients defined and can only be used to export")
+	}
 	allErrs := map[util.ComponentType][]error{}
 
-	err := d.undeployServices()
+	err := d.undeployDaemonSets()
+	if len(err) > 0 {
+		allErrs[util.DaemonSetComponent] = err
+	}
+
+	err = d.undeployStatefulSets()
+	if len(err) > 0 {
+		allErrs[util.StatefulSetComponent] = err
+	}
+
+	err = d.undeployIngress()
+	if len(err) > 0 {
+		allErrs[util.IngressComponent] = err
+	}
+
+	err = d.undeployHPAs()
+	if len(err) > 0 {
+		allErrs[util.HorizontalPodAutoscalerComponent] = err
+	}
+
+	err = d.undeployJobs()
+	if len(err) > 0 {
+		allErrs[util.JobComponent] = err
+	}
+
+	err = d.undeployServices()
 	if len(err) > 0 {
 		allErrs[util.ServiceComponent] = err
 	}
@@ -656,7 +878,10 @@ func (d *Deployer) undeployReplicationControllers() []error {
 
 	for name, rcObj := range d.replicationControllers {
 		log.Infof("Deleting replication controller %s", name)
-		err := d.client.Core().ReplicationControllers(rcObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		propagationPolicy := meta_v1.DeletePropagationBackground
+		err := d.client.Core().ReplicationControllers(rcObj.Namespace).Delete(name, &meta_v1.DeleteOptions{
+			PropagationPolicy: &propagationPolicy,
+		})
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -720,7 +945,72 @@ func (d *Deployer) undeployNamespaces() []error {
 	return errs
 }
 
-// Export returns api string objects for all types.
+func (d *Deployer) undeployJobs() []error {
+	errs := []error{}
+
+	for name, jobObj := range d.jobs {
+		log.Infof("Deleting job %s", name)
+		err := d.client.Batch().Jobs(jobObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployHPAs() []error {
+	errs := []error{}
+
+	for name, hpaObj := range d.hpas {
+		log.Infof("Deleting horizontal pod autoscaler %s", name)
+		err := d.client.Autoscaling().HorizontalPodAutoscalers(hpaObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployIngress() []error {
+	errs := []error{}
+
+	for name, ingressObj := range d.ingress {
+		log.Infof("Deleting ingress %s", name)
+		err := d.client.Extensions().Ingresses(ingressObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployStatefulSets() []error {
+	errs := []error{}
+
+	for name, ssObj := range d.statefulSets {
+		log.Infof("Deleting stateful set %s", name)
+		err := d.client.AppsV1beta2().StatefulSets(ssObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func (d *Deployer) undeployDaemonSets() []error {
+	errs := []error{}
+
+	for name, dsObj := range d.daemonSets {
+		log.Infof("Deleting daemon set %s", name)
+		err := d.client.AppsV1beta2().DaemonSets(dsObj.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+// Export returns api string objects for all types
 func (d *Deployer) Export() map[string]string {
 	ser := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
 		scheme.Scheme)
