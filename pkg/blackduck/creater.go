@@ -203,7 +203,7 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 // Start the instance
 func (hc *Creater) Start(createHub *v1.Blackduck) error {
 	// Create CM, secrets
-	deployer, err := hc.getHubConfigDeployer(&createHub.Spec, hc.isBinaryAnalysisEnabled)
+	deployer, err := hc.getHubConfigDeployer(&createHub.Spec)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (hc *Creater) Stop(createHub *v1.BlackduckSpec) error {
 	}
 
 	// Delete the config
-	deployer, err = hc.getHubConfigDeployer(createHub, hc.isBinaryAnalysisEnabled)
+	deployer, err = hc.getHubConfigDeployer(createHub)
 	if err != nil {
 		return err
 	}
@@ -344,7 +344,7 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec) (*horizon.De
 	return deployer, nil
 }
 
-func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec, isBinaryAnalysisEnabled bool) (*horizon.Deployer, error) {
+func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec) (*horizon.Deployer, error) {
 	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
 	// Create a horizon deployer for each hub
@@ -362,7 +362,7 @@ func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec, isBinaryAna
 
 	// Create ConfigMaps
 	hubContainerFlavor := containers.GetContainersFlavor(createHub.Size)
-	configMaps := hc.createHubConfig(createHub, hubContainerFlavor, isBinaryAnalysisEnabled)
+	configMaps := hc.createHubConfig(createHub, hubContainerFlavor, hc.isBinaryAnalysisEnabled)
 
 	for _, configMap := range configMaps {
 		deployer.AddConfigMap(configMap)
