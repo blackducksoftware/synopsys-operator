@@ -39,5 +39,3 @@ const (
 	NamespaceComponent             ComponentType = "Namespace"
 	PersistentVolumeClaimComponent ComponentType = "PersistentVolumeClaim"
 )
-
-// some functions used for unit tests...

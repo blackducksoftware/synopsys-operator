@@ -59,7 +59,7 @@ func (i *HubStatusUpdater) update() {
 		// if any entreis non running, its status is busted ...
 		if len(hisstorg) > 0 {
 			logrus.Warnf("Warning: Blackduck %v is down  %v", hub.GetNamespace(), hisstorg)
-			hubutils.UpdateState(i.HubClient, i.Config.Namespace, "", "", fmt.Errorf("%v", hisstorg), &hub)
+			hubutils.UpdateState(i.HubClient, i.Config.Namespace, "", fmt.Errorf("%v", hisstorg), &hub)
 		}
 	}
 }
