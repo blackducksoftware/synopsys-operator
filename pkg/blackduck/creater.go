@@ -125,7 +125,7 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	log.Debugf("before init: %+v", &createHub)
 
 	// Create namespace, service account, clusterrolebinding and pvc
-	err = hc.init(deployer, &createHub.Spec, hubContainerFlavor, hc.isBinaryAnalysisEnabled)
+	err = hc.init(deployer, &createHub.Spec, hubContainerFlavor)
 	if err != nil {
 		return "", nil, true, err
 	}
@@ -402,7 +402,7 @@ func (hc *Creater) getHubDeployer(createHub *v1.BlackduckSpec) (*horizon.Deploye
 
 	// Create all hub deployments
 	deployer, _ = horizon.NewDeployer(hc.KubeConfig)
-	hc.AddToDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv, hc.isBinaryAnalysisEnabled)
+	hc.AddToDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
 
 	log.Debugf("%+v", deployer)
 

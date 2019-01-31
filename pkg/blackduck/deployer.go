@@ -39,7 +39,7 @@ import (
 // To create the returned hub, run 	CreateHub().Run().
 // TODO doc what 'allConfigEnv' actually is ???
 func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor,
-	allConfigEnv []*horizonapi.EnvConfig, isBinaryAnalysisEnabled bool) {
+	allConfigEnv []*horizonapi.EnvConfig) {
 
 	// Blackduck ConfigMap environment variables
 	hubConfigEnv := []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"}}
@@ -130,7 +130,7 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 	deployer.AddService(containerCreater.GetWebAppService())
 	deployer.AddService(containerCreater.GetLogStashService())
 
-	if isBinaryAnalysisEnabled {
+	if hc.isBinaryAnalysisEnabled {
 		// Binary Scanner
 		deployer.AddReplicationController(containerCreater.GetBinaryScannerDeployment())
 

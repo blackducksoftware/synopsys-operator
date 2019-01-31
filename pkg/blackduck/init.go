@@ -34,8 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor,
-	isBinaryAnalysisEnabled bool) error {
+func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) error {
 	// Create a namespaces
 	_, err := util.GetNamespace(hc.KubeClient, createHub.Namespace)
 	if err != nil {
@@ -57,7 +56,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 				storageClass = claim.StorageClass
 			}
 
-			if !isBinaryAnalysisEnabled && (strings.Contains(claim.Name, "blackduck-rabbitmq") || strings.Contains(claim.Name, "blackduck-uploadcache")) {
+			if !hc.isBinaryAnalysisEnabled && (strings.Contains(claim.Name, "blackduck-rabbitmq") || strings.Contains(claim.Name, "blackduck-uploadcache")) {
 				continue
 			}
 
