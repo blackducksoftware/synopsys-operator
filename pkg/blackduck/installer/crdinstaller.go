@@ -192,8 +192,6 @@ func (c *CRDInstaller) Deploy() error {
 	// 	BlackduckClient:  c.hubClient,
 	// }
 
-	// call the run method to verify all hubs postgres and initialize the database if it restarts
-	go initDatabaseUpdater.Run(c.stopCh)
 	//	go statusUpdater.Run(c.stopCh)
 
 	return err
