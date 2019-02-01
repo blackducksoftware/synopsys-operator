@@ -98,7 +98,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		log.Error("Unable to cast Blackduck object")
 		return
 	}
-	if strings.EqualFold(hubv2.Spec.DesiredState, "") {
+	if strings.EqualFold(hubv2.Spec.DesiredState, "") && strings.EqualFold(hubv2.Status.State, "") {
 		newSpec := hubv2.Spec
 		hubDefaultSpec := h.defaults
 		err := mergo.Merge(&newSpec, hubDefaultSpec)
