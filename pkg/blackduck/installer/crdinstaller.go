@@ -98,7 +98,11 @@ func (c *CRDInstaller) Deploy() error {
 		Kind:       "Blackduck",
 		Plural:     "blackducks",
 		Singular:   "blackduck",
-		Scope:      horizonapi.CRDClusterScoped,
+		ShortNames: []string{
+			"hub",
+			"hubs",
+		},
+		Scope: horizonapi.CRDClusterScoped,
 	}))
 
 	// // Perceptor configMap
