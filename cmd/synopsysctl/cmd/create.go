@@ -37,9 +37,17 @@ to quickly create a Cobra application.`,
 
 var blackduckCmd = &cobra.Command{
 	Use:   "blackduck",
-	Short: "create an instance of a blackduck",
+	Short: "create an instance of a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Your BD will have %d gigabytes\n", create_blackduck_size)
+	},
+}
+
+var opssightCmd = &cobra.Command{
+	Use:   "opssight",
+	Short: "create an instance of OpsSight",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("Creating OpsSight\n")
 	},
 }
 
@@ -47,6 +55,7 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 	blackduckCmd.Flags().IntVarP(&create_blackduck_size, "size", "s", create_blackduck_size, "blackduck size in GB")
 	createCmd.AddCommand(blackduckCmd)
+	createCmd.AddCommand(opssightCmd)
 
 	// Here you will define your flags and configuration settings.
 
