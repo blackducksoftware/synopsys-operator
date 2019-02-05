@@ -18,12 +18,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
+	"github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl/cmd/utils"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -71,7 +71,7 @@ var initCmd = &cobra.Command{
 
 		// Start Horizon
 		var kubeconfig *string
-		if home := homeDir(); home != "" {
+		if home := utils.homeDir(); home != "" {
 			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 		} else {
 			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
@@ -130,13 +130,6 @@ var initCmd = &cobra.Command{
 		// expose the routes
 
 	},
-}
-
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }
 
 func init() {

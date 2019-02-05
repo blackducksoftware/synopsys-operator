@@ -17,6 +17,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -89,4 +90,11 @@ func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (error, string) {
 			return err, buf.String()
 		}
 	}
+}
+
+func homeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
 }
