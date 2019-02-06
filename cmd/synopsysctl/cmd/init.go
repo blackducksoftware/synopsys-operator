@@ -23,6 +23,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
+	"github.com/blackducksoftware/synopsys-operator/pkg/ctl"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -118,394 +119,74 @@ var initCmd = &cobra.Command{
 			return
 		}
 
-		// Create a Horizon Deployer for the Synopsys Operator
+		// Deploy synopsys-operator
 		synopsysOperatorDeployer, err := deployer.NewDeployer(rc)
+		if err != nil {
+			fmt.Printf("Error creating Horizon Deployer for Synopsys Operator : %s\n", err)
+			return
+		}
+		operReplicationController, err := ctl.GetOperatorReplicationController(namespace, init_synopsysOperatorImage, init_blackduckRegistrationKey)
+		if err != nil {
+			fmt.Printf("Error creating Replication Controller for Synopsys Operator : %s\n", err)
+			return
+		}
+		operService, err := ctl.GetOperatorService(namespace)
+		if err != nil {
+			fmt.Printf("Error creating Service for Synopsys Operator : %s\n", err)
+			return
+		}
+		operConfigMap, err := ctl.GetOperatorConfigMap(namespace)
+		if err != nil {
+			fmt.Printf("Error creating Config Map for Synopsys Operator : %s\n", err)
+			return
+		}
+		operServiceAccount, err := ctl.GetOperatorServiceAccount(namespace)
+		if err != nil {
+			fmt.Printf("Error creating Service Account for Synopsys Operator : %s\n", err)
+			return
+		}
+		operClusterRoleBinding, err := ctl.GetOperatorClusterRoleBinding(namespace)
+		if err != nil {
+			fmt.Printf("Error creating Cluster Role Binding for Synopsys Operator : %s\n", err)
+			return
+		}
 
-		// Add the Replication Controller to the Deployer
-		var synopsysOperatorRCReplicas int32 = 1
-		synopsysOperatorRC := horizoncomponents.NewReplicationController(horizonapi.ReplicationControllerConfig{
-			APIVersion: "v1",
-			//ClusterName:  "string",
-			Name:      "synopsys-operator",
-			Namespace: namespace,
-			Replicas:  &synopsysOperatorRCReplicas,
-			//ReadySeconds: "int32",
-		})
+		synopsysOperatorDeployer.AddReplicationController(operReplicationController)
+		synopsysOperatorDeployer.AddService(operService)
+		synopsysOperatorDeployer.AddConfigMap(operConfigMap)
+		synopsysOperatorDeployer.AddServiceAccount(operServiceAccount)
+		synopsysOperatorDeployer.AddClusterRoleBinding(operClusterRoleBinding)
 
-		synopsysOperatorRC.AddLabelSelectors(map[string]string{"name": "synopsys-operator"})
-
-		synopsysOperatorPod := horizoncomponents.NewPod(horizonapi.PodConfig{
-			APIVersion: "v1",
-			//ClusterName:            "string",
-			Name:           "synopsys-operator",
-			Namespace:      namespace,
-			ServiceAccount: "synopsys-operator",
-			//RestartPolicy:          "RestartPolicyType",
-			//TerminationGracePeriod: "*int64",
-			//ActiveDeadline:         "*int64",
-			//Node:                   "string",
-			//FSGID:                  "*int64",
-			//Hostname:               "string",
-			//SchedulerName:          "string",
-			//DNSPolicy:              "DNSPolicType",
-			//PriorityValue:          "*int32",
-			//PriorityClass:          "string",
-			//SELinux:                "*SELinuxType",
-			//RunAsUser:              "*int64",
-			//RunAsGroup:             "*int64",
-			//ForceNonRoot:           "*bool",
-		})
-
-		synopsysOperatorPodLabels := map[string]string{"name": "synopsys-operator"}
-
-		synopsysOperatorContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
-			Name:       "synopsys-operator",
-			Args:       []string{"/etc/synopsys-operator/config.json"},
-			Command:    []string{"./operator"},
-			Image:      init_synopsysOperatorImage,
-			PullPolicy: horizonapi.PullAlways,
-			//MinCPU:                   "string",
-			//MaxCPU:                   "string",
-			//MinMem:                   "string",
-			//MaxMem:                   "string",
-			//Privileged:               "*bool",
-			//AllowPrivilegeEscalation: "*bool",
-			//ReadOnlyFS:               "*bool",
-			//ForceNonRoot:             "*bool",
-			//SELinux:                  "*SELinuxType",
-			//UID:                      "*int64",
-			//AllocateStdin:            "bool",
-			//StdinOnce:                "bool",
-			//AllocateTTY:              "bool",
-			//WorkingDirectory:         "string",
-			//TerminationMsgPath:       "string",
-			//TerminationMsgPolicy:     "TerminationMessagePolicyType",
-		})
-		synopsysOperatorContainer.AddPort(horizonapi.PortConfig{
-			//Name:          "string",
-			//Protocol:      "ProtocolType",
-			//IP:            "string",
-			//HostPort:      "string",
-			ContainerPort: "8080",
-		})
-		synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
-			NameOrPrefix: "REGISTRATION_KEY",
-			Type:         horizonapi.EnvVal,
-			KeyOrVal:     init_blackduckRegistrationKey,
-			//FromName:     "string",
-		})
-		synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
-			MountPath: "/etc/synopsys-operator",
-			//Propagation: "*MountPropagationType",
-			Name: "synopsys-operator",
-			//SubPath:     "string",
-			//ReadOnly:    "*bool",
-		})
-
-		synopsysOperatorContainerUI := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
-			Name: "synopsys-operator-ui",
-			//Args:                     "[]string",
-			Command:    []string{"./app"},
-			Image:      init_synopsysOperatorImage,
-			PullPolicy: horizonapi.PullAlways,
-			//MinCPU:                   "string",
-			//MaxCPU:                   "string",
-			//MinMem:                   "string",
-			//MaxMem:                   "string",
-			//Privileged:               "*bool",
-			//AllowPrivilegeEscalation: "*bool",
-			//ReadOnlyFS:               "*bool",
-			//ForceNonRoot:             "*bool",
-			//SELinux:                  "*SELinuxType",
-			//UID:                      "*int64",
-			//AllocateStdin:            "bool",
-			//StdinOnce:                "bool",
-			//AllocateTTY:              "bool",
-			//WorkingDirectory:         "string",
-			//TerminationMsgPath:       "string",
-			//TerminationMsgPolicy:     "TerminationMessagePolicyType",
-		})
-		synopsysOperatorContainerUI.AddPort(horizonapi.PortConfig{
-			//Name:          "string",
-			//Protocol:      "ProtocolType",
-			//IP:            "string",
-			//HostPort:      "string",
-			ContainerPort: "3000",
-		})
-		synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
-			NameOrPrefix: "ADDR",
-			Type:         horizonapi.EnvVal,
-			KeyOrVal:     "0.0.0.0",
-			//FromName:     "string",
-		})
-		synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
-			NameOrPrefix: "PORT",
-			Type:         horizonapi.EnvVal,
-			KeyOrVal:     "3000",
-			//FromName:     "string",
-		})
-		synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
-			NameOrPrefix: "GO_ENV",
-			Type:         horizonapi.EnvVal,
-			KeyOrVal:     "development",
-			//FromName:     "string",
-		})
-
-		// Create config map volume
-		var synopsysOperatorVolumeDefaultMode int32 = 420
-		synopsysOperatorVolume := horizoncomponents.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-			VolumeName:      "synopsys-operator",
-			MapOrSecretName: "synopsys-operator",
-			//Items:           "map[string]KeyAndMode",
-			DefaultMode: &synopsysOperatorVolumeDefaultMode,
-			//Required:        "*bool",
-		})
-
-		synopsysOperatorPod.AddLabels(synopsysOperatorPodLabels)
-		synopsysOperatorPod.AddContainer(synopsysOperatorContainer)
-		synopsysOperatorPod.AddContainer(synopsysOperatorContainerUI)
-		synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
-		synopsysOperatorRC.AddPod(synopsysOperatorPod)
-
-		synopsysOperatorDeployer.AddReplicationController(synopsysOperatorRC)
-
-		// Add the Service to the Deployer
-		synopsysOperatorService := horizoncomponents.NewService(horizonapi.ServiceConfig{
-			APIVersion: "v1",
-			//ClusterName:              "string",
-			Name:      "synopsys-operator",
-			Namespace: namespace,
-			//ExternalName:             "string",
-			//IPServiceType:            "ClusterIPServiceType",
-			//ClusterIP:                "string",
-			//PublishNotReadyAddresses: "bool",
-			//TrafficPolicy:            "TrafficPolicyType",
-			//Affinity:                 "string",
-		})
-
-		synopsysOperatorService.AddSelectors(map[string]string{"name": "synopsys-operator"})
-		synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-			Name:       "synopsys-operator-ui",
-			Port:       3000,
-			TargetPort: "3000",
-			//NodePort:   "int32",
-			Protocol: horizonapi.ProtocolTCP,
-		})
-		synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-			Name:       "synopsys-operator-ui-standard-port",
-			Port:       80,
-			TargetPort: "3000",
-			//NodePort:   "int32",
-			Protocol: horizonapi.ProtocolTCP,
-		})
-		synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
-			Name:       "synopsys-operator",
-			Port:       8080,
-			TargetPort: "8080",
-			//NodePort:   "int32",
-			Protocol: horizonapi.ProtocolTCP,
-		})
-
-		synopsysOperatorDeployer.AddService(synopsysOperatorService)
-
-		// Config Map
-		synopsysOperatorConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
-			APIVersion: "v1",
-			//ClusterName: "string",
-			Name:      "synopsys-operator",
-			Namespace: namespace,
-		})
-
-		synopsysOperatorConfigMap.AddData(map[string]string{"config.json": fmt.Sprintf("{\"OperatorTimeBombInSeconds\":\"315576000\", \"DryRun\": false, \"LogLevel\": \"debug\", \"Namespace\": \"%s\", \"Threadiness\": 5, \"PostgresRestartInMins\": 10, \"NFSPath\" : \"/kubenfs\"}", namespace)})
-
-		synopsysOperatorDeployer.AddConfigMap(synopsysOperatorConfigMap)
-
-		// Service Account
-		synopsysOperatorServiceAccount := horizoncomponents.NewServiceAccount(horizonapi.ServiceAccountConfig{
-			APIVersion: "v1",
-			//ClusterName:    "string",
-			Name:      "synopsys-operator",
-			Namespace: namespace,
-			//AutomountToken: "*bool",
-		})
-
-		synopsysOperatorDeployer.AddServiceAccount(synopsysOperatorServiceAccount)
-
-		// Cluster Role Binding
-		synopsysOperatorClusterRoleBinding := horizoncomponents.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
-			APIVersion: "rbac.authorization.k8s.io/v1beta1",
-			//ClusterName: "string",
-			Name:      "synopsys-operator-admin",
-			Namespace: namespace,
-		})
-		synopsysOperatorClusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
-			Kind: "ServiceAccount",
-			//APIGroup:  "string",
-			Name:      "synopsys-operator",
-			Namespace: namespace,
-		})
-		synopsysOperatorClusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
-			APIGroup: "",
-			Kind:     "ClusterRole",
-			Name:     "cluster-admin",
-		})
-
-		synopsysOperatorDeployer.AddClusterRoleBinding(synopsysOperatorClusterRoleBinding)
-
-		// Deploy Resources for the Synopsys Operator
 		err = synopsysOperatorDeployer.Run()
 		if err != nil {
 			fmt.Printf("Error deploying Synopsys Operator with Horizon : %s\n", err)
 			return
 		}
 
-		// Create a Horizon Deployer for Prometheus
+		// Deploy prometheus
 		prometheusDeployer, err := deployer.NewDeployer(rc)
-
-		// Add Service for Prometheus
-		prometheusService := horizoncomponents.NewService(horizonapi.ServiceConfig{
-			APIVersion: "v1",
-			//ClusterName:              "string",
-			Name:      "prometheus",
-			Namespace: namespace,
-			//ExternalName:             "string",
-			IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
-			//ClusterIP:                "string",
-			//PublishNotReadyAddresses: "bool",
-			//TrafficPolicy:            "TrafficPolicyType",
-			//Affinity:                 "string",
-		})
-		prometheusService.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-		prometheusService.AddLabels(map[string]string{"name": "prometheus"})
-		prometheusService.AddSelectors(map[string]string{"app": "prometheus"})
-		prometheusService.AddPort(horizonapi.ServicePortConfig{
-			Name:       "prometheus",
-			Port:       9090,
-			TargetPort: "9090",
-			//NodePort:   "int32",
-			Protocol: horizonapi.ProtocolTCP,
-		})
-
-		prometheusDeployer.AddService(prometheusService)
-
-		// Deployment
-		var prometheusDeploymentReplicas int32 = 1
-		prometheusDeployment := horizoncomponents.NewDeployment(horizonapi.DeploymentConfig{
-			APIVersion: "extensions/v1beta1",
-			//ClusterName:             "string",
-			Name:      "prometheus",
-			Namespace: namespace,
-			Replicas:  &prometheusDeploymentReplicas,
-			//Recreate:                "bool",
-			//MaxUnavailable:          "string",
-			//MaxExtra:                "string",
-			//MinReadySeconds:         "int32",
-			//RevisionHistoryLimit:    "*int32",
-			//Paused:                  "bool",
-			//ProgressDeadlineSeconds: "*int32",
-		})
-		prometheusDeployment.AddMatchLabelsSelectors(map[string]string{"app": "prometheus"})
-
-		prometheusPod := horizoncomponents.NewPod(horizonapi.PodConfig{
-			APIVersion: "v1",
-			//ClusterName          :  "string",
-			Name:      "prometheus",
-			Namespace: namespace,
-			//ServiceAccount       :  "string",
-			//RestartPolicy        :  "RestartPolicyType",
-			//TerminationGracePeriod : "*int64",
-			//ActiveDeadline       :  "*int64",
-			//Node                 :  "string",
-			//FSGID                :  "*int64",
-			//Hostname             :  "string",
-			//SchedulerName        :  "string",
-			//DNSPolicy           :   "DNSPolicyType",
-			//PriorityValue       :   "*int32",
-			//PriorityClass        :  "string",
-			//SELinux              :  "*SELinuxType",
-			//RunAsUser            :  "*int64",
-			//RunAsGroup           :  "*int64",
-			//ForceNonRoot         :  "*bool",
-		})
-
-		prometheusContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
-			Name: "prometheus",
-			Args: []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/"},
-			//Command:                  "[]string",
-			Image: init_promethiusImage,
-			//PullPolicy:               "PullPolicyType",
-			//MinCPU:                   "string",
-			//MaxCPU:                   "string",
-			//MinMem:                   "string",
-			//MaxMem:                   "string",
-			//Privileged:               "*bool",
-			//AllowPrivilegeEscalation: "*bool",
-			//ReadOnlyFS:               "*bool",
-			//ForceNonRoot:             "*bool",
-			//SELinux:                  "*SELinuxType",
-			//UID:                      "*int64",
-			//AllocateStdin:            "bool",
-			//StdinOnce:                "bool",
-			//AllocateTTY:              "bool",
-			//WorkingDirectory:         "string",
-			//TerminationMsgPath:       "string",
-			//TerminationMsgPolicy:     "TerminationMessagePolicyType",
-		})
-
-		prometheusContainer.AddPort(horizonapi.PortConfig{
-			Name: "web",
-			//Protocol:      "ProtocolType",
-			//IP:            "string",
-			//HostPort:      "string",
-			ContainerPort: "9090",
-		})
-
-		prometheusContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
-			MountPath: "/data",
-			//Propagation: "*MountPropagationType",
-			Name: "data",
-			//SubPath:     "string",
-			//ReadOnly:    "*bool",
-		})
-		prometheusContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
-			MountPath: "/etc/prometheus",
-			//Propagation: "*MountPropagationType",
-			Name: "config-volume",
-			//SubPath:     "string",
-			//ReadOnly:    "*bool",
-		})
-
-		prometheusEmptyDirVolume, err := horizoncomponents.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
-			VolumeName: "data",
-			//Medium:     "StorageMediumType",
-			//SizeLimit:  "string",
-		})
-		prometheusConfigMapVolume := horizoncomponents.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-			VolumeName:      "config-volume",
-			MapOrSecretName: "prometheus",
-			//Items:           "map[string]KeyAndMode",
-			//DefaultMode:     "*int32",
-			//Required:        "*bool",
-		})
-
-		prometheusPod.AddContainer(prometheusContainer)
-		prometheusPod.AddVolume(prometheusEmptyDirVolume)
-		prometheusPod.AddVolume(prometheusConfigMapVolume)
-		prometheusDeployment.AddPod(prometheusPod)
-
-		prometheusDeployer.AddDeployment(prometheusDeployment)
-
-		// Config Map
-		prometheusConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
-			APIVersion: "v1",
-			//ClusterName: "string",
-			Name:      "prometheus",
-			Namespace: namespace,
-		})
-		prometheusConfigMap.AddData(map[string]string{"prometheus.yml": "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"})
-		prometheusDeployer.AddConfigMap(prometheusConfigMap)
-
-		// Deploy Resources for Prometheus
+		if err != nil {
+			fmt.Printf("Error creating Horizon Deployer for Prometheus: %s\n", err)
+			return
+		}
+		promService, err := ctl.GetPrometheusService(namespace)
+		if err != nil {
+			fmt.Printf("Error creating Service for Prometheus: %s\n", err)
+			return
+		}
+		promDeployment, err := ctl.GetPrometheusDeployment(namespace, init_promethiusImage)
+		if err != nil {
+			fmt.Printf("Error creating Deployment for Prometheus : %s\n", err)
+			return
+		}
+		promConfigMap, err := ctl.GetPrometheusConfigMap(namespace)
+		if err != nil {
+			fmt.Printf("Error creating Config Map for Prometheus : %s\n", err)
+			return
+		}
+		prometheusDeployer.AddService(promService)
+		prometheusDeployer.AddDeployment(promDeployment)
+		prometheusDeployer.AddConfigMap(promConfigMap)
 		err = prometheusDeployer.Run()
 		if err != nil {
 			fmt.Printf("Error deploying Prometheus with Horizon : %s\n", err)
