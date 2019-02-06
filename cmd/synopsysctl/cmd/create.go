@@ -15,9 +15,7 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
-	"path/filepath"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
@@ -30,7 +28,6 @@ import (
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // createCmd represents the create command
@@ -47,17 +44,7 @@ var blackduckCmd = &cobra.Command{
 	Short: "Create an instance of a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Create kubernetes Clientset
-		var kubeconfig *string
-		if home := homeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-		} else {
-			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-		}
-		flag.Parse()
-		restconfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		if err != nil {
-			panic(err.Error())
-		}
+		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Blackduck
 		namespaceDeployer, err := deployer.NewDeployer(restconfig)
@@ -94,17 +81,7 @@ var opssightCmd = &cobra.Command{
 	Short: "create an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Create kubernetes Clientset
-		var kubeconfig *string
-		if home := homeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-		} else {
-			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-		}
-		flag.Parse()
-		restconfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		if err != nil {
-			panic(err.Error())
-		}
+		restconfig := getKubeRestConfig()
 
 		// Create namespace for the OpsSight
 		namespaceDeployer, err := deployer.NewDeployer(restconfig)
@@ -138,17 +115,7 @@ var alertCmd = &cobra.Command{
 	Short: "create an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Create kubernetes Clientset
-		var kubeconfig *string
-		if home := homeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-		} else {
-			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-		}
-		flag.Parse()
-		restconfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		if err != nil {
-			panic(err.Error())
-		}
+		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Alert
 		namespaceDeployer, err := deployer.NewDeployer(restconfig)

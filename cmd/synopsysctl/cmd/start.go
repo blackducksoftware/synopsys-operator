@@ -16,16 +16,13 @@ package cmd
 
 import (
 	"errors"
-	"flag"
 	"fmt"
-	"path/filepath"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/ctl"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var secretType horizonapi.SecretType
@@ -70,19 +67,7 @@ var startCmd = &cobra.Command{
 		}
 
 		// Start Horizon
-		var kubeconfig *string
-		if home := homeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-		} else {
-			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-		}
-		flag.Parse()
-
-		// Use the current context in kubeconfig
-		rc, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		if err != nil {
-			panic(err.Error())
-		}
+		rc := getKubeRestConfig()
 
 		// Create a Horizon Deployer to set up the environment for the Synopsys Operator
 		environmentDeployer, err := deployer.NewDeployer(rc)
