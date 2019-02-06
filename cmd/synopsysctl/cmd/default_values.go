@@ -16,16 +16,16 @@ package cmd
 
 var create_blackduck_size = 11
 
-var init_synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2018.12.0"
-var init_prometheusImage = "docker.io/prom/prometheus:v2.1.0"
-var init_blackduckRegistrationKey = ""
-var init_dockerConfigPath = ""
+var start_synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2018.12.0"
+var start_prometheusImage = "docker.io/prom/prometheus:v2.1.0"
+var start_blackduckRegistrationKey = ""
+var start_dockerConfigPath = ""
 
-var init_secretName = "blackduck-secret"
-var init_secretType = "Opaque"
-var init_secretAdminPassword = "YmxhY2tkdWNr"
-var init_secretPostgresPassword = "YmxhY2tkdWNr"
-var init_secretUserPassword = "YmxhY2tkdWNr"
-var init_secretBlackduckPassword = "YmxhY2tkdWNr"
+var start_secretName = "blackduck-secret"
+var start_secretType = "Opaque"
+var start_secretAdminPassword = "YmxhY2tkdWNr"
+var start_secretPostgresPassword = "YmxhY2tkdWNr"
+var start_secretUserPassword = "YmxhY2tkdWNr"
+var start_secretBlackduckPassword = "YmxhY2tkdWNr"
 
 var namespace = ""
