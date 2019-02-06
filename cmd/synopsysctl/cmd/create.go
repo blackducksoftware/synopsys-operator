@@ -22,6 +22,8 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -115,7 +117,51 @@ var opssightCmd = &cobra.Command{
 		namespaceDeployer.AddNamespace(ns)
 		err = namespaceDeployer.Run()
 		if err != nil {
-			fmt.Printf("Error deploying namespace for the Blackduck with Horizon : %s\n", err)
+			fmt.Printf("Error deploying namespace for the OpsSight with Horizon : %s\n", err)
+			return
+		}
+
+		// Create OpsSight Spec
+		alert := &alertv1.Alert{}
+		populateAlertConfig(alert)
+		alertClient, err := alertclientset.NewForConfig(restconfig)
+		_, err = alertClient.SynopsysV1().Alerts(namespace).Create(alert)
+		if err != nil {
+			fmt.Printf("Error creating the Alert : %s\n", err)
+			return
+		}
+	},
+}
+
+var alertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "create an instance of Alert",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Create kubernetes Clientset
+		var kubeconfig *string
+		if home := homeDir(); home != "" {
+			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		} else {
+			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		}
+		flag.Parse()
+		restconfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		// Create namespace for the Alert
+		namespaceDeployer, err := deployer.NewDeployer(restconfig)
+		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
+			// APIVersion:  "string",
+			// ClusterName: "string",
+			Name:      namespace,
+			Namespace: namespace,
+		})
+		namespaceDeployer.AddNamespace(ns)
+		err = namespaceDeployer.Run()
+		if err != nil {
+			fmt.Printf("Error deploying namespace for the Alert with Horizon : %s\n", err)
 			return
 		}
 
@@ -125,7 +171,7 @@ var opssightCmd = &cobra.Command{
 		opssightClient, err := opssightclientset.NewForConfig(restconfig)
 		_, err = opssightClient.SynopsysV1().OpsSights(namespace).Create(opssight)
 		if err != nil {
-			fmt.Printf("Error creating the OpsSight : %s\n", err)
+			fmt.Printf("Error creating the Alert : %s\n", err)
 			return
 		}
 	},
@@ -400,4 +446,32 @@ func populateOpssightConfig(opssight *opssightv1.OpsSight) {
 		Name: namespace,
 	}
 	opssight.Spec = opsSightSpec
+}
+
+func populateAlertConfig(alert *alertv1.Alert) {
+	var bdPort int = 443
+	var port int = 8443
+	var standAlone bool = true
+	alertSpec := alertv1.AlertSpec{
+		Namespace:         namespace,
+		Registry:          "docker.io",
+		ImagePath:         "blackducksoftware",
+		AlertImageName:    "blackduck-alert",
+		AlertImageVersion: "2.1.0",
+		CfsslImageName:    "hub-cfssl",
+		CfsslImageVersion: "4.8.1",
+		BlackduckHost:     "HUB_HOST",
+		BlackduckUser:     "sysadmin",
+		BlackduckPort:     &bdPort,
+		Port:              &port,
+		StandAlone:        &standAlone,
+		AlertMemory:       "512M",
+		CfsslMemory:       "640M",
+		//State       string `json:"state"`
+	}
+
+	alert.ObjectMeta = metav1.ObjectMeta{
+		Name: namespace,
+	}
+	alert.Spec = alertSpec
 }
