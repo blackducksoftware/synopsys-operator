@@ -28,6 +28,7 @@ import (
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 )
 
 // createCmd represents the create command
@@ -43,23 +44,11 @@ var blackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Create an instance of a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Create kubernetes Clientset
+		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Blackduck
-		namespaceDeployer, err := deployer.NewDeployer(restconfig)
-		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
-			// APIVersion:  "string",
-			// ClusterName: "string",
-			Name:      namespace,
-			Namespace: namespace,
-		})
-		namespaceDeployer.AddNamespace(ns)
-		err = namespaceDeployer.Run()
-		if err != nil {
-			fmt.Printf("Error deploying namespace for the Blackduck with Horizon : %s\n", err)
-			return
-		}
+		deployCRDNamespace(restconfig)
 
 		// Create Spec for a Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{}
@@ -80,23 +69,11 @@ var opssightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "create an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Create kubernetes Clientset
+		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the OpsSight
-		namespaceDeployer, err := deployer.NewDeployer(restconfig)
-		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
-			// APIVersion:  "string",
-			// ClusterName: "string",
-			Name:      namespace,
-			Namespace: namespace,
-		})
-		namespaceDeployer.AddNamespace(ns)
-		err = namespaceDeployer.Run()
-		if err != nil {
-			fmt.Printf("Error deploying namespace for the OpsSight with Horizon : %s\n", err)
-			return
-		}
+		deployCRDNamespace(restconfig)
 
 		// Create OpsSight Spec
 		alert := &alertv1.Alert{}
@@ -114,23 +91,11 @@ var alertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "create an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Create kubernetes Clientset
+		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Alert
-		namespaceDeployer, err := deployer.NewDeployer(restconfig)
-		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
-			// APIVersion:  "string",
-			// ClusterName: "string",
-			Name:      namespace,
-			Namespace: namespace,
-		})
-		namespaceDeployer.AddNamespace(ns)
-		err = namespaceDeployer.Run()
-		if err != nil {
-			fmt.Printf("Error deploying namespace for the Alert with Horizon : %s\n", err)
-			return
-		}
+		deployCRDNamespace(restconfig)
 
 		// Create OpsSight Spec
 		opssight := &opssightv1.OpsSight{}
@@ -142,6 +107,24 @@ var alertCmd = &cobra.Command{
 			return
 		}
 	},
+}
+
+func deployCRDNamespace(restconfig *rest.Config) {
+
+	// Create Horizon Deployer
+	namespaceDeployer, err := deployer.NewDeployer(restconfig)
+	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
+		// APIVersion:  "string",
+		// ClusterName: "string",
+		Name:      namespace,
+		Namespace: namespace,
+	})
+	namespaceDeployer.AddNamespace(ns)
+	err = namespaceDeployer.Run()
+	if err != nil {
+		fmt.Printf("Error deploying namespace with Horizon : %s\n", err)
+		return
+	}
 }
 
 func init() {
