@@ -18,7 +18,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -518,13 +517,6 @@ var initCmd = &cobra.Command{
 		// expose the routes
 
 	},
-}
-
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }
 
 func init() {
