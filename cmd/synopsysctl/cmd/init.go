@@ -58,7 +58,7 @@ var initCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("at this point we would call kube/install.sh -i %s -p %s -k %s -d %s\n", init_synopsysOperatorImage, init_promethiusImage, init_blackduckRegistrationKey, init_dockerConfigPath)
+		fmt.Printf("at this point we would call kube/install.sh -i %s -p %s -k %s -d %s\n", init_synopsysOperatorImage, init_prometheusImage, init_blackduckRegistrationKey, init_dockerConfigPath)
 
 		// check if operator is already installed
 		out, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
@@ -174,7 +174,7 @@ var initCmd = &cobra.Command{
 			fmt.Printf("Error creating Service for Prometheus: %s\n", err)
 			return
 		}
-		promDeployment, err := ctl.GetPrometheusDeployment(namespace, init_promethiusImage)
+		promDeployment, err := ctl.GetPrometheusDeployment(namespace, init_prometheusImage)
 		if err != nil {
 			fmt.Printf("Error creating Deployment for Prometheus : %s\n", err)
 			return
@@ -204,7 +204,7 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 
 	initCmd.Flags().StringVarP(&init_synopsysOperatorImage, "synopsys-operator-image", "i", init_synopsysOperatorImage, "synopsys operator image URL")
-	initCmd.Flags().StringVarP(&init_promethiusImage, "promethius-image", "p", init_promethiusImage, "promethius image URL")
+	initCmd.Flags().StringVarP(&init_prometheusImage, "prometheus-image", "p", init_prometheusImage, "prometheus image URL")
 	initCmd.Flags().StringVarP(&init_blackduckRegistrationKey, "blackduck-registration-key", "k", init_blackduckRegistrationKey, "key to register with KnowledgeBase")
 	initCmd.Flags().StringVarP(&init_dockerConfigPath, "docker-config", "d", init_dockerConfigPath, "path to docker config (image pull secrets etc)")
 

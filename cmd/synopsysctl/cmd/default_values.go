@@ -17,7 +17,7 @@ package cmd
 var create_blackduck_size = 11
 
 var init_synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2018.12.0"
-var init_promethiusImage = "docker.io/prom/prometheus:v2.1.0"
+var init_prometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var init_blackduckRegistrationKey = ""
 var init_dockerConfigPath = ""
 
