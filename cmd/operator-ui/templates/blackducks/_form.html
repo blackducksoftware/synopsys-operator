@@ -32,6 +32,10 @@
     <%= f.TextAreaTag("Spec.Certificate", {value: blackduck.Spec.Certificate, label: "Certificate"}) %>
     <%= f.TextAreaTag("Spec.CertificateKey", {value: blackduck.Spec.CertificateKey, label: "Certificate Key"}) %>
   </div>
+  <%= f.CheckboxTag("customAuthCACheckbox", {label: "Custom CA for certificate authentication", onchange: "toggleCustomAuthCACheckbox(this)"}) %>
+  <div id="customAuthCAId">
+    <%= f.TextAreaTag("Spec.AuthCustomCA", {value: blackduck.Spec.AuthCustomCA, label: "Authentication Certificate Authority (PEM)"}) %>
+  </div>
   <%= f.TextAreaTag("Spec.ProxyCertificate", {value: blackduck.Spec.ProxyCertificate, label: "Proxy Root Certificate"}) %>
   <label>Container Image Tags</label>
   <ul id="containerTags" name="containerTags" contenteditable="true">
@@ -95,6 +99,7 @@
     checkNginxCertificate();
     checkScanType();
     document.getElementById("externalDbId").style.display= 'none';
+    document.getElementById("customAuthCAId").style.display= 'none';
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
     //   document.getElementById("blackduck-Status.ErrorMessage").hidden = false;
     // }
@@ -187,6 +192,15 @@
 
   function toggleDbCheckbox(element) {
     externalDbId=document.getElementById("externalDbId");
+    if (element.checked) {
+      externalDbId.style.display = '';
+    } else {
+      externalDbId.style.display = 'none';
+    }
+  }
+
+  function toggleCustomAuthCACheckbox(element) {
+    externalDbId=document.getElementById("customAuthCAId");
     if (element.checked) {
       externalDbId.style.display = '';
     } else {
