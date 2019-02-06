@@ -76,4 +76,11 @@ type LoadBalancerConfig struct {
 	IP                  string
 	AllowedIPs          []string
 	HealthCheckNodePort int32
+	Ingress             []LoadBalancerIngressConfig
+}
+
+// LoadBalancerIngressConfig defines the configuration for a load balancer ingress
+type LoadBalancerIngressConfig struct {
+	IP       string
+	Hostname string
 }
