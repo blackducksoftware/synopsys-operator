@@ -41,7 +41,7 @@ var createCmd = &cobra.Command{
 
 var blackduckCmd = &cobra.Command{
 	Use:   "blackduck",
-	Short: "create an instance of a Blackduck",
+	Short: "Create an instance of a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Create kubernetes Clientset
 		var kubeconfig *string
@@ -73,20 +73,17 @@ var blackduckCmd = &cobra.Command{
 
 		// Create Spec for a Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{}
+		populateBlackduckConfig(blackduck)
+		fmt.Printf("%v\n", blackduck)
 
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
-		// Get Namespace for the blackduck
-		blackduckNamespace := blackduck.Spec.Namespace
-		// Get hub_v2.Blackduck
-		hubv2 := blackduckv1.Blackduck{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: blackduck.Spec.Namespace,
-			},
-			Spec: blackduck.Spec,
-		}
 
 		// CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v2.Blackduck)
-		util.CreateHub(blackduckClient, blackduckNamespace, &hubv2)
+		_, err = util.CreateHub(blackduckClient, namespace, blackduck)
+		if err != nil {
+			fmt.Printf("Error creating the Blackduck : %s\n", err)
+			return
+		}
 	},
 }
 
@@ -100,7 +97,9 @@ var opssightCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(createCmd)
-	blackduckCmd.Flags().IntVarP(&create_blackduck_size, "size", "s", create_blackduck_size, "blackduck size in GB")
+	blackduckCmd.Flags().StringVar(&create_blackduck_size, "size", create_blackduck_size, "blackduck size - small, medium, large")
+	blackduckCmd.Flags().BoolVar(&create_blackduck_persistentStorage, "persistent-storage", create_blackduck_persistentStorage, "enable persistent storage")
+	blackduckCmd.Flags().BoolVar(&create_blackduck_LivenessProbes, "liveness-probes", create_blackduck_LivenessProbes, "enable liveness probes")
 	createCmd.AddCommand(blackduckCmd)
 	createCmd.AddCommand(opssightCmd)
 
@@ -113,4 +112,32 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
+	bdSpec := blackduckv1.BlackduckSpec{
+		Namespace: namespace,
+		Size:      create_blackduck_size,
+		//DbPrototype:       "string",
+		//ExternalPostgres:  "*PostgresExternalDBConfig",
+		//PVCStorageClass:   "string",
+		LivenessProbes: create_blackduck_LivenessProbes,
+		//ScanType:          "string",
+		PersistentStorage: create_blackduck_persistentStorage,
+		//PVC:               "[]PVC",
+		CertificateName: "string",
+		//Certificate:       "string",
+		//CertificateKey:    "string",
+		//ProxyCertificate:  "string",
+		//Type:              "string",
+		DesiredState: "string",
+		//Environs:          "[]string",
+		//ImageRegistries:   "[]string",
+		//ImageUIDMap:       "map[string]int64",
+		//LicenseKey:        "string",
+	}
+	bd.ObjectMeta = metav1.ObjectMeta{
+		Name: namespace,
+	}
+	bd.Spec = bdSpec
 }

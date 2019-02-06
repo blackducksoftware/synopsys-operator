@@ -14,8 +14,11 @@
 
 package cmd
 
+// synopsysctl Defaults
+var namespace = ""
+
 // Start Command Defaults
-var start_synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2018.12.0"
+var start_synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
 var start_prometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var start_blackduckRegistrationKey = ""
 var start_dockerConfigPath = ""
@@ -28,7 +31,6 @@ var start_secretUserPassword = "YmxhY2tkdWNr"
 var start_secretBlackduckPassword = "YmxhY2tkdWNr"
 
 // Create Blackduck Defaults
-var create_blackduck_size = 11
+var create_blackduck_size = "small"
+var create_blackduck_LivenessProbes = false
 var create_blackduck_persistentStorage = true
-
-var namespace = ""
