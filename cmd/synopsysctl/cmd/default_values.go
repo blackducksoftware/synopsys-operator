@@ -14,8 +14,7 @@
 
 package cmd
 
-var create_blackduck_size = 11
-
+// Start Command Defaults
 var start_synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2018.12.0"
 var start_prometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var start_blackduckRegistrationKey = ""
@@ -27,5 +26,9 @@ var start_secretAdminPassword = "YmxhY2tkdWNr"
 var start_secretPostgresPassword = "YmxhY2tkdWNr"
 var start_secretUserPassword = "YmxhY2tkdWNr"
 var start_secretBlackduckPassword = "YmxhY2tkdWNr"
+
+// Create Blackduck Defaults
+var create_blackduck_size = 11
+var create_blackduck_persistentStorage = true
 
 var namespace = ""
