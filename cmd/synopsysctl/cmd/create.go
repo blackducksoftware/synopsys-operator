@@ -19,6 +19,9 @@ import (
 	"fmt"
 	"path/filepath"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/horizon/pkg/deployer"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -40,11 +43,7 @@ var blackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "create an instance of a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Your BD will have %d gigabytes\n", create_blackduck_size)
-		// Create Spec for a Blackduck CRD
-		blackduck := &blackduckv1.Blackduck{} //TODO populate blackduck spec elements
-
-		// Create hubclientset.Clientset for the CRD
+		// Create kubernetes Clientset
 		var kubeconfig *string
 		if home := homeDir(); home != "" {
 			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -56,6 +55,25 @@ var blackduckCmd = &cobra.Command{
 		if err != nil {
 			panic(err.Error())
 		}
+
+		// Create namespace for the Blackduck
+		namespaceDeployer, err := deployer.NewDeployer(restconfig)
+		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
+			// APIVersion:  "string",
+			// ClusterName: "string",
+			Name:      namespace,
+			Namespace: namespace,
+		})
+		namespaceDeployer.AddNamespace(ns)
+		err = namespaceDeployer.Run()
+		if err != nil {
+			fmt.Printf("Error deploying namespace for the Blackduck with Horizon : %s\n", err)
+			return
+		}
+
+		// Create Spec for a Blackduck CRD
+		blackduck := &blackduckv1.Blackduck{}
+
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
 		// Get Namespace for the blackduck
 		blackduckNamespace := blackduck.Spec.Namespace
