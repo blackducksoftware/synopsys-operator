@@ -35,7 +35,7 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create a synopsys resource (ex: blackduck, opssight)",
+	Short: "Create a Synopsys Resource in your cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
 	},
@@ -68,7 +68,7 @@ var blackduckCmd = &cobra.Command{
 
 var opssightCmd = &cobra.Command{
 	Use:   "opssight",
-	Short: "create an instance of OpsSight",
+	Short: "Create an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -90,7 +90,7 @@ var opssightCmd = &cobra.Command{
 
 var alertCmd = &cobra.Command{
 	Use:   "alert",
-	Short: "create an instance of Alert",
+	Short: "Create an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
