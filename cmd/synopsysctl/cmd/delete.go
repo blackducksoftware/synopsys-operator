@@ -17,7 +17,11 @@ package cmd
 import (
 	"fmt"
 
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // deleteCmd represents the delete command
@@ -35,9 +39,14 @@ var deleteBlackduckCmd = &cobra.Command{
 	Short: "Delete a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
-		_ = getKubeRestConfig()
+		restconfig := getKubeRestConfig()
+		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
+		if err != nil {
+			fmt.Printf("Error creating the Blackduck Clientset: %s\n", err)
+			return
+		}
+		blackduckClient.SynopsysV1().Blackducks(namespace).Delete(namespace, &metav1.DeleteOptions{})
 
-		fmt.Println("Deleting a Blackduck")
 	},
 }
 
@@ -46,9 +55,13 @@ var deleteOpsSightCmd = &cobra.Command{
 	Short: "Delete an OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
-		_ = getKubeRestConfig()
-
-		fmt.Println("Deleting an OpsSight")
+		restconfig := getKubeRestConfig()
+		opssightClient, err := opssightclientset.NewForConfig(restconfig)
+		if err != nil {
+			fmt.Printf("Error creating the OpsSight Clientset: %s\n", err)
+			return
+		}
+		opssightClient.SynopsysV1().OpsSights(namespace).Delete(namespace, &metav1.DeleteOptions{})
 	},
 }
 
@@ -57,9 +70,13 @@ var deleteAlertCmd = &cobra.Command{
 	Short: "Delete an Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
-		_ = getKubeRestConfig()
-
-		fmt.Println("Deleting an Alert")
+		restconfig := getKubeRestConfig()
+		alertClient, err := alertclientset.NewForConfig(restconfig)
+		if err != nil {
+			fmt.Printf("Error creating the Alert Clientset: %s\n", err)
+			return
+		}
+		alertClient.SynopsysV1().Alerts(namespace).Delete(namespace, &metav1.DeleteOptions{})
 	},
 }
 
