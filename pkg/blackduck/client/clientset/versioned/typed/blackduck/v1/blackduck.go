@@ -19,9 +19,11 @@ limitations under the License.
 package v1
 
 import (
+	"time"
+
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	scheme "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned/scheme"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
@@ -37,11 +39,11 @@ type BlackducksGetter interface {
 type BlackduckInterface interface {
 	Create(*v1.Blackduck) (*v1.Blackduck, error)
 	Update(*v1.Blackduck) (*v1.Blackduck, error)
-	Delete(name string, options *meta_v1.DeleteOptions) error
-	DeleteCollection(options *meta_v1.DeleteOptions, listOptions meta_v1.ListOptions) error
-	Get(name string, options meta_v1.GetOptions) (*v1.Blackduck, error)
-	List(opts meta_v1.ListOptions) (*v1.BlackduckList, error)
-	Watch(opts meta_v1.ListOptions) (watch.Interface, error)
+	Delete(name string, options *metav1.DeleteOptions) error
+	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
+	Get(name string, options metav1.GetOptions) (*v1.Blackduck, error)
+	List(opts metav1.ListOptions) (*v1.BlackduckList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Blackduck, err error)
 	BlackduckExpansion
 }
@@ -61,7 +63,7 @@ func newBlackducks(c *SynopsysV1Client, namespace string) *blackducks {
 }
 
 // Get takes name of the blackduck, and returns the corresponding blackduck object, and an error if there is any.
-func (c *blackducks) Get(name string, options meta_v1.GetOptions) (result *v1.Blackduck, err error) {
+func (c *blackducks) Get(name string, options metav1.GetOptions) (result *v1.Blackduck, err error) {
 	result = &v1.Blackduck{}
 	err = c.client.Get().
 		Namespace(c.ns).
@@ -74,24 +76,34 @@ func (c *blackducks) Get(name string, options meta_v1.GetOptions) (result *v1.Bl
 }
 
 // List takes label and field selectors, and returns the list of Blackducks that match those selectors.
-func (c *blackducks) List(opts meta_v1.ListOptions) (result *v1.BlackduckList, err error) {
+func (c *blackducks) List(opts metav1.ListOptions) (result *v1.BlackduckList, err error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	result = &v1.BlackduckList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("blackducks").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Do().
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested blackducks.
-func (c *blackducks) Watch(opts meta_v1.ListOptions) (watch.Interface, error) {
+func (c *blackducks) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
 		Resource("blackducks").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Watch()
 }
 
@@ -121,7 +133,7 @@ func (c *blackducks) Update(blackduck *v1.Blackduck) (result *v1.Blackduck, err 
 }
 
 // Delete takes name of the blackduck and deletes it. Returns an error if one occurs.
-func (c *blackducks) Delete(name string, options *meta_v1.DeleteOptions) error {
+func (c *blackducks) Delete(name string, options *metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("blackducks").
@@ -132,11 +144,16 @@ func (c *blackducks) Delete(name string, options *meta_v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *blackducks) DeleteCollection(options *meta_v1.DeleteOptions, listOptions meta_v1.ListOptions) error {
+func (c *blackducks) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+	var timeout time.Duration
+	if listOptions.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("blackducks").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
+		Timeout(timeout).
 		Body(options).
 		Do().
 		Error()

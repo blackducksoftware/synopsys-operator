@@ -21,7 +21,7 @@ limitations under the License.
 package v1
 
 import (
-	blackduck_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -35,12 +35,8 @@ func (in *Blackduck) DeepCopyInto(out *Blackduck) {
 	}
 	if in.BlackduckSpec != nil {
 		in, out := &in.BlackduckSpec, &out.BlackduckSpec
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(blackduck_v1.BlackduckSpec)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(blackduckv1.BlackduckSpec)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }
@@ -158,57 +154,33 @@ func (in *OpsSightSpec) DeepCopyInto(out *OpsSightSpec) {
 	*out = *in
 	if in.Perceptor != nil {
 		in, out := &in.Perceptor, &out.Perceptor
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Perceptor)
-			**out = **in
-		}
+		*out = new(Perceptor)
+		**out = **in
 	}
 	if in.ScannerPod != nil {
 		in, out := &in.ScannerPod, &out.ScannerPod
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(ScannerPod)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(ScannerPod)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Perceiver != nil {
 		in, out := &in.Perceiver, &out.Perceiver
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Perceiver)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(Perceiver)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Prometheus != nil {
 		in, out := &in.Prometheus, &out.Prometheus
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Prometheus)
-			**out = **in
-		}
+		*out = new(Prometheus)
+		**out = **in
 	}
 	if in.Skyfire != nil {
 		in, out := &in.Skyfire, &out.Skyfire
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Skyfire)
-			**out = **in
-		}
+		*out = new(Skyfire)
+		**out = **in
 	}
 	if in.Blackduck != nil {
 		in, out := &in.Blackduck, &out.Blackduck
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Blackduck)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(Blackduck)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }
@@ -244,21 +216,13 @@ func (in *Perceiver) DeepCopyInto(out *Perceiver) {
 	*out = *in
 	if in.ImagePerceiver != nil {
 		in, out := &in.ImagePerceiver, &out.ImagePerceiver
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(ImagePerceiver)
-			**out = **in
-		}
+		*out = new(ImagePerceiver)
+		**out = **in
 	}
 	if in.PodPerceiver != nil {
 		in, out := &in.PodPerceiver, &out.PodPerceiver
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(PodPerceiver)
-			**out = **in
-		}
+		*out = new(PodPerceiver)
+		**out = **in
 	}
 	return
 }
@@ -358,21 +322,13 @@ func (in *ScannerPod) DeepCopyInto(out *ScannerPod) {
 	*out = *in
 	if in.Scanner != nil {
 		in, out := &in.Scanner, &out.Scanner
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(Scanner)
-			**out = **in
-		}
+		*out = new(Scanner)
+		**out = **in
 	}
 	if in.ImageFacade != nil {
 		in, out := &in.ImageFacade, &out.ImageFacade
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(ImageFacade)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(ImageFacade)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

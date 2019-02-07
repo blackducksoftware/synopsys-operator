@@ -90,30 +90,18 @@ func (in *AlertSpec) DeepCopyInto(out *AlertSpec) {
 	*out = *in
 	if in.BlackduckPort != nil {
 		in, out := &in.BlackduckPort, &out.BlackduckPort
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(int)
-			**out = **in
-		}
+		*out = new(int)
+		**out = **in
 	}
 	if in.Port != nil {
 		in, out := &in.Port, &out.Port
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(int)
-			**out = **in
-		}
+		*out = new(int)
+		**out = **in
 	}
 	if in.StandAlone != nil {
 		in, out := &in.StandAlone, &out.StandAlone
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(bool)
-			**out = **in
-		}
+		*out = new(bool)
+		**out = **in
 	}
 	return
 }

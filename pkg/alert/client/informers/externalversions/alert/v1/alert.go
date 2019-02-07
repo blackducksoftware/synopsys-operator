@@ -24,8 +24,8 @@ import (
 	versioned "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	internalinterfaces "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/internalinterfaces"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/listers/alert/v1"
-	alert_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
@@ -57,20 +57,20 @@ func NewAlertInformer(client versioned.Interface, namespace string, resyncPeriod
 func NewFilteredAlertInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.SynopsysV1().Alerts(namespace).List(options)
 			},
-			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.SynopsysV1().Alerts(namespace).Watch(options)
 			},
 		},
-		&alert_v1.Alert{},
+		&alertv1.Alert{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *alertInformer) defaultInformer(client versioned.Interface, resyncPeriod
 }
 
 func (f *alertInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&alert_v1.Alert{}, f.defaultInformer)
+	return f.factory.InformerFor(&alertv1.Alert{}, f.defaultInformer)
 }
 
 func (f *alertInformer) Lister() v1.AlertLister {

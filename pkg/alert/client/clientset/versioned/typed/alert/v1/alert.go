@@ -19,9 +19,11 @@ limitations under the License.
 package v1
 
 import (
+	"time"
+
 	scheme "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned/scheme"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
@@ -37,11 +39,11 @@ type AlertsGetter interface {
 type AlertInterface interface {
 	Create(*v1.Alert) (*v1.Alert, error)
 	Update(*v1.Alert) (*v1.Alert, error)
-	Delete(name string, options *meta_v1.DeleteOptions) error
-	DeleteCollection(options *meta_v1.DeleteOptions, listOptions meta_v1.ListOptions) error
-	Get(name string, options meta_v1.GetOptions) (*v1.Alert, error)
-	List(opts meta_v1.ListOptions) (*v1.AlertList, error)
-	Watch(opts meta_v1.ListOptions) (watch.Interface, error)
+	Delete(name string, options *metav1.DeleteOptions) error
+	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
+	Get(name string, options metav1.GetOptions) (*v1.Alert, error)
+	List(opts metav1.ListOptions) (*v1.AlertList, error)
+	Watch(opts metav1.ListOptions) (watch.Interface, error)
 	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Alert, err error)
 	AlertExpansion
 }
@@ -61,7 +63,7 @@ func newAlerts(c *SynopsysV1Client, namespace string) *alerts {
 }
 
 // Get takes name of the alert, and returns the corresponding alert object, and an error if there is any.
-func (c *alerts) Get(name string, options meta_v1.GetOptions) (result *v1.Alert, err error) {
+func (c *alerts) Get(name string, options metav1.GetOptions) (result *v1.Alert, err error) {
 	result = &v1.Alert{}
 	err = c.client.Get().
 		Namespace(c.ns).
@@ -74,24 +76,34 @@ func (c *alerts) Get(name string, options meta_v1.GetOptions) (result *v1.Alert,
 }
 
 // List takes label and field selectors, and returns the list of Alerts that match those selectors.
-func (c *alerts) List(opts meta_v1.ListOptions) (result *v1.AlertList, err error) {
+func (c *alerts) List(opts metav1.ListOptions) (result *v1.AlertList, err error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	result = &v1.AlertList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("alerts").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Do().
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested alerts.
-func (c *alerts) Watch(opts meta_v1.ListOptions) (watch.Interface, error) {
+func (c *alerts) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
 		Resource("alerts").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Watch()
 }
 
@@ -121,7 +133,7 @@ func (c *alerts) Update(alert *v1.Alert) (result *v1.Alert, err error) {
 }
 
 // Delete takes name of the alert and deletes it. Returns an error if one occurs.
-func (c *alerts) Delete(name string, options *meta_v1.DeleteOptions) error {
+func (c *alerts) Delete(name string, options *metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("alerts").
@@ -132,11 +144,16 @@ func (c *alerts) Delete(name string, options *meta_v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *alerts) DeleteCollection(options *meta_v1.DeleteOptions, listOptions meta_v1.ListOptions) error {
+func (c *alerts) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+	var timeout time.Duration
+	if listOptions.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("alerts").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
+		Timeout(timeout).
 		Body(options).
 		Do().
 		Error()
