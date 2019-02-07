@@ -93,6 +93,12 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
 		volumes = append(volumes, c.proxySecretVolume)
 	}
+
+	// Custom CA auth
+	if len(c.hubSpec.AuthCustomCA) > 1 {
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", "auth-custom-ca", 0777)
+		volumes = append(volumes, authCustomCaVolume)
+	}
 	return volumes
 }
 
@@ -111,6 +117,14 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 			Name:      "blackduck-proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
 			SubPath:   "HUB_PROXY_CERT_FILE",
+		})
+	}
+
+	if len(c.hubSpec.AuthCustomCA) > 1 {
+		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
+			Name:      "auth-custom-ca",
+			MountPath: "/tmp/secrets/AUTH_CUSTOM_CA",
+			SubPath:   "AUTH_CUSTOM_CA",
 		})
 	}
 
