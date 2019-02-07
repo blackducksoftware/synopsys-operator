@@ -23,15 +23,52 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a Synopsys Resource from your cluster",
+	Short: "Remove a Synopsys Resource from your cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("delete called")
 
 	},
 }
 
+var deleteBlackduckCmd = &cobra.Command{
+	Use:   "blackduck",
+	Short: "Delete a Blackduck",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get Kubernetes Rest Config
+		_ = getKubeRestConfig()
+
+		fmt.Println("Deleting a Blackduck")
+	},
+}
+
+var deleteOpsSightCmd = &cobra.Command{
+	Use:   "opssight",
+	Short: "Delete an OpsSight",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get Kubernetes Rest Config
+		_ = getKubeRestConfig()
+
+		fmt.Println("Deleting an OpsSight")
+	},
+}
+
+var deleteAlertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "Delete an Alert",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get Kubernetes Rest Config
+		_ = getKubeRestConfig()
+
+		fmt.Println("Deleting an Alert")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(deleteCmd)
+
+	deleteCmd.AddCommand(deleteBlackduckCmd)
+	deleteCmd.AddCommand(deleteOpsSightCmd)
+	deleteCmd.AddCommand(deleteAlertCmd)
 
 	// Here you will define your flags and configuration settings.
 
