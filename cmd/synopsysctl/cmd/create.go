@@ -137,6 +137,7 @@ func init() {
 	createCmd.AddCommand(createBlackduckCmd)
 
 	createCmd.AddCommand(createOpsSightCmd)
+	createCmd.AddCommand(createAlertCmd)
 
 	// Here you will define your flags and configuration settings.
 
