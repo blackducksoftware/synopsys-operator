@@ -35,13 +35,13 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create a synopsys resource (ex: blackduck, opssight)",
+	Short: "Create a Synopsys Resource in your cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
 	},
 }
 
-var blackduckCmd = &cobra.Command{
+var createBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Create an instance of a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -66,9 +66,9 @@ var blackduckCmd = &cobra.Command{
 	},
 }
 
-var opssightCmd = &cobra.Command{
+var createOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
-	Short: "create an instance of OpsSight",
+	Short: "Create an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -88,9 +88,9 @@ var opssightCmd = &cobra.Command{
 	},
 }
 
-var alertCmd = &cobra.Command{
+var createAlertCmd = &cobra.Command{
 	Use:   "alert",
-	Short: "create an instance of Alert",
+	Short: "Create an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -131,12 +131,13 @@ func deployCRDNamespace(restconfig *rest.Config) {
 func init() {
 	rootCmd.AddCommand(createCmd)
 
-	blackduckCmd.Flags().StringVar(&create_blackduck_size, "size", create_blackduck_size, "blackduck size - small, medium, large")
-	blackduckCmd.Flags().BoolVar(&create_blackduck_persistentStorage, "persistent-storage", create_blackduck_persistentStorage, "enable persistent storage")
-	blackduckCmd.Flags().BoolVar(&create_blackduck_LivenessProbes, "liveness-probes", create_blackduck_LivenessProbes, "enable liveness probes")
-	createCmd.AddCommand(blackduckCmd)
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_size, "size", create_blackduck_size, "blackduck size - small, medium, large")
+	createBlackduckCmd.Flags().BoolVar(&create_blackduck_persistentStorage, "persistent-storage", create_blackduck_persistentStorage, "enable persistent storage")
+	createBlackduckCmd.Flags().BoolVar(&create_blackduck_LivenessProbes, "liveness-probes", create_blackduck_LivenessProbes, "enable liveness probes")
+	createCmd.AddCommand(createBlackduckCmd)
 
-	createCmd.AddCommand(opssightCmd)
+	createCmd.AddCommand(createOpsSightCmd)
+	createCmd.AddCommand(createAlertCmd)
 
 	// Here you will define your flags and configuration settings.
 

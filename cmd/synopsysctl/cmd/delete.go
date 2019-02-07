@@ -17,26 +17,75 @@ package cmd
 import (
 	"fmt"
 
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Remove a Synopsys Resource from your cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("delete called")
+
+	},
+}
+
+var deleteBlackduckCmd = &cobra.Command{
+	Use:   "blackduck",
+	Short: "Delete a Blackduck",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get Kubernetes Rest Config
+		restconfig := getKubeRestConfig()
+		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
+		if err != nil {
+			fmt.Printf("Error creating the Blackduck Clientset: %s\n", err)
+			return
+		}
+		blackduckClient.SynopsysV1().Blackducks(namespace).Delete(namespace, &metav1.DeleteOptions{})
+
+	},
+}
+
+var deleteOpsSightCmd = &cobra.Command{
+	Use:   "opssight",
+	Short: "Delete an OpsSight",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get Kubernetes Rest Config
+		restconfig := getKubeRestConfig()
+		opssightClient, err := opssightclientset.NewForConfig(restconfig)
+		if err != nil {
+			fmt.Printf("Error creating the OpsSight Clientset: %s\n", err)
+			return
+		}
+		opssightClient.SynopsysV1().OpsSights(namespace).Delete(namespace, &metav1.DeleteOptions{})
+	},
+}
+
+var deleteAlertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "Delete an Alert",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get Kubernetes Rest Config
+		restconfig := getKubeRestConfig()
+		alertClient, err := alertclientset.NewForConfig(restconfig)
+		if err != nil {
+			fmt.Printf("Error creating the Alert Clientset: %s\n", err)
+			return
+		}
+		alertClient.SynopsysV1().Alerts(namespace).Delete(namespace, &metav1.DeleteOptions{})
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deleteCmd)
+
+	deleteCmd.AddCommand(deleteBlackduckCmd)
+	deleteCmd.AddCommand(deleteOpsSightCmd)
+	deleteCmd.AddCommand(deleteAlertCmd)
 
 	// Here you will define your flags and configuration settings.
 
