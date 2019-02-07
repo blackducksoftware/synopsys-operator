@@ -160,6 +160,9 @@ func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
 
 	// Update values with User input
 	bdDefaultSpec.Namespace = namespace
+	bdDefaultSpec.Size = create_blackduck_size
+	bdDefaultSpec.LivenessProbes = create_blackduck_LivenessProbes
+	bdDefaultSpec.PersistentStorage = create_blackduck_persistentStorage
 
 	// Add updated spec
 	bd.Spec = *bdDefaultSpec
@@ -175,6 +178,7 @@ func populateOpssightConfig(opssight *opssightv1.OpsSight) {
 	opssightDefaultSpec := crddefaults.GetOpsSightDefaultValueWithDisabledHub()
 
 	// Update values with User input
+	opssightDefaultSpec.Namespace = namespace
 
 	// Add updated spec
 	opssight.Spec = *opssightDefaultSpec
