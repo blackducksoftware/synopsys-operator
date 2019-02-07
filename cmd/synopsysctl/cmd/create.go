@@ -77,12 +77,12 @@ var opssightCmd = &cobra.Command{
 		deployCRDNamespace(restconfig)
 
 		// Create OpsSight Spec
-		alert := &alertv1.Alert{}
-		populateAlertConfig(alert)
-		alertClient, err := alertclientset.NewForConfig(restconfig)
-		_, err = alertClient.SynopsysV1().Alerts(namespace).Create(alert)
+		opssight := &opssightv1.OpsSight{}
+		populateOpssightConfig(opssight)
+		opssightClient, err := opssightclientset.NewForConfig(restconfig)
+		_, err = opssightClient.SynopsysV1().OpsSights(namespace).Create(opssight)
 		if err != nil {
-			fmt.Printf("Error creating the Alert : %s\n", err)
+			fmt.Printf("Error creating the OpsSight : %s\n", err)
 			return
 		}
 	},
@@ -98,11 +98,11 @@ var alertCmd = &cobra.Command{
 		// Create namespace for the Alert
 		deployCRDNamespace(restconfig)
 
-		// Create OpsSight Spec
-		opssight := &opssightv1.OpsSight{}
-		populateOpssightConfig(opssight)
-		opssightClient, err := opssightclientset.NewForConfig(restconfig)
-		_, err = opssightClient.SynopsysV1().OpsSights(namespace).Create(opssight)
+		// Create Alert Spec
+		alert := &alertv1.Alert{}
+		populateAlertConfig(alert)
+		alertClient, err := alertclientset.NewForConfig(restconfig)
+		_, err = alertClient.SynopsysV1().Alerts(namespace).Create(alert)
 		if err != nil {
 			fmt.Printf("Error creating the Alert : %s\n", err)
 			return
