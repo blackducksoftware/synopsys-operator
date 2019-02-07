@@ -61,6 +61,19 @@ func (hc *Creater) createHubSecrets(createHub *v1.BlackduckSpec, adminPassword s
 			secrets = append(secrets, proxyCertificateSecret)
 		}
 	}
+
+	if len(createHub.AuthCustomCA) > 0 {
+		cert, err := hc.stringToCertificate(createHub.AuthCustomCA)
+		if err != nil {
+			logrus.Warnf("The Auth Custom CA provided is invalid")
+		} else {
+			logrus.Debugf("Adding The Auth Custom CA with SN: %x", cert.SerialNumber)
+			authCustomCASecret := components.NewSecret(horizonapi.SecretConfig{Namespace: createHub.Namespace, Name: "auth-custom-ca", Type: horizonapi.SecretTypeOpaque})
+			authCustomCASecret.AddData(map[string][]byte{"AUTH_CUSTOM_CA": []byte(createHub.AuthCustomCA)})
+			secrets = append(secrets, authCustomCASecret)
+		}
+	}
+
 	return secrets
 }
 
