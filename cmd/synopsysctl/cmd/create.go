@@ -15,28 +15,27 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
-	"path/filepath"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/horizon/pkg/deployer"
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 )
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "create a synopsys resource (ex: blackduck, opssight)",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
 	},
@@ -44,37 +43,26 @@ to quickly create a Cobra application.`,
 
 var blackduckCmd = &cobra.Command{
 	Use:   "blackduck",
-	Short: "create an instance of a Blackduck",
+	Short: "Create an instance of a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Your BD will have %d gigabytes\n", create_blackduck_size)
+		// Get Kubernetes Rest Config
+		restconfig := getKubeRestConfig()
+
+		// Create namespace for the Blackduck
+		deployCRDNamespace(restconfig)
+
 		// Create Spec for a Blackduck CRD
-		blackduck := &blackduckv1.Blackduck{} //TODO populate blackduck spec elements
+		blackduck := &blackduckv1.Blackduck{}
+		populateBlackduckConfig(blackduck)
+		fmt.Printf("%+v\n", blackduck)
 
-		// Create hubclientset.Clientset for the CRD
-		var kubeconfig *string
-		if home := homeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-		} else {
-			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-		}
-		flag.Parse()
-		restconfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		if err != nil {
-			panic(err.Error())
-		}
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
-		// Get Namespace for the blackduck
-		blackduckNamespace := blackduck.Spec.Namespace
-		// Get hub_v2.Blackduck
-		hubv2 := blackduckv1.Blackduck{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: blackduck.Spec.Namespace,
-			},
-			Spec: blackduck.Spec,
-		}
 
-		// CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v2.Blackduck)
-		util.CreateHub(blackduckClient, blackduckNamespace, &hubv2)
+		_, err = blackduckClient.SynopsysV1().Blackducks(namespace).Create(blackduck)
+		if err != nil {
+			fmt.Printf("Error creating the Blackduck : %s\n", err)
+			return
+		}
 	},
 }
 
@@ -82,14 +70,72 @@ var opssightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "create an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Creating OpsSight\n")
+		// Get Kubernetes Rest Config
+		restconfig := getKubeRestConfig()
+
+		// Create namespace for the OpsSight
+		deployCRDNamespace(restconfig)
+
+		// Create OpsSight Spec
+		opssight := &opssightv1.OpsSight{}
+		populateOpssightConfig(opssight)
+		opssightClient, err := opssightclientset.NewForConfig(restconfig)
+		_, err = opssightClient.SynopsysV1().OpsSights(namespace).Create(opssight)
+		if err != nil {
+			fmt.Printf("Error creating the OpsSight : %s\n", err)
+			return
+		}
 	},
+}
+
+var alertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "create an instance of Alert",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get Kubernetes Rest Config
+		restconfig := getKubeRestConfig()
+
+		// Create namespace for the Alert
+		deployCRDNamespace(restconfig)
+
+		// Create Alert Spec
+		alert := &alertv1.Alert{}
+		populateAlertConfig(alert)
+		alertClient, err := alertclientset.NewForConfig(restconfig)
+		_, err = alertClient.SynopsysV1().Alerts(namespace).Create(alert)
+		if err != nil {
+			fmt.Printf("Error creating the Alert : %s\n", err)
+			return
+		}
+	},
+}
+
+func deployCRDNamespace(restconfig *rest.Config) {
+
+	// Create Horizon Deployer
+	namespaceDeployer, err := deployer.NewDeployer(restconfig)
+	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
+		// APIVersion:  "string",
+		// ClusterName: "string",
+		Name:      namespace,
+		Namespace: namespace,
+	})
+	namespaceDeployer.AddNamespace(ns)
+	err = namespaceDeployer.Run()
+	if err != nil {
+		fmt.Printf("Error deploying namespace with Horizon : %s\n", err)
+		return
+	}
 }
 
 func init() {
 	rootCmd.AddCommand(createCmd)
-	blackduckCmd.Flags().IntVarP(&create_blackduck_size, "size", "s", create_blackduck_size, "blackduck size in GB")
+
+	blackduckCmd.Flags().StringVar(&create_blackduck_size, "size", create_blackduck_size, "blackduck size - small, medium, large")
+	blackduckCmd.Flags().BoolVar(&create_blackduck_persistentStorage, "persistent-storage", create_blackduck_persistentStorage, "enable persistent storage")
+	blackduckCmd.Flags().BoolVar(&create_blackduck_LivenessProbes, "liveness-probes", create_blackduck_LivenessProbes, "enable liveness probes")
 	createCmd.AddCommand(blackduckCmd)
+
 	createCmd.AddCommand(opssightCmd)
 
 	// Here you will define your flags and configuration settings.
@@ -101,4 +147,55 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
+	// Add Meta Data
+	bd.ObjectMeta = metav1.ObjectMeta{
+		Name: namespace,
+	}
+
+	// Get Default Blackduck Spec
+	bdDefaultSpec := crddefaults.GetHubDefaultPersistentStorage()
+
+	// Update values with User input
+	bdDefaultSpec.Namespace = namespace
+	bdDefaultSpec.Size = create_blackduck_size
+	bdDefaultSpec.LivenessProbes = create_blackduck_LivenessProbes
+	bdDefaultSpec.PersistentStorage = create_blackduck_persistentStorage
+
+	// Add updated spec
+	bd.Spec = *bdDefaultSpec
+}
+
+func populateOpssightConfig(opssight *opssightv1.OpsSight) {
+	// Add Meta Data
+	opssight.ObjectMeta = metav1.ObjectMeta{
+		Name: namespace,
+	}
+
+	// Get Default OpsSight Spec
+	opssightDefaultSpec := crddefaults.GetOpsSightDefaultValueWithDisabledHub()
+
+	// Update values with User input
+	opssightDefaultSpec.Namespace = namespace
+
+	// Add updated spec
+	opssight.Spec = *opssightDefaultSpec
+}
+
+func populateAlertConfig(alert *alertv1.Alert) {
+	// Add Meta Data
+	alert.ObjectMeta = metav1.ObjectMeta{
+		Name: namespace,
+	}
+
+	// Get Default Alert Spec
+	alertDefaultSpec := crddefaults.GetAlertDefaultValue()
+
+	// Update values with User input
+	alertDefaultSpec.Namespace = namespace
+
+	// Add updated spec
+	alert.Spec = *alertDefaultSpec
 }
