@@ -322,6 +322,17 @@ func ReadFromFile(filePath string) ([]byte, error) {
 	return file, err
 }
 
+// GetConfigMap will get the config map
+func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string) (*v1.ConfigMap, error) {
+	return clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
+}
+
+// UpdateConfigMap updates a config map
+func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *v1.ConfigMap) error {
+	_, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
+	return err
+}
+
 // // CreateSecret will create the secret
 // func CreateNewSecret(secretConfig *horizonapi.SecretConfig) *components.Secret {
 //
