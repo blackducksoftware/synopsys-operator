@@ -42,6 +42,7 @@ type Sample struct {
 type SampleSpec struct {
 	Namespace   string `json:"namespace,omitempty"`
 	SampleValue string `json:"registry,omitempty"`
+	State       string `json:"state"`
 }
 
 // SampleStatus is the status for a Sample resource

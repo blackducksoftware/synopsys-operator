@@ -24,38 +24,35 @@ package sample
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
 )
 
-type SpecConfig struct {
-	config *v1.SampleSpec
+// Returns a Horizon Deployment for the Sample
+func (specConfig *SampleSpecConfig) getSampleDeployment() *components.Deployment {
+	var replicas int32 = 1
+	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
+		Name:      "sample",
+		Namespace: "sample",
+		Replicas:  &replicas,
+	})
+
+	deployment.AddPod(specConfig.getSamplePod())
+
+	return deployment
 }
 
-// NewSample will create the Sample object
-func NewSample(config *v1.SampleSpec) *SpecConfig {
-	return &SpecConfig{config: config}
-}
-
-// GetComponents will return the list of components for sample
-func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
-	components := &api.ComponentList{}
-	return components, nil
-}
-
-// Create a Sample Pod using Horizon API
-func (sampleSpecConfig *SpecConfig) samplePod() (*components.Pod, error) {
+// Returns a Horizon Pod for the Sample
+func (specConfig *SampleSpecConfig) getSamplePod() *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "sample",
 	})
 
-	pod.AddContainer(sampleSpecConfig.sampleContainer())
+	pod.AddContainer(specConfig.getSampleContainer())
 
-	return pod, nil
+	return pod
 }
 
-// Create a Sample Container using Horizon API
-func (sampleSpecConfig *SpecConfig) sampleContainer() *components.Container {
+// Returns a Horizon Container for the Sample
+func (specConfig *SampleSpecConfig) getSampleContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  "sample",
 		Image: "registry.hub.docker.com/vasiliys/public-test:latest",
