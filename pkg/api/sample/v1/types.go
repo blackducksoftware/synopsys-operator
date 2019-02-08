@@ -40,23 +40,8 @@ type Sample struct {
 
 // SampleSpec is the spec for a Sample resource
 type SampleSpec struct {
-	Namespace          string `json:"namespace,omitempty"`
-	Registry           string `json:"registry,omitempty"`
-	ImagePath          string `json:"imagePath,omitempty"`
-	SampleImageName    string `json:"sampleImageName,omitempty"`
-	SampleImageVersion string `json:"sampleImageVersion,omitempty"`
-	CfsslImageName     string `json:"cfsslImageName,omitempty"`
-	CfsslImageVersion  string `json:"cfsslImageVersion,omitempty"`
-	BlackduckHost      string `json:"blackduckHost,omitempty"`
-	BlackduckUser      string `json:"blackduckUser,omitempty"`
-	BlackduckPort      *int   `json:"blackduckPort,omitempty"`
-	Port               *int   `json:"port"`
-	StandAlone         *bool  `json:"standAlone"`
-
-	// Should be passed like: e.g "1300Mi"
-	SampleMemory string `json:"sampleMemory.omitempty"`
-	CfsslMemory  string `json:"cfsslMemory.omitempty"`
-	State        string `json:"state"`
+	Namespace   string `json:"namespace,omitempty"`
+	SampleValue string `json:"registry,omitempty"`
 }
 
 // SampleStatus is the status for a Sample resource
