@@ -37,7 +37,7 @@ func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: zookeeperMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: volumeMounts,
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: zookeeperPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: zookeeperPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	if c.hubSpec.LivenessProbes {

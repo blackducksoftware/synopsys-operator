@@ -57,7 +57,7 @@ func TestC(t *testing.T) {
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: fmt.Sprintf("docker.io/blackducksoftware/blackduck-documentation:%s", hubVersion), UID: getUID(100)},
 	}
 
-	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
+	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
 	creater.PostEditContainer(myCont)
 	if myCont.ContainerConfig.Image != fmt.Sprintf("docker.io/blackducksoftware/blackduck-documentation:%s", hubVersion) {
 		logrus.Infof("Got wrong tag %v", myCont.ContainerConfig.Image)
@@ -84,7 +84,7 @@ func TestImageTag(t *testing.T) {
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-solr:%s", externalVersion),
 		fmt.Sprintf("docker.io/blackducksoftware/blackduck-zookeeper:%s", externalVersion)},
 		Environs: []string{"HUB_VERSION:4.5.0"}}
-	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
+	creater := NewCreater(nil, hubSpec, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
 
 	external100 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl"}
 	internal50 := []string{"registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
@@ -106,7 +106,7 @@ func TestImageTag(t *testing.T) {
 	}
 
 	hubSpec1 := &v1.BlackduckSpec{Environs: []string{"HUB_VERSION:4.5.0"}}
-	creater = NewCreater(nil, hubSpec1, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
+	creater = NewCreater(nil, hubSpec1, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
 	all50 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl", "registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
 	for _, v := range all50 {
 		containerName := creater.getFullContainerName(v)

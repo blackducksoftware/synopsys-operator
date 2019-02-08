@@ -72,12 +72,13 @@
     "defaultMem": "1300Mi",
     "logLevel": "debug",
     "secretName": "perceptor",
-    "hub": {
+    "blackduck": {
       "initialCount": 0,
       "maxCount": 4,
       "concurrentScanLimit": 2,
       "totalScanLimit": 1000,
-      "hubSpec": {
+      "blackduckSpec": {
+        "licenseKey": "<BLACKDUCK_LICENSE_KEY>",
         "persistentStorage": false,
         "certificateName": "default",
         "dbPrototype": "",

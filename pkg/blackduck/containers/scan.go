@@ -52,7 +52,7 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 				MountPath: "/opt/blackduck/hub/hub-scan/security",
 			},
 		},
-		PortConfig: &horizonapi.PortConfig{ContainerPort: scannerPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig: []*horizonapi.PortConfig{{ContainerPort: scannerPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	if c.hubSpec.LivenessProbes {

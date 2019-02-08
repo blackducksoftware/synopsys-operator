@@ -63,7 +63,7 @@ import (
 )
 
 // CreateContainer will create the container
-func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, port *horizonapi.PortConfig,
+func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, ports []*horizonapi.PortConfig,
 	actionConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
 
 	container := components.NewContainer(*config)
@@ -76,7 +76,7 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 		container.AddVolumeMount(*volumeMount)
 	}
 
-	if port != nil {
+	for _, port := range ports {
 		container.AddPort(*port)
 	}
 
@@ -258,6 +258,32 @@ func CreateService(name string, label string, namespace string, port string, tar
 	return mySvc
 }
 
+// CreateServiceWithMultiplePort will create the service with multiple port
+func CreateServiceWithMultiplePort(name string, label string, namespace string, ports []string, serviceType horizonapi.ClusterIPServiceType) *components.Service {
+	svcConfig := horizonapi.ServiceConfig{
+		Name:          name,
+		Namespace:     namespace,
+		IPServiceType: serviceType,
+	}
+
+	mySvc := components.NewService(svcConfig)
+
+	for _, port := range ports {
+		portVal, _ := strconv.Atoi(port)
+		myPort := &horizonapi.ServicePortConfig{
+			Name:       fmt.Sprintf("port-" + port),
+			Port:       int32(portVal),
+			TargetPort: port,
+			Protocol:   horizonapi.ProtocolTCP,
+		}
+		mySvc.AddPort(*myPort)
+	}
+
+	mySvc.AddSelectors(map[string]string{"app": label})
+
+	return mySvc
+}
+
 // CreateSecretFromFile will create the secret from file
 func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, namespace string, name string, dataKey string) (*v1.Secret, error) {
 	file, err := ioutil.ReadFile(jsonFile)
@@ -294,6 +320,17 @@ func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (
 func ReadFromFile(filePath string) ([]byte, error) {
 	file, err := ioutil.ReadFile(filePath)
 	return file, err
+}
+
+// GetConfigMap will get the config map
+func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string) (*v1.ConfigMap, error) {
+	return clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
+}
+
+// UpdateConfigMap updates a config map
+func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *v1.ConfigMap) error {
+	_, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
+	return err
 }
 
 // // CreateSecret will create the secret

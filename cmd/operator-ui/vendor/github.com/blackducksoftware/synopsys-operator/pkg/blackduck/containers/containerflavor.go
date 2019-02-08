@@ -63,6 +63,9 @@ type ContainerFlavor struct {
 	DocumentationMemoryLimit   string
 	PostgresMemoryLimit        string
 	PostgresCPULimit           string
+	BinaryScannerMemoryLimit   string
+	RabbitmqMemoryLimit        string
+	UploadCacheMemoryLimit     string
 }
 
 // GetContainersFlavor will return the default settings for the flavored Black Duck Blackduck TODO Make this typesafe, make flavor const into an enum.
@@ -90,6 +93,9 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			DocumentationMemoryLimit:   documentationMemoryLimit,
 			PostgresCPULimit:           smallPostgresCPULimit,
 			PostgresMemoryLimit:        smallPostgresMemoryLimit,
+			BinaryScannerMemoryLimit:   binaryScannerMemoryLimit,
+			RabbitmqMemoryLimit:        rabbitmqMemoryLimit,
+			UploadCacheMemoryLimit:     uploadCacheMemoryLimit,
 		}
 	case MEDIUM:
 		return &ContainerFlavor{
@@ -113,6 +119,9 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			DocumentationMemoryLimit:   documentationMemoryLimit,
 			PostgresCPULimit:           mediumPostgresCPULimit,
 			PostgresMemoryLimit:        mediumPostgresMemoryLimit,
+			BinaryScannerMemoryLimit:   binaryScannerMemoryLimit,
+			RabbitmqMemoryLimit:        rabbitmqMemoryLimit,
+			UploadCacheMemoryLimit:     uploadCacheMemoryLimit,
 		}
 	case LARGE:
 		return &ContainerFlavor{
@@ -136,6 +145,9 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			DocumentationMemoryLimit:   documentationMemoryLimit,
 			PostgresCPULimit:           largePostgresCPULimit,
 			PostgresMemoryLimit:        largePostgresMemoryLimit,
+			BinaryScannerMemoryLimit:   binaryScannerMemoryLimit,
+			RabbitmqMemoryLimit:        rabbitmqMemoryLimit,
+			UploadCacheMemoryLimit:     uploadCacheMemoryLimit,
 		}
 	case XLARGE:
 		return &ContainerFlavor{
@@ -159,6 +171,9 @@ func GetContainersFlavor(flavor string) *ContainerFlavor {
 			DocumentationMemoryLimit:   documentationMemoryLimit,
 			PostgresCPULimit:           xLargePostgresCPULimit,
 			PostgresMemoryLimit:        xLargePostgresMemoryLimit,
+			BinaryScannerMemoryLimit:   binaryScannerMemoryLimit,
+			RabbitmqMemoryLimit:        rabbitmqMemoryLimit,
+			UploadCacheMemoryLimit:     uploadCacheMemoryLimit,
 		}
 	default:
 		return nil

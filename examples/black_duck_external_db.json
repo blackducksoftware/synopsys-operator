@@ -6,18 +6,19 @@
   },
   "spec": {
     "namespace": "blackduck-externaldb",
+    "licenseKey": "<BLACKDUCK_LICENSE_KEY>",
     "certificateName": "default",
     "dbPrototype": "",
     "size": "small",
     "persistentStorage": false,
     "externalPostgres": {
-      "postgresHost": "146.148.58.0",
+      "postgresHost": "<<IP/FQDN>>",
       "postgresPort": 5432,
       "postgresAdmin": "blackduck",
       "postgresUser": "blackduck_user",
       "postgresSsl": false,
-      "postgresAdminPassword": "mypassword",
-      "postgresUserPassword": "mypassword"
+      "postgresAdminPassword": "<<PASSWORD>>",
+      "postgresUserPassword": "<<PASSWORD>>"
     },
     "type": "worker",
     "imageRegistries": [

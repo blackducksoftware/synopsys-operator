@@ -24,9 +24,6 @@ items:
           imagePullPolicy: Always
           ports:
           - containerPort: 8080
-          env:
-          - name: REGISTRATION_KEY
-            value: ${REGISTRATION_KEY}
           volumeMounts:
           - mountPath: /etc/synopsys-operator
             name: synopsys-operator

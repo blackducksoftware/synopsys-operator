@@ -120,7 +120,7 @@ func exec(db *sql.DB, statement string) error {
 func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword string) {
 	for {
 		log.Debug("executing SELECT 1")
-		err := exec(db, "SELECT 1")
+		err := exec(db, "SELECT 1;")
 		if err == nil {
 			break
 		}
@@ -198,10 +198,6 @@ func execSystemDBStatements(db *sql.DB) {
 	exec(db, "ALTER SYSTEM SET max_locks_per_transaction TO '256';")
 	exec(db, "ALTER SYSTEM SET random_page_cost TO '4.0';")
 	exec(db, "ALTER SYSTEM SET shared_buffers TO '1024MB';")
-	exec(db, "ALTER SYSTEM SET ssl TO 'on';")
-	exec(db, "ALTER SYSTEM SET ssl_ca_file TO 'root.crt';")
-	exec(db, "ALTER SYSTEM SET ssl_cert_file TO 'hub-database.crt';")
-	exec(db, "ALTER SYSTEM SET ssl_key_file TO 'hub-database.key';")
 	exec(db, "ALTER SYSTEM SET standard_conforming_strings TO 'off';")
 	exec(db, "ALTER SYSTEM SET temp_buffers TO '16MB';")
 	exec(db, "ALTER SYSTEM SET work_mem TO '32MB';")

@@ -38,12 +38,13 @@ import (
 // AddToDeployer will create an entire hub for you.  TODO add flavor parameters !
 // To create the returned hub, run 	CreateHub().Run().
 // TODO doc what 'allConfigEnv' actually is ???
-func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor, allConfigEnv []*horizonapi.EnvConfig) {
+func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor,
+	allConfigEnv []*horizonapi.EnvConfig) {
 
 	// Blackduck ConfigMap environment variables
-	hubConfigEnv := []*horizonapi.EnvConfig{
-		{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"},
-	}
+	hubConfigEnv := []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"}}
+
+	binaryAnalysisEnv := []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "binary-analysis-config"}}
 
 	dbSecretVolume := components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "db-passwords",
@@ -73,7 +74,7 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 		}
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, hubConfigEnv, allConfigEnv, dbSecretVolume, proxySecretVolume)
+	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, hubConfigEnv, allConfigEnv, binaryAnalysisEnv, dbSecretVolume, proxySecretVolume)
 
 	// cfssl
 	deployer.AddReplicationController(containerCreater.GetCfsslDeployment())
@@ -96,8 +97,6 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 	// nginx
 	deployer.AddReplicationController(containerCreater.GetWebserverDeployment())
 	deployer.AddService(containerCreater.GetWebServerService())
-	deployer.AddService(containerCreater.GetWebServerNodePortService())
-	deployer.AddService(containerCreater.GetWebServerLoadBalancerService())
 
 	// documentation
 	deployer.AddReplicationController(containerCreater.GetDocumentationDeployment())
@@ -130,6 +129,19 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 	deployer.AddReplicationController(containerCreater.GetWebappLogstashDeployment())
 	deployer.AddService(containerCreater.GetWebAppService())
 	deployer.AddService(containerCreater.GetLogStashService())
+
+	if hc.isBinaryAnalysisEnabled {
+		// Binary Scanner
+		deployer.AddReplicationController(containerCreater.GetBinaryScannerDeployment())
+
+		// Rabbitmq
+		deployer.AddReplicationController(containerCreater.GetRabbitmqDeployment())
+		deployer.AddService(containerCreater.GetRabbitmqService())
+
+		// Upload cache
+		deployer.AddReplicationController(containerCreater.GetUploadCacheDeployment())
+		deployer.AddService(containerCreater.GetUploadCacheService())
+	}
 }
 
 // addAnyUIDToServiceAccount adds the capability to run as 1000 for nginx or other special IDs.  For example, the binaryscanner
@@ -163,4 +175,11 @@ func (hc *Creater) addAnyUIDToServiceAccount(createHub *v1.BlackduckSpec) error 
 		}
 	}
 	return nil
+}
+
+// AddExposeServices add the nodeport / LB services
+func (hc *Creater) AddExposeServices(deployer *horizon.Deployer, createHub *v1.BlackduckSpec) {
+	containerCreater := containers.NewCreater(hc.Config, createHub, nil, nil, nil, nil, nil, nil)
+	deployer.AddService(containerCreater.GetWebServerNodePortService())
+	deployer.AddService(containerCreater.GetWebServerLoadBalancerService())
 }

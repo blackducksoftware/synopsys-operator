@@ -40,7 +40,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 			MaxCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs:   webappEnvs,
 		VolumeMounts: webappVolumeMounts,
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: webappPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: webappPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	if c.hubSpec.LivenessProbes {
@@ -70,7 +70,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.LogstashMemoryLimit, MaxMem: c.hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: logstashVolumeMounts,
-		PortConfig:   &horizonapi.PortConfig{ContainerPort: logstashPort, Protocol: horizonapi.ProtocolTCP},
+		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: logstashPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	if c.hubSpec.LivenessProbes {

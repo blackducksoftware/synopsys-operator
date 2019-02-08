@@ -35,8 +35,7 @@
     "pkg/util",
     "pkg/util/error"
   ]
-  revision = "fa0acd7bd7a60ee3e9507eff4bb704a1aee70eae"
-  source = "https://github.com/jayunit100/horizon"
+  revision = "89480c1943948d1f46e75bde92aa3618973786d8"
 
 [[projects]]
   branch = "master"
@@ -63,7 +62,7 @@
     "pkg/protoform",
     "pkg/util"
   ]
-  revision = "6677500b60d1654fc6bc1a1f8ecc5f7cc0f47dde"
+  revision = "af3b36e5737132c81df5c4a72818ffdb6ce21c28"
 
 [[projects]]
   name = "github.com/blang/semver"
@@ -126,7 +125,7 @@
   branch = "master"
   name = "github.com/gin-contrib/sse"
   packages = ["."]
-  revision = "61b50c2ef482d0f2c68fa55a1ef570ee5032b0d8"
+  revision = "a7658810eb745c2f22927282dea478278103a897"
 
 [[projects]]
   branch = "master"
@@ -160,8 +159,8 @@
     "servers",
     "worker"
   ]
-  revision = "78d649ad376f5b9da360e89dce5c1d31cf2772ba"
-  version = "v0.13.12"
+  revision = "3efafb960e472de753a1f8a9c6cd5f4a3719b784"
+  version = "v0.13.13"
 
 [[projects]]
   name = "github.com/gobuffalo/buffalo-plugins"
@@ -169,8 +168,8 @@
     "plugins",
     "plugins/plugdeps"
   ]
-  revision = "2461484adc8ad2ec64ac124e7d530eb99986f3bf"
-  version = "v1.11.0"
+  revision = "bf8af8d91a7e06edf66734d3b3db826a5e96caef"
+  version = "v1.12.0"
 
 [[projects]]
   name = "github.com/gobuffalo/envy"
@@ -181,8 +180,8 @@
 [[projects]]
   name = "github.com/gobuffalo/events"
   packages = ["."]
-  revision = "101ad35bcd1d70e0bcc06e7d1e9bc746e13ca2c2"
-  version = "v1.1.9"
+  revision = "7405490b2bb796f2d6aaea94f4c8692e67aa7086"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/gobuffalo/fizz"
@@ -209,7 +208,7 @@
     ".",
     "movinglater/gotools/gomods"
   ]
-  revision = "f31a84fcacf5aaff02bb1f7c3b65823b43f293e5"
+  revision = "008a76242145c9fca08b9047da7da6108292c569"
 
 [[projects]]
   name = "github.com/gobuffalo/github_flavored_markdown"
@@ -252,13 +251,13 @@
   branch = "master"
   name = "github.com/gobuffalo/meta"
   packages = ["."]
-  revision = "ecaa953cbfb313978a8e95b033c452fe3cbd4bea"
+  revision = "c8fb6f4eb5a9cb0fa2e37ef6e42c2f71e19a1ca8"
 
 [[projects]]
   branch = "master"
   name = "github.com/gobuffalo/mw-csrf"
   packages = ["."]
-  revision = "446ff26e108b9a8933dfc854d37a68d5adf2c226"
+  revision = "25460a05551774654d807c1586d9bac3bb2a26c9"
 
 [[projects]]
   branch = "master"
@@ -270,13 +269,13 @@
   branch = "master"
   name = "github.com/gobuffalo/mw-i18n"
   packages = ["."]
-  revision = "09e0c99be4d3196ee973ea7aff7d6fe027cdc97f"
+  revision = "552713a3ebb4dcce18048b105e5a3605c5596f48"
 
 [[projects]]
   branch = "master"
   name = "github.com/gobuffalo/mw-paramlogger"
   packages = ["."]
-  revision = "d6ee392ec72e2863654657a8449a58e47420e617"
+  revision = "395da19985257a56c0e7a4da1afbaff0b77e1b46"
 
 [[projects]]
   branch = "master"
@@ -287,8 +286,8 @@
 [[projects]]
   name = "github.com/gobuffalo/packr"
   packages = ["."]
-  revision = "679459352e18b4c74274a979d695fe13b68730c1"
-  version = "v1.21.9"
+  revision = "2745c044a8699bced928776bfa1fc98e3148ec7e"
+  version = "v2.0.0"
 
 [[projects]]
   name = "github.com/gobuffalo/plush"
@@ -312,8 +311,8 @@
     "logging",
     "nulls"
   ]
-  revision = "56e7944670b644989d8bc8232b2e39339cac117a"
-  version = "v4.9.5"
+  revision = "f2c9532e46892d9c943bf85ec4f86bbab1abfbda"
+  version = "v4.9.6"
 
 [[projects]]
   name = "github.com/gobuffalo/suite"
@@ -429,8 +428,8 @@
 [[projects]]
   name = "github.com/gorilla/mux"
   packages = ["."]
-  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
-  version = "v1.6.2"
+  revision = "a7962380ca08b5a188038c69871b8d3fbdf31e89"
+  version = "v1.7.0"
 
 [[projects]]
   name = "github.com/gorilla/securecookie"
@@ -613,8 +612,8 @@
     "defaults",
     "randx"
   ]
-  revision = "e6789dc391e3308d92d2f9131990b7426e5e3066"
-  version = "v1.0.2"
+  revision = "7745e382f2e927b7ad1bc04524fa32217acaeb15"
+  version = "v1.0.3"
 
 [[projects]]
   name = "github.com/markbates/grift"
@@ -646,8 +645,8 @@
     "refresh",
     "refresh/web"
   ]
-  revision = "4a017449d85be7e77ec41bb7327e10151ffba6e0"
-  version = "v1.4.11"
+  revision = "3da6b8a8c0c084912dc79a531ac31fb06ed0abbc"
+  version = "v1.5.0"
 
 [[projects]]
   name = "github.com/markbates/safe"
@@ -694,8 +693,8 @@
 [[projects]]
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
-  version = "v1.0.0"
+  revision = "af06845cf3004701891bf4fdb884bfe4920b3727"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/mitchellh/mapstructure"
@@ -796,7 +795,7 @@
   branch = "master"
   name = "github.com/prometheus/client_model"
   packages = ["go"]
-  revision = "56726106282f1985ea77d5305743db7231b0c0a8"
+  revision = "fd36f4220a901265f90734c3183c5f0c91daa0b8"
 
 [[projects]]
   name = "github.com/prometheus/common"
@@ -805,8 +804,8 @@
     "internal/bitbucket.org/ww/goautoneg",
     "model"
   ]
-  revision = "2998b132700a7d019ff618c06a234b47c1f3f681"
-  version = "v0.1.0"
+  revision = "cfeb6f9992ffa54aaa4f2170ade4067ee478b250"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -817,7 +816,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "bf6a532e95b1f7a62adf0ab5050a5bb2237ad2f4"
+  revision = "316cf8ccfec56d206735d46333ca162eb374da8b"
 
 [[projects]]
   name = "github.com/rogpeppe/go-internal"
@@ -888,8 +887,8 @@
     ".",
     "mem"
   ]
-  revision = "a5d6946387efe7d64d09dcba68cdd523dc1273a3"
-  version = "v1.2.0"
+  revision = "f4711e4db9e9a1d3887343acb72b2bbfc2f686f5"
+  version = "v1.2.1"
 
 [[projects]]
   name = "github.com/spf13/cast"
@@ -934,8 +933,8 @@
 [[projects]]
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "b4c50a2b199d93b13dc15e78929cfb23bfdf21ab"
-  version = "v1.1.1"
+  revision = "8fd0f8d918c8f0b52d0af210a812ba882cc31a1e"
+  version = "v1.1.2"
 
 [[projects]]
   branch = "master"
@@ -951,7 +950,7 @@
     "blowfish",
     "ssh/terminal"
   ]
-  revision = "057139ce5d2bdbe6fe73c53679e24e9cf007f637"
+  revision = "b8fe1690c61389d7d2a8074a507d1d40c5d30448"
 
 [[projects]]
   branch = "master"
@@ -964,7 +963,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "ed066c81e75eba56dd9bd2139ade88125b855585"
+  revision = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf"
 
 [[projects]]
   branch = "master"
@@ -979,7 +978,7 @@
     "unix",
     "windows"
   ]
-  revision = "b90733256f2e882e81d52f9126de08df5615afd9"
+  revision = "aca44879d5644da7c5b8ec6a1115e9b6ea6c40d9"
 
 [[projects]]
   name = "golang.org/x/text"
