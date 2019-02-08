@@ -120,7 +120,7 @@ func exec(db *sql.DB, statement string) error {
 func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword string) {
 	for {
 		log.Debug("executing SELECT 1")
-		err := exec(db, "SELECT 1")
+		err := exec(db, "SELECT 1;")
 		if err == nil {
 			break
 		}
