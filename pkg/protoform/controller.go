@@ -22,19 +22,9 @@ under the License.
 package protoform
 
 import (
-	"flag"
-	"path/filepath"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
-
-	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 	"github.com/juju/errors"
-
 	log "github.com/sirupsen/logrus"
+	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 // NewController will initialize the input config file, create the hub informers, initiantiate all rest api
@@ -55,34 +45,15 @@ func NewController(configPath string) (*Deployer, error) {
 
 	log.Debugf("config: %+v", config)
 
-	// creates the in-cluster config
-	kubeConfig, err := rest.InClusterConfig()
-	if err != nil {
-		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
-		kubeConfig, err = newKubeClientFromOutsideCluster()
-	}
-
+	kubeConfig, err := GetKubeConfig()
 	if err != nil {
 		return nil, errors.Annotate(err, "unable to create config for both in-cluster and external to cluster")
 	}
 
-	kubeClientSet, err := kubernetes.NewForConfig(kubeConfig)
+	kubeClientSet, err := GetKubeClientSet(kubeConfig)
 	if err != nil {
 		return nil, errors.Annotate(err, "unable to create kubernetes clientset")
 	}
 
 	return NewDeployer(config, kubeConfig, kubeClientSet), nil
-}
-
-func newKubeClientFromOutsideCluster() (*rest.Config, error) {
-	var kubeConfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeConfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeConfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
-	return config, errors.Annotate(err, "error creating default client config")
 }
