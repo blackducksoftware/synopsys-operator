@@ -825,23 +825,24 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 }
 
 // PatchReplicationController patch a replication controller
-func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.ReplicationController, new corev1.ReplicationController) {
+func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.ReplicationController, new corev1.ReplicationController) error {
 	oldData, err := json.Marshal(old)
 	if err != nil {
-		return
+		return err
 	}
 	newData, err := json.Marshal(new)
 	if err != nil {
-		return
+		return err
 	}
 	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.ReplicationController{})
 	if err != nil {
-		return
+		return err
 	}
 	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
 	if err != nil {
-		return
+		return err
 	}
+	return nil
 }
 
 // UniqueValues returns a unique subset of the string slice provided.
