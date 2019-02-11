@@ -60,6 +60,7 @@ func (handler *Handler) ObjectCreated(obj interface{}) {
 		log.Error("Handler is unable to cast the object to a Sample")
 		return
 	}
+	log.Debugf("Sample Spec State: '%v'", sampleObject.Spec.State)
 	if strings.EqualFold(sampleObject.Spec.State, "") {
 		// Merge the Default Spec into the Sample Spec
 		newSpec := sampleObject.Spec
