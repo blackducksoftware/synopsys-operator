@@ -388,9 +388,19 @@ func GetAllPodsForNamespace(clientset *kubernetes.Clientset, namespace string) (
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 }
 
+// GetReplicationController will get the replication controller corresponding to a namespace and name
+func GetReplicationController(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ReplicationController, error) {
+	return clientset.CoreV1().ReplicationControllers(namespace).Get(name, metav1.GetOptions{})
+}
+
 // GetAllReplicationControllersForNamespace will get all the replication controllers corresponding to a namespace
 func GetAllReplicationControllersForNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.ReplicationControllerList, error) {
 	return clientset.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{})
+}
+
+// GetDeployment will get the deployment corresponding to a namespace and name
+func GetDeployment(clientset *kubernetes.Clientset, namespace string, name string) (*appsv1.Deployment, error) {
+	return clientset.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
 }
 
 // GetAllDeploymentsForNamespace will get all the deployments corresponding to a namespace
