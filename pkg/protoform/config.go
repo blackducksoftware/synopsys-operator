@@ -38,7 +38,7 @@ type Config struct {
 	PostgresRestartInMins int
 	NFSPath               string
 	HubFederatorConfig    *HubFederatorConfig
-	PodWaitTimeout        int32
+	PodWaitTimeout        int64
 
 	// Not recommended production, just for testing, QA, resiliency, and CI/CD.
 	OperatorTimeBombInSeconds int64
