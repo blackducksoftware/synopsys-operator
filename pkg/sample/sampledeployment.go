@@ -30,8 +30,8 @@ import (
 func (specConfig *SampleSpecConfig) getSampleDeployment() *components.Deployment {
 	var replicas int32 = 1
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
-		Name:      "sample",
-		Namespace: "sample",
+		Name:      specConfig.config.Namespace,
+		Namespace: specConfig.config.Namespace,
 		Replicas:  &replicas,
 	})
 
@@ -43,7 +43,7 @@ func (specConfig *SampleSpecConfig) getSampleDeployment() *components.Deployment
 // Returns a Horizon Pod for the Sample
 func (specConfig *SampleSpecConfig) getSamplePod() *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "sample",
+		Name: specConfig.config.Namespace,
 	})
 
 	pod.AddContainer(specConfig.getSampleContainer())
@@ -54,7 +54,7 @@ func (specConfig *SampleSpecConfig) getSamplePod() *components.Pod {
 // Returns a Horizon Container for the Sample
 func (specConfig *SampleSpecConfig) getSampleContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:  "sample",
+		Name:  specConfig.config.Namespace,
 		Image: "registry.hub.docker.com/vasiliys/public-test:latest",
 	})
 

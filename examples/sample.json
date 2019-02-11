@@ -1,0 +1,12 @@
+{
+	"apiVersion": "synopsys.com/v1",
+	"kind": "Sample",
+	"metadata": {
+	  "clusterName": "",
+	  "name": "sample"
+	},
+	"spec": {
+	  "namespace": "sample",
+	  "samplevalue": "docker.io"
+	}
+  }
