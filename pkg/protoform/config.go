@@ -37,7 +37,7 @@ type Config struct {
 	Threadiness           int
 	PostgresRestartInMins int
 	HubFederatorConfig    *HubFederatorConfig
-	PodWaitTimeout        int64
+	PodWaitTimeoutSeconds int64
 
 	// Not recommended production, just for testing, QA, resiliency, and CI/CD.
 	OperatorTimeBombInSeconds int64
