@@ -76,7 +76,7 @@ items:
   metadata:
     name: synopsys-operator
   data:
-    config.json: '{"OperatorTimeBombInSeconds":"315576000", "DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "PostgresRestartInMins": 10, "NFSPath" : "/kubenfs"}'
+    config.json: '{"OperatorTimeBombInSeconds":"315576000", "DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "PostgresRestartInMins": 10, "PodWaitTimeout": "600000000000"}'
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
