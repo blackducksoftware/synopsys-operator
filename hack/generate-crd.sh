@@ -1,6 +1,8 @@
-if [[ $# -ne 1 ]]; then
+# Read Command Line Parameters
+if [[ $# -ne 2 ]]; then
     echo "Error: Invalid number of arguments"
-    echo "Usage: ./generate-crd.sh <crd_name>"
+    echo "Usage: ./generate-crd.sh <crd_name> <crd_version>"
+    echo "Example: ./generate-crd.sh newcrd v1"
     exit 1
 fi
 
@@ -11,6 +13,7 @@ fi
 
 crd_name=$1
 crd_name_upper="$(tr '[:lower:]' '[:upper:]' <<< ${crd_name:0:1})${crd_name:1}"
+crd_version=$2
 
 # Create directory for CRD definition
 echo "Creating Directories for CRD"
@@ -39,11 +42,12 @@ sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/api/$crd_name/v1/types.go"
 echo " > v1/types.go"
 
 ### THIS CODE IS MODIFIED FROM update-crds.sh ####################
-echo "Cloning Kubernetes Libraries: code-generator, apimachinery, api"
+echo "Cloning Kubernetes Libraries..."
 mkdir -p $GOPATH/src/k8s.io
 pushd $GOPATH/src/k8s.io > /dev/null 2>&1
   for REPO in code-generator apimachinery api
   do
+    echo " > git clone git@github.com:kubernetes/${REPO}.git"
     git clone git@github.com:kubernetes/${REPO}.git > /dev/null 2>&1
     pushd $REPO > /dev/null 2>&1
       git pull > /dev/null 2>&1
@@ -52,14 +56,7 @@ pushd $GOPATH/src/k8s.io > /dev/null 2>&1
 popd > /dev/null 2>&1
 
 pushd $GOPATH/src/k8s.io/code-generator > /dev/null 2>&1
-  crds=( $crd_name )
-  crdVersions=( v1 )
-  j=0
-  for i in "${crds[@]}" ; do
-    set +x
-    ./generate-groups.sh "deepcopy,client,informer,lister" "github.com/blackducksoftware/synopsys-operator/pkg/${i}/client" "github.com/blackducksoftware/synopsys-operator/pkg/api" ${i}:${crdVersions[j]}
-    let "j++"
-  done
+  ./generate-groups.sh "deepcopy,client,informer,lister" "github.com/blackducksoftware/synopsys-operator/pkg/${crd_name}/client" "github.com/blackducksoftware/synopsys-operator/pkg/api" ${crd_name}:${crd_version}
 popd > /dev/null 2>&1
 ########################################################################
 
