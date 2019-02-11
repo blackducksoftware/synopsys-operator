@@ -5,15 +5,5 @@ steps:
 #### PUSH ARTIFACTS TO DOCKER HUB / GCS 
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/synopsys-operator:$BRANCH_NAME']
-- name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o','./cmd/blackduckctl-osx', './cmd/blackduckctl']
-  env:
-  - 'PROJECT_ROOT=github.com/blackducksoftware/synopsys-operator'
-  - 'CGO_ENABLED=0'
-  - 'GOOS=darwin'
 options:
   machineType: 'N1_HIGHCPU_32'
-artifacts:
-  objects:
-    location: 'gs://perceptor/$BRANCH_NAME'
-    paths: ['./cmd/blackduckctl-osx']
