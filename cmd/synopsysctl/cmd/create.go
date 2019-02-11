@@ -169,6 +169,20 @@ func init() {
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Flags
+	createAlertCmd.Flags().StringVar(&create_alert_registry, "alert-registry", create_alert_registry, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_imagePath, "image-path", create_alert_imagePath, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_alertImageName, "alert-image-name", create_alert_alertImageName, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_alertImageVersion, "alert-image-version", create_alert_alertImageVersion, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_cfsslImageName, "cfssl-image-name", create_alert_cfsslImageName, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_cfsslImageVersion, "cfssl-image-version", create_alert_cfsslImageVersion, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_blackduckHost, "blackduck-host", create_alert_blackduckHost, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_blackduckUser, "blackduck-user", create_alert_blackduckUser, "TODO")
+	createAlertCmd.Flags().IntVar(&create_alert_blackduckPort, "blackduck-port", create_alert_blackduckPort, "TODO")
+	createAlertCmd.Flags().IntVar(&create_alert_port, "port", create_alert_port, "TODO")
+	createAlertCmd.Flags().BoolVar(&create_alert_standAlone, "stand-alone", create_alert_standAlone, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_alertMemory, "alert-memory", create_alert_alertMemory, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_cfsslMemory, "cfssl-memory", create_alert_cfsslMemory, "TODO")
+	createAlertCmd.Flags().StringVar(&create_alert_state, "alert-state", create_alert_state, "TODO")
 	createCmd.AddCommand(createAlertCmd)
 }
 
@@ -246,6 +260,20 @@ func populateAlertConfig(alert *alertv1.Alert) {
 
 	// Update values with User input
 	alertDefaultSpec.Namespace = namespace
+	alertDefaultSpec.Registry = create_alert_registry
+	alertDefaultSpec.ImagePath = create_alert_imagePath
+	alertDefaultSpec.AlertImageName = create_alert_alertImageName
+	alertDefaultSpec.AlertImageVersion = create_alert_alertImageVersion
+	alertDefaultSpec.CfsslImageName = create_alert_cfsslImageName
+	alertDefaultSpec.CfsslImageVersion = create_alert_cfsslImageVersion
+	alertDefaultSpec.BlackduckHost = create_alert_blackduckHost
+	alertDefaultSpec.BlackduckUser = create_alert_blackduckUser
+	alertDefaultSpec.BlackduckPort = &create_alert_blackduckPort
+	alertDefaultSpec.Port = &create_alert_port
+	alertDefaultSpec.StandAlone = &create_alert_standAlone
+	alertDefaultSpec.AlertMemory = create_alert_alertMemory
+	alertDefaultSpec.CfsslMemory = create_alert_cfsslMemory
+	alertDefaultSpec.State = create_alert_state
 
 	// Add updated spec
 	alert.Spec = *alertDefaultSpec

@@ -84,3 +84,19 @@ var create_opssight_defaultMem = ""
 var create_opssight_logLevel = ""
 var create_opssight_configMapName = ""
 var create_opssight_secretName = ""
+
+// Create Alert Defaults
+var create_alert_registry = ""
+var create_alert_imagePath = ""
+var create_alert_alertImageName = ""
+var create_alert_alertImageVersion = ""
+var create_alert_cfsslImageName = ""
+var create_alert_cfsslImageVersion = ""
+var create_alert_blackduckHost = ""
+var create_alert_blackduckUser = ""
+var create_alert_blackduckPort = 0
+var create_alert_port = 0
+var create_alert_standAlone = false
+var create_alert_alertMemory = ""
+var create_alert_cfsslMemory = ""
+var create_alert_state = ""
