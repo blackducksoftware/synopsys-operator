@@ -4,6 +4,11 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
+if [[ $GOPATH == "" ]] ; then
+	echo "Error: GOPATH is empty"
+	exit 1
+fi
+
 crd_name=$1
 crd_name_upper="$(tr '[:lower:]' '[:upper:]' <<< ${crd_name:0:1})${crd_name:1}"
 
@@ -12,7 +17,7 @@ echo "Creating Directories for CRD"
 mkdir "../pkg/api/$crd_name"
 mkdir "../pkg/api/$crd_name/v1"
 
-echo "Copying CRD files from the Sample CRD"
+echo "Copying CRD files from the Sample..."
 cp "../pkg/api/sample/register.go" "../pkg/api/$crd_name/register.go"
 sed -i "" -e "s/sample/$crd_name/g" "../pkg/api/$crd_name/register.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/api/$crd_name/register.go"
@@ -33,27 +38,20 @@ sed -i "" -e "s/sample/$crd_name/g" "../pkg/api/$crd_name/v1/types.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/api/$crd_name/v1/types.go"
 echo " > v1/types.go"
 
-### THIS CODE IS COPY-PASTA FROM update-crds.sh ####################
-echo "Generating Kubernetes Client with update-crds.sh"
-if [[ $GOPATH == "" ]] ; then
-	echo "Need gopath to proceed ! exiting!!!"
-	exit 1
-fi
-
-echo "cloning generators, might fail, no big deal"
+### THIS CODE IS MODIFIED FROM update-crds.sh ####################
+echo "Cloning Kubernetes Libraries: code-generator, apimachinery, api"
 mkdir -p $GOPATH/src/k8s.io
-
-pushd $GOPATH/src/k8s.io
+pushd $GOPATH/src/k8s.io > /dev/null 2>&1
   for REPO in code-generator apimachinery api
   do
-    git clone git@github.com:kubernetes/${REPO}.git
-    pushd $REPO
-      git pull
-    popd
+    git clone git@github.com:kubernetes/${REPO}.git > /dev/null 2>&1
+    pushd $REPO > /dev/null 2>&1
+      git pull > /dev/null 2>&1
+    popd > /dev/null 2>&1
   done
-popd 
+popd > /dev/null 2>&1
 
-pushd $GOPATH/src/k8s.io/code-generator
+pushd $GOPATH/src/k8s.io/code-generator > /dev/null 2>&1
   crds=( $crd_name )
   crdVersions=( v1 )
   j=0
@@ -62,10 +60,10 @@ pushd $GOPATH/src/k8s.io/code-generator
     ./generate-groups.sh "deepcopy,client,informer,lister" "github.com/blackducksoftware/synopsys-operator/pkg/${i}/client" "github.com/blackducksoftware/synopsys-operator/pkg/api" ${i}:${crdVersions[j]}
     let "j++"
   done
-popd
+popd > /dev/null 2>&1
 ########################################################################
 
-echo "Copying Controller Files from Sample"
+echo "Copying Controller Files from the Sample..."
 cp "../pkg/sample/crdinstaller.go" "../pkg/$crd_name/crdinstaller.go"
 sed -i "" -e "s/sample/$crd_name/g" "../pkg/$crd_name/crdinstaller.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/$crd_name/crdinstaller.go"
