@@ -276,7 +276,6 @@ func (hc *Creater) Stop(createHub *v1.BlackduckSpec) error {
 }
 
 func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
-
 	var adminPassword, userPassword, postgresPassword string
 	var err error
 
@@ -293,6 +292,12 @@ func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
 
 	// Validate postgres pod is cloned/backed up
 	err = util.WaitForServiceEndpointReady(hc.KubeClient, createHub.Namespace, "postgres")
+	if err != nil {
+		return err
+	}
+
+	// Validate the postgres container is running
+	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Namespace)
 	if err != nil {
 		return err
 	}
