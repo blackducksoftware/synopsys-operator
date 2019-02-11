@@ -150,7 +150,7 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	}
 
 	// Validate all pods are in running state
-	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Spec.Namespace, time.Duration(hc.Config.PodWaitTimeout))
+	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Spec.Namespace, hc.Config.PodWaitTimeoutSeconds)
 	if err != nil {
 		return "", nil, true, err
 	}
@@ -297,7 +297,7 @@ func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
 	}
 
 	// Validate the postgres container is running
-	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Namespace, time.Duration(hc.Config.PodWaitTimeout))
+	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Namespace, hc.Config.PodWaitTimeoutSeconds)
 	if err != nil {
 		return err
 	}
