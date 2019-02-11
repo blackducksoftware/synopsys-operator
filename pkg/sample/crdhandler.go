@@ -104,7 +104,6 @@ func (handler *Handler) ObjectUpdated(objOld, objNew interface{}) {
 
 // updateState changes the state of the Sample object
 func (handler *Handler) updateState(specState string, statusState string, errorMessage string, sample *samplev1.Sample) (*samplev1.Sample, error) {
-	sample.Spec.State = specState
 	sample.Status.State = statusState
 	sample.Status.ErrorMessage = errorMessage
 	sample, err := handler.updateSampleObject(sample)
