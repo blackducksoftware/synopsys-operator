@@ -14,6 +14,10 @@
 
 package cmd
 
+import (
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+)
+
 // synopsysctl Defaults
 var namespace = ""
 
@@ -32,5 +36,35 @@ var start_secretBlackduckPassword = "YmxhY2tkdWNr"
 
 // Create Blackduck Defaults
 var create_blackduck_size = "small"
-var create_blackduck_LivenessProbes = false
+var create_blackduck_dbPrototype = ""
+var create_blackduck_externalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+var create_blackduck_pvcStorageClass = "standard"
+var create_blackduck_livenessProbes = false
+var create_blackduck_scanType = ""
 var create_blackduck_persistentStorage = true
+var create_blackduck_PVC = []blackduckv1.PVC{}
+var create_blackduck_certificateName = "default"
+var create_blackduck_certificate = ""
+var create_blackduck_certificateKey = ""
+var create_blackduck_proxyCertificate = ""
+var create_blackduck_type = "worker"
+var create_blackduck_desiredState = ""
+var create_blackduck_environs = []string{}
+var create_blackduck_imageRegistries = []string{
+	"docker.io/blackducksoftware/blackduck-authentication:2018.12.2",
+	"docker.io/blackducksoftware/blackduck-documentation:2018.12.2",
+	"docker.io/blackducksoftware/blackduck-jobrunner:2018.12.2",
+	"docker.io/blackducksoftware/blackduck-registration:2018.12.2",
+	"docker.io/blackducksoftware/blackduck-scan:2018.12.2",
+	"docker.io/blackducksoftware/blackduck-webapp:2018.12.2",
+	"docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
+	"docker.io/blackducksoftware/blackduck-logstash:1.0.2",
+	"docker.io/blackducksoftware/blackduck-nginx:1.0.0",
+	"docker.io/blackducksoftware/blackduck-solr:1.0.0",
+	"docker.io/blackducksoftware/blackduck-zookeeper:1.0.0",
+	"docker.io/blackducksoftware/appcheck-worker:1.0.1",
+	"docker.io/blackducksoftware/rabbitmq:1.0.0",
+	"docker.io/blackducksoftware/blackduck-upload-cache:1.0.3",
+}
+var create_blackduck_imageUIDMap = map[string]int64{}
+var create_blackduck_licenseKey = ""

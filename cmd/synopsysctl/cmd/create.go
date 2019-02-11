@@ -131,23 +131,32 @@ func deployCRDNamespace(restconfig *rest.Config) {
 func init() {
 	rootCmd.AddCommand(createCmd)
 
-	createBlackduckCmd.Flags().StringVar(&create_blackduck_size, "size", create_blackduck_size, "blackduck size - small, medium, large")
-	createBlackduckCmd.Flags().BoolVar(&create_blackduck_persistentStorage, "persistent-storage", create_blackduck_persistentStorage, "enable persistent storage")
-	createBlackduckCmd.Flags().BoolVar(&create_blackduck_LivenessProbes, "liveness-probes", create_blackduck_LivenessProbes, "enable liveness probes")
+	// Add Blackduck Flags
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_size, "size", create_blackduck_size, "Blackduck size - small, medium, large")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_dbPrototype, "db-prototype", create_blackduck_dbPrototype, "TODO")
+	//TODO - var create_blackduck_externalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_pvcStorageClass, "pvc-storage-class", create_blackduck_pvcStorageClass, "TODO")
+	createBlackduckCmd.Flags().BoolVar(&create_blackduck_livenessProbes, "liveness-probes", create_blackduck_livenessProbes, "Enable liveness probes")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_scanType, "scan-type", create_blackduck_scanType, "TODO")
+	createBlackduckCmd.Flags().BoolVar(&create_blackduck_persistentStorage, "persistent-storage", create_blackduck_persistentStorage, "Enable persistent storage")
+	//TODO - var create_blackduck_PVC = []blackduckv1.PVC{}
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_certificateName, "db-certificate-name", create_blackduck_certificateName, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_certificate, "certificate", create_blackduck_certificate, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_certificateKey, "certificate-key", create_blackduck_certificateKey, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_proxyCertificate, "proxy-certificate", create_blackduck_proxyCertificate, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_type, "type", create_blackduck_type, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_desiredState, "desired-state", create_blackduck_desiredState, "TODO")
+	createBlackduckCmd.Flags().StringSliceVar(&create_blackduck_environs, "environs", create_blackduck_environs, "TODO")
+	createBlackduckCmd.Flags().StringSliceVar(&create_blackduck_imageRegistries, "image-registries", create_blackduck_imageRegistries, "List of image registries")
+	//TODO - var create_blackduck_imageUIDMap = map[string]int64{}
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_licenseKey, "license-key", create_blackduck_licenseKey, "TODO")
 	createCmd.AddCommand(createBlackduckCmd)
 
+	// Add OpsSight Flags
 	createCmd.AddCommand(createOpsSightCmd)
+
+	// Add Alert Flags
 	createCmd.AddCommand(createAlertCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
@@ -162,8 +171,23 @@ func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
 	// Update values with User input
 	bdDefaultSpec.Namespace = namespace
 	bdDefaultSpec.Size = create_blackduck_size
-	bdDefaultSpec.LivenessProbes = create_blackduck_LivenessProbes
+	bdDefaultSpec.DbPrototype = create_blackduck_dbPrototype
+	//TODO - ExternalPostgres  *PostgresExternalDBConfig
+	bdDefaultSpec.PVCStorageClass = create_blackduck_pvcStorageClass
+	bdDefaultSpec.LivenessProbes = create_blackduck_livenessProbes
+	bdDefaultSpec.ScanType = create_blackduck_scanType
 	bdDefaultSpec.PersistentStorage = create_blackduck_persistentStorage
+	//TODO - PVC               []PVC
+	bdDefaultSpec.CertificateName = create_blackduck_certificateName
+	bdDefaultSpec.Certificate = create_blackduck_certificate
+	bdDefaultSpec.CertificateKey = create_blackduck_certificateKey
+	bdDefaultSpec.ProxyCertificate = create_blackduck_proxyCertificate
+	bdDefaultSpec.Type = create_blackduck_type
+	bdDefaultSpec.DesiredState = create_blackduck_desiredState
+	bdDefaultSpec.Environs = create_blackduck_environs
+	bdDefaultSpec.ImageRegistries = create_blackduck_imageRegistries
+	//TODO - ImageUIDMap       map[string]int64          `json:"imageUidMap,omitempty"`
+	bdDefaultSpec.LicenseKey = create_blackduck_licenseKey
 
 	// Add updated spec
 	bd.Spec = *bdDefaultSpec
