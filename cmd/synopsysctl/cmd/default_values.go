@@ -16,6 +16,7 @@ package cmd
 
 import (
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 )
 
 // synopsysctl Defaults
@@ -68,3 +69,18 @@ var create_blackduck_imageRegistries = []string{
 }
 var create_blackduck_imageUIDMap = map[string]int64{}
 var create_blackduck_licenseKey = ""
+
+// Create OpsSight Defaults
+var create_opssight_perceptor = &opssightv1.Perceptor{}
+var create_opssight_scannerPod = &opssightv1.ScannerPod{}
+var create_opssight_perceiver = &opssightv1.Perceiver{}
+var create_opssight_prometheus = &opssightv1.Prometheus{}
+var create_opssight_enableSkyfire = false
+var create_opssight_skyfire = &opssightv1.Skyfire{}
+var create_opssight_blackduck = &blackduckv1.Blackduck{}
+var create_opssight_enableMetrics = false
+var create_opssight_defaultCPU = ""
+var create_opssight_defaultMem = ""
+var create_opssight_logLevel = ""
+var create_opssight_configMapName = ""
+var create_opssight_secretName = ""

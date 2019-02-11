@@ -153,6 +153,19 @@ func init() {
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Flags
+	//TODO - var create_opssight_perceptor = &opssightv1.Perceptor{}
+	//TODO - var create_opssight_scannerPod = &opssightv1.ScannerPod{}
+	//TODO - var create_opssight_perceiver = &opssightv1.Perceiver{}
+	//TODO - var create_opssight_prometheus = &opssightv1.Prometheus{}
+	createOpsSightCmd.Flags().BoolVar(&create_opssight_enableSkyfire, "enable-skyfire", create_opssight_enableSkyfire, "TODO")
+	//TODO - var create_opssight_skyfire = &opssightv1.Skyfire{}
+	//TODO - var create_opssight_blackduck = &blackduckv1.Blackduck{}
+	createOpsSightCmd.Flags().BoolVar(&create_opssight_enableMetrics, "enable-metrics", create_opssight_enableMetrics, "TODO")
+	createOpsSightCmd.Flags().StringVar(&create_opssight_defaultCPU, "default-cpu", create_opssight_defaultCPU, "TODO")
+	createOpsSightCmd.Flags().StringVar(&create_opssight_defaultMem, "default-mem", create_opssight_defaultMem, "TODO")
+	createOpsSightCmd.Flags().StringVar(&create_opssight_logLevel, "log-level", create_opssight_logLevel, "TODO")
+	createOpsSightCmd.Flags().StringVar(&create_opssight_configMapName, "config-map-name", create_opssight_configMapName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&create_opssight_secretName, "secret-name", create_opssight_secretName, "TODO")
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Flags
@@ -204,6 +217,19 @@ func populateOpssightConfig(opssight *opssightv1.OpsSight) {
 
 	// Update values with User input
 	opssightDefaultSpec.Namespace = namespace
+	//TODO - opssightDefaultSpec.Perceptor{}
+	//TODO - opssightDefaultSpec.ScannerPod{}
+	//TODO - opssightDefaultSpec.Perceiver{}
+	//TODO - opssightDefaultSpec.Prometheus{}
+	opssightDefaultSpec.EnableSkyfire = create_opssight_enableSkyfire
+	//TODO - opssightDefaultSpec.Skyfire{}
+	//TODO - opssightDefaultSpec.Blackduck{}
+	opssightDefaultSpec.EnableMetrics = create_opssight_enableMetrics
+	opssightDefaultSpec.DefaultCPU = create_opssight_defaultCPU
+	opssightDefaultSpec.DefaultMem = create_opssight_defaultMem
+	opssightDefaultSpec.LogLevel = create_opssight_logLevel
+	opssightDefaultSpec.ConfigMapName = create_opssight_configMapName
+	opssightDefaultSpec.SecretName = create_opssight_secretName
 
 	// Add updated spec
 	opssight.Spec = *opssightDefaultSpec
