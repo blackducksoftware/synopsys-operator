@@ -69,10 +69,7 @@ func (specConfig *SampleSpecConfig) getSampleContainer() *components.Container {
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		//Name          string
-		Protocol: horizonapi.ProtocolTCP,
-		//IP            string
-		//HostPort      string
+		Protocol:      horizonapi.ProtocolTCP,
 		ContainerPort: "80",
 	})
 

@@ -74,14 +74,15 @@ func (c *CRDInstaller) CreateClientSet() error {
 	return nil
 }
 
-// Deploy will deploy the CRD
+// Deploy will deploy the Sample's CRD into the Cluster
 func (c *CRDInstaller) Deploy() error {
+	// Deploy the Custom Defined Resource from Horizon
 	deployer, err := horizon.NewDeployer(c.kubeConfig)
 	if err != nil {
 		return err
 	}
 
-	// Blackduck CRD
+	// Sample CRD
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
 		Name:       "samples.synopsys.com",
@@ -96,7 +97,7 @@ func (c *CRDInstaller) Deploy() error {
 
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("unable to create the sample CRD due to %+v", err)
+		log.Errorf("Unable to create the Sample CRD: %+v", err)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -133,7 +134,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 			// convert the resource object into a key (in this case
 			// we are just doing it in the format of 'namespace/name')
 			key, err := cache.MetaNamespaceKeyFunc(obj)
-			log.Infof("add sample: %s", key)
+			log.Infof("Add Sample Event: %s", key)
 			if err == nil {
 				// add the key to the queue for the handler to get
 				c.queue.Add(key)
@@ -141,7 +142,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
-			log.Infof("update sample: %s", key)
+			log.Infof("Update Sample Event: %s", key)
 			if err == nil {
 				c.queue.Add(key)
 			}
@@ -153,7 +154,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 			//
 			// this then in turn calls MetaNamespaceKeyFunc
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			log.Infof("delete sample: %s: %+v", key, obj)
+			log.Infof("Delete Sample Event: %s: %+v", key, obj)
 
 			if err == nil {
 				c.queue.Add(key)

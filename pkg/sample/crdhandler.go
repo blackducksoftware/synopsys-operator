@@ -52,7 +52,7 @@ type Handler struct {
 
 // ObjectCreated will be called for create sample events.
 // It casts the received object to a Sample and attempts
-// to create it with a Creater.
+// to create it with a Creater type.
 func (handler *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("Handler's ObjectCreated received: %+v", obj)
 	sampleObject, ok := obj.(*samplev1.Sample)

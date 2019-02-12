@@ -32,19 +32,22 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Creater will store the configuration to create the Blackduck
+// The Creater type is used to Create and Delete a Sample from your cluster
+// kubeConfig allows it to configure it's kubeClient to your cluster
+// kubeClient allows it to perform actions in your cluster
+// sampleClient allows it to use Sample's Kuberentes Client Set
 type Creater struct {
 	kubeConfig   *rest.Config
 	kubeClient   *kubernetes.Clientset
 	sampleClient *sampleclientset.Clientset
 }
 
-// NewSampleCreater will instantiate the Creater
+// NewSampleCreater will instantiate the Sample's Creater
 func NewSampleCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, sampleClient *sampleclientset.Clientset) *Creater {
 	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, sampleClient: sampleClient}
 }
 
-// CreateSample will create a Sample in the Cluster
+// CreateSample will create a Sample Resource in the Cluster
 func (sampleCreater *Creater) CreateSample(sampleObj *v1.SampleSpec) error {
 	log.Debugf("Creating a Sample in namespace %s: %+v", sampleObj.Namespace, sampleObj)
 	// Get a ComponentList for the Sample
@@ -54,39 +57,38 @@ func (sampleCreater *Creater) CreateSample(sampleObj *v1.SampleSpec) error {
 		log.Errorf("Unable to get components for Sample %s due to %+v", sampleObj.Namespace, err)
 		return err
 	}
-	// Use a DeployerHelper to add components to the Horizon Deployer and deploy them
+	// Use a DeployerHelper to add components to a Horizon Deployer and deploy them
 	deployerHelper, err := util.NewDeployer(sampleCreater.kubeConfig)
 	if err != nil {
-		log.Errorf("Unable to get DeployerHelper for Sample %s due to %+v", sampleObj.Namespace, err)
+		log.Errorf("Unable to create a DeployerHelper for the Sample %s: %+v", sampleObj.Namespace, err)
 		return err
 	}
 	deployerHelper.PreDeploy(componentList, sampleObj.Namespace)
 	err = deployerHelper.Run()
 	if err != nil {
-		log.Errorf("Unable to deploy Sample in the namespace '%s' due to: %+v", sampleObj.Namespace, err)
+		log.Errorf("Unable to deploy the Sample in the namespace '%s': %+v", sampleObj.Namespace, err)
 	}
 	deployerHelper.StartControllers()
 	return nil
 }
 
-// DeleteSample will delete the Sample from the Cluster
+// DeleteSample will delete a Sample from the Cluster
 func (sampleCreater *Creater) DeleteSample(namespace string) {
-	log.Debugf("Deleting a Sample from %s", namespace)
+	log.Debugf("Deleting a Sample from the namespace %s", namespace)
 	// Verify whether the namespace exist
 	_, err := util.GetNamespace(sampleCreater.kubeClient, namespace)
 	if err != nil {
-		log.Errorf("Unable to find the namespace %+v due to %+v", namespace, err)
+		log.Errorf("Unable to find the namespace %+v: %+v", namespace, err)
 	}
-	// Delete the namespace
+	// Delete the namespace with its contents
 	err = util.DeleteNamespace(sampleCreater.kubeClient, namespace)
 	if err != nil {
-		log.Errorf("Unable to delete the namespace %+v due to %+v", namespace, err)
+		log.Errorf("Unable to delete the namespace %+v: %+v", namespace, err)
 	}
-
 	// Wait until the namespace is deleted
 	for {
 		ns, err := util.GetNamespace(sampleCreater.kubeClient, namespace)
-		log.Infof("Namespace: %v, status: %v", namespace, ns.Status)
+		log.Infof("Namespace %v status: %v", namespace, ns.Status)
 		time.Sleep(10 * time.Second)
 		if err != nil {
 			log.Infof("Deleted the namespace %+v", namespace)

@@ -32,6 +32,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+// ** BOILERPLATE FILE **
+
 // Controller will store the controller configuration
 type Controller struct {
 	logger   *log.Entry
