@@ -63,7 +63,7 @@ func (sampleCreater *Creater) CreateSample(sampleObj *v1.SampleSpec) error {
 	deployerHelper.PreDeploy(componentList, sampleObj.Namespace)
 	err = deployerHelper.Run()
 	if err != nil {
-		log.Errorf("Unable to deploy Sample in %s due to %+v", sampleObj.Namespace, err)
+		log.Errorf("Unable to deploy Sample in the namespace '%s' due to: %+v", sampleObj.Namespace, err)
 	}
 	deployerHelper.StartControllers()
 	return nil
