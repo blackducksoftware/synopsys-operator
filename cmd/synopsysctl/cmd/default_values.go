@@ -39,18 +39,103 @@ var start_secretBlackduckPassword = "YmxhY2tkdWNr"
 var create_blackduck_size = "small"
 var create_blackduck_dbPrototype = ""
 var create_blackduck_externalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+
+var create_blackduck_externalPostgres_postgresHost = ""
+var create_blackduck_externalPostgres_postgresPort = 0
+var create_blackduck_externalPostgres_postgresAdmin = ""
+var create_blackduck_externalPostgres_postgresUser = ""
+var create_blackduck_externalPostgres_postgresSsl = false
+var create_blackduck_externalPostgres_postgresAdminPassword = ""
+var create_blackduck_externalPostgres_postgresUserPassword = ""
+
 var create_blackduck_pvcStorageClass = "standard"
 var create_blackduck_livenessProbes = false
 var create_blackduck_scanType = ""
 var create_blackduck_persistentStorage = true
-var create_blackduck_PVC = []blackduckv1.PVC{}
+var create_blackduck_PVC = []blackduckv1.PVC{
+	blackduckv1.PVC{
+		Name: "blackduck-postgres",
+		Size: "200Gi",
+	},
+	blackduckv1.PVC{
+		Name: "blackduck-authentication",
+		Size: "2Gi",
+	},
+	blackduckv1.PVC{
+		Name: "blackduck-cfssl",
+		Size: "2Gi",
+	},
+	blackduckv1.PVC{
+		Name: "blackduck-registration",
+		Size: "2Gi",
+	},
+	blackduckv1.PVC{
+		Name: "blackduck-solr",
+		Size: "2Gi",
+	},
+	blackduckv1.PVC{
+		Name: "blackduck-webapp",
+		Size: "2Gi",
+	},
+	blackduckv1.PVC{
+		Name: "blackduck-logstash",
+		Size: "20Gi",
+	},
+	blackduckv1.PVC{
+		Name: "blackduck-zookeeper-data",
+		Size: "2Gi",
+	},
+	blackduckv1.PVC{
+		Name: "blackduck-zookeeper-datalog",
+		Size: "2Gi",
+	},
+}
+var create_blackduck_PVC_json_slice = []string{
+	"{\"name\": \"blackduck-postgres\",\"size\": \"200Gi\"}",
+	"{\"name\": \"blackduck-authentication\",\"size\": \"2Gi\"}",
+	"{\"name\": \"blackduck-cfssl\",\"size\": \"2Gi\"}",
+	"{\"name\": \"blackduck-registration\",\"size\": \"2Gi\"}",
+	"{\"name\": \"blackduck-solr\",\"size\": \"2Gi\"}",
+	"{\"name\": \"blackduck-webapp\",\"size\": \"2Gi\"}",
+	"{\"name\": \"blackduck-logstash\",\"size\": \"20Gi\"}",
+	"{\"name\": \"blackduck-zookeeper-data\",\"size\": \"2Gi\"}",
+	"{\"name\": \"blackduck-zookeeper-datalog\",\"size\": \"2Gi\"}",
+}
+
+var create_blackduck_PVC_json = "[{\"name\": \"blackduck-postgres\",\"size\": \"200Gi\"},{\"name\": \"blackduck-authentication\",\"size\": \"2Gi\"},{\"name\": \"blackduck-cfssl\",\"size\": \"2Gi\"},{\"name\": \"blackduck-registration\",\"size\": \"2Gi\"},{\"name\": \"blackduck-solr\",\"size\": \"2Gi\"},{\"name\": \"blackduck-webapp\",\"size\": \"2Gi\"},{\"name\": \"blackduck-logstash\",\"size\": \"20Gi\"},{\"name\": \"blackduck-zookeeper-data\",\"size\": \"2Gi\"},{\"name\": \"blackduck-zookeeper-datalog\",\"size\": \"2Gi\"]"
+
 var create_blackduck_certificateName = "default"
 var create_blackduck_certificate = ""
 var create_blackduck_certificateKey = ""
 var create_blackduck_proxyCertificate = ""
 var create_blackduck_type = "worker"
 var create_blackduck_desiredState = ""
-var create_blackduck_environs = []string{}
+var create_blackduck_environs = []string{
+	"HTTPS_VERIFY_CERTS:yes",
+	"HUB_POSTGRES_ENABLE_SSL:false",
+	"HUB_VERSION:2018.12.2",
+	"IPV4_ONLY:0",
+	"RABBITMQ_DEFAULT_VHOST:protecodesc",
+	"USE_ALERT:0",
+	"CFSSL:cfssl:8888",
+	"PUBLIC_HUB_WEBSERVER_HOST:localhost",
+	"RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT:false",
+	"HUB_POSTGRES_ADMIN:blackduck",
+	"HUB_PROXY_NON_PROXY_HOSTS:solr",
+	"PUBLIC_HUB_WEBSERVER_PORT:443",
+	"DISABLE_HUB_DASHBOARD:#hub-webserver.env",
+	"HUB_LOGSTASH_HOST:logstash",
+	"RABBIT_MQ_PORT:5671",
+	"USE_BINARY_UPLOADS:1",
+	"BROKER_USE_SSL:yes",
+	"RABBIT_MQ_HOST:rabbitmq",
+	"CLIENT_CERT_CN:binaryscanner",
+	"HUB_POSTGRES_USER:blackduck_user",
+	"BLACKDUCK_REPORT_IGNORED_COMPONENTS:false",
+	"BROKER_URL:amqps://rabbitmq/protecodesc",
+	"SCANNER_CONCURRENCY:1",
+	"HUB_WEBSERVER_PORT:8443",
+}
 var create_blackduck_imageRegistries = []string{
 	"docker.io/blackducksoftware/blackduck-authentication:2018.12.2",
 	"docker.io/blackducksoftware/blackduck-documentation:2018.12.2",

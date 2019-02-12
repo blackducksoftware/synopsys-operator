@@ -135,6 +135,14 @@ func init() {
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_size, "size", create_blackduck_size, "Blackduck size - small, medium, large")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_dbPrototype, "db-prototype", create_blackduck_dbPrototype, "TODO")
 	//TODO - var create_blackduck_externalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_externalPostgres_postgresHost, "external-postgres-host", create_blackduck_externalPostgres_postgresHost, "TODO")
+	createBlackduckCmd.Flags().IntVar(&create_blackduck_externalPostgres_postgresPort, "external-postgres-port", create_blackduck_externalPostgres_postgresPort, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_externalPostgres_postgresAdmin, "external-postgres-admin", create_blackduck_externalPostgres_postgresAdmin, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_externalPostgres_postgresUser, "external-postgres-user", create_blackduck_externalPostgres_postgresUser, "TODO")
+	createBlackduckCmd.Flags().BoolVar(&create_blackduck_externalPostgres_postgresSsl, "external-postgres-ssl", create_blackduck_externalPostgres_postgresSsl, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_externalPostgres_postgresAdminPassword, "external-postgres-admin-password", create_blackduck_externalPostgres_postgresAdminPassword, "TODO")
+	createBlackduckCmd.Flags().StringVar(&create_blackduck_externalPostgres_postgresUserPassword, "external-postgres-user-password", create_blackduck_externalPostgres_postgresUserPassword, "TODO")
+
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_pvcStorageClass, "pvc-storage-class", create_blackduck_pvcStorageClass, "TODO")
 	createBlackduckCmd.Flags().BoolVar(&create_blackduck_livenessProbes, "liveness-probes", create_blackduck_livenessProbes, "Enable liveness probes")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_scanType, "scan-type", create_blackduck_scanType, "TODO")
@@ -199,12 +207,18 @@ func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
 	bdDefaultSpec.Namespace = namespace
 	bdDefaultSpec.Size = create_blackduck_size
 	bdDefaultSpec.DbPrototype = create_blackduck_dbPrototype
-	//TODO - ExternalPostgres  *PostgresExternalDBConfig
+	bdDefaultSpec.ExternalPostgres.PostgresHost = create_blackduck_externalPostgres_postgresHost
+	bdDefaultSpec.ExternalPostgres.PostgresPort = create_blackduck_externalPostgres_postgresPort
+	bdDefaultSpec.ExternalPostgres.PostgresAdmin = create_blackduck_externalPostgres_postgresAdmin
+	bdDefaultSpec.ExternalPostgres.PostgresUser = create_blackduck_externalPostgres_postgresUser
+	bdDefaultSpec.ExternalPostgres.PostgresSsl = create_blackduck_externalPostgres_postgresSsl
+	bdDefaultSpec.ExternalPostgres.PostgresAdminPassword = create_blackduck_externalPostgres_postgresAdminPassword
+	bdDefaultSpec.ExternalPostgres.PostgresUserPassword = create_blackduck_externalPostgres_postgresUserPassword
 	bdDefaultSpec.PVCStorageClass = create_blackduck_pvcStorageClass
 	bdDefaultSpec.LivenessProbes = create_blackduck_livenessProbes
 	bdDefaultSpec.ScanType = create_blackduck_scanType
 	bdDefaultSpec.PersistentStorage = create_blackduck_persistentStorage
-	//TODO - PVC               []PVC
+	bdDefaultSpec.PVC = create_blackduck_PVC
 	bdDefaultSpec.CertificateName = create_blackduck_certificateName
 	bdDefaultSpec.Certificate = create_blackduck_certificate
 	bdDefaultSpec.CertificateKey = create_blackduck_certificateKey
@@ -213,7 +227,7 @@ func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
 	bdDefaultSpec.DesiredState = create_blackduck_desiredState
 	bdDefaultSpec.Environs = create_blackduck_environs
 	bdDefaultSpec.ImageRegistries = create_blackduck_imageRegistries
-	//TODO - ImageUIDMap       map[string]int64          `json:"imageUidMap,omitempty"`
+	bdDefaultSpec.ImageUIDMap = create_blackduck_imageUIDMap
 	bdDefaultSpec.LicenseKey = create_blackduck_licenseKey
 
 	// Add updated spec
