@@ -4,3 +4,4 @@ cmd/blackduckctl/blackduckctl
 pkg/.DS_Store
 pkg/api/.DS_Store
 .DS_Store
+cmd/operator/operator
