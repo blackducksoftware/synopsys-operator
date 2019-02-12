@@ -22,6 +22,8 @@ under the License.
 package components
 
 import (
+	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -69,4 +71,16 @@ func appendIfMissing(new string, list []string) []string {
 		}
 	}
 	return append(list, new)
+}
+
+func createIngressConfig(config api.LoadBalancerIngressConfig) (*types.LoadBalancerIngress, error) {
+	ip := net.ParseIP(config.IP)
+	if ip == nil {
+		return nil, fmt.Errorf("invalid ip: %s", config.IP)
+	}
+
+	return &types.LoadBalancerIngress{
+		IP:       ip,
+		Hostname: config.Hostname,
+	}, nil
 }
