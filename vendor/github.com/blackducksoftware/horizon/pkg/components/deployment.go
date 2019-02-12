@@ -56,7 +56,7 @@ func NewDeployment(config api.DeploymentConfig) *Deployment {
 	}
 
 	if len(config.MaxExtra) > 0 {
-		d.MaxUnavailable = createIntOrStr(config.MaxExtra)
+		d.MaxSurge = createIntOrStr(config.MaxExtra)
 	}
 
 	return &Deployment{obj: d}
