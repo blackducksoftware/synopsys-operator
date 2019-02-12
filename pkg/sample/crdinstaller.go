@@ -97,7 +97,7 @@ func (c *CRDInstaller) Deploy() error {
 
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("Unable to create the Sample CRD: %+v", err)
+		log.Errorf("Unable to create the Sample's CRD: %+v", err)
 	}
 
 	time.Sleep(5 * time.Second)

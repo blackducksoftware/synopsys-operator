@@ -34,15 +34,15 @@ type SampleSpecConfig struct {
 	config *v1.SampleSpec
 }
 
-// NewSample will create a SampleSpecConfig
+// NewSample will create a SampleSpecConfig type
 func NewSample(config *v1.SampleSpec) *SampleSpecConfig {
 	return &SampleSpecConfig{config: config}
 }
 
 // GetComponents will return a ComponentList representing all
-// Kubernetes Resources for a Sample
+// Kubernetes Resources for the Sample
 func (specConfig *SampleSpecConfig) GetComponents(config *v1.SampleSpec) (*api.ComponentList, error) {
-	// TODO(user) Add your CRD's Horizon Components
+	// TODO(user) Add your Sample's Horizon Components
 	components := &api.ComponentList{
 		Deployments: []*components.Deployment{
 			specConfig.getSampleDeployment(),

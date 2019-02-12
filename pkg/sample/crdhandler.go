@@ -34,7 +34,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// HandlerInterface contains the methods that are required
+// HandlerInterface contains the methods required for the Kubernetes Controller
 type HandlerInterface interface {
 	ObjectCreated(obj interface{})
 	ObjectDeleted(obj string)
@@ -66,10 +66,10 @@ func (handler *Handler) ObjectCreated(obj interface{}) {
 		newSpec := sampleObject.Spec
 		sampleDefaultSpec := handler.defaults
 		err := mergo.Merge(&newSpec, sampleDefaultSpec)
-		log.Debugf("merged sample details %+v", newSpec)
+		log.Debugf("Merged the Sample Defaults: %+v", newSpec)
 		if err != nil {
-			log.Errorf("unable to merge the sample structs for %s due to %+v", sampleObject.Name, err)
-			handler.updateState("error", "error", fmt.Sprintf("unable to merge the sample structs for %s due to %+v", sampleObject.Name, err), sampleObject)
+			log.Errorf("Unable to merge the Sample %s's defaults: %+v", sampleObject.Name, err)
+			handler.updateState("error", "error", fmt.Sprintf("Unable to merge the Sample %s's defaults: %+v", sampleObject.Name, err), sampleObject)
 			return
 		}
 		sampleObject.Spec = newSpec
@@ -80,7 +80,7 @@ func (handler *Handler) ObjectCreated(obj interface{}) {
 			return
 		}
 
-		// Create a Sample instance
+		// Use the SampleCreater type to create a Sample
 		sampleCreator := NewSampleCreater(handler.kubeConfig, handler.kubeClient, handler.sampleClient)
 		err = sampleCreator.CreateSample(&sampleObject.Spec)
 		if err != nil {
@@ -94,6 +94,7 @@ func (handler *Handler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete sample events
 func (handler *Handler) ObjectDeleted(name string) {
 	log.Debugf("Handler's ObjectDeleted received: %+v", name)
+	// Use the SampleCreater type to delete a Sample
 	sampleCreator := NewSampleCreater(handler.kubeConfig, handler.kubeClient, handler.sampleClient)
 	sampleCreator.DeleteSample(name)
 }
@@ -109,7 +110,7 @@ func (handler *Handler) updateState(specState string, statusState string, errorM
 	sample.Status.ErrorMessage = errorMessage
 	sample, err := handler.updateSampleObject(sample)
 	if err != nil {
-		log.Errorf("Couldn't update the state of the Sample object: %s", err.Error())
+		log.Errorf("Couldn't update the state of the Sample: %s", err.Error())
 	}
 	return sample, err
 }

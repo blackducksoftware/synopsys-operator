@@ -33,9 +33,6 @@ import (
 )
 
 // The Creater type is used to Create and Delete a Sample from your cluster
-// kubeConfig allows it to configure it's kubeClient to your cluster
-// kubeClient allows it to perform actions in your cluster
-// sampleClient allows it to use Sample's Kuberentes Client Set
 type Creater struct {
 	kubeConfig   *rest.Config
 	kubeClient   *kubernetes.Clientset
@@ -47,7 +44,7 @@ func NewSampleCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset,
 	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, sampleClient: sampleClient}
 }
 
-// CreateSample will create a Sample Resource in the Cluster
+// CreateSample will deploy a Sample into the Cluster
 func (sampleCreater *Creater) CreateSample(sampleObj *v1.SampleSpec) error {
 	log.Debugf("Creating a Sample in namespace %s: %+v", sampleObj.Namespace, sampleObj)
 	// Get a ComponentList for the Sample
@@ -88,7 +85,7 @@ func (sampleCreater *Creater) DeleteSample(namespace string) {
 	// Wait until the namespace is deleted
 	for {
 		ns, err := util.GetNamespace(sampleCreater.kubeClient, namespace)
-		log.Infof("Namespace %v status: %v", namespace, ns.Status)
+		log.Infof("Namespace %v Status: %v", namespace, ns.Status)
 		time.Sleep(10 * time.Second)
 		if err != nil {
 			log.Infof("Deleted the namespace %+v", namespace)
