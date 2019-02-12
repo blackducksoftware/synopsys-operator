@@ -37,6 +37,11 @@ func (specConfig *SampleSpecConfig) getSampleDeployment() *components.Deployment
 
 	deployment.AddPod(specConfig.getSamplePod())
 
+	deployment.AddLabels(map[string]string{
+		"app":  specConfig.config.Namespace,
+		"tier": specConfig.config.Namespace,
+	})
+
 	return deployment
 }
 
@@ -44,6 +49,11 @@ func (specConfig *SampleSpecConfig) getSampleDeployment() *components.Deployment
 func (specConfig *SampleSpecConfig) getSamplePod() *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: specConfig.config.Namespace,
+	})
+
+	pod.AddLabels(map[string]string{
+		"app":  specConfig.config.Namespace,
+		"tier": specConfig.config.Namespace,
 	})
 
 	pod.AddContainer(specConfig.getSampleContainer())
