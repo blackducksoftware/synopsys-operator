@@ -37,7 +37,7 @@ func (specConfig *SampleSpecConfig) getSampleDeployment() *components.Deployment
 
 	deployment.AddPod(specConfig.getSamplePod())
 
-	deployment.AddLabels(map[string]string{
+	deployment.AddMatchLabelsSelectors(map[string]string{
 		"app":  specConfig.config.Namespace,
 		"tier": specConfig.config.Namespace,
 	})
@@ -66,6 +66,14 @@ func (specConfig *SampleSpecConfig) getSampleContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  specConfig.config.Namespace,
 		Image: "registry.hub.docker.com/vasiliys/public-test:latest",
+	})
+
+	container.AddPort(horizonapi.PortConfig{
+		//Name          string
+		Protocol: horizonapi.ProtocolTCP,
+		//IP            string
+		//HostPort      string
+		ContainerPort: "80",
 	})
 
 	return container
