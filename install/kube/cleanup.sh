@@ -7,6 +7,7 @@ kubectl delete ns $NS
 kubectl delete crd alerts.synopsys.com
 kubectl delete crd blackducks.synopsys.com
 kubectl delete crd opssights.synopsys.com
+kubectl delete crd samples.synopsys.com
 
 
 kubectl delete clusterrolebinding synopsys-operator-admin
