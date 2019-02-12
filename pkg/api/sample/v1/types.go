@@ -41,7 +41,7 @@ type Sample struct {
 // SampleSpec is the spec for a Sample resource
 type SampleSpec struct {
 	Namespace   string `json:"namespace,omitempty"`
-	SampleValue string `json:"registry,omitempty"`
+	SampleValue string `json:"samplevalue,omitempty"`
 	State       string `json:"state"`
 }
 
