@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	crddefaults "github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl/cmd"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -76,7 +76,7 @@ func (v BlackducksResource) Show(c buffalo.Context) error {
 // New renders the form for creating a new Blackduck.
 // This function is mapped to the path GET /blackducks/new
 func (v BlackducksResource) New(c buffalo.Context) error {
-	blackduckSpec := bdutil.GetHubDefaultValue()
+	blackduckSpec := crddefaults.GetHubDefaultValue()
 	blackduck := &blackduckv1.Blackduck{}
 	blackduck.Spec = *blackduckSpec
 	blackduck.Spec.PersistentStorage = true
