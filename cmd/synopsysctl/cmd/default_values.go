@@ -364,7 +364,7 @@ func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
 		Size:              "small",
-		PVCStorageClass:   "standard",
+		PVCStorageClass:   "",
 		LivenessProbes:    false,
 		PersistentStorage: true,
 		PVC: []blackduckv1.PVC{
