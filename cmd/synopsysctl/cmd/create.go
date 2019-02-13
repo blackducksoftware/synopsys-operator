@@ -26,6 +26,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -258,7 +259,7 @@ func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
 	}
 
 	// Get Default Blackduck Spec
-	bdDefaultSpec := GetHubDefaultPersistentStorage()
+	bdDefaultSpec := bdutil.GetHubDefaultPersistentStorage()
 
 	// Update values with User input
 	bdDefaultSpec.Namespace = namespace
@@ -298,7 +299,7 @@ func populateOpssightConfig(opssight *opssightv1.OpsSight) {
 	}
 
 	// Get Default OpsSight Spec
-	opssightDefaultSpec := GetOpsSightDefaultValueWithDisabledHub()
+	opssightDefaultSpec := bdutil.GetOpsSightDefaultValueWithDisabledHub()
 
 	// Update values with User input
 	opssightDefaultSpec.Namespace = namespace
@@ -385,7 +386,7 @@ func populateAlertConfig(alert *alertv1.Alert) {
 	}
 
 	// Get Default Alert Spec
-	alertDefaultSpec := GetAlertDefaultValue()
+	alertDefaultSpec := bdutil.GetAlertDefaultValue()
 
 	// Update values with User input
 	alertDefaultSpec.Namespace = namespace

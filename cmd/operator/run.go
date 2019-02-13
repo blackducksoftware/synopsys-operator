@@ -26,11 +26,11 @@ import (
 	"os"
 	"time"
 
-	crddefaults "github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl/cmd"
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/installer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -64,17 +64,17 @@ func runProtoform(configPath string) {
 
 	stopCh := make(chan struct{})
 
-	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, crddefaults.GetAlertDefaultValue(), stopCh)
+	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetAlertDefaultValue(), stopCh)
 	deployer.AddController(alertController)
 
-	hubController := installer.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, crddefaults.GetHubDefaultValue(), stopCh)
+	hubController := installer.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetHubDefaultValue(), stopCh)
 	deployer.AddController(hubController)
 
 	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
 		Config:        deployer.Config,
 		KubeConfig:    deployer.KubeConfig,
 		KubeClientSet: deployer.KubeClientSet,
-		Defaults:      crddefaults.GetOpsSightDefaultValue(),
+		Defaults:      bdutil.GetOpsSightDefaultValue(),
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
