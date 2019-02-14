@@ -67,6 +67,32 @@ func RunKubeCmd(args ...string) (string, error) {
 	return string(stdoutErr), nil
 }
 
+func RunKubeEditorCmd(args ...string) error {
+	determineClusterClients()
+
+	var cmd *exec.Cmd
+
+	// cluster-info in kube doesnt seem to be in
+	// some versions of oc, but status is.
+	// double check this.
+	if args[0] == "cluster-info" && openshift {
+		args[0] = "status"
+	}
+	if openshift {
+		cmd = exec.Command("oc", args...)
+	} else if kube {
+		cmd = exec.Command("kubectl", args...)
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	//time.Sleep(1 * time.Second) TODO why did Jay put this here???
+	return nil
+}
+
 // runWithTimeout runs a command and times it out at the specified duration
 func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (error, string) {
 	timeout := time.After(d)
