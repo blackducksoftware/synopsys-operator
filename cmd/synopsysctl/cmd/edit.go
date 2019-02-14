@@ -35,16 +35,33 @@ to quickly create a Cobra application.`,
 	},
 }
 
+var editBlackduckCmd = &cobra.Command{
+	Use:   "blackduck",
+	Short: "Edit an instance of Blackduck",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Editing Blackduck")
+	},
+}
+
+var editOpsSightCmd = &cobra.Command{
+	Use:   "opssight",
+	Short: "Edit an instance of OpsSight",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Editing OpsSight")
+	},
+}
+
+var editAlertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "Edit an instance of Alert",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Editing Alert")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(editCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// editCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// editCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	editCmd.AddCommand(editBlackduckCmd)
+	editCmd.AddCommand(editOpsSightCmd)
+	editCmd.AddCommand(editAlertCmd)
 }
