@@ -23,28 +23,51 @@ import (
 // editCmd represents the edit command
 var editCmd = &cobra.Command{
 	Use:   "edit",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Allows you to directly edit the API resource",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("edit called")
 	},
 }
 
+var editBlackduckCmd = &cobra.Command{
+	Use:   "blackduck",
+	Short: "Edit an instance of Blackduck",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Editing Blackduck")
+		err := RunKubeEditorCmd("edit", "blackduck", namespace, "-n", namespace)
+		if err != nil {
+			fmt.Printf("Error Editing the Blackduck with KubeCmd: %s\n", err)
+		}
+	},
+}
+
+var editOpsSightCmd = &cobra.Command{
+	Use:   "opssight",
+	Short: "Edit an instance of OpsSight",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Editing OpsSight")
+		err := RunKubeEditorCmd("edit", "opssight", namespace, "-n", namespace)
+		if err != nil {
+			fmt.Printf("Error Editing the OpsSight with KubeCmd: %s\n", err)
+		}
+	},
+}
+
+var editAlertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "Edit an instance of Alert",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Editing Alert")
+		err := RunKubeEditorCmd("edit", "alert", namespace, "-n", namespace)
+		if err != nil {
+			fmt.Printf("Error Editing the Alert with KubeCmd: %s\n", err)
+		}
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(editCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// editCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// editCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	editCmd.AddCommand(editBlackduckCmd)
+	editCmd.AddCommand(editOpsSightCmd)
+	editCmd.AddCommand(editAlertCmd)
 }

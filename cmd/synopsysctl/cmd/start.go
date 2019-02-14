@@ -179,9 +179,21 @@ var startCmd = &cobra.Command{
 		}
 
 		// secret link stuff
+		RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", start_dockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
+		RunKubeCmd("secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
+		RunKubeCmd("secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
+		RunKubeCmd("scale", "rc", "synopsys-operator", "--replicas=0")
+		RunKubeCmd("scale", "rc", "synopsys-operator", "--replicas=1")
 
 		// expose the routes
-
+		out, err = RunKubeCmd("expose", "rc", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", namespace))
+		if err != nil {
+			fmt.Printf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
+		}
+		out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", namespace)
+		if err != nil {
+			fmt.Printf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
+		}
 	},
 }
 

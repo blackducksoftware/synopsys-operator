@@ -34,7 +34,6 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var out string
 		var err error
-		fmt.Println("Running the cleanup.sh scripts")
 		cleanCommands := [...]string{
 			fmt.Sprintf("delete ns %s", namespace),
 			"delete crd alerts.synopsys.com",
@@ -46,11 +45,12 @@ to quickly create a Cobra application.`,
 		}
 
 		for cmd := range cleanCommands {
-			fmt.Printf("About to run %s\n", cleanCommands[cmd])
+			fmt.Printf("%s\n", cleanCommands[cmd])
 			out, err = RunKubeCmd(strings.Split(cleanCommands[cmd], " ")...)
-			fmt.Printf("Output:\n%s\n", out)
 			if err != nil {
-				fmt.Printf("Error:\n%s\n", err)
+				fmt.Printf(" > %s", out)
+			} else {
+				fmt.Printf(" > %s", out)
 			}
 		}
 

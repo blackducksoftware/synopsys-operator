@@ -23,28 +23,54 @@ import (
 // describeCmd represents the describe command
 var describeCmd = &cobra.Command{
 	Use:   "describe",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Print a detailed description of the selected resource",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("describe called")
 	},
 }
 
+var describeBlackduckCmd = &cobra.Command{
+	Use:   "blackduck",
+	Short: "Describe an instance of Blackduck",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Describing Blackduck")
+		out, err := RunKubeCmd("describe", "blackduck", namespace, "-n", namespace)
+		if err != nil {
+			fmt.Printf("Error Describing the Blackduck with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
+	},
+}
+
+var describeOpsSightCmd = &cobra.Command{
+	Use:   "opssight",
+	Short: "Describe an instance of OpsSight",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Describing OpsSight")
+		out, err := RunKubeCmd("describe", "opssight", namespace, "-n", namespace)
+		if err != nil {
+			fmt.Printf("Error Describing the OpsSight with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
+	},
+}
+
+var describeAlertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "Describe an instance of Alert",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Describing Alert")
+		out, err := RunKubeCmd("describe", "alert", namespace, "-n", namespace)
+		if err != nil {
+			fmt.Printf("Error Describing the Alert with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(describeCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// describeCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// describeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	describeCmd.AddCommand(describeBlackduckCmd)
+	describeCmd.AddCommand(describeOpsSightCmd)
+	describeCmd.AddCommand(describeAlertCmd)
 }
