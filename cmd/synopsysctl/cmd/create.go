@@ -111,7 +111,6 @@ var createAlertCmd = &cobra.Command{
 }
 
 func deployCRDNamespace(restconfig *rest.Config) {
-
 	// Create Horizon Deployer
 	namespaceDeployer, err := deployer.NewDeployer(restconfig)
 	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
@@ -265,6 +264,7 @@ func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
 	bdDefaultSpec.Namespace = namespace
 	bdDefaultSpec.Size = create_blackduck_size
 	bdDefaultSpec.DbPrototype = create_blackduck_dbPrototype
+	bdDefaultSpec.ExternalPostgres = create_blackduck_externalPostgres
 	bdDefaultSpec.ExternalPostgres.PostgresHost = create_blackduck_externalPostgres_postgresHost
 	bdDefaultSpec.ExternalPostgres.PostgresPort = create_blackduck_externalPostgres_postgresPort
 	bdDefaultSpec.ExternalPostgres.PostgresAdmin = create_blackduck_externalPostgres_postgresAdmin
