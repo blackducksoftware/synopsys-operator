@@ -181,7 +181,14 @@ var startCmd = &cobra.Command{
 		// secret link stuff
 
 		// expose the routes
-
+		_, err = RunKubeCmd("expose", "rc", namespace, "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", namespace))
+		if err != nil {
+			fmt.Printf("Error exposing the Synopsys-Operator's Replication Controller: %s\n", err)
+		}
+		_, err = RunKubeCmd("oc", "create", "route", "edge", "--service=synopsys-operator-tcp", "-n", namespace)
+		if err != nil {
+			fmt.Printf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s\n", err)
+		}
 	},
 }
 
