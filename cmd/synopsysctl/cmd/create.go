@@ -54,7 +54,6 @@ var createBlackduckCmd = &cobra.Command{
 		// Create Spec for a Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{}
 		populateBlackduckConfig(blackduck)
-		fmt.Printf("%+v\n", blackduck)
 
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
 

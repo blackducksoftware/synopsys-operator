@@ -55,8 +55,6 @@ var startCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("at this point we would call kube/install.sh -i %s -p %s -k %s -d %s\n", start_synopsysOperatorImage, start_prometheusImage, start_blackduckRegistrationKey, start_dockerConfigPath)
-
 		// check if operator is already installed
 		out, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 		if err == nil {
