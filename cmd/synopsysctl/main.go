@@ -14,8 +14,8 @@
 
 package main
 
-import "github.com/blackducksoftware/synopsys-operator/pkg/ctl"
+import "github.com/blackducksoftware/synopsys-operator/pkg/synopsysctl"
 
 func main() {
-	ctl.Execute()
+	synopsysctl.Execute()
 }
