@@ -35,16 +35,48 @@ to quickly create a Cobra application.`,
 	},
 }
 
+var getBlackduckCmd = &cobra.Command{
+	Use:   "blackduck",
+	Short: "Get a list of Blackducks in the cluster",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Getting Blackducks")
+		out, err := RunKubeCmd("get", "blackducks")
+		if err != nil {
+			fmt.Printf("Error getting Blackducks with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
+	},
+}
+
+var getOpsSightCmd = &cobra.Command{
+	Use:   "opssight",
+	Short: "Get a list of OpsSights in the cluster",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Getting OpsSights")
+		out, err := RunKubeCmd("get", "opssights")
+		if err != nil {
+			fmt.Printf("Error getting OpsSights with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
+	},
+}
+
+var getAlertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "Get a list of Alerts in the cluster",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Getting Alerts")
+		out, err := RunKubeCmd("get", "alerts")
+		if err != nil {
+			fmt.Printf("Error getting Alerts with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(getCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	getCmd.AddCommand(getBlackduckCmd)
+	getCmd.AddCommand(getOpsSightCmd)
+	getCmd.AddCommand(getAlertCmd)
 }
