@@ -28,14 +28,14 @@ import (
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 )
 
-func GetPrometheusService(namespace string) (*horizoncomponents.Service, error) {
+func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponents.Service {
 
 	// Add Service for Prometheus
 	prometheusService := horizoncomponents.NewService(horizonapi.ServiceConfig{
 		APIVersion: "v1",
 		//ClusterName:              "string",
 		Name:      "prometheus",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 		//ExternalName:             "string",
 		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
 		//ClusterIP:                "string",
@@ -54,17 +54,17 @@ func GetPrometheusService(namespace string) (*horizoncomponents.Service, error) 
 		Protocol: horizonapi.ProtocolTCP,
 	})
 
-	return prometheusService, nil
+	return prometheusService
 }
 
-func GetPrometheusDeployment(namespace, prometheusImage string) (*horizoncomponents.Deployment, error) {
+func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncomponents.Deployment {
 	// Deployment
 	var prometheusDeploymentReplicas int32 = 1
 	prometheusDeployment := horizoncomponents.NewDeployment(horizonapi.DeploymentConfig{
 		APIVersion: "extensions/v1beta1",
 		//ClusterName:             "string",
 		Name:      "prometheus",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 		Replicas:  &prometheusDeploymentReplicas,
 		//Recreate:                "bool",
 		//MaxUnavailable:          "string",
@@ -80,7 +80,7 @@ func GetPrometheusDeployment(namespace, prometheusImage string) (*horizoncompone
 		APIVersion: "v1",
 		//ClusterName          :  "string",
 		Name:      "prometheus",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 		//ServiceAccount       :  "string",
 		//RestartPolicy        :  "RestartPolicyType",
 		//TerminationGracePeriod : "*int64",
@@ -102,7 +102,7 @@ func GetPrometheusDeployment(namespace, prometheusImage string) (*horizoncompone
 		Name: "prometheus",
 		Args: []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/"},
 		//Command:                  "[]string",
-		Image: prometheusImage,
+		Image: specConfig.PrometheusImage,
 		//PullPolicy:               "PullPolicyType",
 		//MinCPU:                   "string",
 		//MaxCPU:                   "string",
@@ -151,7 +151,8 @@ func GetPrometheusDeployment(namespace, prometheusImage string) (*horizoncompone
 		//SizeLimit:  "string",
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Error creating EmptyDirVolume for Prometheus: %s", err)
+		fmt.Printf("Error creating EmptyDirVolume for Prometheus: %s", err)
+		return nil
 	}
 	prometheusConfigMapVolume := horizoncomponents.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "config-volume",
@@ -166,18 +167,18 @@ func GetPrometheusDeployment(namespace, prometheusImage string) (*horizoncompone
 	prometheusPod.AddVolume(prometheusConfigMapVolume)
 	prometheusDeployment.AddPod(prometheusPod)
 
-	return prometheusDeployment, nil
+	return prometheusDeployment
 }
 
-func GetPrometheusConfigMap(namespace string) (*horizoncomponents.ConfigMap, error) {
+func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncomponents.ConfigMap {
 	// Add prometheus config map
 	prometheusConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
 		APIVersion: "v1",
 		//ClusterName: "string",
 		Name:      "prometheus",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 	})
 	prometheusConfigMap.AddData(map[string]string{"prometheus.yml": "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"})
 
-	return prometheusConfigMap, nil
+	return prometheusConfigMap
 }

@@ -102,43 +102,21 @@ var startCmd = &cobra.Command{
 		}
 
 		// Deploy synopsys-operator
+		soperatorSpec := SOperatorSpecConfig{
+			Namespace:                namespace,
+			SynopsysOperatorImage:    start_synopsysOperatorImage,
+			BlackduckRegistrationKey: start_blackduckRegistrationKey,
+		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(rc)
 		if err != nil {
-			fmt.Printf("Error creating Horizon Deployer for Synopsys Operator : %s\n", err)
+			fmt.Printf("Error creating Horizon Deployer for Synopsys Operator: %s\n", err)
 			return
 		}
-		operReplicationController, err := GetOperatorReplicationController(namespace, start_synopsysOperatorImage, start_blackduckRegistrationKey)
-		if err != nil {
-			fmt.Printf("Error creating Replication Controller for Synopsys Operator : %s\n", err)
-			return
-		}
-		operService, err := GetOperatorService(namespace)
-		if err != nil {
-			fmt.Printf("Error creating Service for Synopsys Operator : %s\n", err)
-			return
-		}
-		operConfigMap, err := GetOperatorConfigMap(namespace)
-		if err != nil {
-			fmt.Printf("Error creating Config Map for Synopsys Operator : %s\n", err)
-			return
-		}
-		operServiceAccount, err := GetOperatorServiceAccount(namespace)
-		if err != nil {
-			fmt.Printf("Error creating Service Account for Synopsys Operator : %s\n", err)
-			return
-		}
-		operClusterRoleBinding, err := GetOperatorClusterRoleBinding(namespace)
-		if err != nil {
-			fmt.Printf("Error creating Cluster Role Binding for Synopsys Operator : %s\n", err)
-			return
-		}
-
-		synopsysOperatorDeployer.AddReplicationController(operReplicationController)
-		synopsysOperatorDeployer.AddService(operService)
-		synopsysOperatorDeployer.AddConfigMap(operConfigMap)
-		synopsysOperatorDeployer.AddServiceAccount(operServiceAccount)
-		synopsysOperatorDeployer.AddClusterRoleBinding(operClusterRoleBinding)
-
+		synopsysOperatorDeployer.AddReplicationController(soperatorSpec.GetOperatorReplicationController())
+		synopsysOperatorDeployer.AddService(soperatorSpec.GetOperatorService())
+		synopsysOperatorDeployer.AddConfigMap(soperatorSpec.GetOperatorConfigMap())
+		synopsysOperatorDeployer.AddServiceAccount(soperatorSpec.GetOperatorServiceAccount())
+		synopsysOperatorDeployer.AddClusterRoleBinding(soperatorSpec.GetOperatorClusterRoleBinding())
 		err = synopsysOperatorDeployer.Run()
 		if err != nil {
 			fmt.Printf("Error deploying Synopsys Operator with Horizon : %s\n", err)
@@ -146,29 +124,18 @@ var startCmd = &cobra.Command{
 		}
 
 		// Deploy prometheus
+		promtheusSpec := PrometheusSpecConfig{
+			Namespace:       namespace,
+			PrometheusImage: start_prometheusImage,
+		}
 		prometheusDeployer, err := deployer.NewDeployer(rc)
 		if err != nil {
 			fmt.Printf("Error creating Horizon Deployer for Prometheus: %s\n", err)
 			return
 		}
-		promService, err := GetPrometheusService(namespace)
-		if err != nil {
-			fmt.Printf("Error creating Service for Prometheus: %s\n", err)
-			return
-		}
-		promDeployment, err := GetPrometheusDeployment(namespace, start_prometheusImage)
-		if err != nil {
-			fmt.Printf("Error creating Deployment for Prometheus : %s\n", err)
-			return
-		}
-		promConfigMap, err := GetPrometheusConfigMap(namespace)
-		if err != nil {
-			fmt.Printf("Error creating Config Map for Prometheus : %s\n", err)
-			return
-		}
-		prometheusDeployer.AddService(promService)
-		prometheusDeployer.AddDeployment(promDeployment)
-		prometheusDeployer.AddConfigMap(promConfigMap)
+		prometheusDeployer.AddService(promtheusSpec.GetPrometheusService())
+		prometheusDeployer.AddDeployment(promtheusSpec.GetPrometheusDeployment())
+		prometheusDeployer.AddConfigMap(promtheusSpec.GetPrometheusConfigMap())
 		err = prometheusDeployer.Run()
 		if err != nil {
 			fmt.Printf("Error deploying Prometheus with Horizon : %s\n", err)

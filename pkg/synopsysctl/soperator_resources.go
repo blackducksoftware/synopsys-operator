@@ -28,14 +28,14 @@ import (
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 )
 
-func GetOperatorReplicationController(namespace, synopsysOperatorImage, blackduckRegistrationKey string) (*horizoncomponents.ReplicationController, error) {
+func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horizoncomponents.ReplicationController {
 	// Add the Replication Controller to the Deployer
 	var synopsysOperatorRCReplicas int32 = 1
 	synopsysOperatorRC := horizoncomponents.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		APIVersion: "v1",
 		//ClusterName:  "string",
 		Name:      "synopsys-operator",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 		Replicas:  &synopsysOperatorRCReplicas,
 		//ReadySeconds: "int32",
 	})
@@ -46,7 +46,7 @@ func GetOperatorReplicationController(namespace, synopsysOperatorImage, blackduc
 		APIVersion: "v1",
 		//ClusterName:            "string",
 		Name:           "synopsys-operator",
-		Namespace:      namespace,
+		Namespace:      specConfig.Namespace,
 		ServiceAccount: "synopsys-operator",
 		//RestartPolicy:          "RestartPolicyType",
 		//TerminationGracePeriod: "*int64",
@@ -70,7 +70,7 @@ func GetOperatorReplicationController(namespace, synopsysOperatorImage, blackduc
 		Name:       "synopsys-operator",
 		Args:       []string{"/etc/synopsys-operator/config.json"},
 		Command:    []string{"./operator"},
-		Image:      synopsysOperatorImage,
+		Image:      specConfig.SynopsysOperatorImage,
 		PullPolicy: horizonapi.PullAlways,
 		//MinCPU:                   "string",
 		//MaxCPU:                   "string",
@@ -99,7 +99,7 @@ func GetOperatorReplicationController(namespace, synopsysOperatorImage, blackduc
 	synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "REGISTRATION_KEY",
 		Type:         horizonapi.EnvVal,
-		KeyOrVal:     blackduckRegistrationKey,
+		KeyOrVal:     specConfig.BlackduckRegistrationKey,
 		//FromName:     "string",
 	})
 	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
@@ -114,7 +114,7 @@ func GetOperatorReplicationController(namespace, synopsysOperatorImage, blackduc
 		Name: "synopsys-operator-ui",
 		//Args:                     "[]string",
 		Command:    []string{"./app"},
-		Image:      synopsysOperatorImage,
+		Image:      specConfig.SynopsysOperatorImage,
 		PullPolicy: horizonapi.PullAlways,
 		//MinCPU:                   "string",
 		//MaxCPU:                   "string",
@@ -175,17 +175,17 @@ func GetOperatorReplicationController(namespace, synopsysOperatorImage, blackduc
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
 	synopsysOperatorRC.AddPod(synopsysOperatorPod)
 
-	return synopsysOperatorRC, nil
+	return synopsysOperatorRC
 }
 
-func GetOperatorService(namespace string) (*horizoncomponents.Service, error) {
+func (specConfig *SOperatorSpecConfig) GetOperatorService() *horizoncomponents.Service {
 
 	// Add the Service to the Deployer
 	synopsysOperatorService := horizoncomponents.NewService(horizonapi.ServiceConfig{
 		APIVersion: "v1",
 		//ClusterName:              "string",
 		Name:      "synopsys-operator",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 		//ExternalName:             "string",
 		//IPServiceType:            "ClusterIPServiceType",
 		//ClusterIP:                "string",
@@ -217,49 +217,49 @@ func GetOperatorService(namespace string) (*horizoncomponents.Service, error) {
 		Protocol: horizonapi.ProtocolTCP,
 	})
 
-	return synopsysOperatorService, nil
+	return synopsysOperatorService
 }
 
-func GetOperatorConfigMap(namespace string) (*horizoncomponents.ConfigMap, error) {
+func (specConfig *SOperatorSpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMap {
 	// Config Map
 	synopsysOperatorConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
 		APIVersion: "v1",
 		//ClusterName: "string",
 		Name:      "synopsys-operator",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 	})
 
 	synopsysOperatorConfigMap.AddData(map[string]string{"config.json": fmt.Sprintf("{\"OperatorTimeBombInSeconds\":\"315576000\", \"DryRun\": false, \"LogLevel\": \"debug\", \"Namespace\": \"%s\", \"Threadiness\": 5, \"PostgresRestartInMins\": 10, \"NFSPath\" : \"/kubenfs\"}", namespace)})
 
-	return synopsysOperatorConfigMap, nil
+	return synopsysOperatorConfigMap
 }
 
-func GetOperatorServiceAccount(namespace string) (*horizoncomponents.ServiceAccount, error) {
+func (specConfig *SOperatorSpecConfig) GetOperatorServiceAccount() *horizoncomponents.ServiceAccount {
 	// Service Account
 	synopsysOperatorServiceAccount := horizoncomponents.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		APIVersion: "v1",
 		//ClusterName:    "string",
 		Name:      "synopsys-operator",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 		//AutomountToken: "*bool",
 	})
 
-	return synopsysOperatorServiceAccount, nil
+	return synopsysOperatorServiceAccount
 }
 
-func GetOperatorClusterRoleBinding(namespace string) (*horizoncomponents.ClusterRoleBinding, error) {
+func (specConfig *SOperatorSpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
 	// Cluster Role Binding
 	synopsysOperatorClusterRoleBinding := horizoncomponents.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
 		//ClusterName: "string",
 		Name:      "synopsys-operator-admin",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 	})
 	synopsysOperatorClusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
 		Kind: "ServiceAccount",
 		//APIGroup:  "string",
 		Name:      "synopsys-operator",
-		Namespace: namespace,
+		Namespace: specConfig.Namespace,
 	})
 	synopsysOperatorClusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
@@ -267,5 +267,5 @@ func GetOperatorClusterRoleBinding(namespace string) (*horizoncomponents.Cluster
 		Name:     "cluster-admin",
 	})
 
-	return synopsysOperatorClusterRoleBinding, nil
+	return synopsysOperatorClusterRoleBinding
 }
