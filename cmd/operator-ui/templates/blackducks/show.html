@@ -21,6 +21,8 @@
           <h5>Namespace</h5>
         </td>
         <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.Spec.Namespace %></h6>
         </td>
@@ -29,6 +31,8 @@
         <td>
           <h5>Size</h5>
         </td>
+        <td>&nbsp;</td>
+        <td><h6>:</h6></td>
         <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.Spec.Size %></h6>
@@ -39,8 +43,21 @@
           <h5>Black Duck Version</h5>
         </td>
         <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.View.Version %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <h5>Black Duck Type</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= blackduck.Spec.Type %></h6>
         </td>
       </tr>
       <tr>
@@ -48,14 +65,29 @@
           <h5>Clone Database</h5>
         </td>
         <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.Spec.DbPrototype %></h6>
         </td>
       </tr>
       <tr>
         <td>
+          <h5>Persistent Storage</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= blackduck.Spec.PersistentStorage %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
           <h5>PVC Storage Class</h5>
         </td>
+        <td>&nbsp;</td>
+        <td><h6>:</h6></td>
         <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.Spec.PVCStorageClass %></h6>
@@ -66,6 +98,8 @@
           <h5>Scan Type</h5>
         </td>
         <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.Spec.ScanType %></h6>
         </td>
@@ -75,14 +109,29 @@
           <h5>Nginx Certificate Name</h5>
         </td>
         <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.Spec.CertificateName %></h6>
         </td>
       </tr>
       <tr>
         <td>
+          <h5>Liveness Probes</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= blackduck.Spec.LivenessProbes %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td>
           <h5>IP</h5>
         </td>
+        <td>&nbsp;</td>
+        <td><h6>:</h6></td>
         <td>&nbsp;</td>
         <td>
           <a href="https://<%= blackduck.Status.IP %>" target="_blank"><%= blackduck.Status.IP %></a>
@@ -93,6 +142,8 @@
           <h5>Status</h5>
         </td>
         <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.Status.State %></h6>
         </td>
@@ -102,8 +153,36 @@
           <h5>Error Message</h5>
         </td>
         <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
         <td>
           <h6><%= blackduck.Status.ErrorMessage %></h6>
+        </td>
+      </tr>
+      <tr>
+        <td style="vertical-align:top">
+          <h5>Environment Variables</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td style="vertical-align:top"><h6>:</h6></td>
+        <td>&nbsp;</td>
+        <td>
+          <%= for (environ) in  blackduck.Spec.Environs { %>
+            <h6><%= environ %></h6>
+          <% } %>
+        </td>
+      </tr>
+      <tr>
+        <td style="vertical-align:top">
+          <h5>Image Registries</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td style="vertical-align:top"><h6>:</h6></td>
+        <td>&nbsp;</td>
+        <td>
+          <%= for (imageRegistry) in  blackduck.Spec.ImageRegistries { %>
+            <h6><%= imageRegistry %></h6>
+          <% } %>
         </td>
       </tr>
     </tbody>
