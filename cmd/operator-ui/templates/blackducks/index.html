@@ -18,6 +18,7 @@
       <th>Namespace</th>
       <th>Size</th>
       <th>Black Duck Version</th>
+      <th>Black Duck Type</th>
       <th>Clone Database</th>
       <th>PVC Storage</th>
       <th>Certificate Name</th>
@@ -34,8 +35,13 @@
             <td><%= blackduck.Spec.Namespace %></td>
             <td><%= blackduck.Spec.Size %></td>
             <td><%= blackduck.View.Version %></td>
+            <td><%= blackduck.Spec.Type %></td>
             <td><%= blackduck.Spec.DbPrototype %></td>
-            <td><%= blackduck.Spec.PVCStorageClass %> <%= blackduck.Spec.ScanType %> </td>
+            <%= if (blackduck.Spec.PersistentStorage) { %>
+              <td><%= blackduck.Spec.PersistentStorage %>-<%= blackduck.Spec.PVCStorageClass %>-<%= blackduck.Spec.ScanType %></td>
+            <% } else { %>
+              <td><%= blackduck.Spec.PersistentStorage %></td>
+            <% } %>
             <td><%= blackduck.Spec.CertificateName %></td>
             <td><%= blackduck.Status.State %></td>
             <td><a href="https://<%= blackduck.Status.IP %>" target="_blank"><%= blackduck.Status.IP %></a></td>
