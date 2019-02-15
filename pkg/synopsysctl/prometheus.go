@@ -26,9 +26,9 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 )
 
-// SampleSpecConfig represents your Sample component
+// PrometheusSpecConfig represents the Promtheus component
 // Its methods include GetComponents() and any functions
-// that create Kubernetes Resources for the Sample
+// that create Kubernetes Resources for Prometheus
 type PrometheusSpecConfig struct {
 	Namespace       string
 	PrometheusImage string
