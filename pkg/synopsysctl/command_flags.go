@@ -15,6 +15,7 @@
 package synopsysctl
 
 import (
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 )
@@ -150,6 +151,8 @@ var create_opssight_configMapName = ""
 var create_opssight_secretName = ""
 
 // Create Alert Defaults
+var defaultAlertSpec = &alertv1.AlertSpec{}
+
 var create_alert_registry = ""
 var create_alert_imagePath = ""
 var create_alert_alertImageName = ""
