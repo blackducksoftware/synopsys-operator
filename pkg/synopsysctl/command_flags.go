@@ -36,6 +36,8 @@ var start_secretUserPassword = "YmxhY2tkdWNr"
 var start_secretBlackduckPassword = "YmxhY2tkdWNr"
 
 // Create Blackduck Defaults
+var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
+
 var create_blackduck_size = "small"
 var create_blackduck_dbPrototype = ""
 var create_blackduck_externalPostgres = &blackduckv1.PostgresExternalDBConfig{}

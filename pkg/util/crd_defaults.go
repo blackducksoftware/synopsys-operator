@@ -20,6 +20,19 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 )
 
+// Default values for the Synopsys-Operator
+var Default_synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
+var Default_prometheusImage = "docker.io/prom/prometheus:v2.1.0"
+var Default_blackduckRegistrationKey = ""
+var Default_dockerConfigPath = ""
+
+var Default_secretName = "blackduck-secret"
+var Default_secretType = "Opaque"
+var Default_secretAdminPassword = "YmxhY2tkdWNr"
+var Default_secretPostgresPassword = "YmxhY2tkdWNr"
+var Default_secretUserPassword = "YmxhY2tkdWNr"
+var Default_secretBlackduckPassword = "YmxhY2tkdWNr"
+
 // GetAlertDefaultValue creates a alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {
 	port := 8443
@@ -34,6 +47,31 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		CfsslMemory:    "640M",
 		AlertImageName: "blackduck-alert",
 		CfsslImageName: "hub-cfssl",
+	}
+}
+
+// GetHubDefaultValue creates a hub crd configuration object with defaults
+func GetHubSkeleton() *blackduckv1.BlackduckSpec {
+	return &blackduckv1.BlackduckSpec{
+		Namespace:         "",
+		Size:              "",
+		DbPrototype:       "",
+		ExternalPostgres:  &blackduckv1.PostgresExternalDBConfig{},
+		PVCStorageClass:   "",
+		LivenessProbes:    false,
+		ScanType:          "",
+		PersistentStorage: false,
+		PVC:               []blackduckv1.PVC{},
+		CertificateName:   "",
+		Certificate:       "",
+		CertificateKey:    "",
+		ProxyCertificate:  "",
+		Type:              "",
+		DesiredState:      "",
+		Environs:          []string{},
+		ImageRegistries:   []string{},
+		ImageUIDMap:       map[string]int64{},
+		LicenseKey:        "",
 	}
 }
 
