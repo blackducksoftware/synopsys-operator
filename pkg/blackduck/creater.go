@@ -30,6 +30,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/containers"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
@@ -123,7 +124,7 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 		return "", nil, true, err
 	}
 
-	// Deploy config-maps, secrets and postgres container
+	// Deploy namespace, service account, clusterrolebinding and pvc
 	err = deployer.Run()
 	if err != nil {
 		log.Errorf("init deployments failed for %s because %+v", createHub.Spec.Namespace, err)
@@ -333,8 +334,30 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec) (*horizon.De
 	}
 
 	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, nil, nil, nil, nil)
-	deployer.AddReplicationController(containerCreater.GetPostgresDeployment())
-	deployer.AddService(containerCreater.GetPostgresService())
+	postgresImage := containerCreater.GetFullContainerName("postgres")
+	if len(postgresImage) == 0 {
+		postgresImage = "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1"
+	}
+	postgres := apps.Postgres{
+		Namespace:              createHub.Namespace,
+		PVCName:                "blackduck-postgres",
+		Port:                   containers.PostgresPort,
+		Image:                  postgresImage,
+		MinCPU:                 hubContainerFlavor.PostgresCPULimit,
+		MaxCPU:                 "",
+		MinMemory:              hubContainerFlavor.PostgresMemoryLimit,
+		MaxMemory:              "",
+		Database:               "blackduck",
+		User:                   "blackduck",
+		PasswordSecretName:     "db-creds",
+		UserPasswordSecretKey:  "HUB_POSTGRES_USER_PASSWORD_FILE",
+		AdminPasswordSecretKey: "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+		EnvConfigMapRefs:       []string{"hub-db-config", "hub-db-config-granular"},
+	}
+	log.Debugf("postgres: %+v", postgres)
+
+	deployer.AddReplicationController(postgres.GetPostgresReplicationController())
+	deployer.AddService(postgres.GetPostgresService())
 
 	return deployer, nil
 }
