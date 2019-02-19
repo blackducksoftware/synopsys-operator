@@ -109,10 +109,8 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	}
 
 	// Get Containers Flavor
-	hubContainerFlavor := containers.GetContainersFlavor(createHub.Spec.Size)
-	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
-
-	if hubContainerFlavor == nil {
+	hubContainerFlavor, err := hc.getContainersFlavor(createHub)
+	if err != nil {
 		return "", nil, true, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Spec.Size)
 	}
 
@@ -131,7 +129,7 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	}
 	// time.Sleep(20 * time.Second)
 
-	err = hc.Start(createHub)
+	err = hc.Start(createHub, hubContainerFlavor)
 	if err != nil {
 		return "", nil, true, err
 	}
@@ -191,10 +189,22 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	return ipAddress, pvcVolumeNames, false, nil
 }
 
+// getContainersFlavor will get the Containers flavor
+func (hc *Creater) getContainersFlavor(createHub *v1.Blackduck) (*containers.ContainerFlavor, error) {
+	// Get Containers Flavor
+	hubContainerFlavor := containers.GetContainersFlavor(createHub.Spec.Size)
+	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
+
+	if hubContainerFlavor == nil {
+		return nil, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Spec.Size)
+	}
+	return hubContainerFlavor, nil
+}
+
 // Start the instance
-func (hc *Creater) Start(createHub *v1.Blackduck) error {
+func (hc *Creater) Start(createHub *v1.Blackduck, hubContainerFlavor *containers.ContainerFlavor) error {
 	// Create CM, secrets
-	deployer, err := hc.getHubConfigDeployer(&createHub.Spec)
+	deployer, err := hc.getHubConfigDeployer(&createHub.Spec, hubContainerFlavor)
 	if err != nil {
 		return err
 	}
@@ -205,7 +215,7 @@ func (hc *Creater) Start(createHub *v1.Blackduck) error {
 
 	// Start postgres if needed
 	if createHub.Spec.ExternalPostgres == nil {
-		pg, err := hc.getPostgresDeployer(&createHub.Spec)
+		pg, err := hc.getPostgresDeployer(&createHub.Spec, hubContainerFlavor)
 		if err != nil {
 			return err
 		}
@@ -226,7 +236,7 @@ func (hc *Creater) Start(createHub *v1.Blackduck) error {
 	}
 
 	// Start Hub
-	deployer, err = hc.getHubDeployer(&createHub.Spec)
+	deployer, err = hc.getHubDeployer(&createHub.Spec, hubContainerFlavor)
 	if err != nil {
 		return err
 	}
@@ -234,9 +244,9 @@ func (hc *Creater) Start(createHub *v1.Blackduck) error {
 }
 
 // Stop the instance
-func (hc *Creater) Stop(createHub *v1.BlackduckSpec) error {
+func (hc *Creater) Stop(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) error {
 	// Stop Hub
-	deployer, err := hc.getHubDeployer(createHub)
+	deployer, err := hc.getHubDeployer(createHub, hubContainerFlavor)
 	if err != nil {
 		return err
 	}
@@ -248,7 +258,7 @@ func (hc *Creater) Stop(createHub *v1.BlackduckSpec) error {
 
 	// Stop postgres if we don't use an external db
 	if createHub.ExternalPostgres == nil {
-		pg, err := hc.getPostgresDeployer(createHub)
+		pg, err := hc.getPostgresDeployer(createHub, hubContainerFlavor)
 		if err != nil {
 			return err
 		}
@@ -260,7 +270,7 @@ func (hc *Creater) Stop(createHub *v1.BlackduckSpec) error {
 	}
 
 	// Delete the config
-	deployer, err = hc.getHubConfigDeployer(createHub)
+	deployer, err = hc.getHubConfigDeployer(createHub, hubContainerFlavor)
 	if err != nil {
 		return err
 	}
@@ -318,19 +328,11 @@ func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
 	return nil
 }
 
-func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec) (*horizon.Deployer, error) {
+func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) (*horizon.Deployer, error) {
 	// Create a horizon deployer for Postgres
 	deployer, err := horizon.NewDeployer(hc.KubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create the horizon deployer because %+v", err)
-	}
-
-	// Get Containers Flavor
-	hubContainerFlavor := containers.GetContainersFlavor(createHub.Size)
-	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
-
-	if hubContainerFlavor == nil {
-		return nil, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Size)
 	}
 
 	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, nil, nil, nil, nil)
@@ -362,7 +364,7 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec) (*horizon.De
 	return deployer, nil
 }
 
-func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec) (*horizon.Deployer, error) {
+func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) (*horizon.Deployer, error) {
 	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
 	// Create a horizon deployer for each hub
@@ -379,7 +381,6 @@ func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec) (*horizon.D
 	}
 
 	// Create ConfigMaps
-	hubContainerFlavor := containers.GetContainersFlavor(createHub.Size)
 	configMaps := hc.createHubConfig(createHub, hubContainerFlavor)
 
 	for _, configMap := range configMaps {
@@ -389,21 +390,13 @@ func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec) (*horizon.D
 	return deployer, nil
 }
 
-func (hc *Creater) getHubDeployer(createHub *v1.BlackduckSpec) (*horizon.Deployer, error) {
+func (hc *Creater) getHubDeployer(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) (*horizon.Deployer, error) {
 	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.KubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create the horizon deployer because %+v", err)
-	}
-
-	// Get Containers Flavor
-	hubContainerFlavor := containers.GetContainersFlavor(createHub.Size)
-	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
-
-	if hubContainerFlavor == nil {
-		return nil, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Size)
 	}
 
 	// All ConfigMap environment variables
