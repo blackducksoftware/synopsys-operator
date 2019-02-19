@@ -86,10 +86,18 @@ var createOpsSightCmd = &cobra.Command{
 		// Create namespace for the OpsSight
 		deployCRDNamespace(restconfig)
 
-		// Create OpsSight Spec
+		// Create Spec for a Blackduck CRD
 		opssight := &opssightv1.OpsSight{}
-		populateOpssightConfig(opssight)
+		opssight.ObjectMeta = metav1.ObjectMeta{
+			Name: namespace,
+		}
+		defaultOpsSightSpec := crddefaults.GetOpsSightDefaultValue()
+		flagset := cmd.Flags()
+		flagset.VisitAll(checkOpsSightFlags)
+		opssight.Spec = *defaultOpsSightSpec
+
 		opssightClient, err := opssightclientset.NewForConfig(restconfig)
+
 		_, err = opssightClient.SynopsysV1().OpsSights(namespace).Create(opssight)
 		if err != nil {
 			fmt.Printf("Error creating the OpsSight : %s\n", err)
@@ -336,97 +344,340 @@ func checkBlackduckFlags(f *pflag.Flag) {
 		case "license-key":
 			defaultBlackduckSpec.LicenseKey = create_blackduck_licenseKey
 		default:
-			fmt.Printf("Flag Not Found: %s\n", f.Name)
+			fmt.Printf("Flag %s: Not Found\n", f.Name)
 		}
 	}
 	fmt.Printf("Flag %s: UNCHANGED\n", f.Name)
 }
 
-func populateOpssightConfig(opssight *opssightv1.OpsSight) {
-	// Add Meta Data
-	opssight.ObjectMeta = metav1.ObjectMeta{
-		Name: namespace,
+func checkOpsSightFlags(f *pflag.Flag) {
+	if f.Changed {
+		fmt.Printf("Flag %s: CHANGED\n", f.Name)
+		switch f.Name {
+		case "perceptor-name":
+			if defaultOpsSightSpec.Perceptor == nil {
+				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
+			}
+			defaultOpsSightSpec.Perceptor.Name = create_opssight_perceptor_name
+		case "perceptor-image":
+			if defaultOpsSightSpec.Perceptor == nil {
+				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
+			}
+			defaultOpsSightSpec.Perceptor.Image = create_opssight_perceptor_image
+		case "perceptor-port":
+			if defaultOpsSightSpec.Perceptor == nil {
+				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
+			}
+			defaultOpsSightSpec.Perceptor.Port = create_opssight_perceptor_port
+		case "perceptor-check-scan-hours":
+			if defaultOpsSightSpec.Perceptor == nil {
+				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
+			}
+			defaultOpsSightSpec.Perceptor.CheckForStalledScansPauseHours = create_opssight_perceptor_checkForStalledScansPauseHours
+		case "perceptor-scan-client-timeout-hours":
+			if defaultOpsSightSpec.Perceptor == nil {
+				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
+			}
+			defaultOpsSightSpec.Perceptor.StalledScanClientTimeoutHours = create_opssight_perceptor_stalledScanClientTimeoutHours
+		case "perceptor-metrics-pause-seconds":
+			if defaultOpsSightSpec.Perceptor == nil {
+				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
+			}
+			defaultOpsSightSpec.Perceptor.ModelMetricsPauseSeconds = create_opssight_perceptor_modelMetricsPauseSeconds
+		case "perceptor-unknown-image-pause-milliseconds":
+			if defaultOpsSightSpec.Perceptor == nil {
+				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
+			}
+			defaultOpsSightSpec.Perceptor.UnknownImagePauseMilliseconds = create_opssight_perceptor_unknownImagePauseMilliseconds
+		case "perceptor-client-timeout-milliseconds":
+			if defaultOpsSightSpec.Perceptor == nil {
+				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
+			}
+			defaultOpsSightSpec.Perceptor.ClientTimeoutMilliseconds = create_opssight_perceptor_clientTimeoutMilliseconds
+		case "scannerpod-name":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			defaultOpsSightSpec.ScannerPod.Name = create_opssight_scannerPod_name
+		case "scannerpod-scanner-name":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.Scanner == nil {
+				defaultOpsSightSpec.ScannerPod.Scanner = &opssightv1.Scanner{}
+			}
+			defaultOpsSightSpec.ScannerPod.Scanner.Name = create_opssight_scannerPod_scanner_name
+		case "scannerpod-scanner-image":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.Scanner == nil {
+				defaultOpsSightSpec.ScannerPod.Scanner = &opssightv1.Scanner{}
+			}
+			defaultOpsSightSpec.ScannerPod.Scanner.Image = create_opssight_scannerPod_scanner_image
+		case "scannerpod-scanner-port":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.Scanner == nil {
+				defaultOpsSightSpec.ScannerPod.Scanner = &opssightv1.Scanner{}
+			}
+			defaultOpsSightSpec.ScannerPod.Scanner.Port = create_opssight_scannerPod_scanner_port
+		case "scannerpod-scanner-client-timeout-seconds":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.Scanner == nil {
+				defaultOpsSightSpec.ScannerPod.Scanner = &opssightv1.Scanner{}
+			}
+			defaultOpsSightSpec.ScannerPod.Scanner.ClientTimeoutSeconds = create_opssight_scannerPod_scanner_clientTimeoutSeconds
+		case "scannerpod-imagefacade-name":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
+				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+			}
+			defaultOpsSightSpec.ScannerPod.ImageFacade.Name = create_opssight_scannerPod_imageFacade_name
+		case "scannerpod-imagefacade-image":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
+				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+			}
+			defaultOpsSightSpec.ScannerPod.ImageFacade.Image = create_opssight_scannerPod_imageFacade_image
+		case "scannerpod-imagefacade-port":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
+				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+			}
+			defaultOpsSightSpec.ScannerPod.ImageFacade.Port = create_opssight_scannerPod_imageFacade_port
+		//TODO - var create_opssight_scannerPod_imageFacade_internalRegistries = []opssightv1.RegistryAuth{}
+		case "scannerpod-imagefacade-image-puller-type":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
+				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+			}
+			defaultOpsSightSpec.ScannerPod.ImageFacade.ImagePullerType = create_opssight_scannerPod_imageFacade_imagePullerType
+		case "scannerpod-imagefacade-service-account":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
+				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+			}
+			defaultOpsSightSpec.ScannerPod.ImageFacade.ServiceAccount = create_opssight_scannerPod_imageFacade_serviceAccount
+		case "scannerpod-replica-count":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			defaultOpsSightSpec.ScannerPod.ReplicaCount = create_opssight_scannerPod_replicaCount
+		case "scannerpod-image-directory":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			defaultOpsSightSpec.ScannerPod.ImageDirectory = create_opssight_scannerPod_imageDirectory
+		case "enable-image-perceiver":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.EnableImagePerceiver = create_opssight_perceiver_enableImagePerceiver
+		case "enable-pod-perceiver":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.EnablePodPerceiver = create_opssight_perceiver_enablePodPerceiver
+		case "imageperceiver-name":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			if defaultOpsSightSpec.Perceiver.ImagePerceiver == nil {
+				defaultOpsSightSpec.Perceiver.ImagePerceiver = &opssightv1.ImagePerceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.ImagePerceiver.Name = create_opssight_perceiver_imagePerceiver_name
+		case "imageperceiver-image":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			if defaultOpsSightSpec.Perceiver.ImagePerceiver == nil {
+				defaultOpsSightSpec.Perceiver.ImagePerceiver = &opssightv1.ImagePerceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.ImagePerceiver.Image = create_opssight_perceiver_imagePerceiver_image
+		case "podperceiver-name":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			if defaultOpsSightSpec.Perceiver.PodPerceiver == nil {
+				defaultOpsSightSpec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.PodPerceiver.Name = create_opssight_perceiver_podPerceiver_name
+		case "podperceiver-image":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			if defaultOpsSightSpec.Perceiver.PodPerceiver == nil {
+				defaultOpsSightSpec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.PodPerceiver.Image = create_opssight_perceiver_podPerceiver_image
+		case "podperceiver-namespace-filter":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			if defaultOpsSightSpec.Perceiver.PodPerceiver == nil {
+				defaultOpsSightSpec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.PodPerceiver.NamespaceFilter = create_opssight_perceiver_podPerceiver_namespaceFilter
+		case "perceiver-annotation-interval-seconds":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.AnnotationIntervalSeconds = create_opssight_perceiver_annotationIntervalSeconds
+		case "perceiver-dump-interval-minutes":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.DumpIntervalMinutes = create_opssight_perceiver_dumpIntervalMinutes
+		case "perceiver-service-account":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.ServiceAccount = create_opssight_perceiver_serviceAccount
+		case "perceiver-port":
+			if defaultOpsSightSpec.Perceiver == nil {
+				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
+			}
+			defaultOpsSightSpec.Perceiver.Port = create_opssight_perceiver_port
+		case "prometheus-name":
+			if defaultOpsSightSpec.Prometheus == nil {
+				defaultOpsSightSpec.Prometheus = &opssightv1.Prometheus{}
+			}
+			defaultOpsSightSpec.Prometheus.Name = create_opssight_prometheus_name
+		case "prometheus-image":
+			if defaultOpsSightSpec.Prometheus == nil {
+				defaultOpsSightSpec.Prometheus = &opssightv1.Prometheus{}
+			}
+			defaultOpsSightSpec.Prometheus.Image = create_opssight_prometheus_image
+		case "prometheus-port":
+			if defaultOpsSightSpec.Prometheus == nil {
+				defaultOpsSightSpec.Prometheus = &opssightv1.Prometheus{}
+			}
+			defaultOpsSightSpec.Prometheus.Port = create_opssight_prometheus_port
+		case "enable-skyfire":
+			defaultOpsSightSpec.EnableSkyfire = create_opssight_enableSkyfire
+		case "skyfire-name":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.Name = create_opssight_skyfire_name
+		case "skyfire-image":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.Image = create_opssight_skyfire_image
+		case "skyfire-port":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.Port = create_opssight_skyfire_port
+		case "skyfire-prometheus-port":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.PrometheusPort = create_opssight_skyfire_prometheusPort
+		case "skyfire-service-account":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.ServiceAccount = create_opssight_skyfire_serviceAccount
+		case "skyfire-hub-client-timeout-seconds":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.HubClientTimeoutSeconds = create_opssight_skyfire_hubClientTimeoutSeconds
+		case "skyfire-hub-dump-pause-seconds":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.HubDumpPauseSeconds = create_opssight_skyfire_hubDumpPauseSeconds
+		case "skyfire-kube-dump-interval-seconds":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.KubeDumpIntervalSeconds = create_opssight_skyfire_kubeDumpIntervalSeconds
+		case "skyfire-perceptor-dump-interval-seconds":
+			if defaultOpsSightSpec.Skyfire == nil {
+				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
+			}
+			defaultOpsSightSpec.Skyfire.PerceptorDumpIntervalSeconds = create_opssight_skyfire_perceptorDumpIntervalSeconds
+		case "blackduck-hosts":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.Hosts = create_opssight_blackduck_hosts
+		case "blackduck-user":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.User = create_opssight_blackduck_user
+		case "blackduck-port":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.Port = create_opssight_blackduck_port
+		case "blackduck-concurrent-scan-limit":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.ConcurrentScanLimit = create_opssight_blackduck_concurrentScanLimit
+		case "blackduck-total-scan-limit":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.TotalScanLimit = create_opssight_blackduck_totalScanLimit
+		case "blackduck-password-environment-variable":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.PasswordEnvVar = create_opssight_blackduck_passwordEnvVar
+		case "blackduck-initial-count":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.InitialCount = create_opssight_blackduck_initialCount
+		case "blackduck-max-count":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.MaxCount = create_opssight_blackduck_maxCount
+		case "blackduck-delete-blackduck-threshold-percentage":
+			if defaultOpsSightSpec.Blackduck == nil {
+				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
+			}
+			defaultOpsSightSpec.Blackduck.DeleteHubThresholdPercentage = create_opssight_blackduck_deleteHubThresholdPercentage
+		//TODO - var create_opssight_blackduck_blackduckSpec = &blackduckv1.BlackduckSpec{}
+		case "enable-metrics":
+			defaultOpsSightSpec.EnableMetrics = create_opssight_enableMetrics
+		case "default-cpu":
+			defaultOpsSightSpec.DefaultCPU = create_opssight_defaultCPU
+		case "default-mem":
+			defaultOpsSightSpec.DefaultMem = create_opssight_defaultMem
+		case "log-level":
+			defaultOpsSightSpec.LogLevel = create_opssight_logLevel
+		case "config-map-name":
+			defaultOpsSightSpec.ConfigMapName = create_opssight_configMapName
+		case "secret-name":
+			defaultOpsSightSpec.SecretName = create_opssight_secretName
+		default:
+			fmt.Printf("Flag %s: Not Found\n", f.Name)
+		}
 	}
+	fmt.Printf("Flag %s: UNCHANGED\n", f.Name)
 
-	// Get Default OpsSight Spec
-	opssightDefaultSpec := bdutil.GetOpsSightDefaultValueWithDisabledHub()
-
-	// Update values with User input
-	opssightDefaultSpec.Namespace = namespace
-	opssightDefaultSpec.Perceptor = create_opssight_perceptor
-	opssightDefaultSpec.Perceptor.Name = create_opssight_perceptor_name
-	opssightDefaultSpec.Perceptor.Image = create_opssight_perceptor_image
-	opssightDefaultSpec.Perceptor.Port = create_opssight_perceptor_port
-	opssightDefaultSpec.Perceptor.CheckForStalledScansPauseHours = create_opssight_perceptor_checkForStalledScansPauseHours
-	opssightDefaultSpec.Perceptor.StalledScanClientTimeoutHours = create_opssight_perceptor_stalledScanClientTimeoutHours
-	opssightDefaultSpec.Perceptor.ModelMetricsPauseSeconds = create_opssight_perceptor_modelMetricsPauseSeconds
-	opssightDefaultSpec.Perceptor.UnknownImagePauseMilliseconds = create_opssight_perceptor_unknownImagePauseMilliseconds
-	opssightDefaultSpec.Perceptor.ClientTimeoutMilliseconds = create_opssight_perceptor_clientTimeoutMilliseconds
-	opssightDefaultSpec.ScannerPod = create_opssight_scannerPod
-	opssightDefaultSpec.ScannerPod.Name = create_opssight_scannerPod_name
-	opssightDefaultSpec.ScannerPod.Scanner = create_opssight_scannerPod_scanner
-	opssightDefaultSpec.ScannerPod.Scanner.Name = create_opssight_scannerPod_scanner_name
-	opssightDefaultSpec.ScannerPod.Scanner.Image = create_opssight_scannerPod_scanner_image
-	opssightDefaultSpec.ScannerPod.Scanner.Port = create_opssight_scannerPod_scanner_port
-	opssightDefaultSpec.ScannerPod.Scanner.ClientTimeoutSeconds = create_opssight_scannerPod_scanner_clientTimeoutSeconds
-	opssightDefaultSpec.ScannerPod.ImageFacade = create_opssight_scannerPod_imageFacade
-	opssightDefaultSpec.ScannerPod.ImageFacade.Name = create_opssight_scannerPod_imageFacade_name
-	opssightDefaultSpec.ScannerPod.ImageFacade.Image = create_opssight_scannerPod_imageFacade_image
-	opssightDefaultSpec.ScannerPod.ImageFacade.Port = create_opssight_scannerPod_imageFacade_port
-	opssightDefaultSpec.ScannerPod.ImageFacade.InternalRegistries = create_opssight_scannerPod_imageFacade_internalRegistries
-	opssightDefaultSpec.ScannerPod.ImageFacade.ImagePullerType = create_opssight_scannerPod_imageFacade_imagePullerType
-	opssightDefaultSpec.ScannerPod.ImageFacade.ServiceAccount = create_opssight_scannerPod_imageFacade_serviceAccount
-	opssightDefaultSpec.ScannerPod.ReplicaCount = create_opssight_scannerPod_replicaCount
-	opssightDefaultSpec.ScannerPod.ImageDirectory = create_opssight_scannerPod_imageDirectory
-	opssightDefaultSpec.Perceiver = create_opssight_perceiver
-	opssightDefaultSpec.Perceiver.EnableImagePerceiver = create_opssight_perceiver_enableImagePerceiver
-	opssightDefaultSpec.Perceiver.EnablePodPerceiver = create_opssight_perceiver_enablePodPerceiver
-	opssightDefaultSpec.Perceiver.ImagePerceiver = create_opssight_perceiver_imagePerceiver
-	opssightDefaultSpec.Perceiver.ImagePerceiver.Name = create_opssight_perceiver_imagePerceiver_name
-	opssightDefaultSpec.Perceiver.ImagePerceiver.Image = create_opssight_perceiver_imagePerceiver_image
-	opssightDefaultSpec.Perceiver.PodPerceiver = create_opssight_perceiver_podPerceiver
-	opssightDefaultSpec.Perceiver.PodPerceiver.Name = create_opssight_perceiver_podPerceiver_name
-	opssightDefaultSpec.Perceiver.PodPerceiver.Image = create_opssight_perceiver_podPerceiver_image
-	opssightDefaultSpec.Perceiver.PodPerceiver.NamespaceFilter = create_opssight_perceiver_podPerceiver_namespaceFilter
-	opssightDefaultSpec.Perceiver.AnnotationIntervalSeconds = create_opssight_perceiver_annotationIntervalSeconds
-	opssightDefaultSpec.Perceiver.DumpIntervalMinutes = create_opssight_perceiver_dumpIntervalMinutes
-	opssightDefaultSpec.Perceiver.ServiceAccount = create_opssight_perceiver_serviceAccount
-	opssightDefaultSpec.Perceiver.Port = create_opssight_perceiver_port
-	opssightDefaultSpec.Prometheus = create_opssight_prometheus
-	opssightDefaultSpec.Prometheus.Name = create_opssight_prometheus_name
-	opssightDefaultSpec.Prometheus.Image = create_opssight_prometheus_image
-	opssightDefaultSpec.Prometheus.Port = create_opssight_prometheus_port
-	opssightDefaultSpec.EnableSkyfire = create_opssight_enableSkyfire
-	opssightDefaultSpec.Skyfire = create_opssight_skyfire
-	opssightDefaultSpec.Skyfire.Name = create_opssight_skyfire_name
-	opssightDefaultSpec.Skyfire.Image = create_opssight_skyfire_image
-	opssightDefaultSpec.Skyfire.Port = create_opssight_skyfire_port
-	opssightDefaultSpec.Skyfire.PrometheusPort = create_opssight_skyfire_prometheusPort
-	opssightDefaultSpec.Skyfire.ServiceAccount = create_opssight_skyfire_serviceAccount
-	opssightDefaultSpec.Skyfire.HubClientTimeoutSeconds = create_opssight_skyfire_hubClientTimeoutSeconds
-	opssightDefaultSpec.Skyfire.HubDumpPauseSeconds = create_opssight_skyfire_hubDumpPauseSeconds
-	opssightDefaultSpec.Skyfire.KubeDumpIntervalSeconds = create_opssight_skyfire_kubeDumpIntervalSeconds
-	opssightDefaultSpec.Skyfire.PerceptorDumpIntervalSeconds = create_opssight_skyfire_perceptorDumpIntervalSeconds
-	opssightDefaultSpec.Blackduck = create_opssight_blackduck
-	opssightDefaultSpec.Blackduck.Hosts = create_opssight_blackduck_hosts
-	opssightDefaultSpec.Blackduck.User = create_opssight_blackduck_user
-	opssightDefaultSpec.Blackduck.Port = create_opssight_blackduck_port
-	opssightDefaultSpec.Blackduck.ConcurrentScanLimit = create_opssight_blackduck_concurrentScanLimit
-	opssightDefaultSpec.Blackduck.TotalScanLimit = create_opssight_blackduck_totalScanLimit
-	opssightDefaultSpec.Blackduck.PasswordEnvVar = create_opssight_blackduck_passwordEnvVar
-	opssightDefaultSpec.Blackduck.InitialCount = create_opssight_blackduck_initialCount
-	opssightDefaultSpec.Blackduck.MaxCount = create_opssight_blackduck_maxCount
-	opssightDefaultSpec.Blackduck.DeleteHubThresholdPercentage = create_opssight_blackduck_deleteHubThresholdPercentage
-	opssightDefaultSpec.Blackduck.BlackduckSpec = create_opssight_blackduck_blackduckSpec
-	opssightDefaultSpec.EnableMetrics = create_opssight_enableMetrics
-	opssightDefaultSpec.DefaultCPU = create_opssight_defaultCPU
-	opssightDefaultSpec.DefaultMem = create_opssight_defaultMem
-	opssightDefaultSpec.LogLevel = create_opssight_logLevel
-	opssightDefaultSpec.ConfigMapName = create_opssight_configMapName
-	opssightDefaultSpec.SecretName = create_opssight_secretName
-
-	// Add updated spec
-	opssight.Spec = *opssightDefaultSpec
 }
 
 func populateAlertConfig(alert *alertv1.Alert) {
