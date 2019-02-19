@@ -20,62 +20,8 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 )
 
-// Default values for the Synopsys-Operator
-var Default_synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
-var Default_prometheusImage = "docker.io/prom/prometheus:v2.1.0"
-var Default_blackduckRegistrationKey = ""
-var Default_dockerConfigPath = ""
-
-var Default_secretName = "blackduck-secret"
-var Default_secretType = "Opaque"
-var Default_secretAdminPassword = "YmxhY2tkdWNr"
-var Default_secretPostgresPassword = "YmxhY2tkdWNr"
-var Default_secretUserPassword = "YmxhY2tkdWNr"
-var Default_secretBlackduckPassword = "YmxhY2tkdWNr"
-
-// GetAlertDefaultValue creates a alert crd configuration object with defaults
-func GetAlertDefaultValue() *alertv1.AlertSpec {
-	port := 8443
-	hubPort := 443
-	standAlone := true
-
-	return &alertv1.AlertSpec{
-		Port:           &port,
-		BlackduckPort:  &hubPort,
-		StandAlone:     &standAlone,
-		AlertMemory:    "512M",
-		CfsslMemory:    "640M",
-		AlertImageName: "blackduck-alert",
-		CfsslImageName: "hub-cfssl",
-	}
-}
-
-// GetHubDefaultValue creates a hub crd configuration object with defaults
-func GetHubSkeleton() *blackduckv1.BlackduckSpec {
-	return &blackduckv1.BlackduckSpec{
-		Namespace:         "",
-		Size:              "",
-		DbPrototype:       "",
-		ExternalPostgres:  &blackduckv1.PostgresExternalDBConfig{},
-		PVCStorageClass:   "",
-		LivenessProbes:    false,
-		ScanType:          "",
-		PersistentStorage: false,
-		PVC:               []blackduckv1.PVC{},
-		CertificateName:   "",
-		Certificate:       "",
-		CertificateKey:    "",
-		ProxyCertificate:  "",
-		Type:              "",
-		DesiredState:      "",
-		Environs:          []string{},
-		ImageRegistries:   []string{},
-		ImageUIDMap:       map[string]int64{},
-		LicenseKey:        "",
-	}
-}
-
-// GetHubDefaultValue creates a hub crd configuration object with defaults
+// GetHubDefaultValue creates a hub crd configuration object
+// with defaults
 func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Size:            "Small",
@@ -85,90 +31,8 @@ func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
-func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
-	return &opssightv1.OpsSightSpec{
-		Perceptor: &opssightv1.Perceptor{
-			Name:                           "perceptor",
-			Port:                           3001,
-			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
-			CheckForStalledScansPauseHours: 999999,
-			StalledScanClientTimeoutHours:  999999,
-			ModelMetricsPauseSeconds:       15,
-			UnknownImagePauseMilliseconds:  15000,
-			ClientTimeoutMilliseconds:      100000,
-		},
-		Perceiver: &opssightv1.Perceiver{
-			EnableImagePerceiver: false,
-			EnablePodPerceiver:   true,
-			Port:                 3002,
-			ImagePerceiver: &opssightv1.ImagePerceiver{
-				Name:  "image-perceiver",
-				Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
-			},
-			PodPerceiver: &opssightv1.PodPerceiver{
-				Name:  "pod-perceiver",
-				Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
-			},
-			ServiceAccount:            "perceiver",
-			AnnotationIntervalSeconds: 30,
-			DumpIntervalMinutes:       30,
-		},
-		ScannerPod: &opssightv1.ScannerPod{
-			Name: "perceptor-scanner",
-			ImageFacade: &opssightv1.ImageFacade{
-				Port:               3004,
-				InternalRegistries: []opssightv1.RegistryAuth{},
-				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-				ServiceAccount:     "perceptor-scanner",
-				Name:               "perceptor-imagefacade",
-			},
-			Scanner: &opssightv1.Scanner{
-				Name:                 "perceptor-scanner",
-				Port:                 3003,
-				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
-				ClientTimeoutSeconds: 600,
-			},
-			ReplicaCount:   1,
-			ImageDirectory: "/var/images",
-		},
-		Prometheus: &opssightv1.Prometheus{
-			Name:  "prometheus",
-			Image: "docker.io/prom/prometheus:v2.1.0",
-			Port:  9090,
-		},
-		Skyfire: &opssightv1.Skyfire{
-			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
-			Name:                         "skyfire",
-			Port:                         3005,
-			PrometheusPort:               3006,
-			ServiceAccount:               "skyfire",
-			HubClientTimeoutSeconds:      100,
-			HubDumpPauseSeconds:          240,
-			KubeDumpIntervalSeconds:      60,
-			PerceptorDumpIntervalSeconds: 60,
-		},
-		Blackduck: &opssightv1.Blackduck{
-			User:                         "sysadmin",
-			Port:                         443,
-			ConcurrentScanLimit:          2,
-			TotalScanLimit:               1000,
-			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
-			InitialCount:                 0,
-			MaxCount:                     0,
-			DeleteHubThresholdPercentage: 50,
-			BlackduckSpec:                GetHubDefaultValue(),
-		},
-		EnableMetrics: true,
-		EnableSkyfire: false,
-		DefaultCPU:    "300m",
-		DefaultMem:    "1300Mi",
-		LogLevel:      "debug",
-		SecretName:    "perceptor",
-		ConfigMapName: "opssight",
-	}
-}
-
+// GetHubDefaultValue creates a hub crd configuration object
+// with defaults and persistent storage
 func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
@@ -259,6 +123,93 @@ func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
 	}
 }
 
+// GetOpsSightDefaultValue creates a perceptor crd configuration object
+// with defaults
+func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
+	return &opssightv1.OpsSightSpec{
+		Perceptor: &opssightv1.Perceptor{
+			Name:                           "perceptor",
+			Port:                           3001,
+			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+			CheckForStalledScansPauseHours: 999999,
+			StalledScanClientTimeoutHours:  999999,
+			ModelMetricsPauseSeconds:       15,
+			UnknownImagePauseMilliseconds:  15000,
+			ClientTimeoutMilliseconds:      100000,
+		},
+		Perceiver: &opssightv1.Perceiver{
+			EnableImagePerceiver: false,
+			EnablePodPerceiver:   true,
+			Port:                 3002,
+			ImagePerceiver: &opssightv1.ImagePerceiver{
+				Name:  "image-perceiver",
+				Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
+			},
+			PodPerceiver: &opssightv1.PodPerceiver{
+				Name:  "pod-perceiver",
+				Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
+			},
+			ServiceAccount:            "perceiver",
+			AnnotationIntervalSeconds: 30,
+			DumpIntervalMinutes:       30,
+		},
+		ScannerPod: &opssightv1.ScannerPod{
+			Name: "perceptor-scanner",
+			ImageFacade: &opssightv1.ImageFacade{
+				Port:               3004,
+				InternalRegistries: []opssightv1.RegistryAuth{},
+				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
+				ServiceAccount:     "perceptor-scanner",
+				Name:               "perceptor-imagefacade",
+			},
+			Scanner: &opssightv1.Scanner{
+				Name:                 "perceptor-scanner",
+				Port:                 3003,
+				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
+				ClientTimeoutSeconds: 600,
+			},
+			ReplicaCount:   1,
+			ImageDirectory: "/var/images",
+		},
+		Prometheus: &opssightv1.Prometheus{
+			Name:  "prometheus",
+			Image: "docker.io/prom/prometheus:v2.1.0",
+			Port:  9090,
+		},
+		Skyfire: &opssightv1.Skyfire{
+			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
+			Name:                         "skyfire",
+			Port:                         3005,
+			PrometheusPort:               3006,
+			ServiceAccount:               "skyfire",
+			HubClientTimeoutSeconds:      100,
+			HubDumpPauseSeconds:          240,
+			KubeDumpIntervalSeconds:      60,
+			PerceptorDumpIntervalSeconds: 60,
+		},
+		Blackduck: &opssightv1.Blackduck{
+			User:                         "sysadmin",
+			Port:                         443,
+			ConcurrentScanLimit:          2,
+			TotalScanLimit:               1000,
+			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
+			InitialCount:                 0,
+			MaxCount:                     0,
+			DeleteHubThresholdPercentage: 50,
+			BlackduckSpec:                GetHubDefaultValue(),
+		},
+		EnableMetrics: true,
+		EnableSkyfire: false,
+		DefaultCPU:    "300m",
+		DefaultMem:    "1300Mi",
+		LogLevel:      "debug",
+		SecretName:    "perceptor",
+		ConfigMapName: "opssight",
+	}
+}
+
+// GetOpsSightDefaultValueWithDisabledHub creates an opssight crd configuration
+// with defaults and a Disabled Hub
 func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 	blackduck := opssightv1.Blackduck{
 		User:                "sysadmin",
@@ -361,5 +312,46 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 		DefaultMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
+	}
+}
+
+// GetAlertDefaultValue creates an Alert crd configuration object with defaults
+func GetAlertDefaultValue() *alertv1.AlertSpec {
+	port := 8443
+	hubPort := 443
+	standAlone := true
+
+	return &alertv1.AlertSpec{
+		Port:           &port,
+		BlackduckPort:  &hubPort,
+		StandAlone:     &standAlone,
+		AlertMemory:    "512M",
+		CfsslMemory:    "640M",
+		AlertImageName: "blackduck-alert",
+		CfsslImageName: "hub-cfssl",
+	}
+}
+
+// GetAlertJson creates an Alert crd configuration object with defaults
+func GetAlertDefaultValue2() *alertv1.AlertSpec {
+	port := 8443
+	hubPort := 443
+	standAlone := true
+
+	return &alertv1.AlertSpec{
+		Namespace:         "alert-test",
+		Registry:          "docker.io",
+		ImagePath:         "blackducksoftware",
+		AlertImageName:    "blackduck-alert",
+		AlertImageVersion: "2.1.0",
+		CfsslImageName:    "hub-cfssl",
+		CfsslImageVersion: "4.8.1",
+		BlackduckHost:     "<<HUB_HOST>>",
+		BlackduckUser:     "sysadmin",
+		BlackduckPort:     &hubPort,
+		Port:              &port,
+		StandAlone:        &standAlone,
+		AlertMemory:       "512M",
+		CfsslMemory:       "640M",
 	}
 }
