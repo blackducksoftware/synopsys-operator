@@ -26,7 +26,6 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -67,7 +66,6 @@ var createBlackduckCmd = &cobra.Command{
 		blackduck.Spec = *defaultBlackduckSpec
 
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
-
 		_, err = blackduckClient.SynopsysV1().Blackducks(namespace).Create(blackduck)
 		if err != nil {
 			fmt.Printf("Error creating the Blackduck : %s\n", err)
@@ -86,7 +84,7 @@ var createOpsSightCmd = &cobra.Command{
 		// Create namespace for the OpsSight
 		deployCRDNamespace(restconfig)
 
-		// Create Spec for a Blackduck CRD
+		// Create Spec for a OpsSight CRD
 		opssight := &opssightv1.OpsSight{}
 		opssight.ObjectMeta = metav1.ObjectMeta{
 			Name: namespace,
@@ -97,7 +95,6 @@ var createOpsSightCmd = &cobra.Command{
 		opssight.Spec = *defaultOpsSightSpec
 
 		opssightClient, err := opssightclientset.NewForConfig(restconfig)
-
 		_, err = opssightClient.SynopsysV1().OpsSights(namespace).Create(opssight)
 		if err != nil {
 			fmt.Printf("Error creating the OpsSight : %s\n", err)
@@ -116,9 +113,16 @@ var createAlertCmd = &cobra.Command{
 		// Create namespace for the Alert
 		deployCRDNamespace(restconfig)
 
-		// Create Alert Spec
+		// Create Spec for an Alert CRD
 		alert := &alertv1.Alert{}
-		populateAlertConfig(alert)
+		alert.ObjectMeta = metav1.ObjectMeta{
+			Name: namespace,
+		}
+		defaultAlertSpec := crddefaults.GetAlertDefaultValue()
+		flagset := cmd.Flags()
+		flagset.VisitAll(checkAlertFlags)
+		alert.Spec = *defaultAlertSpec
+
 		alertClient, err := alertclientset.NewForConfig(restconfig)
 		_, err = alertClient.SynopsysV1().Alerts(namespace).Create(alert)
 		if err != nil {
@@ -680,32 +684,41 @@ func checkOpsSightFlags(f *pflag.Flag) {
 
 }
 
-func populateAlertConfig(alert *alertv1.Alert) {
-	// Add Meta Data
-	alert.ObjectMeta = metav1.ObjectMeta{
-		Name: namespace,
+func checkAlertFlags(f *pflag.Flag) {
+	if f.Changed {
+		fmt.Printf("Flag %s: CHANGED\n", f.Name)
+		switch f.Name {
+		case "namespace":
+			defaultAlertSpec.Namespace = namespace
+		case "alert-registry":
+			defaultAlertSpec.Registry = create_alert_registry
+		case "image-path":
+			defaultAlertSpec.ImagePath = create_alert_imagePath
+		case "alert-image-name":
+			defaultAlertSpec.AlertImageName = create_alert_alertImageName
+		case "alert-image-version":
+			defaultAlertSpec.AlertImageVersion = create_alert_alertImageVersion
+		case "cfssl-image-name":
+			defaultAlertSpec.CfsslImageName = create_alert_cfsslImageName
+		case "cfssl-image-version":
+			defaultAlertSpec.CfsslImageVersion = create_alert_cfsslImageVersion
+		case "blackduck-host":
+			defaultAlertSpec.BlackduckHost = create_alert_blackduckHost
+		case "blackduck-user":
+			defaultAlertSpec.BlackduckUser = create_alert_blackduckUser
+		case "blackduck-port":
+			defaultAlertSpec.BlackduckPort = &create_alert_blackduckPort
+		case "port":
+			defaultAlertSpec.Port = &create_alert_port
+		case "stand-alone":
+			defaultAlertSpec.StandAlone = &create_alert_standAlone
+		case "alert-memory":
+			defaultAlertSpec.AlertMemory = create_alert_alertMemory
+		case "cfssl-memory":
+			defaultAlertSpec.CfsslMemory = create_alert_cfsslMemory
+		default:
+			fmt.Printf("Flag %s: Not Found\n", f.Name)
+		}
 	}
-
-	// Get Default Alert Spec
-	alertDefaultSpec := bdutil.GetAlertDefaultValue()
-
-	// Update values with User input
-	alertDefaultSpec.Namespace = namespace
-	alertDefaultSpec.Registry = create_alert_registry
-	alertDefaultSpec.ImagePath = create_alert_imagePath
-	alertDefaultSpec.AlertImageName = create_alert_alertImageName
-	alertDefaultSpec.AlertImageVersion = create_alert_alertImageVersion
-	alertDefaultSpec.CfsslImageName = create_alert_cfsslImageName
-	alertDefaultSpec.CfsslImageVersion = create_alert_cfsslImageVersion
-	alertDefaultSpec.BlackduckHost = create_alert_blackduckHost
-	alertDefaultSpec.BlackduckUser = create_alert_blackduckUser
-	alertDefaultSpec.BlackduckPort = &create_alert_blackduckPort
-	alertDefaultSpec.Port = &create_alert_port
-	alertDefaultSpec.StandAlone = &create_alert_standAlone
-	alertDefaultSpec.AlertMemory = create_alert_alertMemory
-	alertDefaultSpec.CfsslMemory = create_alert_cfsslMemory
-	alertDefaultSpec.State = create_alert_state
-
-	// Add updated spec
-	alert.Spec = *alertDefaultSpec
+	fmt.Printf("Flag %s: UNCHANGED\n", f.Name)
 }
