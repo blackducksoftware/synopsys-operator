@@ -33,9 +33,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Commands
-//var createCmd *cobra.Command
-
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
@@ -55,16 +52,18 @@ var createBlackduckCmd = &cobra.Command{
 		// Create namespace for the Blackduck
 		deployCRDNamespace(restconfig)
 
-		// Create Spec for a Blackduck CRD
-		blackduck := &blackduckv1.Blackduck{}
-		blackduck.ObjectMeta = metav1.ObjectMeta{
-			Name: namespace,
-		}
+		// Read Flags Into Default Blackduck Spec
 		defaultBlackduckSpec := crddefaults.GetHubDefaultValue()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkBlackduckFlags)
-		blackduck.Spec = *defaultBlackduckSpec
 
+		// Create and Deploy Blackduck CRD
+		blackduck := &blackduckv1.Blackduck{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+			Spec: *defaultBlackduckSpec,
+		}
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
 		_, err = blackduckClient.SynopsysV1().Blackducks(namespace).Create(blackduck)
 		if err != nil {
@@ -84,16 +83,18 @@ var createOpsSightCmd = &cobra.Command{
 		// Create namespace for the OpsSight
 		deployCRDNamespace(restconfig)
 
-		// Create Spec for a OpsSight CRD
-		opssight := &opssightv1.OpsSight{}
-		opssight.ObjectMeta = metav1.ObjectMeta{
-			Name: namespace,
-		}
+		// Read Flags Into Default OpsSight Spec
 		defaultOpsSightSpec := crddefaults.GetOpsSightDefaultValue()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkOpsSightFlags)
-		opssight.Spec = *defaultOpsSightSpec
 
+		// Create and Deploy OpsSight CRD
+		opssight := &opssightv1.OpsSight{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+			Spec: *defaultOpsSightSpec,
+		}
 		opssightClient, err := opssightclientset.NewForConfig(restconfig)
 		_, err = opssightClient.SynopsysV1().OpsSights(namespace).Create(opssight)
 		if err != nil {
@@ -113,16 +114,18 @@ var createAlertCmd = &cobra.Command{
 		// Create namespace for the Alert
 		deployCRDNamespace(restconfig)
 
-		// Create Spec for an Alert CRD
-		alert := &alertv1.Alert{}
-		alert.ObjectMeta = metav1.ObjectMeta{
-			Name: namespace,
-		}
+		// Read Flags Into Default Alert Spec
 		defaultAlertSpec := crddefaults.GetAlertDefaultValue()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkAlertFlags)
-		alert.Spec = *defaultAlertSpec
 
+		// Create and Deploy Alert CRD
+		alert := &alertv1.Alert{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+			Spec: *defaultAlertSpec,
+		}
 		alertClient, err := alertclientset.NewForConfig(restconfig)
 		_, err = alertClient.SynopsysV1().Alerts(namespace).Create(alert)
 		if err != nil {
@@ -136,8 +139,6 @@ func deployCRDNamespace(restconfig *rest.Config) {
 	// Create Horizon Deployer
 	namespaceDeployer, err := deployer.NewDeployer(restconfig)
 	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
-		// APIVersion:  "string",
-		// ClusterName: "string",
 		Name:      namespace,
 		Namespace: namespace,
 	})
