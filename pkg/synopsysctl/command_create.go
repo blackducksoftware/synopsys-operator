@@ -34,6 +34,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Commands
+//var createCmd *cobra.Command
+
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
@@ -60,7 +63,7 @@ var createBlackduckCmd = &cobra.Command{
 		}
 		defaultBlackduckSpec := crddefaults.GetHubDefaultValue()
 		flagset := cmd.Flags()
-		flagset.Visit(checkBlackduckFlags)
+		flagset.VisitAll(checkBlackduckFlags)
 		blackduck.Spec = *defaultBlackduckSpec
 
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
@@ -258,69 +261,55 @@ func init() {
 	createCmd.AddCommand(createAlertCmd)
 }
 
-func populateBlackduckConfig(bd *blackduckv1.Blackduck) {
-	// Add Meta Data
-	bd.ObjectMeta = metav1.ObjectMeta{
-		Name: namespace,
-	}
-
-	// Get Default Blackduck Spec
-	bdDefaultSpec := bdutil.GetHubDefaultPersistentStorage()
-
-	// Update values with User input
-	bdDefaultSpec.Namespace = namespace
-	bdDefaultSpec.Size = create_blackduck_size
-	bdDefaultSpec.DbPrototype = create_blackduck_dbPrototype
-	bdDefaultSpec.ExternalPostgres = create_blackduck_externalPostgres
-	bdDefaultSpec.ExternalPostgres.PostgresHost = create_blackduck_externalPostgres_postgresHost
-	bdDefaultSpec.ExternalPostgres.PostgresPort = create_blackduck_externalPostgres_postgresPort
-	bdDefaultSpec.ExternalPostgres.PostgresAdmin = create_blackduck_externalPostgres_postgresAdmin
-	bdDefaultSpec.ExternalPostgres.PostgresUser = create_blackduck_externalPostgres_postgresUser
-	bdDefaultSpec.ExternalPostgres.PostgresSsl = create_blackduck_externalPostgres_postgresSsl
-	bdDefaultSpec.ExternalPostgres.PostgresAdminPassword = create_blackduck_externalPostgres_postgresAdminPassword
-	bdDefaultSpec.ExternalPostgres.PostgresUserPassword = create_blackduck_externalPostgres_postgresUserPassword
-	bdDefaultSpec.PVCStorageClass = create_blackduck_pvcStorageClass
-	bdDefaultSpec.LivenessProbes = create_blackduck_livenessProbes
-	bdDefaultSpec.ScanType = create_blackduck_scanType
-	bdDefaultSpec.PersistentStorage = create_blackduck_persistentStorage
-	bdDefaultSpec.PVC = create_blackduck_PVC
-	bdDefaultSpec.CertificateName = create_blackduck_certificateName
-	bdDefaultSpec.Certificate = create_blackduck_certificate
-	bdDefaultSpec.CertificateKey = create_blackduck_certificateKey
-	bdDefaultSpec.ProxyCertificate = create_blackduck_proxyCertificate
-	bdDefaultSpec.Type = create_blackduck_type
-	bdDefaultSpec.DesiredState = create_blackduck_desiredState
-	bdDefaultSpec.Environs = create_blackduck_environs
-	bdDefaultSpec.ImageRegistries = create_blackduck_imageRegistries
-	bdDefaultSpec.ImageUIDMap = create_blackduck_imageUIDMap
-	bdDefaultSpec.LicenseKey = create_blackduck_licenseKey
-
-	// Add updated spec
-	bd.Spec = *bdDefaultSpec
-}
-
 func checkBlackduckFlags(f *pflag.Flag) {
 	if f.Changed {
+		fmt.Printf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
+		case "namespace":
+			defaultBlackduckSpec.Namespace = namespace
 		case "size":
 			defaultBlackduckSpec.Size = create_blackduck_size
 		case "db-prototype":
 			defaultBlackduckSpec.DbPrototype = create_blackduck_dbPrototype
 		case "external-postgres-host":
+			if defaultBlackduckSpec.ExternalPostgres == nil {
+				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			}
 			defaultBlackduckSpec.ExternalPostgres.PostgresHost = create_blackduck_externalPostgres_postgresHost
 		case "external-postgres-port":
+			if defaultBlackduckSpec.ExternalPostgres == nil {
+				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			}
 			defaultBlackduckSpec.ExternalPostgres.PostgresPort = create_blackduck_externalPostgres_postgresPort
 		case "external-postgres-admin":
+			if defaultBlackduckSpec.ExternalPostgres == nil {
+				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			}
 			defaultBlackduckSpec.ExternalPostgres.PostgresAdmin = create_blackduck_externalPostgres_postgresAdmin
 		case "external-postgres-user":
+			if defaultBlackduckSpec.ExternalPostgres == nil {
+				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			}
 			defaultBlackduckSpec.ExternalPostgres.PostgresUser = create_blackduck_externalPostgres_postgresUser
 		case "external-postgres-ssl":
+			if defaultBlackduckSpec.ExternalPostgres == nil {
+				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			}
 			defaultBlackduckSpec.ExternalPostgres.PostgresSsl = create_blackduck_externalPostgres_postgresSsl
 		case "external-postgres-admin-password":
+			if defaultBlackduckSpec.ExternalPostgres == nil {
+				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			}
 			defaultBlackduckSpec.ExternalPostgres.PostgresAdminPassword = create_blackduck_externalPostgres_postgresAdminPassword
 		case "external-postgres-user-password":
+			if defaultBlackduckSpec.ExternalPostgres == nil {
+				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			}
 			defaultBlackduckSpec.ExternalPostgres.PostgresUserPassword = create_blackduck_externalPostgres_postgresUserPassword
 		case "pvc-storage-class":
+			if defaultBlackduckSpec.ExternalPostgres == nil {
+				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			}
 			defaultBlackduckSpec.PVCStorageClass = create_blackduck_pvcStorageClass
 		case "liveness-probes":
 			defaultBlackduckSpec.LivenessProbes = create_blackduck_livenessProbes
@@ -350,6 +339,7 @@ func checkBlackduckFlags(f *pflag.Flag) {
 			fmt.Printf("Flag Not Found: %s\n", f.Name)
 		}
 	}
+	fmt.Printf("Flag %s: UNCHANGED\n", f.Name)
 }
 
 func populateOpssightConfig(opssight *opssightv1.OpsSight) {
