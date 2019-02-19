@@ -24,6 +24,13 @@ import (
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
+	Args: func(cmd *cobra.Command, args []string) error {
+		num_args := 1
+		if len(args) != num_args {
+			return fmt.Errorf("Must pass Namespace")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("edit called")
 	},
@@ -33,6 +40,9 @@ var editBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Edit an instance of Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		fmt.Println("Editing Blackduck")
 		err := RunKubeEditorCmd("edit", "blackduck", namespace, "-n", namespace)
 		if err != nil {
@@ -45,6 +55,9 @@ var editOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Edit an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		fmt.Println("Editing OpsSight")
 		err := RunKubeEditorCmd("edit", "opssight", namespace, "-n", namespace)
 		if err != nil {
@@ -57,6 +70,9 @@ var editAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Edit an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		fmt.Println("Editing Alert")
 		err := RunKubeEditorCmd("edit", "alert", namespace, "-n", namespace)
 		if err != nil {
