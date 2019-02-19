@@ -30,12 +30,12 @@ import (
 )
 
 const (
-	// name will be Postgres container name
-	name = "postgres"
-	// dataMountPath will be Postgres data mount path
-	dataMountPath = "/var/lib/pgsql/data"
-	// dataVolumeName will be Postgres data volume name
-	dataVolumeName = "postgres-data-volume"
+	// postgresName will be Postgres container name
+	postgresName = "postgres"
+	// postgresDataMountPath will be Postgres data mount path
+	postgresDataMountPath = "/var/lib/pgsql/data"
+	// postgresDataVolumeName will be Postgres data volume name
+	postgresDataVolumeName = "postgres-data-volume"
 )
 
 // Postgres will provide the postgres container configuration
@@ -64,7 +64,7 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 
 	postgresExternalContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
-			Name:       name,
+			Name:       postgresName,
 			Image:      p.Image,
 			PullPolicy: horizonapi.PullAlways,
 			MinMem:     p.MinMemory,
@@ -80,7 +80,7 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 	if len(p.PVCName) > 0 {
 		postgresInitContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine",
-				Command: []string{"sh", "-c", fmt.Sprintf("chmod -cR 777 %s", dataMountPath)}},
+				Command: []string{"sh", "-c", fmt.Sprintf("chmod -cR 777 %s", postgresDataMountPath)}},
 			VolumeMounts: postgresVolumeMounts,
 			PortConfig:   []*horizonapi.PortConfig{{ContainerPort: "3001", Protocol: horizonapi.ProtocolTCP}},
 		}
@@ -88,7 +88,7 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 	}
 
 	postgres := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
-		Name: name, Replicas: util.IntToInt32(1)}, "", []*util.Container{postgresExternalContainerConfig},
+		Name: postgresName, Replicas: util.IntToInt32(1)}, "", []*util.Container{postgresExternalContainerConfig},
 		postgresVolumes, initContainers, []horizonapi.AffinityConfig{})
 
 	return postgres
@@ -96,7 +96,7 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 
 // GetPostgresService will return the postgres service
 func (p *Postgres) GetPostgresService() *components.Service {
-	return util.CreateService(name, name, p.Namespace, p.Port, p.Port, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService(postgresName, postgresName, p.Namespace, p.Port, p.Port, horizonapi.ClusterIPServiceTypeDefault)
 }
 
 // getPostgresVolumes will return the postgres volumes
@@ -104,9 +104,9 @@ func (p *Postgres) getPostgresVolumes() []*components.Volume {
 	var postgresVolumes []*components.Volume
 	var postgresDataVolume *components.Volume
 	if len(p.PVCName) > 0 {
-		postgresDataVolume, _ = util.CreatePersistentVolumeClaimVolume(dataVolumeName, p.PVCName)
+		postgresDataVolume, _ = util.CreatePersistentVolumeClaimVolume(postgresDataVolumeName, p.PVCName)
 	} else {
-		postgresDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit(dataVolumeName)
+		postgresDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit(postgresDataVolumeName)
 	}
 
 	postgresVolumes = append(postgresVolumes, postgresDataVolume)
@@ -116,7 +116,7 @@ func (p *Postgres) getPostgresVolumes() []*components.Volume {
 // getPostgresVolumeMounts will return the postgres volume mount configurations
 func (p *Postgres) getPostgresVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var postgresVolumeMounts []*horizonapi.VolumeMountConfig
-	postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: dataVolumeName, MountPath: dataMountPath})
+	postgresVolumeMounts = append(postgresVolumeMounts, &horizonapi.VolumeMountConfig{Name: postgresDataVolumeName, MountPath: postgresDataMountPath})
 	return postgresVolumeMounts
 }
 
