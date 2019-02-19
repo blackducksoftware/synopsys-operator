@@ -19,25 +19,24 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package util
+package api
 
-import (
-	"os/exec"
-	"testing"
-	"time"
-)
-
-func TestA(t *testing.T) {
-	cmd := &exec.Cmd{
-		Args: []string{"sleep", "100"},
-	}
-	timer := time.NewTimer(5 * time.Second)
-	go func() {
-		<-timer.C
-		t.Fail()
-		return
-	}()
-	RunWithTimeout(cmd, 2*time.Second)
-	t.Log("passed! finished before channel tripped")
-
+// DaemonSetConfig defines the basic configuration for a daemon set
+type DaemonSetConfig struct {
+	APIVersion           string
+	ClusterName          string
+	Name                 string
+	Namespace            string
+	UpdateStrategy       DaemonSetUpdateStrategyType
+	MaxUnavailable       string
+	MinReadySeconds      int32
+	RevisionHistoryLimit *int32
 }
+
+// DaemonSetUpdateStrategyType defines the update strategy for the stateful set
+type DaemonSetUpdateStrategyType int
+
+const (
+	DaemonSetUpdateStrategyRollingUpdate DaemonSetUpdateStrategyType = iota
+	DaemonSetUpdateStrategyOnDelete
+)

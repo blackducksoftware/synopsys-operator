@@ -322,6 +322,17 @@ func ReadFromFile(filePath string) ([]byte, error) {
 	return file, err
 }
 
+// GetConfigMap will get the config map
+func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string) (*v1.ConfigMap, error) {
+	return clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
+}
+
+// UpdateConfigMap updates a config map
+func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *v1.ConfigMap) error {
+	_, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
+	return err
+}
+
 // // CreateSecret will create the secret
 // func CreateNewSecret(secretConfig *horizonapi.SecretConfig) *components.Secret {
 //
@@ -377,9 +388,19 @@ func GetAllPodsForNamespace(clientset *kubernetes.Clientset, namespace string) (
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 }
 
+// GetReplicationController will get the replication controller corresponding to a namespace and name
+func GetReplicationController(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ReplicationController, error) {
+	return clientset.CoreV1().ReplicationControllers(namespace).Get(name, metav1.GetOptions{})
+}
+
 // GetAllReplicationControllersForNamespace will get all the replication controllers corresponding to a namespace
 func GetAllReplicationControllersForNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.ReplicationControllerList, error) {
 	return clientset.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{})
+}
+
+// GetDeployment will get the deployment corresponding to a namespace and name
+func GetDeployment(clientset *kubernetes.Clientset, namespace string, name string) (*appsv1.Deployment, error) {
+	return clientset.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
 }
 
 // GetAllDeploymentsForNamespace will get all the deployments corresponding to a namespace
@@ -484,34 +505,37 @@ func WaitForServiceEndpointReady(clientset *kubernetes.Clientset, namespace stri
 }
 
 // ValidatePodsAreRunningInNamespace will validate whether the pods are running in a given namespace
-func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespace string) error {
+func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespace string, timeoutInSeconds int64) error {
 	pods, err := GetAllPodsForNamespace(clientset, namespace)
 	if err != nil {
 		return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
 	}
 
-	allPodExist := ValidatePodsAreRunning(clientset, pods)
-	if !allPodExist {
-		ValidatePodsAreRunningInNamespace(clientset, namespace)
+	timeout := time.NewTimer(time.Duration(timeoutInSeconds) * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
+	for {
+		select {
+		case <-timeout.C:
+			ticker.Stop()
+			return fmt.Errorf("the pods weren't able to start - timing out after %d seconds", timeoutInSeconds)
+		case <-ticker.C:
+			if ValidatePodsAreRunning(clientset, pods) {
+				timeout.Stop()
+				ticker.Stop()
+				return nil
+			}
+		}
 	}
-	return nil
 }
 
 // ValidatePodsAreRunning will validate whether the pods are running
 func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodList) bool {
 	// Check whether all pods are running
 	for _, podList := range pods.Items {
-		for {
-			pod, _ := clientset.CoreV1().Pods(podList.Namespace).Get(podList.Name, metav1.GetOptions{})
-			if strings.EqualFold(pod.Name, "") {
-				log.Infof("pod %s is restarted in %s..... checking all pod status again...", podList.Name, podList.Namespace)
-				return false
-			}
-			if strings.EqualFold(string(pod.Status.Phase), "Running") {
-				break
-			}
-			log.Infof("pod %s is in %s status... waiting 10 seconds", pod.Name, string(pod.Status.Phase))
-			time.Sleep(10 * time.Second)
+		pod, _ := clientset.CoreV1().Pods(podList.Namespace).Get(podList.Name, metav1.GetOptions{})
+		if !strings.EqualFold(string(pod.Status.Phase), "Running") {
+			log.Infof("pod %s is in %s status...", pod.Name, string(pod.Status.Phase))
+			return false
 		}
 	}
 	return true
@@ -804,23 +828,24 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 }
 
 // PatchReplicationController patch a replication controller
-func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.ReplicationController, new corev1.ReplicationController) {
+func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.ReplicationController, new corev1.ReplicationController) error {
 	oldData, err := json.Marshal(old)
 	if err != nil {
-		return
+		return err
 	}
 	newData, err := json.Marshal(new)
 	if err != nil {
-		return
+		return err
 	}
 	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.ReplicationController{})
 	if err != nil {
-		return
+		return err
 	}
 	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
 	if err != nil {
-		return
+		return err
 	}
+	return nil
 }
 
 // UniqueValues returns a unique subset of the string slice provided.

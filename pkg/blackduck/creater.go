@@ -37,7 +37,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -64,7 +63,7 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 // DeleteHub will delete the Black Duck Blackduck
 func (hc *Creater) DeleteHub(namespace string) error {
 
-	logrus.Infof("Deleting hub: %s", namespace)
+	log.Infof("Deleting hub: %s", namespace)
 
 	var err error
 	// Verify whether the namespace exist
@@ -150,7 +149,7 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	}
 
 	// Validate all pods are in running state
-	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Spec.Namespace)
+	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Spec.Namespace, hc.Config.PodWaitTimeoutSeconds)
 	if err != nil {
 		return "", nil, true, err
 	}
@@ -181,12 +180,9 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	time.Sleep(1 * time.Minute)
 
 	if strings.EqualFold(ipAddress, "") {
-		ipAddress, err = hc.getLoadBalancerIPAddress(createHub.Spec.Namespace, "webserver-lb")
+		ipAddress, err = hubutils.GetIPAddress(hc.KubeClient, createHub.Spec.Namespace, 10, 10)
 		if err != nil {
-			ipAddress, err = hc.getNodePortIPAddress(createHub.Spec.Namespace, "webserver-np")
-			if err != nil {
-				return "", pvcVolumeNames, false, err
-			}
+			return "", pvcVolumeNames, false, err
 		}
 	}
 	log.Infof("hub Ip address: %s", ipAddress)
@@ -276,7 +272,6 @@ func (hc *Creater) Stop(createHub *v1.BlackduckSpec) error {
 }
 
 func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
-
 	var adminPassword, userPassword, postgresPassword string
 	var err error
 
@@ -293,6 +288,12 @@ func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
 
 	// Validate postgres pod is cloned/backed up
 	err = util.WaitForServiceEndpointReady(hc.KubeClient, createHub.Namespace, "postgres")
+	if err != nil {
+		return err
+	}
+
+	// Validate the postgres container is running
+	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Namespace, hc.Config.PodWaitTimeoutSeconds)
 	if err != nil {
 		return err
 	}

@@ -19,12 +19,30 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package main
+package api
 
-import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-)
+// IngressConfig defines the basic configuration for an ingress
+type IngressConfig struct {
+	APIVersion  string
+	ClusterName string
+	Name        string
+	Namespace   string
+	ServiceName string
+	ServicePort string
+}
 
-func main() {
-	apps.RootCmd.Execute()
+type IngressTLSConfig struct {
+	Hosts      []string
+	SecretName string
+}
+
+type IngressRuleConfig struct {
+	Host  string
+	Paths []HTTPIngressPathConfig
+}
+
+type HTTPIngressPathConfig struct {
+	Path        string
+	ServiceName string
+	ServicePort string
 }
