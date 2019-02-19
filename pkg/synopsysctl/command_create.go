@@ -35,9 +35,9 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Synopsys Resource in your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
-		max_args := 1
-		if len(args) > max_args {
-			return fmt.Errorf("Accepts %d arg(s), received %d", max_args, len(args))
+		num_args := 1
+		if len(args) != num_args {
+			return fmt.Errorf("Must pass Namespace")
 		}
 		return nil
 	},
@@ -51,12 +51,15 @@ var createBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Create an instance of a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 1 {
-			namespace = args[0]
+		if len(args) != 1 {
+			return fmt.Errorf("Must pass Namespace")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
@@ -88,13 +91,10 @@ var createBlackduckCmd = &cobra.Command{
 var createOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Create an instance of OpsSight",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 1 {
-			namespace = args[0]
-		}
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
@@ -126,13 +126,10 @@ var createOpsSightCmd = &cobra.Command{
 var createAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Create an instance of Alert",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 1 {
-			namespace = args[0]
-		}
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
