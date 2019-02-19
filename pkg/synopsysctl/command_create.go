@@ -17,9 +17,6 @@ package synopsysctl
 import (
 	"fmt"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -30,7 +27,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 )
 
 // createCmd represents the create command
@@ -50,7 +46,7 @@ var createBlackduckCmd = &cobra.Command{
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Blackduck
-		deployCRDNamespace(restconfig)
+		DeployCRDNamespace(restconfig)
 
 		// Read Flags Into Default Blackduck Spec
 		defaultBlackduckSpec := crddefaults.GetHubDefaultValue()
@@ -81,7 +77,7 @@ var createOpsSightCmd = &cobra.Command{
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the OpsSight
-		deployCRDNamespace(restconfig)
+		DeployCRDNamespace(restconfig)
 
 		// Read Flags Into Default OpsSight Spec
 		defaultOpsSightSpec := crddefaults.GetOpsSightDefaultValue()
@@ -112,7 +108,7 @@ var createAlertCmd = &cobra.Command{
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Alert
-		deployCRDNamespace(restconfig)
+		DeployCRDNamespace(restconfig)
 
 		// Read Flags Into Default Alert Spec
 		defaultAlertSpec := crddefaults.GetAlertDefaultValue()
@@ -133,21 +129,6 @@ var createAlertCmd = &cobra.Command{
 			return
 		}
 	},
-}
-
-func deployCRDNamespace(restconfig *rest.Config) {
-	// Create Horizon Deployer
-	namespaceDeployer, err := deployer.NewDeployer(restconfig)
-	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
-		Name:      namespace,
-		Namespace: namespace,
-	})
-	namespaceDeployer.AddNamespace(ns)
-	err = namespaceDeployer.Run()
-	if err != nil {
-		fmt.Printf("Error deploying namespace with Horizon : %s\n", err)
-		return
-	}
 }
 
 func init() {

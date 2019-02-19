@@ -23,6 +23,9 @@ import (
 	"path/filepath"
 	"time"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/horizon/pkg/deployer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -143,4 +146,19 @@ func homeDir() string {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
+}
+
+func DeployCRDNamespace(restconfig *rest.Config) {
+	// Create Horizon Deployer
+	namespaceDeployer, err := deployer.NewDeployer(restconfig)
+	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
+		Name:      namespace,
+		Namespace: namespace,
+	})
+	namespaceDeployer.AddNamespace(ns)
+	err = namespaceDeployer.Run()
+	if err != nil {
+		fmt.Printf("Error deploying namespace with Horizon : %s\n", err)
+		return
+	}
 }
