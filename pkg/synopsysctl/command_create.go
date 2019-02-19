@@ -15,6 +15,7 @@
 package synopsysctl
 
 import (
+	"encoding/json"
 	"fmt"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
@@ -137,7 +138,6 @@ func init() {
 	// Add Blackduck Flags
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_size, "size", create_blackduck_size, "Blackduck size - small, medium, large")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_dbPrototype, "db-prototype", create_blackduck_dbPrototype, "TODO")
-	//TODO - var create_blackduck_externalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_externalPostgres_postgresHost, "external-postgres-host", create_blackduck_externalPostgres_postgresHost, "TODO")
 	createBlackduckCmd.Flags().IntVar(&create_blackduck_externalPostgres_postgresPort, "external-postgres-port", create_blackduck_externalPostgres_postgresPort, "TODO")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_externalPostgres_postgresAdmin, "external-postgres-admin", create_blackduck_externalPostgres_postgresAdmin, "TODO")
@@ -149,7 +149,7 @@ func init() {
 	createBlackduckCmd.Flags().BoolVar(&create_blackduck_livenessProbes, "liveness-probes", create_blackduck_livenessProbes, "Enable liveness probes")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_scanType, "scan-type", create_blackduck_scanType, "TODO")
 	createBlackduckCmd.Flags().BoolVar(&create_blackduck_persistentStorage, "persistent-storage", create_blackduck_persistentStorage, "Enable persistent storage")
-	//TODO - var create_blackduck_PVC = []blackduckv1.PVC{}
+	createBlackduckCmd.Flags().StringSliceVar(&create_blackduck_PVC_json_slice, "pvc", create_blackduck_PVC_json_slice, "TODO")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_certificateName, "db-certificate-name", create_blackduck_certificateName, "TODO")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_certificate, "certificate", create_blackduck_certificate, "TODO")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_certificateKey, "certificate-key", create_blackduck_certificateKey, "TODO")
@@ -158,7 +158,7 @@ func init() {
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_desiredState, "desired-state", create_blackduck_desiredState, "TODO")
 	createBlackduckCmd.Flags().StringSliceVar(&create_blackduck_environs, "environs", create_blackduck_environs, "TODO")
 	createBlackduckCmd.Flags().StringSliceVar(&create_blackduck_imageRegistries, "image-registries", create_blackduck_imageRegistries, "List of image registries")
-	//TODO - var create_blackduck_imageUIDMap = map[string]int64{}
+	createBlackduckCmd.Flags().StringSliceVar(&create_blackduck_imageUIDMap_json_slice, "image-uid-map", create_blackduck_imageUIDMap_json_slice, "TODO")
 	createBlackduckCmd.Flags().StringVar(&create_blackduck_licenseKey, "license-key", create_blackduck_licenseKey, "TODO")
 	createCmd.AddCommand(createBlackduckCmd)
 
@@ -311,6 +311,12 @@ func checkBlackduckFlags(f *pflag.Flag) {
 			defaultBlackduckSpec.ScanType = create_blackduck_scanType
 		case "persistent-storage":
 			defaultBlackduckSpec.PersistentStorage = create_blackduck_persistentStorage
+		case "pvc":
+			for _, pvc_json := range create_blackduck_PVC_json_slice {
+				pvc := &blackduckv1.PVC{}
+				json.Unmarshal([]byte(pvc_json), pvc)
+				defaultBlackduckSpec.PVC = append(defaultBlackduckSpec.PVC, *pvc)
+			}
 		case "db-certificate-name":
 			defaultBlackduckSpec.CertificateName = create_blackduck_certificateName
 		case "certificate":
@@ -327,6 +333,17 @@ func checkBlackduckFlags(f *pflag.Flag) {
 			defaultBlackduckSpec.Environs = create_blackduck_environs
 		case "image-registries":
 			defaultBlackduckSpec.ImageRegistries = create_blackduck_imageRegistries
+		case "image-uid-map":
+			type uid struct {
+				Key   string `json:"key"`
+				Value int64  `json:"value"`
+			}
+			defaultBlackduckSpec.ImageUIDMap = make(map[string]int64)
+			for _, uid_json := range create_blackduck_imageUIDMap_json_slice {
+				uid_struct := &uid{}
+				json.Unmarshal([]byte(uid_json), uid_struct)
+				defaultBlackduckSpec.ImageUIDMap[uid_struct.Key] = uid_struct.Value
+			}
 		case "license-key":
 			defaultBlackduckSpec.LicenseKey = create_blackduck_licenseKey
 		default:

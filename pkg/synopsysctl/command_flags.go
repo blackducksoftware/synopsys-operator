@@ -60,7 +60,7 @@ var create_blackduck_type = ""
 var create_blackduck_desiredState = ""
 var create_blackduck_environs = []string{}
 var create_blackduck_imageRegistries = []string{}
-var create_blackduck_imageUIDMap = map[string]int64{}
+var create_blackduck_imageUIDMap_json_slice = []string{}
 var create_blackduck_licenseKey = ""
 
 // Create OpsSight Command Defaults
