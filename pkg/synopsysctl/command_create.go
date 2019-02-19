@@ -163,7 +163,6 @@ func init() {
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Flags
-	//TODO - var create_opssight_perceptor = &opssightv1.Perceptor{}
 	createOpsSightCmd.Flags().StringVar(&create_opssight_perceptor_name, "perceptor-name", create_opssight_perceptor_name, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_perceptor_image, "perceptor-image", create_opssight_perceptor_image, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_perceptor_port, "perceptor-port", create_opssight_perceptor_port, "TODO")
@@ -172,29 +171,23 @@ func init() {
 	createOpsSightCmd.Flags().IntVar(&create_opssight_perceptor_modelMetricsPauseSeconds, "perceptor-metrics-pause-seconds", create_opssight_perceptor_modelMetricsPauseSeconds, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_perceptor_unknownImagePauseMilliseconds, "perceptor-unknown-image-pause-milliseconds", create_opssight_perceptor_unknownImagePauseMilliseconds, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_perceptor_clientTimeoutMilliseconds, "perceptor-client-timeout-milliseconds", create_opssight_perceptor_clientTimeoutMilliseconds, "TODO")
-	//TODO - var create_opssight_scannerPod = &opssightv1.ScannerPod{}
 	createOpsSightCmd.Flags().StringVar(&create_opssight_scannerPod_name, "scannerpod-name", create_opssight_scannerPod_name, "TODO")
-	//TODO - var create_opssight_scannerPod_scanner = &opssightv1.Scanner{}
 	createOpsSightCmd.Flags().StringVar(&create_opssight_scannerPod_scanner_name, "scannerpod-scanner-name", create_opssight_scannerPod_scanner_name, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_scannerPod_scanner_image, "scannerpod-scanner-image", create_opssight_scannerPod_scanner_image, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_scannerPod_scanner_port, "scannerpod-scanner-port", create_opssight_scannerPod_scanner_port, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_scannerPod_scanner_clientTimeoutSeconds, "scannerpod-scanner-client-timeout-seconds", create_opssight_scannerPod_scanner_clientTimeoutSeconds, "TODO")
-	//TODO - var create_opssight_scannerPod_imageFacade = &opssightv1.ImageFacade{}
 	createOpsSightCmd.Flags().StringVar(&create_opssight_scannerPod_imageFacade_name, "scannerpod-imagefacade-name", create_opssight_scannerPod_imageFacade_name, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_scannerPod_imageFacade_image, "scannerpod-imagefacade-image", create_opssight_scannerPod_imageFacade_image, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_scannerPod_imageFacade_port, "scannerpod-imagefacade-port", create_opssight_scannerPod_imageFacade_port, "TODO")
-	//TODO - var create_opssight_scannerPod_imageFacade_internalRegistries = []opssightv1.RegistryAuth{}
+	createOpsSightCmd.Flags().StringSliceVar(&create_opssight_scannerPod_imageFacade_internalRegistries_json_slice, "scannerpod-imagefacade-internal-registries", create_opssight_scannerPod_imageFacade_internalRegistries_json_slice, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_scannerPod_imageFacade_imagePullerType, "scannerpod-imagefacade-image-puller-type", create_opssight_scannerPod_imageFacade_imagePullerType, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_scannerPod_imageFacade_serviceAccount, "scannerpod-imagefacade-service-account", create_opssight_scannerPod_imageFacade_serviceAccount, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_scannerPod_replicaCount, "scannerpod-replica-count", create_opssight_scannerPod_replicaCount, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_scannerPod_imageDirectory, "scannerpod-image-directory", create_opssight_scannerPod_imageDirectory, "TODO")
-	//TODO - var create_opssight_perceiver = &opssightv1.Perceiver{}
 	createOpsSightCmd.Flags().BoolVar(&create_opssight_perceiver_enableImagePerceiver, "enable-image-perceiver", create_opssight_perceiver_enableImagePerceiver, "TODO")
 	createOpsSightCmd.Flags().BoolVar(&create_opssight_perceiver_enablePodPerceiver, "enable-pod-perceiver", create_opssight_perceiver_enablePodPerceiver, "TODO")
-	//TODO - var create_opssight_perceiver_imagePerceiver = &opssightv1.ImagePerceiver{}
 	createOpsSightCmd.Flags().StringVar(&create_opssight_perceiver_imagePerceiver_name, "imageperceiver-name", create_opssight_perceiver_imagePerceiver_name, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_perceiver_imagePerceiver_image, "imageperceiver-image", create_opssight_perceiver_imagePerceiver_image, "TODO")
-	//TODO - var create_opssight_perceiver_podPerceiver = &opssightv1.PodPerceiver{}
 	createOpsSightCmd.Flags().StringVar(&create_opssight_perceiver_podPerceiver_name, "podperceiver-name", create_opssight_perceiver_podPerceiver_name, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_perceiver_podPerceiver_image, "podperceiver-image", create_opssight_perceiver_podPerceiver_image, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_perceiver_podPerceiver_namespaceFilter, "podperceiver-namespace-filter", create_opssight_perceiver_podPerceiver_namespaceFilter, "TODO")
@@ -202,12 +195,10 @@ func init() {
 	createOpsSightCmd.Flags().IntVar(&create_opssight_perceiver_dumpIntervalMinutes, "perceiver-dump-interval-minutes", create_opssight_perceiver_dumpIntervalMinutes, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_perceiver_serviceAccount, "perceiver-service-account", create_opssight_perceiver_serviceAccount, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_perceiver_port, "perceiver-port", create_opssight_perceiver_port, "TODO")
-	//TODO - var create_opssight_prometheus = &opssightv1.Prometheus{}
 	createOpsSightCmd.Flags().StringVar(&create_opssight_prometheus_name, "prometheus-name", create_opssight_prometheus_name, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_prometheus_name, "prometheus-image", create_opssight_prometheus_name, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_prometheus_port, "prometheus-port", create_opssight_prometheus_port, "TODO")
 	createOpsSightCmd.Flags().BoolVar(&create_opssight_enableSkyfire, "enable-skyfire", create_opssight_enableSkyfire, "TODO")
-	//TODO - var create_opssight_skyfire = &opssightv1.Skyfire{}
 	createOpsSightCmd.Flags().StringVar(&create_opssight_skyfire_name, "skyfire-name", create_opssight_skyfire_name, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_skyfire_image, "skyfire-image", create_opssight_skyfire_image, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_skyfire_port, "skyfire-port", create_opssight_skyfire_port, "TODO")
@@ -217,7 +208,6 @@ func init() {
 	createOpsSightCmd.Flags().IntVar(&create_opssight_skyfire_hubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", create_opssight_skyfire_hubDumpPauseSeconds, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_skyfire_kubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", create_opssight_skyfire_kubeDumpIntervalSeconds, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_skyfire_perceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", create_opssight_skyfire_perceptorDumpIntervalSeconds, "TODO")
-	//TODO - var create_opssight_blackduck = &opssightv1.Blackduck{}
 	createOpsSightCmd.Flags().StringSliceVar(&create_opssight_blackduck_hosts, "blackduck-hosts", create_opssight_blackduck_hosts, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_blackduck_user, "blackduck-user", create_opssight_blackduck_user, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_blackduck_port, "blackduck-port", create_opssight_blackduck_port, "TODO")
@@ -227,8 +217,6 @@ func init() {
 	createOpsSightCmd.Flags().IntVar(&create_opssight_blackduck_initialCount, "blackduck-initial-count", create_opssight_blackduck_initialCount, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_blackduck_maxCount, "blackduck-max-count", create_opssight_blackduck_maxCount, "TODO")
 	createOpsSightCmd.Flags().IntVar(&create_opssight_blackduck_deleteHubThresholdPercentage, "blackduck-delete-blackduck-threshold-percentage", create_opssight_blackduck_deleteHubThresholdPercentage, "TODO")
-	//TODO - var create_opssight_blackduck_blackduckSpec = &blackduckv1.BlackduckSpec{}
-
 	createOpsSightCmd.Flags().BoolVar(&create_opssight_enableMetrics, "enable-metrics", create_opssight_enableMetrics, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_defaultCPU, "default-cpu", create_opssight_defaultCPU, "TODO")
 	createOpsSightCmd.Flags().StringVar(&create_opssight_defaultMem, "default-mem", create_opssight_defaultMem, "TODO")
@@ -458,7 +446,18 @@ func checkOpsSightFlags(f *pflag.Flag) {
 				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
 			defaultOpsSightSpec.ScannerPod.ImageFacade.Port = create_opssight_scannerPod_imageFacade_port
-		//TODO - var create_opssight_scannerPod_imageFacade_internalRegistries = []opssightv1.RegistryAuth{}
+		case "scannerpod-imagefacade-internal-registries":
+			if defaultOpsSightSpec.ScannerPod == nil {
+				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
+			}
+			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
+				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+			}
+			for _, registry_json := range create_opssight_scannerPod_imageFacade_internalRegistries_json_slice {
+				registry := &opssightv1.RegistryAuth{}
+				json.Unmarshal([]byte(registry_json), registry)
+				defaultOpsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(defaultOpsSightSpec.ScannerPod.ImageFacade.InternalRegistries, *registry)
+			}
 		case "scannerpod-imagefacade-image-puller-type":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -662,7 +661,6 @@ func checkOpsSightFlags(f *pflag.Flag) {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
 			defaultOpsSightSpec.Blackduck.DeleteHubThresholdPercentage = create_opssight_blackduck_deleteHubThresholdPercentage
-		//TODO - var create_opssight_blackduck_blackduckSpec = &blackduckv1.BlackduckSpec{}
 		case "enable-metrics":
 			defaultOpsSightSpec.EnableMetrics = create_opssight_enableMetrics
 		case "default-cpu":

@@ -82,6 +82,7 @@ var create_opssight_scannerPod_scanner_clientTimeoutSeconds = 0
 var create_opssight_scannerPod_imageFacade_name = ""
 var create_opssight_scannerPod_imageFacade_image = ""
 var create_opssight_scannerPod_imageFacade_port = 0
+var create_opssight_scannerPod_imageFacade_internalRegistries_json_slice = []string{}
 var create_opssight_scannerPod_imageFacade_imagePullerType = ""
 var create_opssight_scannerPod_imageFacade_serviceAccount = ""
 var create_opssight_scannerPod_replicaCount = 0
