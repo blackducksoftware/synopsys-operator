@@ -37,6 +37,7 @@ var start_secretBlackduckPassword = "YmxhY2tkdWNr"
 
 // Create Blackduck Command Defaults
 var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
+var defaultBlackduckName = "blackduck"
 
 var create_blackduck_size = ""
 var create_blackduck_dbPrototype = ""
@@ -65,6 +66,7 @@ var create_blackduck_licenseKey = ""
 
 // Create OpsSight Command Defaults
 var defaultOpsSightSpec = &opssightv1.OpsSightSpec{}
+var defaultOpsSightName = "opssight"
 
 var create_opssight_perceptor_name = ""
 var create_opssight_perceptor_image = ""
@@ -129,6 +131,7 @@ var create_opssight_secretName = ""
 
 // Create Alert Command Defaults
 var defaultAlertSpec = &alertv1.AlertSpec{}
+var defaultAlertName = "alert"
 
 var create_alert_registry = ""
 var create_alert_imagePath = ""

@@ -34,14 +34,27 @@ import (
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Synopsys Resource in your cluster",
+	Args: func(cmd *cobra.Command, args []string) error {
+		max_args := 1
+		if len(args) > max_args {
+			return fmt.Errorf("Accepts %d arg(s), received %d", max_args, len(args))
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("create called")
+
 	},
 }
 
 var createBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Create an instance of a Blackduck",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 1 {
+			defaultBlackduckName = args[0]
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -57,7 +70,7 @@ var createBlackduckCmd = &cobra.Command{
 		// Create and Deploy Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
+				Name: defaultBlackduckName,
 			},
 			Spec: *defaultBlackduckSpec,
 		}
@@ -73,6 +86,12 @@ var createBlackduckCmd = &cobra.Command{
 var createOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Create an instance of OpsSight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 1 {
+			defaultOpsSightName = args[0]
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -88,7 +107,7 @@ var createOpsSightCmd = &cobra.Command{
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
+				Name: defaultOpsSightName,
 			},
 			Spec: *defaultOpsSightSpec,
 		}
@@ -104,6 +123,12 @@ var createOpsSightCmd = &cobra.Command{
 var createAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Create an instance of Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 1 {
+			defaultAlertName = args[0]
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -119,7 +144,7 @@ var createAlertCmd = &cobra.Command{
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
+				Name: defaultAlertName,
 			},
 			Spec: *defaultAlertSpec,
 		}
