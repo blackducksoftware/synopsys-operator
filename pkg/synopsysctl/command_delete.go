@@ -28,8 +28,14 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Remove a Synopsys Resource from your cluster",
+	Args: func(cmd *cobra.Command, args []string) error {
+		num_args := 1
+		if len(args) != num_args {
+			return fmt.Errorf("Must pass Namespace")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("delete called")
 
 	},
 }
@@ -38,6 +44,9 @@ var deleteBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Delete a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
@@ -54,6 +63,9 @@ var deleteOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Delete an OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 		opssightClient, err := opssightclientset.NewForConfig(restconfig)
@@ -69,6 +81,9 @@ var deleteAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Delete an Alert",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Read Commandline Parameters
+		namespace = args[0]
+
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 		alertClient, err := alertclientset.NewForConfig(restconfig)

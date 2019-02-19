@@ -46,12 +46,13 @@ var createCmd = &cobra.Command{
 	},
 }
 
+// createCmd represents the create command for Blackduck
 var createBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Create an instance of a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 1 {
-			defaultBlackduckName = args[0]
+			namespace = args[0]
 		}
 		return nil
 	},
@@ -70,7 +71,7 @@ var createBlackduckCmd = &cobra.Command{
 		// Create and Deploy Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: defaultBlackduckName,
+				Name: namespace,
 			},
 			Spec: *defaultBlackduckSpec,
 		}
@@ -83,12 +84,13 @@ var createBlackduckCmd = &cobra.Command{
 	},
 }
 
+// createCmd represents the create command for OpsSight
 var createOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Create an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 1 {
-			defaultOpsSightName = args[0]
+			namespace = args[0]
 		}
 		return nil
 	},
@@ -107,7 +109,7 @@ var createOpsSightCmd = &cobra.Command{
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: defaultOpsSightName,
+				Name: namespace,
 			},
 			Spec: *defaultOpsSightSpec,
 		}
@@ -120,12 +122,13 @@ var createOpsSightCmd = &cobra.Command{
 	},
 }
 
+// createCmd represents the create command for Alert
 var createAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Create an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 1 {
-			defaultAlertName = args[0]
+			namespace = args[0]
 		}
 		return nil
 	},
@@ -144,7 +147,7 @@ var createAlertCmd = &cobra.Command{
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: defaultAlertName,
+				Name: namespace,
 			},
 			Spec: *defaultAlertSpec,
 		}
