@@ -38,7 +38,7 @@ var start_secretBlackduckPassword = "YmxhY2tkdWNr"
 // Create Blackduck Defaults
 var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
 
-var create_blackduck_size = "small"
+var create_blackduck_size = ""
 var create_blackduck_dbPrototype = ""
 var create_blackduck_externalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 var create_blackduck_externalPostgres_postgresHost = ""
@@ -48,114 +48,29 @@ var create_blackduck_externalPostgres_postgresUser = ""
 var create_blackduck_externalPostgres_postgresSsl = false
 var create_blackduck_externalPostgres_postgresAdminPassword = ""
 var create_blackduck_externalPostgres_postgresUserPassword = ""
-var create_blackduck_pvcStorageClass = "standard"
+var create_blackduck_pvcStorageClass = ""
 var create_blackduck_livenessProbes = false
 var create_blackduck_scanType = ""
 var create_blackduck_persistentStorage = true
 
-var create_blackduck_PVC = []blackduckv1.PVC{
-	blackduckv1.PVC{
-		Name: "blackduck-postgres",
-		Size: "200Gi",
-	},
-	blackduckv1.PVC{
-		Name: "blackduck-authentication",
-		Size: "2Gi",
-	},
-	blackduckv1.PVC{
-		Name: "blackduck-cfssl",
-		Size: "2Gi",
-	},
-	blackduckv1.PVC{
-		Name: "blackduck-registration",
-		Size: "2Gi",
-	},
-	blackduckv1.PVC{
-		Name: "blackduck-solr",
-		Size: "2Gi",
-	},
-	blackduckv1.PVC{
-		Name: "blackduck-webapp",
-		Size: "2Gi",
-	},
-	blackduckv1.PVC{
-		Name: "blackduck-logstash",
-		Size: "20Gi",
-	},
-	blackduckv1.PVC{
-		Name: "blackduck-zookeeper-data",
-		Size: "2Gi",
-	},
-	blackduckv1.PVC{
-		Name: "blackduck-zookeeper-datalog",
-		Size: "2Gi",
-	},
-}
-var create_blackduck_PVC_json_slice = []string{
-	"{\"name\": \"blackduck-postgres\",\"size\": \"200Gi\"}",
-	"{\"name\": \"blackduck-authentication\",\"size\": \"2Gi\"}",
-	"{\"name\": \"blackduck-cfssl\",\"size\": \"2Gi\"}",
-	"{\"name\": \"blackduck-registration\",\"size\": \"2Gi\"}",
-	"{\"name\": \"blackduck-solr\",\"size\": \"2Gi\"}",
-	"{\"name\": \"blackduck-webapp\",\"size\": \"2Gi\"}",
-	"{\"name\": \"blackduck-logstash\",\"size\": \"20Gi\"}",
-	"{\"name\": \"blackduck-zookeeper-data\",\"size\": \"2Gi\"}",
-	"{\"name\": \"blackduck-zookeeper-datalog\",\"size\": \"2Gi\"}",
-}
-var create_blackduck_PVC_json = "[{\"name\": \"blackduck-postgres\",\"size\": \"200Gi\"},{\"name\": \"blackduck-authentication\",\"size\": \"2Gi\"},{\"name\": \"blackduck-cfssl\",\"size\": \"2Gi\"},{\"name\": \"blackduck-registration\",\"size\": \"2Gi\"},{\"name\": \"blackduck-solr\",\"size\": \"2Gi\"},{\"name\": \"blackduck-webapp\",\"size\": \"2Gi\"},{\"name\": \"blackduck-logstash\",\"size\": \"20Gi\"},{\"name\": \"blackduck-zookeeper-data\",\"size\": \"2Gi\"},{\"name\": \"blackduck-zookeeper-datalog\",\"size\": \"2Gi\"]"
+var create_blackduck_PVC = []blackduckv1.PVC{}
+var create_blackduck_PVC_json_slice = []string{}
+var create_blackduck_PVC_json = ""
 
-var create_blackduck_certificateName = "default"
+var create_blackduck_certificateName = ""
 var create_blackduck_certificate = ""
 var create_blackduck_certificateKey = ""
 var create_blackduck_proxyCertificate = ""
-var create_blackduck_type = "worker"
+var create_blackduck_type = ""
 var create_blackduck_desiredState = ""
-var create_blackduck_environs = []string{
-	"HTTPS_VERIFY_CERTS:yes",
-	"HUB_POSTGRES_ENABLE_SSL:false",
-	"HUB_VERSION:2018.12.2",
-	"IPV4_ONLY:0",
-	"RABBITMQ_DEFAULT_VHOST:protecodesc",
-	"USE_ALERT:0",
-	"CFSSL:cfssl:8888",
-	"PUBLIC_HUB_WEBSERVER_HOST:localhost",
-	"RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT:false",
-	"HUB_POSTGRES_ADMIN:blackduck",
-	"HUB_PROXY_NON_PROXY_HOSTS:solr",
-	"PUBLIC_HUB_WEBSERVER_PORT:443",
-	"DISABLE_HUB_DASHBOARD:#hub-webserver.env",
-	"HUB_LOGSTASH_HOST:logstash",
-	"RABBIT_MQ_PORT:5671",
-	"USE_BINARY_UPLOADS:1",
-	"BROKER_USE_SSL:yes",
-	"RABBIT_MQ_HOST:rabbitmq",
-	"CLIENT_CERT_CN:binaryscanner",
-	"HUB_POSTGRES_USER:blackduck_user",
-	"BLACKDUCK_REPORT_IGNORED_COMPONENTS:false",
-	"BROKER_URL:amqps://rabbitmq/protecodesc",
-	"SCANNER_CONCURRENCY:1",
-	"HUB_WEBSERVER_PORT:8443",
-}
-var create_blackduck_imageRegistries = []string{
-	"docker.io/blackducksoftware/blackduck-authentication:2018.12.2",
-	"docker.io/blackducksoftware/blackduck-documentation:2018.12.2",
-	"docker.io/blackducksoftware/blackduck-jobrunner:2018.12.2",
-	"docker.io/blackducksoftware/blackduck-registration:2018.12.2",
-	"docker.io/blackducksoftware/blackduck-scan:2018.12.2",
-	"docker.io/blackducksoftware/blackduck-webapp:2018.12.2",
-	"docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
-	"docker.io/blackducksoftware/blackduck-logstash:1.0.2",
-	"docker.io/blackducksoftware/blackduck-nginx:1.0.0",
-	"docker.io/blackducksoftware/blackduck-solr:1.0.0",
-	"docker.io/blackducksoftware/blackduck-zookeeper:1.0.0",
-	"docker.io/blackducksoftware/appcheck-worker:1.0.1",
-	"docker.io/blackducksoftware/rabbitmq:1.0.0",
-	"docker.io/blackducksoftware/blackduck-upload-cache:1.0.3",
-}
+var create_blackduck_environs = []string{}
+var create_blackduck_imageRegistries = []string{}
 var create_blackduck_imageUIDMap = map[string]int64{}
 var create_blackduck_licenseKey = ""
 
 // Create OpsSight Defaults
+var defaultOpsSightSpec = &opssightv1.OpsSightSpec{}
+
 var create_opssight_perceptor = &opssightv1.Perceptor{}
 var create_opssight_perceptor_name = ""
 var create_opssight_perceptor_image = ""
@@ -235,17 +150,17 @@ var create_opssight_configMapName = ""
 var create_opssight_secretName = ""
 
 // Create Alert Defaults
-var create_alert_registry = "docker.io"
-var create_alert_imagePath = "blackducksoftware"
-var create_alert_alertImageName = "blackduck-alert"
-var create_alert_alertImageVersion = "2.1.0"
-var create_alert_cfsslImageName = "hub-cfssl"
-var create_alert_cfsslImageVersion = "4.8.1"
-var create_alert_blackduckHost = "sysadmin"
+var create_alert_registry = ""
+var create_alert_imagePath = ""
+var create_alert_alertImageName = ""
+var create_alert_alertImageVersion = ""
+var create_alert_cfsslImageName = ""
+var create_alert_cfsslImageVersion = ""
+var create_alert_blackduckHost = ""
 var create_alert_blackduckUser = ""
-var create_alert_blackduckPort = 443
-var create_alert_port = 8443
-var create_alert_standAlone = true
-var create_alert_alertMemory = "512M"
-var create_alert_cfsslMemory = "640M"
+var create_alert_blackduckPort = 0
+var create_alert_port = 0
+var create_alert_standAlone = false
+var create_alert_alertMemory = ""
+var create_alert_cfsslMemory = ""
 var create_alert_state = ""
