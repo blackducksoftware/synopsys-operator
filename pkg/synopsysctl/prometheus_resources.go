@@ -28,6 +28,7 @@ import (
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 )
 
+// GetPrometheusService creates a Horizon Service component for Prometheus
 func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponents.Service {
 
 	// Add Service for Prometheus
@@ -57,6 +58,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponent
 	return prometheusService
 }
 
+// GetPrometheusDeployment creates a Horizon Deployment component for Prometheus
 func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncomponents.Deployment {
 	// Deployment
 	var prometheusDeploymentReplicas int32 = 1
@@ -170,6 +172,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 	return prometheusDeployment
 }
 
+// GetPrometheusConfigMap creates a Horizon ConfigMap component for Prometheus
 func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncomponents.ConfigMap {
 	// Add prometheus config map
 	prometheusConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{

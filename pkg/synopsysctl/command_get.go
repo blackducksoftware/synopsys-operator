@@ -25,8 +25,8 @@ var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "List Synopsys Resources in your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
-		num_args := 1
-		if len(args) != num_args {
+		numArgs := 1
+		if len(args) != numArgs {
 			return fmt.Errorf("Must pass Resource Type")
 		}
 		return nil

@@ -28,6 +28,7 @@ import (
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 )
 
+// GetOperatorReplicationController creates a ReplicationController Horizon component for the Synopsys-Operaotor
 func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horizoncomponents.ReplicationController {
 	// Add the Replication Controller to the Deployer
 	var synopsysOperatorRCReplicas int32 = 1
@@ -178,6 +179,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horiz
 	return synopsysOperatorRC
 }
 
+// GetOperatorService creates a Service Horizon component for the Synopsys-Operaotor
 func (specConfig *SOperatorSpecConfig) GetOperatorService() *horizoncomponents.Service {
 
 	// Add the Service to the Deployer
@@ -220,6 +222,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorService() *horizoncomponents.S
 	return synopsysOperatorService
 }
 
+// GetOperatorConfigMap creates a ConfigMap Horizon component for the Synopsys-Operaotor
 func (specConfig *SOperatorSpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMap {
 	// Config Map
 	synopsysOperatorConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
@@ -234,6 +237,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorConfigMap() *horizoncomponents
 	return synopsysOperatorConfigMap
 }
 
+// GetOperatorServiceAccount creates a ServiceAccount Horizon component for the Synopsys-Operaotor
 func (specConfig *SOperatorSpecConfig) GetOperatorServiceAccount() *horizoncomponents.ServiceAccount {
 	// Service Account
 	synopsysOperatorServiceAccount := horizoncomponents.NewServiceAccount(horizonapi.ServiceAccountConfig{
@@ -247,6 +251,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorServiceAccount() *horizoncompo
 	return synopsysOperatorServiceAccount
 }
 
+// GetOperatorClusterRoleBinding creates a ClusterRoleBinding Horizon component for the Synopsys-Operaotor
 func (specConfig *SOperatorSpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
 	// Cluster Role Binding
 	synopsysOperatorClusterRoleBinding := horizoncomponents.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{

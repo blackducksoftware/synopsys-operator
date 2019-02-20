@@ -32,7 +32,7 @@ var startCmd = &cobra.Command{
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check the Secret Type
-		switch start_secretType {
+		switch startSecretType {
 		case "Opaque":
 			secretType = horizonapi.SecretTypeOpaque
 		case "ServiceAccountToken":
@@ -48,7 +48,7 @@ var startCmd = &cobra.Command{
 		case "TypeTLS":
 			secretType = horizonapi.SecretTypeTLS
 		default:
-			fmt.Printf("Invalid Secret Type: %s\n", start_secretType)
+			fmt.Printf("Invalid Secret Type: %s\n", startSecretType)
 			return errors.New("Bad Secret Type")
 		}
 		return nil
@@ -82,15 +82,15 @@ var startCmd = &cobra.Command{
 		secret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 			APIVersion: "v1",
 			// ClusterName : "cluster",
-			Name:      start_secretName,
+			Name:      startSecretName,
 			Namespace: namespace,
 			Type:      secretType,
 		})
 		secret.AddData(map[string][]byte{
-			"ADMIN_PASSWORD":    []byte(start_secretAdminPassword),
-			"POSTGRES_PASSWORD": []byte(start_secretPostgresPassword),
-			"USER_PASSWORD":     []byte(start_secretUserPassword),
-			"HUB_PASSWORD":      []byte(start_secretBlackduckPassword),
+			"ADMIN_PASSWORD":    []byte(startSecretAdminPassword),
+			"POSTGRES_PASSWORD": []byte(startSecretPostgresPassword),
+			"USER_PASSWORD":     []byte(startSecretUserPassword),
+			"HUB_PASSWORD":      []byte(startSecretBlackduckPassword),
 		})
 		environmentDeployer.AddSecret(secret)
 
@@ -104,8 +104,8 @@ var startCmd = &cobra.Command{
 		// Deploy synopsys-operator
 		soperatorSpec := SOperatorSpecConfig{
 			Namespace:                namespace,
-			SynopsysOperatorImage:    start_synopsysOperatorImage,
-			BlackduckRegistrationKey: start_blackduckRegistrationKey,
+			SynopsysOperatorImage:    startSynopsysOperatorImage,
+			BlackduckRegistrationKey: startBlackduckRegistrationKey,
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(rc)
 		if err != nil {
@@ -126,7 +126,7 @@ var startCmd = &cobra.Command{
 		// Deploy prometheus
 		promtheusSpec := PrometheusSpecConfig{
 			Namespace:       namespace,
-			PrometheusImage: start_prometheusImage,
+			PrometheusImage: startPrometheusImage,
 		}
 		prometheusDeployer, err := deployer.NewDeployer(rc)
 		if err != nil {
@@ -143,7 +143,7 @@ var startCmd = &cobra.Command{
 		}
 
 		// secret link stuff
-		RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", start_dockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
+		RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", startDockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
 		RunKubeCmd("secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
 		RunKubeCmd("secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
 		RunKubeCmd("scale", "rc", "synopsys-operator", "--replicas=0")
@@ -164,25 +164,15 @@ var startCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(startCmd)
 
-	startCmd.Flags().StringVarP(&start_synopsysOperatorImage, "synopsys-operator-image", "i", start_synopsysOperatorImage, "synopsys operator image URL")
-	startCmd.Flags().StringVarP(&start_prometheusImage, "prometheus-image", "p", start_prometheusImage, "prometheus image URL")
-	startCmd.Flags().StringVarP(&start_blackduckRegistrationKey, "blackduck-registration-key", "k", start_blackduckRegistrationKey, "key to register with KnowledgeBase")
-	startCmd.Flags().StringVarP(&start_dockerConfigPath, "docker-config", "d", start_dockerConfigPath, "path to docker config (image pull secrets etc)")
+	startCmd.Flags().StringVarP(&startSynopsysOperatorImage, "synopsys-operator-image", "i", startSynopsysOperatorImage, "synopsys operator image URL")
+	startCmd.Flags().StringVarP(&startPrometheusImage, "prometheus-image", "p", startPrometheusImage, "prometheus image URL")
+	startCmd.Flags().StringVarP(&startBlackduckRegistrationKey, "blackduck-registration-key", "k", startBlackduckRegistrationKey, "key to register with KnowledgeBase")
+	startCmd.Flags().StringVarP(&startDockerConfigPath, "docker-config", "d", startDockerConfigPath, "path to docker config (image pull secrets etc)")
 
-	startCmd.Flags().StringVar(&start_secretName, "secret-name", start_secretName, "name of kubernetes secret for postgres and blackduck")
-	startCmd.Flags().StringVar(&start_secretType, "secret-type", start_secretType, "type of kubernetes secret for postgres and blackduck")
-	startCmd.Flags().StringVar(&start_secretAdminPassword, "admin-password", start_secretAdminPassword, "postgres admin password")
-	startCmd.Flags().StringVar(&start_secretPostgresPassword, "postgres-password", start_secretPostgresPassword, "postgres password")
-	startCmd.Flags().StringVar(&start_secretUserPassword, "user-password", start_secretUserPassword, "postgres user password")
-	startCmd.Flags().StringVar(&start_secretBlackduckPassword, "blackduck-password", start_secretBlackduckPassword, "blackduck password for 'sysadmin' account")
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// startCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	startCmd.Flags().StringVar(&startSecretName, "secret-name", startSecretName, "name of kubernetes secret for postgres and blackduck")
+	startCmd.Flags().StringVar(&startSecretType, "secret-type", startSecretType, "type of kubernetes secret for postgres and blackduck")
+	startCmd.Flags().StringVar(&startSecretAdminPassword, "admin-password", startSecretAdminPassword, "postgres admin password")
+	startCmd.Flags().StringVar(&startSecretPostgresPassword, "postgres-password", startSecretPostgresPassword, "postgres password")
+	startCmd.Flags().StringVar(&startSecretUserPassword, "user-password", startSecretUserPassword, "postgres user password")
+	startCmd.Flags().StringVar(&startSecretBlackduckPassword, "blackduck-password", startSecretBlackduckPassword, "blackduck password for 'sysadmin' account")
 }

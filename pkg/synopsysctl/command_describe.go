@@ -25,8 +25,8 @@ var describeCmd = &cobra.Command{
 	Use:   "describe",
 	Short: "Print a detailed description of the selected resource",
 	Args: func(cmd *cobra.Command, args []string) error {
-		num_args := 1
-		if len(args) != num_args {
+		numArgs := 1
+		if len(args) != numArgs {
 			return fmt.Errorf("Must pass Resource Name")
 		}
 		return nil

@@ -44,7 +44,7 @@ func determineClusterClients() {
 	}
 }
 
-// RunCmd is a simple wrapper to oc/kubectl exec that captures output.
+// RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
 // TODO consider replacing w/ go api but not crucial for now.
 func RunKubeCmd(args ...string) (string, error) {
 	determineClusterClients()
@@ -70,6 +70,8 @@ func RunKubeCmd(args ...string) (string, error) {
 	return string(stdoutErr), nil
 }
 
+// RunKubeEditorCmd is a wrapper for oc/kubectl but redirects
+// input/output to the user - ex: let user control text editor
 func RunKubeEditorCmd(args ...string) error {
 	determineClusterClients()
 
@@ -96,8 +98,8 @@ func RunKubeEditorCmd(args ...string) error {
 	return nil
 }
 
-// runWithTimeout runs a command and times it out at the specified duration
-func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (error, string) {
+// RunWithTimeout runs a command and times it out at the specified duration
+func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (string, error) {
 	timeout := time.After(d)
 
 	// Use a bytes.Buffer to get the output
@@ -116,16 +118,16 @@ func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (error, string) {
 	case <-timeout:
 		// Timeout happened first, kill the process and print a message.
 		cmd.Process.Kill()
-		return fmt.Errorf("Killed due to timeout"), buf.String()
+		return buf.String(), fmt.Errorf("Killed due to timeout")
 	case err := <-done:
 		if err != nil {
-			return nil, buf.String()
-		} else {
-			return err, buf.String()
+			return buf.String(), nil
 		}
+		return buf.String(), err
 	}
 }
 
+// getKubeRestConfig gets the user's kubeconfig from their system
 func getKubeRestConfig() *rest.Config {
 	var kubeconfig *string
 	if home := homeDir(); home != "" {
@@ -141,6 +143,7 @@ func getKubeRestConfig() *rest.Config {
 	return restconfig
 }
 
+// homeDir determines the user's home directory path
 func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
@@ -148,6 +151,7 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
+// DeployCRDNamespace creates an empty Horizon namespace
 func DeployCRDNamespace(restconfig *rest.Config) {
 	// Create Horizon Deployer
 	namespaceDeployer, err := deployer.NewDeployer(restconfig)

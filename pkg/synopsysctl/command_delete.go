@@ -29,8 +29,8 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Remove a Synopsys Resource from your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
-		num_args := 1
-		if len(args) != num_args {
+		numArgs := 1
+		if len(args) != numArgs {
 			return fmt.Errorf("Must pass Namespace")
 		}
 		return nil

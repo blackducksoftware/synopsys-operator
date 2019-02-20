@@ -25,8 +25,8 @@ var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
 	Args: func(cmd *cobra.Command, args []string) error {
-		num_args := 1
-		if len(args) != num_args {
+		numArgs := 1
+		if len(args) != numArgs {
 			return fmt.Errorf("Must pass Namespace")
 		}
 		return nil
