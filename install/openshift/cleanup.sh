@@ -7,8 +7,6 @@ oc delete ns $NS
 oc delete crd alerts.synopsys.com
 oc delete crd blackducks.synopsys.com
 oc delete crd opssights.synopsys.com
-oc delete crd samples.synopsys.com
-
 
 oc delete clusterrolebinding synopsys-operator-admin
 #oc delete clusterrolebinding protoform-admin
