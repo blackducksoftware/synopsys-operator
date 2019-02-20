@@ -32,6 +32,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/sirupsen/logrus"
+	//"github.com/blackducksoftware/synopsys-operator/pkg/hammer"
 )
 
 func main() {
