@@ -26,8 +26,8 @@ var describeCmd = &cobra.Command{
 	Short: "Print a detailed description of the selected resource",
 	Args: func(cmd *cobra.Command, args []string) error {
 		numArgs := 1
-		if len(args) != numArgs {
-			return fmt.Errorf("Must pass Resource Name")
+		if len(args) < numArgs {
+			return fmt.Errorf("Not enough arguments")
 		}
 		return nil
 	},
@@ -91,6 +91,7 @@ var describeAlertCmd = &cobra.Command{
 }
 
 func init() {
+	describeCmd.DisableFlagParsing = true
 	rootCmd.AddCommand(describeCmd)
 	describeCmd.AddCommand(describeBlackduckCmd)
 	describeCmd.AddCommand(describeOpsSightCmd)

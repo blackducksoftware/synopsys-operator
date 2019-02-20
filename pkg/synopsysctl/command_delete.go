@@ -30,8 +30,8 @@ var deleteCmd = &cobra.Command{
 	Short: "Remove a Synopsys Resource from your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		numArgs := 1
-		if len(args) != numArgs {
-			return fmt.Errorf("Must pass Namespace")
+		if len(args) < numArgs {
+			return fmt.Errorf("Not enough arguments")
 		}
 		return nil
 	},
@@ -102,6 +102,7 @@ var deleteAlertCmd = &cobra.Command{
 }
 
 func init() {
+	deleteCmd.DisableFlagParsing = true
 	rootCmd.AddCommand(deleteCmd)
 
 	deleteCmd.AddCommand(deleteBlackduckCmd)

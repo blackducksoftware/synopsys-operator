@@ -36,13 +36,13 @@ var createCmd = &cobra.Command{
 	Short: "Create a Synopsys Resource in your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		numArgs := 1
-		if len(args) != numArgs {
-			return fmt.Errorf("Must pass Namespace")
+		if len(args) < numArgs {
+			return fmt.Errorf("Not enough arguments")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Creating Non-Synopsys Resource")
+		fmt.Printf("Creating Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"create"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
@@ -164,6 +164,7 @@ var createAlertCmd = &cobra.Command{
 }
 
 func init() {
+	createCmd.DisableFlagParsing = true
 	rootCmd.AddCommand(createCmd)
 
 	// Add Blackduck Flags

@@ -26,8 +26,8 @@ var getCmd = &cobra.Command{
 	Short: "List Synopsys Resources in your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		numArgs := 1
-		if len(args) != numArgs {
-			return fmt.Errorf("Must pass Resource Type")
+		if len(args) < numArgs {
+			return fmt.Errorf("Not enough arguments")
 		}
 		return nil
 	},
@@ -82,6 +82,7 @@ var getAlertCmd = &cobra.Command{
 }
 
 func init() {
+	getCmd.DisableFlagParsing = true
 	rootCmd.AddCommand(getCmd)
 	getCmd.AddCommand(getBlackduckCmd)
 	getCmd.AddCommand(getOpsSightCmd)

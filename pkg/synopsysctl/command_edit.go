@@ -26,8 +26,8 @@ var editCmd = &cobra.Command{
 	Short: "Allows you to directly edit the API resource",
 	Args: func(cmd *cobra.Command, args []string) error {
 		numArgs := 1
-		if len(args) != numArgs {
-			return fmt.Errorf("Must pass Namespace")
+		if len(args) < numArgs {
+			return fmt.Errorf("Not enough arguments")
 		}
 		return nil
 	},
@@ -88,6 +88,7 @@ var editAlertCmd = &cobra.Command{
 }
 
 func init() {
+	editCmd.DisableFlagParsing = true
 	rootCmd.AddCommand(editCmd)
 	editCmd.AddCommand(editBlackduckCmd)
 	editCmd.AddCommand(editOpsSightCmd)
