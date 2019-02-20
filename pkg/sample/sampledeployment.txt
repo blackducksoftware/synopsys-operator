@@ -65,7 +65,7 @@ func (specConfig *SpecConfig) getSamplePod() *components.Pod {
 func (specConfig *SpecConfig) getSampleContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  specConfig.config.Namespace,
-		Image: "registry.hub.docker.com/vasiliys/public-test:latest",
+		Image: "<<image_name>>",
 	})
 
 	container.AddPort(horizonapi.PortConfig{
