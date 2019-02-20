@@ -35,8 +35,7 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
-	PreRun: func(cmd *cobra.Command, args []string) {
-		// PreRun - Children Do Not Inherit
+	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Deleting Non-Synopsys Resource")
 		kubeCmdArgs := append([]string{"delete"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)

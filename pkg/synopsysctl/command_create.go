@@ -41,8 +41,7 @@ var createCmd = &cobra.Command{
 		}
 		return nil
 	},
-	PreRun: func(cmd *cobra.Command, args []string) {
-		// PreRun - Children Do Not Inherit
+	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Creating Non-Synopsys Resource")
 		kubeCmdArgs := append([]string{"create"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
