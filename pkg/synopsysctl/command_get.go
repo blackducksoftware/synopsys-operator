@@ -31,16 +31,60 @@ var getCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		resource_name := args[0]
-		out, err := RunKubeCmd("get", resource_name)
+	PreRun: func(cmd *cobra.Command, args []string) {
+		// PreRun - Children Do Not Inherit
+		fmt.Println("Describing Non-Synopsys Resource")
+		kubeCmdArgs := append([]string{"describe"}, args...)
+		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			fmt.Printf("Error getting %s with KubeCmd: %s", resource_name, err)
+			fmt.Printf("Error Describing the Resource with KubeCmd: %s\n", err)
 		}
-		fmt.Printf("%+v", out)
+		fmt.Printf("%+v\n", out)
+	},
+}
+
+var getBlackduckCmd = &cobra.Command{
+	Use:   "blackduck",
+	Short: "Get a list of Blackducks in the cluster",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Getting Blackducks")
+		out, err := RunKubeCmd("get", "blackducks")
+		if err != nil {
+			fmt.Printf("Error getting Blackducks with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
+	},
+}
+
+var getOpsSightCmd = &cobra.Command{
+	Use:   "opssight",
+	Short: "Get a list of OpsSights in the cluster",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Getting OpsSights")
+		out, err := RunKubeCmd("get", "opssights")
+		if err != nil {
+			fmt.Printf("Error getting OpsSights with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
+	},
+}
+
+var getAlertCmd = &cobra.Command{
+	Use:   "alert",
+	Short: "Get a list of Alerts in the cluster",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Getting Alerts")
+		out, err := RunKubeCmd("get", "alerts")
+		if err != nil {
+			fmt.Printf("Error getting Alerts with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(getCmd)
+	getCmd.AddCommand(getBlackduckCmd)
+	getCmd.AddCommand(getOpsSightCmd)
+	getCmd.AddCommand(getAlertCmd)
 }
