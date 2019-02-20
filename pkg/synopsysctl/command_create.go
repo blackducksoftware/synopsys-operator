@@ -64,28 +64,31 @@ var createBlackduckCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		blackduckNamespace := args[0]
+		blackduckName := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Blackduck
-		DeployCRDNamespace(restconfig, blackduckNamespace)
+		DeployCRDNamespace(restconfig, blackduckName)
 
 		// Read Flags Into Default Blackduck Spec
 		defaultBlackduckSpec := crddefaults.GetHubDefaultPersistentStorage()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkBlackduckFlags)
 
+		// Set Namespace in Spec
+		defaultBlackduckSpec.Namespace = blackduckName
+
 		// Create and Deploy Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: blackduckNamespace,
+				Name: blackduckName,
 			},
 			Spec: *defaultBlackduckSpec,
 		}
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
-		_, err = blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Create(blackduck)
+		_, err = blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
 		if err != nil {
 			fmt.Printf("Error creating the Blackduck : %s\n", err)
 			return
@@ -99,13 +102,13 @@ var createOpsSightCmd = &cobra.Command{
 	Short: "Create an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		opsSightNamespace := args[0]
+		opsSightName := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the OpsSight
-		DeployCRDNamespace(restconfig, opsSightNamespace)
+		DeployCRDNamespace(restconfig, opsSightName)
 
 		// Read Flags Into Default OpsSight Spec
 		defaultOpsSightSpec := crddefaults.GetOpsSightDefaultValueWithDisabledHub()
@@ -113,15 +116,18 @@ var createOpsSightCmd = &cobra.Command{
 		flagset.VisitAll(checkOpsSightFlags)
 		fmt.Printf("OpsSight Spec: %+v\n", defaultOpsSightSpec)
 
+		// Set Namespace in Spec
+		defaultOpsSightSpec.Namespace = opsSightName
+
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: opsSightNamespace,
+				Name: opsSightName,
 			},
 			Spec: *defaultOpsSightSpec,
 		}
 		opssightClient, err := opssightclientset.NewForConfig(restconfig)
-		_, err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
+		_, err = opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
 		if err != nil {
 			fmt.Printf("Error creating the OpsSight : %s\n", err)
 			return
@@ -135,30 +141,31 @@ var createAlertCmd = &cobra.Command{
 	Short: "Create an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		alertNamespace := args[0]
+		alertName := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Alert
-		DeployCRDNamespace(restconfig, alertNamespace)
+		DeployCRDNamespace(restconfig, alertName)
 
 		// Read Flags Into Default Alert Spec
 		defaultAlertSpec := crddefaults.GetAlertDefaultValue()
-		fmt.Printf("Alert Spec: %+v\n", defaultAlertSpec)
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkAlertFlags)
-		fmt.Printf("Alert Spec: %+v\n", defaultAlertSpec)
+
+		// Set Namespace in Spec
+		defaultAlertSpec.Namespace = alertName
 
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: alertNamespace,
+				Name: alertName,
 			},
 			Spec: *defaultAlertSpec,
 		}
 		alertClient, err := alertclientset.NewForConfig(restconfig)
-		_, err = alertClient.SynopsysV1().Alerts(alertNamespace).Create(alert)
+		_, err = alertClient.SynopsysV1().Alerts(alertName).Create(alert)
 		if err != nil {
 			fmt.Printf("Error creating the Alert : %s\n", err)
 			return
