@@ -40,7 +40,6 @@ var stopNamespace = "synopsys-operator"
 
 // Create Blackduck Command Defaults
 var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
-var defaultBlackduckName = "blackduck"
 
 var createBlackduckSize = ""
 var createBlackduckDbPrototype = ""
@@ -69,7 +68,6 @@ var createBlackduckLicenseKey = ""
 
 // Create OpsSight Command Defaults
 var defaultOpsSightSpec = &opssightv1.OpsSightSpec{}
-var defaultOpsSightName = "opssight"
 
 var createOpssightPerceptorName = ""
 var createOpssightPerceptorImage = ""
@@ -134,7 +132,6 @@ var createOpssightSecretName = ""
 
 // Create Alert Command Defaults
 var defaultAlertSpec = &alertv1.AlertSpec{}
-var defaultAlertName = "alert"
 
 var createAlertRegistry = ""
 var createAlertImagePath = ""
