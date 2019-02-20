@@ -47,10 +47,10 @@ var describeBlackduckCmd = &cobra.Command{
 	Short: "Describe an instance of Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		blackduckNamespace := args[0]
 
 		fmt.Println("Describing Blackduck")
-		out, err := RunKubeCmd("describe", "blackduck", namespace, "-n", namespace)
+		out, err := RunKubeCmd("describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
 		if err != nil {
 			fmt.Printf("Error Describing the Blackduck with KubeCmd: %s\n", err)
 		}
@@ -63,10 +63,10 @@ var describeOpsSightCmd = &cobra.Command{
 	Short: "Describe an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		opsSightNamespace := args[0]
 
 		fmt.Println("Describing OpsSight")
-		out, err := RunKubeCmd("describe", "opssight", namespace, "-n", namespace)
+		out, err := RunKubeCmd("describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
 		if err != nil {
 			fmt.Printf("Error Describing the OpsSight with KubeCmd: %s\n", err)
 		}
@@ -79,10 +79,10 @@ var describeAlertCmd = &cobra.Command{
 	Short: "Describe an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		alertNamespace := args[0]
 
 		fmt.Println("Describing Alert")
-		out, err := RunKubeCmd("describe", "alert", namespace, "-n", namespace)
+		out, err := RunKubeCmd("describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
 			fmt.Printf("Error Describing the Alert with KubeCmd: %s\n", err)
 		}

@@ -47,10 +47,10 @@ var editBlackduckCmd = &cobra.Command{
 	Short: "Edit an instance of Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		blackduckNamespace := args[0]
 
 		fmt.Println("Editing Blackduck")
-		err := RunKubeEditorCmd("edit", "blackduck", namespace, "-n", namespace)
+		err := RunKubeEditorCmd("edit", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
 		if err != nil {
 			fmt.Printf("Error Editing the Blackduck with KubeCmd: %s\n", err)
 		}
@@ -62,10 +62,10 @@ var editOpsSightCmd = &cobra.Command{
 	Short: "Edit an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		opSightNamespace := args[0]
 
 		fmt.Println("Editing OpsSight")
-		err := RunKubeEditorCmd("edit", "opssight", namespace, "-n", namespace)
+		err := RunKubeEditorCmd("edit", "opssight", opSightNamespace, "-n", opSightNamespace)
 		if err != nil {
 			fmt.Printf("Error Editing the OpsSight with KubeCmd: %s\n", err)
 		}
@@ -77,10 +77,10 @@ var editAlertCmd = &cobra.Command{
 	Short: "Edit an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		alertNamespace := args[0]
 
 		fmt.Println("Editing Alert")
-		err := RunKubeEditorCmd("edit", "alert", namespace, "-n", namespace)
+		err := RunKubeEditorCmd("edit", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
 			fmt.Printf("Error Editing the Alert with KubeCmd: %s\n", err)
 		}

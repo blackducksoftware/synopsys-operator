@@ -21,7 +21,6 @@ import (
 )
 
 // synopsysctl Defaults
-var namespace = ""
 
 // Start Command Defaults
 var startNamespace = "synopsys-operator"

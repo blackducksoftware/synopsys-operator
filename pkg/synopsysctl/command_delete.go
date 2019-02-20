@@ -51,7 +51,7 @@ var deleteBlackduckCmd = &cobra.Command{
 	Short: "Delete a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		blackduckNamespace := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -60,7 +60,7 @@ var deleteBlackduckCmd = &cobra.Command{
 			fmt.Printf("Error creating the Blackduck Clientset: %s\n", err)
 			return
 		}
-		blackduckClient.SynopsysV1().Blackducks(namespace).Delete(namespace, &metav1.DeleteOptions{})
+		blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
 
 	},
 }
@@ -70,7 +70,7 @@ var deleteOpsSightCmd = &cobra.Command{
 	Short: "Delete an OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		opsSightNamespace := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -79,7 +79,7 @@ var deleteOpsSightCmd = &cobra.Command{
 			fmt.Printf("Error creating the OpsSight Clientset: %s\n", err)
 			return
 		}
-		opssightClient.SynopsysV1().OpsSights(namespace).Delete(namespace, &metav1.DeleteOptions{})
+		opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
 	},
 }
 
@@ -88,7 +88,7 @@ var deleteAlertCmd = &cobra.Command{
 	Short: "Delete an Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		alertNamespace := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -97,7 +97,7 @@ var deleteAlertCmd = &cobra.Command{
 			fmt.Printf("Error creating the Alert Clientset: %s\n", err)
 			return
 		}
-		alertClient.SynopsysV1().Alerts(namespace).Delete(namespace, &metav1.DeleteOptions{})
+		alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
 	},
 }
 

@@ -64,28 +64,28 @@ var createBlackduckCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		blackduckNamespace := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Blackduck
-		DeployCRDNamespace(restconfig)
+		DeployCRDNamespace(restconfig, blackduckNamespace)
 
 		// Read Flags Into Default Blackduck Spec
-		defaultBlackduckSpec := crddefaults.GetHubDefaultValue()
+		defaultBlackduckSpec := crddefaults.GetHubDefaultPersistentStorage()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkBlackduckFlags)
 
 		// Create and Deploy Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
+				Name: blackduckNamespace,
 			},
 			Spec: *defaultBlackduckSpec,
 		}
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
-		_, err = blackduckClient.SynopsysV1().Blackducks(namespace).Create(blackduck)
+		_, err = blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Create(blackduck)
 		if err != nil {
 			fmt.Printf("Error creating the Blackduck : %s\n", err)
 			return
@@ -99,28 +99,29 @@ var createOpsSightCmd = &cobra.Command{
 	Short: "Create an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		opsSightNamespace := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the OpsSight
-		DeployCRDNamespace(restconfig)
+		DeployCRDNamespace(restconfig, opsSightNamespace)
 
 		// Read Flags Into Default OpsSight Spec
-		defaultOpsSightSpec := crddefaults.GetOpsSightDefaultValue()
+		defaultOpsSightSpec := crddefaults.GetOpsSightDefaultValueWithDisabledHub()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkOpsSightFlags)
+		fmt.Printf("OpsSight Spec: %+v\n", defaultOpsSightSpec)
 
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
+				Name: opsSightNamespace,
 			},
 			Spec: *defaultOpsSightSpec,
 		}
 		opssightClient, err := opssightclientset.NewForConfig(restconfig)
-		_, err = opssightClient.SynopsysV1().OpsSights(namespace).Create(opssight)
+		_, err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
 		if err != nil {
 			fmt.Printf("Error creating the OpsSight : %s\n", err)
 			return
@@ -134,28 +135,30 @@ var createAlertCmd = &cobra.Command{
 	Short: "Create an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Read Commandline Parameters
-		namespace = args[0]
+		alertNamespace := args[0]
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
 
 		// Create namespace for the Alert
-		DeployCRDNamespace(restconfig)
+		DeployCRDNamespace(restconfig, alertNamespace)
 
 		// Read Flags Into Default Alert Spec
 		defaultAlertSpec := crddefaults.GetAlertDefaultValue()
+		fmt.Printf("Alert Spec: %+v\n", defaultAlertSpec)
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkAlertFlags)
+		fmt.Printf("Alert Spec: %+v\n", defaultAlertSpec)
 
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
+				Name: alertNamespace,
 			},
 			Spec: *defaultAlertSpec,
 		}
 		alertClient, err := alertclientset.NewForConfig(restconfig)
-		_, err = alertClient.SynopsysV1().Alerts(namespace).Create(alert)
+		_, err = alertClient.SynopsysV1().Alerts(alertNamespace).Create(alert)
 		if err != nil {
 			fmt.Printf("Error creating the Alert : %s\n", err)
 			return
@@ -279,8 +282,6 @@ func checkBlackduckFlags(f *pflag.Flag) {
 	if f.Changed {
 		fmt.Printf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
-		case "namespace":
-			defaultBlackduckSpec.Namespace = namespace
 		case "size":
 			defaultBlackduckSpec.Size = createBlackduckSize
 		case "db-prototype":
@@ -717,8 +718,6 @@ func checkAlertFlags(f *pflag.Flag) {
 	if f.Changed {
 		fmt.Printf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
-		case "namespace":
-			defaultAlertSpec.Namespace = namespace
 		case "alert-registry":
 			defaultAlertSpec.Registry = createAlertRegistry
 		case "image-path":

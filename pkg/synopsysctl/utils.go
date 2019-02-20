@@ -152,7 +152,7 @@ func homeDir() string {
 }
 
 // DeployCRDNamespace creates an empty Horizon namespace
-func DeployCRDNamespace(restconfig *rest.Config) {
+func DeployCRDNamespace(restconfig *rest.Config, namespace string) {
 	// Create Horizon Deployer
 	namespaceDeployer, err := deployer.NewDeployer(restconfig)
 	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
