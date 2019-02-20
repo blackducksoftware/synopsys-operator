@@ -24,6 +24,7 @@ import (
 var namespace = ""
 
 // Start Command Defaults
+var startNamespace = "synopsys-operator"
 var startSynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
 var startPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var startBlackduckRegistrationKey = ""
@@ -34,6 +35,9 @@ var startSecretAdminPassword = "YmxhY2tkdWNr"
 var startSecretPostgresPassword = "YmxhY2tkdWNr"
 var startSecretUserPassword = "YmxhY2tkdWNr"
 var startSecretBlackduckPassword = "YmxhY2tkdWNr"
+
+// Stop Command Defaults
+var stopNamespace = "synopsys-operator"
 
 // Create Blackduck Command Defaults
 var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}

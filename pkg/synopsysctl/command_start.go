@@ -31,6 +31,10 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
+		// Check number of arguments
+		if len(args) != 0 {
+			return fmt.Errorf("Error: This command accepts 0 arguments")
+		}
 		// Check the Secret Type
 		switch startSecretType {
 		case "Opaque":
@@ -73,8 +77,8 @@ var startCmd = &cobra.Command{
 		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
 			// APIVersion:  "string",
 			// ClusterName: "string",
-			Name:      namespace,
-			Namespace: namespace,
+			Name:      startNamespace,
+			Namespace: startNamespace,
 		})
 		environmentDeployer.AddNamespace(ns)
 
@@ -83,7 +87,7 @@ var startCmd = &cobra.Command{
 			APIVersion: "v1",
 			// ClusterName : "cluster",
 			Name:      startSecretName,
-			Namespace: namespace,
+			Namespace: startNamespace,
 			Type:      secretType,
 		})
 		secret.AddData(map[string][]byte{
@@ -103,7 +107,7 @@ var startCmd = &cobra.Command{
 
 		// Deploy synopsys-operator
 		soperatorSpec := SOperatorSpecConfig{
-			Namespace:                namespace,
+			Namespace:                startNamespace,
 			SynopsysOperatorImage:    startSynopsysOperatorImage,
 			BlackduckRegistrationKey: startBlackduckRegistrationKey,
 		}
@@ -125,7 +129,7 @@ var startCmd = &cobra.Command{
 
 		// Deploy prometheus
 		promtheusSpec := PrometheusSpecConfig{
-			Namespace:       namespace,
+			Namespace:       startNamespace,
 			PrometheusImage: startPrometheusImage,
 		}
 		prometheusDeployer, err := deployer.NewDeployer(rc)
@@ -150,11 +154,11 @@ var startCmd = &cobra.Command{
 		RunKubeCmd("scale", "rc", "synopsys-operator", "--replicas=1")
 
 		// expose the routes
-		out, err = RunKubeCmd("expose", "rc", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", namespace))
+		out, err = RunKubeCmd("expose", "rc", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", startNamespace))
 		if err != nil {
 			fmt.Printf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
 		}
-		out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", namespace)
+		out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", startNamespace)
 		if err != nil {
 			fmt.Printf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
 		}
@@ -164,11 +168,11 @@ var startCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(startCmd)
 
+	startCmd.Flags().StringVarP(&startNamespace, "name", "n", startNamespace, "name for Synopsys-Operator")
 	startCmd.Flags().StringVarP(&startSynopsysOperatorImage, "synopsys-operator-image", "i", startSynopsysOperatorImage, "synopsys operator image URL")
 	startCmd.Flags().StringVarP(&startPrometheusImage, "prometheus-image", "p", startPrometheusImage, "prometheus image URL")
 	startCmd.Flags().StringVarP(&startBlackduckRegistrationKey, "blackduck-registration-key", "k", startBlackduckRegistrationKey, "key to register with KnowledgeBase")
 	startCmd.Flags().StringVarP(&startDockerConfigPath, "docker-config", "d", startDockerConfigPath, "path to docker config (image pull secrets etc)")
-
 	startCmd.Flags().StringVar(&startSecretName, "secret-name", startSecretName, "name of kubernetes secret for postgres and blackduck")
 	startCmd.Flags().StringVar(&startSecretType, "secret-type", startSecretType, "type of kubernetes secret for postgres and blackduck")
 	startCmd.Flags().StringVar(&startSecretAdminPassword, "admin-password", startSecretAdminPassword, "postgres admin password")
