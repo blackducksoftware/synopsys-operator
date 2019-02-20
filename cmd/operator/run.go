@@ -31,7 +31,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/installer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/sample"
 	"github.com/sirupsen/logrus"
 )
 
@@ -67,8 +66,8 @@ func runProtoform(configPath string) {
 
 	stopCh := make(chan struct{})
 
-	sampleController := sample.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetSampleDefaultValue(), stopCh)
-	deployer.AddController(sampleController)
+	//sampleController := sample.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetSampleDefaultValue(), stopCh)
+	//deployer.AddController(sampleController)
 
 	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetAlertDefaultValue(), stopCh)
 	deployer.AddController(alertController)
