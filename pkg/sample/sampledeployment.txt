@@ -27,7 +27,7 @@ import (
 )
 
 // Returns a Horizon Deployment for the Sample
-func (specConfig *SampleSpecConfig) getSampleDeployment() *components.Deployment {
+func (specConfig *SpecConfig) getSampleDeployment() *components.Deployment {
 	var replicas int32 = 1
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Name:      specConfig.config.Namespace,
@@ -46,7 +46,7 @@ func (specConfig *SampleSpecConfig) getSampleDeployment() *components.Deployment
 }
 
 // Returns a Horizon Pod for the Sample
-func (specConfig *SampleSpecConfig) getSamplePod() *components.Pod {
+func (specConfig *SpecConfig) getSamplePod() *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: specConfig.config.Namespace,
 	})
@@ -62,7 +62,7 @@ func (specConfig *SampleSpecConfig) getSamplePod() *components.Pod {
 }
 
 // Returns a Horizon Container for the Sample
-func (specConfig *SampleSpecConfig) getSampleContainer() *components.Container {
+func (specConfig *SpecConfig) getSampleContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  specConfig.config.Namespace,
 		Image: "registry.hub.docker.com/vasiliys/public-test:latest",

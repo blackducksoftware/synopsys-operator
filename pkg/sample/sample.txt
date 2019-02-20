@@ -27,21 +27,21 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
 )
 
-// SampleSpecConfig represents your Sample component
+// SpecConfig represents your Sample component
 // Its methods include GetComponents() and any functions
 // that create Kubernetes Resources for the Sample
-type SampleSpecConfig struct {
+type SpecConfig struct {
 	config *v1.SampleSpec
 }
 
-// NewSample will create a SampleSpecConfig type
-func NewSample(config *v1.SampleSpec) *SampleSpecConfig {
-	return &SampleSpecConfig{config: config}
+// NewSample will create a SpecConfig type
+func NewSample(config *v1.SampleSpec) *SpecConfig {
+	return &SpecConfig{config: config}
 }
 
 // GetComponents will return a ComponentList representing all
 // Kubernetes Resources for the Sample
-func (specConfig *SampleSpecConfig) GetComponents(config *v1.SampleSpec) (*api.ComponentList, error) {
+func (specConfig *SpecConfig) GetComponents(config *v1.SampleSpec) (*api.ComponentList, error) {
 	// TODO(user) Add your Sample's Horizon Components
 	components := &api.ComponentList{
 		Deployments: []*components.Deployment{
