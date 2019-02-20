@@ -31,8 +31,15 @@ var editCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("edit called")
+	PreRun: func(cmd *cobra.Command, args []string) {
+		// PreRun - Children Do Not Inherit
+		fmt.Println("Describing Non-Synopsys Resource")
+		kubeCmdArgs := append([]string{"describe"}, args...)
+		out, err := RunKubeCmd(kubeCmdArgs...)
+		if err != nil {
+			fmt.Printf("Error Describing the Resource with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
 	},
 }
 

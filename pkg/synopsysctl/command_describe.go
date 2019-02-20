@@ -27,12 +27,19 @@ var describeCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		num_args := 1
 		if len(args) != num_args {
-			return fmt.Errorf("Must pass Namespace")
+			return fmt.Errorf("Must pass Resource Name")
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("describe called")
+	PreRun: func(cmd *cobra.Command, args []string) {
+		// PreRun - Children Do Not Inherit
+		fmt.Println("Describing Non-Synopsys Resource")
+		kubeCmdArgs := append([]string{"describe"}, args...)
+		out, err := RunKubeCmd(kubeCmdArgs...)
+		if err != nil {
+			fmt.Printf("Error Describing the Resource with KubeCmd: %s\n", err)
+		}
+		fmt.Printf("%+v\n", out)
 	},
 }
 
