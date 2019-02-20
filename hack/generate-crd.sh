@@ -61,32 +61,32 @@ popd > /dev/null 2>&1
 ########################################################################
 
 echo "Copying Controller Files from the Sample..."
-cp "../pkg/sample/crdinstaller.go" "../pkg/$crd_name/crdinstaller.go"
+cp "../pkg/sample/crdinstaller.txt" "../pkg/$crd_name/crdinstaller.go"
 sed -i "" -e "s/sample/$crd_name/g" "../pkg/$crd_name/crdinstaller.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/$crd_name/crdinstaller.go"
 echo " > crdinstaller.go"
 
-cp "../pkg/sample/crdcontroller.go" "../pkg/$crd_name/crdcontroller.go"
+cp "../pkg/sample/crdcontroller.txt" "../pkg/$crd_name/crdcontroller.go"
 sed -i "" -e "s/sample/$crd_name/g" "../pkg/$crd_name/crdcontroller.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/$crd_name/crdcontroller.go"
 echo " > crdcontroller.go"
 
-cp "../pkg/sample/crdhandler.go" "../pkg/$crd_name/crdhandler.go"
+cp "../pkg/sample/crdhandler.txt" "../pkg/$crd_name/crdhandler.go"
 sed -i "" -e "s/sample/$crd_name/g" "../pkg/$crd_name/crdhandler.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/$crd_name/crdhandler.go"
 echo " > crdhandler.go"
 
-cp "../pkg/sample/samplecreater.go" "../pkg/$crd_name/${crd_name}creater.go"
+cp "../pkg/sample/samplecreater.txt" "../pkg/$crd_name/${crd_name}creater.go"
 sed -i "" -e "s/sample/$crd_name/g" "../pkg/$crd_name/${crd_name}creater.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/$crd_name/${crd_name}creater.go"
 echo " > ${crd_name}creater.go"
 
-cp "../pkg/sample/sample.go" "../pkg/$crd_name/${crd_name}.go"
+cp "../pkg/sample/sample.txt" "../pkg/$crd_name/${crd_name}.go"
 sed -i "" -e "s/sample/$crd_name/g" "../pkg/$crd_name/${crd_name}.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/$crd_name/${crd_name}.go"
 echo " > ${crd_name}.go"
 
-cp "../pkg/sample/sampledeployment.go" "../pkg/$crd_name/${crd_name}deployment.go"
+cp "../pkg/sample/sampledeployment.txt" "../pkg/$crd_name/${crd_name}deployment.go"
 sed -i "" -e "s/sample/$crd_name/g" "../pkg/$crd_name/${crd_name}deployment.go"
 sed -i "" -e "s/Sample/$crd_name_upper/g" "../pkg/$crd_name/${crd_name}deployment.go"
 echo " > ${crd_name}deployment.go"
