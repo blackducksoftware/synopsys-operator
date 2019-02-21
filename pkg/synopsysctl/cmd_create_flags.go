@@ -14,7 +14,10 @@
 
 package synopsysctl
 
-// Create Blackduck Command Defaults
+// Create Blackduck Command Flags
+var createBlackduckSpecType = "persistentStorage"
+
+// Create Blackduck Spec Flags
 var createBlackduckSize = ""
 var createBlackduckDbPrototype = ""
 var createBlackduckExternalPostgresPostgresHost = ""
@@ -40,7 +43,10 @@ var createBlackduckImageRegistries = []string{}
 var createBlackduckImageUIDMapJSONSlice = []string{}
 var createBlackduckLicenseKey = ""
 
-// Create OpsSight Command Defaults
+// Create OpsSight Command Flags
+var createOpsSightSpecType = "disabledBlackduck"
+
+// Create OpsSight Spec Flags
 var createOpssightPerceptorName = ""
 var createOpssightPerceptorImage = ""
 var createOpssightPerceptorPort = 0
@@ -102,7 +108,10 @@ var createOpssightLogLevel = ""
 var createOpssightConfigMapName = ""
 var createOpssightSecretName = ""
 
-// Create Alert Command Defaults
+// Create Alert Command Flags
+var createAlertSpecType = "spec1"
+
+// Create Alert Spec Flags
 var createAlertRegistry = ""
 var createAlertImagePath = ""
 var createAlertAlertImageName = ""

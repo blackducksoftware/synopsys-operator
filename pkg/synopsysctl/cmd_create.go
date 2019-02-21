@@ -64,8 +64,20 @@ var createBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Create an instance of a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
+		// Check Number of Arguments
 		if len(args) != 1 {
 			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		// Check the Spec Type
+		switch createBlackduckSpecType {
+		case "empty":
+			defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
+		case "persistentStorage":
+			defaultBlackduckSpec = crddefaults.GetHubDefaultPersistentStorage()
+		case "default":
+			defaultBlackduckSpec = crddefaults.GetHubDefaultValue()
+		default:
+			return fmt.Errorf("Blackduck Spec Type %s does not match: empty, persistentStorage, default", createAlertSpecType)
 		}
 		return nil
 	},
@@ -81,7 +93,6 @@ var createBlackduckCmd = &cobra.Command{
 		DeployCRDNamespace(restconfig, blackduckName)
 
 		// Read Flags Into Default Blackduck Spec
-		defaultBlackduckSpec = crddefaults.GetHubDefaultPersistentStorage()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkBlackduckFlags)
 
@@ -95,6 +106,7 @@ var createBlackduckCmd = &cobra.Command{
 			},
 			Spec: *defaultBlackduckSpec,
 		}
+		log.Debugf("%+v\n", blackduck)
 		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
 		_, err = blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
 		if err != nil {
@@ -109,8 +121,20 @@ var createOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Create an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
+		// Check Number of Arguments
 		if len(args) != 1 {
 			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		// Check the Spec Type
+		switch createOpsSightSpecType {
+		case "empty":
+			defaultOpsSightSpec = &opssightv1.OpsSightSpec{}
+		case "disabledBlackduck":
+			defaultOpsSightSpec = crddefaults.GetOpsSightDefaultValueWithDisabledHub()
+		case "default":
+			defaultOpsSightSpec = crddefaults.GetOpsSightDefaultValue()
+		default:
+			return fmt.Errorf("OpsSight Spec Type %s does not match: empty, disabledBlackduck, default", createAlertSpecType)
 		}
 		return nil
 	},
@@ -126,7 +150,6 @@ var createOpsSightCmd = &cobra.Command{
 		DeployCRDNamespace(restconfig, opsSightName)
 
 		// Read Flags Into Default OpsSight Spec
-		defaultOpsSightSpec = crddefaults.GetOpsSightDefaultValueWithDisabledHub()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkOpsSightFlags)
 
@@ -140,6 +163,7 @@ var createOpsSightCmd = &cobra.Command{
 			},
 			Spec: *defaultOpsSightSpec,
 		}
+		log.Debugf("%+v\n", opssight)
 		opssightClient, err := opssightclientset.NewForConfig(restconfig)
 		_, err = opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
 		if err != nil {
@@ -154,8 +178,20 @@ var createAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Create an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
+		// Check Number of Arguments
 		if len(args) != 1 {
 			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		// Check the Spec Type
+		switch createAlertSpecType {
+		case "empty":
+			defaultAlertSpec = &alertv1.AlertSpec{}
+		case "spec1":
+			defaultAlertSpec = crddefaults.GetAlertDefaultValue()
+		case "spec2":
+			defaultAlertSpec = crddefaults.GetAlertDefaultValue2()
+		default:
+			return fmt.Errorf("Alert Spec Type %s does not match: empty, spec1, spec2", createAlertSpecType)
 		}
 		return nil
 	},
@@ -171,7 +207,6 @@ var createAlertCmd = &cobra.Command{
 		DeployCRDNamespace(restconfig, alertName)
 
 		// Read Flags Into Default Alert Spec
-		defaultAlertSpec = crddefaults.GetAlertDefaultValue()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkAlertFlags)
 
@@ -185,6 +220,7 @@ var createAlertCmd = &cobra.Command{
 			},
 			Spec: *defaultAlertSpec,
 		}
+		log.Debugf("%+v\n", alert)
 		alertClient, err := alertclientset.NewForConfig(restconfig)
 		_, err = alertClient.SynopsysV1().Alerts(alertName).Create(alert)
 		if err != nil {
@@ -198,7 +234,9 @@ func init() {
 	createCmd.DisableFlagParsing = true
 	rootCmd.AddCommand(createCmd)
 
-	// Add Blackduck Flags
+	// Add Blackduck Spec Flags
+	createBlackduckCmd.Flags().StringVar(&createBlackduckSpecType, "spec", createBlackduckSpecType, "TODO")
+	// Add Blackduck Spec Flags
 	createBlackduckCmd.Flags().StringVar(&createBlackduckSize, "size", createBlackduckSize, "Blackduck size - small, medium, large")
 	createBlackduckCmd.Flags().StringVar(&createBlackduckDbPrototype, "db-prototype", createBlackduckDbPrototype, "TODO")
 	createBlackduckCmd.Flags().StringVar(&createBlackduckExternalPostgresPostgresHost, "external-postgres-host", createBlackduckExternalPostgresPostgresHost, "TODO")
@@ -225,7 +263,9 @@ func init() {
 	createBlackduckCmd.Flags().StringVar(&createBlackduckLicenseKey, "license-key", createBlackduckLicenseKey, "TODO")
 	createCmd.AddCommand(createBlackduckCmd)
 
-	// Add OpsSight Flags
+	// Add OpsSight Command Flags
+	createOpsSightCmd.Flags().StringVar(&createOpsSightSpecType, "spec", createOpsSightSpecType, "TODO")
+	// Add OpsSight Spec Flags
 	createOpsSightCmd.Flags().StringVar(&createOpssightPerceptorName, "perceptor-name", createOpssightPerceptorName, "TODO")
 	createOpsSightCmd.Flags().StringVar(&createOpssightPerceptorImage, "perceptor-image", createOpssightPerceptorImage, "TODO")
 	createOpsSightCmd.Flags().IntVar(&createOpssightPerceptorPort, "perceptor-port", createOpssightPerceptorPort, "TODO")
@@ -288,7 +328,9 @@ func init() {
 	createOpsSightCmd.Flags().StringVar(&createOpssightSecretName, "secret-name", createOpssightSecretName, "TODO")
 	createCmd.AddCommand(createOpsSightCmd)
 
-	// Add Alert Flags
+	// Add Alert Command Flags
+	createAlertCmd.Flags().StringVar(&createAlertSpecType, "spec", createAlertSpecType, "TODO")
+	// Add Alert Spec Flags
 	createAlertCmd.Flags().StringVar(&createAlertRegistry, "alert-registry", createAlertRegistry, "TODO")
 	createAlertCmd.Flags().StringVar(&createAlertImagePath, "image-path", createAlertImagePath, "TODO")
 	createAlertCmd.Flags().StringVar(&createAlertAlertImageName, "alert-image-name", createAlertAlertImageName, "TODO")
