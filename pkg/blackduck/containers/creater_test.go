@@ -89,7 +89,7 @@ func TestImageTag(t *testing.T) {
 	external100 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl"}
 	internal50 := []string{"registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
 	for _, v := range external100 {
-		containerName := creater.getFullContainerName(v)
+		containerName := creater.GetFullContainerName(v)
 		if containerName == fmt.Sprintf("docker.io/blackducksoftware/blackduck-%s:%s", v, externalVersion) {
 			t.Logf("%s: %s", v, containerName)
 		} else {
@@ -97,7 +97,7 @@ func TestImageTag(t *testing.T) {
 		}
 	}
 	for _, v := range internal50 {
-		containerName := creater.getFullContainerName(v)
+		containerName := creater.GetFullContainerName(v)
 		if containerName == fmt.Sprintf("docker.io/blackducksoftware/blackduck-%s:%s", v, hubVersion) {
 			t.Logf("%s: %s", v, containerName)
 		} else {
@@ -109,7 +109,7 @@ func TestImageTag(t *testing.T) {
 	creater = NewCreater(nil, hubSpec1, nil, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, []*horizonapi.EnvConfig{}, nil, nil)
 	all50 := []string{"zookeeper", "nginx", "solr", "logstash", "cfssl", "registration", "webapp", "jobrunner", "documentation", "scan", "authentication"}
 	for _, v := range all50 {
-		containerName := creater.getFullContainerName(v)
+		containerName := creater.GetFullContainerName(v)
 		if containerName == fmt.Sprintf("docker.io/blackducksoftware/hub-%s:%s", v, "4.5.0") {
 			t.Logf("%s: %s", v, containerName)
 		} else {

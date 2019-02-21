@@ -31,7 +31,7 @@ import (
 func (c *Creater) GetDocumentationDeployment() *components.ReplicationController {
 	documentationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-documentation")
 	documentationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: c.getFullContainerName("documentation"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: c.GetFullContainerName("documentation"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.DocumentationMemoryLimit, MaxMem: c.hubContainerFlavor.DocumentationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: c.hubConfigEnv,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
