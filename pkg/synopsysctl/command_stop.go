@@ -48,7 +48,7 @@ var stopCmd = &cobra.Command{
 		}
 
 		for cmd := range cleanCommands {
-			fmt.Printf("%s\n", cleanCommands[cmd])
+			fmt.Printf("Command: %s\n", cleanCommands[cmd])
 			out, err = RunKubeCmd(strings.Split(cleanCommands[cmd], " ")...)
 			if err != nil {
 				fmt.Printf(" > %s", out)

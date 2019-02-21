@@ -52,7 +52,7 @@ var startCmd = &cobra.Command{
 		case "TypeTLS":
 			secretType = horizonapi.SecretTypeTLS
 		default:
-			return fmt.Errorf("Invalid Secret Type: %s\n", startSecretType)
+			return fmt.Errorf("Invalid Secret Type: %s", startSecretType)
 		}
 		return nil
 	},
@@ -179,5 +179,5 @@ func init() {
 	startCmd.Flags().StringVar(&startSecretBlackduckPassword, "blackduck-password", startSecretBlackduckPassword, "blackduck password for 'sysadmin' account")
 
 	// Set Log Level
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.DebugLevel)
 }
