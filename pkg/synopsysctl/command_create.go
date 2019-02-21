@@ -25,6 +25,7 @@ import (
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +43,7 @@ var createCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Creating Non-Synopsys Resource\n")
+		log.Debugf("Creating Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"create"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
@@ -63,6 +64,7 @@ var createBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Creating a Blackduck\n")
 		// Read Commandline Parameters
 		blackduckName := args[0]
 
@@ -101,6 +103,7 @@ var createOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Create an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Creating an OpsSight\n")
 		// Read Commandline Parameters
 		opsSightName := args[0]
 
@@ -114,7 +117,6 @@ var createOpsSightCmd = &cobra.Command{
 		defaultOpsSightSpec := crddefaults.GetOpsSightDefaultValueWithDisabledHub()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkOpsSightFlags)
-		fmt.Printf("OpsSight Spec: %+v\n", defaultOpsSightSpec)
 
 		// Set Namespace in Spec
 		defaultOpsSightSpec.Namespace = opsSightName
@@ -140,6 +142,7 @@ var createAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Create an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Creating an Alert\n")
 		// Read Commandline Parameters
 		alertName := args[0]
 
@@ -287,7 +290,7 @@ func init() {
 
 func checkBlackduckFlags(f *pflag.Flag) {
 	if f.Changed {
-		fmt.Printf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
 		case "size":
 			defaultBlackduckSpec.Size = createBlackduckSize
@@ -375,15 +378,15 @@ func checkBlackduckFlags(f *pflag.Flag) {
 		case "license-key":
 			defaultBlackduckSpec.LicenseKey = createBlackduckLicenseKey
 		default:
-			fmt.Printf("Flag %s: Not Found\n", f.Name)
+			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
 	}
-	fmt.Printf("Flag %s: UNCHANGED\n", f.Name)
+	log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 }
 
 func checkOpsSightFlags(f *pflag.Flag) {
 	if f.Changed {
-		fmt.Printf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
 		case "perceptor-name":
 			if defaultOpsSightSpec.Perceptor == nil {
@@ -714,16 +717,16 @@ func checkOpsSightFlags(f *pflag.Flag) {
 		case "secret-name":
 			defaultOpsSightSpec.SecretName = createOpssightSecretName
 		default:
-			fmt.Printf("Flag %s: Not Found\n", f.Name)
+			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
 	}
-	fmt.Printf("Flag %s: UNCHANGED\n", f.Name)
+	log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 
 }
 
 func checkAlertFlags(f *pflag.Flag) {
 	if f.Changed {
-		fmt.Printf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
 		case "alert-registry":
 			defaultAlertSpec.Registry = createAlertRegistry
@@ -752,8 +755,8 @@ func checkAlertFlags(f *pflag.Flag) {
 		case "cfssl-memory":
 			defaultAlertSpec.CfsslMemory = createAlertCfsslMemory
 		default:
-			fmt.Printf("Flag %s: Not Found\n", f.Name)
+			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
 	}
-	fmt.Printf("Flag %s: UNCHANGED\n", f.Name)
+	log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 }

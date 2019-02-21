@@ -21,6 +21,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -179,4 +180,7 @@ func init() {
 	startCmd.Flags().StringVar(&startSecretPostgresPassword, "postgres-password", startSecretPostgresPassword, "postgres password")
 	startCmd.Flags().StringVar(&startSecretUserPassword, "user-password", startSecretUserPassword, "postgres user password")
 	startCmd.Flags().StringVar(&startSecretBlackduckPassword, "blackduck-password", startSecretBlackduckPassword, "blackduck password for 'sysadmin' account")
+
+	// Set Log Level
+	log.SetLevel(log.InfoLevel)
 }
