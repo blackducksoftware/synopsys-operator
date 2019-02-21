@@ -76,7 +76,7 @@ var createBlackduckCmd = &cobra.Command{
 		DeployCRDNamespace(restconfig, blackduckName)
 
 		// Read Flags Into Default Blackduck Spec
-		defaultBlackduckSpec := crddefaults.GetHubDefaultPersistentStorage()
+		defaultBlackduckSpec = crddefaults.GetHubDefaultPersistentStorage()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkBlackduckFlags)
 
@@ -115,7 +115,7 @@ var createOpsSightCmd = &cobra.Command{
 		DeployCRDNamespace(restconfig, opsSightName)
 
 		// Read Flags Into Default OpsSight Spec
-		defaultOpsSightSpec := crddefaults.GetOpsSightDefaultValueWithDisabledHub()
+		defaultOpsSightSpec = crddefaults.GetOpsSightDefaultValueWithDisabledHub()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkOpsSightFlags)
 
@@ -154,7 +154,7 @@ var createAlertCmd = &cobra.Command{
 		DeployCRDNamespace(restconfig, alertName)
 
 		// Read Flags Into Default Alert Spec
-		defaultAlertSpec := crddefaults.GetAlertDefaultValue()
+		defaultAlertSpec = crddefaults.GetAlertDefaultValue()
 		flagset := cmd.Flags()
 		flagset.VisitAll(checkAlertFlags)
 
