@@ -62,8 +62,11 @@ var deleteBlackduckCmd = &cobra.Command{
 			fmt.Printf("Error creating the Blackduck Clientset: %s\n", err)
 			return
 		}
-		blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
-
+		err = blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Printf("Error deleting the Blackduck: %s\n", err)
+			return
+		}
 	},
 }
 
@@ -88,7 +91,11 @@ var deleteOpsSightCmd = &cobra.Command{
 			fmt.Printf("Error creating the OpsSight Clientset: %s\n", err)
 			return
 		}
-		opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
+		err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Printf("Error deleting the OpsSight: %s\n", err)
+			return
+		}
 	},
 }
 
@@ -113,7 +120,11 @@ var deleteAlertCmd = &cobra.Command{
 			fmt.Printf("Error creating the Alert Clientset: %s\n", err)
 			return
 		}
-		alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
+		err = alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Printf("Error deleting the Alert: %s\n", err)
+			return
+		}
 	},
 }
 
