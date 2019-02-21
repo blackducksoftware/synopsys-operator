@@ -22,7 +22,7 @@ under the License.
 package scannertester
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
+	"github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/model"
 	"github.com/spf13/viper"
 )
 

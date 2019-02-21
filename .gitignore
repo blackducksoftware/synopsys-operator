@@ -1,6 +1,6 @@
 cmd/operator-build
 install/secured-registry/dockercfg.json
-cmd/blackduckctl/blackduckctl
+cmd/synopsysctl/synopsysctl
 pkg/.DS_Store
 pkg/api/.DS_Store
 .DS_Store

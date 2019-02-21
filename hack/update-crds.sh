@@ -7,12 +7,15 @@ echo "cloning generators, might fail, no big deal"
 mkdir -p $GOPATH/src/k8s.io
 
 pushd $GOPATH/src/k8s.io
+  commits=( b1289fc74931d4b6b04bd1a259acfc88a2cb0a66 94ebb086c69b9fec4ddbfb6a1433d28ecca9292b d216743eed4c3242b85d094d2a589f41a793652d )
+  j=0
   for REPO in code-generator apimachinery api
   do
     git clone git@github.com:kubernetes/${REPO}.git
     pushd $REPO
-      git pull
+      git checkout ${commits[j]}
     popd
+    let "j++"
   done
 popd 
 

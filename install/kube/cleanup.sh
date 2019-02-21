@@ -8,7 +8,6 @@ kubectl delete crd alerts.synopsys.com
 kubectl delete crd blackducks.synopsys.com
 kubectl delete crd opssights.synopsys.com
 
-
 kubectl delete clusterrolebinding synopsys-operator-admin
 #kubectl delete clusterrolebinding protoform-admin
 #kubectl delete clusterrolebinding synopsys-operator-cluster-admin

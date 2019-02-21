@@ -23,16 +23,13 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"os" // v1beta1 "k8s.io/api/extensions/v1beta1"
 
-	// v1beta1 "k8s.io/api/extensions/v1beta1"
+	perceptor "github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/apps/standardperceptor"
+	kubebuilder "github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/kubebuilder"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	perceptor "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/apps/standardperceptor"
-	kubebuilder "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/kubebuilder"
-
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
