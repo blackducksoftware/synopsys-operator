@@ -209,24 +209,6 @@ func (client *ProviderClient) SetThrowaway(v bool) {
 	client.Throwaway = v
 }
 
-// IsThrowaway safely reads the value of the client Throwaway field.
-func (client *ProviderClient) IsThrowaway() bool {
-	if client.reauthmut != nil {
-		client.reauthmut.RLock()
-		defer client.reauthmut.RUnlock()
-	}
-	return client.Throwaway
-}
-
-// SetThrowaway safely sets the value of the client Throwaway field.
-func (client *ProviderClient) SetThrowaway(v bool) {
-	if client.reauthmut != nil {
-		client.reauthmut.Lock()
-		defer client.reauthmut.Unlock()
-	}
-	client.Throwaway = v
-}
-
 // Reauthenticate calls client.ReauthFunc in a thread-safe way. If this is
 // called because of a 401 response, the caller may pass the previous token. In
 // this case, the reauthentication can be skipped if another thread has already
