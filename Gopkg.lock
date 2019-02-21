@@ -254,15 +254,15 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:a63edf6a4aef1156d3553a5f4869a85c13c02a3ce7be8c0e94704877ef847442"
+  digest = "1:f1ac2ec96968642a8c81624c1b02f5ebea5a1accac703c52cb4dbaf53abde46e"
   name = "github.com/gobuffalo/fizz"
   packages = [
     ".",
     "translators",
   ]
   pruneopts = "UT"
-  revision = "e70bf7d38ac1298601cccc46567ef323a12f8e51"
-  version = "v1.5.0"
+  revision = "3d99862ae4ef21ae80ff8e92f2150ef2a72963bb"
+  version = "v1.5.1"
 
 [[projects]]
   digest = "1:e90602c17dd4ed777bb86312fcb16f5b13419ecec51b89a3ed6ced109a371def"
@@ -573,7 +573,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d2b1b1461a53fcce11dfe617ed71214247b3bac0b393ceaa042772e26e65bab7"
+  digest = "1:73f45b0ab76211ff1301bbbce4955585cfe906b63cade635c3d11eb0c11be5f2"
   name = "github.com/gophercloud/gophercloud"
   packages = [
     ".",
@@ -585,7 +585,7 @@
     "pagination",
   ]
   pruneopts = "UT"
-  revision = "d6801284f5e8eb368096bcdef55f81a33eb16b23"
+  revision = "3f3cc5a566b2284815a4b6feb9e8c8f3d74aecdf"
 
 [[projects]]
   digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
@@ -1407,7 +1407,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "629670e5acc5b3e069375d323404911dc8fe1d19"
+  revision = "b4e8571b14e03cc164df06f72b640ebce3899579"
 
 [[projects]]
   digest = "1:436b24586f8fee329e0dd65fd67c817681420cda1d7f934345c13fe78c212a73"
