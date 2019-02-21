@@ -45,13 +45,16 @@ echo " > v1/types.go"
 echo "Cloning Kubernetes Libraries..."
 mkdir -p $GOPATH/src/k8s.io
 pushd $GOPATH/src/k8s.io > /dev/null 2>&1
+  commits=( b1289fc74931d4b6b04bd1a259acfc88a2cb0a66 94ebb086c69b9fec4ddbfb6a1433d28ecca9292b d216743eed4c3242b85d094d2a589f41a793652d )
+  j=0
   for REPO in code-generator apimachinery api
   do
     echo " > git clone git@github.com:kubernetes/${REPO}.git"
     git clone git@github.com:kubernetes/${REPO}.git > /dev/null 2>&1
     pushd $REPO > /dev/null 2>&1
-      git pull > /dev/null 2>&1
+      git checkout ${commits[j]} > /dev/null 2>&1
     popd > /dev/null 2>&1
+    let "j++"
   done
 popd > /dev/null 2>&1
 
