@@ -119,7 +119,7 @@ func (c *FakeAlerts) DeleteCollection(options *v1.DeleteOptions, listOptions v1.
 // Patch applies the patch and returns the patched alert.
 func (c *FakeAlerts) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *alertv1.Alert, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(alertsResource, c.ns, name, pt, data, subresources...), &alertv1.Alert{})
+		Invokes(testing.NewPatchSubresourceAction(alertsResource, c.ns, name, data, subresources...), &alertv1.Alert{})
 
 	if obj == nil {
 		return nil, err

@@ -119,7 +119,7 @@ func (c *FakeOpsSights) DeleteCollection(options *v1.DeleteOptions, listOptions 
 // Patch applies the patch and returns the patched opsSight.
 func (c *FakeOpsSights) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *opssightv1.OpsSight, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(opssightsResource, c.ns, name, pt, data, subresources...), &opssightv1.OpsSight{})
+		Invokes(testing.NewPatchSubresourceAction(opssightsResource, c.ns, name, data, subresources...), &opssightv1.OpsSight{})
 
 	if obj == nil {
 		return nil, err

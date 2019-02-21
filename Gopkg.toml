@@ -34,36 +34,8 @@
   version = "1.0.5"
 
 [[constraint]]
-  name = "github.com/spf13/viper"
-  version = "1.2.1"
-
-[[override]]
-  name = "github.com/manifoldco/promptui"
-  version = "0.3.1"
-
-[[override]]
-  name = "github.com/mitchellh/go-homedir"
-  version = "1.0.0"
-
-[[override]]
-  name = "github.com/spf13/cobra"
-  version = "0.0.3"
-
-[[constraint]]
   name = "github.com/prometheus/client_golang"
   version = "=0.9.0-pre1"
-
-[[override]]
-  branch = "master"
-  name = "golang.org/x/crypto"
-
-[[constraint]]
-  branch = "master"
-  name = "k8s.io/api"
-
-[[constraint]]
-  name = "k8s.io/client-go"
-  version = "8.0.0"
 
 [[override]]
   name = "k8s.io/api"
@@ -74,12 +46,17 @@
   revision = "94ebb086c69b9fec4ddbfb6a1433d28ecca9292b"
 
 [[override]]
-  name = "k8s.io/apiextensions-apiserver"
-  revision = "b5a9dfcf0afdc336c921e56e70166b5e291e77f5"
+  name = "k8s.io/kube-aggregator"
+  revision = "29c7989121fc30258c674f31aff9bbd393dfab5e"
 
 [[override]]
-  name = "k8s.io/kube-aggregator"
-  revision = "89512616b165a8d1280cf4b7dfdc266e96d8abe1"
+  name = "k8s.io/apiextensions-apiserver"
+  revision = "e798125b68b9e62ce80c2b4f1157e96da7b3b1c7"
+
+[[override]]
+  name = "k8s.io/client-go"
+  #branch = "master"
+  version = "v8.0.0"
 
 [[override]]
   source = "https://github.com/fsnotify/fsnotify/archive/v1.4.7.tar.gz"

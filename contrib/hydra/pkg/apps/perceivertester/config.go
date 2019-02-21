@@ -22,7 +22,7 @@ under the License.
 package perceivertester
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
+	"github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/model"
 	"github.com/spf13/viper"
 )
 
@@ -83,8 +83,8 @@ func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 		HubHost:               "doesn't matter -- unused",
 		HubUser:               "doesn't matter -- unused",
 		HubUserPasswordEnvVar: "doesn't matter -- unused",
-		Port:        pc.PerceptorPort,
-		UseMockMode: true,
-		LogLevel:    pc.LogLevel,
+		Port:                  pc.PerceptorPort,
+		UseMockMode:           true,
+		LogLevel:              pc.LogLevel,
 	}
 }

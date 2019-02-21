@@ -26,9 +26,8 @@ import (
 	"fmt"
 	"os"
 
-	piftester "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/apps/piftester"
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/kubebuilder"
-
+	piftester "github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/apps/piftester"
+	"github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/kubebuilder"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )

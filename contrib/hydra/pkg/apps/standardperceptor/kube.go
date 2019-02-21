@@ -22,10 +22,9 @@ under the License.
 package standardperceptor
 
 import (
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
+	"github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/model"
 	v1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
-
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

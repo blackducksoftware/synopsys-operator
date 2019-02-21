@@ -22,7 +22,7 @@ under the License.
 package standardperceptor
 
 import (
-	model "github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/model"
+	model "github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/model"
 	"github.com/spf13/viper"
 )
 
@@ -159,8 +159,8 @@ func (pc *Config) ImagefacadeConfig() model.ImagefacadeConfigMap {
 func (pc *Config) PerceptorConfig() model.PerceptorConfigMap {
 	return model.PerceptorConfigMap{
 		Hub: &model.PerceptorHubConfig{
-			Host: pc.Hub.Host,
-			User: pc.Hub.User,
+			Host:                      pc.Hub.Host,
+			User:                      pc.Hub.User,
 			ClientTimeoutMilliseconds: pc.Perceptor.HubClientTimeoutMilliseconds,
 			PasswordEnvVar:            "PERCEPTOR_HUBUSERPASSWORD",
 			Port:                      int(pc.Hub.Port),
