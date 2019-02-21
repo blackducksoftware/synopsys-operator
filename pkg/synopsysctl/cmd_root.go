@@ -19,6 +19,7 @@ import (
 	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,9 +30,18 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "synopsysctl",
 	Short: "Command Line Tool for managing Synopsys Resources",
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Running Non-Synopsysctl Command\n")
+		out, err := RunKubeCmd(args...)
+		if err != nil {
+			log.Errorf("Error with KubeCmd: %s", out)
+		} else {
+			fmt.Printf("%+v", out)
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -45,7 +55,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-
+	rootCmd.DisableFlagParsing = true
 	// Cobra supports persistent flags, which, if defined here, will be global for your application.
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.synopsysctl.yaml)")
 

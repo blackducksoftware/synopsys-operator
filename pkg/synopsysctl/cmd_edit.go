@@ -30,7 +30,7 @@ var editCmd = &cobra.Command{
 		kubeCmdArgs := append([]string{"edit"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			log.Errorf("Error Editing the Resource with KubeCmd: %s\n", err)
+			log.Errorf("Error Editing the Resource with KubeCmd: %s", out)
 		} else {
 			fmt.Printf("%+v", out)
 		}
