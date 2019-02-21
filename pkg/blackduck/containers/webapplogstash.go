@@ -35,7 +35,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	webappVolumeMounts := c.getWebappVolumeMounts()
 
 	webappContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.getFullContainerName("webapp"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.GetFullContainerName("webapp"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit,
 			MaxCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs:   webappEnvs,
@@ -66,7 +66,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	logstashVolumeMounts := c.getLogstashVolumeMounts()
 
 	logstashContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: c.getFullContainerName("logstash"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: c.GetFullContainerName("logstash"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.LogstashMemoryLimit, MaxMem: c.hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: logstashVolumeMounts,
