@@ -18,7 +18,16 @@ import (
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	//samplev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
 )
+
+// GetSampleDefaultValue creates a sample crd configuration object with defaults
+//func GetSampleDefaultValue() *samplev1.SampleSpec {
+//	return &samplev1.SampleSpec{
+//		Namespace:   "namesapce",
+//		SampleValue: "Value",
+//	}
+//}
 
 // GetHubDefaultValue creates a hub crd configuration object
 // with defaults
@@ -31,7 +40,7 @@ func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetHubDefaultValue creates a hub crd configuration object
+// GetHubDefaultPersistentStorage creates a hub crd configuration object
 // with defaults and persistent storage
 func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
@@ -332,7 +341,7 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 	}
 }
 
-// GetAlertJson creates an Alert crd configuration object with defaults
+// GetAlertDefaultValue2 creates an Alert crd configuration object with defaults
 func GetAlertDefaultValue2() *alertv1.AlertSpec {
 	port := 8443
 	hubPort := 443
