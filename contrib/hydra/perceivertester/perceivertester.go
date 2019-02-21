@@ -26,9 +26,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/apps/perceivertester"
-	"github.com/blackducksoftware/perceptor-protoform/contrib/hydra/pkg/kubebuilder"
-
+	"github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/apps/perceivertester"
+	"github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/kubebuilder"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )

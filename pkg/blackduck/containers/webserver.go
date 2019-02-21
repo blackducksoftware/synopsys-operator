@@ -29,17 +29,13 @@ import (
 
 // GetWebserverDeployment will return the webserver deployment
 func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
-	webServerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
-	webServerSecretVol, _ := util.CreateSecretVolume("certificate", "blackduck-certificate", 0777)
 	webServerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.getFullContainerName("nginx"),
-			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit, MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
-		EnvConfigs: c.hubConfigEnv,
-		VolumeMounts: []*horizonapi.VolumeMountConfig{
-			{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security"},
-			{Name: "certificate", MountPath: "/tmp/secrets"},
-		},
-		PortConfig: []*horizonapi.PortConfig{{ContainerPort: webserverPort, Protocol: horizonapi.ProtocolTCP}},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.GetFullContainerName("nginx"),
+			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit,
+			MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
+		EnvConfigs:   c.hubConfigEnv,
+		VolumeMounts: c.getWebserverVolumeMounts(),
+		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: webserverPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
 	if c.hubSpec.LivenessProbes {
@@ -54,11 +50,45 @@ func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 
 	c.PostEditContainer(webServerContainerConfig)
 
-	webserver := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webserver",
-		Replicas: util.IntToInt32(1)}, c.hubSpec.Namespace, []*util.Container{webServerContainerConfig}, []*components.Volume{webServerEmptyDir, webServerSecretVol},
-		[]*util.Container{}, []horizonapi.AffinityConfig{})
+	webserver := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{
+		Namespace: c.hubSpec.Namespace, Name: "webserver", Replicas: util.IntToInt32(1)}, "",
+		[]*util.Container{webServerContainerConfig}, c.getWebserverVolumes(), []*util.Container{}, []horizonapi.AffinityConfig{})
 	// log.Infof("webserver : %v\n", webserver.GetObj())
 	return webserver
+}
+
+// getWebserverVolumes will return the authentication volumes
+func (c *Creater) getWebserverVolumes() []*components.Volume {
+	webServerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
+	webServerSecretVol, _ := util.CreateSecretVolume("certificate", "blackduck-certificate", 0777)
+
+	volumes := []*components.Volume{webServerEmptyDir, webServerSecretVol}
+
+	// Custom CA auth
+	if len(c.hubSpec.AuthCustomCA) > 1 {
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", "auth-custom-ca", 0777)
+		volumes = append(volumes, authCustomCaVolume)
+	}
+	return volumes
+}
+
+// getWebserverVolumeMounts will return the authentication volume mounts
+func (c *Creater) getWebserverVolumeMounts() []*horizonapi.VolumeMountConfig {
+	volumesMounts := []*horizonapi.VolumeMountConfig{
+		{Name: "dir-webserver", MountPath: "/opt/blackduck/hub/webserver/security"},
+		{Name: "certificate", MountPath: "/tmp/secrets/WEBSERVER_CUSTOM_CERT_FILE", SubPath: "WEBSERVER_CUSTOM_CERT_FILE"},
+		{Name: "certificate", MountPath: "/tmp/secrets/WEBSERVER_CUSTOM_KEY_FILE", SubPath: "WEBSERVER_CUSTOM_KEY_FILE"},
+	}
+
+	if len(c.hubSpec.AuthCustomCA) > 1 {
+		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
+			Name:      "auth-custom-ca",
+			MountPath: "/tmp/secrets/AUTH_CUSTOM_CA",
+			SubPath:   "AUTH_CUSTOM_CA",
+		})
+	}
+
+	return volumesMounts
 }
 
 // GetWebServerService will return the webserver service

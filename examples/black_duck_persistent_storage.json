@@ -49,7 +49,7 @@
     ],
     "livenessProbes": false,
     "persistentStorage": true,
-    "pvcStorageClass": "standard",
+    "pvcStorageClass": "",
     "pvc": [
       {
         "name": "blackduck-postgres",

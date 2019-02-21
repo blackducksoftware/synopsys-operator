@@ -1,6 +1,6 @@
 {
   "Namespace": "synopsys-operator",
-  "Image": "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC",
+  "Image": "gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:master",
   "PrometheusImage": "docker.io/prom/prometheus:v2.1.0",
   "DockerConfigPath": ""
 }

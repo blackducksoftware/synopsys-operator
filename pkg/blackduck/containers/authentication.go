@@ -34,7 +34,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.AuthenticationHubMaxMemory})
 
 	hubAuthContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: c.getFullContainerName("authentication"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: c.GetFullContainerName("authentication"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   authEnvs,
 		VolumeMounts: volumeMounts,
@@ -93,6 +93,12 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 	if len(c.hubSpec.ProxyCertificate) > 0 && c.proxySecretVolume != nil {
 		volumes = append(volumes, c.proxySecretVolume)
 	}
+
+	// Custom CA auth
+	if len(c.hubSpec.AuthCustomCA) > 1 {
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", "auth-custom-ca", 0777)
+		volumes = append(volumes, authCustomCaVolume)
+	}
 	return volumes
 }
 
@@ -111,6 +117,14 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 			Name:      "blackduck-proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
 			SubPath:   "HUB_PROXY_CERT_FILE",
+		})
+	}
+
+	if len(c.hubSpec.AuthCustomCA) > 1 {
+		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
+			Name:      "auth-custom-ca",
+			MountPath: "/tmp/secrets/AUTH_CUSTOM_CA",
+			SubPath:   "AUTH_CUSTOM_CA",
 		})
 	}
 

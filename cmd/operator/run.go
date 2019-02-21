@@ -32,6 +32,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
+	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
 )
 
 func main() {
@@ -55,14 +56,19 @@ func kill(stopCh chan struct{}) {
 	os.Exit(0)
 }
 
-// runProtoform ...
+// runProtoform will add CRD controllers to the Protoform Deployer which
+// will call each of their Deploy functions
 func runProtoform(configPath string) {
+	// Add controllers to the Protoform Deployer
 	deployer, err := protoform.NewController(configPath)
 	if err != nil {
 		panic(err)
 	}
 
 	stopCh := make(chan struct{})
+
+	//sampleController := sample.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetSampleDefaultValue(), stopCh)
+	//deployer.AddController(sampleController)
 
 	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetAlertDefaultValue(), stopCh)
 	deployer.AddController(alertController)
@@ -83,7 +89,7 @@ func runProtoform(configPath string) {
 	}
 	deployer.AddController(opssSightController)
 
-	logrus.Info("Starting deployer.  All controllers have been added to horizon.")
+	logrus.Info("Starting deployer.  All controllers have been added to Protoform.")
 	if err = deployer.Deploy(); err != nil {
 		logrus.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
 	}
