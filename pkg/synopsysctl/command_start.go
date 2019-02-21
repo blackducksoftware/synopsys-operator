@@ -33,7 +33,7 @@ var startCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) != 0 {
-			return fmt.Errorf("Error: This command accepts 0 arguments")
+			return fmt.Errorf("This command accepts 0 arguments")
 		}
 		// Check the Secret Type
 		switch startSecretType {

@@ -25,13 +25,6 @@ import (
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
-	Args: func(cmd *cobra.Command, args []string) error {
-		numArgs := 1
-		if len(args) < numArgs {
-			return fmt.Errorf("Not enough arguments")
-		}
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Editing Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"edit"}, args...)
@@ -47,6 +40,12 @@ var editCmd = &cobra.Command{
 var editBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Edit an instance of Blackduck",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Editing Non-Synopsys Resource\n")
 		// Read Commandline Parameters
@@ -62,6 +61,12 @@ var editBlackduckCmd = &cobra.Command{
 var editOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Edit an instance of OpsSight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Editing an OpsSight\n")
 		// Read Commandline Parameters
@@ -77,6 +82,12 @@ var editOpsSightCmd = &cobra.Command{
 var editAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Edit an instance of Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Editing an Alert\n")
 		// Read Commandline Parameters

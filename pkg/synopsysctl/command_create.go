@@ -60,7 +60,7 @@ var createBlackduckCmd = &cobra.Command{
 	Short: "Create an instance of a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("Must pass Namespace")
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
 		}
 		return nil
 	},
@@ -103,6 +103,12 @@ var createBlackduckCmd = &cobra.Command{
 var createOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Create an instance of OpsSight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Creating an OpsSight\n")
 		// Read Commandline Parameters
@@ -142,6 +148,12 @@ var createOpsSightCmd = &cobra.Command{
 var createAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Create an instance of Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Creating an Alert\n")
 		// Read Commandline Parameters

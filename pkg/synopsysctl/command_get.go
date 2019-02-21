@@ -25,13 +25,6 @@ import (
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "List Synopsys Resources in your cluster",
-	Args: func(cmd *cobra.Command, args []string) error {
-		numArgs := 1
-		if len(args) < numArgs {
-			return fmt.Errorf("Not enough arguments")
-		}
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Getting a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"get"}, args...)
@@ -47,6 +40,12 @@ var getCmd = &cobra.Command{
 var getBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Get a list of Blackducks in the cluster",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("This command accepts 0 arguments")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Getting a Blackduck\n")
 		out, err := RunKubeCmd("get", "blackducks")
@@ -61,6 +60,12 @@ var getBlackduckCmd = &cobra.Command{
 var getOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Get a list of OpsSights in the cluster",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("This command accepts 0 arguments")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Getting an OpsSight\n")
 		out, err := RunKubeCmd("get", "opssights")
@@ -75,6 +80,12 @@ var getOpsSightCmd = &cobra.Command{
 var getAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Get a list of Alerts in the cluster",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 0 {
+			return fmt.Errorf("This command accepts 0 arguments")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Getting an OpsSight\n")
 		out, err := RunKubeCmd("get", "alerts")

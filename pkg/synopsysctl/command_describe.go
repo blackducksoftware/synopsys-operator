@@ -25,13 +25,6 @@ import (
 var describeCmd = &cobra.Command{
 	Use:   "describe",
 	Short: "Print a detailed description of the selected resource",
-	Args: func(cmd *cobra.Command, args []string) error {
-		numArgs := 1
-		if len(args) < numArgs {
-			return fmt.Errorf("Not enough arguments")
-		}
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Describing a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"describe"}, args...)
@@ -47,6 +40,12 @@ var describeCmd = &cobra.Command{
 var describeBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Describe an instance of Blackduck",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Describing a Blackduck\n")
 		// Read Commandline Parameters
@@ -65,6 +64,12 @@ var describeBlackduckCmd = &cobra.Command{
 var describeOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Describe an instance of OpsSight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Describing an OpsSight\n")
 		// Read Commandline Parameters
@@ -83,6 +88,12 @@ var describeOpsSightCmd = &cobra.Command{
 var describeAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Describe an instance of Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Describing an OpsSight\n")
 		// Read Commandline Parameters

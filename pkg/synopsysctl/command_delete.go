@@ -29,13 +29,6 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Remove a Synopsys Resource from your cluster",
-	Args: func(cmd *cobra.Command, args []string) error {
-		numArgs := 1
-		if len(args) < numArgs {
-			return fmt.Errorf("Not enough arguments")
-		}
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Deleting a Non-Synopsys Resource")
 		kubeCmdArgs := append([]string{"delete"}, args...)
@@ -51,6 +44,12 @@ var deleteCmd = &cobra.Command{
 var deleteBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Delete a Blackduck",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Deleting a Blackduck\n")
 		// Read Commandline Parameters
@@ -71,6 +70,12 @@ var deleteBlackduckCmd = &cobra.Command{
 var deleteOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Delete an OpsSight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Deleting an OpsSight\n")
 		// Read Commandline Parameters
@@ -90,6 +95,12 @@ var deleteOpsSightCmd = &cobra.Command{
 var deleteAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Delete an Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Deleting an Alert\n")
 		// Read Commandline Parameters
