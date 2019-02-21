@@ -15,7 +15,6 @@
 package synopsysctl
 
 import (
-	"errors"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -53,18 +52,16 @@ var startCmd = &cobra.Command{
 		case "TypeTLS":
 			secretType = horizonapi.SecretTypeTLS
 		default:
-			fmt.Printf("Invalid Secret Type: %s\n", startSecretType)
-			return errors.New("Bad Secret Type")
+			return fmt.Errorf("Invalid Secret Type: %s\n", startSecretType)
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Starting the Synopsys-Operator\n")
 		// check if operator is already installed
 		out, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 		if err == nil {
-			fmt.Printf("You have already installed the operator in namespace %s.\n", out)
-			fmt.Printf("To delete the operator run: synopsysctl stop --namespace %s\n", out)
-			fmt.Printf("Nothing to do...\n")
+			fmt.Printf("You have already installed the operator in namespace %s.", out)
 			return
 		}
 
@@ -102,7 +99,7 @@ var startCmd = &cobra.Command{
 		// Deploy Resources for the Synopsys Operator
 		err = environmentDeployer.Run()
 		if err != nil {
-			fmt.Printf("Error deploying Environment with Horizon : %s\n", err)
+			log.Errorf("Error deploying Environment with Horizon : %s\n", err)
 			return
 		}
 

@@ -43,13 +43,14 @@ var createCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debugf("Creating Non-Synopsys Resource\n")
+		log.Debugf("Creating a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"create"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
 			fmt.Printf("Error Creating the Resource with KubeCmd: %s\n", err)
+		} else {
+			fmt.Printf("%+v", out)
 		}
-		fmt.Printf("%+v\n", out)
 	},
 }
 

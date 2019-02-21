@@ -17,6 +17,7 @@ package synopsysctl
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -32,13 +33,14 @@ var editCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Describing Non-Synopsys Resource")
-		kubeCmdArgs := append([]string{"describe"}, args...)
+		log.Debugf("Editing Non-Synopsys Resource\n")
+		kubeCmdArgs := append([]string{"edit"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			fmt.Printf("Error Describing the Resource with KubeCmd: %s\n", err)
+			log.Errorf("Error Editing the Resource with KubeCmd: %s\n", err)
+		} else {
+			fmt.Printf("%+v", out)
 		}
-		fmt.Printf("%+v\n", out)
 	},
 }
 
@@ -46,13 +48,13 @@ var editBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Edit an instance of Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Editing Non-Synopsys Resource\n")
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
-		fmt.Println("Editing Blackduck")
 		err := RunKubeEditorCmd("edit", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
 		if err != nil {
-			fmt.Printf("Error Editing the Blackduck with KubeCmd: %s\n", err)
+			fmt.Printf("Error Editing the Blackduck: %s\n", err)
 		}
 	},
 }
@@ -61,13 +63,13 @@ var editOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Edit an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Editing an OpsSight\n")
 		// Read Commandline Parameters
 		opSightNamespace := args[0]
 
-		fmt.Println("Editing OpsSight")
 		err := RunKubeEditorCmd("edit", "opssight", opSightNamespace, "-n", opSightNamespace)
 		if err != nil {
-			fmt.Printf("Error Editing the OpsSight with KubeCmd: %s\n", err)
+			fmt.Printf("Error Editing the OpsSight: %s\n", err)
 		}
 	},
 }
@@ -76,13 +78,13 @@ var editAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Edit an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Editing an Alert\n")
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
-		fmt.Println("Editing Alert")
 		err := RunKubeEditorCmd("edit", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
-			fmt.Printf("Error Editing the Alert with KubeCmd: %s\n", err)
+			fmt.Printf("Error Editing the Alert: %s\n", err)
 		}
 	},
 }

@@ -17,6 +17,7 @@ package synopsysctl
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -32,13 +33,14 @@ var describeCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Describing Non-Synopsys Resource")
+		log.Debugf("Describing a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"describe"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			fmt.Printf("Error Describing the Resource with KubeCmd: %s\n", err)
+			fmt.Printf("Error Describing the Resource: %s", out)
+		} else {
+			fmt.Printf("%+v", out)
 		}
-		fmt.Printf("%+v\n", out)
 	},
 }
 
@@ -46,15 +48,17 @@ var describeBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Describe an instance of Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Describing a Blackduck\n")
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
 		fmt.Println("Describing Blackduck")
 		out, err := RunKubeCmd("describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
 		if err != nil {
-			fmt.Printf("Error Describing the Blackduck with KubeCmd: %s\n", err)
+			fmt.Printf("Error Describing the Blackduck: %s", out)
+		} else {
+			fmt.Printf("%+v", out)
 		}
-		fmt.Printf("%+v\n", out)
 	},
 }
 
@@ -62,15 +66,17 @@ var describeOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Describe an instance of OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Describing an OpsSight\n")
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
 		fmt.Println("Describing OpsSight")
 		out, err := RunKubeCmd("describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
 		if err != nil {
-			fmt.Printf("Error Describing the OpsSight with KubeCmd: %s\n", err)
+			fmt.Printf("Error Describing the OpsSight: %s", out)
+		} else {
+			fmt.Printf("%+v", out)
 		}
-		fmt.Printf("%+v\n", out)
 	},
 }
 
@@ -78,15 +84,17 @@ var describeAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Describe an instance of Alert",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Describing an OpsSight\n")
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
 		fmt.Println("Describing Alert")
 		out, err := RunKubeCmd("describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
-			fmt.Printf("Error Describing the Alert with KubeCmd: %s\n", err)
+			fmt.Printf("Error Describing the Alert: %s\n", out)
+		} else {
+			fmt.Printf("%+v", out)
 		}
-		fmt.Printf("%+v\n", out)
 	},
 }
 

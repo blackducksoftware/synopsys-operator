@@ -20,6 +20,7 @@ import (
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,13 +37,14 @@ var deleteCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Deleting Non-Synopsys Resource")
+		log.Debugf("Deleting a Non-Synopsys Resource")
 		kubeCmdArgs := append([]string{"delete"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			fmt.Printf("Error Deleting the Resource with KubeCmd: %s\n", err)
+			fmt.Printf("Error Deleting the Resource: %s", out)
+		} else {
+			fmt.Printf("%+v", out)
 		}
-		fmt.Printf("%+v\n", out)
 	},
 }
 
@@ -50,6 +52,7 @@ var deleteBlackduckCmd = &cobra.Command{
 	Use:   "blackduck",
 	Short: "Delete a Blackduck",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Deleting a Blackduck\n")
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
@@ -69,6 +72,7 @@ var deleteOpsSightCmd = &cobra.Command{
 	Use:   "opssight",
 	Short: "Delete an OpsSight",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Deleting an OpsSight\n")
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
@@ -87,6 +91,7 @@ var deleteAlertCmd = &cobra.Command{
 	Use:   "alert",
 	Short: "Delete an Alert",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Deleting an Alert\n")
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
@@ -108,14 +113,4 @@ func init() {
 	deleteCmd.AddCommand(deleteBlackduckCmd)
 	deleteCmd.AddCommand(deleteOpsSightCmd)
 	deleteCmd.AddCommand(deleteAlertCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

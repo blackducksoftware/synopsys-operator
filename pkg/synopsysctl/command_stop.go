@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -33,6 +34,7 @@ var stopCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Stopping the Synopsys-Operator\n")
 		var out string
 		var err error
 		cleanCommands := [...]string{
