@@ -46,8 +46,8 @@ var startCmd = &cobra.Command{
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
-		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
+		if len(args) > 1 {
+			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Secret Type
 		switch startSecretType {
@@ -71,11 +71,15 @@ var startCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debugf("Starting the Synopsys-Operator\n")
+		log.Debugf("Starting the Synopsys-Operator: %s\n", startNamespace)
+		// Read Commandline Parameters
+		if len(args) == 1 {
+			startNamespace = args[0]
+		}
 		// check if operator is already installed
 		out, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 		if err == nil {
-			fmt.Printf("You have already installed the operator in namespace %s.", out)
+			fmt.Printf("Synopsys-Operator is already installed in namespace %s.", out)
 			return
 		}
 
@@ -179,8 +183,6 @@ var startCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(startCmd)
-
-	startCmd.Flags().StringVarP(&startNamespace, "name", "n", startNamespace, "name for Synopsys-Operator")
 	startCmd.Flags().StringVarP(&startSynopsysOperatorImage, "synopsys-operator-image", "i", startSynopsysOperatorImage, "synopsys operator image URL")
 	startCmd.Flags().StringVarP(&startPrometheusImage, "prometheus-image", "p", startPrometheusImage, "prometheus image URL")
 	startCmd.Flags().StringVarP(&startBlackduckRegistrationKey, "blackduck-registration-key", "k", startBlackduckRegistrationKey, "key to register with KnowledgeBase")

@@ -31,17 +31,23 @@ var stopCmd = &cobra.Command{
 	Short: "Removes the Synopsys-Operator and CRDs from Cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
-		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
+		if len(args) > 1 {
+			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debugf("Stopping the Synopsys-Operator\n")
-		var out string
-		var err error
+		log.Debugf("Stopping the Synopsys-Operator: %s\n", stopNamespace)
+		// Read Commandline Parameters
+		if len(args) == 1 {
+			stopNamespace = args[0]
+		}
+		out, err := RunKubeCmd("delete", "ns", stopNamespace)
+		if err != nil {
+			fmt.Printf("Synopsys-Operator does not exist in namespace %s", stopNamespace)
+			return
+		}
 		cleanCommands := [...]string{
-			fmt.Sprintf("delete ns %s", stopNamespace),
 			"delete crd alerts.synopsys.com",
 			"delete crd hubs.synopsys.com",
 			"delete crd opssights.synopsys.com",
@@ -65,5 +71,4 @@ var stopCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(stopCmd)
-	stopCmd.Flags().StringVarP(&stopNamespace, "name", "n", stopNamespace, "name of Synopsys-Operator")
 }
