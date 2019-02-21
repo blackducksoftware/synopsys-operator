@@ -14,33 +14,7 @@
 
 package synopsysctl
 
-import (
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-)
-
-// synopsysctl Defaults
-
-// Start Command Defaults
-var startNamespace = "synopsys-operator"
-var startSynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
-var startPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
-var startBlackduckRegistrationKey = ""
-var startDockerConfigPath = ""
-var startSecretName = "blackduck-secret"
-var startSecretType = "Opaque"
-var startSecretAdminPassword = "YmxhY2tkdWNr"
-var startSecretPostgresPassword = "YmxhY2tkdWNr"
-var startSecretUserPassword = "YmxhY2tkdWNr"
-var startSecretBlackduckPassword = "YmxhY2tkdWNr"
-
-// Stop Command Defaults
-var stopNamespace = "synopsys-operator"
-
 // Create Blackduck Command Defaults
-var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
-
 var createBlackduckSize = ""
 var createBlackduckDbPrototype = ""
 var createBlackduckExternalPostgresPostgresHost = ""
@@ -67,8 +41,6 @@ var createBlackduckImageUIDMapJSONSlice = []string{}
 var createBlackduckLicenseKey = ""
 
 // Create OpsSight Command Defaults
-var defaultOpsSightSpec = &opssightv1.OpsSightSpec{}
-
 var createOpssightPerceptorName = ""
 var createOpssightPerceptorImage = ""
 var createOpssightPerceptorPort = 0
@@ -131,8 +103,6 @@ var createOpssightConfigMapName = ""
 var createOpssightSecretName = ""
 
 // Create Alert Command Defaults
-var defaultAlertSpec = &alertv1.AlertSpec{}
-
 var createAlertRegistry = ""
 var createAlertImagePath = ""
 var createAlertAlertImageName = ""

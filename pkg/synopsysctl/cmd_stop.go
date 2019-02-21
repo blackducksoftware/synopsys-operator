@@ -22,6 +22,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Stop Command Defaults
+var stopNamespace = "synopsys-operator"
+
 // stopCmd represents the stop command
 var stopCmd = &cobra.Command{
 	Use:   "stop",

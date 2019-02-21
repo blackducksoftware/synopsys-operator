@@ -31,6 +31,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Default Specs
+var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
+var defaultOpsSightSpec = &opssightv1.OpsSightSpec{}
+var defaultAlertSpec = &alertv1.AlertSpec{}
+
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",

@@ -24,6 +24,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Start Command Defaults
+var startNamespace = "synopsys-operator"
+var startSynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
+var startPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
+var startBlackduckRegistrationKey = ""
+var startDockerConfigPath = ""
+var startSecretName = "blackduck-secret"
+var startSecretType = "Opaque"
+var startSecretAdminPassword = "YmxhY2tkdWNr"
+var startSecretPostgresPassword = "YmxhY2tkdWNr"
+var startSecretUserPassword = "YmxhY2tkdWNr"
+var startSecretBlackduckPassword = "YmxhY2tkdWNr"
+
+// Start Global Variables
 var secretType horizonapi.SecretType
 
 // startCmd represents the start command
