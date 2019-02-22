@@ -33,6 +33,12 @@ var rootCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 1 && args[0] == "--help" {
+			return fmt.Errorf("Help Called")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Running Non-Synopsysctl Command\n")
 		out, err := RunKubeCmd(args...)
@@ -55,7 +61,9 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+
 	rootCmd.DisableFlagParsing = true
+
 	// Cobra supports persistent flags, which, if defined here, will be global for your application.
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.synopsysctl.yaml)")
 

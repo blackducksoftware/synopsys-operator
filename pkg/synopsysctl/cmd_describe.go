@@ -25,6 +25,12 @@ import (
 var describeCmd = &cobra.Command{
 	Use:   "describe",
 	Short: "Print a detailed description of the selected resource",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 1 && args[0] == "--help" {
+			return fmt.Errorf("Help Called")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Describing a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"describe"}, args...)

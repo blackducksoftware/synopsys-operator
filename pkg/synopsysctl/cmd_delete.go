@@ -29,6 +29,12 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Remove a Synopsys Resource from your cluster",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 1 && args[0] == "--help" {
+			return fmt.Errorf("Help Called")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Deleting a Non-Synopsys Resource")
 		kubeCmdArgs := append([]string{"delete"}, args...)

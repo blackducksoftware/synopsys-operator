@@ -25,6 +25,12 @@ import (
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 1 && args[0] == "--help" {
+			return fmt.Errorf("Help Called")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Editing Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"edit"}, args...)

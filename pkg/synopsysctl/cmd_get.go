@@ -25,6 +25,12 @@ import (
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "List Synopsys Resources in your cluster",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 1 && args[0] == "--help" {
+			return fmt.Errorf("Help Called")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Getting a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"get"}, args...)
