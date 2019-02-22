@@ -76,8 +76,8 @@ var createBlackduckCmd = &cobra.Command{
 	Short: "Create an instance of a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
-		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		if len(args) > 1 {
+			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
 		switch createBlackduckSpecType {
@@ -88,14 +88,17 @@ var createBlackduckCmd = &cobra.Command{
 		case "default":
 			defaultBlackduckSpec = crddefaults.GetHubDefaultValue()
 		default:
-			return fmt.Errorf("Blackduck Spec Type %s does not match: empty, persistentStorage, default", createAlertSpecType)
+			return fmt.Errorf("Blackduck Spec Type %s does not match: empty, persistentStorage, default", createBlackduckSpecType)
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Creating a Blackduck\n")
 		// Read Commandline Parameters
-		blackduckName := args[0]
+		blackduckName := "blackduck"
+		if len(args) == 1 {
+			blackduckName = args[0]
+		}
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -133,8 +136,8 @@ var createOpsSightCmd = &cobra.Command{
 	Short: "Create an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
-		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		if len(args) > 1 {
+			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
 		switch createOpsSightSpecType {
@@ -145,14 +148,17 @@ var createOpsSightCmd = &cobra.Command{
 		case "default":
 			defaultOpsSightSpec = crddefaults.GetOpsSightDefaultValue()
 		default:
-			return fmt.Errorf("OpsSight Spec Type %s does not match: empty, disabledBlackduck, default", createAlertSpecType)
+			return fmt.Errorf("OpsSight Spec Type %s does not match: empty, disabledBlackduck, default", createOpsSightSpecType)
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Creating an OpsSight\n")
 		// Read Commandline Parameters
-		opsSightName := args[0]
+		opsSightName := "opssight"
+		if len(args) == 1 {
+			opsSightName = args[0]
+		}
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
@@ -190,8 +196,8 @@ var createAlertCmd = &cobra.Command{
 	Short: "Create an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
-		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		if len(args) > 1 {
+			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
 		switch createAlertSpecType {
@@ -209,7 +215,10 @@ var createAlertCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Creating an Alert\n")
 		// Read Commandline Parameters
-		alertName := args[0]
+		alertName := "alert"
+		if len(args) == 1 {
+			alertName = args[0]
+		}
 
 		// Get Kubernetes Rest Config
 		restconfig := getKubeRestConfig()
