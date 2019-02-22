@@ -49,6 +49,7 @@ var stopCmd = &cobra.Command{
 		}
 		cleanCommands := [...]string{
 			"delete crd alerts.synopsys.com",
+			"delete crd blackducks.synopsys.com",
 			"delete crd hubs.synopsys.com",
 			"delete crd opssights.synopsys.com",
 			"delete clusterrolebinding synopsys-operator-admin",

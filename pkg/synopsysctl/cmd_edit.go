@@ -17,6 +17,7 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -54,11 +55,11 @@ var editCmd = &cobra.Command{
 }
 
 var editBlackduckCmd = &cobra.Command{
-	Use:   "blackduck",
+	Use:   "blackduck NAME",
 	Short: "Edit an instance of Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
@@ -93,76 +94,148 @@ var editBlackduckCmd = &cobra.Command{
 	},
 }
 
+var blackduckPVCSize = "2Gi"
+var blackduckPVCStorageClass = ""
 var editBlackduckAddPVCCmd = &cobra.Command{
-	Use:   "addPVC",
+	Use:   "addPVC BLACKDUCK_NAME PVC_NAME",
 	Short: "Add a PVC to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		if len(args) != 2 {
+			return fmt.Errorf("This command takes 2 argument")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Adding PVC to Blackduck\n")
 		// Read Commandline Parameters
-		//blackduckNamespace := args[0]
+		blackduckName := args[0]
+		pvcName := args[1]
+		// Get Blackduck Spec
+		bd, err := getBlackduckSpec(blackduckName)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+		// Add PVC to Spec
+		newPVC := blackduckv1.PVC{
+			Name:         pvcName,
+			Size:         blackduckPVCSize,
+			StorageClass: blackduckPVCStorageClass,
+		}
+		bd.Spec.PVC = append(bd.Spec.PVC, newPVC)
+		// Update Blackduck with PVC
+		err = updateBlackduckSpec(bd)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
 	},
 }
 
 var editBlackduckAddEnvironCmd = &cobra.Command{
-	Use:   "addEnviron",
+	Use:   "addEnviron BLACKDUCK_NAME ENVIRON_NAME:ENVIRON_VALUE",
 	Short: "Add an Environment Variable to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		if len(args) != 2 {
+			return fmt.Errorf("This command accepts 2 arguments")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Adding Environ to Blackduck\n")
 		// Read Commandline Parameters
-		//blackduckNamespace := args[0]
+		blackduckName := args[0]
+		environ := args[1]
+		// Get Blackduck Spec
+		bd, err := getBlackduckSpec(blackduckName)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+		// Add Environ to Spec
+		bd.Spec.Environs = append(bd.Spec.Environs, environ)
+		// Update Blackduck with Environ
+		err = updateBlackduckSpec(bd)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
 	},
 }
 
 var editBlackduckAddRegistryCmd = &cobra.Command{
-	Use:   "addRegistry",
+	Use:   "addRegistry BLACKDUCK_NAME REGISTRY",
 	Short: "Add an Image Registry to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		if len(args) != 2 {
+			return fmt.Errorf("This command accepts 2 arguments")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Adding an Image Registry to Blackduck\n")
 		// Read Commandline Parameters
-		//blackduckNamespace := args[0]
+		blackduckName := args[0]
+		registry := args[1]
+		// Get Blackduck Spec
+		bd, err := getBlackduckSpec(blackduckName)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+		// Add Registry to Spec
+		bd.Spec.ImageRegistries = append(bd.Spec.ImageRegistries, registry)
+		// Update Blackduck with Environ
+		err = updateBlackduckSpec(bd)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
 	},
 }
 
 var editBlackduckAddUIDCmd = &cobra.Command{
-	Use:   "addUID",
+	Use:   "addUID BLACKDUCK_NAME UID_KEY UID_VALUE",
 	Short: "Add an Image UID to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		if len(args) != 3 {
+			return fmt.Errorf("This command accepts 3 arguments")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Adding an Image UID to Blackduck\n")
 		// Read Commandline Parameters
-		//blackduckNamespace := args[0]
+		blackduckName := args[0]
+		uidKey := args[1]
+		uidVal := args[2]
+		// Get Blackduck Spec
+		bd, err := getBlackduckSpec(blackduckName)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+		// Add UID Mapping to Spec
+		intUIDVal, err := strconv.ParseInt(uidVal, 0, 64)
+		if err != nil {
+			fmt.Printf("Couldn't convert UID_VAL to int: %s\n", err)
+		}
+		bd.Spec.ImageUIDMap[uidKey] = intUIDVal
+		// Update Blackduck with UID mapping
+		err = updateBlackduckSpec(bd)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
 	},
 }
 
 var editOpsSightCmd = &cobra.Command{
-	Use:   "opssight",
+	Use:   "opssight OPSSIGHT_NAME",
 	Short: "Edit an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
@@ -198,45 +271,78 @@ var editOpsSightCmd = &cobra.Command{
 }
 
 var editOpsSightAddRegistryCmd = &cobra.Command{
-	Use:   "addRegistry",
+	Use:   "addRegistry OPSSIGHT_NAME URL USER PASSWORD",
 	Short: "Add an Internal Registry to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command takes 4 arguments")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debugf("Adding Internal Registryto OpsSight\n")
-		// Read Commandline Parameters
-		//opSightNamespace := args[0]
-		return
+		log.Debugf("Adding Internal Registry to OpsSight\n")
+		opssightName := args[0]
+		regURL := args[1]
+		regUser := args[2]
+		regPass := args[3]
+		// Get OpsSight Spec
+		ops, err := getOpsSightSpec(opssightName)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+		// Add Internal Registry to Spec
+		newReg := opssightv1.RegistryAuth{
+			URL:      regURL,
+			User:     regUser,
+			Password: regPass,
+		}
+		ops.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ops.Spec.ScannerPod.ImageFacade.InternalRegistries, newReg)
+		// Update OpsSight with Internal Registry
+		err = updateOpsSightSpec(ops)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
 	},
 }
 
 var editOpsSightAddHostCmd = &cobra.Command{
-	Use:   "addHost",
+	Use:   "addHost OPSSIGHT_NAME BLACKDUCK_HOST",
 	Short: "Add a Blackduck Host to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("This command only accepts 2 arguments - NAME  BLACKDUCK_HOST")
+			return fmt.Errorf("This command takes 2 arguments")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debugf("Adding Blackduck Host to OpsSight\n")
-		// Read Commandline Parameters
-		//opSightNamespace := args[0]
-		return
+		opssightName := args[0]
+		host := args[1]
+		// Get OpsSight Spec
+		ops, err := getOpsSightSpec(opssightName)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+		// Add Host to Spec
+		ops.Spec.Blackduck.Hosts = append(ops.Spec.Blackduck.Hosts, host)
+		// Update OpsSight with Host
+		err = updateOpsSightSpec(ops)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
 	},
 }
 
 var editAlertCmd = &cobra.Command{
-	Use:   "alert",
+	Use:   "alert NAME",
 	Short: "Edit an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
@@ -302,10 +408,15 @@ func init() {
 	editBlackduckCmd.Flags().StringVar(&blackduckLicenseKey, "license-key", blackduckLicenseKey, "TODO")
 	editCmd.AddCommand(editBlackduckCmd)
 
-	// Add Blackduck Commands
+	// Add Blackduck PVC Command
+	editBlackduckAddPVCCmd.Flags().StringVar(&blackduckPVCSize, "size", blackduckPVCSize, "TODO")
+	editBlackduckAddPVCCmd.Flags().StringVar(&blackduckPVCStorageClass, "storage-class", blackduckPVCStorageClass, "TODO")
 	editBlackduckCmd.AddCommand(editBlackduckAddPVCCmd)
+	// Add Blackduck Environ Command
 	editBlackduckCmd.AddCommand(editBlackduckAddEnvironCmd)
+	// Add Blackduck Registry Command
 	editBlackduckCmd.AddCommand(editBlackduckAddRegistryCmd)
+	// Add Blackduck Registry Command
 	editBlackduckCmd.AddCommand(editBlackduckAddUIDCmd)
 
 	// Add OpsSight Spec Flags
