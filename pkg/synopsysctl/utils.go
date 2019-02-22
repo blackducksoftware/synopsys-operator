@@ -26,12 +26,75 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// These vars set by setResourceClients() in root command's init()
+var restconfig *rest.Config
+var blackduckClient *blackduckclientset.Clientset
+var opssightClient *opssightclientset.Clientset
+var alertClient *alertclientset.Clientset
+
+// These vars used by KubeCmd
 var openshift bool
 var kube bool
+
+func getBlackduckSpec(name string) (*blackduckv1.Blackduck, error) {
+	blackduck, err := blackduckClient.SynopsysV1().Blackducks(name).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return blackduck, fmt.Errorf("Error Editing Blackduck: %+v", err)
+	}
+	return blackduck, nil
+}
+
+func updateBlackduckSpec(spec *blackduckv1.Blackduck) error {
+	_, err := blackduckClient.SynopsysV1().Blackducks(spec.Name).Update(spec)
+	if err != nil {
+		return fmt.Errorf("Error Editing Blackduck: %+v", err)
+	}
+	return nil
+}
+
+func getOpsSightSpec(name string) (*opssightv1.OpsSight, error) {
+	opssight, err := opssightClient.SynopsysV1().OpsSights(name).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return opssight, fmt.Errorf("Error Editing OpsSight: %+v", err)
+	}
+	return opssight, nil
+}
+
+func updateOpsSightSpec(spec *opssightv1.OpsSight) error {
+	_, err := opssightClient.SynopsysV1().OpsSights(spec.Name).Update(spec)
+	if err != nil {
+		return fmt.Errorf("Error Editing OpsSight: %+v", err)
+	}
+	return nil
+}
+
+func getAlertSpec(name string) (*alertv1.Alert, error) {
+	alert, err := alertClient.SynopsysV1().Alerts(name).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return alert, fmt.Errorf("Error Editing Alert: %+v", err)
+	}
+	return alert, nil
+}
+
+func updateAlertSpec(spec *alertv1.Alert) error {
+	_, err := alertClient.SynopsysV1().Alerts(spec.Name).Update(spec)
+	if err != nil {
+		return fmt.Errorf("Error Editing Alert: %+v", err)
+	}
+	return nil
+}
 
 func determineClusterClients() {
 	_, exists := exec.LookPath("kubectl")
@@ -127,8 +190,28 @@ func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (string, error) {
 	}
 }
 
+func setResourceClients() {
+	restconfig = getKubeRestConfig()
+	bClient, err := blackduckclientset.NewForConfig(restconfig)
+	if err != nil {
+		panic(fmt.Errorf("Error creating the Blackduck Clientset: %s", err))
+	}
+	blackduckClient = bClient
+	oClient, err := opssightclientset.NewForConfig(restconfig)
+	if err != nil {
+		panic(fmt.Errorf("Error creating the OpsSight Clientset: %s", err))
+	}
+	opssightClient = oClient
+	aClient, err := alertclientset.NewForConfig(restconfig)
+	if err != nil {
+		panic(fmt.Errorf("Error creating the Alert Clientset: %s", err))
+	}
+	alertClient = aClient
+}
+
 // getKubeRestConfig gets the user's kubeconfig from their system
 func getKubeRestConfig() *rest.Config {
+	log.Debugf("Getting Kube Rest Config\n")
 	var kubeconfig *string
 	if home := homeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")

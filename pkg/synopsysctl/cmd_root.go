@@ -60,6 +60,7 @@ func Execute() {
 }
 
 func init() {
+	setResourceClients()
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.DisableFlagParsing = true

@@ -18,12 +18,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -100,9 +97,6 @@ var createBlackduckCmd = &cobra.Command{
 			blackduckName = args[0]
 		}
 
-		// Get Kubernetes Rest Config
-		restconfig := getKubeRestConfig()
-
 		// Create namespace for the Blackduck
 		DeployCRDNamespace(restconfig, blackduckName)
 
@@ -121,8 +115,7 @@ var createBlackduckCmd = &cobra.Command{
 			Spec: *defaultBlackduckSpec,
 		}
 		log.Debugf("%+v\n", blackduck)
-		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
-		_, err = blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
+		_, err := blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
 		if err != nil {
 			fmt.Printf("Error creating the Blackduck : %s\n", err)
 			return
@@ -160,9 +153,6 @@ var createOpsSightCmd = &cobra.Command{
 			opsSightName = args[0]
 		}
 
-		// Get Kubernetes Rest Config
-		restconfig := getKubeRestConfig()
-
 		// Create namespace for the OpsSight
 		DeployCRDNamespace(restconfig, opsSightName)
 
@@ -181,8 +171,7 @@ var createOpsSightCmd = &cobra.Command{
 			Spec: *defaultOpsSightSpec,
 		}
 		log.Debugf("%+v\n", opssight)
-		opssightClient, err := opssightclientset.NewForConfig(restconfig)
-		_, err = opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
+		_, err := opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
 		if err != nil {
 			fmt.Printf("Error creating the OpsSight : %s\n", err)
 			return
@@ -220,9 +209,6 @@ var createAlertCmd = &cobra.Command{
 			alertName = args[0]
 		}
 
-		// Get Kubernetes Rest Config
-		restconfig := getKubeRestConfig()
-
 		// Create namespace for the Alert
 		DeployCRDNamespace(restconfig, alertName)
 
@@ -241,8 +227,7 @@ var createAlertCmd = &cobra.Command{
 			Spec: *defaultAlertSpec,
 		}
 		log.Debugf("%+v\n", alert)
-		alertClient, err := alertclientset.NewForConfig(restconfig)
-		_, err = alertClient.SynopsysV1().Alerts(alertName).Create(alert)
+		_, err := alertClient.SynopsysV1().Alerts(alertName).Create(alert)
 		if err != nil {
 			fmt.Printf("Error creating the Alert : %s\n", err)
 			return
@@ -254,7 +239,7 @@ func init() {
 	createCmd.DisableFlagParsing = true
 	rootCmd.AddCommand(createCmd)
 
-	// Add Blackduck Spec Flags
+	// Add Blackduck Command Flags
 	createBlackduckCmd.Flags().StringVar(&createBlackduckSpecType, "spec", createBlackduckSpecType, "TODO")
 	// Add Blackduck Spec Flags
 	createBlackduckCmd.Flags().StringVar(&blackduckSize, "size", blackduckSize, "Blackduck size - small, medium, large")

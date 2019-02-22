@@ -17,9 +17,6 @@ package synopsysctl
 import (
 	"fmt"
 
-	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,14 +58,8 @@ var deleteBlackduckCmd = &cobra.Command{
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
-		// Get Kubernetes Rest Config
-		restconfig := getKubeRestConfig()
-		blackduckClient, err := blackduckclientset.NewForConfig(restconfig)
-		if err != nil {
-			fmt.Printf("Error creating the Blackduck Clientset: %s\n", err)
-			return
-		}
-		err = blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
+		// Delete Blackduck with Client
+		err := blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
 		if err != nil {
 			fmt.Printf("Error deleting the Blackduck: %s\n", err)
 			return
@@ -90,14 +81,8 @@ var deleteOpsSightCmd = &cobra.Command{
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
-		// Get Kubernetes Rest Config
-		restconfig := getKubeRestConfig()
-		opssightClient, err := opssightclientset.NewForConfig(restconfig)
-		if err != nil {
-			fmt.Printf("Error creating the OpsSight Clientset: %s\n", err)
-			return
-		}
-		err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
+		// Delete OpsSight with Client
+		err := opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
 		if err != nil {
 			fmt.Printf("Error deleting the OpsSight: %s\n", err)
 			return
@@ -119,14 +104,8 @@ var deleteAlertCmd = &cobra.Command{
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
-		// Get Kubernetes Rest Config
-		restconfig := getKubeRestConfig()
-		alertClient, err := alertclientset.NewForConfig(restconfig)
-		if err != nil {
-			fmt.Printf("Error creating the Alert Clientset: %s\n", err)
-			return
-		}
-		err = alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
+		// Delete Alert with Client
+		err := alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
 		if err != nil {
 			fmt.Printf("Error deleting the Alert: %s\n", err)
 			return

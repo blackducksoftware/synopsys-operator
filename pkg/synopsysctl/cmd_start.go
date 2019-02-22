@@ -83,11 +83,8 @@ var startCmd = &cobra.Command{
 			return
 		}
 
-		// Start Horizon
-		rc := getKubeRestConfig()
-
 		// Create a Horizon Deployer to set up the environment for the Synopsys Operator
-		environmentDeployer, err := deployer.NewDeployer(rc)
+		environmentDeployer, err := deployer.NewDeployer(restconfig)
 
 		// create a new namespace
 		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
@@ -127,7 +124,7 @@ var startCmd = &cobra.Command{
 			SynopsysOperatorImage:    startSynopsysOperatorImage,
 			BlackduckRegistrationKey: startBlackduckRegistrationKey,
 		}
-		synopsysOperatorDeployer, err := deployer.NewDeployer(rc)
+		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
 			fmt.Printf("Error creating Horizon Deployer for Synopsys Operator: %s\n", err)
 			return
@@ -148,7 +145,7 @@ var startCmd = &cobra.Command{
 			Namespace:       startNamespace,
 			PrometheusImage: startPrometheusImage,
 		}
-		prometheusDeployer, err := deployer.NewDeployer(rc)
+		prometheusDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
 			fmt.Printf("Error creating Horizon Deployer for Prometheus: %s\n", err)
 			return
@@ -166,11 +163,11 @@ var startCmd = &cobra.Command{
 		RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", startDockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
 		RunKubeCmd("secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
 		RunKubeCmd("secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
-		RunKubeCmd("scale", "rc", "synopsys-operator", "--replicas=0")
-		RunKubeCmd("scale", "rc", "synopsys-operator", "--replicas=1")
+		RunKubeCmd("scale", "replicationcontroller", "synopsys-operator", "--replicas=0")
+		RunKubeCmd("scale", "replicationcontroller", "synopsys-operator", "--replicas=1")
 
 		// expose the routes
-		out, err = RunKubeCmd("expose", "rc", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", startNamespace))
+		out, err = RunKubeCmd("expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", startNamespace))
 		if err != nil {
 			fmt.Printf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
 		}
