@@ -31,6 +31,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Create Flags
+var createBlackduckSpecType = "persistentStorage"
+var createOpsSightSpecType = "disabledBlackduck"
+var createAlertSpecType = "spec1"
+
 // Default Specs
 var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
 var defaultOpsSightSpec = &opssightv1.OpsSightSpec{}
@@ -243,114 +248,114 @@ func init() {
 	// Add Blackduck Spec Flags
 	createBlackduckCmd.Flags().StringVar(&createBlackduckSpecType, "spec", createBlackduckSpecType, "TODO")
 	// Add Blackduck Spec Flags
-	createBlackduckCmd.Flags().StringVar(&createBlackduckSize, "size", createBlackduckSize, "Blackduck size - small, medium, large")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckDbPrototype, "db-prototype", createBlackduckDbPrototype, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckExternalPostgresPostgresHost, "external-postgres-host", createBlackduckExternalPostgresPostgresHost, "TODO")
-	createBlackduckCmd.Flags().IntVar(&createBlackduckExternalPostgresPostgresPort, "external-postgres-port", createBlackduckExternalPostgresPostgresPort, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckExternalPostgresPostgresAdmin, "external-postgres-admin", createBlackduckExternalPostgresPostgresAdmin, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckExternalPostgresPostgresUser, "external-postgres-user", createBlackduckExternalPostgresPostgresUser, "TODO")
-	createBlackduckCmd.Flags().BoolVar(&createBlackduckExternalPostgresPostgresSsl, "external-postgres-ssl", createBlackduckExternalPostgresPostgresSsl, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", createBlackduckExternalPostgresPostgresAdminPassword, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckExternalPostgresPostgresUserPassword, "external-postgres-user-password", createBlackduckExternalPostgresPostgresUserPassword, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckPvcStorageClass, "pvc-storage-class", createBlackduckPvcStorageClass, "TODO")
-	createBlackduckCmd.Flags().BoolVar(&createBlackduckLivenessProbes, "liveness-probes", createBlackduckLivenessProbes, "Enable liveness probes")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckScanType, "scan-type", createBlackduckScanType, "TODO")
-	createBlackduckCmd.Flags().BoolVar(&createBlackduckPersistentStorage, "persistent-storage", createBlackduckPersistentStorage, "Enable persistent storage")
-	createBlackduckCmd.Flags().StringSliceVar(&createBlackduckPVCJSONSlice, "pvc", createBlackduckPVCJSONSlice, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckCertificateName, "db-certificate-name", createBlackduckCertificateName, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckCertificate, "certificate", createBlackduckCertificate, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckCertificateKey, "certificate-key", createBlackduckCertificateKey, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckProxyCertificate, "proxy-certificate", createBlackduckProxyCertificate, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckType, "type", createBlackduckType, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckDesiredState, "desired-state", createBlackduckDesiredState, "TODO")
-	createBlackduckCmd.Flags().StringSliceVar(&createBlackduckEnvirons, "environs", createBlackduckEnvirons, "TODO")
-	createBlackduckCmd.Flags().StringSliceVar(&createBlackduckImageRegistries, "image-registries", createBlackduckImageRegistries, "List of image registries")
-	createBlackduckCmd.Flags().StringSliceVar(&createBlackduckImageUIDMapJSONSlice, "image-uid-map", createBlackduckImageUIDMapJSONSlice, "TODO")
-	createBlackduckCmd.Flags().StringVar(&createBlackduckLicenseKey, "license-key", createBlackduckLicenseKey, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckSize, "size", blackduckSize, "Blackduck size - small, medium, large")
+	createBlackduckCmd.Flags().StringVar(&blackduckDbPrototype, "db-prototype", blackduckDbPrototype, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckExternalPostgresPostgresHost, "external-postgres-host", blackduckExternalPostgresPostgresHost, "TODO")
+	createBlackduckCmd.Flags().IntVar(&blackduckExternalPostgresPostgresPort, "external-postgres-port", blackduckExternalPostgresPostgresPort, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckExternalPostgresPostgresAdmin, "external-postgres-admin", blackduckExternalPostgresPostgresAdmin, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckExternalPostgresPostgresUser, "external-postgres-user", blackduckExternalPostgresPostgresUser, "TODO")
+	createBlackduckCmd.Flags().BoolVar(&blackduckExternalPostgresPostgresSsl, "external-postgres-ssl", blackduckExternalPostgresPostgresSsl, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", blackduckExternalPostgresPostgresAdminPassword, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckExternalPostgresPostgresUserPassword, "external-postgres-user-password", blackduckExternalPostgresPostgresUserPassword, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckPvcStorageClass, "pvc-storage-class", blackduckPvcStorageClass, "TODO")
+	createBlackduckCmd.Flags().BoolVar(&blackduckLivenessProbes, "liveness-probes", blackduckLivenessProbes, "Enable liveness probes")
+	createBlackduckCmd.Flags().StringVar(&blackduckScanType, "scan-type", blackduckScanType, "TODO")
+	createBlackduckCmd.Flags().BoolVar(&blackduckPersistentStorage, "persistent-storage", blackduckPersistentStorage, "Enable persistent storage")
+	createBlackduckCmd.Flags().StringSliceVar(&blackduckPVCJSONSlice, "pvc", blackduckPVCJSONSlice, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckCertificateName, "db-certificate-name", blackduckCertificateName, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckCertificate, "certificate", blackduckCertificate, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckCertificateKey, "certificate-key", blackduckCertificateKey, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckProxyCertificate, "proxy-certificate", blackduckProxyCertificate, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckType, "type", blackduckType, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckDesiredState, "desired-state", blackduckDesiredState, "TODO")
+	createBlackduckCmd.Flags().StringSliceVar(&blackduckEnvirons, "environs", blackduckEnvirons, "TODO")
+	createBlackduckCmd.Flags().StringSliceVar(&blackduckImageRegistries, "image-registries", blackduckImageRegistries, "List of image registries")
+	createBlackduckCmd.Flags().StringSliceVar(&blackduckImageUIDMapJSONSlice, "image-uid-map", blackduckImageUIDMapJSONSlice, "TODO")
+	createBlackduckCmd.Flags().StringVar(&blackduckLicenseKey, "license-key", blackduckLicenseKey, "TODO")
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command Flags
 	createOpsSightCmd.Flags().StringVar(&createOpsSightSpecType, "spec", createOpsSightSpecType, "TODO")
 	// Add OpsSight Spec Flags
-	createOpsSightCmd.Flags().StringVar(&createOpssightPerceptorName, "perceptor-name", createOpssightPerceptorName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPerceptorImage, "perceptor-image", createOpssightPerceptorImage, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceptorPort, "perceptor-port", createOpssightPerceptorPort, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceptorCheckForStalledScansPauseHours, "perceptor-check-scan-hours", createOpssightPerceptorCheckForStalledScansPauseHours, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceptorStalledScanClientTimeoutHours, "perceptor-scan-client-timeout-hours", createOpssightPerceptorStalledScanClientTimeoutHours, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceptorModelMetricsPauseSeconds, "perceptor-metrics-pause-seconds", createOpssightPerceptorModelMetricsPauseSeconds, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceptorUnknownImagePauseMilliseconds, "perceptor-unknown-image-pause-milliseconds", createOpssightPerceptorUnknownImagePauseMilliseconds, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceptorClientTimeoutMilliseconds, "perceptor-client-timeout-milliseconds", createOpssightPerceptorClientTimeoutMilliseconds, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightScannerPodName, "scannerpod-name", createOpssightScannerPodName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightScannerPodScannerName, "scannerpod-scanner-name", createOpssightScannerPodScannerName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightScannerPodScannerImage, "scannerpod-scanner-image", createOpssightScannerPodScannerImage, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightScannerPodScannerPort, "scannerpod-scanner-port", createOpssightScannerPodScannerPort, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightScannerPodScannerClientTimeoutSeconds, "scannerpod-scanner-client-timeout-seconds", createOpssightScannerPodScannerClientTimeoutSeconds, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightScannerPodImageFacadeName, "scannerpod-imagefacade-name", createOpssightScannerPodImageFacadeName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightScannerPodImageFacadeImage, "scannerpod-imagefacade-image", createOpssightScannerPodImageFacadeImage, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightScannerPodImageFacadePort, "scannerpod-imagefacade-port", createOpssightScannerPodImageFacadePort, "TODO")
-	createOpsSightCmd.Flags().StringSliceVar(&createOpssightScannerPodImageFacadeInternalRegistriesJSONSlice, "scannerpod-imagefacade-internal-registries", createOpssightScannerPodImageFacadeInternalRegistriesJSONSlice, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightScannerPodImageFacadeImagePullerType, "scannerpod-imagefacade-image-puller-type", createOpssightScannerPodImageFacadeImagePullerType, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightScannerPodImageFacadeServiceAccount, "scannerpod-imagefacade-service-account", createOpssightScannerPodImageFacadeServiceAccount, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightScannerPodReplicaCount, "scannerpod-replica-count", createOpssightScannerPodReplicaCount, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightScannerPodImageDirectory, "scannerpod-image-directory", createOpssightScannerPodImageDirectory, "TODO")
-	createOpsSightCmd.Flags().BoolVar(&createOpssightPerceiverEnableImagePerceiver, "enable-image-perceiver", createOpssightPerceiverEnableImagePerceiver, "TODO")
-	createOpsSightCmd.Flags().BoolVar(&createOpssightPerceiverEnablePodPerceiver, "enable-pod-perceiver", createOpssightPerceiverEnablePodPerceiver, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPerceiverImagePerceiverName, "imageperceiver-name", createOpssightPerceiverImagePerceiverName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPerceiverImagePerceiverImage, "imageperceiver-image", createOpssightPerceiverImagePerceiverImage, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPerceiverPodPerceiverName, "podperceiver-name", createOpssightPerceiverPodPerceiverName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPerceiverPodPerceiverImage, "podperceiver-image", createOpssightPerceiverPodPerceiverImage, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPerceiverPodPerceiverNamespaceFilter, "podperceiver-namespace-filter", createOpssightPerceiverPodPerceiverNamespaceFilter, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceiverAnnotationIntervalSeconds, "perceiver-annotation-interval-seconds", createOpssightPerceiverAnnotationIntervalSeconds, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceiverDumpIntervalMinutes, "perceiver-dump-interval-minutes", createOpssightPerceiverDumpIntervalMinutes, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPerceiverServiceAccount, "perceiver-service-account", createOpssightPerceiverServiceAccount, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPerceiverPort, "perceiver-port", createOpssightPerceiverPort, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPrometheusName, "prometheus-name", createOpssightPrometheusName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightPrometheusName, "prometheus-image", createOpssightPrometheusName, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightPrometheusPort, "prometheus-port", createOpssightPrometheusPort, "TODO")
-	createOpsSightCmd.Flags().BoolVar(&createOpssightEnableSkyfire, "enable-skyfire", createOpssightEnableSkyfire, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightSkyfireName, "skyfire-name", createOpssightSkyfireName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightSkyfireImage, "skyfire-image", createOpssightSkyfireImage, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightSkyfirePort, "skyfire-port", createOpssightSkyfirePort, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightSkyfirePrometheusPort, "skyfire-prometheus-port", createOpssightSkyfirePrometheusPort, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightSkyfireServiceAccount, "skyfire-service-account", createOpssightSkyfireServiceAccount, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightSkyfireHubClientTimeoutSeconds, "skyfire-hub-client-timeout-seconds", createOpssightSkyfireHubClientTimeoutSeconds, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightSkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", createOpssightSkyfireHubDumpPauseSeconds, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightSkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", createOpssightSkyfireKubeDumpIntervalSeconds, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightSkyfirePerceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", createOpssightSkyfirePerceptorDumpIntervalSeconds, "TODO")
-	createOpsSightCmd.Flags().StringSliceVar(&createOpssightBlackduckHosts, "blackduck-hosts", createOpssightBlackduckHosts, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightBlackduckUser, "blackduck-user", createOpssightBlackduckUser, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightBlackduckPort, "blackduck-port", createOpssightBlackduckPort, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightBlackduckConcurrentScanLimit, "blackduck-concurrent-scan-limit", createOpssightBlackduckConcurrentScanLimit, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightBlackduckTotalScanLimit, "blackduck-total-scan-limit", createOpssightBlackduckTotalScanLimit, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightBlackduckPasswordEnvVar, "blackduck-password-environment-variable", createOpssightBlackduckPasswordEnvVar, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightBlackduckInitialCount, "blackduck-initial-count", createOpssightBlackduckInitialCount, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightBlackduckMaxCount, "blackduck-max-count", createOpssightBlackduckMaxCount, "TODO")
-	createOpsSightCmd.Flags().IntVar(&createOpssightBlackduckDeleteHubThresholdPercentage, "blackduck-delete-blackduck-threshold-percentage", createOpssightBlackduckDeleteHubThresholdPercentage, "TODO")
-	createOpsSightCmd.Flags().BoolVar(&createOpssightEnableMetrics, "enable-metrics", createOpssightEnableMetrics, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightDefaultCPU, "default-cpu", createOpssightDefaultCPU, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightDefaultMem, "default-mem", createOpssightDefaultMem, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightLogLevel, "log-level", createOpssightLogLevel, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightConfigMapName, "config-map-name", createOpssightConfigMapName, "TODO")
-	createOpsSightCmd.Flags().StringVar(&createOpssightSecretName, "secret-name", createOpssightSecretName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPerceptorName, "perceptor-name", opssightPerceptorName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPerceptorImage, "perceptor-image", opssightPerceptorImage, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceptorPort, "perceptor-port", opssightPerceptorPort, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceptorCheckForStalledScansPauseHours, "perceptor-check-scan-hours", opssightPerceptorCheckForStalledScansPauseHours, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceptorStalledScanClientTimeoutHours, "perceptor-scan-client-timeout-hours", opssightPerceptorStalledScanClientTimeoutHours, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceptorModelMetricsPauseSeconds, "perceptor-metrics-pause-seconds", opssightPerceptorModelMetricsPauseSeconds, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceptorUnknownImagePauseMilliseconds, "perceptor-unknown-image-pause-milliseconds", opssightPerceptorUnknownImagePauseMilliseconds, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceptorClientTimeoutMilliseconds, "perceptor-client-timeout-milliseconds", opssightPerceptorClientTimeoutMilliseconds, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightScannerPodName, "scannerpod-name", opssightScannerPodName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightScannerPodScannerName, "scannerpod-scanner-name", opssightScannerPodScannerName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightScannerPodScannerImage, "scannerpod-scanner-image", opssightScannerPodScannerImage, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightScannerPodScannerPort, "scannerpod-scanner-port", opssightScannerPodScannerPort, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightScannerPodScannerClientTimeoutSeconds, "scannerpod-scanner-client-timeout-seconds", opssightScannerPodScannerClientTimeoutSeconds, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightScannerPodImageFacadeName, "scannerpod-imagefacade-name", opssightScannerPodImageFacadeName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightScannerPodImageFacadeImage, "scannerpod-imagefacade-image", opssightScannerPodImageFacadeImage, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightScannerPodImageFacadePort, "scannerpod-imagefacade-port", opssightScannerPodImageFacadePort, "TODO")
+	createOpsSightCmd.Flags().StringSliceVar(&opssightScannerPodImageFacadeInternalRegistriesJSONSlice, "scannerpod-imagefacade-internal-registries", opssightScannerPodImageFacadeInternalRegistriesJSONSlice, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightScannerPodImageFacadeImagePullerType, "scannerpod-imagefacade-image-puller-type", opssightScannerPodImageFacadeImagePullerType, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightScannerPodImageFacadeServiceAccount, "scannerpod-imagefacade-service-account", opssightScannerPodImageFacadeServiceAccount, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightScannerPodReplicaCount, "scannerpod-replica-count", opssightScannerPodReplicaCount, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightScannerPodImageDirectory, "scannerpod-image-directory", opssightScannerPodImageDirectory, "TODO")
+	createOpsSightCmd.Flags().BoolVar(&opssightPerceiverEnableImagePerceiver, "enable-image-perceiver", opssightPerceiverEnableImagePerceiver, "TODO")
+	createOpsSightCmd.Flags().BoolVar(&opssightPerceiverEnablePodPerceiver, "enable-pod-perceiver", opssightPerceiverEnablePodPerceiver, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPerceiverImagePerceiverName, "imageperceiver-name", opssightPerceiverImagePerceiverName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPerceiverImagePerceiverImage, "imageperceiver-image", opssightPerceiverImagePerceiverImage, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPerceiverPodPerceiverName, "podperceiver-name", opssightPerceiverPodPerceiverName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPerceiverPodPerceiverImage, "podperceiver-image", opssightPerceiverPodPerceiverImage, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPerceiverPodPerceiverNamespaceFilter, "podperceiver-namespace-filter", opssightPerceiverPodPerceiverNamespaceFilter, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceiverAnnotationIntervalSeconds, "perceiver-annotation-interval-seconds", opssightPerceiverAnnotationIntervalSeconds, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceiverDumpIntervalMinutes, "perceiver-dump-interval-minutes", opssightPerceiverDumpIntervalMinutes, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPerceiverServiceAccount, "perceiver-service-account", opssightPerceiverServiceAccount, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPerceiverPort, "perceiver-port", opssightPerceiverPort, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPrometheusName, "prometheus-name", opssightPrometheusName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightPrometheusName, "prometheus-image", opssightPrometheusName, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightPrometheusPort, "prometheus-port", opssightPrometheusPort, "TODO")
+	createOpsSightCmd.Flags().BoolVar(&opssightEnableSkyfire, "enable-skyfire", opssightEnableSkyfire, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightSkyfireName, "skyfire-name", opssightSkyfireName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightSkyfireImage, "skyfire-image", opssightSkyfireImage, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightSkyfirePort, "skyfire-port", opssightSkyfirePort, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightSkyfirePrometheusPort, "skyfire-prometheus-port", opssightSkyfirePrometheusPort, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightSkyfireServiceAccount, "skyfire-service-account", opssightSkyfireServiceAccount, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightSkyfireHubClientTimeoutSeconds, "skyfire-hub-client-timeout-seconds", opssightSkyfireHubClientTimeoutSeconds, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightSkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", opssightSkyfireHubDumpPauseSeconds, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightSkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", opssightSkyfireKubeDumpIntervalSeconds, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightSkyfirePerceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", opssightSkyfirePerceptorDumpIntervalSeconds, "TODO")
+	createOpsSightCmd.Flags().StringSliceVar(&opssightBlackduckHosts, "blackduck-hosts", opssightBlackduckHosts, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightBlackduckUser, "blackduck-user", opssightBlackduckUser, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightBlackduckPort, "blackduck-port", opssightBlackduckPort, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightBlackduckConcurrentScanLimit, "blackduck-concurrent-scan-limit", opssightBlackduckConcurrentScanLimit, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightBlackduckTotalScanLimit, "blackduck-total-scan-limit", opssightBlackduckTotalScanLimit, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightBlackduckPasswordEnvVar, "blackduck-password-environment-variable", opssightBlackduckPasswordEnvVar, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightBlackduckInitialCount, "blackduck-initial-count", opssightBlackduckInitialCount, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightBlackduckMaxCount, "blackduck-max-count", opssightBlackduckMaxCount, "TODO")
+	createOpsSightCmd.Flags().IntVar(&opssightBlackduckDeleteHubThresholdPercentage, "blackduck-delete-blackduck-threshold-percentage", opssightBlackduckDeleteHubThresholdPercentage, "TODO")
+	createOpsSightCmd.Flags().BoolVar(&opssightEnableMetrics, "enable-metrics", opssightEnableMetrics, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightDefaultCPU, "default-cpu", opssightDefaultCPU, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightDefaultMem, "default-mem", opssightDefaultMem, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightLogLevel, "log-level", opssightLogLevel, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightConfigMapName, "config-map-name", opssightConfigMapName, "TODO")
+	createOpsSightCmd.Flags().StringVar(&opssightSecretName, "secret-name", opssightSecretName, "TODO")
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command Flags
 	createAlertCmd.Flags().StringVar(&createAlertSpecType, "spec", createAlertSpecType, "TODO")
 	// Add Alert Spec Flags
-	createAlertCmd.Flags().StringVar(&createAlertRegistry, "alert-registry", createAlertRegistry, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertImagePath, "image-path", createAlertImagePath, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertAlertImageName, "alert-image-name", createAlertAlertImageName, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertAlertImageVersion, "alert-image-version", createAlertAlertImageVersion, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertCfsslImageName, "cfssl-image-name", createAlertCfsslImageName, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertCfsslImageVersion, "cfssl-image-version", createAlertCfsslImageVersion, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertBlackduckHost, "blackduck-host", createAlertBlackduckHost, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertBlackduckUser, "blackduck-user", createAlertBlackduckUser, "TODO")
-	createAlertCmd.Flags().IntVar(&createAlertBlackduckPort, "blackduck-port", createAlertBlackduckPort, "TODO")
-	createAlertCmd.Flags().IntVar(&createAlertPort, "port", createAlertPort, "TODO")
-	createAlertCmd.Flags().BoolVar(&createAlertStandAlone, "stand-alone", createAlertStandAlone, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertAlertMemory, "alert-memory", createAlertAlertMemory, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertCfsslMemory, "cfssl-memory", createAlertCfsslMemory, "TODO")
-	createAlertCmd.Flags().StringVar(&createAlertState, "alert-state", createAlertState, "TODO")
+	createAlertCmd.Flags().StringVar(&alertRegistry, "alert-registry", alertRegistry, "TODO")
+	createAlertCmd.Flags().StringVar(&alertImagePath, "image-path", alertImagePath, "TODO")
+	createAlertCmd.Flags().StringVar(&alertAlertImageName, "alert-image-name", alertAlertImageName, "TODO")
+	createAlertCmd.Flags().StringVar(&alertAlertImageVersion, "alert-image-version", alertAlertImageVersion, "TODO")
+	createAlertCmd.Flags().StringVar(&alertCfsslImageName, "cfssl-image-name", alertCfsslImageName, "TODO")
+	createAlertCmd.Flags().StringVar(&alertCfsslImageVersion, "cfssl-image-version", alertCfsslImageVersion, "TODO")
+	createAlertCmd.Flags().StringVar(&alertBlackduckHost, "blackduck-host", alertBlackduckHost, "TODO")
+	createAlertCmd.Flags().StringVar(&alertBlackduckUser, "blackduck-user", alertBlackduckUser, "TODO")
+	createAlertCmd.Flags().IntVar(&alertBlackduckPort, "blackduck-port", alertBlackduckPort, "TODO")
+	createAlertCmd.Flags().IntVar(&alertPort, "port", alertPort, "TODO")
+	createAlertCmd.Flags().BoolVar(&alertStandAlone, "stand-alone", alertStandAlone, "TODO")
+	createAlertCmd.Flags().StringVar(&alertAlertMemory, "alert-memory", alertAlertMemory, "TODO")
+	createAlertCmd.Flags().StringVar(&alertCfsslMemory, "cfssl-memory", alertCfsslMemory, "TODO")
+	createAlertCmd.Flags().StringVar(&alertState, "alert-state", alertState, "TODO")
 	createCmd.AddCommand(createAlertCmd)
 }
 
@@ -359,90 +364,90 @@ func checkBlackduckFlags(f *pflag.Flag) {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
 		case "size":
-			defaultBlackduckSpec.Size = createBlackduckSize
+			defaultBlackduckSpec.Size = blackduckSize
 		case "db-prototype":
-			defaultBlackduckSpec.DbPrototype = createBlackduckDbPrototype
+			defaultBlackduckSpec.DbPrototype = blackduckDbPrototype
 		case "external-postgres-host":
 			if defaultBlackduckSpec.ExternalPostgres == nil {
 				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			defaultBlackduckSpec.ExternalPostgres.PostgresHost = createBlackduckExternalPostgresPostgresHost
+			defaultBlackduckSpec.ExternalPostgres.PostgresHost = blackduckExternalPostgresPostgresHost
 		case "external-postgres-port":
 			if defaultBlackduckSpec.ExternalPostgres == nil {
 				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			defaultBlackduckSpec.ExternalPostgres.PostgresPort = createBlackduckExternalPostgresPostgresPort
+			defaultBlackduckSpec.ExternalPostgres.PostgresPort = blackduckExternalPostgresPostgresPort
 		case "external-postgres-admin":
 			if defaultBlackduckSpec.ExternalPostgres == nil {
 				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			defaultBlackduckSpec.ExternalPostgres.PostgresAdmin = createBlackduckExternalPostgresPostgresAdmin
+			defaultBlackduckSpec.ExternalPostgres.PostgresAdmin = blackduckExternalPostgresPostgresAdmin
 		case "external-postgres-user":
 			if defaultBlackduckSpec.ExternalPostgres == nil {
 				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			defaultBlackduckSpec.ExternalPostgres.PostgresUser = createBlackduckExternalPostgresPostgresUser
+			defaultBlackduckSpec.ExternalPostgres.PostgresUser = blackduckExternalPostgresPostgresUser
 		case "external-postgres-ssl":
 			if defaultBlackduckSpec.ExternalPostgres == nil {
 				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			defaultBlackduckSpec.ExternalPostgres.PostgresSsl = createBlackduckExternalPostgresPostgresSsl
+			defaultBlackduckSpec.ExternalPostgres.PostgresSsl = blackduckExternalPostgresPostgresSsl
 		case "external-postgres-admin-password":
 			if defaultBlackduckSpec.ExternalPostgres == nil {
 				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			defaultBlackduckSpec.ExternalPostgres.PostgresAdminPassword = createBlackduckExternalPostgresPostgresAdminPassword
+			defaultBlackduckSpec.ExternalPostgres.PostgresAdminPassword = blackduckExternalPostgresPostgresAdminPassword
 		case "external-postgres-user-password":
 			if defaultBlackduckSpec.ExternalPostgres == nil {
 				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			defaultBlackduckSpec.ExternalPostgres.PostgresUserPassword = createBlackduckExternalPostgresPostgresUserPassword
+			defaultBlackduckSpec.ExternalPostgres.PostgresUserPassword = blackduckExternalPostgresPostgresUserPassword
 		case "pvc-storage-class":
 			if defaultBlackduckSpec.ExternalPostgres == nil {
 				defaultBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			defaultBlackduckSpec.PVCStorageClass = createBlackduckPvcStorageClass
+			defaultBlackduckSpec.PVCStorageClass = blackduckPvcStorageClass
 		case "liveness-probes":
-			defaultBlackduckSpec.LivenessProbes = createBlackduckLivenessProbes
+			defaultBlackduckSpec.LivenessProbes = blackduckLivenessProbes
 		case "scan-type":
-			defaultBlackduckSpec.ScanType = createBlackduckScanType
+			defaultBlackduckSpec.ScanType = blackduckScanType
 		case "persistent-storage":
-			defaultBlackduckSpec.PersistentStorage = createBlackduckPersistentStorage
+			defaultBlackduckSpec.PersistentStorage = blackduckPersistentStorage
 		case "pvc":
-			for _, pvcJSON := range createBlackduckPVCJSONSlice {
+			for _, pvcJSON := range blackduckPVCJSONSlice {
 				pvc := &blackduckv1.PVC{}
 				json.Unmarshal([]byte(pvcJSON), pvc)
 				defaultBlackduckSpec.PVC = append(defaultBlackduckSpec.PVC, *pvc)
 			}
 		case "db-certificate-name":
-			defaultBlackduckSpec.CertificateName = createBlackduckCertificateName
+			defaultBlackduckSpec.CertificateName = blackduckCertificateName
 		case "certificate":
-			defaultBlackduckSpec.Certificate = createBlackduckCertificate
+			defaultBlackduckSpec.Certificate = blackduckCertificate
 		case "certificate-key":
-			defaultBlackduckSpec.CertificateKey = createBlackduckCertificateKey
+			defaultBlackduckSpec.CertificateKey = blackduckCertificateKey
 		case "proxy-certificate":
-			defaultBlackduckSpec.ProxyCertificate = createBlackduckProxyCertificate
+			defaultBlackduckSpec.ProxyCertificate = blackduckProxyCertificate
 		case "type":
-			defaultBlackduckSpec.Type = createBlackduckType
+			defaultBlackduckSpec.Type = blackduckType
 		case "desired-state":
-			defaultBlackduckSpec.DesiredState = createBlackduckDesiredState
+			defaultBlackduckSpec.DesiredState = blackduckDesiredState
 		case "environs":
-			defaultBlackduckSpec.Environs = createBlackduckEnvirons
+			defaultBlackduckSpec.Environs = blackduckEnvirons
 		case "image-registries":
-			defaultBlackduckSpec.ImageRegistries = createBlackduckImageRegistries
+			defaultBlackduckSpec.ImageRegistries = blackduckImageRegistries
 		case "image-uid-map":
 			type uid struct {
 				Key   string `json:"key"`
 				Value int64  `json:"value"`
 			}
 			defaultBlackduckSpec.ImageUIDMap = make(map[string]int64)
-			for _, uidJSON := range createBlackduckImageUIDMapJSONSlice {
+			for _, uidJSON := range blackduckImageUIDMapJSONSlice {
 				uidStruct := &uid{}
 				json.Unmarshal([]byte(uidJSON), uidStruct)
 				defaultBlackduckSpec.ImageUIDMap[uidStruct.Key] = uidStruct.Value
 			}
 		case "license-key":
-			defaultBlackduckSpec.LicenseKey = createBlackduckLicenseKey
+			defaultBlackduckSpec.LicenseKey = blackduckLicenseKey
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
@@ -458,47 +463,47 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.Perceptor == nil {
 				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
 			}
-			defaultOpsSightSpec.Perceptor.Name = createOpssightPerceptorName
+			defaultOpsSightSpec.Perceptor.Name = opssightPerceptorName
 		case "perceptor-image":
 			if defaultOpsSightSpec.Perceptor == nil {
 				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
 			}
-			defaultOpsSightSpec.Perceptor.Image = createOpssightPerceptorImage
+			defaultOpsSightSpec.Perceptor.Image = opssightPerceptorImage
 		case "perceptor-port":
 			if defaultOpsSightSpec.Perceptor == nil {
 				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
 			}
-			defaultOpsSightSpec.Perceptor.Port = createOpssightPerceptorPort
+			defaultOpsSightSpec.Perceptor.Port = opssightPerceptorPort
 		case "perceptor-check-scan-hours":
 			if defaultOpsSightSpec.Perceptor == nil {
 				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
 			}
-			defaultOpsSightSpec.Perceptor.CheckForStalledScansPauseHours = createOpssightPerceptorCheckForStalledScansPauseHours
+			defaultOpsSightSpec.Perceptor.CheckForStalledScansPauseHours = opssightPerceptorCheckForStalledScansPauseHours
 		case "perceptor-scan-client-timeout-hours":
 			if defaultOpsSightSpec.Perceptor == nil {
 				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
 			}
-			defaultOpsSightSpec.Perceptor.StalledScanClientTimeoutHours = createOpssightPerceptorStalledScanClientTimeoutHours
+			defaultOpsSightSpec.Perceptor.StalledScanClientTimeoutHours = opssightPerceptorStalledScanClientTimeoutHours
 		case "perceptor-metrics-pause-seconds":
 			if defaultOpsSightSpec.Perceptor == nil {
 				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
 			}
-			defaultOpsSightSpec.Perceptor.ModelMetricsPauseSeconds = createOpssightPerceptorModelMetricsPauseSeconds
+			defaultOpsSightSpec.Perceptor.ModelMetricsPauseSeconds = opssightPerceptorModelMetricsPauseSeconds
 		case "perceptor-unknown-image-pause-milliseconds":
 			if defaultOpsSightSpec.Perceptor == nil {
 				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
 			}
-			defaultOpsSightSpec.Perceptor.UnknownImagePauseMilliseconds = createOpssightPerceptorUnknownImagePauseMilliseconds
+			defaultOpsSightSpec.Perceptor.UnknownImagePauseMilliseconds = opssightPerceptorUnknownImagePauseMilliseconds
 		case "perceptor-client-timeout-milliseconds":
 			if defaultOpsSightSpec.Perceptor == nil {
 				defaultOpsSightSpec.Perceptor = &opssightv1.Perceptor{}
 			}
-			defaultOpsSightSpec.Perceptor.ClientTimeoutMilliseconds = createOpssightPerceptorClientTimeoutMilliseconds
+			defaultOpsSightSpec.Perceptor.ClientTimeoutMilliseconds = opssightPerceptorClientTimeoutMilliseconds
 		case "scannerpod-name":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
 			}
-			defaultOpsSightSpec.ScannerPod.Name = createOpssightScannerPodName
+			defaultOpsSightSpec.ScannerPod.Name = opssightScannerPodName
 		case "scannerpod-scanner-name":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -506,7 +511,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.Scanner == nil {
 				defaultOpsSightSpec.ScannerPod.Scanner = &opssightv1.Scanner{}
 			}
-			defaultOpsSightSpec.ScannerPod.Scanner.Name = createOpssightScannerPodScannerName
+			defaultOpsSightSpec.ScannerPod.Scanner.Name = opssightScannerPodScannerName
 		case "scannerpod-scanner-image":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -514,7 +519,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.Scanner == nil {
 				defaultOpsSightSpec.ScannerPod.Scanner = &opssightv1.Scanner{}
 			}
-			defaultOpsSightSpec.ScannerPod.Scanner.Image = createOpssightScannerPodScannerImage
+			defaultOpsSightSpec.ScannerPod.Scanner.Image = opssightScannerPodScannerImage
 		case "scannerpod-scanner-port":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -522,7 +527,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.Scanner == nil {
 				defaultOpsSightSpec.ScannerPod.Scanner = &opssightv1.Scanner{}
 			}
-			defaultOpsSightSpec.ScannerPod.Scanner.Port = createOpssightScannerPodScannerPort
+			defaultOpsSightSpec.ScannerPod.Scanner.Port = opssightScannerPodScannerPort
 		case "scannerpod-scanner-client-timeout-seconds":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -530,7 +535,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.Scanner == nil {
 				defaultOpsSightSpec.ScannerPod.Scanner = &opssightv1.Scanner{}
 			}
-			defaultOpsSightSpec.ScannerPod.Scanner.ClientTimeoutSeconds = createOpssightScannerPodScannerClientTimeoutSeconds
+			defaultOpsSightSpec.ScannerPod.Scanner.ClientTimeoutSeconds = opssightScannerPodScannerClientTimeoutSeconds
 		case "scannerpod-imagefacade-name":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -538,7 +543,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
 				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
-			defaultOpsSightSpec.ScannerPod.ImageFacade.Name = createOpssightScannerPodImageFacadeName
+			defaultOpsSightSpec.ScannerPod.ImageFacade.Name = opssightScannerPodImageFacadeName
 		case "scannerpod-imagefacade-image":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -546,7 +551,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
 				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
-			defaultOpsSightSpec.ScannerPod.ImageFacade.Image = createOpssightScannerPodImageFacadeImage
+			defaultOpsSightSpec.ScannerPod.ImageFacade.Image = opssightScannerPodImageFacadeImage
 		case "scannerpod-imagefacade-port":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -554,7 +559,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
 				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
-			defaultOpsSightSpec.ScannerPod.ImageFacade.Port = createOpssightScannerPodImageFacadePort
+			defaultOpsSightSpec.ScannerPod.ImageFacade.Port = opssightScannerPodImageFacadePort
 		case "scannerpod-imagefacade-internal-registries":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -562,7 +567,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
 				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
-			for _, registryJSON := range createOpssightScannerPodImageFacadeInternalRegistriesJSONSlice {
+			for _, registryJSON := range opssightScannerPodImageFacadeInternalRegistriesJSONSlice {
 				registry := &opssightv1.RegistryAuth{}
 				json.Unmarshal([]byte(registryJSON), registry)
 				defaultOpsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(defaultOpsSightSpec.ScannerPod.ImageFacade.InternalRegistries, *registry)
@@ -574,7 +579,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
 				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
-			defaultOpsSightSpec.ScannerPod.ImageFacade.ImagePullerType = createOpssightScannerPodImageFacadeImagePullerType
+			defaultOpsSightSpec.ScannerPod.ImageFacade.ImagePullerType = opssightScannerPodImageFacadeImagePullerType
 		case "scannerpod-imagefacade-service-account":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
@@ -582,27 +587,27 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.ScannerPod.ImageFacade == nil {
 				defaultOpsSightSpec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
-			defaultOpsSightSpec.ScannerPod.ImageFacade.ServiceAccount = createOpssightScannerPodImageFacadeServiceAccount
+			defaultOpsSightSpec.ScannerPod.ImageFacade.ServiceAccount = opssightScannerPodImageFacadeServiceAccount
 		case "scannerpod-replica-count":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
 			}
-			defaultOpsSightSpec.ScannerPod.ReplicaCount = createOpssightScannerPodReplicaCount
+			defaultOpsSightSpec.ScannerPod.ReplicaCount = opssightScannerPodReplicaCount
 		case "scannerpod-image-directory":
 			if defaultOpsSightSpec.ScannerPod == nil {
 				defaultOpsSightSpec.ScannerPod = &opssightv1.ScannerPod{}
 			}
-			defaultOpsSightSpec.ScannerPod.ImageDirectory = createOpssightScannerPodImageDirectory
+			defaultOpsSightSpec.ScannerPod.ImageDirectory = opssightScannerPodImageDirectory
 		case "enable-image-perceiver":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.EnableImagePerceiver = createOpssightPerceiverEnableImagePerceiver
+			defaultOpsSightSpec.Perceiver.EnableImagePerceiver = opssightPerceiverEnableImagePerceiver
 		case "enable-pod-perceiver":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.EnablePodPerceiver = createOpssightPerceiverEnablePodPerceiver
+			defaultOpsSightSpec.Perceiver.EnablePodPerceiver = opssightPerceiverEnablePodPerceiver
 		case "imageperceiver-name":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
@@ -610,7 +615,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.Perceiver.ImagePerceiver == nil {
 				defaultOpsSightSpec.Perceiver.ImagePerceiver = &opssightv1.ImagePerceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.ImagePerceiver.Name = createOpssightPerceiverImagePerceiverName
+			defaultOpsSightSpec.Perceiver.ImagePerceiver.Name = opssightPerceiverImagePerceiverName
 		case "imageperceiver-image":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
@@ -618,7 +623,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.Perceiver.ImagePerceiver == nil {
 				defaultOpsSightSpec.Perceiver.ImagePerceiver = &opssightv1.ImagePerceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.ImagePerceiver.Image = createOpssightPerceiverImagePerceiverImage
+			defaultOpsSightSpec.Perceiver.ImagePerceiver.Image = opssightPerceiverImagePerceiverImage
 		case "podperceiver-name":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
@@ -626,7 +631,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.Perceiver.PodPerceiver == nil {
 				defaultOpsSightSpec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.PodPerceiver.Name = createOpssightPerceiverPodPerceiverName
+			defaultOpsSightSpec.Perceiver.PodPerceiver.Name = opssightPerceiverPodPerceiverName
 		case "podperceiver-image":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
@@ -634,7 +639,7 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.Perceiver.PodPerceiver == nil {
 				defaultOpsSightSpec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.PodPerceiver.Image = createOpssightPerceiverPodPerceiverImage
+			defaultOpsSightSpec.Perceiver.PodPerceiver.Image = opssightPerceiverPodPerceiverImage
 		case "podperceiver-namespace-filter":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
@@ -642,146 +647,146 @@ func checkOpsSightFlags(f *pflag.Flag) {
 			if defaultOpsSightSpec.Perceiver.PodPerceiver == nil {
 				defaultOpsSightSpec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.PodPerceiver.NamespaceFilter = createOpssightPerceiverPodPerceiverNamespaceFilter
+			defaultOpsSightSpec.Perceiver.PodPerceiver.NamespaceFilter = opssightPerceiverPodPerceiverNamespaceFilter
 		case "perceiver-annotation-interval-seconds":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.AnnotationIntervalSeconds = createOpssightPerceiverAnnotationIntervalSeconds
+			defaultOpsSightSpec.Perceiver.AnnotationIntervalSeconds = opssightPerceiverAnnotationIntervalSeconds
 		case "perceiver-dump-interval-minutes":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.DumpIntervalMinutes = createOpssightPerceiverDumpIntervalMinutes
+			defaultOpsSightSpec.Perceiver.DumpIntervalMinutes = opssightPerceiverDumpIntervalMinutes
 		case "perceiver-service-account":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.ServiceAccount = createOpssightPerceiverServiceAccount
+			defaultOpsSightSpec.Perceiver.ServiceAccount = opssightPerceiverServiceAccount
 		case "perceiver-port":
 			if defaultOpsSightSpec.Perceiver == nil {
 				defaultOpsSightSpec.Perceiver = &opssightv1.Perceiver{}
 			}
-			defaultOpsSightSpec.Perceiver.Port = createOpssightPerceiverPort
+			defaultOpsSightSpec.Perceiver.Port = opssightPerceiverPort
 		case "prometheus-name":
 			if defaultOpsSightSpec.Prometheus == nil {
 				defaultOpsSightSpec.Prometheus = &opssightv1.Prometheus{}
 			}
-			defaultOpsSightSpec.Prometheus.Name = createOpssightPrometheusName
+			defaultOpsSightSpec.Prometheus.Name = opssightPrometheusName
 		case "prometheus-image":
 			if defaultOpsSightSpec.Prometheus == nil {
 				defaultOpsSightSpec.Prometheus = &opssightv1.Prometheus{}
 			}
-			defaultOpsSightSpec.Prometheus.Image = createOpssightPrometheusImage
+			defaultOpsSightSpec.Prometheus.Image = opssightPrometheusImage
 		case "prometheus-port":
 			if defaultOpsSightSpec.Prometheus == nil {
 				defaultOpsSightSpec.Prometheus = &opssightv1.Prometheus{}
 			}
-			defaultOpsSightSpec.Prometheus.Port = createOpssightPrometheusPort
+			defaultOpsSightSpec.Prometheus.Port = opssightPrometheusPort
 		case "enable-skyfire":
-			defaultOpsSightSpec.EnableSkyfire = createOpssightEnableSkyfire
+			defaultOpsSightSpec.EnableSkyfire = opssightEnableSkyfire
 		case "skyfire-name":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.Name = createOpssightSkyfireName
+			defaultOpsSightSpec.Skyfire.Name = opssightSkyfireName
 		case "skyfire-image":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.Image = createOpssightSkyfireImage
+			defaultOpsSightSpec.Skyfire.Image = opssightSkyfireImage
 		case "skyfire-port":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.Port = createOpssightSkyfirePort
+			defaultOpsSightSpec.Skyfire.Port = opssightSkyfirePort
 		case "skyfire-prometheus-port":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.PrometheusPort = createOpssightSkyfirePrometheusPort
+			defaultOpsSightSpec.Skyfire.PrometheusPort = opssightSkyfirePrometheusPort
 		case "skyfire-service-account":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.ServiceAccount = createOpssightSkyfireServiceAccount
+			defaultOpsSightSpec.Skyfire.ServiceAccount = opssightSkyfireServiceAccount
 		case "skyfire-hub-client-timeout-seconds":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.HubClientTimeoutSeconds = createOpssightSkyfireHubClientTimeoutSeconds
+			defaultOpsSightSpec.Skyfire.HubClientTimeoutSeconds = opssightSkyfireHubClientTimeoutSeconds
 		case "skyfire-hub-dump-pause-seconds":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.HubDumpPauseSeconds = createOpssightSkyfireHubDumpPauseSeconds
+			defaultOpsSightSpec.Skyfire.HubDumpPauseSeconds = opssightSkyfireHubDumpPauseSeconds
 		case "skyfire-kube-dump-interval-seconds":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.KubeDumpIntervalSeconds = createOpssightSkyfireKubeDumpIntervalSeconds
+			defaultOpsSightSpec.Skyfire.KubeDumpIntervalSeconds = opssightSkyfireKubeDumpIntervalSeconds
 		case "skyfire-perceptor-dump-interval-seconds":
 			if defaultOpsSightSpec.Skyfire == nil {
 				defaultOpsSightSpec.Skyfire = &opssightv1.Skyfire{}
 			}
-			defaultOpsSightSpec.Skyfire.PerceptorDumpIntervalSeconds = createOpssightSkyfirePerceptorDumpIntervalSeconds
+			defaultOpsSightSpec.Skyfire.PerceptorDumpIntervalSeconds = opssightSkyfirePerceptorDumpIntervalSeconds
 		case "blackduck-hosts":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.Hosts = createOpssightBlackduckHosts
+			defaultOpsSightSpec.Blackduck.Hosts = opssightBlackduckHosts
 		case "blackduck-user":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.User = createOpssightBlackduckUser
+			defaultOpsSightSpec.Blackduck.User = opssightBlackduckUser
 		case "blackduck-port":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.Port = createOpssightBlackduckPort
+			defaultOpsSightSpec.Blackduck.Port = opssightBlackduckPort
 		case "blackduck-concurrent-scan-limit":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.ConcurrentScanLimit = createOpssightBlackduckConcurrentScanLimit
+			defaultOpsSightSpec.Blackduck.ConcurrentScanLimit = opssightBlackduckConcurrentScanLimit
 		case "blackduck-total-scan-limit":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.TotalScanLimit = createOpssightBlackduckTotalScanLimit
+			defaultOpsSightSpec.Blackduck.TotalScanLimit = opssightBlackduckTotalScanLimit
 		case "blackduck-password-environment-variable":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.PasswordEnvVar = createOpssightBlackduckPasswordEnvVar
+			defaultOpsSightSpec.Blackduck.PasswordEnvVar = opssightBlackduckPasswordEnvVar
 		case "blackduck-initial-count":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.InitialCount = createOpssightBlackduckInitialCount
+			defaultOpsSightSpec.Blackduck.InitialCount = opssightBlackduckInitialCount
 		case "blackduck-max-count":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.MaxCount = createOpssightBlackduckMaxCount
+			defaultOpsSightSpec.Blackduck.MaxCount = opssightBlackduckMaxCount
 		case "blackduck-delete-blackduck-threshold-percentage":
 			if defaultOpsSightSpec.Blackduck == nil {
 				defaultOpsSightSpec.Blackduck = &opssightv1.Blackduck{}
 			}
-			defaultOpsSightSpec.Blackduck.DeleteHubThresholdPercentage = createOpssightBlackduckDeleteHubThresholdPercentage
+			defaultOpsSightSpec.Blackduck.DeleteHubThresholdPercentage = opssightBlackduckDeleteHubThresholdPercentage
 		case "enable-metrics":
-			defaultOpsSightSpec.EnableMetrics = createOpssightEnableMetrics
+			defaultOpsSightSpec.EnableMetrics = opssightEnableMetrics
 		case "default-cpu":
-			defaultOpsSightSpec.DefaultCPU = createOpssightDefaultCPU
+			defaultOpsSightSpec.DefaultCPU = opssightDefaultCPU
 		case "default-mem":
-			defaultOpsSightSpec.DefaultMem = createOpssightDefaultMem
+			defaultOpsSightSpec.DefaultMem = opssightDefaultMem
 		case "log-level":
-			defaultOpsSightSpec.LogLevel = createOpssightLogLevel
+			defaultOpsSightSpec.LogLevel = opssightLogLevel
 		case "config-map-name":
-			defaultOpsSightSpec.ConfigMapName = createOpssightConfigMapName
+			defaultOpsSightSpec.ConfigMapName = opssightConfigMapName
 		case "secret-name":
-			defaultOpsSightSpec.SecretName = createOpssightSecretName
+			defaultOpsSightSpec.SecretName = opssightSecretName
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
@@ -795,31 +800,31 @@ func checkAlertFlags(f *pflag.Flag) {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
 		case "alert-registry":
-			defaultAlertSpec.Registry = createAlertRegistry
+			defaultAlertSpec.Registry = alertRegistry
 		case "image-path":
-			defaultAlertSpec.ImagePath = createAlertImagePath
+			defaultAlertSpec.ImagePath = alertImagePath
 		case "alert-image-name":
-			defaultAlertSpec.AlertImageName = createAlertAlertImageName
+			defaultAlertSpec.AlertImageName = alertAlertImageName
 		case "alert-image-version":
-			defaultAlertSpec.AlertImageVersion = createAlertAlertImageVersion
+			defaultAlertSpec.AlertImageVersion = alertAlertImageVersion
 		case "cfssl-image-name":
-			defaultAlertSpec.CfsslImageName = createAlertCfsslImageName
+			defaultAlertSpec.CfsslImageName = alertCfsslImageName
 		case "cfssl-image-version":
-			defaultAlertSpec.CfsslImageVersion = createAlertCfsslImageVersion
+			defaultAlertSpec.CfsslImageVersion = alertCfsslImageVersion
 		case "blackduck-host":
-			defaultAlertSpec.BlackduckHost = createAlertBlackduckHost
+			defaultAlertSpec.BlackduckHost = alertBlackduckHost
 		case "blackduck-user":
-			defaultAlertSpec.BlackduckUser = createAlertBlackduckUser
+			defaultAlertSpec.BlackduckUser = alertBlackduckUser
 		case "blackduck-port":
-			defaultAlertSpec.BlackduckPort = &createAlertBlackduckPort
+			defaultAlertSpec.BlackduckPort = &alertBlackduckPort
 		case "port":
-			defaultAlertSpec.Port = &createAlertPort
+			defaultAlertSpec.Port = &alertPort
 		case "stand-alone":
-			defaultAlertSpec.StandAlone = &createAlertStandAlone
+			defaultAlertSpec.StandAlone = &alertStandAlone
 		case "alert-memory":
-			defaultAlertSpec.AlertMemory = createAlertAlertMemory
+			defaultAlertSpec.AlertMemory = alertAlertMemory
 		case "cfssl-memory":
-			defaultAlertSpec.CfsslMemory = createAlertCfsslMemory
+			defaultAlertSpec.CfsslMemory = alertCfsslMemory
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
