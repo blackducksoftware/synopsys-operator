@@ -53,7 +53,7 @@ var editBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debugf("Editing Non-Synopsys Resource\n")
+		log.Debugf("Editing Blackduck\n")
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
@@ -61,6 +61,70 @@ var editBlackduckCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Error Editing the Blackduck: %s\n", err)
 		}
+	},
+}
+
+var editBlackduckAddPVCCmd = &cobra.Command{
+	Use:   "addPVC",
+	Short: "Add a PVC to Blackduck",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Adding PVC to Blackduck\n")
+		// Read Commandline Parameters
+		//blackduckNamespace := args[0]
+	},
+}
+
+var editBlackduckAddEnvironCmd = &cobra.Command{
+	Use:   "addEnviron",
+	Short: "Add an Environment Variable to Blackduck",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Adding Environ to Blackduck\n")
+		// Read Commandline Parameters
+		//blackduckNamespace := args[0]
+	},
+}
+
+var editBlackduckAddRegistryCmd = &cobra.Command{
+	Use:   "addRegistry",
+	Short: "Add an Image Registry to Blackduck",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Adding an Image Registry to Blackduck\n")
+		// Read Commandline Parameters
+		//blackduckNamespace := args[0]
+	},
+}
+
+var editBlackduckAddUIDCmd = &cobra.Command{
+	Use:   "addUID",
+	Short: "Add an Image UID to Blackduck",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Adding an Image UID to Blackduck\n")
+		// Read Commandline Parameters
+		//blackduckNamespace := args[0]
 	},
 }
 
@@ -82,6 +146,40 @@ var editOpsSightCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Error Editing the OpsSight: %s\n", err)
 		}
+	},
+}
+
+var editOpsSightAddRegistryCmd = &cobra.Command{
+	Use:   "addRegistry",
+	Short: "Add an Internal Registry to OpsSight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument - NAME")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Adding Internal Registryto OpsSight\n")
+		// Read Commandline Parameters
+		//opSightNamespace := args[0]
+		return
+	},
+}
+
+var editOpsSightAddHostCmd = &cobra.Command{
+	Use:   "addHost",
+	Short: "Add a Blackduck Host to OpsSight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 2 {
+			return fmt.Errorf("This command only accepts 2 arguments - NAME  BLACKDUCK_HOST")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debugf("Adding Blackduck Host to OpsSight\n")
+		// Read Commandline Parameters
+		//opSightNamespace := args[0]
+		return
 	},
 }
 
@@ -110,6 +208,12 @@ func init() {
 	editCmd.DisableFlagParsing = true
 	rootCmd.AddCommand(editCmd)
 	editCmd.AddCommand(editBlackduckCmd)
+	editBlackduckCmd.AddCommand(editBlackduckAddPVCCmd)
+	editBlackduckCmd.AddCommand(editBlackduckAddEnvironCmd)
+	editBlackduckCmd.AddCommand(editBlackduckAddRegistryCmd)
+	editBlackduckCmd.AddCommand(editBlackduckAddUIDCmd)
 	editCmd.AddCommand(editOpsSightCmd)
+	editOpsSightCmd.AddCommand(editOpsSightAddRegistryCmd)
+	editOpsSightCmd.AddCommand(editOpsSightAddHostCmd)
 	editCmd.AddCommand(editAlertCmd)
 }
