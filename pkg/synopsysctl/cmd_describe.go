@@ -31,72 +31,73 @@ var describeCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"describe"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			fmt.Printf("Error Describing the Resource: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error Describing the Resource: %s", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
 var describeBlackduckCmd = &cobra.Command{
-	Use:   "blackduck",
+	Use:   "blackduck NAME",
 	Short: "Describe an instance of Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing a Blackduck\n")
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
-		fmt.Println("Describing Blackduck")
 		out, err := RunKubeCmd("describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
 		if err != nil {
-			fmt.Printf("Error Describing the Blackduck: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error Describing the Blackduck: %s", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
 var describeOpsSightCmd = &cobra.Command{
-	Use:   "opssight",
+	Use:   "opssight NAME",
 	Short: "Describe an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing an OpsSight\n")
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
-		fmt.Println("Describing OpsSight")
 		out, err := RunKubeCmd("describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
 		if err != nil {
-			fmt.Printf("Error Describing the OpsSight: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error Describing the OpsSight: %s", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
 var describeAlertCmd = &cobra.Command{
-	Use:   "alert",
+	Use:   "alert NAME",
 	Short: "Describe an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
@@ -105,7 +106,6 @@ var describeAlertCmd = &cobra.Command{
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
-		fmt.Println("Describing Alert")
 		out, err := RunKubeCmd("describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
 			fmt.Printf("Error Describing the Alert: %s\n", out)

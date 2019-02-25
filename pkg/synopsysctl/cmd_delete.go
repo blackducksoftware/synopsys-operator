@@ -32,28 +32,29 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Deleting a Non-Synopsys Resource")
 		kubeCmdArgs := append([]string{"delete"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			fmt.Printf("Error Deleting the Resource: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error Deleting the Resource: %s", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
 var deleteBlackduckCmd = &cobra.Command{
-	Use:   "blackduck",
+	Use:   "blackduck NAME",
 	Short: "Delete a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Deleting a Blackduck\n")
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
@@ -61,22 +62,23 @@ var deleteBlackduckCmd = &cobra.Command{
 		// Delete Blackduck with Client
 		err := blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
 		if err != nil {
-			fmt.Printf("Error deleting the Blackduck: %s\n", err)
-			return
+			log.Errorf("Error deleting the Blackduck: %s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 var deleteOpsSightCmd = &cobra.Command{
-	Use:   "opssight",
+	Use:   "opssight NAME",
 	Short: "Delete an OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Deleting an OpsSight\n")
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
@@ -84,22 +86,23 @@ var deleteOpsSightCmd = &cobra.Command{
 		// Delete OpsSight with Client
 		err := opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
 		if err != nil {
-			fmt.Printf("Error deleting the OpsSight: %s\n", err)
-			return
+			log.Errorf("Error deleting the OpsSight: %s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 var deleteAlertCmd = &cobra.Command{
-	Use:   "alert",
+	Use:   "alert NAME",
 	Short: "Delete an Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument - NAME")
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Deleting an Alert\n")
 		// Read Commandline Parameters
 		alertNamespace := args[0]
@@ -107,9 +110,10 @@ var deleteAlertCmd = &cobra.Command{
 		// Delete Alert with Client
 		err := alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
 		if err != nil {
-			fmt.Printf("Error deleting the Alert: %s\n", err)
-			return
+			log.Errorf("Error deleting the Alert: %s", err)
+			return nil
 		}
+		return nil
 	},
 }
 

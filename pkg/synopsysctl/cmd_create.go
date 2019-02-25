@@ -52,35 +52,36 @@ var createCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"create"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			fmt.Printf("Error Creating the Resource with KubeCmd: %s\n", err)
-		} else {
-			fmt.Printf("%+v", out)
+			return fmt.Errorf("Error Creating the Resource with KubeCmd: %s", err)
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
 // createCmd represents the create command for Blackduck
 var createBlackduckCmd = &cobra.Command{
-	Use:   "blackduck",
+	Use:   "blackduck NAME",
 	Short: "Create an instance of a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
 		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
+			return fmt.Errorf("This command only accepts up to 1 argument")
 		}
 		// Check the Spec Type
 		err := createBlackduckCtl.SwitchSpec(createBlackduckSpecType)
 		if err != nil {
-			return err
+			log.Errorf("%s", err)
+			return nil
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating a Blackduck\n")
 		// Read Commandline Parameters
 		blackduckName := "blackduck"
@@ -89,7 +90,11 @@ var createBlackduckCmd = &cobra.Command{
 		}
 
 		// Create namespace for the Blackduck
-		DeployCRDNamespace(restconfig, blackduckName)
+		err := DeployCRDNamespace(restconfig, blackduckName)
+		if err != nil {
+			log.Errorf("%s", err)
+			return nil
+		}
 
 		// Read Flags Into Default Blackduck Spec
 		flagset := cmd.Flags()
@@ -106,22 +111,23 @@ var createBlackduckCmd = &cobra.Command{
 			Spec: *createBlackduckCtl.Spec,
 		}
 		log.Debugf("%+v\n", blackduck)
-		_, err := blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
+		_, err = blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
 		if err != nil {
-			fmt.Printf("Error creating the Blackduck : %s\n", err)
-			return
+			log.Errorf("Error creating the Blackduck : %s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 // createCmd represents the create command for OpsSight
 var createOpsSightCmd = &cobra.Command{
-	Use:   "opssight",
+	Use:   "opssight NAME",
 	Short: "Create an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
 		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
+			return fmt.Errorf("This command only accepts up to 1 argument")
 		}
 		// Check the Spec Type
 		err := createOpsSightCtl.SwitchSpec(createOpsSightSpecType)
@@ -130,7 +136,7 @@ var createOpsSightCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating an OpsSight\n")
 		// Read Commandline Parameters
 		opsSightName := "opssight"
@@ -139,7 +145,11 @@ var createOpsSightCmd = &cobra.Command{
 		}
 
 		// Create namespace for the OpsSight
-		DeployCRDNamespace(restconfig, opsSightName)
+		err := DeployCRDNamespace(restconfig, opsSightName)
+		if err != nil {
+			log.Errorf("%s", err)
+			return nil
+		}
 
 		// Read Flags Into Default OpsSight Spec
 		flagset := cmd.Flags()
@@ -156,22 +166,23 @@ var createOpsSightCmd = &cobra.Command{
 			Spec: *createOpsSightCtl.Spec,
 		}
 		log.Debugf("%+v\n", opssight)
-		_, err := opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
+		_, err = opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
 		if err != nil {
-			fmt.Printf("Error creating the OpsSight : %s\n", err)
-			return
+			log.Errorf("Error creating the OpsSight : %s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 // createCmd represents the create command for Alert
 var createAlertCmd = &cobra.Command{
-	Use:   "alert",
+	Use:   "alert NAME",
 	Short: "Create an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
 		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
+			return fmt.Errorf("This command only accepts up to 1 argument")
 		}
 		// Check the Spec Type
 		err := createAlertCtl.SwitchSpec(createAlertSpecType)
@@ -180,7 +191,7 @@ var createAlertCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating an Alert\n")
 		// Read Commandline Parameters
 		alertName := "alert"
@@ -189,7 +200,11 @@ var createAlertCmd = &cobra.Command{
 		}
 
 		// Create namespace for the Alert
-		DeployCRDNamespace(restconfig, alertName)
+		err := DeployCRDNamespace(restconfig, alertName)
+		if err != nil {
+			log.Errorf("%s", err)
+			return nil
+		}
 
 		// Read Flags Into Default Alert Spec
 		flagset := cmd.Flags()
@@ -206,11 +221,12 @@ var createAlertCmd = &cobra.Command{
 			Spec: *createAlertCtl.Spec,
 		}
 		log.Debugf("%+v\n", alert)
-		_, err := alertClient.SynopsysV1().Alerts(alertName).Create(alert)
+		_, err = alertClient.SynopsysV1().Alerts(alertName).Create(alert)
 		if err != nil {
-			fmt.Printf("Error creating the Alert : %s\n", err)
-			return
+			log.Errorf("Error creating the Alert : %s", err)
+			return nil
 		}
+		return nil
 	},
 }
 

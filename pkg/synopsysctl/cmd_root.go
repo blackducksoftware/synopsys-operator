@@ -39,14 +39,15 @@ var rootCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Running Non-Synopsysctl Command\n")
 		out, err := RunKubeCmd(args...)
 		if err != nil {
 			log.Errorf("Error with KubeCmd: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 

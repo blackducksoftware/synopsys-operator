@@ -39,15 +39,16 @@ var editCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Editing Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"edit"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
 			log.Errorf("Error Editing the Resource with KubeCmd: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
@@ -62,7 +63,7 @@ var editBlackduckCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Editing Blackduck\n")
 		// Read Commandline Parameters
 		blackduckName := args[0]
@@ -72,8 +73,8 @@ var editBlackduckCmd = &cobra.Command{
 		if flagset.NFlag() != 0 {
 			bd, err := getBlackduckSpec(blackduckName)
 			if err != nil {
-				fmt.Printf("%s\n", err)
-				return
+				log.Errorf("%s", err)
+				return nil
 			}
 			editBlackduckCtl.Spec = &bd.Spec
 			// Update Spec with Changes from Flags
@@ -81,15 +82,17 @@ var editBlackduckCmd = &cobra.Command{
 			// Update Blackduck with Updates
 			err = updateBlackduckSpec(bd)
 			if err != nil {
-				fmt.Printf("%s\n", err)
-				return
+				log.Errorf("%s", err)
+				return nil
 			}
 		} else {
 			err := RunKubeEditorCmd("edit", "blackduck", blackduckName, "-n", blackduckName)
 			if err != nil {
-				fmt.Printf("Error Editing the Blackduck: %s\n", err)
+				log.Errorf("Error Editing the Blackduck: %s", err)
+				return nil
 			}
 		}
+		return nil
 	},
 }
 
@@ -98,7 +101,7 @@ var blackduckPVCStorageClass = ""
 
 // editBlackduckAddPVCCmd adds a PVC to a Blackduck
 var editBlackduckAddPVCCmd = &cobra.Command{
-	Use:   "addPVC BLACKDUCK_NAME PVC_NAME",
+	Use:   "addPVC NAME PVC_NAME",
 	Short: "Add a PVC to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -106,7 +109,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding PVC to Blackduck\n")
 		// Read Commandline Parameters
 		blackduckName := args[0]
@@ -114,8 +117,8 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		// Get Blackduck Spec
 		bd, err := getBlackduckSpec(blackduckName)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
 		// Add PVC to Spec
 		newPVC := blackduckv1.PVC{
@@ -127,15 +130,16 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		// Update Blackduck with PVC
 		err = updateBlackduckSpec(bd)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 // editBlackduckAddEnvironCmd adds an environ to a Blackduck
 var editBlackduckAddEnvironCmd = &cobra.Command{
-	Use:   "addEnviron BLACKDUCK_NAME ENVIRON_NAME:ENVIRON_VALUE",
+	Use:   "addEnviron NAME ENVIRON_NAME:ENVIRON_VALUE",
 	Short: "Add an Environment Variable to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -143,7 +147,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding Environ to Blackduck\n")
 		// Read Commandline Parameters
 		blackduckName := args[0]
@@ -151,23 +155,24 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		// Get Blackduck Spec
 		bd, err := getBlackduckSpec(blackduckName)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
 		// Add Environ to Spec
 		bd.Spec.Environs = append(bd.Spec.Environs, environ)
 		// Update Blackduck with Environ
 		err = updateBlackduckSpec(bd)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 // editBlackduckAddRegistryCmd adds an Image Registry to a Blackduck
 var editBlackduckAddRegistryCmd = &cobra.Command{
-	Use:   "addRegistry BLACKDUCK_NAME REGISTRY",
+	Use:   "addRegistry NAME REGISTRY",
 	Short: "Add an Image Registry to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -175,7 +180,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding an Image Registry to Blackduck\n")
 		// Read Commandline Parameters
 		blackduckName := args[0]
@@ -183,23 +188,24 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		// Get Blackduck Spec
 		bd, err := getBlackduckSpec(blackduckName)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
 		// Add Registry to Spec
 		bd.Spec.ImageRegistries = append(bd.Spec.ImageRegistries, registry)
 		// Update Blackduck with Environ
 		err = updateBlackduckSpec(bd)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 // editBlackduckAddUIDCmd adds a UID mapping to a Blackduck
 var editBlackduckAddUIDCmd = &cobra.Command{
-	Use:   "addUID BLACKDUCK_NAME UID_KEY UID_VALUE",
+	Use:   "addUID NAME UID_KEY UID_VALUE",
 	Short: "Add an Image UID to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
@@ -207,7 +213,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding an Image UID to Blackduck\n")
 		// Read Commandline Parameters
 		blackduckName := args[0]
@@ -216,8 +222,8 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		// Get Blackduck Spec
 		bd, err := getBlackduckSpec(blackduckName)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
 		// Add UID Mapping to Spec
 		intUIDVal, err := strconv.ParseInt(uidVal, 0, 64)
@@ -228,16 +234,17 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		// Update Blackduck with UID mapping
 		err = updateBlackduckSpec(bd)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 // editOpsSightCmd edits an OpsSight by updating the spec
 // or using the kube/oc editor
 var editOpsSightCmd = &cobra.Command{
-	Use:   "opssight OPSSIGHT_NAME",
+	Use:   "opssight NAME",
 	Short: "Edit an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -245,7 +252,7 @@ var editOpsSightCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Editing an OpsSight\n")
 		// Read Commandline Parameters
 		opsSightName := args[0]
@@ -255,8 +262,8 @@ var editOpsSightCmd = &cobra.Command{
 		if flagset.NFlag() != 0 {
 			ops, err := getOpsSightSpec(opsSightName)
 			if err != nil {
-				fmt.Printf("%s\n", err)
-				return
+				log.Errorf("%s", err)
+				return nil
 			}
 			editOpsSightCtl.Spec = &ops.Spec
 			// Update Spec with Changes from Flags
@@ -264,21 +271,23 @@ var editOpsSightCmd = &cobra.Command{
 			// Update OpsSight with Updates
 			err = updateOpsSightSpec(ops)
 			if err != nil {
-				fmt.Printf("%s\n", err)
-				return
+				log.Errorf("%s", err)
+				return nil
 			}
 		} else {
 			err := RunKubeEditorCmd("edit", "opssight", opsSightName, "-n", opsSightName)
 			if err != nil {
-				fmt.Printf("Error Editing the OpsSight: %s\n", err)
+				log.Errorf("Error Editing the OpsSight: %s", err)
+				return nil
 			}
 		}
+		return nil
 	},
 }
 
 // editOpsSightAddRegistryCmd adds a registry to an OpsSight
 var editOpsSightAddRegistryCmd = &cobra.Command{
-	Use:   "addRegistry OPSSIGHT_NAME URL USER PASSWORD",
+	Use:   "addRegistry NAME URL USER PASSWORD",
 	Short: "Add an Internal Registry to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -286,7 +295,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding Internal Registry to OpsSight\n")
 		opssightName := args[0]
 		regURL := args[1]
@@ -295,8 +304,8 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		// Get OpsSight Spec
 		ops, err := getOpsSightSpec(opssightName)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
 		// Add Internal Registry to Spec
 		newReg := opssightv1.RegistryAuth{
@@ -308,15 +317,16 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		// Update OpsSight with Internal Registry
 		err = updateOpsSightSpec(ops)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
 // editOpsSightAddHostCmd adds a Blackduck Host to an OpsSight
 var editOpsSightAddHostCmd = &cobra.Command{
-	Use:   "addHost OPSSIGHT_NAME BLACKDUCK_HOST",
+	Use:   "addHost NAME BLACKDUCK_HOST",
 	Short: "Add a Blackduck Host to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -324,24 +334,25 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding Blackduck Host to OpsSight\n")
 		opssightName := args[0]
 		host := args[1]
 		// Get OpsSight Spec
 		ops, err := getOpsSightSpec(opssightName)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
 		// Add Host to Spec
 		ops.Spec.Blackduck.Hosts = append(ops.Spec.Blackduck.Hosts, host)
 		// Update OpsSight with Host
 		err = updateOpsSightSpec(ops)
 		if err != nil {
-			fmt.Printf("%s\n", err)
-			return
+			log.Errorf("%s", err)
+			return nil
 		}
+		return nil
 	},
 }
 
@@ -356,7 +367,7 @@ var editAlertCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Editing an Alert\n")
 		// Read Commandline Parameters
 		alertName := args[0]
@@ -366,8 +377,8 @@ var editAlertCmd = &cobra.Command{
 		if flagset.NFlag() != 0 {
 			alt, err := getAlertSpec(alertName)
 			if err != nil {
-				fmt.Printf("Get Spec: %s\n", err)
-				return
+				log.Errorf("Get Spec: %s", err)
+				return nil
 			}
 			editAlertCtl.Spec = &alt.Spec
 			// Update Spec with Changes from Flags
@@ -375,15 +386,17 @@ var editAlertCmd = &cobra.Command{
 			// Update Alert with Updates
 			err = updateAlertSpec(alt)
 			if err != nil {
-				fmt.Printf("Update Spec: %s\n", err)
-				return
+				log.Errorf("Update Spec: %s", err)
+				return nil
 			}
 		} else {
 			err := RunKubeEditorCmd("edit", "alert", alertName, "-n", alertName)
 			if err != nil {
-				fmt.Printf("Error Editing the Alert: %s\n", err)
+				log.Errorf("Error Editing the Alert: %s", err)
+				return nil
 			}
 		}
+		return nil
 	},
 }
 

@@ -31,15 +31,16 @@ var getCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"get"}, args...)
 		out, err := RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
-			fmt.Printf("Error Getting the Resource: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error Getting the Resource: %s", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
@@ -52,14 +53,15 @@ var getBlackduckCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting a Blackduck\n")
 		out, err := RunKubeCmd("get", "blackducks")
 		if err != nil {
-			fmt.Printf("Error getting Blackducks: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error getting Blackducks: %s", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
@@ -72,14 +74,15 @@ var getOpsSightCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting an OpsSight\n")
 		out, err := RunKubeCmd("get", "opssights")
 		if err != nil {
-			fmt.Printf("Error getting OpsSights: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error getting OpsSights: %s", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 
@@ -92,14 +95,15 @@ var getAlertCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting an OpsSight\n")
 		out, err := RunKubeCmd("get", "alerts")
 		if err != nil {
-			fmt.Printf("Error getting Alerts with KubeCmd: %s", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error getting Alerts with KubeCmd: %s", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 

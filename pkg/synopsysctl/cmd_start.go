@@ -42,7 +42,7 @@ var secretType horizonapi.SecretType
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
-	Use:   "start",
+	Use:   "start NAME",
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
@@ -70,7 +70,7 @@ var startCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Starting the Synopsys-Operator: %s\n", startNamespace)
 		// Read Commandline Parameters
 		if len(args) == 1 {
@@ -79,8 +79,8 @@ var startCmd = &cobra.Command{
 		// check if operator is already installed
 		out, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 		if err == nil {
-			fmt.Printf("Synopsys-Operator is already installed in namespace %s.", out)
-			return
+			log.Errorf("Synopsys-Operator is already installed in namespace %s.", out)
+			return nil
 		}
 
 		// Create a Horizon Deployer to set up the environment for the Synopsys Operator
@@ -114,8 +114,8 @@ var startCmd = &cobra.Command{
 		// Deploy Resources for the Synopsys Operator
 		err = environmentDeployer.Run()
 		if err != nil {
-			log.Errorf("Error deploying Environment with Horizon : %s\n", err)
-			return
+			log.Errorf("Error deploying Environment with Horizon : %s", err)
+			return nil
 		}
 
 		// Deploy synopsys-operator
@@ -126,8 +126,8 @@ var startCmd = &cobra.Command{
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
-			fmt.Printf("Error creating Horizon Deployer for Synopsys Operator: %s\n", err)
-			return
+			log.Errorf("Error creating Horizon Deployer for Synopsys Operator: %s", err)
+			return nil
 		}
 		synopsysOperatorDeployer.AddReplicationController(soperatorSpec.GetOperatorReplicationController())
 		synopsysOperatorDeployer.AddService(soperatorSpec.GetOperatorService())
@@ -136,8 +136,7 @@ var startCmd = &cobra.Command{
 		synopsysOperatorDeployer.AddClusterRoleBinding(soperatorSpec.GetOperatorClusterRoleBinding())
 		err = synopsysOperatorDeployer.Run()
 		if err != nil {
-			fmt.Printf("Error deploying Synopsys Operator with Horizon : %s\n", err)
-			return
+			return fmt.Errorf("Error deploying Synopsys Operator with Horizon : %s", err)
 		}
 
 		// Deploy prometheus
@@ -147,16 +146,16 @@ var startCmd = &cobra.Command{
 		}
 		prometheusDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
-			fmt.Printf("Error creating Horizon Deployer for Prometheus: %s\n", err)
-			return
+			log.Errorf("Error creating Horizon Deployer for Prometheus: %s", err)
+			return nil
 		}
 		prometheusDeployer.AddService(promtheusSpec.GetPrometheusService())
 		prometheusDeployer.AddDeployment(promtheusSpec.GetPrometheusDeployment())
 		prometheusDeployer.AddConfigMap(promtheusSpec.GetPrometheusConfigMap())
 		err = prometheusDeployer.Run()
 		if err != nil {
-			fmt.Printf("Error deploying Prometheus with Horizon : %s\n", err)
-			return
+			log.Errorf("Error deploying Prometheus with Horizon : %s", err)
+			return nil
 		}
 
 		// secret link stuff
@@ -169,12 +168,13 @@ var startCmd = &cobra.Command{
 		// expose the routes
 		out, err = RunKubeCmd("expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", startNamespace))
 		if err != nil {
-			fmt.Printf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
+			log.Errorf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
 		}
 		out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", startNamespace)
 		if err != nil {
-			fmt.Printf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
+			log.Errorf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
 		}
+		return nil
 	},
 }
 
