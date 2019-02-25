@@ -114,9 +114,10 @@ var deleteAlertCmd = &cobra.Command{
 }
 
 func init() {
-	deleteCmd.DisableFlagParsing = true
+	deleteCmd.DisableFlagParsing = true // lets deleteCmd pass flags to kube/oc
 	rootCmd.AddCommand(deleteCmd)
 
+	// Add Delete Commands
 	deleteCmd.AddCommand(deleteBlackduckCmd)
 	deleteCmd.AddCommand(deleteOpsSightCmd)
 	deleteCmd.AddCommand(deleteAlertCmd)

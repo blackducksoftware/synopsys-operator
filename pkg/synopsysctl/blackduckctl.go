@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// BlackduckCtl type provides functionality for a Blackduck
+// for the Synopsysctl tool
 type BlackduckCtl struct {
 	Spec                                           *blackduckv1.BlackduckSpec
 	BlackduckSize                                  string
@@ -53,6 +55,7 @@ type BlackduckCtl struct {
 	BlackduckLicenseKey                            string
 }
 
+// NewBlackduckCtl creates a new BlackduckCtl struct
 func NewBlackduckCtl() *BlackduckCtl {
 	return &BlackduckCtl{
 		Spec:                                           &blackduckv1.BlackduckSpec{},
@@ -83,7 +86,8 @@ func NewBlackduckCtl() *BlackduckCtl {
 	}
 }
 
-func (ctl *BlackduckCtl) SetDefault(createBlackduckSpecType string) error {
+// SwitchSpec switches the Blackduck's Spec to a different predefined spec
+func (ctl *BlackduckCtl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
 	case "empty":
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
@@ -97,7 +101,8 @@ func (ctl *BlackduckCtl) SetDefault(createBlackduckSpecType string) error {
 	return nil
 }
 
-func (ctl *BlackduckCtl) AddBlackduckSpecFlags(cmd *cobra.Command) {
+// AddSpecFlags adds flags for the OpsSight's Spec to the command
+func (ctl *BlackduckCtl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.BlackduckSize, "size", ctl.BlackduckSize, "Blackduck size - small, medium, large")
 	cmd.Flags().StringVar(&ctl.BlackduckDbPrototype, "db-prototype", ctl.BlackduckDbPrototype, "TODO")
 	cmd.Flags().StringVar(&ctl.BlackduckExternalPostgresPostgresHost, "external-postgres-host", ctl.BlackduckExternalPostgresPostgresHost, "TODO")
@@ -124,7 +129,8 @@ func (ctl *BlackduckCtl) AddBlackduckSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.BlackduckLicenseKey, "license-key", ctl.BlackduckLicenseKey, "TODO")
 }
 
-func (ctl *BlackduckCtl) SetBlackduckFlags(f *pflag.Flag) {
+// SetFlags sets the Blackduck's Spec if a flag was changed
+func (ctl *BlackduckCtl) SetFlags(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {

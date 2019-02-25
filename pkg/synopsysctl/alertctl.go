@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// AlertCtl type provides functionality for an Alert
+// for the Synopsysctl tool
 type AlertCtl struct {
 	Spec                   *alertv1.AlertSpec
 	AlertRegistry          string
@@ -42,6 +44,7 @@ type AlertCtl struct {
 	AlertState             string
 }
 
+// NewAlertCtl creates a new AlertCtl struct
 func NewAlertCtl() *AlertCtl {
 	return &AlertCtl{
 		Spec:                   &alertv1.AlertSpec{},
@@ -62,7 +65,8 @@ func NewAlertCtl() *AlertCtl {
 	}
 }
 
-func (ctl *AlertCtl) SetDefault(createAlertSpecType string) error {
+// SwitchSpec switches the Alert's Spec to a different predefined spec
+func (ctl *AlertCtl) SwitchSpec(createAlertSpecType string) error {
 	switch createAlertSpecType {
 	case "empty":
 		ctl.Spec = &alertv1.AlertSpec{}
@@ -76,8 +80,8 @@ func (ctl *AlertCtl) SetDefault(createAlertSpecType string) error {
 	return nil
 }
 
-// Create Alert Spec Flags
-func (ctl *AlertCtl) AddAlertSpecFlags(cmd *cobra.Command) {
+// AddSpecFlags adds flags for the Alert's Spec to the command
+func (ctl *AlertCtl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.AlertRegistry, "alert-registry", ctl.AlertRegistry, "TODO")
 	cmd.Flags().StringVar(&ctl.AlertImagePath, "image-path", ctl.AlertImagePath, "TODO")
 	cmd.Flags().StringVar(&ctl.AlertAlertImageName, "alert-image-name", ctl.AlertAlertImageName, "TODO")
@@ -94,7 +98,8 @@ func (ctl *AlertCtl) AddAlertSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.AlertState, "alert-state", ctl.AlertState, "TODO")
 }
 
-func (ctl *AlertCtl) SetAlertFlags(f *pflag.Flag) {
+// SetFlags sets the Alert's Spec if a flag was changed
+func (ctl *AlertCtl) SetFlags(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
@@ -118,12 +123,7 @@ func (ctl *AlertCtl) SetAlertFlags(f *pflag.Flag) {
 			fmt.Printf("Shouldn't be here\n")
 			ctl.Spec.BlackduckPort = &ctl.AlertBlackduckPort
 		case "port":
-			fmt.Printf("Flag Value: %s\n", f.Value)
-			fmt.Printf("AddFlg AlertPort: %+v\n", ctl.AlertPort)
-			fmt.Printf("AddFlg &AlertPort: %+v\n", &ctl.AlertPort)
 			ctl.Spec.Port = &ctl.AlertPort
-			fmt.Printf("AddFlg AlertPort: %+v\n", ctl.AlertPort)
-			fmt.Printf("AddFlg &AlertPort: %+v\n", &ctl.AlertPort)
 		case "stand-alone":
 			ctl.Spec.StandAlone = &ctl.AlertStandAlone
 		case "alert-memory":

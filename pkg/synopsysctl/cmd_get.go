@@ -104,8 +104,10 @@ var getAlertCmd = &cobra.Command{
 }
 
 func init() {
-	getCmd.DisableFlagParsing = true
+	getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
 	rootCmd.AddCommand(getCmd)
+
+	// Add Commands
 	getCmd.AddCommand(getBlackduckCmd)
 	getCmd.AddCommand(getOpsSightCmd)
 	getCmd.AddCommand(getAlertCmd)

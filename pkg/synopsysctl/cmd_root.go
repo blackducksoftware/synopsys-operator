@@ -60,16 +60,11 @@ func Execute() {
 }
 
 func init() {
-	setResourceClients()
+	setResourceClients() // sets kubeconfig and initializes resource client libraries
+
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.DisableFlagParsing = true
-
-	// Cobra supports persistent flags, which, if defined here, will be global for your application.
-	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.synopsysctl.yaml)")
-
-	// Cobra also supports local flags, which will only run when this action is called directly.
-	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
 }
 
 // initConfig reads in config file and ENV variables if set.

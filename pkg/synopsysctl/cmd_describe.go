@@ -116,8 +116,10 @@ var describeAlertCmd = &cobra.Command{
 }
 
 func init() {
-	describeCmd.DisableFlagParsing = true
+	describeCmd.DisableFlagParsing = true // lets describeCmd pass flags to kube/oc
 	rootCmd.AddCommand(describeCmd)
+
+	// Add Commands
 	describeCmd.AddCommand(describeBlackduckCmd)
 	describeCmd.AddCommand(describeOpsSightCmd)
 	describeCmd.AddCommand(describeAlertCmd)

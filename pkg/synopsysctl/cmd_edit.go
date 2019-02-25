@@ -24,12 +24,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// AlertCtl Spec
+// Resource Ctl for edit
 var editBlackduckCtl = NewBlackduckCtl()
 var editOpsSightCtl = NewOpsSightCtl()
 var editAlertCtl = NewAlertCtl()
 
-// editCmd represents the edit command
+// editCmd edits non-synopsys resources
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
@@ -51,6 +51,8 @@ var editCmd = &cobra.Command{
 	},
 }
 
+// editBlackduckCmd edits a Blackduck by updating the spec
+// or using the kube/oc editor
 var editBlackduckCmd = &cobra.Command{
 	Use:   "blackduck NAME",
 	Short: "Edit an instance of Blackduck",
@@ -75,7 +77,7 @@ var editBlackduckCmd = &cobra.Command{
 			}
 			editBlackduckCtl.Spec = &bd.Spec
 			// Update Spec with Changes from Flags
-			flagset.VisitAll(editBlackduckCtl.SetBlackduckFlags)
+			flagset.VisitAll(editBlackduckCtl.SetFlags)
 			// Update Blackduck with Updates
 			err = updateBlackduckSpec(bd)
 			if err != nil {
@@ -93,6 +95,8 @@ var editBlackduckCmd = &cobra.Command{
 
 var blackduckPVCSize = "2Gi"
 var blackduckPVCStorageClass = ""
+
+// editBlackduckAddPVCCmd adds a PVC to a Blackduck
 var editBlackduckAddPVCCmd = &cobra.Command{
 	Use:   "addPVC BLACKDUCK_NAME PVC_NAME",
 	Short: "Add a PVC to Blackduck",
@@ -129,6 +133,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 	},
 }
 
+// editBlackduckAddEnvironCmd adds an environ to a Blackduck
 var editBlackduckAddEnvironCmd = &cobra.Command{
 	Use:   "addEnviron BLACKDUCK_NAME ENVIRON_NAME:ENVIRON_VALUE",
 	Short: "Add an Environment Variable to Blackduck",
@@ -160,6 +165,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 	},
 }
 
+// editBlackduckAddRegistryCmd adds an Image Registry to a Blackduck
 var editBlackduckAddRegistryCmd = &cobra.Command{
 	Use:   "addRegistry BLACKDUCK_NAME REGISTRY",
 	Short: "Add an Image Registry to Blackduck",
@@ -191,6 +197,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 	},
 }
 
+// editBlackduckAddUIDCmd adds a UID mapping to a Blackduck
 var editBlackduckAddUIDCmd = &cobra.Command{
 	Use:   "addUID BLACKDUCK_NAME UID_KEY UID_VALUE",
 	Short: "Add an Image UID to Blackduck",
@@ -227,6 +234,8 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 	},
 }
 
+// editOpsSightCmd edits an OpsSight by updating the spec
+// or using the kube/oc editor
 var editOpsSightCmd = &cobra.Command{
 	Use:   "opssight OPSSIGHT_NAME",
 	Short: "Edit an instance of OpsSight",
@@ -251,7 +260,7 @@ var editOpsSightCmd = &cobra.Command{
 			}
 			editOpsSightCtl.Spec = &ops.Spec
 			// Update Spec with Changes from Flags
-			flagset.VisitAll(editOpsSightCtl.SetOpsSightFlags)
+			flagset.VisitAll(editOpsSightCtl.SetFlags)
 			// Update OpsSight with Updates
 			err = updateOpsSightSpec(ops)
 			if err != nil {
@@ -267,6 +276,7 @@ var editOpsSightCmd = &cobra.Command{
 	},
 }
 
+// editOpsSightAddRegistryCmd adds a registry to an OpsSight
 var editOpsSightAddRegistryCmd = &cobra.Command{
 	Use:   "addRegistry OPSSIGHT_NAME URL USER PASSWORD",
 	Short: "Add an Internal Registry to OpsSight",
@@ -304,6 +314,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 	},
 }
 
+// editOpsSightAddHostCmd adds a Blackduck Host to an OpsSight
 var editOpsSightAddHostCmd = &cobra.Command{
 	Use:   "addHost OPSSIGHT_NAME BLACKDUCK_HOST",
 	Short: "Add a Blackduck Host to OpsSight",
@@ -334,6 +345,8 @@ var editOpsSightAddHostCmd = &cobra.Command{
 	},
 }
 
+// editAlertCmd edits an Alert by updating the spec
+// or using the kube/oc editor
 var editAlertCmd = &cobra.Command{
 	Use:   "alert NAME",
 	Short: "Edit an instance of Alert",
@@ -358,7 +371,7 @@ var editAlertCmd = &cobra.Command{
 			}
 			editAlertCtl.Spec = &alt.Spec
 			// Update Spec with Changes from Flags
-			flagset.VisitAll(editAlertCtl.SetAlertFlags)
+			flagset.VisitAll(editAlertCtl.SetFlags)
 			// Update Alert with Updates
 			err = updateAlertSpec(alt)
 			if err != nil {
@@ -375,33 +388,31 @@ var editAlertCmd = &cobra.Command{
 }
 
 func init() {
-	editCmd.DisableFlagParsing = true
+	editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
 	rootCmd.AddCommand(editCmd)
 
-	// Add Blackduck Spec Flags
-	editBlackduckCtl.AddBlackduckSpecFlags(editBlackduckCmd)
+	// Add Blackduck Commands
+	editBlackduckCtl.AddSpecFlags(editBlackduckCmd)
 	editCmd.AddCommand(editBlackduckCmd)
 
-	// Add Blackduck PVC Command
 	editBlackduckAddPVCCmd.Flags().StringVar(&blackduckPVCSize, "size", blackduckPVCSize, "TODO")
 	editBlackduckAddPVCCmd.Flags().StringVar(&blackduckPVCStorageClass, "storage-class", blackduckPVCStorageClass, "TODO")
 	editBlackduckCmd.AddCommand(editBlackduckAddPVCCmd)
-	// Add Blackduck Environ Command
+
 	editBlackduckCmd.AddCommand(editBlackduckAddEnvironCmd)
-	// Add Blackduck Registry Command
+
 	editBlackduckCmd.AddCommand(editBlackduckAddRegistryCmd)
-	// Add Blackduck Registry Command
+
 	editBlackduckCmd.AddCommand(editBlackduckAddUIDCmd)
 
-	// Add OpsSight Spec Flags
-	editOpsSightCtl.AddOpsSightSpecFlags(editOpsSightCmd)
+	// Add OpsSight Commands
+	editOpsSightCtl.AddSpecFlags(editOpsSightCmd)
 	editCmd.AddCommand(editOpsSightCmd)
 
-	// Add OpsSight Commands
 	editOpsSightCmd.AddCommand(editOpsSightAddRegistryCmd)
 	editOpsSightCmd.AddCommand(editOpsSightAddHostCmd)
 
 	// Add Alert Spec Flags
-	editAlertCtl.AddAlertSpecFlags(editAlertCmd)
+	editAlertCtl.AddSpecFlags(editAlertCmd)
 	editCmd.AddCommand(editAlertCmd)
 }

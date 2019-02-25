@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// OpsSightCtl type provides functionality for an OpsSight
+// for the Synopsysctl tool
 type OpsSightCtl struct {
 	Spec                                                     *opssightv1.OpsSightSpec
 	OpssightPerceptorName                                    string
@@ -89,6 +91,7 @@ type OpsSightCtl struct {
 	OpssightSecretName                                       string
 }
 
+// NewOpsSightCtl creates a new OpsSightCtl struct
 func NewOpsSightCtl() *OpsSightCtl {
 	return &OpsSightCtl{
 		Spec:                   &opssightv1.OpsSightSpec{},
@@ -155,7 +158,8 @@ func NewOpsSightCtl() *OpsSightCtl {
 	}
 }
 
-func (ctl *OpsSightCtl) SetDefault(createOpsSightSpecType string) error {
+// SwitchSpec switches the OpsSight's Spec to a different predefined spec
+func (ctl *OpsSightCtl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
 	case "empty":
 		ctl.Spec = &opssightv1.OpsSightSpec{}
@@ -169,7 +173,8 @@ func (ctl *OpsSightCtl) SetDefault(createOpsSightSpecType string) error {
 	return nil
 }
 
-func (ctl *OpsSightCtl) AddOpsSightSpecFlags(cmd *cobra.Command) {
+// AddSpecFlags adds flags for the OpsSight's Spec to the command
+func (ctl *OpsSightCtl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.OpssightPerceptorName, "perceptor-name", ctl.OpssightPerceptorName, "TODO")
 	cmd.Flags().StringVar(&ctl.OpssightPerceptorImage, "perceptor-image", ctl.OpssightPerceptorImage, "TODO")
 	cmd.Flags().IntVar(&ctl.OpssightPerceptorPort, "perceptor-port", ctl.OpssightPerceptorPort, "TODO")
@@ -232,7 +237,8 @@ func (ctl *OpsSightCtl) AddOpsSightSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.OpssightSecretName, "secret-name", ctl.OpssightSecretName, "TODO")
 }
 
-func (ctl *OpsSightCtl) SetOpsSightFlags(f *pflag.Flag) {
+// SetFlags sets the OpsSight's Spec if a flag was changed
+func (ctl *OpsSightCtl) SetFlags(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {

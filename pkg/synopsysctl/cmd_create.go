@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AlertCtl Spec
+// Resource Ctl for create
 var createBlackduckCtl = NewBlackduckCtl()
 var createOpsSightCtl = NewOpsSightCtl()
 var createAlertCtl = NewAlertCtl()
@@ -34,11 +34,6 @@ var createAlertCtl = NewAlertCtl()
 var createBlackduckSpecType = "persistentStorage"
 var createOpsSightSpecType = "disabledBlackduck"
 var createAlertSpecType = "spec1"
-
-// Default Specs
-var defaultBlackduckSpec = &blackduckv1.BlackduckSpec{}
-var defaultOpsSightSpec = &opssightv1.OpsSightSpec{}
-var defaultAlertSpec = &alertv1.AlertSpec{}
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -79,7 +74,7 @@ var createBlackduckCmd = &cobra.Command{
 			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
-		err := createBlackduckCtl.SetDefault(createBlackduckSpecType)
+		err := createBlackduckCtl.SwitchSpec(createBlackduckSpecType)
 		if err != nil {
 			return err
 		}
@@ -98,7 +93,7 @@ var createBlackduckCmd = &cobra.Command{
 
 		// Read Flags Into Default Blackduck Spec
 		flagset := cmd.Flags()
-		flagset.VisitAll(createBlackduckCtl.SetBlackduckFlags)
+		flagset.VisitAll(createBlackduckCtl.SetFlags)
 
 		// Set Namespace in Spec
 		createBlackduckCtl.Spec.Namespace = blackduckName
@@ -129,7 +124,7 @@ var createOpsSightCmd = &cobra.Command{
 			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
-		err := createOpsSightCtl.SetDefault(createOpsSightSpecType)
+		err := createOpsSightCtl.SwitchSpec(createOpsSightSpecType)
 		if err != nil {
 			return err
 		}
@@ -148,7 +143,7 @@ var createOpsSightCmd = &cobra.Command{
 
 		// Read Flags Into Default OpsSight Spec
 		flagset := cmd.Flags()
-		flagset.VisitAll(createOpsSightCtl.SetOpsSightFlags)
+		flagset.VisitAll(createOpsSightCtl.SetFlags)
 
 		// Set Namespace in Spec
 		createOpsSightCtl.Spec.Namespace = opsSightName
@@ -179,7 +174,7 @@ var createAlertCmd = &cobra.Command{
 			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
-		err := createAlertCtl.SetDefault(createAlertSpecType)
+		err := createAlertCtl.SwitchSpec(createAlertSpecType)
 		if err != nil {
 			return err
 		}
@@ -198,7 +193,7 @@ var createAlertCmd = &cobra.Command{
 
 		// Read Flags Into Default Alert Spec
 		flagset := cmd.Flags()
-		flagset.VisitAll(createAlertCtl.SetAlertFlags)
+		flagset.VisitAll(createAlertCtl.SetFlags)
 
 		// Set Namespace in Spec
 		createAlertCtl.Spec.Namespace = alertName
@@ -220,24 +215,21 @@ var createAlertCmd = &cobra.Command{
 }
 
 func init() {
-	createCmd.DisableFlagParsing = true
+	createCmd.DisableFlagParsing = true // lets createCmd pass flags to kube/oc
 	rootCmd.AddCommand(createCmd)
 
 	// Add Blackduck Command Flags
 	createBlackduckCmd.Flags().StringVar(&createBlackduckSpecType, "spec", createBlackduckSpecType, "TODO")
-	// Add Blackduck Spec Flags
-	createBlackduckCtl.AddBlackduckSpecFlags(createBlackduckCmd)
+	createBlackduckCtl.AddSpecFlags(createBlackduckCmd)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command Flags
 	createOpsSightCmd.Flags().StringVar(&createOpsSightSpecType, "spec", createOpsSightSpecType, "TODO")
-	// Add OpsSight Spec Flags
-	createOpsSightCtl.AddOpsSightSpecFlags(createOpsSightCmd)
+	createOpsSightCtl.AddSpecFlags(createOpsSightCmd)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command Flags
 	createAlertCmd.Flags().StringVar(&createAlertSpecType, "spec", createAlertSpecType, "TODO")
-	// Add Alert Spec Flags
-	createAlertCtl.AddAlertSpecFlags(createAlertCmd)
+	createAlertCtl.AddSpecFlags(createAlertCmd)
 	createCmd.AddCommand(createAlertCmd)
 }
