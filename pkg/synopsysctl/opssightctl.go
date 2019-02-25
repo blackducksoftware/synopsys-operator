@@ -17,8 +17,6 @@ package synopsysctl
 import (
 	"encoding/json"
 
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -26,35 +24,7 @@ import (
 )
 
 // Gloabal Specs
-var globalBlackduckSpec = &blackduckv1.BlackduckSpec{}
 var globalOpsSightSpec = &opssightv1.OpsSightSpec{}
-var globalAlertSpec = &alertv1.AlertSpec{}
-
-// Blackduck Spec Flags
-var blackduckSize = ""
-var blackduckDbPrototype = ""
-var blackduckExternalPostgresPostgresHost = ""
-var blackduckExternalPostgresPostgresPort = 0
-var blackduckExternalPostgresPostgresAdmin = ""
-var blackduckExternalPostgresPostgresUser = ""
-var blackduckExternalPostgresPostgresSsl = false
-var blackduckExternalPostgresPostgresAdminPassword = ""
-var blackduckExternalPostgresPostgresUserPassword = ""
-var blackduckPvcStorageClass = ""
-var blackduckLivenessProbes = false
-var blackduckScanType = ""
-var blackduckPersistentStorage = false
-var blackduckPVCJSONSlice = []string{}
-var blackduckCertificateName = ""
-var blackduckCertificate = ""
-var blackduckCertificateKey = ""
-var blackduckProxyCertificate = ""
-var blackduckType = ""
-var blackduckDesiredState = ""
-var blackduckEnvirons = []string{}
-var blackduckImageRegistries = []string{}
-var blackduckImageUIDMapJSONSlice = []string{}
-var blackduckLicenseKey = ""
 
 // OpsSight Spec Flags
 var opssightPerceptorName = ""
@@ -118,49 +88,6 @@ var opssightLogLevel = ""
 var opssightConfigMapName = ""
 var opssightSecretName = ""
 
-// Create Alert Spec Flags
-var alertRegistry = ""
-var alertImagePath = ""
-var alertAlertImageName = ""
-var alertAlertImageVersion = ""
-var alertCfsslImageName = ""
-var alertCfsslImageVersion = ""
-var alertBlackduckHost = ""
-var alertBlackduckUser = ""
-var alertBlackduckPort = 0
-var alertPort = 0
-var alertStandAlone = false
-var alertAlertMemory = ""
-var alertCfsslMemory = ""
-var alertState = ""
-
-func addBlackduckSpecFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&blackduckSize, "size", blackduckSize, "Blackduck size - small, medium, large")
-	cmd.Flags().StringVar(&blackduckDbPrototype, "db-prototype", blackduckDbPrototype, "TODO")
-	cmd.Flags().StringVar(&blackduckExternalPostgresPostgresHost, "external-postgres-host", blackduckExternalPostgresPostgresHost, "TODO")
-	cmd.Flags().IntVar(&blackduckExternalPostgresPostgresPort, "external-postgres-port", blackduckExternalPostgresPostgresPort, "TODO")
-	cmd.Flags().StringVar(&blackduckExternalPostgresPostgresAdmin, "external-postgres-admin", blackduckExternalPostgresPostgresAdmin, "TODO")
-	cmd.Flags().StringVar(&blackduckExternalPostgresPostgresUser, "external-postgres-user", blackduckExternalPostgresPostgresUser, "TODO")
-	cmd.Flags().BoolVar(&blackduckExternalPostgresPostgresSsl, "external-postgres-ssl", blackduckExternalPostgresPostgresSsl, "TODO")
-	cmd.Flags().StringVar(&blackduckExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", blackduckExternalPostgresPostgresAdminPassword, "TODO")
-	cmd.Flags().StringVar(&blackduckExternalPostgresPostgresUserPassword, "external-postgres-user-password", blackduckExternalPostgresPostgresUserPassword, "TODO")
-	cmd.Flags().StringVar(&blackduckPvcStorageClass, "pvc-storage-class", blackduckPvcStorageClass, "TODO")
-	cmd.Flags().BoolVar(&blackduckLivenessProbes, "liveness-probes", blackduckLivenessProbes, "Enable liveness probes")
-	cmd.Flags().StringVar(&blackduckScanType, "scan-type", blackduckScanType, "TODO")
-	cmd.Flags().BoolVar(&blackduckPersistentStorage, "persistent-storage", blackduckPersistentStorage, "Enable persistent storage")
-	cmd.Flags().StringSliceVar(&blackduckPVCJSONSlice, "pvc", blackduckPVCJSONSlice, "TODO")
-	cmd.Flags().StringVar(&blackduckCertificateName, "db-certificate-name", blackduckCertificateName, "TODO")
-	cmd.Flags().StringVar(&blackduckCertificate, "certificate", blackduckCertificate, "TODO")
-	cmd.Flags().StringVar(&blackduckCertificateKey, "certificate-key", blackduckCertificateKey, "TODO")
-	cmd.Flags().StringVar(&blackduckProxyCertificate, "proxy-certificate", blackduckProxyCertificate, "TODO")
-	cmd.Flags().StringVar(&blackduckType, "type", blackduckType, "TODO")
-	cmd.Flags().StringVar(&blackduckDesiredState, "desired-state", blackduckDesiredState, "TODO")
-	cmd.Flags().StringSliceVar(&blackduckEnvirons, "environs", blackduckEnvirons, "TODO")
-	cmd.Flags().StringSliceVar(&blackduckImageRegistries, "image-registries", blackduckImageRegistries, "List of image registries")
-	cmd.Flags().StringSliceVar(&blackduckImageUIDMapJSONSlice, "image-uid-map", blackduckImageUIDMapJSONSlice, "TODO")
-	cmd.Flags().StringVar(&blackduckLicenseKey, "license-key", blackduckLicenseKey, "TODO")
-}
-
 func addOpsSightSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&opssightPerceptorName, "perceptor-name", opssightPerceptorName, "TODO")
 	cmd.Flags().StringVar(&opssightPerceptorImage, "perceptor-image", opssightPerceptorImage, "TODO")
@@ -222,119 +149,6 @@ func addOpsSightSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&opssightLogLevel, "log-level", opssightLogLevel, "TODO")
 	cmd.Flags().StringVar(&opssightConfigMapName, "config-map-name", opssightConfigMapName, "TODO")
 	cmd.Flags().StringVar(&opssightSecretName, "secret-name", opssightSecretName, "TODO")
-}
-
-func addAlertSpecFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&alertRegistry, "alert-registry", alertRegistry, "TODO")
-	cmd.Flags().StringVar(&alertImagePath, "image-path", alertImagePath, "TODO")
-	cmd.Flags().StringVar(&alertAlertImageName, "alert-image-name", alertAlertImageName, "TODO")
-	cmd.Flags().StringVar(&alertAlertImageVersion, "alert-image-version", alertAlertImageVersion, "TODO")
-	cmd.Flags().StringVar(&alertCfsslImageName, "cfssl-image-name", alertCfsslImageName, "TODO")
-	cmd.Flags().StringVar(&alertCfsslImageVersion, "cfssl-image-version", alertCfsslImageVersion, "TODO")
-	cmd.Flags().StringVar(&alertBlackduckHost, "blackduck-host", alertBlackduckHost, "TODO")
-	cmd.Flags().StringVar(&alertBlackduckUser, "blackduck-user", alertBlackduckUser, "TODO")
-	cmd.Flags().IntVar(&alertBlackduckPort, "blackduck-port", alertBlackduckPort, "TODO")
-	cmd.Flags().IntVar(&alertPort, "port", alertPort, "TODO")
-	cmd.Flags().BoolVar(&alertStandAlone, "stand-alone", alertStandAlone, "TODO")
-	cmd.Flags().StringVar(&alertAlertMemory, "alert-memory", alertAlertMemory, "TODO")
-	cmd.Flags().StringVar(&alertCfsslMemory, "cfssl-memory", alertCfsslMemory, "TODO")
-	cmd.Flags().StringVar(&alertState, "alert-state", alertState, "TODO")
-}
-
-func setBlackduckFlags(f *pflag.Flag) {
-	if f.Changed {
-		log.Debugf("Flag %s: CHANGED\n", f.Name)
-		switch f.Name {
-		case "size":
-			globalBlackduckSpec.Size = blackduckSize
-		case "db-prototype":
-			globalBlackduckSpec.DbPrototype = blackduckDbPrototype
-		case "external-postgres-host":
-			if globalBlackduckSpec.ExternalPostgres == nil {
-				globalBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
-			globalBlackduckSpec.ExternalPostgres.PostgresHost = blackduckExternalPostgresPostgresHost
-		case "external-postgres-port":
-			if globalBlackduckSpec.ExternalPostgres == nil {
-				globalBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
-			globalBlackduckSpec.ExternalPostgres.PostgresPort = blackduckExternalPostgresPostgresPort
-		case "external-postgres-admin":
-			if globalBlackduckSpec.ExternalPostgres == nil {
-				globalBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
-			globalBlackduckSpec.ExternalPostgres.PostgresAdmin = blackduckExternalPostgresPostgresAdmin
-		case "external-postgres-user":
-			if globalBlackduckSpec.ExternalPostgres == nil {
-				globalBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
-			globalBlackduckSpec.ExternalPostgres.PostgresUser = blackduckExternalPostgresPostgresUser
-		case "external-postgres-ssl":
-			if globalBlackduckSpec.ExternalPostgres == nil {
-				globalBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
-			globalBlackduckSpec.ExternalPostgres.PostgresSsl = blackduckExternalPostgresPostgresSsl
-		case "external-postgres-admin-password":
-			if globalBlackduckSpec.ExternalPostgres == nil {
-				globalBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
-			globalBlackduckSpec.ExternalPostgres.PostgresAdminPassword = blackduckExternalPostgresPostgresAdminPassword
-		case "external-postgres-user-password":
-			if globalBlackduckSpec.ExternalPostgres == nil {
-				globalBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
-			globalBlackduckSpec.ExternalPostgres.PostgresUserPassword = blackduckExternalPostgresPostgresUserPassword
-		case "pvc-storage-class":
-			if globalBlackduckSpec.ExternalPostgres == nil {
-				globalBlackduckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
-			globalBlackduckSpec.PVCStorageClass = blackduckPvcStorageClass
-		case "liveness-probes":
-			globalBlackduckSpec.LivenessProbes = blackduckLivenessProbes
-		case "scan-type":
-			globalBlackduckSpec.ScanType = blackduckScanType
-		case "persistent-storage":
-			globalBlackduckSpec.PersistentStorage = blackduckPersistentStorage
-		case "pvc":
-			for _, pvcJSON := range blackduckPVCJSONSlice {
-				pvc := &blackduckv1.PVC{}
-				json.Unmarshal([]byte(pvcJSON), pvc)
-				globalBlackduckSpec.PVC = append(globalBlackduckSpec.PVC, *pvc)
-			}
-		case "db-certificate-name":
-			globalBlackduckSpec.CertificateName = blackduckCertificateName
-		case "certificate":
-			globalBlackduckSpec.Certificate = blackduckCertificate
-		case "certificate-key":
-			globalBlackduckSpec.CertificateKey = blackduckCertificateKey
-		case "proxy-certificate":
-			globalBlackduckSpec.ProxyCertificate = blackduckProxyCertificate
-		case "type":
-			globalBlackduckSpec.Type = blackduckType
-		case "desired-state":
-			globalBlackduckSpec.DesiredState = blackduckDesiredState
-		case "environs":
-			globalBlackduckSpec.Environs = blackduckEnvirons
-		case "image-registries":
-			globalBlackduckSpec.ImageRegistries = blackduckImageRegistries
-		case "image-uid-map":
-			type uid struct {
-				Key   string `json:"key"`
-				Value int64  `json:"value"`
-			}
-			globalBlackduckSpec.ImageUIDMap = make(map[string]int64)
-			for _, uidJSON := range blackduckImageUIDMapJSONSlice {
-				uidStruct := &uid{}
-				json.Unmarshal([]byte(uidJSON), uidStruct)
-				globalBlackduckSpec.ImageUIDMap[uidStruct.Key] = uidStruct.Value
-			}
-		case "license-key":
-			globalBlackduckSpec.LicenseKey = blackduckLicenseKey
-		default:
-			log.Debugf("Flag %s: Not Found\n", f.Name)
-		}
-	}
-	log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 }
 
 func setOpsSightFlags(f *pflag.Flag) {
@@ -675,41 +489,4 @@ func setOpsSightFlags(f *pflag.Flag) {
 	}
 	log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 
-}
-
-func setAlertFlags(f *pflag.Flag) {
-	if f.Changed {
-		log.Debugf("Flag %s: CHANGED\n", f.Name)
-		switch f.Name {
-		case "alert-registry":
-			globalAlertSpec.Registry = alertRegistry
-		case "image-path":
-			globalAlertSpec.ImagePath = alertImagePath
-		case "alert-image-name":
-			globalAlertSpec.AlertImageName = alertAlertImageName
-		case "alert-image-version":
-			globalAlertSpec.AlertImageVersion = alertAlertImageVersion
-		case "cfssl-image-name":
-			globalAlertSpec.CfsslImageName = alertCfsslImageName
-		case "cfssl-image-version":
-			globalAlertSpec.CfsslImageVersion = alertCfsslImageVersion
-		case "blackduck-host":
-			globalAlertSpec.BlackduckHost = alertBlackduckHost
-		case "blackduck-user":
-			globalAlertSpec.BlackduckUser = alertBlackduckUser
-		case "blackduck-port":
-			globalAlertSpec.BlackduckPort = &alertBlackduckPort
-		case "port":
-			globalAlertSpec.Port = &alertPort
-		case "stand-alone":
-			globalAlertSpec.StandAlone = &alertStandAlone
-		case "alert-memory":
-			globalAlertSpec.AlertMemory = alertAlertMemory
-		case "cfssl-memory":
-			globalAlertSpec.CfsslMemory = alertCfsslMemory
-		default:
-			log.Debugf("Flag %s: Not Found\n", f.Name)
-		}
-	}
-	log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 }
