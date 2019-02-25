@@ -24,6 +24,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// AlertCtl Spec
+var editBlackduckCtl = NewBlackduckCtl()
+var editOpsSightCtl = NewOpsSightCtl()
+var editAlertCtl = NewAlertCtl()
+
 // editCmd represents the edit command
 var editCmd = &cobra.Command{
 	Use:   "edit",
@@ -68,9 +73,9 @@ var editBlackduckCmd = &cobra.Command{
 				fmt.Printf("%s\n", err)
 				return
 			}
-			globalBlackduckSpec = &bd.Spec
+			editBlackduckCtl.Spec = &bd.Spec
 			// Update Spec with Changes from Flags
-			flagset.VisitAll(setBlackduckFlags)
+			flagset.VisitAll(editBlackduckCtl.SetBlackduckFlags)
 			// Update Blackduck with Updates
 			err = updateBlackduckSpec(bd)
 			if err != nil {
@@ -244,9 +249,9 @@ var editOpsSightCmd = &cobra.Command{
 				fmt.Printf("%s\n", err)
 				return
 			}
-			globalOpsSightSpec = &ops.Spec
+			editOpsSightCtl.Spec = &ops.Spec
 			// Update Spec with Changes from Flags
-			flagset.VisitAll(setOpsSightFlags)
+			flagset.VisitAll(editOpsSightCtl.SetOpsSightFlags)
 			// Update OpsSight with Updates
 			err = updateOpsSightSpec(ops)
 			if err != nil {
@@ -351,9 +356,9 @@ var editAlertCmd = &cobra.Command{
 				fmt.Printf("Get Spec: %s\n", err)
 				return
 			}
-			globalAlertSpec = &alt.Spec
+			editAlertCtl.Spec = &alt.Spec
 			// Update Spec with Changes from Flags
-			flagset.VisitAll(setAlertFlags)
+			flagset.VisitAll(editAlertCtl.SetAlertFlags)
 			// Update Alert with Updates
 			err = updateAlertSpec(alt)
 			if err != nil {
@@ -374,7 +379,7 @@ func init() {
 	rootCmd.AddCommand(editCmd)
 
 	// Add Blackduck Spec Flags
-	addBlackduckSpecFlags(editBlackduckCmd)
+	editBlackduckCtl.AddBlackduckSpecFlags(editBlackduckCmd)
 	editCmd.AddCommand(editBlackduckCmd)
 
 	// Add Blackduck PVC Command
@@ -389,7 +394,7 @@ func init() {
 	editBlackduckCmd.AddCommand(editBlackduckAddUIDCmd)
 
 	// Add OpsSight Spec Flags
-	addOpsSightSpecFlags(editOpsSightCmd)
+	editOpsSightCtl.AddOpsSightSpecFlags(editOpsSightCmd)
 	editCmd.AddCommand(editOpsSightCmd)
 
 	// Add OpsSight Commands
@@ -397,6 +402,6 @@ func init() {
 	editOpsSightCmd.AddCommand(editOpsSightAddHostCmd)
 
 	// Add Alert Spec Flags
-	addAlertSpecFlags(editAlertCmd)
+	editAlertCtl.AddAlertSpecFlags(editAlertCmd)
 	editCmd.AddCommand(editAlertCmd)
 }

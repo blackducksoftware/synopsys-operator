@@ -20,11 +20,15 @@ import (
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// AlertCtl Spec
+var createBlackduckCtl = NewBlackduckCtl()
+var createOpsSightCtl = NewOpsSightCtl()
+var createAlertCtl = NewAlertCtl()
 
 // Create Flags
 var createBlackduckSpecType = "persistentStorage"
@@ -75,15 +79,9 @@ var createBlackduckCmd = &cobra.Command{
 			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
-		switch createBlackduckSpecType {
-		case "empty":
-			globalBlackduckSpec = &blackduckv1.BlackduckSpec{}
-		case "persistentStorage":
-			globalBlackduckSpec = crddefaults.GetHubDefaultPersistentStorage()
-		case "default":
-			globalBlackduckSpec = crddefaults.GetHubDefaultValue()
-		default:
-			return fmt.Errorf("Blackduck Spec Type %s does not match: empty, persistentStorage, default", createBlackduckSpecType)
+		err := createBlackduckCtl.SetDefault(createBlackduckSpecType)
+		if err != nil {
+			return err
 		}
 		return nil
 	},
@@ -100,17 +98,17 @@ var createBlackduckCmd = &cobra.Command{
 
 		// Read Flags Into Default Blackduck Spec
 		flagset := cmd.Flags()
-		flagset.VisitAll(setBlackduckFlags)
+		flagset.VisitAll(createBlackduckCtl.SetBlackduckFlags)
 
 		// Set Namespace in Spec
-		globalBlackduckSpec.Namespace = blackduckName
+		createBlackduckCtl.Spec.Namespace = blackduckName
 
 		// Create and Deploy Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: blackduckName,
 			},
-			Spec: *globalBlackduckSpec,
+			Spec: *createBlackduckCtl.Spec,
 		}
 		log.Debugf("%+v\n", blackduck)
 		_, err := blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
@@ -131,15 +129,9 @@ var createOpsSightCmd = &cobra.Command{
 			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
-		switch createOpsSightSpecType {
-		case "empty":
-			globalOpsSightSpec = &opssightv1.OpsSightSpec{}
-		case "disabledBlackduck":
-			globalOpsSightSpec = crddefaults.GetOpsSightDefaultValueWithDisabledHub()
-		case "default":
-			globalOpsSightSpec = crddefaults.GetOpsSightDefaultValue()
-		default:
-			return fmt.Errorf("OpsSight Spec Type %s does not match: empty, disabledBlackduck, default", createOpsSightSpecType)
+		err := createOpsSightCtl.SetDefault(createOpsSightSpecType)
+		if err != nil {
+			return err
 		}
 		return nil
 	},
@@ -156,17 +148,17 @@ var createOpsSightCmd = &cobra.Command{
 
 		// Read Flags Into Default OpsSight Spec
 		flagset := cmd.Flags()
-		flagset.VisitAll(setOpsSightFlags)
+		flagset.VisitAll(createOpsSightCtl.SetOpsSightFlags)
 
 		// Set Namespace in Spec
-		globalOpsSightSpec.Namespace = opsSightName
+		createOpsSightCtl.Spec.Namespace = opsSightName
 
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: opsSightName,
 			},
-			Spec: *globalOpsSightSpec,
+			Spec: *createOpsSightCtl.Spec,
 		}
 		log.Debugf("%+v\n", opssight)
 		_, err := opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
@@ -187,15 +179,9 @@ var createAlertCmd = &cobra.Command{
 			return fmt.Errorf("This command only accepts up to 1 argument - NAME")
 		}
 		// Check the Spec Type
-		switch createAlertSpecType {
-		case "empty":
-			globalAlertSpec = &alertv1.AlertSpec{}
-		case "spec1":
-			globalAlertSpec = crddefaults.GetAlertDefaultValue()
-		case "spec2":
-			globalAlertSpec = crddefaults.GetAlertDefaultValue2()
-		default:
-			return fmt.Errorf("Alert Spec Type %s does not match: empty, spec1, spec2", createAlertSpecType)
+		err := createAlertCtl.SetDefault(createAlertSpecType)
+		if err != nil {
+			return err
 		}
 		return nil
 	},
@@ -212,17 +198,17 @@ var createAlertCmd = &cobra.Command{
 
 		// Read Flags Into Default Alert Spec
 		flagset := cmd.Flags()
-		flagset.VisitAll(setAlertFlags)
+		flagset.VisitAll(createAlertCtl.SetAlertFlags)
 
 		// Set Namespace in Spec
-		globalAlertSpec.Namespace = alertName
+		createAlertCtl.Spec.Namespace = alertName
 
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: alertName,
 			},
-			Spec: *globalAlertSpec,
+			Spec: *createAlertCtl.Spec,
 		}
 		log.Debugf("%+v\n", alert)
 		_, err := alertClient.SynopsysV1().Alerts(alertName).Create(alert)
@@ -240,18 +226,18 @@ func init() {
 	// Add Blackduck Command Flags
 	createBlackduckCmd.Flags().StringVar(&createBlackduckSpecType, "spec", createBlackduckSpecType, "TODO")
 	// Add Blackduck Spec Flags
-	addBlackduckSpecFlags(createBlackduckCmd)
+	createBlackduckCtl.AddBlackduckSpecFlags(createBlackduckCmd)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command Flags
 	createOpsSightCmd.Flags().StringVar(&createOpsSightSpecType, "spec", createOpsSightSpecType, "TODO")
 	// Add OpsSight Spec Flags
-	addOpsSightSpecFlags(createOpsSightCmd)
+	createOpsSightCtl.AddOpsSightSpecFlags(createOpsSightCmd)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command Flags
 	createAlertCmd.Flags().StringVar(&createAlertSpecType, "spec", createAlertSpecType, "TODO")
 	// Add Alert Spec Flags
-	addAlertSpecFlags(createAlertCmd)
+	createAlertCtl.AddAlertSpecFlags(createAlertCmd)
 	createCmd.AddCommand(createAlertCmd)
 }
