@@ -65,6 +65,11 @@ func NewAlertCtl() *AlertCtl {
 	}
 }
 
+// GetSpec returns the Spec for the resource
+func (ctl *AlertCtl) GetSpec() alertv1.AlertSpec {
+	return *ctl.Spec
+}
+
 // SwitchSpec switches the Alert's Spec to a different predefined spec
 func (ctl *AlertCtl) SwitchSpec(createAlertSpecType string) error {
 	switch createAlertSpecType {

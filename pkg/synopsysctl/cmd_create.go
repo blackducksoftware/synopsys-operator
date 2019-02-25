@@ -101,14 +101,15 @@ var createBlackduckCmd = &cobra.Command{
 		flagset.VisitAll(createBlackduckCtl.SetFlags)
 
 		// Set Namespace in Spec
-		createBlackduckCtl.Spec.Namespace = blackduckName
+		blackduckSpec := createBlackduckCtl.GetSpec()
+		blackduckSpec.Namespace = blackduckName
 
 		// Create and Deploy Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: blackduckName,
 			},
-			Spec: *createBlackduckCtl.Spec,
+			Spec: blackduckSpec,
 		}
 		log.Debugf("%+v\n", blackduck)
 		_, err = blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
@@ -156,14 +157,15 @@ var createOpsSightCmd = &cobra.Command{
 		flagset.VisitAll(createOpsSightCtl.SetFlags)
 
 		// Set Namespace in Spec
-		createOpsSightCtl.Spec.Namespace = opsSightName
+		opssightSpec := createOpsSightCtl.GetSpec()
+		opssightSpec.Namespace = opsSightName
 
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: opsSightName,
 			},
-			Spec: *createOpsSightCtl.Spec,
+			Spec: opssightSpec,
 		}
 		log.Debugf("%+v\n", opssight)
 		_, err = opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
@@ -211,14 +213,15 @@ var createAlertCmd = &cobra.Command{
 		flagset.VisitAll(createAlertCtl.SetFlags)
 
 		// Set Namespace in Spec
-		createAlertCtl.Spec.Namespace = alertName
+		alertSpec := createAlertCtl.GetSpec()
+		alertSpec.Namespace = alertName
 
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: alertName,
 			},
-			Spec: *createAlertCtl.Spec,
+			Spec: alertSpec,
 		}
 		log.Debugf("%+v\n", alert)
 		_, err = alertClient.SynopsysV1().Alerts(alertName).Create(alert)

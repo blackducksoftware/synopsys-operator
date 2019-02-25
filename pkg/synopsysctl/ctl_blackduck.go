@@ -86,6 +86,11 @@ func NewBlackduckCtl() *BlackduckCtl {
 	}
 }
 
+// GetSpec returns the Spec for the resource
+func (ctl *BlackduckCtl) GetSpec() blackduckv1.BlackduckSpec {
+	return *ctl.Spec
+}
+
 // SwitchSpec switches the Blackduck's Spec to a different predefined spec
 func (ctl *BlackduckCtl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {

@@ -158,6 +158,11 @@ func NewOpsSightCtl() *OpsSightCtl {
 	}
 }
 
+// GetSpec returns the Spec for the resource
+func (ctl *OpsSightCtl) GetSpec() opssightv1.OpsSightSpec {
+	return *ctl.Spec
+}
+
 // SwitchSpec switches the OpsSight's Spec to a different predefined spec
 func (ctl *OpsSightCtl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
