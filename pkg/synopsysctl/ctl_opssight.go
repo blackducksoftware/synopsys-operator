@@ -159,8 +159,18 @@ func NewOpsSightCtl() *OpsSightCtl {
 }
 
 // GetSpec returns the Spec for the resource
-func (ctl *OpsSightCtl) GetSpec() opssightv1.OpsSightSpec {
+func (ctl *OpsSightCtl) GetSpec() interface{} {
 	return *ctl.Spec
+}
+
+// SetSpec sets the Spec for the resource
+func (ctl *OpsSightCtl) SetSpec(spec interface{}) error {
+	convertedSpec, ok := spec.(opssightv1.OpsSightSpec)
+	if !ok {
+		return fmt.Errorf("Error setting OpsSight Spec")
+	}
+	ctl.Spec = &convertedSpec
+	return nil
 }
 
 // CheckSpecFlags returns an error if a user input was invalid

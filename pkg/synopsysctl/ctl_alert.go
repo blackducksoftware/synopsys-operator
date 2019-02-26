@@ -66,8 +66,18 @@ func NewAlertCtl() *AlertCtl {
 }
 
 // GetSpec returns the Spec for the resource
-func (ctl *AlertCtl) GetSpec() alertv1.AlertSpec {
+func (ctl *AlertCtl) GetSpec() interface{} {
 	return *ctl.Spec
+}
+
+// SetSpec sets the Spec for the resource
+func (ctl *AlertCtl) SetSpec(spec interface{}) error {
+	convertedSpec, ok := spec.(alertv1.AlertSpec)
+	if !ok {
+		return fmt.Errorf("Error setting Alert Spec")
+	}
+	ctl.Spec = &convertedSpec
+	return nil
 }
 
 // CheckSpecFlags returns an error if a user input was invalid

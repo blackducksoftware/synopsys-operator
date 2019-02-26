@@ -26,9 +26,9 @@ import (
 )
 
 // Resource Ctl for create
-var createBlackduckCtl = NewBlackduckCtl()
-var createOpsSightCtl = NewOpsSightCtl()
-var createAlertCtl = NewAlertCtl()
+var createBlackduckCtl ResourceCtl
+var createOpsSightCtl ResourceCtl
+var createAlertCtl ResourceCtl
 
 // Create Flags
 var createBlackduckSpecType = "persistentStorage"
@@ -106,7 +106,7 @@ var createBlackduckCmd = &cobra.Command{
 		flagset.VisitAll(createBlackduckCtl.SetFlags)
 
 		// Set Namespace in Spec
-		blackduckSpec := createBlackduckCtl.GetSpec()
+		blackduckSpec, _ := createBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
 		blackduckSpec.Namespace = blackduckName
 
 		// Create and Deploy Blackduck CRD
@@ -167,7 +167,7 @@ var createOpsSightCmd = &cobra.Command{
 		flagset.VisitAll(createOpsSightCtl.SetFlags)
 
 		// Set Namespace in Spec
-		opssightSpec := createOpsSightCtl.GetSpec()
+		opssightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
 		opssightSpec.Namespace = opsSightName
 
 		// Create and Deploy OpsSight CRD
@@ -227,7 +227,7 @@ var createAlertCmd = &cobra.Command{
 		flagset.VisitAll(createAlertCtl.SetFlags)
 
 		// Set Namespace in Spec
-		alertSpec := createAlertCtl.GetSpec()
+		alertSpec, _ := createAlertCtl.GetSpec().(alertv1.AlertSpec)
 		alertSpec.Namespace = alertName
 
 		// Create and Deploy Alert CRD
@@ -248,6 +248,10 @@ var createAlertCmd = &cobra.Command{
 }
 
 func init() {
+	createBlackduckCtl = NewBlackduckCtl()
+	createOpsSightCtl = NewOpsSightCtl()
+	createAlertCtl = NewAlertCtl()
+
 	createCmd.DisableFlagParsing = true // lets createCmd pass flags to kube/oc
 	rootCmd.AddCommand(createCmd)
 

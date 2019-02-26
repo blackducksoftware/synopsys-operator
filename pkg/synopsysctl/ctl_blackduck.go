@@ -93,8 +93,18 @@ func NewBlackduckCtl() *BlackduckCtl {
 }
 
 // GetSpec returns the Spec for the resource
-func (ctl *BlackduckCtl) GetSpec() blackduckv1.BlackduckSpec {
+func (ctl *BlackduckCtl) GetSpec() interface{} {
 	return *ctl.Spec
+}
+
+// SetSpec sets the Spec for the resource
+func (ctl *BlackduckCtl) SetSpec(spec interface{}) error {
+	convertedSpec, ok := spec.(blackduckv1.BlackduckSpec)
+	if !ok {
+		return fmt.Errorf("Error setting Blackduck Spec")
+	}
+	ctl.Spec = &convertedSpec
+	return nil
 }
 
 // CheckSpecFlags returns an error if a user input was invalid

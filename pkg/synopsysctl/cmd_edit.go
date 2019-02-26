@@ -25,9 +25,9 @@ import (
 )
 
 // Resource Ctl for edit
-var editBlackduckCtl = NewBlackduckCtl()
-var editOpsSightCtl = NewOpsSightCtl()
-var editAlertCtl = NewAlertCtl()
+var editBlackduckCtl ResourceCtl
+var editOpsSightCtl ResourceCtl
+var editAlertCtl ResourceCtl
 
 // editCmd edits non-synopsys resources
 var editCmd = &cobra.Command{
@@ -76,7 +76,7 @@ var editBlackduckCmd = &cobra.Command{
 				log.Errorf("%s", err)
 				return nil
 			}
-			editBlackduckCtl.Spec = &bd.Spec
+			editBlackduckCtl.SetSpec(bd.Spec)
 			// Update Spec with Changes from Flags
 			flagset.VisitAll(editBlackduckCtl.SetFlags)
 			// Update Blackduck with Updates
@@ -265,7 +265,7 @@ var editOpsSightCmd = &cobra.Command{
 				log.Errorf("%s", err)
 				return nil
 			}
-			editOpsSightCtl.Spec = &ops.Spec
+			editOpsSightCtl.SetSpec(ops.Spec)
 			// Update Spec with Changes from Flags
 			flagset.VisitAll(editOpsSightCtl.SetFlags)
 			// Update OpsSight with Updates
@@ -380,7 +380,7 @@ var editAlertCmd = &cobra.Command{
 				log.Errorf("Get Spec: %s", err)
 				return nil
 			}
-			editAlertCtl.Spec = &alt.Spec
+			editAlertCtl.SetSpec(alt.Spec)
 			// Update Spec with Changes from Flags
 			flagset.VisitAll(editAlertCtl.SetFlags)
 			// Update Alert with Updates
@@ -401,6 +401,10 @@ var editAlertCmd = &cobra.Command{
 }
 
 func init() {
+	editBlackduckCtl = NewBlackduckCtl()
+	editOpsSightCtl = NewOpsSightCtl()
+	editAlertCtl = NewAlertCtl()
+
 	editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
 	rootCmd.AddCommand(editCmd)
 
