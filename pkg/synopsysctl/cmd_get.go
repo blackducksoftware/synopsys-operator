@@ -45,8 +45,9 @@ var getCmd = &cobra.Command{
 }
 
 var getBlackduckCmd = &cobra.Command{
-	Use:   "blackduck",
-	Short: "Get a list of Blackducks in the cluster",
+	Use:     "blackduck",
+	Aliases: []string{"blackducks"},
+	Short:   "Get a list of Blackducks in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
 			return fmt.Errorf("This command accepts 0 arguments")
@@ -54,7 +55,7 @@ var getBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting a Blackduck\n")
+		log.Debugf("Getting Blackducks\n")
 		out, err := RunKubeCmd("get", "blackducks")
 		if err != nil {
 			log.Errorf("Error getting Blackducks: %s", out)
@@ -66,8 +67,9 @@ var getBlackduckCmd = &cobra.Command{
 }
 
 var getOpsSightCmd = &cobra.Command{
-	Use:   "opssight",
-	Short: "Get a list of OpsSights in the cluster",
+	Use:     "opssight",
+	Aliases: []string{"opssights"},
+	Short:   "Get a list of OpsSights in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
 			return fmt.Errorf("This command accepts 0 arguments")
@@ -75,7 +77,7 @@ var getOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting an OpsSight\n")
+		log.Debugf("Getting OpsSights\n")
 		out, err := RunKubeCmd("get", "opssights")
 		if err != nil {
 			log.Errorf("Error getting OpsSights: %s", out)
@@ -87,8 +89,9 @@ var getOpsSightCmd = &cobra.Command{
 }
 
 var getAlertCmd = &cobra.Command{
-	Use:   "alert",
-	Short: "Get a list of Alerts in the cluster",
+	Use:     "alert",
+	Aliases: []string{"alerts"},
+	Short:   "Get a list of Alerts in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
 			return fmt.Errorf("This command accepts 0 arguments")
@@ -96,7 +99,7 @@ var getAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting an OpsSight\n")
+		log.Debugf("Getting Alerts\n")
 		out, err := RunKubeCmd("get", "alerts")
 		if err != nil {
 			log.Errorf("Error getting Alerts with KubeCmd: %s", out)

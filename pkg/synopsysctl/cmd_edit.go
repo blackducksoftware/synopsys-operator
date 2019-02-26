@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strconv"
 
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	log "github.com/sirupsen/logrus"
@@ -71,7 +72,7 @@ var editBlackduckCmd = &cobra.Command{
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
 		if flagset.NFlag() != 0 {
-			bd, err := getBlackduckSpec(blackduckName)
+			bd, err := getBlackduckSpecFromCluster(blackduckName)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -80,7 +81,9 @@ var editBlackduckCmd = &cobra.Command{
 			// Update Spec with Changes from Flags
 			flagset.VisitAll(editBlackduckCtl.SetFlags)
 			// Update Blackduck with Updates
-			err = updateBlackduckSpec(bd)
+			blackduckSpec := editBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
+			bd.Spec = blackduckSpec
+			err = updateBlackduckSpecInCluster(bd)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -115,7 +118,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		blackduckName := args[0]
 		pvcName := args[1]
 		// Get Blackduck Spec
-		bd, err := getBlackduckSpec(blackduckName)
+		bd, err := getBlackduckSpecFromCluster(blackduckName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -128,7 +131,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		}
 		bd.Spec.PVC = append(bd.Spec.PVC, newPVC)
 		// Update Blackduck with PVC
-		err = updateBlackduckSpec(bd)
+		err = updateBlackduckSpecInCluster(bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -153,7 +156,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		blackduckName := args[0]
 		environ := args[1]
 		// Get Blackduck Spec
-		bd, err := getBlackduckSpec(blackduckName)
+		bd, err := getBlackduckSpecFromCluster(blackduckName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -161,7 +164,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		// Add Environ to Spec
 		bd.Spec.Environs = append(bd.Spec.Environs, environ)
 		// Update Blackduck with Environ
-		err = updateBlackduckSpec(bd)
+		err = updateBlackduckSpecInCluster(bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -186,7 +189,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		blackduckName := args[0]
 		registry := args[1]
 		// Get Blackduck Spec
-		bd, err := getBlackduckSpec(blackduckName)
+		bd, err := getBlackduckSpecFromCluster(blackduckName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -194,7 +197,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		// Add Registry to Spec
 		bd.Spec.ImageRegistries = append(bd.Spec.ImageRegistries, registry)
 		// Update Blackduck with Environ
-		err = updateBlackduckSpec(bd)
+		err = updateBlackduckSpecInCluster(bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -220,7 +223,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		uidKey := args[1]
 		uidVal := args[2]
 		// Get Blackduck Spec
-		bd, err := getBlackduckSpec(blackduckName)
+		bd, err := getBlackduckSpecFromCluster(blackduckName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -230,9 +233,12 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Couldn't convert UID_VAL to int: %s\n", err)
 		}
+		if bd.Spec.ImageUIDMap == nil {
+			bd.Spec.ImageUIDMap = make(map[string]int64)
+		}
 		bd.Spec.ImageUIDMap[uidKey] = intUIDVal
 		// Update Blackduck with UID mapping
-		err = updateBlackduckSpec(bd)
+		err = updateBlackduckSpecInCluster(bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -260,7 +266,7 @@ var editOpsSightCmd = &cobra.Command{
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
 		if flagset.NFlag() != 0 {
-			ops, err := getOpsSightSpec(opsSightName)
+			ops, err := getOpsSightSpecFromCluster(opsSightName)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -269,7 +275,9 @@ var editOpsSightCmd = &cobra.Command{
 			// Update Spec with Changes from Flags
 			flagset.VisitAll(editOpsSightCtl.SetFlags)
 			// Update OpsSight with Updates
-			err = updateOpsSightSpec(ops)
+			opsSightSpec := editOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
+			ops.Spec = opsSightSpec
+			err = updateOpsSightSpecInCluster(ops)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -302,7 +310,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		regUser := args[2]
 		regPass := args[3]
 		// Get OpsSight Spec
-		ops, err := getOpsSightSpec(opssightName)
+		ops, err := getOpsSightSpecFromCluster(opssightName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -315,7 +323,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		}
 		ops.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ops.Spec.ScannerPod.ImageFacade.InternalRegistries, newReg)
 		// Update OpsSight with Internal Registry
-		err = updateOpsSightSpec(ops)
+		err = updateOpsSightSpecInCluster(ops)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -339,7 +347,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		opssightName := args[0]
 		host := args[1]
 		// Get OpsSight Spec
-		ops, err := getOpsSightSpec(opssightName)
+		ops, err := getOpsSightSpecFromCluster(opssightName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -347,7 +355,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		// Add Host to Spec
 		ops.Spec.Blackduck.Hosts = append(ops.Spec.Blackduck.Hosts, host)
 		// Update OpsSight with Host
-		err = updateOpsSightSpec(ops)
+		err = updateOpsSightSpecInCluster(ops)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -375,7 +383,7 @@ var editAlertCmd = &cobra.Command{
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
 		if flagset.NFlag() != 0 {
-			alt, err := getAlertSpec(alertName)
+			alt, err := getAlertSpecFromCluster(alertName)
 			if err != nil {
 				log.Errorf("Get Spec: %s", err)
 				return nil
@@ -384,7 +392,9 @@ var editAlertCmd = &cobra.Command{
 			// Update Spec with Changes from Flags
 			flagset.VisitAll(editAlertCtl.SetFlags)
 			// Update Alert with Updates
-			err = updateAlertSpec(alt)
+			alertSpec := editAlertCtl.GetSpec().(alertv1.AlertSpec)
+			alt.Spec = alertSpec
+			err = updateAlertSpecInCluster(alt)
 			if err != nil {
 				log.Errorf("Update Spec: %s", err)
 				return nil

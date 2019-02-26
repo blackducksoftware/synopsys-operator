@@ -48,7 +48,7 @@ var alertClient *alertclientset.Clientset
 var openshift bool
 var kube bool
 
-func getBlackduckSpec(name string) (*blackduckv1.Blackduck, error) {
+func getBlackduckSpecFromCluster(name string) (*blackduckv1.Blackduck, error) {
 	blackduck, err := blackduckClient.SynopsysV1().Blackducks(name).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return blackduck, fmt.Errorf("Error Editing Blackduck: %+v", err)
@@ -56,7 +56,7 @@ func getBlackduckSpec(name string) (*blackduckv1.Blackduck, error) {
 	return blackduck, nil
 }
 
-func updateBlackduckSpec(spec *blackduckv1.Blackduck) error {
+func updateBlackduckSpecInCluster(spec *blackduckv1.Blackduck) error {
 	_, err := blackduckClient.SynopsysV1().Blackducks(spec.Name).Update(spec)
 	if err != nil {
 		return fmt.Errorf("Error Editing Blackduck: %+v", err)
@@ -64,7 +64,7 @@ func updateBlackduckSpec(spec *blackduckv1.Blackduck) error {
 	return nil
 }
 
-func getOpsSightSpec(name string) (*opssightv1.OpsSight, error) {
+func getOpsSightSpecFromCluster(name string) (*opssightv1.OpsSight, error) {
 	opssight, err := opssightClient.SynopsysV1().OpsSights(name).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return opssight, fmt.Errorf("Error Editing OpsSight: %+v", err)
@@ -72,7 +72,7 @@ func getOpsSightSpec(name string) (*opssightv1.OpsSight, error) {
 	return opssight, nil
 }
 
-func updateOpsSightSpec(spec *opssightv1.OpsSight) error {
+func updateOpsSightSpecInCluster(spec *opssightv1.OpsSight) error {
 	_, err := opssightClient.SynopsysV1().OpsSights(spec.Name).Update(spec)
 	if err != nil {
 		return fmt.Errorf("Error Editing OpsSight: %+v", err)
@@ -80,7 +80,7 @@ func updateOpsSightSpec(spec *opssightv1.OpsSight) error {
 	return nil
 }
 
-func getAlertSpec(name string) (*alertv1.Alert, error) {
+func getAlertSpecFromCluster(name string) (*alertv1.Alert, error) {
 	alert, err := alertClient.SynopsysV1().Alerts(name).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return alert, fmt.Errorf("Error Editing Alert: %+v", err)
@@ -88,7 +88,7 @@ func getAlertSpec(name string) (*alertv1.Alert, error) {
 	return alert, nil
 }
 
-func updateAlertSpec(spec *alertv1.Alert) error {
+func updateAlertSpecInCluster(spec *alertv1.Alert) error {
 	_, err := alertClient.SynopsysV1().Alerts(spec.Name).Update(spec)
 	if err != nil {
 		return fmt.Errorf("Error Editing Alert: %+v", err)
