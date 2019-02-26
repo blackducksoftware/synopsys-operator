@@ -15,6 +15,7 @@
 package synopsysctl
 
 import (
+	"encoding/json"
 	"fmt"
 
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -34,6 +35,10 @@ var createAlertCtl ResourceCtl
 var createBlackduckSpecType = "persistentStorage"
 var createOpsSightSpecType = "disabledBlackduck"
 var createAlertSpecType = "spec1"
+
+var mockBlackduck bool
+var mockOpsSight bool
+var mockAlert bool
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -94,13 +99,6 @@ var createBlackduckCmd = &cobra.Command{
 			blackduckName = args[0]
 		}
 
-		// Create namespace for the Blackduck
-		err := DeployCRDNamespace(restconfig, blackduckName)
-		if err != nil {
-			log.Errorf("%s", err)
-			return nil
-		}
-
 		// Read Flags Into Default Blackduck Spec
 		flagset := cmd.Flags()
 		flagset.VisitAll(createBlackduckCtl.SetFlags)
@@ -116,11 +114,22 @@ var createBlackduckCmd = &cobra.Command{
 			},
 			Spec: blackduckSpec,
 		}
-		log.Debugf("%+v\n", blackduck)
-		_, err = blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
-		if err != nil {
-			log.Errorf("Error creating the Blackduck : %s", err)
-			return nil
+		if mockBlackduck {
+			prettyPrint, _ := json.MarshalIndent(blackduck, "", "    ")
+			fmt.Printf("%s\n", prettyPrint)
+		} else {
+			// Create namespace for the Blackduck
+			err := DeployCRDNamespace(restconfig, blackduckName)
+			if err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
+			// Create Blackduck with Client
+			_, err = blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
+			if err != nil {
+				log.Errorf("Error creating the Blackduck : %s", err)
+				return nil
+			}
 		}
 		return nil
 	},
@@ -155,13 +164,6 @@ var createOpsSightCmd = &cobra.Command{
 			opsSightName = args[0]
 		}
 
-		// Create namespace for the OpsSight
-		err := DeployCRDNamespace(restconfig, opsSightName)
-		if err != nil {
-			log.Errorf("%s", err)
-			return nil
-		}
-
 		// Read Flags Into Default OpsSight Spec
 		flagset := cmd.Flags()
 		flagset.VisitAll(createOpsSightCtl.SetFlags)
@@ -177,11 +179,22 @@ var createOpsSightCmd = &cobra.Command{
 			},
 			Spec: opssightSpec,
 		}
-		log.Debugf("%+v\n", opssight)
-		_, err = opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
-		if err != nil {
-			log.Errorf("Error creating the OpsSight : %s", err)
-			return nil
+		if mockOpsSight {
+			prettyPrint, _ := json.MarshalIndent(opssight, "", "    ")
+			fmt.Printf("%s\n", prettyPrint)
+		} else {
+			// Create namespace for the OpsSight
+			err := DeployCRDNamespace(restconfig, opsSightName)
+			if err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
+			// Create OpsSight with Client
+			_, err = opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
+			if err != nil {
+				log.Errorf("Error creating the OpsSight : %s", err)
+				return nil
+			}
 		}
 		return nil
 	},
@@ -215,13 +228,6 @@ var createAlertCmd = &cobra.Command{
 			alertName = args[0]
 		}
 
-		// Create namespace for the Alert
-		err := DeployCRDNamespace(restconfig, alertName)
-		if err != nil {
-			log.Errorf("%s", err)
-			return nil
-		}
-
 		// Read Flags Into Default Alert Spec
 		flagset := cmd.Flags()
 		flagset.VisitAll(createAlertCtl.SetFlags)
@@ -237,11 +243,22 @@ var createAlertCmd = &cobra.Command{
 			},
 			Spec: alertSpec,
 		}
-		log.Debugf("%+v\n", alert)
-		_, err = alertClient.SynopsysV1().Alerts(alertName).Create(alert)
-		if err != nil {
-			log.Errorf("Error creating the Alert : %s", err)
-			return nil
+		if mockAlert {
+			prettyPrint, _ := json.MarshalIndent(alert, "", "    ")
+			fmt.Printf("%s\n", prettyPrint)
+		} else {
+			// Create namespace for the Alert
+			err := DeployCRDNamespace(restconfig, alertName)
+			if err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
+			// Create the Alert with Client
+			_, err = alertClient.SynopsysV1().Alerts(alertName).Create(alert)
+			if err != nil {
+				log.Errorf("Error creating the Alert : %s", err)
+				return nil
+			}
 		}
 		return nil
 	},
@@ -257,16 +274,19 @@ func init() {
 
 	// Add Blackduck Command Flags
 	createBlackduckCmd.Flags().StringVar(&createBlackduckSpecType, "spec", createBlackduckSpecType, "TODO")
+	createBlackduckCmd.Flags().BoolVar(&mockBlackduck, "mock", false, "Prints resource spec instead of creating")
 	createBlackduckCtl.AddSpecFlags(createBlackduckCmd)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command Flags
 	createOpsSightCmd.Flags().StringVar(&createOpsSightSpecType, "spec", createOpsSightSpecType, "TODO")
+	createOpsSightCmd.Flags().BoolVar(&mockOpsSight, "mock", false, "Prints resource spec instead of creating")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command Flags
 	createAlertCmd.Flags().StringVar(&createAlertSpecType, "spec", createAlertSpecType, "TODO")
+	createAlertCmd.Flags().BoolVar(&mockAlert, "mock", false, "Prints resource spec instead of creating")
 	createAlertCtl.AddSpecFlags(createAlertCmd)
 	createCmd.AddCommand(createAlertCmd)
 }
