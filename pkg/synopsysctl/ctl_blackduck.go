@@ -17,6 +17,7 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -25,70 +26,102 @@ import (
 	"github.com/spf13/pflag"
 )
 
+type uid struct {
+	Key   string `json:"key"`
+	Value int64  `json:"value"`
+}
+
 // BlackduckCtl type provides functionality for a Blackduck
 // for the Synopsysctl tool
 type BlackduckCtl struct {
-	Spec                                           *blackduckv1.BlackduckSpec
-	BlackduckSize                                  string
-	BlackduckDbPrototype                           string
-	BlackduckExternalPostgresPostgresHost          string
-	BlackduckExternalPostgresPostgresPort          int
-	BlackduckExternalPostgresPostgresAdmin         string
-	BlackduckExternalPostgresPostgresUser          string
-	BlackduckExternalPostgresPostgresSsl           bool
-	BlackduckExternalPostgresPostgresAdminPassword string
-	BlackduckExternalPostgresPostgresUserPassword  string
-	BlackduckPvcStorageClass                       string
-	BlackduckLivenessProbes                        bool
-	BlackduckScanType                              string
-	BlackduckPersistentStorage                     bool
-	BlackduckPVCJSONSlice                          []string
-	BlackduckCertificateName                       string
-	BlackduckCertificate                           string
-	BlackduckCertificateKey                        string
-	BlackduckProxyCertificate                      string
-	BlackduckType                                  string
-	BlackduckDesiredState                          string
-	BlackduckEnvirons                              []string
-	BlackduckImageRegistries                       []string
-	BlackduckImageUIDMapJSONSlice                  []string
-	BlackduckLicenseKey                            string
+	Spec                                  *blackduckv1.BlackduckSpec
+	Size                                  string
+	DbPrototype                           string
+	ExternalPostgresPostgresHost          string
+	ExternalPostgresPostgresPort          int
+	ExternalPostgresPostgresAdmin         string
+	ExternalPostgresPostgresUser          string
+	ExternalPostgresPostgresSsl           bool
+	ExternalPostgresPostgresAdminPassword string
+	ExternalPostgresPostgresUserPassword  string
+	PvcStorageClass                       string
+	LivenessProbes                        bool
+	ScanType                              string
+	PersistentStorage                     bool
+	PVCJSONSlice                          []string
+	CertificateName                       string
+	Certificate                           string
+	CertificateKey                        string
+	ProxyCertificate                      string
+	Type                                  string
+	DesiredState                          string
+	Environs                              []string
+	ImageRegistries                       []string
+	ImageUIDMapJSONSlice                  []string
+	LicenseKey                            string
 }
 
 // NewBlackduckCtl creates a new BlackduckCtl struct
 func NewBlackduckCtl() *BlackduckCtl {
 	return &BlackduckCtl{
-		Spec:                                           &blackduckv1.BlackduckSpec{},
-		BlackduckSize:                                  "",
-		BlackduckDbPrototype:                           "",
-		BlackduckExternalPostgresPostgresHost:          "",
-		BlackduckExternalPostgresPostgresPort:          0,
-		BlackduckExternalPostgresPostgresAdmin:         "",
-		BlackduckExternalPostgresPostgresUser:          "",
-		BlackduckExternalPostgresPostgresSsl:           false,
-		BlackduckExternalPostgresPostgresAdminPassword: "",
-		BlackduckExternalPostgresPostgresUserPassword:  "",
-		BlackduckPvcStorageClass:                       "",
-		BlackduckLivenessProbes:                        false,
-		BlackduckScanType:                              "",
-		BlackduckPersistentStorage:                     false,
-		BlackduckPVCJSONSlice:                          []string{},
-		BlackduckCertificateName:                       "",
-		BlackduckCertificate:                           "",
-		BlackduckCertificateKey:                        "",
-		BlackduckProxyCertificate:                      "",
-		BlackduckType:                                  "",
-		BlackduckDesiredState:                          "",
-		BlackduckEnvirons:                              []string{},
-		BlackduckImageRegistries:                       []string{},
-		BlackduckImageUIDMapJSONSlice:                  []string{},
-		BlackduckLicenseKey:                            "",
+		Spec:                                  &blackduckv1.BlackduckSpec{},
+		Size:                                  "",
+		DbPrototype:                           "",
+		ExternalPostgresPostgresHost:          "",
+		ExternalPostgresPostgresPort:          0,
+		ExternalPostgresPostgresAdmin:         "",
+		ExternalPostgresPostgresUser:          "",
+		ExternalPostgresPostgresSsl:           false,
+		ExternalPostgresPostgresAdminPassword: "",
+		ExternalPostgresPostgresUserPassword:  "",
+		PvcStorageClass:                       "",
+		LivenessProbes:                        false,
+		ScanType:                              "",
+		PersistentStorage:                     false,
+		PVCJSONSlice:                          []string{},
+		CertificateName:                       "",
+		Certificate:                           "",
+		CertificateKey:                        "",
+		ProxyCertificate:                      "",
+		Type:                                  "",
+		DesiredState:                          "",
+		Environs:                              []string{},
+		ImageRegistries:                       []string{},
+		ImageUIDMapJSONSlice:                  []string{},
+		LicenseKey:                            "",
 	}
 }
 
 // GetSpec returns the Spec for the resource
 func (ctl *BlackduckCtl) GetSpec() blackduckv1.BlackduckSpec {
 	return *ctl.Spec
+}
+
+// CheckSpecFlags returns an error if a user input was invalid
+func (ctl *BlackduckCtl) CheckSpecFlags() error {
+	if ctl.Size != "" && ctl.Size != "small" && ctl.Size != "medium" && ctl.Size != "large" {
+		return fmt.Errorf("Size must be 'small', 'medium', or 'large'")
+	}
+	for _, pvcJSON := range ctl.PVCJSONSlice {
+		pvc := &blackduckv1.PVC{}
+		err := json.Unmarshal([]byte(pvcJSON), pvc)
+		if err != nil {
+			return fmt.Errorf("Invalid format for PVC")
+		}
+	}
+	for _, environ := range ctl.Environs {
+		if !strings.Contains(environ, ":") {
+			return fmt.Errorf("Invalid Environ Format - NAME:VALUE")
+		}
+	}
+	for _, uidJSON := range ctl.ImageUIDMapJSONSlice {
+		uidStruct := &uid{}
+		err := json.Unmarshal([]byte(uidJSON), uidStruct)
+		if err != nil {
+			return fmt.Errorf("Invalid format for Image UID")
+		}
+	}
+	return nil
 }
 
 // SwitchSpec switches the Blackduck's Spec to a different predefined spec
@@ -108,125 +141,122 @@ func (ctl *BlackduckCtl) SwitchSpec(createBlackduckSpecType string) error {
 
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
 func (ctl *BlackduckCtl) AddSpecFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&ctl.BlackduckSize, "size", ctl.BlackduckSize, "Blackduck size - small, medium, large")
-	cmd.Flags().StringVar(&ctl.BlackduckDbPrototype, "db-prototype", ctl.BlackduckDbPrototype, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckExternalPostgresPostgresHost, "external-postgres-host", ctl.BlackduckExternalPostgresPostgresHost, "TODO")
-	cmd.Flags().IntVar(&ctl.BlackduckExternalPostgresPostgresPort, "external-postgres-port", ctl.BlackduckExternalPostgresPostgresPort, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckExternalPostgresPostgresAdmin, "external-postgres-admin", ctl.BlackduckExternalPostgresPostgresAdmin, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckExternalPostgresPostgresUser, "external-postgres-user", ctl.BlackduckExternalPostgresPostgresUser, "TODO")
-	cmd.Flags().BoolVar(&ctl.BlackduckExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.BlackduckExternalPostgresPostgresSsl, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", ctl.BlackduckExternalPostgresPostgresAdminPassword, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.BlackduckExternalPostgresPostgresUserPassword, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckPvcStorageClass, "pvc-storage-class", ctl.BlackduckPvcStorageClass, "TODO")
-	cmd.Flags().BoolVar(&ctl.BlackduckLivenessProbes, "liveness-probes", ctl.BlackduckLivenessProbes, "Enable liveness probes")
-	cmd.Flags().StringVar(&ctl.BlackduckScanType, "scan-type", ctl.BlackduckScanType, "TODO")
-	cmd.Flags().BoolVar(&ctl.BlackduckPersistentStorage, "persistent-storage", ctl.BlackduckPersistentStorage, "Enable persistent storage")
-	cmd.Flags().StringSliceVar(&ctl.BlackduckPVCJSONSlice, "pvc", ctl.BlackduckPVCJSONSlice, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckCertificateName, "db-certificate-name", ctl.BlackduckCertificateName, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckCertificate, "certificate", ctl.BlackduckCertificate, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckCertificateKey, "certificate-key", ctl.BlackduckCertificateKey, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckProxyCertificate, "proxy-certificate", ctl.BlackduckProxyCertificate, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckType, "type", ctl.BlackduckType, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckDesiredState, "desired-state", ctl.BlackduckDesiredState, "TODO")
-	cmd.Flags().StringSliceVar(&ctl.BlackduckEnvirons, "environs", ctl.BlackduckEnvirons, "TODO")
-	cmd.Flags().StringSliceVar(&ctl.BlackduckImageRegistries, "image-registries", ctl.BlackduckImageRegistries, "List of image registries")
-	cmd.Flags().StringSliceVar(&ctl.BlackduckImageUIDMapJSONSlice, "image-uid-map", ctl.BlackduckImageUIDMapJSONSlice, "TODO")
-	cmd.Flags().StringVar(&ctl.BlackduckLicenseKey, "license-key", ctl.BlackduckLicenseKey, "TODO")
+	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, " size - small, medium, large")
+	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "TODO")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "TODO")
+	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "TODO")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresPostgresAdmin, "TODO")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUser, "external-postgres-user", ctl.ExternalPostgresPostgresUser, "TODO")
+	cmd.Flags().BoolVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "TODO")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresPostgresAdminPassword, "TODO")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "TODO")
+	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "TODO")
+	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
+	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "TODO")
+	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
+	cmd.Flags().StringSliceVar(&ctl.PVCJSONSlice, "pvc", ctl.PVCJSONSlice, "TODO")
+	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "TODO")
+	cmd.Flags().StringVar(&ctl.Certificate, "certificate", ctl.Certificate, "TODO")
+	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key", ctl.CertificateKey, "TODO")
+	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate", ctl.ProxyCertificate, "TODO")
+	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "TODO")
+	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "TODO")
+	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "TODO")
+	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
+	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "TODO")
+	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "TODO")
 }
 
 // SetFlags sets the Blackduck's Spec if a flag was changed
 func (ctl *BlackduckCtl) SetFlags(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s:   CHANGED\n", f.Name)
 		switch f.Name {
 		case "size":
-			ctl.Spec.Size = ctl.BlackduckSize
+			ctl.Spec.Size = ctl.Size
 		case "db-prototype":
-			ctl.Spec.DbPrototype = ctl.BlackduckDbPrototype
+			ctl.Spec.DbPrototype = ctl.DbPrototype
 		case "external-postgres-host":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresHost = ctl.BlackduckExternalPostgresPostgresHost
+			ctl.Spec.ExternalPostgres.PostgresHost = ctl.ExternalPostgresPostgresHost
 		case "external-postgres-port":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresPort = ctl.BlackduckExternalPostgresPostgresPort
+			ctl.Spec.ExternalPostgres.PostgresPort = ctl.ExternalPostgresPostgresPort
 		case "external-postgres-admin":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresAdmin = ctl.BlackduckExternalPostgresPostgresAdmin
+			ctl.Spec.ExternalPostgres.PostgresAdmin = ctl.ExternalPostgresPostgresAdmin
 		case "external-postgres-user":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresUser = ctl.BlackduckExternalPostgresPostgresUser
+			ctl.Spec.ExternalPostgres.PostgresUser = ctl.ExternalPostgresPostgresUser
 		case "external-postgres-ssl":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresSsl = ctl.BlackduckExternalPostgresPostgresSsl
+			ctl.Spec.ExternalPostgres.PostgresSsl = ctl.ExternalPostgresPostgresSsl
 		case "external-postgres-admin-password":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresAdminPassword = ctl.BlackduckExternalPostgresPostgresAdminPassword
+			ctl.Spec.ExternalPostgres.PostgresAdminPassword = ctl.ExternalPostgresPostgresAdminPassword
 		case "external-postgres-user-password":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresUserPassword = ctl.BlackduckExternalPostgresPostgresUserPassword
+			ctl.Spec.ExternalPostgres.PostgresUserPassword = ctl.ExternalPostgresPostgresUserPassword
 		case "pvc-storage-class":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.PVCStorageClass = ctl.BlackduckPvcStorageClass
+			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
-			ctl.Spec.LivenessProbes = ctl.BlackduckLivenessProbes
+			ctl.Spec.LivenessProbes = ctl.LivenessProbes
 		case "scan-type":
-			ctl.Spec.ScanType = ctl.BlackduckScanType
+			ctl.Spec.ScanType = ctl.ScanType
 		case "persistent-storage":
-			ctl.Spec.PersistentStorage = ctl.BlackduckPersistentStorage
+			ctl.Spec.PersistentStorage = ctl.PersistentStorage
 		case "pvc":
-			for _, pvcJSON := range ctl.BlackduckPVCJSONSlice {
+			for _, pvcJSON := range ctl.PVCJSONSlice {
 				pvc := &blackduckv1.PVC{}
 				json.Unmarshal([]byte(pvcJSON), pvc)
 				ctl.Spec.PVC = append(ctl.Spec.PVC, *pvc)
 			}
 		case "db-certificate-name":
-			ctl.Spec.CertificateName = ctl.BlackduckCertificateName
+			ctl.Spec.CertificateName = ctl.CertificateName
 		case "certificate":
-			ctl.Spec.Certificate = ctl.BlackduckCertificate
+			ctl.Spec.Certificate = ctl.Certificate
 		case "certificate-key":
-			ctl.Spec.CertificateKey = ctl.BlackduckCertificateKey
+			ctl.Spec.CertificateKey = ctl.CertificateKey
 		case "proxy-certificate":
-			ctl.Spec.ProxyCertificate = ctl.BlackduckProxyCertificate
+			ctl.Spec.ProxyCertificate = ctl.ProxyCertificate
 		case "type":
-			ctl.Spec.Type = ctl.BlackduckType
+			ctl.Spec.Type = ctl.Type
 		case "desired-state":
-			ctl.Spec.DesiredState = ctl.BlackduckDesiredState
+			ctl.Spec.DesiredState = ctl.DesiredState
 		case "environs":
-			ctl.Spec.Environs = ctl.BlackduckEnvirons
+			ctl.Spec.Environs = ctl.Environs
 		case "image-registries":
-			ctl.Spec.ImageRegistries = ctl.BlackduckImageRegistries
+			ctl.Spec.ImageRegistries = ctl.ImageRegistries
 		case "image-uid-map":
-			type uid struct {
-				Key   string `json:"key"`
-				Value int64  `json:"value"`
-			}
 			ctl.Spec.ImageUIDMap = make(map[string]int64)
-			for _, uidJSON := range ctl.BlackduckImageUIDMapJSONSlice {
+			for _, uidJSON := range ctl.ImageUIDMapJSONSlice {
 				uidStruct := &uid{}
 				json.Unmarshal([]byte(uidJSON), uidStruct)
 				ctl.Spec.ImageUIDMap[uidStruct.Key] = uidStruct.Value
 			}
 		case "license-key":
-			ctl.Spec.LicenseKey = ctl.BlackduckLicenseKey
+			ctl.Spec.LicenseKey = ctl.LicenseKey
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
+	} else {
+		log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 	}
-	log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 }

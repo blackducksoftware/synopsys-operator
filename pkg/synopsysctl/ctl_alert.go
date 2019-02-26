@@ -70,6 +70,11 @@ func (ctl *AlertCtl) GetSpec() alertv1.AlertSpec {
 	return *ctl.Spec
 }
 
+// CheckSpecFlags returns an error if a user input was invalid
+func (ctl *AlertCtl) CheckSpecFlags() error {
+	return nil
+}
+
 // SwitchSpec switches the Alert's Spec to a different predefined spec
 func (ctl *AlertCtl) SwitchSpec(createAlertSpecType string) error {
 	switch createAlertSpecType {
@@ -106,7 +111,7 @@ func (ctl *AlertCtl) AddSpecFlags(cmd *cobra.Command) {
 // SetFlags sets the Alert's Spec if a flag was changed
 func (ctl *AlertCtl) SetFlags(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s:   CHANGED\n", f.Name)
 		switch f.Name {
 		case "alert-registry":
 			ctl.Spec.Registry = ctl.AlertRegistry

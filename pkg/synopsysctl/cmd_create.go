@@ -73,8 +73,13 @@ var createBlackduckCmd = &cobra.Command{
 		if len(args) > 1 {
 			return fmt.Errorf("This command only accepts up to 1 argument")
 		}
-		// Check the Spec Type
-		err := createBlackduckCtl.SwitchSpec(createBlackduckSpecType)
+		// Check the Arguments
+		err := createBlackduckCtl.CheckSpecFlags()
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+		// Set the Spec Type
+		err = createBlackduckCtl.SwitchSpec(createBlackduckSpecType)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -130,8 +135,13 @@ var createOpsSightCmd = &cobra.Command{
 		if len(args) > 1 {
 			return fmt.Errorf("This command only accepts up to 1 argument")
 		}
-		// Check the Spec Type
-		err := createOpsSightCtl.SwitchSpec(createOpsSightSpecType)
+		// Check the Arguments
+		err := createOpsSightCtl.CheckSpecFlags()
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+		// Set the Spec Type
+		err = createOpsSightCtl.SwitchSpec(createOpsSightSpecType)
 		if err != nil {
 			return err
 		}
@@ -186,8 +196,12 @@ var createAlertCmd = &cobra.Command{
 		if len(args) > 1 {
 			return fmt.Errorf("This command only accepts up to 1 argument")
 		}
-		// Check the Spec Type
-		err := createAlertCtl.SwitchSpec(createAlertSpecType)
+		err := createAlertCtl.CheckSpecFlags()
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+		// Check/Set the Spec Type
+		err = createAlertCtl.SwitchSpec(createAlertSpecType)
 		if err != nil {
 			return err
 		}

@@ -245,7 +245,7 @@ func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
 	namespaceDeployer.AddNamespace(ns)
 	err = namespaceDeployer.Run()
 	if err != nil {
-		return fmt.Errorf("Error deploying namespace with Horizon : %s\n", err)
+		return fmt.Errorf("Error deploying namespace with Horizon : %s", err)
 	}
 	return nil
 }
