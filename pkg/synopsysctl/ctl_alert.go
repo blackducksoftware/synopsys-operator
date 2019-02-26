@@ -27,41 +27,41 @@ import (
 // AlertCtl type provides functionality for an Alert
 // for the Synopsysctl tool
 type AlertCtl struct {
-	Spec                   *alertv1.AlertSpec
-	AlertRegistry          string
-	AlertImagePath         string
-	AlertAlertImageName    string
-	AlertAlertImageVersion string
-	AlertCfsslImageName    string
-	AlertCfsslImageVersion string
-	AlertBlackduckHost     string
-	AlertBlackduckUser     string
-	AlertBlackduckPort     int
-	AlertPort              int
-	AlertStandAlone        bool
-	AlertAlertMemory       string
-	AlertCfsslMemory       string
-	AlertState             string
+	Spec              *alertv1.AlertSpec
+	Registry          string
+	ImagePath         string
+	AlertImageName    string
+	AlertImageVersion string
+	CfsslImageName    string
+	CfsslImageVersion string
+	BlackduckHost     string
+	BlackduckUser     string
+	BlackduckPort     int
+	Port              int
+	StandAlone        bool
+	AlertMemory       string
+	CfsslMemory       string
+	State             string
 }
 
 // NewAlertCtl creates a new AlertCtl struct
 func NewAlertCtl() *AlertCtl {
 	return &AlertCtl{
-		Spec:                   &alertv1.AlertSpec{},
-		AlertRegistry:          "",
-		AlertImagePath:         "",
-		AlertAlertImageName:    "",
-		AlertAlertImageVersion: "",
-		AlertCfsslImageName:    "",
-		AlertCfsslImageVersion: "",
-		AlertBlackduckHost:     "",
-		AlertBlackduckUser:     "",
-		AlertBlackduckPort:     0,
-		AlertPort:              0,
-		AlertStandAlone:        false,
-		AlertAlertMemory:       "",
-		AlertCfsslMemory:       "",
-		AlertState:             "",
+		Spec:              &alertv1.AlertSpec{},
+		Registry:          "",
+		ImagePath:         "",
+		AlertImageName:    "",
+		AlertImageVersion: "",
+		CfsslImageName:    "",
+		CfsslImageVersion: "",
+		BlackduckHost:     "",
+		BlackduckUser:     "",
+		BlackduckPort:     0,
+		Port:              0,
+		StandAlone:        false,
+		AlertMemory:       "",
+		CfsslMemory:       "",
+		State:             "",
 	}
 }
 
@@ -102,20 +102,20 @@ func (ctl *AlertCtl) SwitchSpec(createAlertSpecType string) error {
 
 // AddSpecFlags adds flags for the Alert's Spec to the command
 func (ctl *AlertCtl) AddSpecFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&ctl.AlertRegistry, "spec-alert-registry", ctl.AlertRegistry, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertImagePath, "spec-image-path", ctl.AlertImagePath, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertAlertImageName, "spec-alert-image-name", ctl.AlertAlertImageName, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertAlertImageVersion, "spec-alert-image-version", ctl.AlertAlertImageVersion, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertCfsslImageName, "spec-cfssl-image-name", ctl.AlertCfsslImageName, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertCfsslImageVersion, "spec-cfssl-image-version", ctl.AlertCfsslImageVersion, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertBlackduckHost, "spec-blackduck-host", ctl.AlertBlackduckHost, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertBlackduckUser, "spec-blackduck-user", ctl.AlertBlackduckUser, "TODO")
-	cmd.Flags().IntVar(&ctl.AlertBlackduckPort, "spec-blackduck-port", ctl.AlertBlackduckPort, "TODO")
-	cmd.Flags().IntVar(&ctl.AlertPort, "spec-port", ctl.AlertPort, "TODO")
-	cmd.Flags().BoolVar(&ctl.AlertStandAlone, "spec-stand-alone", ctl.AlertStandAlone, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertAlertMemory, "spec-alert-memory", ctl.AlertAlertMemory, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertCfsslMemory, "spec-cfssl-memory", ctl.AlertCfsslMemory, "TODO")
-	cmd.Flags().StringVar(&ctl.AlertState, "spec-alert-state", ctl.AlertState, "TODO")
+	cmd.Flags().StringVar(&ctl.Registry, "spec-alert-registry", ctl.Registry, "Registry with the Alert Image")
+	cmd.Flags().StringVar(&ctl.ImagePath, "spec-image-path", ctl.ImagePath, "Path to the Alert Image")
+	cmd.Flags().StringVar(&ctl.AlertImageName, "spec-alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
+	cmd.Flags().StringVar(&ctl.AlertImageVersion, "spec-alert-image-version", ctl.AlertImageVersion, "Version of the Alert Image")
+	cmd.Flags().StringVar(&ctl.CfsslImageName, "spec-cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
+	cmd.Flags().StringVar(&ctl.CfsslImageVersion, "spec-cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
+	cmd.Flags().StringVar(&ctl.BlackduckHost, "spec-blackduck-host", ctl.BlackduckHost, "Host url of Blackduck")
+	cmd.Flags().StringVar(&ctl.BlackduckUser, "spec-blackduck-user", ctl.BlackduckUser, "Username for Blackduck")
+	cmd.Flags().IntVar(&ctl.BlackduckPort, "spec-blackduck-port", ctl.BlackduckPort, "Port for Blackduck")
+	cmd.Flags().IntVar(&ctl.Port, "spec-port", ctl.Port, "Port for Alert")
+	cmd.Flags().BoolVar(&ctl.StandAlone, "spec-stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
+	cmd.Flags().StringVar(&ctl.AlertMemory, "spec-alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
+	cmd.Flags().StringVar(&ctl.CfsslMemory, "spec-cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
+	cmd.Flags().StringVar(&ctl.State, "spec-alert-state", ctl.State, "State of the Alert")
 }
 
 // SetFlags sets the Alert's Spec if a flag was changed
@@ -124,32 +124,32 @@ func (ctl *AlertCtl) SetFlags(f *pflag.Flag) {
 		log.Debugf("Flag %s:   CHANGED\n", f.Name)
 		switch f.Name {
 		case "spec-alert-registry":
-			ctl.Spec.Registry = ctl.AlertRegistry
+			ctl.Spec.Registry = ctl.Registry
 		case "spec-image-path":
-			ctl.Spec.ImagePath = ctl.AlertImagePath
+			ctl.Spec.ImagePath = ctl.ImagePath
 		case "spec-alert-image-name":
-			ctl.Spec.AlertImageName = ctl.AlertAlertImageName
+			ctl.Spec.AlertImageName = ctl.AlertImageName
 		case "spec-alert-image-version":
-			ctl.Spec.AlertImageVersion = ctl.AlertAlertImageVersion
+			ctl.Spec.AlertImageVersion = ctl.AlertImageVersion
 		case "spec-cfssl-image-name":
-			ctl.Spec.CfsslImageName = ctl.AlertCfsslImageName
+			ctl.Spec.CfsslImageName = ctl.CfsslImageName
 		case "spec-cfssl-image-version":
-			ctl.Spec.CfsslImageVersion = ctl.AlertCfsslImageVersion
+			ctl.Spec.CfsslImageVersion = ctl.CfsslImageVersion
 		case "spec-blackduck-host":
-			ctl.Spec.BlackduckHost = ctl.AlertBlackduckHost
+			ctl.Spec.BlackduckHost = ctl.BlackduckHost
 		case "spec-blackduck-user":
-			ctl.Spec.BlackduckUser = ctl.AlertBlackduckUser
+			ctl.Spec.BlackduckUser = ctl.BlackduckUser
 		case "spec-blackduck-port":
 			fmt.Printf("Shouldn't be here\n")
-			ctl.Spec.BlackduckPort = &ctl.AlertBlackduckPort
+			ctl.Spec.BlackduckPort = &ctl.BlackduckPort
 		case "spec-port":
-			ctl.Spec.Port = &ctl.AlertPort
+			ctl.Spec.Port = &ctl.Port
 		case "spec-stand-alone":
-			ctl.Spec.StandAlone = &ctl.AlertStandAlone
+			ctl.Spec.StandAlone = &ctl.StandAlone
 		case "spec-alert-memory":
-			ctl.Spec.AlertMemory = ctl.AlertAlertMemory
+			ctl.Spec.AlertMemory = ctl.AlertMemory
 		case "spec-cfssl-memory":
-			ctl.Spec.CfsslMemory = ctl.AlertCfsslMemory
+			ctl.Spec.CfsslMemory = ctl.CfsslMemory
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
