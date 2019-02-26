@@ -16,7 +16,6 @@ package synopsysctl
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -36,6 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // These vars set by setResourceClients() in root command's init()
@@ -212,16 +212,32 @@ func setResourceClients() {
 // getKubeRestConfig gets the user's kubeconfig from their system
 func getKubeRestConfig() *rest.Config {
 	log.Debugf("Getting Kube Rest Config\n")
-	var kubeconfig *string
+	// Determine Config Paths
+	var masterURL = ""
+	var kubeconfigpath = ""
 	if home := homeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		kubeconfigpath = filepath.Join(home, ".kube", "config")
 	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		kubeconfigpath = ""
 	}
-	flag.Parse()
-	restconfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	// Get Rest Config using Paths
+	var restconfig *rest.Config
+	var err error
+	if masterURL == "" && kubeconfigpath == "" {
+		restconfig, err = rest.InClusterConfig() // if no paths then in cluster
+	} else {
+		restconfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			&clientcmd.ClientConfigLoadingRules{
+				ExplicitPath: kubeconfigpath,
+			},
+			&clientcmd.ConfigOverrides{
+				ClusterInfo: clientcmdapi.Cluster{
+					Server: masterURL,
+				},
+			}).ClientConfig()
+	}
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 	return restconfig
 }

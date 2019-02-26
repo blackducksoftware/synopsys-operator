@@ -61,11 +61,9 @@ func Execute() {
 }
 
 func init() {
-	setResourceClients() // sets kubeconfig and initializes resource client libraries
-
-	cobra.OnInitialize(initConfig)
-
+	setResourceClients()              // sets kubeconfig and initializes resource client libraries
 	rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
+	cobra.OnInitialize(initConfig)
 }
 
 // initConfig reads in config file and ENV variables if set.
