@@ -101,17 +101,18 @@ var describeAlertCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing an Alert\n")
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
 		out, err := RunKubeCmd("describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
-			fmt.Printf("Error Describing the Alert: %s\n", out)
-		} else {
-			fmt.Printf("%+v", out)
+			log.Errorf("Error Describing the Alert: %s\n", out)
+			return nil
 		}
+		fmt.Printf("%+v", out)
+		return nil
 	},
 }
 

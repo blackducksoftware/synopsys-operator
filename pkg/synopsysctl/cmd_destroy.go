@@ -37,13 +37,8 @@ var destroyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Get Namespace of Synopsys Operator
-		destroyNamespace, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
-		if err != nil {
-			log.Errorf("%s", destroyNamespace)
-			return nil
-		}
-		destroyNamespace = destroyNamespace[1 : len(destroyNamespace)-1] // remove quotes
+		destroyNamespace := GetOperatorNamespace()
+		// remove quotes
 		log.Debugf(" Destroyping the Synopsys-Operator: %s\n", destroyNamespace)
 		// Delete the namespace
 		out, err := RunKubeCmd("delete", "ns", destroyNamespace)

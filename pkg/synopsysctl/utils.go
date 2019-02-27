@@ -107,6 +107,17 @@ func determineClusterClients() {
 	}
 }
 
+// GetOperatorNamespace returns the namespace of the Synopsys-Operator by
+// looking at its cluster role binding
+func GetOperatorNamespace() string {
+	namespace, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
+	if err != nil {
+		log.Errorf("%s", namespace)
+		return ""
+	}
+	return destroyNamespace[1 : len(destroyNamespace)-1]
+}
+
 // RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
 // TODO consider replacing w/ go api but not crucial for now.
 func RunKubeCmd(args ...string) (string, error) {
