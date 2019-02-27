@@ -102,7 +102,7 @@ var describeAlertCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debugf("Describing an OpsSight\n")
+		log.Debugf("Describing an Alert\n")
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
