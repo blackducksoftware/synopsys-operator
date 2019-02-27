@@ -42,7 +42,7 @@ var secretType horizonapi.SecretType
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
-	Use:   "start NAME",
+	Use:   "start [NAME]",
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
