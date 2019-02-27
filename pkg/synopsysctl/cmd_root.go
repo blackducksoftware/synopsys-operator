@@ -26,6 +26,13 @@ import (
 
 var cfgFile string
 
+// Options flags for all commands
+var cluster string
+var kubeconfig string
+var context string
+var insecureSkipTLSVerify = false
+var logLevel int
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "synopsysctl",
@@ -64,6 +71,11 @@ func init() {
 	setResourceClients()              // sets kubeconfig and initializes resource client libraries
 	rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
 	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().StringVar(&cluster, "cluster", cluster, "The name of the kubeconfig cluster to use")
+	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "Path to the kubeconfig file to use for CLI requests")
+	rootCmd.PersistentFlags().StringVar(&context, "context", context, "The name of the kubeconfig context to use")
+	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "Server's certificate won't be validated. HTTPS will be less secure")
+	rootCmd.PersistentFlags().IntVar(&logLevel, "log-level", logLevel, "Log Level for the Synopsys-Operator")
 }
 
 // initConfig reads in config file and ENV variables if set.
