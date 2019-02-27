@@ -109,8 +109,8 @@ func (ctl *BlackduckCtl) SetSpec(spec interface{}) error {
 
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *BlackduckCtl) CheckSpecFlags() error {
-	if ctl.Size != "" && ctl.Size != "small" && ctl.Size != "medium" && ctl.Size != "large" {
-		return fmt.Errorf("Size must be 'small', 'medium', or 'large'")
+	if ctl.Size != "" && ctl.Size != "small" && ctl.Size != "medium" && ctl.Size != "large" && ctl.Size != "xlarge" {
+		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'xlarge'")
 	}
 	for _, pvcJSON := range ctl.PVCJSONSlice {
 		pvc := &blackduckv1.PVC{}
