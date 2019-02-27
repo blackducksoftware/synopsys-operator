@@ -56,7 +56,7 @@ var editCmd = &cobra.Command{
 // editBlackduckCmd edits a Blackduck by updating the spec
 // or using the kube/oc editor
 var editBlackduckCmd = &cobra.Command{
-	Use:   "blackduck NAME",
+	Use:   "blackduck NAMESPACE",
 	Short: "Edit an instance of Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -104,7 +104,7 @@ var blackduckPVCStorageClass = ""
 
 // editBlackduckAddPVCCmd adds a PVC to a Blackduck
 var editBlackduckAddPVCCmd = &cobra.Command{
-	Use:   "addPVC NAME PVC_NAME",
+	Use:   "addPVC NAMESPACE PVC_NAME",
 	Short: "Add a PVC to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -142,7 +142,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 
 // editBlackduckAddEnvironCmd adds an environ to a Blackduck
 var editBlackduckAddEnvironCmd = &cobra.Command{
-	Use:   "addEnviron NAME ENVIRON_NAME:ENVIRON_VALUE",
+	Use:   "addEnviron NAMESPACE ENVIRON_NAME:ENVIRON_VALUE",
 	Short: "Add an Environment Variable to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -175,7 +175,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 
 // editBlackduckAddRegistryCmd adds an Image Registry to a Blackduck
 var editBlackduckAddRegistryCmd = &cobra.Command{
-	Use:   "addRegistry NAME REGISTRY",
+	Use:   "addRegistry NAMESPACE REGISTRY",
 	Short: "Add an Image Registry to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -208,7 +208,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 
 // editBlackduckAddUIDCmd adds a UID mapping to a Blackduck
 var editBlackduckAddUIDCmd = &cobra.Command{
-	Use:   "addUID NAME UID_KEY UID_VALUE",
+	Use:   "addUID NAMESPACE UID_KEY UID_VALUE",
 	Short: "Add an Image UID to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
@@ -250,7 +250,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 // editOpsSightCmd edits an OpsSight by updating the spec
 // or using the kube/oc editor
 var editOpsSightCmd = &cobra.Command{
-	Use:   "opssight NAME",
+	Use:   "opssight NAMESPACE",
 	Short: "Edit an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -295,7 +295,7 @@ var editOpsSightCmd = &cobra.Command{
 
 // editOpsSightAddRegistryCmd adds a registry to an OpsSight
 var editOpsSightAddRegistryCmd = &cobra.Command{
-	Use:   "addRegistry NAME URL USER PASSWORD",
+	Use:   "addRegistry NAMESPACE URL USER PASSWORD",
 	Short: "Add an Internal Registry to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -334,7 +334,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 
 // editOpsSightAddHostCmd adds a Blackduck Host to an OpsSight
 var editOpsSightAddHostCmd = &cobra.Command{
-	Use:   "addHost NAME BLACKDUCK_HOST",
+	Use:   "addHost NAMESPACE BLACKDUCK_HOST",
 	Short: "Add a Blackduck Host to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -367,7 +367,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 // editAlertCmd edits an Alert by updating the spec
 // or using the kube/oc editor
 var editAlertCmd = &cobra.Command{
-	Use:   "alert NAME",
+	Use:   "alert NAMESPACE",
 	Short: "Edit an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {

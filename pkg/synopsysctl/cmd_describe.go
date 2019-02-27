@@ -45,7 +45,7 @@ var describeCmd = &cobra.Command{
 }
 
 var describeBlackduckCmd = &cobra.Command{
-	Use:   "blackduck NAME",
+	Use:   "blackduck NAMESPACE",
 	Short: "Describe an instance of Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -69,7 +69,7 @@ var describeBlackduckCmd = &cobra.Command{
 }
 
 var describeOpsSightCmd = &cobra.Command{
-	Use:   "opssight NAME",
+	Use:   "opssight NAMESPACE",
 	Short: "Describe an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -93,7 +93,7 @@ var describeOpsSightCmd = &cobra.Command{
 }
 
 var describeAlertCmd = &cobra.Command{
-	Use:   "alert NAME",
+	Use:   "alert NAMESPACE",
 	Short: "Describe an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {

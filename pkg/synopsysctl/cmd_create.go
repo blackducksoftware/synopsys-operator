@@ -71,7 +71,7 @@ var createCmd = &cobra.Command{
 
 // createCmd represents the create command for Blackduck
 var createBlackduckCmd = &cobra.Command{
-	Use:   "blackduck NAME",
+	Use:   "blackduck NAMESPACE",
 	Short: "Create an instance of a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
@@ -137,7 +137,7 @@ var createBlackduckCmd = &cobra.Command{
 
 // createCmd represents the create command for OpsSight
 var createOpsSightCmd = &cobra.Command{
-	Use:   "opssight NAME",
+	Use:   "opssight NAMESPACE",
 	Short: "Create an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
@@ -202,7 +202,7 @@ var createOpsSightCmd = &cobra.Command{
 
 // createCmd represents the create command for Alert
 var createAlertCmd = &cobra.Command{
-	Use:   "alert NAME",
+	Use:   "alert NAMESPACE",
 	Short: "Create an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments

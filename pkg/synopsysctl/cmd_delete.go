@@ -46,7 +46,7 @@ var deleteCmd = &cobra.Command{
 }
 
 var deleteBlackduckCmd = &cobra.Command{
-	Use:   "blackduck NAME",
+	Use:   "blackduck NAMESPACE",
 	Short: "Delete a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -70,7 +70,7 @@ var deleteBlackduckCmd = &cobra.Command{
 }
 
 var deleteOpsSightCmd = &cobra.Command{
-	Use:   "opssight NAME",
+	Use:   "opssight NAMESPACE",
 	Short: "Delete an OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -94,7 +94,7 @@ var deleteOpsSightCmd = &cobra.Command{
 }
 
 var deleteAlertCmd = &cobra.Command{
-	Use:   "alert NAME",
+	Use:   "alert NAMESPACE",
 	Short: "Delete an Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
