@@ -32,9 +32,9 @@ var createOpsSightCtl ResourceCtl
 var createAlertCtl ResourceCtl
 
 // Create Flags
-var createBlackduckSpecType = "persistentStorage"
-var createOpsSightSpecType = "disabledBlackduck"
-var createAlertSpecType = "spec1"
+var baseBlackduckSpec = "persistentStorage"
+var baseOpsSightSpec = "disabledBlackduck"
+var baseAlertSpec = "spec1"
 
 var mockBlackduck bool
 var mockOpsSight bool
@@ -84,7 +84,7 @@ var createBlackduckCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Set the Spec Type
-		err = createBlackduckCtl.SwitchSpec(createBlackduckSpecType)
+		err = createBlackduckCtl.SwitchSpec(baseBlackduckSpec)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -150,7 +150,7 @@ var createOpsSightCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Set the Spec Type
-		err = createOpsSightCtl.SwitchSpec(createOpsSightSpecType)
+		err = createOpsSightCtl.SwitchSpec(baseOpsSightSpec)
 		if err != nil {
 			return err
 		}
@@ -214,7 +214,7 @@ var createAlertCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Check/Set the Spec Type
-		err = createAlertCtl.SwitchSpec(createAlertSpecType)
+		err = createAlertCtl.SwitchSpec(baseAlertSpec)
 		if err != nil {
 			return err
 		}
@@ -273,19 +273,19 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 
 	// Add Blackduck Command Flags
-	createBlackduckCmd.Flags().StringVar(&createBlackduckSpecType, "spec", createBlackduckSpecType, "TODO")
+	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createBlackduckCmd.Flags().BoolVar(&mockBlackduck, "mock", false, "Prints resource spec instead of creating")
 	createBlackduckCtl.AddSpecFlags(createBlackduckCmd)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command Flags
-	createOpsSightCmd.Flags().StringVar(&createOpsSightSpecType, "spec", createOpsSightSpecType, "TODO")
+	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createOpsSightCmd.Flags().BoolVar(&mockOpsSight, "mock", false, "Prints resource spec instead of creating")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command Flags
-	createAlertCmd.Flags().StringVar(&createAlertSpecType, "spec", createAlertSpecType, "TODO")
+	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createAlertCmd.Flags().BoolVar(&mockAlert, "mock", false, "Prints resource spec instead of creating")
 	createAlertCtl.AddSpecFlags(createAlertCmd)
 	createCmd.AddCommand(createAlertCmd)
