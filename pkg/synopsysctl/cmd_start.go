@@ -25,6 +25,7 @@ import (
 )
 
 // Start Command Defaults
+var exposeUI = false
 var startNamespace = "synopsys-operator"
 var startSynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
 var startPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
@@ -166,13 +167,17 @@ var startCmd = &cobra.Command{
 		RunKubeCmd("scale", "replicationcontroller", "synopsys-operator", "--replicas=1")
 
 		// expose the routes
-		out, err = RunKubeCmd("expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", startNamespace))
-		if err != nil {
-			log.Warnf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
-		}
-		out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", startNamespace)
-		if err != nil {
-			log.Warnf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
+		if exposeUI {
+			out, err = RunKubeCmd("expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", startNamespace))
+			if err != nil {
+				log.Warnf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
+			}
+			out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", startNamespace)
+			if err != nil {
+				log.Warnf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
+			}
+		} else {
+			log.Warnf("Synopsys-Operator UI is not exposed ( --expose-ui=true to expose )")
 		}
 		return nil
 	},
@@ -180,6 +185,7 @@ var startCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(startCmd)
+	startCmd.Flags().BoolVar(&exposeUI, "expose-ui", exposeUI, "Expose the Synopsys-Operator's User Interface")
 	startCmd.Flags().StringVarP(&startSynopsysOperatorImage, "synopsys-operator-image", "i", startSynopsysOperatorImage, "synopsys operator image URL")
 	startCmd.Flags().StringVarP(&startPrometheusImage, "prometheus-image", "p", startPrometheusImage, "prometheus image URL")
 	startCmd.Flags().StringVarP(&startBlackduckRegistrationKey, "blackduck-registration-key", "k", startBlackduckRegistrationKey, "key to register with KnowledgeBase")
