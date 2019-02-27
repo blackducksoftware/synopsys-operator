@@ -22,12 +22,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Stop Command Defaults
-var stopNamespace = "synopsys-operator"
+//  estroy Command Defaults
+var destroyNamespace = "synopsys-operator"
 
-// stopCmd represents the stop command
-var stopCmd = &cobra.Command{
-	Use:   "stop",
+//  destroyCmd represents the  destroy command
+var destroyCmd = &cobra.Command{
+	Use:   " destroy",
 	Short: "Removes the Synopsys-Operator and CRDs from Cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
@@ -38,17 +38,17 @@ var stopCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get Namespace of Synopsys Operator
-		stopNamespace, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
+		destroyNamespace, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 		if err != nil {
-			log.Errorf("%s", stopNamespace)
+			log.Errorf("%s", destroyNamespace)
 			return nil
 		}
-		stopNamespace = stopNamespace[1 : len(stopNamespace)-1] // remove quotes
-		log.Debugf("Stopping the Synopsys-Operator: %s\n", stopNamespace)
+		destroyNamespace = destroyNamespace[1 : len(destroyNamespace)-1] // remove quotes
+		log.Debugf(" Destroyping the Synopsys-Operator: %s\n", destroyNamespace)
 		// Delete the namespace
-		out, err := RunKubeCmd("delete", "ns", stopNamespace)
+		out, err := RunKubeCmd("delete", "ns", destroyNamespace)
 		if err != nil {
-			log.Errorf("Could not delete %s - %s\n", stopNamespace, err)
+			log.Errorf("Could not delete %s - %s\n", destroyNamespace, err)
 			return nil
 		}
 		cleanCommands := [...]string{
@@ -75,5 +75,5 @@ var stopCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(stopCmd)
+	rootCmd.AddCommand(destroyCmd)
 }

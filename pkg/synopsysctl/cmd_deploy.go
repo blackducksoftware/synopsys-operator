@@ -24,26 +24,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Start Command Defaults
+//  Deploy Command Defaults
 var exposeUI = false
-var startNamespace = "synopsys-operator"
-var startSynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
-var startPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
-var startBlackduckRegistrationKey = ""
-var startDockerConfigPath = ""
-var startSecretName = "blackduck-secret"
-var startSecretType = "Opaque"
-var startSecretAdminPassword = "YmxhY2tkdWNr"
-var startSecretPostgresPassword = "YmxhY2tkdWNr"
-var startSecretUserPassword = "YmxhY2tkdWNr"
-var startSecretBlackduckPassword = "YmxhY2tkdWNr"
+var deployNamespace = "synopsys-operator"
+var deploySynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
+var deployPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
+var deployBlackduckRegistrationKey = ""
+var deployDockerConfigPath = ""
+var deploySecretName = "blackduck-secret"
+var deploySecretType = "Opaque"
+var deploySecretAdminPassword = "YmxhY2tkdWNr"
+var deploySecretPostgresPassword = "YmxhY2tkdWNr"
+var deploySecretUserPassword = "YmxhY2tkdWNr"
+var deploySecretBlackduckPassword = "YmxhY2tkdWNr"
 
-// Start Global Variables
+//  Deploy Global Variables
 var secretType horizonapi.SecretType
 
-// startCmd represents the start command
-var startCmd = &cobra.Command{
-	Use:   "start [NAMESPACE]",
+//  deployCmd represents the  deploy command
+var deployCmd = &cobra.Command{
+	Use:   " deploy [NAMESPACE]",
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
@@ -51,7 +51,7 @@ var startCmd = &cobra.Command{
 			return fmt.Errorf("This command only accepts up to 1 argument")
 		}
 		// Check the Secret Type
-		switch startSecretType {
+		switch deploySecretType {
 		case "Opaque":
 			secretType = horizonapi.SecretTypeOpaque
 		case "ServiceAccountToken":
@@ -67,15 +67,15 @@ var startCmd = &cobra.Command{
 		case "TypeTLS":
 			secretType = horizonapi.SecretTypeTLS
 		default:
-			return fmt.Errorf("Invalid Secret Type: %s", startSecretType)
+			return fmt.Errorf("Invalid Secret Type: %s", deploySecretType)
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Starting the Synopsys-Operator: %s\n", startNamespace)
+		log.Debugf(" Deploying the Synopsys-Operator: %s\n", deployNamespace)
 		// Read Commandline Parameters
 		if len(args) == 1 {
-			startNamespace = args[0]
+			deployNamespace = args[0]
 		}
 		// check if operator is already installed
 		out, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
@@ -91,8 +91,8 @@ var startCmd = &cobra.Command{
 		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
 			// APIVersion:  "string",
 			// ClusterName: "string",
-			Name:      startNamespace,
-			Namespace: startNamespace,
+			Name:      deployNamespace,
+			Namespace: deployNamespace,
 		})
 		environmentDeployer.AddNamespace(ns)
 
@@ -100,15 +100,15 @@ var startCmd = &cobra.Command{
 		secret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 			APIVersion: "v1",
 			// ClusterName : "cluster",
-			Name:      startSecretName,
-			Namespace: startNamespace,
+			Name:      deploySecretName,
+			Namespace: deployNamespace,
 			Type:      secretType,
 		})
 		secret.AddData(map[string][]byte{
-			"ADMIN_PASSWORD":    []byte(startSecretAdminPassword),
-			"POSTGRES_PASSWORD": []byte(startSecretPostgresPassword),
-			"USER_PASSWORD":     []byte(startSecretUserPassword),
-			"HUB_PASSWORD":      []byte(startSecretBlackduckPassword),
+			"ADMIN_PASSWORD":    []byte(deploySecretAdminPassword),
+			"POSTGRES_PASSWORD": []byte(deploySecretPostgresPassword),
+			"USER_PASSWORD":     []byte(deploySecretUserPassword),
+			"HUB_PASSWORD":      []byte(deploySecretBlackduckPassword),
 		})
 		environmentDeployer.AddSecret(secret)
 
@@ -121,9 +121,9 @@ var startCmd = &cobra.Command{
 
 		// Deploy synopsys-operator
 		soperatorSpec := SOperatorSpecConfig{
-			Namespace:                startNamespace,
-			SynopsysOperatorImage:    startSynopsysOperatorImage,
-			BlackduckRegistrationKey: startBlackduckRegistrationKey,
+			Namespace:                deployNamespace,
+			SynopsysOperatorImage:    deploySynopsysOperatorImage,
+			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
@@ -142,8 +142,8 @@ var startCmd = &cobra.Command{
 
 		// Deploy prometheus
 		promtheusSpec := PrometheusSpecConfig{
-			Namespace:       startNamespace,
-			PrometheusImage: startPrometheusImage,
+			Namespace:       deployNamespace,
+			PrometheusImage: deployPrometheusImage,
 		}
 		prometheusDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
@@ -160,7 +160,7 @@ var startCmd = &cobra.Command{
 		}
 
 		// secret link stuff
-		RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", startDockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
+		RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", deployDockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
 		RunKubeCmd("secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
 		RunKubeCmd("secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
 		RunKubeCmd("scale", "replicationcontroller", "synopsys-operator", "--replicas=0")
@@ -168,11 +168,11 @@ var startCmd = &cobra.Command{
 
 		// expose the routes
 		if exposeUI {
-			out, err = RunKubeCmd("expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", startNamespace))
+			out, err = RunKubeCmd("expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", deployNamespace))
 			if err != nil {
 				log.Warnf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
 			}
-			out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", startNamespace)
+			out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", deployNamespace)
 			if err != nil {
 				log.Warnf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
 			}
@@ -184,18 +184,18 @@ var startCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(startCmd)
-	startCmd.Flags().BoolVar(&exposeUI, "expose-ui", exposeUI, "Expose the Synopsys-Operator's User Interface")
-	startCmd.Flags().StringVarP(&startSynopsysOperatorImage, "synopsys-operator-image", "i", startSynopsysOperatorImage, "synopsys operator image URL")
-	startCmd.Flags().StringVarP(&startPrometheusImage, "prometheus-image", "p", startPrometheusImage, "prometheus image URL")
-	startCmd.Flags().StringVarP(&startBlackduckRegistrationKey, "blackduck-registration-key", "k", startBlackduckRegistrationKey, "key to register with KnowledgeBase")
-	startCmd.Flags().StringVarP(&startDockerConfigPath, "docker-config", "d", startDockerConfigPath, "path to docker config (image pull secrets etc)")
-	startCmd.Flags().StringVar(&startSecretName, "secret-name", startSecretName, "name of kubernetes secret for postgres and blackduck")
-	startCmd.Flags().StringVar(&startSecretType, "secret-type", startSecretType, "type of kubernetes secret for postgres and blackduck")
-	startCmd.Flags().StringVar(&startSecretAdminPassword, "admin-password", startSecretAdminPassword, "postgres admin password")
-	startCmd.Flags().StringVar(&startSecretPostgresPassword, "postgres-password", startSecretPostgresPassword, "postgres password")
-	startCmd.Flags().StringVar(&startSecretUserPassword, "user-password", startSecretUserPassword, "postgres user password")
-	startCmd.Flags().StringVar(&startSecretBlackduckPassword, "blackduck-password", startSecretBlackduckPassword, "blackduck password for 'sysadmin' account")
+	rootCmd.AddCommand(deployCmd)
+	deployCmd.Flags().BoolVar(&exposeUI, "expose-ui", exposeUI, "Expose the Synopsys-Operator's User Interface")
+	deployCmd.Flags().StringVarP(&deploySynopsysOperatorImage, "synopsys-operator-image", "i", deploySynopsysOperatorImage, "synopsys operator image URL")
+	deployCmd.Flags().StringVarP(&deployPrometheusImage, "prometheus-image", "p", deployPrometheusImage, "prometheus image URL")
+	deployCmd.Flags().StringVarP(&deployBlackduckRegistrationKey, "blackduck-registration-key", "k", deployBlackduckRegistrationKey, "key to register with KnowledgeBase")
+	deployCmd.Flags().StringVarP(&deployDockerConfigPath, "docker-config", "d", deployDockerConfigPath, "path to docker config (image pull secrets etc)")
+	deployCmd.Flags().StringVar(&deploySecretName, "secret-name", deploySecretName, "name of kubernetes secret for postgres and blackduck")
+	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret for postgres and blackduck")
+	deployCmd.Flags().StringVar(&deploySecretAdminPassword, "admin-password", deploySecretAdminPassword, "postgres admin password")
+	deployCmd.Flags().StringVar(&deploySecretPostgresPassword, "postgres-password", deploySecretPostgresPassword, "postgres password")
+	deployCmd.Flags().StringVar(&deploySecretUserPassword, "user-password", deploySecretUserPassword, "postgres user password")
+	deployCmd.Flags().StringVar(&deploySecretBlackduckPassword, "blackduck-password", deploySecretBlackduckPassword, "blackduck password for 'sysadmin' account")
 
 	// Set Log Level
 	log.SetLevel(log.DebugLevel)
