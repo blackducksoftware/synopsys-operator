@@ -87,7 +87,7 @@ var editBlackduckCmd = &cobra.Command{
 			// Update Blackduck with Updates
 			blackduckSpec := editBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
 			bd.Spec = blackduckSpec
-			err = updateBlackduckSpecInCluster(bd)
+			err = updateBlackduckSpecInCluster(blackduckName, bd)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -135,7 +135,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		}
 		bd.Spec.PVC = append(bd.Spec.PVC, newPVC)
 		// Update Blackduck with PVC
-		err = updateBlackduckSpecInCluster(bd)
+		err = updateBlackduckSpecInCluster(blackduckName, bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -168,7 +168,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		// Add Environ to Spec
 		bd.Spec.Environs = append(bd.Spec.Environs, environ)
 		// Update Blackduck with Environ
-		err = updateBlackduckSpecInCluster(bd)
+		err = updateBlackduckSpecInCluster(blackduckName, bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -201,7 +201,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		// Add Registry to Spec
 		bd.Spec.ImageRegistries = append(bd.Spec.ImageRegistries, registry)
 		// Update Blackduck with Environ
-		err = updateBlackduckSpecInCluster(bd)
+		err = updateBlackduckSpecInCluster(blackduckName, bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -242,7 +242,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		}
 		bd.Spec.ImageUIDMap[uidKey] = intUIDVal
 		// Update Blackduck with UID mapping
-		err = updateBlackduckSpecInCluster(bd)
+		err = updateBlackduckSpecInCluster(blackduckName, bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -281,7 +281,7 @@ var editOpsSightCmd = &cobra.Command{
 			// Update OpsSight with Updates
 			opsSightSpec := editOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
 			ops.Spec = opsSightSpec
-			err = updateOpsSightSpecInCluster(ops)
+			err = updateOpsSightSpecInCluster(opsSightName, ops)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -309,12 +309,12 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding Internal Registry to OpsSight\n")
-		opssightName := args[0]
+		opsSightName := args[0]
 		regURL := args[1]
 		regUser := args[2]
 		regPass := args[3]
 		// Get OpsSight Spec
-		ops, err := getOpsSightSpecFromCluster(opssightName)
+		ops, err := getOpsSightSpecFromCluster(opsSightName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -327,7 +327,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		}
 		ops.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ops.Spec.ScannerPod.ImageFacade.InternalRegistries, newReg)
 		// Update OpsSight with Internal Registry
-		err = updateOpsSightSpecInCluster(ops)
+		err = updateOpsSightSpecInCluster(opsSightName, ops)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -359,7 +359,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		// Add Host to Spec
 		ops.Spec.Blackduck.Hosts = append(ops.Spec.Blackduck.Hosts, host)
 		// Update OpsSight with Host
-		err = updateOpsSightSpecInCluster(ops)
+		err = updateOpsSightSpecInCluster(opssightName, ops)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -398,7 +398,7 @@ var editAlertCmd = &cobra.Command{
 			// Update Alert with Updates
 			alertSpec := editAlertCtl.GetSpec().(alertv1.AlertSpec)
 			alt.Spec = alertSpec
-			err = updateAlertSpecInCluster(alt)
+			err = updateAlertSpecInCluster(alertName, alt)
 			if err != nil {
 				log.Errorf("Update Spec: %s", err)
 				return nil

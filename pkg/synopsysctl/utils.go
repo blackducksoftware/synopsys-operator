@@ -56,8 +56,8 @@ func getBlackduckSpecFromCluster(namespace string) (*blackduckv1.Blackduck, erro
 }
 
 // updateBlackduckSpecInCluster updates the CRD for a blackduck
-func updateBlackduckSpecInCluster(crd *blackduckv1.Blackduck) error {
-	_, err := blackduckClient.SynopsysV1().Blackducks(crd.Namespace).Update(crd)
+func updateBlackduckSpecInCluster(namespace string, crd *blackduckv1.Blackduck) error {
+	_, err := blackduckClient.SynopsysV1().Blackducks(namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing Blackduck: %+v", err)
 	}
@@ -74,8 +74,8 @@ func getOpsSightSpecFromCluster(namespace string) (*opssightv1.OpsSight, error) 
 }
 
 // updateOpsSightSpecInCluster updates the CRD for an OpsSight
-func updateOpsSightSpecInCluster(crd *opssightv1.OpsSight) error {
-	_, err := opssightClient.SynopsysV1().OpsSights(crd.Namespace).Update(crd)
+func updateOpsSightSpecInCluster(namespace string, crd *opssightv1.OpsSight) error {
+	_, err := opssightClient.SynopsysV1().OpsSights(namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing OpsSight: %+v", err)
 	}
@@ -92,8 +92,8 @@ func getAlertSpecFromCluster(namespace string) (*alertv1.Alert, error) {
 }
 
 // updateAlertSpecInCluster updates the CRD for an Alert
-func updateAlertSpecInCluster(crd *alertv1.Alert) error {
-	_, err := alertClient.SynopsysV1().Alerts(crd.Namespace).Update(crd)
+func updateAlertSpecInCluster(namespace string, crd *alertv1.Alert) error {
+	_, err := alertClient.SynopsysV1().Alerts(namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing Alert: %+v", err)
 	}
@@ -120,7 +120,7 @@ func GetOperatorNamespace() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%s", namespace)
 	}
-	return destroyNamespace[1 : len(destroyNamespace)-1], nil
+	return destroyNamespace, nil
 }
 
 // RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.

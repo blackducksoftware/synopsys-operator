@@ -38,12 +38,12 @@ var deploySecretPostgresPassword = "YmxhY2tkdWNr"
 var deploySecretUserPassword = "YmxhY2tkdWNr"
 var deploySecretBlackduckPassword = "YmxhY2tkdWNr"
 
-//  Deploy Global Variables
+// Deploy Global Variables
 var secretType horizonapi.SecretType
 
-//  deployCmd represents the  deploy command
+// deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use:   " deploy [NAMESPACE]",
+	Use:   "deploy [NAMESPACE]",
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
@@ -72,7 +72,7 @@ var deployCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf(" Deploying the Synopsys-Operator: %s\n", deployNamespace)
+		log.Debugf("Deploying the Synopsys-Operator: %s\n", deployNamespace)
 		// Read Commandline Parameters
 		if len(args) == 1 {
 			deployNamespace = args[0]

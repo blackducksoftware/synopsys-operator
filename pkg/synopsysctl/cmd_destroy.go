@@ -22,10 +22,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//  Destroy Command Defaults
+// Destroy Command Defaults
 var destroyNamespace = "synopsys-operator"
 
-//  destroyCmd removes the Synopsys-Operator from the cluster
+// destroyCmd removes the Synopsys-Operator from the cluster
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
 	Short: "Removes the Synopsys-Operator and CRDs from Cluster",
@@ -43,7 +43,7 @@ var destroyCmd = &cobra.Command{
 			log.Errorf("Error finding Synopsys-Operator: %s", err)
 			return nil
 		}
-		log.Debugf(" Destroying the Synopsys-Operator: %s\n", destroyNamespace)
+		log.Debugf("Destroying the Synopsys-Operator: %s\n", destroyNamespace)
 		// Delete the namespace
 		out, err := RunKubeCmd("delete", "ns", destroyNamespace)
 		if err != nil {

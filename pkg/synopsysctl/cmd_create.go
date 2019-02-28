@@ -114,7 +114,8 @@ var createBlackduckCmd = &cobra.Command{
 		// Create and Deploy Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: blackduckName,
+				Name:      blackduckName,
+				Namespace: blackduckName,
 			},
 			Spec: blackduckSpec,
 		}
@@ -178,7 +179,8 @@ var createOpsSightCmd = &cobra.Command{
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: opsSightName,
+				Name:      opsSightName,
+				Namespace: opsSightName,
 			},
 			Spec: opssightSpec,
 		}
@@ -241,7 +243,8 @@ var createAlertCmd = &cobra.Command{
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: alertName,
+				Name:      alertName,
+				Namespace: alertName,
 			},
 			Spec: alertSpec,
 		}
@@ -282,13 +285,13 @@ func init() {
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command
-	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
+	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags")
 	createOpsSightCmd.Flags().BoolVar(&mockOpsSight, "mock", false, "Prints resource spec instead of creating")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command
-	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
+	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags")
 	createAlertCmd.Flags().BoolVar(&mockAlert, "mock", false, "Prints resource spec instead of creating")
 	createAlertCtl.AddSpecFlags(createAlertCmd)
 	createCmd.AddCommand(createAlertCmd)
