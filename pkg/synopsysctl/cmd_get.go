@@ -21,11 +21,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getCmd represents the get command
+// getCmd lists resources in the cluster
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "List Synopsys Resources in your cluster",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		// Display synopsysctl's Help instead of sending to oc/kubectl
 		if len(args) == 1 && args[0] == "--help" {
 			return fmt.Errorf("Help Called")
 		}
@@ -44,6 +45,7 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// getBlackduckCmd lists Blackducks in the cluster
 var getBlackduckCmd = &cobra.Command{
 	Use:     "blackduck",
 	Aliases: []string{"blackducks"},
@@ -66,6 +68,7 @@ var getBlackduckCmd = &cobra.Command{
 	},
 }
 
+// getOpsSightCmd lists OpsSights in the cluster
 var getOpsSightCmd = &cobra.Command{
 	Use:     "opssight",
 	Aliases: []string{"opssights"},
@@ -88,6 +91,7 @@ var getOpsSightCmd = &cobra.Command{
 	},
 }
 
+// getAlertCmd lists Alerts in the cluster
 var getAlertCmd = &cobra.Command{
 	Use:     "alert",
 	Aliases: []string{"alerts"},

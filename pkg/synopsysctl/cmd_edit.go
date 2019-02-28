@@ -35,6 +35,7 @@ var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		// Display synopsysctl's Help instead of sending to oc/kubectl
 		if len(args) == 1 && args[0] == "--help" {
 			return fmt.Errorf("Help Called")
 		}
@@ -78,8 +79,8 @@ var editBlackduckCmd = &cobra.Command{
 				return nil
 			}
 			editBlackduckCtl.SetSpec(bd.Spec)
-			// Update Spec with Changes from Flags
-			flagset.VisitAll(editBlackduckCtl.SetFlags)
+			// Update Spec with User's Flags
+			editBlackduckCtl.SetChangedFlags(flagset)
 			// Update Blackduck with Updates
 			blackduckSpec := editBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
 			bd.Spec = blackduckSpec
@@ -272,8 +273,8 @@ var editOpsSightCmd = &cobra.Command{
 				return nil
 			}
 			editOpsSightCtl.SetSpec(ops.Spec)
-			// Update Spec with Changes from Flags
-			flagset.VisitAll(editOpsSightCtl.SetFlags)
+			// Update Spec with User's Flags
+			editOpsSightCtl.SetChangedFlags(flagset)
 			// Update OpsSight with Updates
 			opsSightSpec := editOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
 			ops.Spec = opsSightSpec
@@ -389,8 +390,8 @@ var editAlertCmd = &cobra.Command{
 				return nil
 			}
 			editAlertCtl.SetSpec(alt.Spec)
-			// Update Spec with Changes from Flags
-			flagset.VisitAll(editAlertCtl.SetFlags)
+			// Update Spec with User's Flags
+			editAlertCtl.SetChangedFlags(flagset)
 			// Update Alert with Updates
 			alertSpec := editAlertCtl.GetSpec().(alertv1.AlertSpec)
 			alt.Spec = alertSpec
@@ -411,6 +412,7 @@ var editAlertCmd = &cobra.Command{
 }
 
 func init() {
+	// initialize global resource ctl structs for commands to use
 	editBlackduckCtl = NewBlackduckCtl()
 	editOpsSightCtl = NewOpsSightCtl()
 	editAlertCtl = NewAlertCtl()
@@ -418,7 +420,7 @@ func init() {
 	editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
 	rootCmd.AddCommand(editCmd)
 
-	// Add Blackduck Commands
+	// Add Blackduck Edit Commands
 	editBlackduckCtl.AddSpecFlags(editBlackduckCmd)
 	editCmd.AddCommand(editBlackduckCmd)
 
@@ -432,14 +434,14 @@ func init() {
 
 	editBlackduckCmd.AddCommand(editBlackduckAddUIDCmd)
 
-	// Add OpsSight Commands
+	// Add OpsSight Edit Commands
 	editOpsSightCtl.AddSpecFlags(editOpsSightCmd)
 	editCmd.AddCommand(editOpsSightCmd)
 
 	editOpsSightCmd.AddCommand(editOpsSightAddRegistryCmd)
 	editOpsSightCmd.AddCommand(editOpsSightAddHostCmd)
 
-	// Add Alert Spec Flags
+	// Add Alert Edit Comamnds
 	editAlertCtl.AddSpecFlags(editAlertCmd)
 	editCmd.AddCommand(editAlertCmd)
 }

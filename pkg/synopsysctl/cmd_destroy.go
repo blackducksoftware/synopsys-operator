@@ -22,12 +22,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//  estroy Command Defaults
+//  Destroy Command Defaults
 var destroyNamespace = "synopsys-operator"
 
-//  destroyCmd represents the  destroy command
+//  destroyCmd removes the Synopsys-Operator from the cluster
 var destroyCmd = &cobra.Command{
-	Use:   " destroy",
+	Use:   "destroy",
 	Short: "Removes the Synopsys-Operator and CRDs from Cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
@@ -37,9 +37,13 @@ var destroyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		destroyNamespace := GetOperatorNamespace()
-		// remove quotes
-		log.Debugf(" Destroyping the Synopsys-Operator: %s\n", destroyNamespace)
+		// Get the namespace of the Synopsys-Operator
+		destroyNamespace, err := GetOperatorNamespace()
+		if err != nil {
+			log.Errorf("Error finding Synopsys-Operator: %s", err)
+			return nil
+		}
+		log.Debugf(" Destroying the Synopsys-Operator: %s\n", destroyNamespace)
 		// Delete the namespace
 		out, err := RunKubeCmd("delete", "ns", destroyNamespace)
 		if err != nil {
@@ -57,12 +61,11 @@ var destroyCmd = &cobra.Command{
 		}
 
 		for cmd := range cleanCommands {
-			fmt.Printf("Command: %s\n", cleanCommands[cmd])
 			out, err = RunKubeCmd(strings.Split(cleanCommands[cmd], " ")...)
 			if err != nil {
-				fmt.Printf(" > %s", out)
+				log.Debugf("Command: %s\n > %s", cleanCommands[cmd], out)
 			} else {
-				fmt.Printf(" > %s", out)
+				log.Debugf("Command: %s\n > %s", cleanCommands[cmd], out)
 			}
 		}
 		return nil

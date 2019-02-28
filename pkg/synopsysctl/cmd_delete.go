@@ -22,11 +22,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// deleteCmd represents the delete command
+// deleteCmd deletes a resource from the cluster
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Remove a Synopsys Resource from your cluster",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		// Display synopsysctl's Help instead of sending to oc/kubectl
 		if len(args) == 1 && args[0] == "--help" {
 			return fmt.Errorf("Help Called")
 		}
@@ -45,6 +46,7 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
+// deleteBlackduckCmd deletes a Blackduck from the cluster
 var deleteBlackduckCmd = &cobra.Command{
 	Use:   "blackduck NAMESPACE",
 	Short: "Delete a Blackduck",
@@ -69,6 +71,7 @@ var deleteBlackduckCmd = &cobra.Command{
 	},
 }
 
+// deleteOpsSightCmd deletes an OpsSight from the cluster
 var deleteOpsSightCmd = &cobra.Command{
 	Use:   "opssight NAMESPACE",
 	Short: "Delete an OpsSight",
@@ -93,6 +96,7 @@ var deleteOpsSightCmd = &cobra.Command{
 	},
 }
 
+// deleteAlertCmd deletes an Alert from the cluster
 var deleteAlertCmd = &cobra.Command{
 	Use:   "alert NAMESPACE",
 	Short: "Delete an Alert",

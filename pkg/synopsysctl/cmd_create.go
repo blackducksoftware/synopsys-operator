@@ -26,16 +26,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Resource Ctl for create
+// Resource Ctls for Create Command
 var createBlackduckCtl ResourceCtl
 var createOpsSightCtl ResourceCtl
 var createAlertCtl ResourceCtl
 
-// Create Flags
+// Flags for the Base Spec (template)
 var baseBlackduckSpec = "persistentStorage"
 var baseOpsSightSpec = "disabledBlackduck"
 var baseAlertSpec = "spec1"
 
+// Flags for using mock mode - don't deploy
 var mockBlackduck bool
 var mockOpsSight bool
 var mockAlert bool
@@ -52,6 +53,7 @@ var createCmd = &cobra.Command{
 		return nil
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		// Display synopsysctl's Help instead of sending to oc/kubectl
 		if len(args) == 1 && args[0] == "--help" {
 			return fmt.Errorf("Help Called")
 		}
@@ -99,9 +101,8 @@ var createBlackduckCmd = &cobra.Command{
 			blackduckName = args[0]
 		}
 
-		// Read Flags Into Default Blackduck Spec
-		flagset := cmd.Flags()
-		flagset.VisitAll(createBlackduckCtl.SetFlags)
+		// Update Spec with user's flags
+		createBlackduckCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
 		blackduckSpec, _ := createBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
@@ -164,9 +165,8 @@ var createOpsSightCmd = &cobra.Command{
 			opsSightName = args[0]
 		}
 
-		// Read Flags Into Default OpsSight Spec
-		flagset := cmd.Flags()
-		flagset.VisitAll(createOpsSightCtl.SetFlags)
+		// Update Spec with user's flags
+		createOpsSightCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
 		opssightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
@@ -228,9 +228,8 @@ var createAlertCmd = &cobra.Command{
 			alertName = args[0]
 		}
 
-		// Read Flags Into Default Alert Spec
-		flagset := cmd.Flags()
-		flagset.VisitAll(createAlertCtl.SetFlags)
+		// Update Spec with user's flags
+		createAlertCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
 		alertSpec, _ := createAlertCtl.GetSpec().(alertv1.AlertSpec)
@@ -265,6 +264,7 @@ var createAlertCmd = &cobra.Command{
 }
 
 func init() {
+	// initialize global resource ctl structs for commands to use
 	createBlackduckCtl = NewBlackduckCtl()
 	createOpsSightCtl = NewOpsSightCtl()
 	createAlertCtl = NewAlertCtl()
@@ -272,19 +272,19 @@ func init() {
 	createCmd.DisableFlagParsing = true // lets createCmd pass flags to kube/oc
 	rootCmd.AddCommand(createCmd)
 
-	// Add Blackduck Command Flags
+	// Add Blackduck Command
 	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createBlackduckCmd.Flags().BoolVar(&mockBlackduck, "mock", false, "Prints resource spec instead of creating")
 	createBlackduckCtl.AddSpecFlags(createBlackduckCmd)
 	createCmd.AddCommand(createBlackduckCmd)
 
-	// Add OpsSight Command Flags
+	// Add OpsSight Command
 	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createOpsSightCmd.Flags().BoolVar(&mockOpsSight, "mock", false, "Prints resource spec instead of creating")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd)
 	createCmd.AddCommand(createOpsSightCmd)
 
-	// Add Alert Command Flags
+	// Add Alert Command
 	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createAlertCmd.Flags().BoolVar(&mockAlert, "mock", false, "Prints resource spec instead of creating")
 	createAlertCtl.AddSpecFlags(createAlertCmd)

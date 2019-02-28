@@ -118,10 +118,16 @@ func (ctl *AlertCtl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.State, "alert-state", ctl.State, "State of the Alert")
 }
 
-// SetFlags sets the Alert's Spec if a flag was changed
-func (ctl *AlertCtl) SetFlags(f *pflag.Flag) {
+// SetChangedFlags visits every flag and calls setFlag to update
+// the resource's spec
+func (ctl *AlertCtl) SetChangedFlags(flagset *pflag.FlagSet) {
+	flagset.VisitAll(ctl.setFlag)
+}
+
+// setFlag sets an Alert's Spec field if its flag was changed
+func (ctl *AlertCtl) setFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s:   CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
 		case "alert-registry":
 			ctl.Spec.Registry = ctl.Registry

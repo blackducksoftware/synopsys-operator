@@ -159,7 +159,7 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		// secret link stuff
+		// create secrets (TDDO I think this only works on OpenShift)
 		RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", deployDockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
 		RunKubeCmd("secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
 		RunKubeCmd("secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")

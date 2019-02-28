@@ -15,12 +15,10 @@
 package synopsysctl
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
@@ -48,54 +46,62 @@ var alertClient *alertclientset.Clientset
 var openshift bool
 var kube bool
 
-func getBlackduckSpecFromCluster(name string) (*blackduckv1.Blackduck, error) {
-	blackduck, err := blackduckClient.SynopsysV1().Blackducks(name).Get(name, metav1.GetOptions{})
+// getBlackduckSpecFromCluster returns the CRD for a blackduck in namespace
+func getBlackduckSpecFromCluster(namespace string) (*blackduckv1.Blackduck, error) {
+	blackduck, err := blackduckClient.SynopsysV1().Blackducks(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		return blackduck, fmt.Errorf("Error Editing Blackduck: %+v", err)
 	}
 	return blackduck, nil
 }
 
-func updateBlackduckSpecInCluster(spec *blackduckv1.Blackduck) error {
-	_, err := blackduckClient.SynopsysV1().Blackducks(spec.Name).Update(spec)
+// updateBlackduckSpecInCluster updates the CRD for a blackduck
+func updateBlackduckSpecInCluster(crd *blackduckv1.Blackduck) error {
+	_, err := blackduckClient.SynopsysV1().Blackducks(crd.Namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing Blackduck: %+v", err)
 	}
 	return nil
 }
 
-func getOpsSightSpecFromCluster(name string) (*opssightv1.OpsSight, error) {
-	opssight, err := opssightClient.SynopsysV1().OpsSights(name).Get(name, metav1.GetOptions{})
+// getOpsSightSpecFromCluster returns the CRD for an OpsSight in namespace
+func getOpsSightSpecFromCluster(namespace string) (*opssightv1.OpsSight, error) {
+	opssight, err := opssightClient.SynopsysV1().OpsSights(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		return opssight, fmt.Errorf("Error Editing OpsSight: %+v", err)
 	}
 	return opssight, nil
 }
 
-func updateOpsSightSpecInCluster(spec *opssightv1.OpsSight) error {
-	_, err := opssightClient.SynopsysV1().OpsSights(spec.Name).Update(spec)
+// updateOpsSightSpecInCluster updates the CRD for an OpsSight
+func updateOpsSightSpecInCluster(crd *opssightv1.OpsSight) error {
+	_, err := opssightClient.SynopsysV1().OpsSights(crd.Namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing OpsSight: %+v", err)
 	}
 	return nil
 }
 
-func getAlertSpecFromCluster(name string) (*alertv1.Alert, error) {
-	alert, err := alertClient.SynopsysV1().Alerts(name).Get(name, metav1.GetOptions{})
+// getAlertSpecFromCluster returns the CRD for an Alert in namespace
+func getAlertSpecFromCluster(namespace string) (*alertv1.Alert, error) {
+	alert, err := alertClient.SynopsysV1().Alerts(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		return alert, fmt.Errorf("Error Editing Alert: %+v", err)
 	}
 	return alert, nil
 }
 
-func updateAlertSpecInCluster(spec *alertv1.Alert) error {
-	_, err := alertClient.SynopsysV1().Alerts(spec.Name).Update(spec)
+// updateAlertSpecInCluster updates the CRD for an Alert
+func updateAlertSpecInCluster(crd *alertv1.Alert) error {
+	_, err := alertClient.SynopsysV1().Alerts(crd.Namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing Alert: %+v", err)
 	}
 	return nil
 }
 
+// determineClusterClients sets bool values to true
+// if it can find kube/oc in the path
 func determineClusterClients() {
 	_, exists := exec.LookPath("kubectl")
 	if exists == nil {
@@ -109,13 +115,12 @@ func determineClusterClients() {
 
 // GetOperatorNamespace returns the namespace of the Synopsys-Operator by
 // looking at its cluster role binding
-func GetOperatorNamespace() string {
+func GetOperatorNamespace() (string, error) {
 	namespace, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 	if err != nil {
-		log.Errorf("%s", namespace)
-		return ""
+		return "", fmt.Errorf("%s", namespace)
 	}
-	return destroyNamespace[1 : len(destroyNamespace)-1]
+	return destroyNamespace[1 : len(destroyNamespace)-1], nil
 }
 
 // RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
@@ -172,35 +177,8 @@ func RunKubeEditorCmd(args ...string) error {
 	return nil
 }
 
-// RunWithTimeout runs a command and times it out at the specified duration
-func RunWithTimeout(cmd *exec.Cmd, d time.Duration) (string, error) {
-	timeout := time.After(d)
-
-	// Use a bytes.Buffer to get the output
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-
-	cmd.Start()
-
-	// Use a channel to signal completion so we can use a select statement
-	done := make(chan error)
-	go func() { done <- cmd.Wait() }()
-
-	// The select statement allows us to execute based on which channel
-	// we get a message from first.
-	select {
-	case <-timeout:
-		// Timeout happened first, kill the process and print a message.
-		cmd.Process.Kill()
-		return buf.String(), fmt.Errorf("Killed due to timeout")
-	case err := <-done:
-		if err != nil {
-			return buf.String(), nil
-		}
-		return buf.String(), err
-	}
-}
-
+// setResourceClients sets the global variables for the kuberentes rest config
+// and the resource clients
 func setResourceClients() {
 	restconfig = getKubeRestConfig()
 	bClient, err := blackduckclientset.NewForConfig(restconfig)
@@ -235,7 +213,7 @@ func getKubeRestConfig() *rest.Config {
 	var restconfig *rest.Config
 	var err error
 	if masterURL == "" && kubeconfigpath == "" {
-		restconfig, err = rest.InClusterConfig() // if no paths then in cluster
+		restconfig, err = rest.InClusterConfig() // if no paths then use in-cluster config
 	} else {
 		restconfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			&clientcmd.ClientConfigLoadingRules{
@@ -263,7 +241,6 @@ func homeDir() string {
 
 // DeployCRDNamespace creates an empty Horizon namespace
 func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
-	// Create Horizon Deployer
 	namespaceDeployer, err := deployer.NewDeployer(restconfig)
 	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
 		Name:      namespace,

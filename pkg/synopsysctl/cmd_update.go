@@ -37,7 +37,11 @@ var updateOperatorCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		namespace := GetOperatorNamespace()
+		namespace, err := GetOperatorNamespace()
+		if err != nil {
+			log.Errorf("Error finding Synopsys-Operator: %s", err)
+			return nil
+		}
 		log.Debugf("Updating the Synopsys-Operator: %s\n", namespace)
 		return nil
 	},

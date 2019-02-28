@@ -151,7 +151,7 @@ func (ctl *BlackduckCtl) SwitchSpec(createBlackduckSpecType string) error {
 
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
 func (ctl *BlackduckCtl) AddSpecFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, " size - small, medium, large")
+	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "TODO")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "Port for Postgres")
@@ -177,10 +177,16 @@ func (ctl *BlackduckCtl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
 }
 
-// SetFlags sets the Blackduck's Spec if a flag was changed
-func (ctl *BlackduckCtl) SetFlags(f *pflag.Flag) {
+// SetChangedFlags visits every flag and calls setFlag to update
+// the resource's spec
+func (ctl *BlackduckCtl) SetChangedFlags(flagset *pflag.FlagSet) {
+	flagset.VisitAll(ctl.setFlag)
+}
+
+// setFlag sets a Blackduck's Spec field if its flag was changed
+func (ctl *BlackduckCtl) setFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s:   CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
 		case "size":
 			ctl.Spec.Size = ctl.Size

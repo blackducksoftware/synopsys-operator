@@ -264,10 +264,16 @@ func (ctl *OpsSightCtl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.SecretName, "secret-name", ctl.SecretName, "Name of the secret for OpsSight")
 }
 
-// SetFlags sets the OpsSight's Spec if a flag was changed
-func (ctl *OpsSightCtl) SetFlags(f *pflag.Flag) {
+// SetChangedFlags visits every flag and calls setFlag to update
+// the resource's spec
+func (ctl *OpsSightCtl) SetChangedFlags(flagset *pflag.FlagSet) {
+	flagset.VisitAll(ctl.setFlag)
+}
+
+// setFlag sets an OpsSights's Spec field if its flag was changed
+func (ctl *OpsSightCtl) setFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s:   CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
 		case "perceptor-name":
 			if ctl.Spec.Perceptor == nil {

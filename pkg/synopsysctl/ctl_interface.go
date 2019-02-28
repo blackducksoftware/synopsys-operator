@@ -22,10 +22,11 @@ import (
 // ResourceCtl interface defines functions that other
 // ctl types for resources should define
 type ResourceCtl interface {
-	CheckSpecFlags() error       // returns an error if a flag format is invalid
-	GetSpec() interface{}        // returns spec for the resource
-	SetSpec(interface{}) error   // sets the spec
-	SwitchSpec(string) error     // change the spec for the resource
-	AddSpecFlags(*cobra.Command) // Add flags for the resource spec
-	SetFlags(*pflag.Flag)        // update the spec with flags that changed
+	CheckSpecFlags() error          // returns an error if a flag format is invalid
+	GetSpec() interface{}           // returns spec for the resource
+	SetSpec(interface{}) error      // sets the spec
+	SwitchSpec(string) error        // change the spec for the resource
+	AddSpecFlags(*cobra.Command)    // Add flags for the resource spec
+	SetChangedFlags(*pflag.FlagSet) // calls setFlag on each flag in flagset
+	setFlag(*pflag.Flag)            // updates the spec value for the flag
 }

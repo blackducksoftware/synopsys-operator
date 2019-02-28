@@ -21,11 +21,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// describeCmd represents the describe command
+// describeCmd prints the CRD for a resource
 var describeCmd = &cobra.Command{
 	Use:   "describe",
 	Short: "Print a detailed description of the selected resource",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		// Display synopsysctl's Help instead of sending to oc/kubectl
 		if len(args) == 1 && args[0] == "--help" {
 			return fmt.Errorf("Help Called")
 		}
@@ -44,6 +45,7 @@ var describeCmd = &cobra.Command{
 	},
 }
 
+// describeBlackduckCmd prints the CRD for a Blackduck
 var describeBlackduckCmd = &cobra.Command{
 	Use:   "blackduck NAMESPACE",
 	Short: "Describe an instance of Blackduck",
@@ -68,6 +70,7 @@ var describeBlackduckCmd = &cobra.Command{
 	},
 }
 
+// describeOpsSightCmd prints the CRD for an OpsSight
 var describeOpsSightCmd = &cobra.Command{
 	Use:   "opssight NAMESPACE",
 	Short: "Describe an instance of OpsSight",
@@ -92,6 +95,7 @@ var describeOpsSightCmd = &cobra.Command{
 	},
 }
 
+// describeAlertCmd prints the CRD for an Alert
 var describeAlertCmd = &cobra.Command{
 	Use:   "alert NAMESPACE",
 	Short: "Describe an instance of Alert",
