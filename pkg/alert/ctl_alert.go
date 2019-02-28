@@ -24,9 +24,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// AlertCtl type provides functionality for an Alert
+// Ctl type provides functionality for an Alert
 // for the Synopsysctl tool
-type AlertCtl struct {
+type Ctl struct {
 	Spec              *alertv1.AlertSpec
 	Registry          string
 	ImagePath         string
@@ -45,8 +45,8 @@ type AlertCtl struct {
 }
 
 // NewAlertCtl creates a new AlertCtl struct
-func NewAlertCtl() *AlertCtl {
-	return &AlertCtl{
+func NewAlertCtl() *Ctl {
+	return &Ctl{
 		Spec:              &alertv1.AlertSpec{},
 		Registry:          "",
 		ImagePath:         "",
@@ -66,12 +66,12 @@ func NewAlertCtl() *AlertCtl {
 }
 
 // GetSpec returns the Spec for the resource
-func (ctl *AlertCtl) GetSpec() interface{} {
+func (ctl *Ctl) GetSpec() interface{} {
 	return *ctl.Spec
 }
 
 // SetSpec sets the Spec for the resource
-func (ctl *AlertCtl) SetSpec(spec interface{}) error {
+func (ctl *Ctl) SetSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(alertv1.AlertSpec)
 	if !ok {
 		return fmt.Errorf("Error setting Alert Spec")
@@ -81,12 +81,12 @@ func (ctl *AlertCtl) SetSpec(spec interface{}) error {
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *AlertCtl) CheckSpecFlags() error {
+func (ctl *Ctl) CheckSpecFlags() error {
 	return nil
 }
 
 // SwitchSpec switches the Alert's Spec to a different predefined spec
-func (ctl *AlertCtl) SwitchSpec(createAlertSpecType string) error {
+func (ctl *Ctl) SwitchSpec(createAlertSpecType string) error {
 	switch createAlertSpecType {
 	case "empty":
 		ctl.Spec = &alertv1.AlertSpec{}
@@ -101,7 +101,7 @@ func (ctl *AlertCtl) SwitchSpec(createAlertSpecType string) error {
 }
 
 // AddSpecFlags adds flags for the Alert's Spec to the command
-func (ctl *AlertCtl) AddSpecFlags(cmd *cobra.Command) {
+func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
 	cmd.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
 	cmd.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
@@ -120,12 +120,12 @@ func (ctl *AlertCtl) AddSpecFlags(cmd *cobra.Command) {
 
 // SetChangedFlags visits every flag and calls setFlag to update
 // the resource's spec
-func (ctl *AlertCtl) SetChangedFlags(flagset *pflag.FlagSet) {
-	flagset.VisitAll(ctl.setFlag)
+func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
+	flagset.VisitAll(ctl.SetFlag)
 }
 
-// setFlag sets an Alert's Spec field if its flag was changed
-func (ctl *AlertCtl) setFlag(f *pflag.Flag) {
+// SetFlag sets an Alert's Spec field if its flag was changed
+func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {

@@ -31,9 +31,9 @@ type uid struct {
 	Value int64  `json:"value"`
 }
 
-// BlackduckCtl type provides functionality for a Blackduck
+// Ctl type provides functionality for a Blackduck
 // for the Synopsysctl tool
-type BlackduckCtl struct {
+type Ctl struct {
 	Spec                                  *blackduckv1.BlackduckSpec
 	Size                                  string
 	DbPrototype                           string
@@ -61,9 +61,9 @@ type BlackduckCtl struct {
 	LicenseKey                            string
 }
 
-// NewBlackduckCtl creates a new BlackduckCtl struct
-func NewBlackduckCtl() *BlackduckCtl {
-	return &BlackduckCtl{
+// NewBlackduckCtl creates a new Ctl struct
+func NewBlackduckCtl() *Ctl {
+	return &Ctl{
 		Spec:                                  &blackduckv1.BlackduckSpec{},
 		Size:                                  "",
 		DbPrototype:                           "",
@@ -93,12 +93,12 @@ func NewBlackduckCtl() *BlackduckCtl {
 }
 
 // GetSpec returns the Spec for the resource
-func (ctl *BlackduckCtl) GetSpec() interface{} {
+func (ctl *Ctl) GetSpec() interface{} {
 	return *ctl.Spec
 }
 
 // SetSpec sets the Spec for the resource
-func (ctl *BlackduckCtl) SetSpec(spec interface{}) error {
+func (ctl *Ctl) SetSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(blackduckv1.BlackduckSpec)
 	if !ok {
 		return fmt.Errorf("Error setting Blackduck Spec")
@@ -108,7 +108,7 @@ func (ctl *BlackduckCtl) SetSpec(spec interface{}) error {
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *BlackduckCtl) CheckSpecFlags() error {
+func (ctl *Ctl) CheckSpecFlags() error {
 	if ctl.Size != "" && ctl.Size != "small" && ctl.Size != "medium" && ctl.Size != "large" && ctl.Size != "xlarge" {
 		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'xlarge'")
 	}
@@ -135,7 +135,7 @@ func (ctl *BlackduckCtl) CheckSpecFlags() error {
 }
 
 // SwitchSpec switches the Blackduck's Spec to a different predefined spec
-func (ctl *BlackduckCtl) SwitchSpec(createBlackduckSpecType string) error {
+func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
 	case "empty":
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
@@ -150,7 +150,7 @@ func (ctl *BlackduckCtl) SwitchSpec(createBlackduckSpecType string) error {
 }
 
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
-func (ctl *BlackduckCtl) AddSpecFlags(cmd *cobra.Command) {
+func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "TODO")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
@@ -179,12 +179,12 @@ func (ctl *BlackduckCtl) AddSpecFlags(cmd *cobra.Command) {
 
 // SetChangedFlags visits every flag and calls setFlag to update
 // the resource's spec
-func (ctl *BlackduckCtl) SetChangedFlags(flagset *pflag.FlagSet) {
-	flagset.VisitAll(ctl.setFlag)
+func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
+	flagset.VisitAll(ctl.SetFlag)
 }
 
-// setFlag sets a Blackduck's Spec field if its flag was changed
-func (ctl *BlackduckCtl) setFlag(f *pflag.Flag) {
+// SetFlag sets a Blackduck's Spec field if its flag was changed
+func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {

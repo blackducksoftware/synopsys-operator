@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// OpsSightCtl type provides functionality for an OpsSight
+// Ctl type provides functionality for an OpsSight
 // for the Synopsysctl tool
-type OpsSightCtl struct {
+type Ctl struct {
 	Spec                                             *opssightv1.OpsSightSpec
 	PerceptorName                                    string
 	PerceptorImage                                   string
@@ -91,9 +91,9 @@ type OpsSightCtl struct {
 	SecretName                                       string
 }
 
-// NewOpsSightCtl creates a new OpsSightCtl struct
-func NewOpsSightCtl() *OpsSightCtl {
-	return &OpsSightCtl{
+// NewOpsSightCtl creates a new Ctl struct
+func NewOpsSightCtl() *Ctl {
+	return &Ctl{
 		Spec:                                             &opssightv1.OpsSightSpec{},
 		PerceptorName:                                    "",
 		PerceptorImage:                                   "",
@@ -159,12 +159,12 @@ func NewOpsSightCtl() *OpsSightCtl {
 }
 
 // GetSpec returns the Spec for the resource
-func (ctl *OpsSightCtl) GetSpec() interface{} {
+func (ctl *Ctl) GetSpec() interface{} {
 	return *ctl.Spec
 }
 
 // SetSpec sets the Spec for the resource
-func (ctl *OpsSightCtl) SetSpec(spec interface{}) error {
+func (ctl *Ctl) SetSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(opssightv1.OpsSightSpec)
 	if !ok {
 		return fmt.Errorf("Error setting OpsSight Spec")
@@ -174,7 +174,7 @@ func (ctl *OpsSightCtl) SetSpec(spec interface{}) error {
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *OpsSightCtl) CheckSpecFlags() error {
+func (ctl *Ctl) CheckSpecFlags() error {
 	for _, registryJSON := range ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice {
 		registry := &opssightv1.RegistryAuth{}
 		err := json.Unmarshal([]byte(registryJSON), registry)
@@ -186,7 +186,7 @@ func (ctl *OpsSightCtl) CheckSpecFlags() error {
 }
 
 // SwitchSpec switches the OpsSight's Spec to a different predefined spec
-func (ctl *OpsSightCtl) SwitchSpec(createOpsSightSpecType string) error {
+func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
 	case "empty":
 		ctl.Spec = &opssightv1.OpsSightSpec{}
@@ -201,7 +201,7 @@ func (ctl *OpsSightCtl) SwitchSpec(createOpsSightSpecType string) error {
 }
 
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
-func (ctl *OpsSightCtl) AddSpecFlags(cmd *cobra.Command) {
+func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.PerceptorName, "perceptor-name", ctl.PerceptorName, "Name of the Perceptor")
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "perceptor-image", ctl.PerceptorImage, "Image of the Perceptor")
 	cmd.Flags().IntVar(&ctl.PerceptorPort, "perceptor-port", ctl.PerceptorPort, "Port for the Perceptor")
@@ -266,12 +266,12 @@ func (ctl *OpsSightCtl) AddSpecFlags(cmd *cobra.Command) {
 
 // SetChangedFlags visits every flag and calls setFlag to update
 // the resource's spec
-func (ctl *OpsSightCtl) SetChangedFlags(flagset *pflag.FlagSet) {
-	flagset.VisitAll(ctl.setFlag)
+func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
+	flagset.VisitAll(ctl.SetFlag)
 }
 
-// setFlag sets an OpsSights's Spec field if its flag was changed
-func (ctl *OpsSightCtl) setFlag(f *pflag.Flag) {
+// SetFlag sets an OpsSights's Spec field if its flag was changed
+func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {

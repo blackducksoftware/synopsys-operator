@@ -28,5 +28,5 @@ type ResourceCtl interface {
 	SwitchSpec(string) error        // change the spec for the resource
 	AddSpecFlags(*cobra.Command)    // Add flags for the resource spec
 	SetChangedFlags(*pflag.FlagSet) // calls setFlag on each flag in flagset
-	setFlag(*pflag.Flag)            // updates the spec value for the flag
+	SetFlag(*pflag.Flag)            // updates the spec value for the flag
 }
