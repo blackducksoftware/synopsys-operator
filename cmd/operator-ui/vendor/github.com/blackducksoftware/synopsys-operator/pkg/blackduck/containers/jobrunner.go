@@ -33,7 +33,7 @@ func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
 	jobRunnerEnvs := c.allConfigEnv
 	jobRunnerEnvs = append(jobRunnerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "jobrunner-mem", FromName: "hub-config-resources"})
 	jobRunnerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "jobrunner", Image: c.getFullContainerName("jobrunner"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "jobrunner", Image: c.GetFullContainerName("jobrunner"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.JobRunnerMemoryLimit, MaxMem: c.hubContainerFlavor.JobRunnerMemoryLimit, MinCPU: jobRunnerMinCPUUsage, MaxCPU: jobRunnerMaxCPUUsage},
 		EnvConfigs: jobRunnerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
