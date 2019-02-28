@@ -18,9 +18,12 @@ import (
 	"fmt"
 	"strconv"
 
+	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
+	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -413,9 +416,9 @@ var editAlertCmd = &cobra.Command{
 
 func init() {
 	// initialize global resource ctl structs for commands to use
-	editBlackduckCtl = NewBlackduckCtl()
-	editOpsSightCtl = NewOpsSightCtl()
-	editAlertCtl = NewAlertCtl()
+	editBlackduckCtl = blackduck.NewBlackduckCtl()
+	editOpsSightCtl = opssight.NewOpsSightCtl()
+	editAlertCtl = alert.NewAlertCtl()
 
 	editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
 	rootCmd.AddCommand(editCmd)

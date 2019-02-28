@@ -18,9 +18,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
+	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -265,9 +268,9 @@ var createAlertCmd = &cobra.Command{
 
 func init() {
 	// initialize global resource ctl structs for commands to use
-	createBlackduckCtl = NewBlackduckCtl()
-	createOpsSightCtl = NewOpsSightCtl()
-	createAlertCtl = NewAlertCtl()
+	createBlackduckCtl = blackduck.NewBlackduckCtl()
+	createOpsSightCtl = opssight.NewOpsSightCtl()
+	createAlertCtl = alert.NewAlertCtl()
 
 	createCmd.DisableFlagParsing = true // lets createCmd pass flags to kube/oc
 	rootCmd.AddCommand(createCmd)
