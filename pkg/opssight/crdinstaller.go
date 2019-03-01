@@ -103,7 +103,7 @@ func (c *CRDInstaller) Deploy() error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	configMapEditor := NewConfigMapUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
+	configMapEditor := NewUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
 	configMapEditor.Run(c.config.StopCh)
 
 	return nil

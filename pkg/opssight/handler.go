@@ -29,7 +29,6 @@ import (
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -72,46 +71,54 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 	log.Debugf("objectCreated: %+v", obj)
 	opssightv1, ok := obj.(*opssight_v1.OpsSight)
 	if !ok {
-		return errors.Errorf("unable to cast")
+		return errors.Errorf("unable to cast opssight object")
 	}
-	if !strings.EqualFold(opssightv1.Spec.State, "") {
-		return nil // ??? why nil?
-	}
-	newSpec := opssightv1.Spec
-	defaultSpec := h.Defaults
-	err := mergo.Merge(&newSpec, defaultSpec)
-	if err != nil {
-		recordError("unable to merge objects")
-		h.updateState("error", "error", err.Error(), opssightv1)
-		return errors.Annotate(err, "unable to merge objects")
-	}
-	bytes, err := json.Marshal(newSpec)
-	log.Debugf("merged opssight details: %+v", newSpec)
-	log.Debugf("opssight json (%+v): %s", err, string(bytes))
 
-	opssightv1.Spec = newSpec
-	opssightv1, err = h.updateState("pending", "creating", "", opssightv1)
+	if !strings.EqualFold(opssightv1.Status.State, "") {
+		return nil // controller restarted
+	}
+
+	newSpec, err := h.mergeOpsSightWithDefaultValues(opssightv1)
+	if err != nil {
+		recordError("unable to merge default and new objects")
+		h.updateState("error", err.Error(), opssightv1)
+		return errors.Annotate(err, "unable to merge default and new objects")
+	}
+
+	opssightv1.Spec = *newSpec
+	opssightv1, err = h.updateState("creating", "", opssightv1)
 	if err != nil {
 		recordError("unable to update state")
 		return errors.Annotate(err, "unable to update state")
 	}
-	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
 
+	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.Clientset, h.OpsSightClientset, h.OSSecurityClient, h.RouteClient, h.HubClient)
 	err = opssightCreator.CreateOpsSight(&opssightv1.Spec)
 	if err != nil {
 		recordError("unable to create opssight")
-		h.updateState("error", "error", err.Error(), opssightv1)
+		h.updateState("error", err.Error(), opssightv1)
 		return errors.Annotatef(err, "unable to create opssight %s", opssightv1.Name)
 	}
 
-	opssightv1, err = util.GetOpsSight(h.OpsSightClientset, opssightv1.Name, opssightv1.Name)
-	if err != nil {
-		recordError("unable to get opssight")
-		return errors.Annotatef(err, "unable to get the opssight %s", opssightv1.Name)
-	}
+	// opssightv1, err = util.GetOpsSight(h.OpsSightClientset, opssightv1.Name, opssightv1.Name)
+	// if err != nil {
+	// 	recordError("unable to get opssight")
+	// 	return errors.Annotatef(err, "unable to get the opssight %s", opssightv1.Name)
+	// }
 
-	h.updateState("running", "running", "", opssightv1)
+	h.updateState("running", "", opssightv1)
 	return nil
+}
+
+func (h *Handler) mergeOpsSightWithDefaultValues(opssightv1 *opssight_v1.OpsSight) (newSpec *opssight_v1.OpsSightSpec, err error) {
+	defaultSpec := h.Defaults
+	err = mergo.Merge(&newSpec, defaultSpec)
+	if err == nil {
+		bytes, err := json.Marshal(newSpec)
+		log.Debugf("merged opssight details: %+v", newSpec)
+		log.Debugf("opssight json (%+v): %s", err, string(bytes))
+	}
+	return newSpec, err
 }
 
 // ObjectDeleted will be called for delete opssight events
@@ -132,8 +139,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("objectUpdated: %+v", objNew)
 }
 
-func (h *Handler) updateState(specState string, statusState string, errorMessage string, opssight *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
-	opssight.Spec.State = specState
+func (h *Handler) updateState(statusState string, errorMessage string, opssight *opssight_v1.OpsSight) (*opssight_v1.OpsSight, error) {
 	opssight.Status.State = statusState
 	opssight.Status.ErrorMessage = errorMessage
 	opssight, err := h.updateOpsSightObject(opssight)

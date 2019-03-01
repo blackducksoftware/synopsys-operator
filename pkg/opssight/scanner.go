@@ -57,7 +57,11 @@ func (p *SpecConfig) scannerPod() (*components.Pod, error) {
 	})
 	pod.AddLabels(map[string]string{"name": p.config.ScannerPod.Name})
 
-	pod.AddContainer(p.scannerContainer())
+	cont, err := p.scannerContainer()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	pod.AddContainer(cont)
 	pod.AddContainer(p.imageFacadeContainer())
 
 	vols, err := p.scannerVolumes()
@@ -76,7 +80,7 @@ func (p *SpecConfig) scannerPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *SpecConfig) scannerContainer() *components.Container {
+func (p *SpecConfig) scannerContainer() (*components.Container, error) {
 	priv := false
 	name := p.config.ScannerPod.Scanner.Name
 	container := components.NewContainer(horizonapi.ContainerConfig{
@@ -84,8 +88,8 @@ func (p *SpecConfig) scannerContainer() *components.Container {
 		Image:      p.config.ScannerPod.Scanner.Image,
 		Command:    []string{fmt.Sprintf("./%s", name)},
 		Args:       []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
-		MinCPU:     p.config.DefaultCPU,
-		MinMem:     p.config.DefaultMem,
+		MinCPU:     p.config.ScannerCPU,
+		MinMem:     p.config.ScannerMem,
 		Privileged: &priv,
 	})
 
@@ -94,23 +98,28 @@ func (p *SpecConfig) scannerContainer() *components.Container {
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      name,
 		MountPath: fmt.Sprintf("/etc/%s", name),
 	})
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "var-images",
 		MountPath: "/var/images",
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
-	container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: p.config.Blackduck.PasswordEnvVar,
-		Type:         horizonapi.EnvFromSecret,
-		KeyOrVal:     "HubUserPassword",
-		FromName:     p.config.SecretName,
-	})
+	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.config.SecretName})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
-	return container
+	return container, nil
 }
 
 func (p *SpecConfig) imageFacadeContainer() *components.Container {
@@ -121,8 +130,8 @@ func (p *SpecConfig) imageFacadeContainer() *components.Container {
 		Image:      p.config.ScannerPod.ImageFacade.Image,
 		Command:    []string{fmt.Sprintf("./%s", name)},
 		Args:       []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
-		MinCPU:     p.config.DefaultCPU,
-		MinMem:     p.config.DefaultMem,
+		MinCPU:     p.config.ScannerCPU,
+		MinMem:     p.config.ScannerMem,
 		Privileged: &priv,
 	})
 

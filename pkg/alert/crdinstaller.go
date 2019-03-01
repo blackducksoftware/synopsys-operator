@@ -133,7 +133,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 			// convert the resource object into a key (in this case
 			// we are just doing it in the format of 'namespace/name')
 			key, err := cache.MetaNamespaceKeyFunc(obj)
-			log.Infof("add alert: %s", key)
+			log.Infof("add alert: %s, err: %+v", key, err)
 			if err == nil {
 				// add the key to the queue for the handler to get
 				c.queue.Add(key)
@@ -141,7 +141,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
-			log.Infof("update alert: %s", key)
+			log.Infof("update alert: %s, err: %+v", key, err)
 			if err == nil {
 				c.queue.Add(key)
 			}
@@ -153,7 +153,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 			//
 			// this then in turn calls MetaNamespaceKeyFunc
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			log.Infof("delete alert: %s: %+v", key, obj)
+			log.Infof("delete alert: %s, err: %+v", key, err)
 
 			if err == nil {
 				c.queue.Add(key)

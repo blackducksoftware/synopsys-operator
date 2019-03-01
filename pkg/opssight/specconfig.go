@@ -39,44 +39,30 @@ type SpecConfig struct {
 
 // NewSpecConfig will create the OpsSight object
 func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
-	privateRegistries := []RegistryAuth{}
-	for _, reg := range config.ScannerPod.ImageFacade.InternalRegistries {
-		privateRegistries = append(privateRegistries, RegistryAuth{
-			Password: reg.Password,
-			URL:      reg.URL,
-			User:     reg.User,
-		})
-	}
 	configMap := &MainOpssightConfigMap{
 		LogLevel: config.LogLevel,
-		Hub: HubConfig{
-			Hosts:               config.Blackduck.Hosts,
-			PasswordEnvVar:      config.Blackduck.PasswordEnvVar,
-			ConcurrentScanLimit: config.Blackduck.ConcurrentScanLimit,
-			Port:                config.Blackduck.Port,
-			TotalScanLimit:      config.Blackduck.TotalScanLimit,
-			User:                config.Blackduck.User,
+		BlackDuck: &BlackDuckConfig{
+			TLSVerification: config.Blackduck.TLSVerification,
 		},
-		ImageFacade: ImageFacadeConfig{
-			CreateImagesOnly:        false,
-			Host:                    "localhost",
-			Port:                    config.ScannerPod.ImageFacade.Port,
-			PrivateDockerRegistries: privateRegistries,
-			ImagePullerType:         config.ScannerPod.ImageFacade.ImagePullerType,
+		ImageFacade: &ImageFacadeConfig{
+			CreateImagesOnly: false,
+			Host:             "localhost",
+			Port:             config.ScannerPod.ImageFacade.Port,
+			ImagePullerType:  config.ScannerPod.ImageFacade.ImagePullerType,
 		},
-		Perceiver: PerceiverConfig{
-			Image: ImagePerceiverConfig{},
-			Pod: PodPerceiverConfig{
+		Perceiver: &PerceiverConfig{
+			Image: &ImagePerceiverConfig{},
+			Pod: &PodPerceiverConfig{
 				NamespaceFilter: config.Perceiver.PodPerceiver.NamespaceFilter,
 			},
 			AnnotationIntervalSeconds: config.Perceiver.AnnotationIntervalSeconds,
 			DumpIntervalMinutes:       config.Perceiver.DumpIntervalMinutes,
 			Port:                      config.Perceiver.Port,
 		},
-		Perceptor: PerceptorConfig{
-			Timings: PerceptorTimingsConfig{
+		Perceptor: &PerceptorConfig{
+			Timings: &PerceptorTimingsConfig{
 				CheckForStalledScansPauseHours: config.Perceptor.CheckForStalledScansPauseHours,
-				HubClientTimeoutMilliseconds:   config.Perceptor.ClientTimeoutMilliseconds,
+				ClientTimeoutMilliseconds:      config.Perceptor.ClientTimeoutMilliseconds,
 				ModelMetricsPauseSeconds:       config.Perceptor.ModelMetricsPauseSeconds,
 				StalledScanClientTimeoutHours:  config.Perceptor.StalledScanClientTimeoutHours,
 				UnknownImagePauseMilliseconds:  config.Perceptor.UnknownImagePauseMilliseconds,
@@ -85,19 +71,19 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 			Port:        config.Perceptor.Port,
 			UseMockMode: false,
 		},
-		Scanner: ScannerConfig{
-			HubClientTimeoutSeconds: config.ScannerPod.Scanner.ClientTimeoutSeconds,
-			ImageDirectory:          config.ScannerPod.ImageDirectory,
-			Port:                    config.ScannerPod.Scanner.Port,
+		Scanner: &ScannerConfig{
+			BlackDuckClientTimeoutSeconds: config.ScannerPod.Scanner.ClientTimeoutSeconds,
+			ImageDirectory:                config.ScannerPod.ImageDirectory,
+			Port:                          config.ScannerPod.Scanner.Port,
 		},
-		Skyfire: SkyfireConfig{
-			HubClientTimeoutSeconds:      config.Skyfire.HubClientTimeoutSeconds,
-			HubDumpPauseSeconds:          config.Skyfire.HubDumpPauseSeconds,
-			KubeDumpIntervalSeconds:      config.Skyfire.KubeDumpIntervalSeconds,
-			PerceptorDumpIntervalSeconds: config.Skyfire.PerceptorDumpIntervalSeconds,
-			Port:                         config.Skyfire.Port,
-			PrometheusPort:               config.Skyfire.PrometheusPort,
-			UseInClusterConfig:           true,
+		Skyfire: &SkyfireConfig{
+			BlackDuckClientTimeoutSeconds: config.Skyfire.HubClientTimeoutSeconds,
+			BlackDuckDumpPauseSeconds:     config.Skyfire.HubDumpPauseSeconds,
+			KubeDumpIntervalSeconds:       config.Skyfire.KubeDumpIntervalSeconds,
+			PerceptorDumpIntervalSeconds:  config.Skyfire.PerceptorDumpIntervalSeconds,
+			Port:                          config.Skyfire.Port,
+			PrometheusPort:                config.Skyfire.PrometheusPort,
+			UseInClusterConfig:            true,
 		},
 	}
 	return &SpecConfig{config: config, configMap: configMap}

@@ -568,7 +568,7 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		ScannerPod: &opssightv1.ScannerPod{
 			ImageFacade: &opssightv1.ImageFacade{
 				Port:               3004,
-				InternalRegistries: []opssightv1.RegistryAuth{},
+				InternalRegistries: []*opssightv1.RegistryAuth{},
 				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
 				ServiceAccount:     "perceptor-scanner",
 				Name:               "perceptor-imagefacade",
@@ -593,15 +593,10 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			ServiceAccount: "skyfire",
 		},
 		Blackduck: &opssightv1.Blackduck{
-			User:                         "sysadmin",
-			Port:                         443,
-			ConcurrentScanLimit:          2,
-			TotalScanLimit:               1000,
-			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
-			InitialCount:                 1,
-			MaxCount:                     1,
-			DeleteHubThresholdPercentage: 50,
-			BlackduckSpec:                nil,
+			InitialCount:                       1,
+			MaxCount:                           1,
+			DeleteBlackDuckThresholdPercentage: 50,
+			BlackduckSpec:                      nil,
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,

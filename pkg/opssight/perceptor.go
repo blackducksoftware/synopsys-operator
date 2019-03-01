@@ -93,12 +93,8 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		return nil, errors.Trace(err)
 	}
 
-	err = container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: p.config.Blackduck.PasswordEnvVar,
-		Type:         horizonapi.EnvFromSecret,
-		KeyOrVal:     "HubUserPassword",
-		FromName:     p.config.SecretName,
-	})
+	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.config.SecretName})
+
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

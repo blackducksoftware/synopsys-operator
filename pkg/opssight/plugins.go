@@ -24,18 +24,14 @@ package opssight
 // This is a controller that deletes the hub based on the delete threshold
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"math"
 	"strings"
 	"time"
 
-	"github.com/blackducksoftware/horizon/pkg/api"
-	hubv2 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1" //extensions "github.com/kubernetes/kubernetes/pkg/apis/extensions"
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -55,120 +51,30 @@ func init() {
 	logger = log.WithField("subsystem", "opssight-plugins")
 }
 
-// DeleteHub ...
-type DeleteHub struct {
-	Config         *protoform.Config
-	KubeClient     *kubernetes.Clientset
-	OpsSightClient *opssightclientset.Clientset
-	HubClient      *hubclient.Clientset
-	OpsSightSpec   *v1.OpsSightSpec
-}
+// This is a controller that updates the secret in perceptor periodically.
+// It is assumed that the secret in perceptor will roll over any time this is updated, and
+// if not, that there is a problem in the orchestration environment.
 
-// Run is a BLOCKING function which should be run by the framework .
-func (d *DeleteHub) Run(resources api.ControllerResources, ch chan struct{}) error {
-	hubCounts, err := d.getHubsCount()
-	if err != nil {
-		return errors.Trace(err)
-	}
-	// whether the max no of hub is reached?
-	if d.OpsSightSpec.Blackduck.MaxCount == hubCounts {
-
-	}
-
-	return nil
-}
-
-func (d *DeleteHub) getHubsCount() (int, error) {
-	hubs, err := util.ListHubs(d.HubClient, d.Config.Namespace)
-	if err != nil {
-		return 0, errors.Annotate(err, "unable to list hubs")
-	}
-	return len(hubs.Items), nil
-}
-
-// This is a controller that updates the configmap
-// in perceptor periodically.
-// It is assumed that the configmap in perceptor will
-// roll over any time this is updated, and if not, that
-// there is a problem in the orchestration environment.
-
-// ConfigMapUpdater ...
-type ConfigMapUpdater struct {
+// Updater ...
+type Updater struct {
 	config         *protoform.Config
-	httpClient     *http.Client
 	kubeClient     *kubernetes.Clientset
 	hubClient      *hubclient.Clientset
 	opssightClient *opssightclientset.Clientset
 }
 
-// NewConfigMapUpdater ...
-func NewConfigMapUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *ConfigMapUpdater {
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-		Timeout: 5 * time.Second,
-	}
-	return &ConfigMapUpdater{
+// NewUpdater ...
+func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *Updater {
+	return &Updater{
 		config:         config,
-		httpClient:     httpClient,
 		kubeClient:     kubeClient,
 		hubClient:      hubClient,
 		opssightClient: opssightClient,
 	}
 }
 
-func getKeys(dict map[string]string) []string {
-	keys := make([]string, len(dict))
-	i := 0
-	for k := range dict {
-		keys[i] = k
-		i++
-	}
-	return keys
-}
-
-// sendHubs is one possible way to configure the perceptor hub family.
-func sendHubs(kubeClient *kubernetes.Clientset, opsSightSpec *opssightv1.OpsSightSpec, hubs []string) error {
-	configMapName := opsSightSpec.ConfigMapName
-	logger.WithField("configMap", opsSightSpec.ConfigMapName).Info("send hubs: looking for config map")
-	configMap, err := kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Get(configMapName, metav1.GetOptions{})
-
-	if err != nil {
-		return errors.Annotatef(err, "unable to get configmap %s in %s", configMapName, opsSightSpec.Namespace)
-	}
-
-	cmKey := fmt.Sprintf("%s.json", configMapName)
-	logger.WithField("lookingForKey", cmKey).WithField("foundKeys", getKeys(configMap.Data)).Infof("send hubs")
-
-	var value MainOpssightConfigMap
-	data := configMap.Data[cmKey]
-	logger.Debugf("found config map data: %s", data)
-	err = json.Unmarshal([]byte(data), &value)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	value.Hub.Hosts = util.UniqueValues(append(hubs, value.Hub.Hosts...))
-
-	jsonBytes, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	configMap.Data[cmKey] = string(jsonBytes)
-	logger.WithFields(log.Fields{"configMap": configMapName, "namespace": opsSightSpec.Namespace}).Debugf("updated configmap to %+v", configMap)
-	_, err = kubeClient.CoreV1().ConfigMaps(opsSightSpec.Namespace).Update(configMap)
-	if err != nil {
-		return errors.Annotatef(err, "unable to update configmap %s in %s", configMapName, opsSightSpec.Namespace)
-	}
-	return nil
-}
-
 // Run ...
-func (p *ConfigMapUpdater) Run(ch <-chan struct{}) {
+func (p *Updater) Run(ch <-chan struct{}) {
 	logger.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
 
 	syncFunc := func() {
@@ -189,7 +95,7 @@ func (p *ConfigMapUpdater) Run(ch <-chan struct{}) {
 		},
 	}
 	_, hubController := cache.NewInformer(hubListWatch,
-		&hubv2.Blackduck{},
+		&blackduckapi.Blackduck{},
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			// TODO kinda dumb, we just do a complete re-list of all hubs,
@@ -215,7 +121,7 @@ func (p *ConfigMapUpdater) Run(ch <-chan struct{}) {
 		},
 	}
 	_, opssightController := cache.NewInformer(opssightListWatch,
-		&opssightv1.OpsSight{},
+		&opssightapi.OpsSight{},
 		2*time.Second,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -233,26 +139,8 @@ func (p *ConfigMapUpdater) Run(ch <-chan struct{}) {
 	go opssightController.Run(ch)
 }
 
-func (p *ConfigMapUpdater) getAllHubs(hubType string) []string {
-	allHubNamespaces := []string{}
-	hubsList, _ := util.ListHubs(p.hubClient, p.config.Namespace)
-	hubs := hubsList.Items
-	for _, hub := range hubs {
-		if strings.EqualFold(hub.Spec.Type, hubType) {
-			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
-			allHubNamespaces = append(allHubNamespaces, hubURL)
-			logger.Infof("Blackduck config map controller, namespace is %s", hub.Name)
-		}
-	}
-
-	logger.Debugf("allHubNamespaces: %+v", allHubNamespaces)
-	return allHubNamespaces
-}
-
-// updateAllHubs will list all hubs in the cluster, and send them to opssight as scan targets.
-// TODO there may be hubs which we dont want opssight to use.  Not sure how to deal with that yet.
-func (p *ConfigMapUpdater) updateAllHubs() []error {
-	// for opssight 3.0, only support one opssight
+// updateAllHubs will update the hubs in opssight resources
+func (p *Updater) updateAllHubs() []error {
 	opssights, err := util.GetOpsSights(p.opssightClient)
 	if err != nil {
 		return []error{errors.Annotate(err, "unable to get opssights")}
@@ -261,53 +149,170 @@ func (p *ConfigMapUpdater) updateAllHubs() []error {
 	if len(opssights.Items) == 0 {
 		return nil
 	}
-	// if len(opssights.Items) > 1 {
-	// 	return errors.Errorf("cowardly refusing to update OpsSights: found %d", len(opssights.Items))
-	// }
 
 	errList := []error{}
-	for _, o := range opssights.Items {
-		hubType := o.Spec.Blackduck.BlackduckSpec.Type
-		allHubNamespaces := p.getAllHubs(hubType)
-
-		for _, o := range opssights.Items {
-			err = sendHubs(p.kubeClient, &o.Spec, allHubNamespaces)
-			if err != nil {
-				errList = append(errList, errors.Annotate(err, "unable to send hubs"))
-			}
+	for _, opssight := range opssights.Items {
+		err = p.updateOpsSight(opssight)
+		if err != nil {
+			errList = append(errList, errors.Annotate(err, "unable to update perceptor"))
 		}
 	}
 	return errList
 }
 
-// updateOpsSight will list all hubs in the cluster, and send them to opssight as scan targets.
-// TODO there may be hubs which we dont want opssight to use.  Not sure how to deal with that yet.
-func (p *ConfigMapUpdater) updateOpsSight(obj interface{}) error {
-	opssight, ok := obj.(*opssightv1.OpsSight)
+// updateOpsSight will update the opssight resource with latest hubs
+func (p *Updater) updateOpsSight(obj interface{}) error {
+	opssight, ok := obj.(*opssightapi.OpsSight)
 	if !ok {
 		return errors.Errorf("unable to cast object")
 	}
 	var err error
 	for j := 0; j < 20; j++ {
-		opssight, err = util.GetOpsSight(p.opssightClient, p.config.Namespace, opssight.Name)
-		if err != nil {
-			return fmt.Errorf("unable to get opssight %s due to %+v", opssight.Name, err)
-		}
-
 		if strings.EqualFold(opssight.Status.State, "running") {
 			break
 		}
 		logger.Debugf("waiting for opssight %s to be up.....", opssight.Name)
 		time.Sleep(10 * time.Second)
-	}
 
+		opssight, err = util.GetOpsSight(p.opssightClient, p.config.Namespace, opssight.Name)
+		if err != nil {
+			return fmt.Errorf("unable to get opssight %s due to %+v", opssight.Name, err)
+		}
+	}
+	err = p.update(opssight)
+	return err
+}
+
+// update will list all hubs in the cluster, and send them to opssight as scan targets.
+func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 	hubType := opssight.Spec.Blackduck.BlackduckSpec.Type
-	allHubNamespaces := p.getAllHubs(hubType)
+	allHubs := p.getAllHubs(hubType)
 
-	err = sendHubs(p.kubeClient, &opssight.Spec, allHubNamespaces)
+	err := p.updateOpsSightCRD(&opssight.Spec, allHubs)
 	if err != nil {
-		return errors.Annotate(err, "unable to send hubs")
+		return errors.Annotate(err, "unable to update opssight CRD")
 	}
 
+	err = p.updatePerceptorSecret(&opssight.Spec, allHubs)
+	if err != nil {
+		return errors.Annotate(err, "unable to update perceptor")
+	}
 	return nil
+}
+
+func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
+	hosts := []*opssightapi.Host{}
+	hubsList, _ := util.ListHubs(p.hubClient, p.config.Namespace)
+	blackduckPassword := p.getDefaultPassword()
+	for _, hub := range hubsList.Items {
+		if strings.EqualFold(hub.Spec.Type, hubType) {
+			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
+			var concurrentScanLimit int
+			switch strings.ToUpper(hub.Spec.Size) {
+			case "MEDIUM":
+				concurrentScanLimit = 3
+			case "LARGE":
+				concurrentScanLimit = 4
+			case "X-LARGE":
+				concurrentScanLimit = 6
+			default:
+				concurrentScanLimit = 2
+			}
+			host := &opssightapi.Host{Domain: hubURL, ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysdamin", Port: 8443, Password: blackduckPassword}
+			hosts = append(hosts, host)
+			logger.Infof("Blackduck config map controller, namespace is %s", hub.Name)
+		}
+	}
+
+	logger.Debugf("allHubHosts: %+v", hosts)
+	return hosts
+}
+
+func (p *Updater) getDefaultPassword() string {
+	var hubPassword string
+	var err error
+	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
+		// get the secret from the default operator namespace, then copy it into the hub namespace.
+		hubPassword, err = GetDefaultPasswords(p.kubeClient, p.config.Namespace)
+		if err == nil {
+			break
+		} else {
+			log.Infof("wasn't able to get hub password, sleeping 5 seconds.  try = %v", dbInitTry)
+			time.Sleep(5 * time.Second)
+		}
+	}
+	return hubPassword
+}
+
+// updateOpsSightCRD will update the opssight CRD
+func (p *Updater) updateOpsSightCRD(opsSightSpec *opssightapi.OpsSightSpec, hubs []*opssightapi.Host) error {
+	opssightName := opsSightSpec.Namespace
+	logger.WithField("opssight", opssightName).Info("update opssight: looking for opssight")
+	opssight, err := p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Get(opssightName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Annotatef(err, "unable to get opssight %s in %s namespace", opssightName, opsSightSpec.Namespace)
+	}
+
+	opssight.Status.InternalHosts = p.appendBlackDuckHosts(opssight.Status.InternalHosts, hubs)
+
+	_, err = p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Update(opssight)
+	if err != nil {
+		return errors.Annotatef(err, "unable to update opssight %s in %s", opssightName, opsSightSpec.Namespace)
+	}
+	return nil
+}
+
+// appendBlackDuckHosts will append the hosts of external and internal Black Duck
+func (p *Updater) appendBlackDuckHosts(existingBlackDucks []*opssightapi.Host, internalBlackDucks []*opssightapi.Host) []*opssightapi.Host {
+	for _, internalBlackDuck := range internalBlackDucks {
+		isExist := false
+		for _, existingBlackDuck := range existingBlackDucks {
+			if strings.EqualFold(internalBlackDuck.Domain, existingBlackDuck.Domain) {
+				isExist = true
+				break
+			}
+		}
+		if !isExist {
+			existingBlackDucks = append(existingBlackDucks, internalBlackDuck)
+		}
+	}
+	return existingBlackDucks
+}
+
+// updatePerceptorSecret will update the secrets
+func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, hubs []*opssightapi.Host) error {
+	secretName := opsSightSpec.SecretName
+	logger.WithField("secret", secretName).Info("update perceptor: looking for secret")
+	secret, err := p.kubeClient.CoreV1().Secrets(opsSightSpec.Namespace).Get(secretName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Annotatef(err, "unable to get secret %s in %s", secretName, opsSightSpec.Namespace)
+	}
+	blackduckHosts := make(map[string]interface{})
+	err = json.Unmarshal([]byte(secret.Data["blackduck.json"]), &blackduckHosts)
+	if err != nil {
+		return errors.Annotatef(err, "unable to get unmarshal the secret %s in %s", secretName, opsSightSpec.Namespace)
+	}
+
+	blackduckPasswords := p.appendBlackDuckSecrets(blackduckHosts, hubs)
+	bytes, err := json.Marshal(blackduckPasswords)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	secret.Data = map[string][]byte{"blackduck.json": bytes}
+
+	_, err = p.kubeClient.CoreV1().Secrets(opsSightSpec.Namespace).Update(secret)
+	if err != nil {
+		return errors.Annotatef(err, "unable to update secret %s in %s", secretName, opsSightSpec.Namespace)
+	}
+	return nil
+}
+
+// appendBlackDuckSecrets will append the secrets of external and internal Black Duck
+func (p *Updater) appendBlackDuckSecrets(existingBlackDucks map[string]interface{}, internalBlackDucks []*opssightapi.Host) map[string]interface{} {
+	for _, internalBlackDuck := range internalBlackDucks {
+		if _, ok := existingBlackDucks[internalBlackDuck.Domain]; !ok {
+			existingBlackDucks[internalBlackDuck.Domain] = &internalBlackDuck
+		}
+	}
+	return existingBlackDucks
 }

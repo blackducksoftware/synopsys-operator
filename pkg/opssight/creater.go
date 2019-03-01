@@ -22,8 +22,8 @@ under the License.
 package opssight
 
 import (
+	"encoding/json"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -153,24 +153,32 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 		return errors.Annotatef(err, "unable to get opssight components for %s", createOpsSight.Namespace)
 	}
 
-	// setting up hub password in perceptor secret
+	// setting up blackduck password in perceptor secret
 	if !ac.config.DryRun {
-		var hubPassword string
-		var err error
-		for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
-			// get the secret from the default operator namespace, then copy it into the hub namespace.
-			hubPassword, err = GetDefaultPasswords(ac.kubeClient, ac.config.Namespace)
-			if err == nil {
-				break
-			} else {
-				log.Infof("wasn't able to get hub password, sleeping 5 seconds.  try = %v", dbInitTry)
-				time.Sleep(5 * time.Second)
-			}
-		}
-
 		for _, secret := range components.Secrets {
 			if strings.EqualFold(secret.GetName(), createOpsSight.SecretName) {
-				secret.AddData(map[string][]byte{"HubUserPassword": []byte(hubPassword)})
+				blackduckPasswords := make(map[string]interface{})
+				// adding External Black Duck passwords
+				for _, host := range createOpsSight.Blackduck.ExternalHosts {
+					blackduckPasswords[host.Domain] = &host
+				}
+				bytes, err := json.Marshal(blackduckPasswords)
+				if err != nil {
+					return errors.Trace(err)
+				}
+				secret.AddData(map[string][]byte{"blackduck.json": bytes})
+
+				// adding Secured registries credential
+				securedRegistries := make(map[string]interface{})
+				for _, internalRegistry := range createOpsSight.ScannerPod.ImageFacade.InternalRegistries {
+					securedRegistries[internalRegistry.URL] = &internalRegistry
+				}
+				bytes, err = json.Marshal(securedRegistries)
+				if err != nil {
+					return errors.Trace(err)
+				}
+				secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
+
 				break
 			}
 		}
@@ -251,7 +259,7 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
 		log.Errorf("unable to read the service account token file due to %+v", err)
 	} else {
 		for _, internalRegistry := range internalRegistries {
-			registryAuth := v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
+			registryAuth := &v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
 			opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightSpec.ScannerPod.ImageFacade.InternalRegistries, registryAuth)
 		}
 	}
