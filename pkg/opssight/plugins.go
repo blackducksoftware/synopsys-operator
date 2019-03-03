@@ -288,7 +288,7 @@ func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, 
 		return errors.Annotatef(err, "unable to get secret %s in %s", secretName, opsSightSpec.Namespace)
 	}
 	blackduckHosts := make(map[string]interface{})
-	err = json.Unmarshal([]byte(secret.Data["blackduck.json"]), &blackduckHosts)
+	err = json.Unmarshal([]byte(secret.Data[opsSightSpec.Blackduck.PasswordEnvVar]), &blackduckHosts)
 	if err != nil {
 		return errors.Annotatef(err, "unable to get unmarshal the secret %s in %s", secretName, opsSightSpec.Namespace)
 	}
@@ -298,7 +298,7 @@ func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, 
 	if err != nil {
 		return errors.Trace(err)
 	}
-	secret.Data = map[string][]byte{"blackduck.json": bytes}
+	secret.Data = map[string][]byte{opsSightSpec.Blackduck.PasswordEnvVar: bytes}
 
 	_, err = p.kubeClient.CoreV1().Secrets(opsSightSpec.Namespace).Update(secret)
 	if err != nil {
