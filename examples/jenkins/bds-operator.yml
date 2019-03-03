@@ -40,6 +40,7 @@ objects:
     - BDS_RELENG_DEPLOY_USER:${BDS_RELENG_DEPLOY_USER}
     - BDS_RELENG_KEEP_HOURS:${BDS_RELENG_KEEP_HOURS}
     - BDS_RELENG_BUILD_INFO:${BDS_RELENG_BUILD_INFO}
+    - BDS_RELENG_DEP_DETAILS_FILENAME:${BDS_RELENG_DEP_DETAILS_FILENAME}
     size: ${HUB_TYPE}
     imageRegistries:
     - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${APPCHECK_WORKER_IMAGE}
@@ -68,6 +69,8 @@ parameters:
   name: BDS_RELENG_KEEP_HOURS
 - description: Details of the build process which deploying the environment
   name: BDS_RELENG_BUILD_INFO
+- description: Name of file on Artifactory with deployment details
+  name: BDS_RELENG_DEP_DETAILS_FILENAME
 - description: Actual Hub version, without the build number
   name: ACTUAL_HUB_VERSION
 - description: Docker registry to pull images from
