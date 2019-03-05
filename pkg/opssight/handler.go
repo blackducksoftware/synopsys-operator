@@ -85,7 +85,7 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 		return errors.Annotate(err, "unable to merge default and new objects")
 	}
 
-	opssightv1.Spec = *newSpec
+	opssightv1.Spec = newSpec
 	opssightv1, err = h.updateState("creating", "", opssightv1)
 	if err != nil {
 		recordError("unable to update state")
@@ -110,7 +110,7 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 	return nil
 }
 
-func (h *Handler) mergeOpsSightWithDefaultValues(opssightv1 *opssight_v1.OpsSight) (newSpec *opssight_v1.OpsSightSpec, err error) {
+func (h *Handler) mergeOpsSightWithDefaultValues(opssightv1 *opssight_v1.OpsSight) (newSpec opssight_v1.OpsSightSpec, err error) {
 	defaultSpec := h.Defaults
 	err = mergo.Merge(&newSpec, defaultSpec)
 	if err == nil {

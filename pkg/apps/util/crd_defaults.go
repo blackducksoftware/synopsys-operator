@@ -128,6 +128,8 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,
+			PasswordEnvVar:                     "blackduck.json",
+			TLSVerification:                    false,
 			DeleteBlackDuckThresholdPercentage: 50,
 			BlackduckSpec:                      GetHubDefaultValue(),
 		},
