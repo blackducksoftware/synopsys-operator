@@ -197,6 +197,28 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 	if err != nil {
 		return errors.Annotate(err, "unable to update perceptor")
 	}
+
+	perceptorRCName := opssight.Spec.Perceptor.Name
+	err = p.patchOpsSightReplicationController(opssight.Spec.Namespace, perceptorRCName)
+	if err != nil {
+		return errors.Annotate(err, fmt.Sprintf("unable to patch %s replication controller", perceptorRCName))
+	}
+
+	if opssight.Spec.Perceiver.EnablePodPerceiver {
+		podProcessorRCName := opssight.Spec.Perceiver.PodPerceiver.Name
+		err = p.patchOpsSightReplicationController(opssight.Spec.Namespace, podProcessorRCName)
+		if err != nil {
+			return errors.Annotate(err, fmt.Sprintf("unable to patch %s replication controller", podProcessorRCName))
+		}
+	}
+
+	if opssight.Spec.Perceiver.EnableImagePerceiver {
+		imageProcessorRCName := opssight.Spec.Perceiver.ImagePerceiver.Name
+		err = p.patchOpsSightReplicationController(opssight.Spec.Namespace, imageProcessorRCName)
+		if err != nil {
+			return errors.Annotate(err, fmt.Sprintf("unable to patch %s replication controller", imageProcessorRCName))
+		}
+	}
 	return nil
 }
 
@@ -304,6 +326,38 @@ func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, 
 	if err != nil {
 		return errors.Annotatef(err, "unable to update secret %s in %s", secretName, opsSightSpec.Namespace)
 	}
+	return nil
+}
+
+func (p *Updater) patchOpsSightReplicationController(namespace string, name string) error {
+	err := p.patchReplicationController(namespace, name, 0)
+	if err != nil {
+		return errors.Annotate(err, "unable to patch replication controller")
+	}
+
+	err = p.patchReplicationController(namespace, name, 1)
+	if err != nil {
+		return errors.Annotate(err, "unable to patch replication controller")
+	}
+	return nil
+}
+
+func (p *Updater) patchReplicationController(namespace string, name string, replicas int) error {
+	// Get the replication controllers
+	rc, err := util.GetReplicationController(p.kubeClient, namespace, name)
+	if err != nil {
+		return fmt.Errorf("unable to find %s replication controller in %s namespace because %+v", name, namespace, err)
+	}
+
+	log.Infof("found %s replication controller in %s namespace successfully", name, namespace)
+
+	r := rc.DeepCopy()
+	r.Spec.Replicas = util.IntToInt32(replicas)
+	err = util.PatchReplicationController(p.kubeClient, *rc, *r)
+	if err != nil {
+		return fmt.Errorf("unable to patch %s replication controller with replicas %d in %s namespace because %+v", name, replicas, namespace, err)
+	}
+	log.Infof("patched the %s replication controller with replicas=%d in %s namespace successfully", name, replicas, namespace)
 	return nil
 }
 
