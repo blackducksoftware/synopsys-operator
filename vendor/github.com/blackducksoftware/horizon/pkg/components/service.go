@@ -212,19 +212,30 @@ func (s *Service) RemoveExternalIP(ip string) {
 }
 
 // AddLoadBalancer will add the provided load balancer to the service
-func (s *Service) AddLoadBalancer(config api.LoadBalancerConfig) {
+func (s *Service) AddLoadBalancer(config api.LoadBalancerConfig) error {
 	ips := []types.CIDR{}
 	for _, ip := range config.AllowedIPs {
 		ips = append(ips, types.CIDR(ip))
+	}
+
+	ingressList := []types.LoadBalancerIngress{}
+	for _, ic := range config.Ingress {
+		ingressLB, err := createIngressConfig(ic)
+		if err != nil {
+			return fmt.Errorf("unable to create ingress configuration: %v", err)
+		}
+		ingressList = append(ingressList, *ingressLB)
 	}
 
 	ingress := types.LoadBalancer{
 		IP:                  types.IPAddr(config.IP),
 		Allowed:             ips,
 		HealthCheckNodePort: config.HealthCheckNodePort,
+		Ingress:             ingressList,
 	}
 
 	s.obj.SetLoadBalancer(&ingress)
+	return nil
 }
 
 // RemoveLoadBalancer will remove the load balancer from the service

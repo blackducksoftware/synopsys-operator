@@ -21,11 +21,11 @@ package v1
 import (
 	time "time"
 
-	blackduck_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	versioned "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	internalinterfaces "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/informers/externalversions/internalinterfaces"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/listers/blackduck/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
@@ -57,20 +57,20 @@ func NewBlackduckInformer(client versioned.Interface, namespace string, resyncPe
 func NewFilteredBlackduckInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.SynopsysV1().Blackducks(namespace).List(options)
 			},
-			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.SynopsysV1().Blackducks(namespace).Watch(options)
 			},
 		},
-		&blackduck_v1.Blackduck{},
+		&blackduckv1.Blackduck{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *blackduckInformer) defaultInformer(client versioned.Interface, resyncPe
 }
 
 func (f *blackduckInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&blackduck_v1.Blackduck{}, f.defaultInformer)
+	return f.factory.InformerFor(&blackduckv1.Blackduck{}, f.defaultInformer)
 }
 
 func (f *blackduckInformer) Lister() v1.BlackduckLister {

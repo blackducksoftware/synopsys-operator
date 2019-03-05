@@ -30,8 +30,9 @@ import (
 // GetWebserverDeployment will return the webserver deployment
 func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 	webServerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.getFullContainerName("nginx"),
-			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit, MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.GetFullContainerName("nginx"),
+			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit,
+			MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: c.getWebserverVolumeMounts(),
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: webserverPort, Protocol: horizonapi.ProtocolTCP}},
@@ -49,9 +50,9 @@ func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 
 	c.PostEditContainer(webServerContainerConfig)
 
-	webserver := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webserver",
-		Replicas: util.IntToInt32(1)}, c.hubSpec.Namespace, []*util.Container{webServerContainerConfig}, c.getWebserverVolumes(),
-		[]*util.Container{}, []horizonapi.AffinityConfig{})
+	webserver := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{
+		Namespace: c.hubSpec.Namespace, Name: "webserver", Replicas: util.IntToInt32(1)}, "",
+		[]*util.Container{webServerContainerConfig}, c.getWebserverVolumes(), []*util.Container{}, []horizonapi.AffinityConfig{})
 	// log.Infof("webserver : %v\n", webserver.GetObj())
 	return webserver
 }
