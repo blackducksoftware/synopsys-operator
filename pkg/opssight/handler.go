@@ -78,12 +78,18 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 		return nil // controller restarted
 	}
 
-	newSpec, err := h.mergeOpsSightWithDefaultValues(opssightv1)
+	newSpec := opssightv1.Spec
+	defaultSpec := h.Defaults
+	err := mergo.Merge(&newSpec, defaultSpec)
 	if err != nil {
 		recordError("unable to merge default and new objects")
 		h.updateState("error", err.Error(), opssightv1)
 		return errors.Annotate(err, "unable to merge default and new objects")
 	}
+
+	bytes, err := json.Marshal(newSpec)
+	log.Debugf("merged opssight details: %+v", newSpec)
+	log.Debugf("opssight json (%+v): %s", err, string(bytes))
 
 	opssightv1.Spec = newSpec
 	opssightv1, err = h.updateState("creating", "", opssightv1)
@@ -108,17 +114,6 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 
 	h.updateState("running", "", opssightv1)
 	return nil
-}
-
-func (h *Handler) mergeOpsSightWithDefaultValues(opssightv1 *opssight_v1.OpsSight) (newSpec opssight_v1.OpsSightSpec, err error) {
-	defaultSpec := h.Defaults
-	err = mergo.Merge(&newSpec, defaultSpec)
-	if err == nil {
-		bytes, err := json.Marshal(newSpec)
-		log.Debugf("merged opssight details: %+v", newSpec)
-		log.Debugf("opssight json (%+v): %s", err, string(bytes))
-	}
-	return newSpec, err
 }
 
 // ObjectDeleted will be called for delete opssight events
