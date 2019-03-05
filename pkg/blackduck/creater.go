@@ -335,9 +335,13 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec, hubContainer
 	if len(postgresImage) == 0 {
 		postgresImage = "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1"
 	}
+	var pvcName string
+	if createHub.PersistentStorage {
+		pvcName = "blackduck-postgres"
+	}
 	postgres := apps.Postgres{
 		Namespace:              createHub.Namespace,
-		PVCName:                "blackduck-postgres",
+		PVCName:                pvcName,
 		Port:                   containers.PostgresPort,
 		Image:                  postgresImage,
 		MinCPU:                 hubContainerFlavor.PostgresCPULimit,
