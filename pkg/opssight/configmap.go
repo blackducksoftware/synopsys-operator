@@ -48,7 +48,8 @@ type PodPerceiverConfig struct {
 
 // BlackDuckConfig ...
 type BlackDuckConfig struct {
-	TLSVerification bool `json:"tlsVerification"`
+	PasswordEnvVar  string
+	TLSVerification bool
 }
 
 // PerceptorTimingsConfig ...
