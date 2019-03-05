@@ -36,8 +36,8 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	opssight_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	routev1 "github.com/openshift/api/route/v1"
@@ -646,22 +646,22 @@ func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*v1
 }
 
 // ListOpsSights will list all opssights in the cluster
-func ListOpsSights(opssightClientset *opssightclientset.Clientset, namespace string) (*opssight_v1.OpsSightList, error) {
+func ListOpsSights(opssightClientset *opssightclientset.Clientset, namespace string) (*opssightapi.OpsSightList, error) {
 	return opssightClientset.SynopsysV1().OpsSights(namespace).List(metav1.ListOptions{})
 }
 
 // GetOpsSight will get OpsSight in the cluster
-func GetOpsSight(opssightClientset *opssightclientset.Clientset, namespace string, name string) (*opssight_v1.OpsSight, error) {
+func GetOpsSight(opssightClientset *opssightclientset.Clientset, namespace string, name string) (*opssightapi.OpsSight, error) {
 	return opssightClientset.SynopsysV1().OpsSights(namespace).Get(name, metav1.GetOptions{})
 }
 
 // GetOpsSights gets all opssights
-func GetOpsSights(clientSet *opssightclientset.Clientset) (*opssight_v1.OpsSightList, error) {
+func GetOpsSights(clientSet *opssightclientset.Clientset) (*opssightapi.OpsSightList, error) {
 	return clientSet.SynopsysV1().OpsSights(metav1.NamespaceAll).List(metav1.ListOptions{})
 }
 
 // ListHubs will list all hubs in the cluster
-func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*hub_v2.BlackduckList, error) {
+func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*blackduckapi.BlackduckList, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).List(metav1.ListOptions{})
 }
 
@@ -671,12 +671,12 @@ func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.In
 }
 
 // CreateHub will create hub in the cluster
-func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *hub_v2.Blackduck) (*hub_v2.Blackduck, error) {
+func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).Create(createHub)
 }
 
 // GetHub will get hubs in the cluster
-func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*hub_v2.Blackduck, error) {
+func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*blackduckapi.Blackduck, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).Get(name, metav1.GetOptions{})
 }
 

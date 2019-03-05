@@ -79,7 +79,7 @@ func (p *Updater) Run(ch <-chan struct{}) {
 
 	syncFunc := func() {
 		err := p.updateAllHubs()
-		if err != nil {
+		if len(err) > 0 {
 			logger.Errorf("unable to update hubs because %+v", err)
 		}
 	}
@@ -107,7 +107,10 @@ func (p *Updater) Run(ch <-chan struct{}) {
 
 			AddFunc: func(obj interface{}) {
 				logger.Debugf("configmap updater hub added event! %v ", obj)
-				syncFunc()
+				running := p.isBlackDuckRunning(obj)
+				if !running {
+					syncFunc()
+				}
 			},
 		},
 	)
@@ -126,6 +129,10 @@ func (p *Updater) Run(ch <-chan struct{}) {
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				logger.Debugf("configmap updater opssight added event! %v ", obj)
+				running := p.isOpsSightRunning(obj)
+				if running {
+					return
+				}
 				err := p.updateOpsSight(obj)
 				if err != nil {
 					logger.Errorf("unable to update opssight because %+v", err)
@@ -137,6 +144,22 @@ func (p *Updater) Run(ch <-chan struct{}) {
 	// make sure this is called from a go func -- it blocks!
 	go hubController.Run(ch)
 	go opssightController.Run(ch)
+}
+
+func (p *Updater) isBlackDuckRunning(obj interface{}) bool {
+	blackduck, _ := obj.(*blackduckapi.Blackduck)
+	if strings.EqualFold(blackduck.Status.State, "Running") {
+		return true
+	}
+	return false
+}
+
+func (p *Updater) isOpsSightRunning(obj interface{}) bool {
+	opssight, _ := obj.(*opssightapi.OpsSight)
+	if strings.EqualFold(opssight.Status.State, "Running") {
+		return true
+	}
+	return false
 }
 
 // updateAllHubs will update the hubs in opssight resources
@@ -152,7 +175,7 @@ func (p *Updater) updateAllHubs() []error {
 
 	errList := []error{}
 	for _, opssight := range opssights.Items {
-		err = p.updateOpsSight(opssight)
+		err = p.updateOpsSight(&opssight)
 		if err != nil {
 			errList = append(errList, errors.Annotate(err, "unable to update perceptor"))
 		}
@@ -225,8 +248,10 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 	hosts := []*opssightapi.Host{}
 	hubsList, _ := util.ListHubs(p.hubClient, p.config.Namespace)
+	log.Debugf("total no of Black Duck's: %d", len(hubsList.Items))
 	blackduckPassword := p.getDefaultPassword()
 	for _, hub := range hubsList.Items {
+		log.Debugf("Black Duck type: %s, OpsSight Type: %s", hub.Spec.Type, hubType)
 		if strings.EqualFold(hub.Spec.Type, hubType) {
 			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
 			var concurrentScanLimit int
@@ -240,7 +265,7 @@ func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 			default:
 				concurrentScanLimit = 2
 			}
-			host := &opssightapi.Host{Domain: hubURL, ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysdamin", Port: 8443, Password: blackduckPassword}
+			host := &opssightapi.Host{Domain: hubURL, ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysadmin", Port: 443, Password: blackduckPassword}
 			hosts = append(hosts, host)
 			logger.Infof("Blackduck config map controller, namespace is %s", hub.Name)
 		}
@@ -309,8 +334,9 @@ func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, 
 	if err != nil {
 		return errors.Annotatef(err, "unable to get secret %s in %s", secretName, opsSightSpec.Namespace)
 	}
+
 	blackduckHosts := make(map[string]interface{})
-	err = json.Unmarshal([]byte(secret.Data[opsSightSpec.Blackduck.PasswordEnvVar]), &blackduckHosts)
+	err = json.Unmarshal(secret.Data[opsSightSpec.Blackduck.PasswordEnvVar], &blackduckHosts)
 	if err != nil {
 		return errors.Annotatef(err, "unable to get unmarshal the secret %s in %s", secretName, opsSightSpec.Namespace)
 	}
@@ -320,7 +346,7 @@ func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, 
 	if err != nil {
 		return errors.Trace(err)
 	}
-	secret.Data = map[string][]byte{opsSightSpec.Blackduck.PasswordEnvVar: bytes}
+	secret.Data[opsSightSpec.Blackduck.PasswordEnvVar] = bytes
 
 	_, err = p.kubeClient.CoreV1().Secrets(opsSightSpec.Namespace).Update(secret)
 	if err != nil {

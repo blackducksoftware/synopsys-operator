@@ -183,6 +183,8 @@ type OpsSightSpec struct {
 
 	// Black Duck
 	Blackduck *Blackduck `json:"blackduck"`
+
+	DesiredState string `json:"desiredState"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource
