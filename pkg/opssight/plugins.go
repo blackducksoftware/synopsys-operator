@@ -253,7 +253,6 @@ func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 	for _, hub := range hubsList.Items {
 		log.Debugf("Black Duck type: %s, OpsSight Type: %s", hub.Spec.Type, hubType)
 		if strings.EqualFold(hub.Spec.Type, hubType) {
-			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Name)
 			var concurrentScanLimit int
 			switch strings.ToUpper(hub.Spec.Size) {
 			case "MEDIUM":
@@ -265,7 +264,7 @@ func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 			default:
 				concurrentScanLimit = 2
 			}
-			host := &opssightapi.Host{Domain: hubURL, ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysadmin", Port: 443, Password: blackduckPassword}
+			host := &opssightapi.Host{Domain: fmt.Sprintf("webserver.%s.svc", hub.Name), ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysadmin", Port: 443, Password: blackduckPassword}
 			hosts = append(hosts, host)
 			logger.Infof("Blackduck config map controller, namespace is %s", hub.Name)
 		}
@@ -335,7 +334,7 @@ func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, 
 		return errors.Annotatef(err, "unable to get secret %s in %s", secretName, opsSightSpec.Namespace)
 	}
 
-	blackduckHosts := make(map[string]interface{})
+	blackduckHosts := map[string]*opssightapi.Host{}
 	err = json.Unmarshal(secret.Data[opsSightSpec.Blackduck.PasswordEnvVar], &blackduckHosts)
 	if err != nil {
 		return errors.Annotatef(err, "unable to get unmarshal the secret %s in %s", secretName, opsSightSpec.Namespace)
@@ -388,10 +387,10 @@ func (p *Updater) patchReplicationController(namespace string, name string, repl
 }
 
 // appendBlackDuckSecrets will append the secrets of external and internal Black Duck
-func (p *Updater) appendBlackDuckSecrets(existingBlackDucks map[string]interface{}, internalBlackDucks []*opssightapi.Host) map[string]interface{} {
+func (p *Updater) appendBlackDuckSecrets(existingBlackDucks map[string]*opssightapi.Host, internalBlackDucks []*opssightapi.Host) map[string]*opssightapi.Host {
 	for _, internalBlackDuck := range internalBlackDucks {
 		if _, ok := existingBlackDucks[internalBlackDuck.Domain]; !ok {
-			existingBlackDucks[internalBlackDuck.Domain] = &internalBlackDuck
+			existingBlackDucks[internalBlackDuck.Domain] = internalBlackDuck
 		}
 	}
 	return existingBlackDucks
