@@ -154,7 +154,7 @@ func execBdsHubDBStatements(db *sql.DB) {
 func execBdsHubReportDBStatements(db *sql.DB) {
 	// exec(db, "CREATE EXTENSION pgcrypto;")
 	exec(db, "GRANT SELECT ON ALL TABLES IN SCHEMA public TO blackduck_reporter;")
-	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO blackduck_reporter;")
+	exec(db, "ALTER DEFAULT PRIVILEGES FOR ROLE blackduck IN SCHEMA public GRANT SELECT ON TABLES TO blackduck_reporter;")
 	exec(db, "GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA public TO blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;")
 	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;")
