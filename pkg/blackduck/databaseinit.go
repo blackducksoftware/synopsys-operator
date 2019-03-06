@@ -131,6 +131,7 @@ func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword str
 	exec(db, "CREATE DATABASE bds_hub owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
 	exec(db, "CREATE DATABASE bds_hub_report owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
 	exec(db, "CREATE DATABASE bdio owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
+	exec(db, "ALTER USER blackduck WITH NOCREATEDB SUPERUSER NOREPLICATION BYPASSRLS;")
 	exec(db, "CREATE USER blackduck_user NOCREATEDB NOSUPERUSER NOREPLICATION NOBYPASSRLS;")
 	exec(db, fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", userPassword))
 	exec(db, "CREATE USER blackduck_reporter;")
@@ -146,7 +147,6 @@ func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword str
 
 func execBdsHubDBStatements(db *sql.DB) {
 	exec(db, "CREATE EXTENSION pgcrypto;")
-	exec(db, "CREATE USER blackduck WITH NOCREATEDB SUPERUSER NOREPLICATION BYPASSRLS;")
 	exec(db, "CREATE SCHEMA st AUTHORIZATION blackduck;")
 	exec(db, "GRANT USAGE ON SCHEMA st TO blackduck_user;")
 	exec(db, "GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA st TO blackduck_user;")
