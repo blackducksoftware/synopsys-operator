@@ -131,14 +131,22 @@ func execPostGresDBStatements(db *sql.DB, adminPassword string, userPassword str
 	exec(db, "CREATE DATABASE bds_hub owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
 	exec(db, "CREATE DATABASE bds_hub_report owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
 	exec(db, "CREATE DATABASE bdio owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;")
-	exec(db, "CREATE USER blackduck_user;")
+	exec(db, "CREATE USER blackduck_user NOCREATEDB NOSUPERUSER NOREPLICATION NOBYPASSRLS;")
 	exec(db, fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", userPassword))
 	exec(db, "CREATE USER blackduck_reporter;")
+	exec(db, "GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA public TO blackduck_user;")
+	exec(db, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public to blackduck_user;")
+	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;")
+	exec(db, "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;")
+	exec(db, "GRANT SELECT ON ALL TABLES IN SCHEMA public TO blackduck_reporter;")
+	exec(db, "ALTER DEFAULT PRIVILEGES FOR ROLE blackduck IN SCHEMA public GRANT SELECT ON TABLES TO blackduck_reporter;")
+	exec(db, "CREATE USER blackduck_replication REPLICATION CONNECTION LIMIT 5;")
 	// db.Close()
 }
 
 func execBdsHubDBStatements(db *sql.DB) {
 	exec(db, "CREATE EXTENSION pgcrypto;")
+	exec(db, "CREATE USER blackduck WITH NOCREATEDB SUPERUSER NOREPLICATION BYPASSRLS;")
 	exec(db, "CREATE SCHEMA st AUTHORIZATION blackduck;")
 	exec(db, "GRANT USAGE ON SCHEMA st TO blackduck_user;")
 	exec(db, "GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA st TO blackduck_user;")
