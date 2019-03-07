@@ -62,7 +62,12 @@ func (p *SpecConfig) scannerPod() (*components.Pod, error) {
 		return nil, errors.Trace(err)
 	}
 	pod.AddContainer(cont)
-	pod.AddContainer(p.imageFacadeContainer())
+
+	facadecont, err := p.imageFacadeContainer()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	pod.AddContainer(facadecont)
 
 	vols, err := p.scannerVolumes()
 	if err != nil {
@@ -122,7 +127,7 @@ func (p *SpecConfig) scannerContainer() (*components.Container, error) {
 	return container, nil
 }
 
-func (p *SpecConfig) imageFacadeContainer() *components.Container {
+func (p *SpecConfig) imageFacadeContainer() (*components.Container, error) {
 	priv := true
 	name := p.config.ScannerPod.ImageFacade.Name
 	container := components.NewContainer(horizonapi.ContainerConfig{
@@ -140,23 +145,37 @@ func (p *SpecConfig) imageFacadeContainer() *components.Container {
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      name,
 		MountPath: fmt.Sprintf("/etc/%s", name),
 	})
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "var-images",
 		MountPath: "/var/images",
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	if !strings.EqualFold(p.config.ScannerPod.ImageFacade.ImagePullerType, "skopeo") {
-		container.AddVolumeMount(horizonapi.VolumeMountConfig{
+		err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 			Name:      "dir-docker-socket",
 			MountPath: "/var/run/docker.sock",
 		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
 
-	return container
+	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.config.SecretName})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return container, nil
 }
 
 func (p *SpecConfig) scannerVolumes() ([]*components.Volume, error) {
