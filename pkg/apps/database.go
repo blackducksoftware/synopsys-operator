@@ -75,13 +75,13 @@ func ExecDBStatements(hostName string, databaseName string, user string, passwor
 func NewDatabase(hostName string, databaseName string, user string, password string, driverName string) (*Database, error) {
 	// Note that sslmode=disable is required it does not mean that the connection
 	// is unencrypted. All connections via the proxy are completely encrypted.
-	log.Debug("attempting to open database connection")
+	log.Debugf("attempting to open db host %s for database %s", hostName, databaseName)
 	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable connect_timeout=10", hostName, databaseName, user, password)
 	db, err := sql.Open(driverName, dsn)
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf("connected to db host %s with database %s", hostName, databaseName)
+	log.Debugf("connected to db host %s for database %s", hostName, databaseName)
 	return &Database{Connection: db}, nil
 }
 
