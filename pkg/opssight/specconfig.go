@@ -42,7 +42,7 @@ func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
 	configMap := &MainOpssightConfigMap{
 		LogLevel: config.LogLevel,
 		BlackDuck: &BlackDuckConfig{
-			BlackDuckConnectionsEnvVar: config.Blackduck.BlackDuckConnectionsEnvVar,
+			BlackDuckConnectionsEnvVar: config.Blackduck.ConnectionsEnvironmentVariableName,
 			TLSVerification:            config.Blackduck.TLSVerification,
 		},
 		ImageFacade: &ImageFacadeConfig{

@@ -166,7 +166,7 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 				if err != nil {
 					return errors.Trace(err)
 				}
-				secret.AddData(map[string][]byte{createOpsSight.Blackduck.BlackDuckConnectionsEnvVar: bytes})
+				secret.AddData(map[string][]byte{createOpsSight.Blackduck.ConnectionsEnvironmentVariableName: bytes})
 
 				// adding Secured registries credential
 				securedRegistries := make(map[string]interface{})

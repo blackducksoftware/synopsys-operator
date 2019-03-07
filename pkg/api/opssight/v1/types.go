@@ -58,9 +58,9 @@ type Host struct {
 
 // Blackduck ...
 type Blackduck struct {
-	ExternalHosts              []*Host `json:"externalHosts"`
-	BlackDuckConnectionsEnvVar string  `json:"blackDuckConnectionsEnvVar"`
-	TLSVerification            bool    `json:"tlsVerification"`
+	ExternalHosts                      []*Host `json:"externalHosts"`
+	ConnectionsEnvironmentVariableName string  `json:"connectionsEnvironmentVariableName"`
+	TLSVerification                    bool    `json:"tlsVerification"`
 
 	// Auto scaling parameters
 	InitialCount                       int               `json:"initialCount"`

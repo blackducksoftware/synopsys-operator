@@ -75,8 +75,8 @@
     "blackduck": {
       "initialCount": 0,
       "maxCount": 0,
-      "BlackDuckConnectionsEnvVar": "perceptor.json",
-      "TLSVerification": false,
+      "connectionsEnvironmentVariableName": "perceptor.json",
+      "tlsVerification": false,
       "blackduckSpec": {
         "licenseKey": "<BLACKDUCK_LICENSE_KEY>",
         "persistentStorage": false,
