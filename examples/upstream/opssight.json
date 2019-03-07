@@ -9,7 +9,7 @@
     "perceptor": {
       "name": "perceptor",
       "port": 3001,
-      "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor:support-multiple-hubs",
+      "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
       "checkForStalledScansPauseHours": 999999,
       "stalledScanClientTimeoutHours": 999999,
       "modelMetricsPauseSeconds": 15,
@@ -21,14 +21,14 @@
       "scanner": {
         "name": "perceptor-scanner",
         "port": 3003,
-        "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:support-multiple-hubs",
+        "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
         "clientTimeoutSeconds": 600
       },
       "imageFacade": {
         "name": "perceptor-imagefacade",
         "port": 3004,
         "internalRegistries": [],
-        "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:support-multiple-hubs",
+        "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
         "serviceAccount": "perceptor-scanner"      
       },
       "replicaCount": 1
