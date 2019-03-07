@@ -24,7 +24,7 @@ package apps
 import (
 	"database/sql"
 	"fmt"
-
+	"time"
 	// This is required to access the Postgres database
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
@@ -35,17 +35,53 @@ type Database struct {
 	Connection *sql.DB
 }
 
+// ExecDBStatements will create the connection, execute statements and close the connection
+func ExecDBStatements(hostName string, databaseName string, user string, password string, driverName string, statements []string, checkDatabase bool) error {
+	// create a new DB connection
+	db, err := NewDatabase(hostName, databaseName, user, password, driverName)
+	if err != nil {
+		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
+	}
+
+	// if check database is true, then verify the DB is serve to accept queries
+	if checkDatabase {
+		for {
+			log.Debug("executing SELECT 1")
+			errs := db.ExecuteStatements([]string{"SELECT 1;"})
+			if len(errs) == 0 {
+				break
+			}
+			time.Sleep(5 * time.Second)
+		}
+	}
+
+	// execute the statements
+	errs := db.ExecuteStatements(statements)
+	for _, err := range errs {
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
+	// close the DB connection
+	err = db.CloseDatabaseConnection()
+	if err != nil {
+		return fmt.Errorf("unable to close database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
+	}
+	return nil
+}
+
 // NewDatabase will create a database connection and provide the connection instance
-func NewDatabase(host string, name string, user string, password string, driverName string) (*Database, error) {
+func NewDatabase(hostName string, databaseName string, user string, password string, driverName string) (*Database, error) {
 	// Note that sslmode=disable is required it does not mean that the connection
 	// is unencrypted. All connections via the proxy are completely encrypted.
 	log.Debug("attempting to open database connection")
-	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable connect_timeout=10", host, name, user, password)
+	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable connect_timeout=10", hostName, databaseName, user, password)
 	db, err := sql.Open(driverName, dsn)
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("connected to database")
+	log.Debugf("connected to db host %s with database %s", hostName, databaseName)
 	return &Database{Connection: db}, nil
 }
 
@@ -55,7 +91,7 @@ func (d *Database) ExecuteStatements(statements []string) []error {
 	for _, statement := range statements {
 		_, err := d.Connection.Exec(statement)
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, fmt.Errorf("unable to exec %s statment due to %+v", statement, err))
 		}
 	}
 	return errs
