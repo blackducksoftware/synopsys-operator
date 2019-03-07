@@ -4,14 +4,16 @@ metadata:
   name: hub-template
 objects:
 - apiVersion: synopsys.com/v1
-  kind: Hub
+  kind: Blackduck
   metadata:
     name: ${HUB_NAME}
   spec:
-    backupSupport: "No"
+    namespace: ${HUB_NAME}
     certificateName: default
-    dbPrototype: empty
-    hubType: master
+    livenessProbes: false
+    persistentStorage: false
+    type: master
+    size: ${HUB_TYPE}
     environs:
     - HTTPS_VERIFY_CERTS:yes
     - HUB_POSTGRES_ENABLE_SSL:"false"
@@ -41,7 +43,6 @@ objects:
     - BDS_RELENG_KEEP_HOURS:${BDS_RELENG_KEEP_HOURS}
     - BDS_RELENG_BUILD_INFO:${BDS_RELENG_BUILD_INFO}
     - BDS_RELENG_DEP_DETAILS_FILENAME:${BDS_RELENG_DEP_DETAILS_FILENAME}
-    size: ${HUB_TYPE}
     imageRegistries:
     - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${APPCHECK_WORKER_IMAGE}
     - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${RABBITMQ_IMAGE}
@@ -57,7 +58,6 @@ objects:
     - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${BLACKDUCK_UPLOAD_CACHE_IMAGE}
     - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${BLACKDUCK_WEBAPP_IMAGE}
     - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${BLACKDUCK_ZOOKEEPER_IMAGE}
-    namespace: ${HUB_NAME}
 parameters:
 - description: Size of the hub instance
   name: HUB_TYPE
