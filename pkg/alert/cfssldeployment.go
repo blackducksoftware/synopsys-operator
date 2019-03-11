@@ -71,6 +71,7 @@ func (a *SpecConfig) getCfsslContainer() *components.Container {
 		Name:   "hub-cfssl",
 		Image:  fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.CfsslImageName, a.config.CfsslImageVersion),
 		MinMem: a.config.CfsslMemory,
+		MaxMem: a.config.CfsslMemory,
 	})
 
 	container.AddPort(horizonapi.PortConfig{
@@ -85,7 +86,7 @@ func (a *SpecConfig) getCfsslContainer() *components.Container {
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromConfigMap,
-		FromName: "alert",
+		FromName: "blackduck-alert-config",
 	})
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{

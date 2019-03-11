@@ -18,7 +18,7 @@
 		"blackduckPort": 443,
 		"port": 8443,
 		"standAlone": true,
-		"alertMemory": "512M",
+		"alertMemory": "2560M",
 		"cfsslMemory": "640M"
 	}
 }
