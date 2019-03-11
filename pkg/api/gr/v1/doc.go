@@ -19,20 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package util
+// +k8s:deepcopy-gen=package
+// +groupName=synopsys
 
-import (
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-)
-
-// Container defines the configuration for a container
-type Container struct {
-	ContainerConfig       *horizonapi.ContainerConfig
-	EnvConfigs            []*horizonapi.EnvConfig
-	VolumeMounts          []*horizonapi.VolumeMountConfig
-	PortConfig            []*horizonapi.PortConfig
-	ActionConfig          *horizonapi.ActionConfig
-	ReadinessProbeConfigs []*horizonapi.ProbeConfig
-	LivenessProbeConfigs  []*horizonapi.ProbeConfig
-	Capabilities          []string
-}
+package v1

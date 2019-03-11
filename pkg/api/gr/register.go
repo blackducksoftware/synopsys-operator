@@ -19,20 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package util
+package gr
 
-import (
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-)
-
-// Container defines the configuration for a container
-type Container struct {
-	ContainerConfig       *horizonapi.ContainerConfig
-	EnvConfigs            []*horizonapi.EnvConfig
-	VolumeMounts          []*horizonapi.VolumeMountConfig
-	PortConfig            []*horizonapi.PortConfig
-	ActionConfig          *horizonapi.ActionConfig
-	ReadinessProbeConfigs []*horizonapi.ProbeConfig
-	LivenessProbeConfigs  []*horizonapi.ProbeConfig
-	Capabilities          []string
-}
+// GroupName will store the CRD Blackduck group name
+const GroupName = "synopsys.com"
