@@ -24,149 +24,43 @@ package alert
 import (
 	"fmt"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
 
-// alertDeployment creates a new deployment for alert
-func (a *SpecConfig) alertDeployment() (*components.Deployment, error) {
-	replicas := int32(1)
-	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
-		Replicas:  &replicas,
-		Name:      "alert",
-		Namespace: a.config.Namespace,
-	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": "alert", "tier": "alert"})
+// SpecConfig will contain the specification of Alert
+type SpecConfig struct {
+	config *v1.AlertSpec
+}
 
-	pod, err := a.alertPod()
+// NewAlert will create the Alert object
+func NewAlert(config *v1.AlertSpec) *SpecConfig {
+	return &SpecConfig{config: config}
+}
+
+// GetComponents will return the list of components for alert
+func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
+	components := &api.ComponentList{}
+
+	// Add alert
+	dep, err := a.alertDeployment()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pod: %v", err)
+		return nil, fmt.Errorf("failed to create alert deployment: %v", err)
 	}
-	deployment.AddPod(pod)
+	components.Deployments = append(components.Deployments, dep)
+	components.Services = append(components.Services, a.alertService())
+	components.Services = append(components.Services, a.alertExposedService())
+	components.ConfigMaps = append(components.ConfigMaps, a.alertConfigMap())
 
-	return deployment, nil
-}
-
-func (a *SpecConfig) alertPod() (*components.Pod, error) {
-	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "alert",
-	})
-	pod.AddLabels(map[string]string{"app": "alert", "tier": "alert"})
-
-	pod.AddContainer(a.alertContainer())
-
-	vol, err := a.alertVolume()
-	if err != nil {
-		return nil, fmt.Errorf("error creating volumes: %v", err)
-	}
-	pod.AddVolume(vol)
-
-	return pod, nil
-}
-
-func (a *SpecConfig) alertContainer() *components.Container {
-	// This will prevent it from working on openshift without a privileged service account.  Remove once the
-	// chowns are removed in the image
-	user := int64(0)
-	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:   "alert",
-		Image:  fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.AlertImageName, a.config.AlertImageVersion),
-		MinMem: a.config.AlertMemory,
-		UID:    &user,
-	})
-
-	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: "8443",
-		Protocol:      horizonapi.ProtocolTCP,
-	})
-
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
-		Name:      "dir-alert",
-		MountPath: "/opt/blackduck/alert/alert-config",
-	})
-
-	container.AddEnv(horizonapi.EnvConfig{
-		Type:     horizonapi.EnvFromConfigMap,
-		FromName: "alert",
-	})
-
-	container.AddLivenessProbe(horizonapi.ProbeConfig{
-		ActionConfig: horizonapi.ActionConfig{
-			Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/alert/api/about"},
-		},
-		Delay:           240,
-		Timeout:         10,
-		Interval:        30,
-		MinCountFailure: 5,
-	})
-
-	return container
-}
-
-func (a *SpecConfig) alertVolume() (*components.Volume, error) {
-	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
-		VolumeName: "dir-alert",
-		Medium:     horizonapi.StorageMediumDefault,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create empty dir volume: %v", err)
+	// Add cfssl if running in stand alone mode
+	if *a.config.StandAlone {
+		dep, err := a.cfsslDeployment()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create cfssl deployment: %v", err)
+		}
+		components.Deployments = append(components.Deployments, dep)
+		components.Services = append(components.Services, a.cfsslService())
 	}
 
-	return vol, nil
-}
-
-// alertService creates a service for alert
-func (a *SpecConfig) alertService() *components.Service {
-	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "alert",
-		Namespace:     a.config.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
-	})
-
-	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       8443,
-		TargetPort: "8443",
-		Protocol:   horizonapi.ProtocolTCP,
-		Name:       "8443-tcp",
-	})
-
-	service.AddSelectors(map[string]string{"app": "alert"})
-
-	return service
-}
-
-// alertExposedService creates a loadBalancer service for alert
-func (a *SpecConfig) alertExposedService() *components.Service {
-	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "alert-lb",
-		Namespace:     a.config.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeLoadBalancer,
-	})
-
-	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       8443,
-		TargetPort: "8443",
-		Protocol:   horizonapi.ProtocolTCP,
-		Name:       "8443-tcp",
-	})
-
-	service.AddSelectors(map[string]string{"app": "alert"})
-
-	return service
-}
-
-// alertConfigMap creates a config map for alert
-func (a *SpecConfig) alertConfigMap() *components.ConfigMap {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      "alert",
-		Namespace: a.config.Namespace,
-	})
-
-	configMap.AddData(map[string]string{
-		"ALERT_SERVER_PORT":         fmt.Sprintf("%d", *a.config.Port),
-		"PUBLIC_HUB_WEBSERVER_HOST": a.config.BlackduckHost,
-		"PUBLIC_HUB_WEBSERVER_PORT": fmt.Sprintf("%d", *a.config.BlackduckPort),
-	})
-
-	return configMap
+	return components, nil
 }
