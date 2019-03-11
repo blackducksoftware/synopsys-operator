@@ -39,7 +39,7 @@ func (p *SpecConfig) ScannerReplicationController() (*components.ReplicationCont
 		Namespace: p.config.Namespace,
 	})
 
-	rc.AddLabelSelectors(map[string]string{"name": p.config.ScannerPod.Name})
+	rc.AddLabelSelectors(map[string]string{"name": p.config.ScannerPod.Name, "app": "opssight"})
 
 	pod, err := p.scannerPod()
 	if err != nil {
@@ -55,7 +55,7 @@ func (p *SpecConfig) scannerPod() (*components.Pod, error) {
 		Name:           p.config.ScannerPod.Name,
 		ServiceAccount: p.config.ScannerPod.ImageFacade.ServiceAccount,
 	})
-	pod.AddLabels(map[string]string{"name": p.config.ScannerPod.Name})
+	pod.AddLabels(map[string]string{"name": p.config.ScannerPod.Name, "app": "opssight"})
 
 	cont, err := p.scannerContainer()
 	if err != nil {
@@ -223,6 +223,7 @@ func (p *SpecConfig) ScannerService() *components.Service {
 		Name:      p.config.ScannerPod.Scanner.Name,
 		Namespace: p.config.Namespace,
 	})
+	service.AddLabels(map[string]string{"name": p.config.ScannerPod.Name, "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": p.config.ScannerPod.Name})
 
 	service.AddPort(horizonapi.ServicePortConfig{
@@ -241,6 +242,7 @@ func (p *SpecConfig) ImageFacadeService() *components.Service {
 		Namespace: p.config.Namespace,
 	})
 	// TODO verify that this hits the *perceptor-scanner pod* !!!
+	service.AddLabels(map[string]string{"name": p.config.ScannerPod.Name, "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": p.config.ScannerPod.Name})
 
 	service.AddPort(horizonapi.ServicePortConfig{

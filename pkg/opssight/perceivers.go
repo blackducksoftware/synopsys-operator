@@ -34,12 +34,7 @@ func (p *SpecConfig) PodPerceiverReplicationController() (*components.Replicatio
 	name := p.config.Perceiver.PodPerceiver.Name
 	image := p.config.Perceiver.PodPerceiver.Image
 
-	var rc *components.ReplicationController
-	if p.config.Perceiver.EnablePodPerceiver {
-		rc = p.perceiverReplicationController(name, 1)
-	} else {
-		rc = p.perceiverReplicationController(name, 0)
-	}
+	rc := p.perceiverReplicationController(name, 1)
 
 	pod, err := p.perceiverPod(name, image, p.config.Perceiver.ServiceAccount)
 	if err != nil {
@@ -55,12 +50,7 @@ func (p *SpecConfig) ImagePerceiverReplicationController() (*components.Replicat
 	name := p.config.Perceiver.ImagePerceiver.Name
 	image := p.config.Perceiver.ImagePerceiver.Image
 
-	var rc *components.ReplicationController
-	if p.config.Perceiver.EnableImagePerceiver {
-		rc = p.perceiverReplicationController(name, 1)
-	} else {
-		rc = p.perceiverReplicationController(name, 0)
-	}
+	rc := p.perceiverReplicationController(name, 1)
 
 	pod, err := p.perceiverPod(name, image, p.config.Perceiver.ServiceAccount)
 	if err != nil {
@@ -77,7 +67,7 @@ func (p *SpecConfig) perceiverReplicationController(name string, replicas int32)
 		Name:      name,
 		Namespace: p.config.Namespace,
 	})
-	rc.AddLabelSelectors(map[string]string{"name": name})
+	rc.AddLabelSelectors(map[string]string{"name": name, "app": "opssight"})
 
 	return rc
 }
@@ -88,7 +78,7 @@ func (p *SpecConfig) perceiverPod(name string, image string, account string) (*c
 		ServiceAccount: account,
 	})
 
-	pod.AddLabels(map[string]string{"name": name})
+	pod.AddLabels(map[string]string{"name": name, "app": "opssight"})
 	pod.AddContainer(p.perceiverContainer(name, image))
 
 	vols, err := p.perceiverVolumes(name)
@@ -163,6 +153,7 @@ func (p *SpecConfig) perceiverService(name string) *components.Service {
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
+	service.AddLabels(map[string]string{"name": name, "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": name})
 
 	return service

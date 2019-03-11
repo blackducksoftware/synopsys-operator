@@ -376,9 +376,7 @@ func (p *Updater) patchReplicationController(namespace string, name string, repl
 
 	log.Infof("found %s replication controller in %s namespace successfully", name, namespace)
 
-	r := rc.DeepCopy()
-	r.Spec.Replicas = util.IntToInt32(replicas)
-	err = util.PatchReplicationController(p.kubeClient, *rc, *r)
+	err = util.PatchReplicationControllerForReplicas(p.kubeClient, *rc, replicas)
 	if err != nil {
 		return fmt.Errorf("unable to patch %s replication controller with replicas %d in %s namespace because %+v", name, replicas, namespace, err)
 	}

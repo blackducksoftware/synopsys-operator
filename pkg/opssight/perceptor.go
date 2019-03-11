@@ -45,7 +45,7 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	rc.AddLabelSelectors(map[string]string{"name": p.config.Perceptor.Name})
+	rc.AddLabelSelectors(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
 	return rc, nil
 }
 
@@ -118,6 +118,7 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 		return nil, errors.Trace(err)
 	}
 
+	service.AddLabels(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": p.config.Perceptor.Name})
 
 	return service, nil

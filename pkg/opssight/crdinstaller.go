@@ -28,10 +28,10 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	opssightinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
+	opssightinformer "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -115,7 +115,7 @@ func (c *CRDInstaller) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *CRDInstaller) CreateInformer() {
-	c.config.informer = opssightinformerv1.NewOpsSightInformer(
+	c.config.informer = opssightinformer.NewOpsSightInformer(
 		c.config.customClientSet,
 		c.config.Config.Namespace,
 		c.config.resyncPeriod,
@@ -204,15 +204,15 @@ func (c *CRDInstaller) CreateHandler() {
 	}
 
 	c.config.handler = &Handler{
-		Config:            c.config.Config,
-		KubeConfig:        c.config.KubeConfig,
-		Clientset:         c.config.KubeClientSet,
-		OpsSightClientset: c.config.customClientSet,
-		Namespace:         c.config.Config.Namespace,
-		OSSecurityClient:  osClient,
-		RouteClient:       routeClient,
-		Defaults:          c.config.Defaults.(*v1.OpsSightSpec),
-		HubClient:         hubClient,
+		Config:           c.config.Config,
+		KubeConfig:       c.config.KubeConfig,
+		KubeClient:       c.config.KubeClientSet,
+		OpsSightClient:   c.config.customClientSet,
+		Namespace:        c.config.Config.Namespace,
+		OSSecurityClient: osClient,
+		RouteClient:      routeClient,
+		Defaults:         c.config.Defaults.(*opssightapi.OpsSightSpec),
+		HubClient:        hubClient,
 	}
 }
 

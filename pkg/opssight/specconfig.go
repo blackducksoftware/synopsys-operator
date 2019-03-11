@@ -27,18 +27,18 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/juju/errors"
 )
 
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
-	config    *v1.OpsSightSpec
+	config    *opssightapi.OpsSightSpec
 	configMap *MainOpssightConfigMap
 }
 
 // NewSpecConfig will create the OpsSight object
-func NewSpecConfig(config *v1.OpsSightSpec) *SpecConfig {
+func NewSpecConfig(config *opssightapi.OpsSightSpec) *SpecConfig {
 	configMap := &MainOpssightConfigMap{
 		LogLevel: config.LogLevel,
 		BlackDuck: &BlackDuckConfig{
@@ -135,54 +135,62 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 
-	//if p.config.Perceiver.EnablePodPerceiver {
-	rc, err = p.PodPerceiverReplicationController()
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create pod perceiver")
+	// Add Pod Perceiver
+	if p.config.Perceiver.EnablePodPerceiver {
+		rc, err = p.PodPerceiverReplicationController()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create pod perceiver")
+		}
+		components.ReplicationControllers = append(components.ReplicationControllers, rc)
+		components.Services = append(components.Services, p.PodPerceiverService())
+		components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
+		cr := p.PodPerceiverClusterRole()
+		components.ClusterRoles = append(components.ClusterRoles, cr)
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(cr))
 	}
-	components.ReplicationControllers = append(components.ReplicationControllers, rc)
-	components.Services = append(components.Services, p.PodPerceiverService())
-	components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
-	cr := p.PodPerceiverClusterRole()
-	components.ClusterRoles = append(components.ClusterRoles, cr)
-	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(cr))
-	//}
 
-	//if p.config.Perceiver.EnableImagePerceiver {
-	rc, err = p.ImagePerceiverReplicationController()
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create image perceiver")
+	// Add Image Perceiver
+	if p.config.Perceiver.EnableImagePerceiver {
+		rc, err = p.ImagePerceiverReplicationController()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create image perceiver")
+		}
+		components.ReplicationControllers = append(components.ReplicationControllers, rc)
+		components.Services = append(components.Services, p.ImagePerceiverService())
+		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
+		cr := p.ImagePerceiverClusterRole()
+		components.ClusterRoles = append(components.ClusterRoles, cr)
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(cr))
 	}
-	components.ReplicationControllers = append(components.ReplicationControllers, rc)
-	components.Services = append(components.Services, p.ImagePerceiverService())
-	components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
-	cr = p.ImagePerceiverClusterRole()
-	components.ClusterRoles = append(components.ClusterRoles, cr)
-	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(cr))
-	//}
 
-	skyfireRC, err := p.PerceptorSkyfireReplicationController()
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create skyfire")
+	// Add skyfire
+	if p.config.EnableSkyfire {
+		skyfireRC, err := p.PerceptorSkyfireReplicationController()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create skyfire")
+		}
+		components.ReplicationControllers = append(components.ReplicationControllers, skyfireRC)
+		components.Services = append(components.Services, p.PerceptorSkyfireService())
+		components.ServiceAccounts = append(components.ServiceAccounts, p.PerceptorSkyfireServiceAccount())
+		skyfireClusterRole := p.PerceptorSkyfireClusterRole()
+		components.ClusterRoles = append(components.ClusterRoles, skyfireClusterRole)
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole))
 	}
-	components.ReplicationControllers = append(components.ReplicationControllers, skyfireRC)
-	components.Services = append(components.Services, p.PerceptorSkyfireService())
-	components.ServiceAccounts = append(components.ServiceAccounts, p.PerceptorSkyfireServiceAccount())
-	skyfireClusterRole := p.PerceptorSkyfireClusterRole()
-	components.ClusterRoles = append(components.ClusterRoles, skyfireClusterRole)
-	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole))
 
-	dep, err := p.PerceptorMetricsDeployment()
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create metrics")
+	// Add Metrics
+	if p.config.EnableMetrics {
+		dep, err := p.PerceptorMetricsDeployment()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create metrics")
+		}
+		components.Deployments = append(components.Deployments, dep)
+		components.Services = append(components.Services, p.PerceptorMetricsService())
+		perceptorCm, err := p.PerceptorMetricsConfigMap()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create perceptor config map")
+		}
+		components.ConfigMaps = append(components.ConfigMaps, perceptorCm)
 	}
-	components.Deployments = append(components.Deployments, dep)
-	components.Services = append(components.Services, p.PerceptorMetricsService())
-	perceptorCm, err := p.PerceptorMetricsConfigMap()
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to create perceptor config map")
-	}
-	components.ConfigMaps = append(components.ConfigMaps, perceptorCm)
 
 	return components, nil
 }

@@ -316,6 +316,12 @@ func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (
 	return clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 }
 
+// UpdateSecret updates a secret
+func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *v1.Secret) error {
+	_, err := clientset.CoreV1().Secrets(namespace).Update(secret)
+	return err
+}
+
 // ReadFromFile will read the file
 func ReadFromFile(filePath string) ([]byte, error) {
 	file, err := ioutil.ReadFile(filePath)
@@ -393,9 +399,14 @@ func GetReplicationController(clientset *kubernetes.Clientset, namespace string,
 	return clientset.CoreV1().ReplicationControllers(namespace).Get(name, metav1.GetOptions{})
 }
 
-// GetAllReplicationControllersForNamespace will get all the replication controllers corresponding to a namespace
-func GetAllReplicationControllersForNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.ReplicationControllerList, error) {
-	return clientset.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{})
+// GetReplicationControllerList will get the replication controllers corresponding to a namespace
+func GetReplicationControllerList(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ReplicationControllerList, error) {
+	return clientset.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// DeleteReplicationController will delete the replication controller corresponding to a namespace and name
+func DeleteReplicationController(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
 // GetDeployment will get the deployment corresponding to a namespace and name
@@ -697,6 +708,11 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 	return pvList, nil
 }
 
+// Int32ToInt will convert from int32 to int
+func Int32ToInt(i *int32) int {
+	return int(*i)
+}
+
 // IntToInt32 will convert from int to int32
 func IntToInt32(i int) *int32 {
 	j := int32(i)
@@ -825,6 +841,29 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 		}
 	}
 	return err
+}
+
+// PatchReplicationControllerForReplicas patch a replication controller for replica update
+func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old corev1.ReplicationController, replicas int) error {
+	oldData, err := json.Marshal(old)
+	if err != nil {
+		return err
+	}
+	new := old.DeepCopy()
+	new.Spec.Replicas = IntToInt32(replicas)
+	newData, err := json.Marshal(new)
+	if err != nil {
+		return err
+	}
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.ReplicationController{})
+	if err != nil {
+		return err
+	}
+	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // PatchReplicationController patch a replication controller
