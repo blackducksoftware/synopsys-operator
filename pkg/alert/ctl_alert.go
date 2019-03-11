@@ -101,7 +101,8 @@ func (ctl *Ctl) SwitchSpec(createAlertSpecType string) error {
 }
 
 // AddSpecFlags adds flags for the Alert's Spec to the command
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
+// master - if false, doesn't add flags that all Users shouldn't use
+func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
 	cmd.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
 	cmd.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
@@ -162,4 +163,14 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	} else {
 		log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 	}
+}
+
+// SpecIsValid verifies the spec has necessary fields to deploy
+func (ctl *Ctl) SpecIsValid() (bool, error) {
+	return true, nil
+}
+
+// CanUpdate checks if a user has permission to modify based on the spec
+func (ctl *Ctl) CanUpdate() (bool, error) {
+	return true, nil
 }

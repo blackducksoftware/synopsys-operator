@@ -46,8 +46,8 @@ var alertClient *alertclientset.Clientset
 var openshift bool
 var kube bool
 
-// getBlackduckSpecFromCluster returns the CRD for a blackduck in namespace
-func getBlackduckSpecFromCluster(namespace string) (*blackduckv1.Blackduck, error) {
+// getBlackduckFromCluster returns the CRD for a blackduck in namespace
+func getBlackduckFromCluster(namespace string) (*blackduckv1.Blackduck, error) {
 	blackduck, err := blackduckClient.SynopsysV1().Blackducks(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		return blackduck, fmt.Errorf("Error Editing Blackduck: %+v", err)
@@ -55,8 +55,8 @@ func getBlackduckSpecFromCluster(namespace string) (*blackduckv1.Blackduck, erro
 	return blackduck, nil
 }
 
-// updateBlackduckSpecInCluster updates the CRD for a blackduck
-func updateBlackduckSpecInCluster(namespace string, crd *blackduckv1.Blackduck) error {
+// updateBlackduckInCluster updates the CRD for a blackduck
+func updateBlackduckInCluster(namespace string, crd *blackduckv1.Blackduck) error {
 	_, err := blackduckClient.SynopsysV1().Blackducks(namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing Blackduck: %+v", err)
@@ -64,8 +64,8 @@ func updateBlackduckSpecInCluster(namespace string, crd *blackduckv1.Blackduck) 
 	return nil
 }
 
-// getOpsSightSpecFromCluster returns the CRD for an OpsSight in namespace
-func getOpsSightSpecFromCluster(namespace string) (*opssightv1.OpsSight, error) {
+// getOpsSightFromCluster returns the CRD for an OpsSight in namespace
+func getOpsSightFromCluster(namespace string) (*opssightv1.OpsSight, error) {
 	opssight, err := opssightClient.SynopsysV1().OpsSights(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		return opssight, fmt.Errorf("Error Editing OpsSight: %+v", err)
@@ -73,8 +73,8 @@ func getOpsSightSpecFromCluster(namespace string) (*opssightv1.OpsSight, error) 
 	return opssight, nil
 }
 
-// updateOpsSightSpecInCluster updates the CRD for an OpsSight
-func updateOpsSightSpecInCluster(namespace string, crd *opssightv1.OpsSight) error {
+// updateOpsSightInCluster updates the CRD for an OpsSight
+func updateOpsSightInCluster(namespace string, crd *opssightv1.OpsSight) error {
 	_, err := opssightClient.SynopsysV1().OpsSights(namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing OpsSight: %+v", err)
@@ -82,8 +82,8 @@ func updateOpsSightSpecInCluster(namespace string, crd *opssightv1.OpsSight) err
 	return nil
 }
 
-// getAlertSpecFromCluster returns the CRD for an Alert in namespace
-func getAlertSpecFromCluster(namespace string) (*alertv1.Alert, error) {
+// getAlertFromCluster returns the CRD for an Alert in namespace
+func getAlertFromCluster(namespace string) (*alertv1.Alert, error) {
 	alert, err := alertClient.SynopsysV1().Alerts(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
 		return alert, fmt.Errorf("Error Editing Alert: %+v", err)
@@ -91,8 +91,8 @@ func getAlertSpecFromCluster(namespace string) (*alertv1.Alert, error) {
 	return alert, nil
 }
 
-// updateAlertSpecInCluster updates the CRD for an Alert
-func updateAlertSpecInCluster(namespace string, crd *alertv1.Alert) error {
+// updateAlertInCluster updates the CRD for an Alert
+func updateAlertInCluster(namespace string, crd *alertv1.Alert) error {
 	_, err := alertClient.SynopsysV1().Alerts(namespace).Update(crd)
 	if err != nil {
 		return fmt.Errorf("Error Editing Alert: %+v", err)
