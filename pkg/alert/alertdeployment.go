@@ -67,14 +67,12 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 
 // getAlertContainer returns a new Container for an Alert
 func (a *SpecConfig) getAlertContainer() *components.Container {
-	// This will prevent it from working on openshift without a privileged service account.  Remove once the
-	// chowns are removed in the image
-	user := int64(0)
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:   "alert",
-		Image:  fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.AlertImageName, a.config.AlertImageVersion),
-		MinMem: a.config.AlertMemory,
-		UID:    &user,
+		Name:       "alert",
+		Image:      fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.AlertImageName, a.config.AlertImageVersion),
+		PullPolicy: horizonapi.PullAlways,
+		MinMem:     a.config.AlertMemory,
+		MaxMem:     a.config.AlertMemory,
 	})
 
 	container.AddPort(horizonapi.PortConfig{
@@ -89,7 +87,7 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromConfigMap,
-		FromName: "alert",
+		FromName: "blackduck-alert-config",
 	})
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{
