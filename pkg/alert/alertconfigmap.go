@@ -31,14 +31,16 @@ import (
 // getAlertConfigMap returns a new ConfigMap for an Alert
 func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      "alert",
+		Name:      "blackduck-alert-config",
 		Namespace: a.config.Namespace,
 	})
 
 	configMap.AddData(map[string]string{
-		"ALERT_SERVER_PORT":         fmt.Sprintf("%d", *a.config.Port),
-		"PUBLIC_HUB_WEBSERVER_HOST": a.config.BlackduckHost,
-		"PUBLIC_HUB_WEBSERVER_PORT": fmt.Sprintf("%d", *a.config.BlackduckPort),
+		"ALERT_SERVER_PORT":           fmt.Sprintf("%d", *a.config.Port),
+		"PUBLIC_HUB_WEBSERVER_HOST":   a.config.BlackduckHost,
+		"PUBLIC_HUB_WEBSERVER_PORT":   fmt.Sprintf("%d", *a.config.BlackduckPort),
+		"ALERT_ENCRYPTION_PASSWORD":   a.config.EncryptionPassword,
+		"ALERTENCRYPTION_GLOBAL_SALT": a.config.EncryptionGlobalSalt,
 	})
 
 	return configMap
