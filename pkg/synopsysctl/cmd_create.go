@@ -281,18 +281,18 @@ func init() {
 	// Add Blackduck Command
 	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createBlackduckCmd.Flags().BoolVar(&mockBlackduck, "mock", false, "Prints resource spec instead of creating")
-	createBlackduckCtl.AddSpecFlags(createBlackduckCmd)
+	createBlackduckCtl.AddSpecFlags(createBlackduckCmd, true)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command
 	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags")
 	createOpsSightCmd.Flags().BoolVar(&mockOpsSight, "mock", false, "Prints resource spec instead of creating")
-	createOpsSightCtl.AddSpecFlags(createOpsSightCmd)
+	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command
 	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags")
 	createAlertCmd.Flags().BoolVar(&mockAlert, "mock", false, "Prints resource spec instead of creating")
-	createAlertCtl.AddSpecFlags(createAlertCmd)
+	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	createCmd.AddCommand(createAlertCmd)
 }
