@@ -25,7 +25,7 @@ import (
 	"fmt"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
 
 // SpecConfig will contain the specification of Alert
@@ -43,23 +43,23 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
 
 	// Add alert
-	dep, err := a.alertDeployment()
+	dep, err := a.getAlertDeployment()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alert deployment: %v", err)
 	}
 	components.Deployments = append(components.Deployments, dep)
-	components.Services = append(components.Services, a.alertService())
-	components.Services = append(components.Services, a.alertExposedService())
-	components.ConfigMaps = append(components.ConfigMaps, a.alertConfigMap())
+	components.Services = append(components.Services, a.getAlertService())
+	components.Services = append(components.Services, a.getAlertExposedService())
+	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
 
 	// Add cfssl if running in stand alone mode
 	if *a.config.StandAlone {
-		dep, err := a.cfsslDeployment()
+		dep, err := a.getCfsslDeployment()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create cfssl deployment: %v", err)
 		}
 		components.Deployments = append(components.Deployments, dep)
-		components.Services = append(components.Services, a.cfsslService())
+		components.Services = append(components.Services, a.getCfsslService())
 	}
 
 	return components, nil

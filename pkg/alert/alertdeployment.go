@@ -28,8 +28,8 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// alertDeployment creates a new deployment for alert
-func (a *SpecConfig) alertDeployment() (*components.Deployment, error) {
+// getAlertDeployment returns a new deployment for an Alert
+func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
@@ -38,7 +38,7 @@ func (a *SpecConfig) alertDeployment() (*components.Deployment, error) {
 	})
 	deployment.AddMatchLabelsSelectors(map[string]string{"app": "alert", "tier": "alert"})
 
-	pod, err := a.alertPod()
+	pod, err := a.getAlertPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pod: %v", err)
 	}
@@ -47,15 +47,16 @@ func (a *SpecConfig) alertDeployment() (*components.Deployment, error) {
 	return deployment, nil
 }
 
-func (a *SpecConfig) alertPod() (*components.Pod, error) {
+// getAlertPod returns a new Pod for an Alert
+func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "alert",
 	})
 	pod.AddLabels(map[string]string{"app": "alert", "tier": "alert"})
 
-	pod.AddContainer(a.alertContainer())
+	pod.AddContainer(a.getAlertContainer())
 
-	vol, err := a.alertVolume()
+	vol, err := a.getAlertVolume()
 	if err != nil {
 		return nil, fmt.Errorf("error creating volumes: %v", err)
 	}
@@ -64,7 +65,8 @@ func (a *SpecConfig) alertPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (a *SpecConfig) alertContainer() *components.Container {
+// getAlertContainer returns a new Container for an Alert
+func (a *SpecConfig) getAlertContainer() *components.Container {
 	// This will prevent it from working on openshift without a privileged service account.  Remove once the
 	// chowns are removed in the image
 	user := int64(0)
@@ -103,7 +105,8 @@ func (a *SpecConfig) alertContainer() *components.Container {
 	return container
 }
 
-func (a *SpecConfig) alertVolume() (*components.Volume, error) {
+// getAlertVolume returns a new Volume for an Alert
+func (a *SpecConfig) getAlertVolume() (*components.Volume, error) {
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "dir-alert",
 		Medium:     horizonapi.StorageMediumDefault,

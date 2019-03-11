@@ -26,8 +26,8 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// alertService creates a service for alert
-func (a *SpecConfig) alertService() *components.Service {
+// getAlertService returns a new Service for an Alert
+func (a *SpecConfig) getAlertService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "alert",
 		Namespace:     a.config.Namespace,
@@ -46,8 +46,8 @@ func (a *SpecConfig) alertService() *components.Service {
 	return service
 }
 
-// alertExposedService creates a loadBalancer service for alert
-func (a *SpecConfig) alertExposedService() *components.Service {
+// getAlertExposedService returns a new Exposed Service for an Alert
+func (a *SpecConfig) getAlertExposedService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "alert-lb",
 		Namespace:     a.config.Namespace,

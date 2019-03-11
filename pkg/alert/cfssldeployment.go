@@ -28,8 +28,8 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// cfsslDeployment creates a new deployment for cfssl
-func (a *SpecConfig) cfsslDeployment() (*components.Deployment, error) {
+// getCfsslDeployment returns a new Deployment for a Cffsl
+func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
@@ -38,7 +38,7 @@ func (a *SpecConfig) cfsslDeployment() (*components.Deployment, error) {
 	})
 	deployment.AddMatchLabelsSelectors(map[string]string{"app": "cfssl", "tier": "cfssl"})
 
-	pod, err := a.cfsslPod()
+	pod, err := a.getCfsslPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pod: %v", err)
 	}
@@ -47,15 +47,16 @@ func (a *SpecConfig) cfsslDeployment() (*components.Deployment, error) {
 	return deployment, nil
 }
 
-func (a *SpecConfig) cfsslPod() (*components.Pod, error) {
+// getCfsslPod returns a new Pod for a Cffsl
+func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "cfssl",
 	})
 	pod.AddLabels(map[string]string{"app": "cfssl", "tier": "cfssl"})
 
-	pod.AddContainer(a.cfsslContainer())
+	pod.AddContainer(a.getCfsslContainer())
 
-	vol, err := a.cfsslVolume()
+	vol, err := a.getCfsslVolume()
 	if err != nil {
 		return nil, fmt.Errorf("error creating volumes: %v", err)
 	}
@@ -64,7 +65,8 @@ func (a *SpecConfig) cfsslPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (a *SpecConfig) cfsslContainer() *components.Container {
+// getCfsslContainer returns a new Container for a Cffsl
+func (a *SpecConfig) getCfsslContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:   "hub-cfssl",
 		Image:  fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.CfsslImageName, a.config.CfsslImageVersion),
@@ -99,7 +101,8 @@ func (a *SpecConfig) cfsslContainer() *components.Container {
 	return container
 }
 
-func (a *SpecConfig) cfsslVolume() (*components.Volume, error) {
+// getCfsslVolume returns a new Volume for a Cffsl
+func (a *SpecConfig) getCfsslVolume() (*components.Volume, error) {
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "dir-cfssl",
 		Medium:     horizonapi.StorageMediumDefault,
@@ -109,24 +112,4 @@ func (a *SpecConfig) cfsslVolume() (*components.Volume, error) {
 	}
 
 	return vol, nil
-}
-
-// CfsslService creates a service for cfssl
-func (a *SpecConfig) cfsslService() *components.Service {
-	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "cfssl",
-		Namespace:     a.config.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
-	})
-
-	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       8888,
-		TargetPort: "8888",
-		Protocol:   horizonapi.ProtocolTCP,
-		Name:       "8888-tcp",
-	})
-
-	service.AddSelectors(map[string]string{"app": "cfssl"})
-
-	return service
 }

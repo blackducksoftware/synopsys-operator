@@ -22,24 +22,26 @@ under the License.
 package alert
 
 import (
-	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// getAlertConfigMap returns a new ConfigMap for an Alert
-func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      "alert",
-		Namespace: a.config.Namespace,
+// getCfsslService returns a new Service for a Cffsl
+func (a *SpecConfig) getCfsslService() *components.Service {
+	service := components.NewService(horizonapi.ServiceConfig{
+		Name:          "cfssl",
+		Namespace:     a.config.Namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
 	})
 
-	configMap.AddData(map[string]string{
-		"ALERT_SERVER_PORT":         fmt.Sprintf("%d", *a.config.Port),
-		"PUBLIC_HUB_WEBSERVER_HOST": a.config.BlackduckHost,
-		"PUBLIC_HUB_WEBSERVER_PORT": fmt.Sprintf("%d", *a.config.BlackduckPort),
+	service.AddPort(horizonapi.ServicePortConfig{
+		Port:       8888,
+		TargetPort: "8888",
+		Protocol:   horizonapi.ProtocolTCP,
+		Name:       "8888-tcp",
 	})
 
-	return configMap
+	service.AddSelectors(map[string]string{"app": "cfssl"})
+
+	return service
 }
