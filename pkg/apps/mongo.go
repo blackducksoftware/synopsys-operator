@@ -131,11 +131,11 @@ func (p *Mongo) getMongoEnvconfigs() []*horizonapi.EnvConfig {
 		mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MONGODB_USER", KeyOrVal: p.User})
 	}
 
-	if len (p.UserPasswordSecretKey) > 0 && len(p.PasswordSecretName) > 0 {
+	if len(p.UserPasswordSecretKey) > 0 && len(p.PasswordSecretName) > 0 {
 		mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MONGODB_PASSWORD", KeyOrVal: p.UserPasswordSecretKey, FromName: p.PasswordSecretName})
 	}
 
-	if len (p.AdminPasswordSecretKey) > 0 && len(p.PasswordSecretName) > 0 {
+	if len(p.AdminPasswordSecretKey) > 0 && len(p.PasswordSecretName) > 0 {
 		mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MONGODB_ADMIN_PASSWORD", KeyOrVal: p.AdminPasswordSecretKey, FromName: p.PasswordSecretName})
 
 	}

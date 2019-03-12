@@ -6,6 +6,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// GetToolsPortfolioDeployment returns the tools portfolio deployment
 func (g *RgpDeployer) GetToolsPortfolioDeployment() *components.Deployment {
 	deployConfig := &horizonapi.DeploymentConfig{
 		Name:      "tools-portfolio-service",
@@ -14,6 +15,7 @@ func (g *RgpDeployer) GetToolsPortfolioDeployment() *components.Deployment {
 	return util.CreateDeployment(deployConfig, g.GetToolsPortfolioPod())
 }
 
+// GetToolsPortfolioPod returns the tools portfolio pod
 func (g *RgpDeployer) GetToolsPortfolioPod() *components.Pod {
 	envs := g.getToolsPortfolioEnvConfigs()
 
@@ -40,6 +42,7 @@ func (g *RgpDeployer) GetToolsPortfolioPod() *components.Pod {
 	return util.CreatePod("tools-portfolio-service", "", g.getToolsPortfolioVolumes(), containers, nil, nil)
 }
 
+// GetToolsPortfolioService returns the tools portfolio service
 func (g *RgpDeployer) GetToolsPortfolioService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "tools-portfolio-service",

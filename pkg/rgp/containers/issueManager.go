@@ -6,6 +6,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// GetIssueManagerDeployment returns the issue manager deployment
 func (g *RgpDeployer) GetIssueManagerDeployment() *components.Deployment {
 	deployConfig := &horizonapi.DeploymentConfig{
 		Name:      "rp-issue-manager",
@@ -14,6 +15,7 @@ func (g *RgpDeployer) GetIssueManagerDeployment() *components.Deployment {
 	return util.CreateDeployment(deployConfig, g.GetIssueManagerPod())
 }
 
+// GetIssueManagerPod returns the issue manager pod
 func (g *RgpDeployer) GetIssueManagerPod() *components.Pod {
 	envs := g.getIssueManagerEnvConfigs()
 
@@ -40,6 +42,7 @@ func (g *RgpDeployer) GetIssueManagerPod() *components.Pod {
 	return util.CreatePod("rp-issue-manager", "", g.getReportVolumes(), containers, nil, nil)
 }
 
+// GetIssueManagerService returns the issue manager service
 func (g *RgpDeployer) GetIssueManagerService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "rp-issue-manager",

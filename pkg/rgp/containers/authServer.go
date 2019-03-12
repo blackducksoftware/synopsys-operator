@@ -6,6 +6,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// GetAuthServerDeployment return the auth server deployment
 func (g *RgpDeployer) GetAuthServerDeployment() *components.Deployment {
 	deployConfig := &horizonapi.DeploymentConfig{
 		Name:      "auth-server",
@@ -14,6 +15,7 @@ func (g *RgpDeployer) GetAuthServerDeployment() *components.Deployment {
 	return util.CreateDeployment(deployConfig, g.GetAuthServersPod())
 }
 
+// GetAuthServersPod returns the auth server pod
 func (g *RgpDeployer) GetAuthServersPod() *components.Pod {
 	envs := g.getAuthServerEnvConfigs()
 
@@ -40,6 +42,7 @@ func (g *RgpDeployer) GetAuthServersPod() *components.Pod {
 	return util.CreatePod("auth-server", "", g.getAuthServerVolumes(), containers, nil, nil)
 }
 
+// GetAuthServerService returns the auth server service
 func (g *RgpDeployer) GetAuthServerService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "auth-server",

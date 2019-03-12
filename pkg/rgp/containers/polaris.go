@@ -6,6 +6,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// GetPolarisDeployment returns the polaris deployment
 func (g *RgpDeployer) GetPolarisDeployment() *components.Deployment {
 	deployConfig := &horizonapi.DeploymentConfig{
 		Name:      "polaris-service",
@@ -14,6 +15,7 @@ func (g *RgpDeployer) GetPolarisDeployment() *components.Deployment {
 	return util.CreateDeployment(deployConfig, g.GetPolarisPod())
 }
 
+// GetPolarisPod returns the polaris pod
 func (g *RgpDeployer) GetPolarisPod() *components.Pod {
 	envs := g.getPolarisEnvConfigs()
 
@@ -40,6 +42,7 @@ func (g *RgpDeployer) GetPolarisPod() *components.Pod {
 	return util.CreatePod("polaris-service", "", g.getReportVolumes(), containers, nil, nil)
 }
 
+// GetPolarisService returns the polaris service
 func (g *RgpDeployer) GetPolarisService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "polaris-service",

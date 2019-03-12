@@ -6,6 +6,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// GetReportDeployment returns the report deployment
 func (g *RgpDeployer) GetReportDeployment() *components.Deployment {
 	deployConfig := &horizonapi.DeploymentConfig{
 		Name:      "report-service",
@@ -14,6 +15,7 @@ func (g *RgpDeployer) GetReportDeployment() *components.Deployment {
 	return util.CreateDeployment(deployConfig, g.GetReportPod())
 }
 
+// GetReportPod returns the report pod
 func (g *RgpDeployer) GetReportPod() *components.Pod {
 	envs := g.getReportEnvConfigs()
 
@@ -40,6 +42,7 @@ func (g *RgpDeployer) GetReportPod() *components.Pod {
 	return util.CreatePod("report-service", "", g.getReportVolumes(), containers, nil, nil)
 }
 
+// GetReportService returns the report service
 func (g *RgpDeployer) GetReportService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "report-service",

@@ -27,6 +27,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// Vault stores the vault configuration
 type Vault struct {
 	namespace   string
 	vaultConfig string
@@ -39,11 +40,12 @@ type Vault struct {
 	//vaultTLSMountPath string
 }
 
+// NewVault returns the vault configuration
 func NewVault(namespace string, vaultConfig string, vaultSecrets map[string]string, vaultCacertPath string) *Vault {
 	return &Vault{namespace: namespace, vaultConfig: vaultConfig, vaultSecrets: vaultSecrets, vaultCacertPath: vaultCacertPath}
 }
 
-// GetConsulDeployment will return the postgres deployment
+// GetVaultDeployment will return the vault deployment
 func (v *Vault) GetVaultDeployment() *components.Deployment {
 	deployConfig := &horizonapi.DeploymentConfig{
 		Name:      "vault",
@@ -52,6 +54,7 @@ func (v *Vault) GetVaultDeployment() *components.Deployment {
 	return util.CreateDeployment(deployConfig, v.GetPod())
 }
 
+// GetPod returns the vault pod
 func (v *Vault) GetPod() *components.Pod {
 	envs := v.getVaultEnvConfigs()
 
@@ -105,7 +108,7 @@ func (v *Vault) GetPod() *components.Pod {
 	return util.CreatePod("vault", "", v.getVaultVolumes(), containers, nil, nil)
 }
 
-// GetConsulService will return the postgres service
+// GetVaultServices will return the vault service
 func (v *Vault) GetVaultServices() *components.Service {
 	// Consul service
 	vault := components.NewService(horizonapi.ServiceConfig{
@@ -120,7 +123,7 @@ func (v *Vault) GetVaultServices() *components.Service {
 	return vault
 }
 
-// getConsulVolumes will return the postgres volumes
+// getVaultVolumes will return the vault volumes
 func (v *Vault) getVaultVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
@@ -133,7 +136,7 @@ func (v *Vault) getVaultVolumes() []*components.Volume {
 	}))
 	volumes = append(volumes, emptyDir)
 
-	for k, _ := range v.vaultSecrets {
+	for k := range v.vaultSecrets {
 		volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 			VolumeName:      k,
 			MapOrSecretName: k,
@@ -142,7 +145,7 @@ func (v *Vault) getVaultVolumes() []*components.Volume {
 	return volumes
 }
 
-// getConsulVolumeMounts will return the postgres volume mounts
+// getVaultVolumeMounts will return the vault volume mounts
 func (v *Vault) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-config", MountPath: "/vault/config/"})
@@ -155,7 +158,7 @@ func (v *Vault) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
 	return volumeMounts
 }
 
-// getConsulEnvConfigs will return the postgres environment config maps
+// getVaultEnvConfigs will return the vault environment config maps
 func (v *Vault) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromPodIP, NameOrPrefix: "POD_IP"})
@@ -168,6 +171,7 @@ func (v *Vault) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 	return envs
 }
 
+// GetVaultConfigConfigMap returns the vault config maps
 func (v *Vault) GetVaultConfigConfigMap() *components.ConfigMap {
 	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "vault-config",

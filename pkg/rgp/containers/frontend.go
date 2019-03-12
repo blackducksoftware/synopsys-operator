@@ -6,6 +6,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// GetFrontendDeployment returns the front end deployment
 func (g *RgpDeployer) GetFrontendDeployment() *components.Deployment {
 	deployConfig := &horizonapi.DeploymentConfig{
 		Name:      "frontend-service",
@@ -14,6 +15,7 @@ func (g *RgpDeployer) GetFrontendDeployment() *components.Deployment {
 	return util.CreateDeployment(deployConfig, g.GetFrontendPod())
 }
 
+// GetFrontendPod returns the front end pod
 func (g *RgpDeployer) GetFrontendPod() *components.Pod {
 	var containers []*util.Container
 	container := &util.Container{
@@ -38,6 +40,7 @@ func (g *RgpDeployer) GetFrontendPod() *components.Pod {
 	return pod
 }
 
+// GetFrontendService returns the front end service
 func (g *RgpDeployer) GetFrontendService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "frontend-service",

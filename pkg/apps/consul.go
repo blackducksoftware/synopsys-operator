@@ -27,16 +27,18 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// Consul stores the consul configuration
 type Consul struct {
 	namespace    string
 	storageClass string
 }
 
+// NewConsul returns the consul configuration
 func NewConsul(namespace string, storageClass string) *Consul {
 	return &Consul{namespace: namespace, storageClass: storageClass}
 }
 
-// GetConsulDeployment will return the postgres deployment
+// GetConsulStatefulSet will return the consul statefulset
 func (c *Consul) GetConsulStatefulSet() *components.StatefulSet {
 	envs := c.getConsulEnvConfigs()
 	volumes := c.getConsulVolumes()
@@ -133,7 +135,7 @@ func (c *Consul) GetConsulStatefulSet() *components.StatefulSet {
 	return stateFulSet
 }
 
-// GetConsulService will return the postgres service
+// GetConsulServices will return the consul service
 func (c *Consul) GetConsulServices() *components.Service {
 	// Consul service
 	consul := components.NewService(horizonapi.ServiceConfig{
@@ -186,6 +188,7 @@ func (c *Consul) getConsulEnvConfigs() []*horizonapi.EnvConfig {
 	return envs
 }
 
+// GetConsulSecrets returns the consul secret
 func (c *Consul) GetConsulSecrets() *components.Secret {
 	gossipKey := components.NewSecret(horizonapi.SecretConfig{
 		Name:      "consul-gossip-key",
