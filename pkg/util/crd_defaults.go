@@ -36,23 +36,6 @@ import (
 //	}
 //}
 
-// GetAlertDefaultValue creates a alert crd configuration object with defaults
-func GetAlertDefaultValue() *alertv1.AlertSpec {
-	port := 8443
-	hubPort := 443
-	standAlone := true
-
-	return &alertv1.AlertSpec{
-		Port:           &port,
-		BlackduckPort:  &hubPort,
-		StandAlone:     &standAlone,
-		AlertMemory:    "512M",
-		CfsslMemory:    "640M",
-		AlertImageName: "blackduck-alert",
-		CfsslImageName: "hub-cfssl",
-	}
-}
-
 // GetHubDefaultValue creates a hub crd configuration object with defaults
 func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
@@ -239,11 +222,11 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 // with defaults and a Disabled Hub
 func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 	blackduck := opssightv1.Blackduck{
-		User:                "sysadmin",
-		ConcurrentScanLimit: 2,
-		TotalScanLimit:      1000,
-		InitialCount:        0,
-		MaxCount:            0,
+		ExternalHosts:                      []*opssightv1.Host{},
+		ConnectionsEnvironmentVariableName: "",
+		TLSVerification:                    true,
+		InitialCount:                       0,
+		MaxCount:                           0,
 		BlackduckSpec: &blackduckv1.BlackduckSpec{
 			Size:              "small",
 			DbPrototype:       "",
@@ -294,7 +277,7 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 				Name:               "opssight-image-getter",
 				Image:              "docker.io/blackducksoftware/opssight-image-getter:master",
 				Port:               3004,
-				InternalRegistries: []opssightv1.RegistryAuth{},
+				InternalRegistries: []*opssightv1.RegistryAuth{},
 				ImagePullerType:    "skopeo",
 				ServiceAccount:     "opssight-scanner",
 			},

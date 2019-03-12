@@ -185,7 +185,7 @@ var updateOpsSightCmd = &cobra.Command{
 			updateOpsSightCtl.SetChangedFlags(flagset)
 			newSpec := updateOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
 			// Build New Horizon-Components from the updated OpsSight Spec
-			opsSightSpecConfig := opssight.NewSpecConfig(&newSpec)
+			opsSightSpecConfig := opssight.NewSpecConfig(kubeClient, &newSpec, true)
 			horizonComponents, err := opsSightSpecConfig.GetComponents()
 			if err != nil {
 				log.Errorf("%s", err)
@@ -193,16 +193,16 @@ var updateOpsSightCmd = &cobra.Command{
 			}
 			// Update OpsSight's Config Map
 			newConfigMapHorizon := horizonComponents.ConfigMaps[0]
-			newConfigMapKube := newConfigMapHorizon.ToKube()
-			err = updateOpsSightConfigMap(newConfigMapKube)
+			newConfigMapKube, err := newConfigMapHorizon.ToKube()
+			err = updateOpsSightConfigMap(newConfigMapKube.(*corev1.ConfigMap))
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 			// Update OpsSight's Secret
 			newSecretHorizon := horizonComponents.Secrets[0]
-			newSecretKube := newSecretHorizon.ToKube()
-			err = updateOpsSightSecret(newSecretKube)
+			newSecretKube, err := newSecretHorizon.ToKube()
+			err = updateOpsSightSecret(newSecretKube.(*corev1.Secret))
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -226,7 +226,7 @@ var updateOpsSightCmd = &cobra.Command{
 				return nil
 			}
 			// Update OpsSight's Replication Controllers
-			err = updateOpsSightReplicationControllers(opsSightNamespace, horizonComponents.ReplicationControllers, true, true)
+			err = updateOpsSightReplicationControllers(&newSpec, horizonComponents.ReplicationControllers, true, true)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -348,11 +348,11 @@ func updateOpsSightClusterRoleBindings(namespace string, clusterRoleBindings []*
 	return nil
 }
 
-func updateOpsSightReplicationControllers(opssight *opssightv1.OpsSightSpec, replicationControllers []*components.ReplicationController, isConfigMapUpdated bool, isSecretUpdated bool) error {
+func updateOpsSightReplicationControllers(opssightSpec *opssightv1.OpsSightSpec, replicationControllers []*components.ReplicationController, isConfigMapUpdated bool, isSecretUpdated bool) error {
 	// get old replication controller
-	rcl, err := util.GetReplicationControllerList(kubeClient, opssight.Namespace, "app=opssight")
+	rcl, err := util.ListReplicationControllers(kubeClient, opssightSpec.Namespace, "app=opssight")
 	if err != nil {
-		return fmt.Errorf("unable to get opssight replication controllers for %s: %s", opssight.Namespace, err)
+		return fmt.Errorf("unable to get opssight replication controllers for %s: %s", opssightSpec.Namespace, err)
 	}
 
 	oldRCs := make(map[string]corev1.ReplicationController)
@@ -364,7 +364,7 @@ func updateOpsSightReplicationControllers(opssight *opssightv1.OpsSightSpec, rep
 	for _, component := range replicationControllers {
 		newRCKube, err := component.ToKube()
 		if err != nil {
-			return fmt.Errorf("unable to convert rc %s to kube in opssight namespace %s: %s", component.GetName(), opssight.Namespace, err)
+			return fmt.Errorf("unable to convert rc %s to kube in opssight namespace %s: %s", component.GetName(), opssightSpec.Namespace, err)
 		}
 
 		newRC := newRCKube.(*corev1.ReplicationController)
@@ -374,7 +374,7 @@ func updateOpsSightReplicationControllers(opssight *opssightv1.OpsSightSpec, rep
 		if _, ok := oldRCs[newRC.GetName()]; !ok {
 			deployer, err := util.NewDeployer(restconfig)
 			if err != nil {
-				return fmt.Errorf("unable to get deployer object for %s: %s", opssight.Namespace, err)
+				return fmt.Errorf("unable to get deployer object for %s: %s", opssightSpec.Namespace, err)
 			}
 			deployer.Deployer.AddReplicationController(component)
 			deployer.Deployer.Run()
@@ -384,7 +384,7 @@ func updateOpsSightReplicationControllers(opssight *opssightv1.OpsSightSpec, rep
 		if isConfigMapUpdated || isSecretUpdated {
 			err = util.PatchReplicationController(kubeClient, oldRC, *newRC)
 			if err != nil {
-				return fmt.Errorf("unable to patch rc %s to kube in opssight namespace %s: %s", component.GetName(), opssight.Namespace, err)
+				return fmt.Errorf("unable to patch rc %s to kube in opssight namespace %s: %s", component.GetName(), opssightSpec.Namespace, err)
 			}
 			continue
 		}
@@ -420,7 +420,7 @@ func updateOpsSightReplicationControllers(opssight *opssightv1.OpsSightSpec, rep
 		if isChanged {
 			err = util.PatchReplicationController(kubeClient, oldRC, *newRC)
 			if err != nil {
-				return fmt.Errorf("unable to patch rc %s to kube in opssight namespace %s: %s", component.GetName(), opssight.Namespace, err)
+				return fmt.Errorf("unable to patch rc %s to kube in opssight namespace %s: %s", component.GetName(), opssightSpec.Namespace, err)
 			}
 		}
 	}
@@ -510,7 +510,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 			User:     regUser,
 			Password: regPass,
 		}
-		ops.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ops.Spec.ScannerPod.ImageFacade.InternalRegistries, newReg)
+		ops.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ops.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
 		// Update OpsSight with Internal Registry
 		err = updateOpsSightInCluster(opsSightName, ops)
 		if err != nil {
