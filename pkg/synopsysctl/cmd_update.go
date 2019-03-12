@@ -86,6 +86,11 @@ var updateOperatorCmd = &cobra.Command{
 		// Get Spec of Synopsys-Operator
 
 		// Check if Version has changed -> migration script
+		// 1. Get local copies of specs of all instances of crds (ex: opssight crds)
+		// 2. Delete the CRD definition
+		// 3. Create the new CRD definition
+		// 4. Update the local specs of all instances with the new versions
+		// 5. Update the resources in the cluster with the new specs (that contain the new version)
 
 		// else just change spec fields
 
