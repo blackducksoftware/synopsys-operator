@@ -53,11 +53,12 @@ const (
 	authenticationPort = "8443"
 	webappPort         = "8443"
 	logstashPort       = "5044"
-	postgresPort       = "5432"
-	binaryScannerPort  = "3001"
-	rabbitmqPort       = "5671"
-	uploadCachePort1   = "9443"
-	uploadCachePort2   = "9444"
+	// PostgresPort will hold the port number of Postgres
+	PostgresPort      = "5432"
+	binaryScannerPort = "3001"
+	rabbitmqPort      = "5671"
+	uploadCachePort1  = "9443"
+	uploadCachePort2  = "9444"
 
 	// Small Flavor
 	smallWebServerMemoryLimit = "512M"

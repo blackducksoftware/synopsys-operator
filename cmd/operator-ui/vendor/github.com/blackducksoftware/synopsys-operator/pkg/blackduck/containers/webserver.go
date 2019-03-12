@@ -30,7 +30,7 @@ import (
 // GetWebserverDeployment will return the webserver deployment
 func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 	webServerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.getFullContainerName("nginx"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.GetFullContainerName("nginx"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit,
 			MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,

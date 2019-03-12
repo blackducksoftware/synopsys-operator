@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/blackducksoftware/synopsys-operator/cmd/operator-ui/models"
-	rgpclient "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned"
-	// rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
+	rgpclient "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned" // rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/pop"
 	"github.com/pkg/errors"
@@ -28,23 +28,22 @@ import (
 // RgpsResource is the resource for the Rgp model
 type RgpsResource struct {
 	buffalo.Resource
-	kubeClient      *kubernetes.Clientset
-	rgpClient *rgpclient.Clientset
+	kubeClient *kubernetes.Clientset
+	rgpClient  *rgpclient.Clientset
 }
 
 // NewRgpResource will instantiate the Rgp Resource
-func NewRgpResource(kubeConfig *rest.Config) (*BlackducksResource, error) {
+func NewRgpResource(kubeConfig *rest.Config) (*RgpsResource, error) {
 	kubeClient, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create kube client due to %+v", err)
 	}
 	rgpClient, err := rgpclient.NewForConfig(kubeConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create hub client due to %+v", err)
+		return nil, fmt.Errorf("unable to create rgp client due to %+v", err)
 	}
 	return &RgpsResource{kubeClient: kubeClient, rgpClient: rgpClient}, nil
 }
-
 
 // List gets all Rgps. This function is mapped to the path
 // GET /rgps

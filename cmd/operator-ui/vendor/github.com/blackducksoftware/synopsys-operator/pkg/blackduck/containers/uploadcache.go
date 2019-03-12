@@ -32,7 +32,7 @@ func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 	volumeMounts := c.getUploadCacheVolumeMounts()
 
 	uploadCacheContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: c.getFullContainerName("upload"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: c.GetFullContainerName("upload"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.UploadCacheMemoryLimit, MaxMem: c.hubContainerFlavor.UploadCacheMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.bdbaConfigEnv,

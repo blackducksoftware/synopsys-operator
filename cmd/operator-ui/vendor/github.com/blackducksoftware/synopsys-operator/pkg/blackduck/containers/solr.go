@@ -31,7 +31,7 @@ import (
 func (c *Creater) GetSolrDeployment() *components.ReplicationController {
 	solrVolumeMount := c.getSolrVolumeMounts()
 	solrContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: c.getFullContainerName("solr"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: c.GetFullContainerName("solr"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.SolrMemoryLimit, MaxMem: c.hubContainerFlavor.SolrMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: solrVolumeMount,

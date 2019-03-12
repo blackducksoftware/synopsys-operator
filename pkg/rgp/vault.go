@@ -9,10 +9,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Vault stores the value configuration
 type Vault struct {
 	Namespace string
 }
 
+// GetConfigmap returns the vault configmap
 func (v *Vault) GetConfigmap() *components.ConfigMap {
 	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: v.Namespace, Name: "vault-policies"})
 	cm.AddData(map[string]string{
@@ -27,6 +29,7 @@ func (v *Vault) GetConfigmap() *components.ConfigMap {
 	return cm
 }
 
+// GetJob returns the vault job
 func (v *Vault) GetJob() *v1.Job {
 
 	job := &v1.Job{
@@ -68,6 +71,7 @@ func (v *Vault) GetJob() *v1.Job {
 	return job
 }
 
+// GetDeployment returns the vault deployment
 func (v *Vault) GetDeployment() *components.Deployment {
 
 	var containers []*util.Container
@@ -150,6 +154,8 @@ func (v *Vault) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 
 	return envs
 }
+
+// GetSidecarUnsealContainer returns the side car container
 func (v *Vault) GetSidecarUnsealContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "vault-sidecar",

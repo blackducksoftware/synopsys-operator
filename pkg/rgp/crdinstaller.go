@@ -83,13 +83,13 @@ func (c *CRDInstaller) Deploy() error {
 	// Blackduck CRD
 	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 		APIVersion: "apiextensions.k8s.io/v1beta1",
-		Name:       "grs.synopsys.com",
+		Name:       "rgps.synopsys.com",
 		Namespace:  c.config.Namespace,
 		Group:      "synopsys.com",
 		CRDVersion: "v1",
-		Kind:       "Gr",
-		Plural:     "grs",
-		Singular:   "gr",
+		Kind:       "Rgp",
+		Plural:     "rgps",
+		Singular:   "rgp",
 		Scope:      horizonapi.CRDClusterScoped,
 	}))
 

@@ -45,6 +45,7 @@ type Handler struct {
 	grClient   *grclientset.Clientset
 }
 
+// NewHandler ...
 func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, grClient *grclientset.Clientset) *Handler {
 	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, grClient: grClient}
 }

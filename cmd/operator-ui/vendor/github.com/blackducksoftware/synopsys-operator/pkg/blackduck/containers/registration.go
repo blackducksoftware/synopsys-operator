@@ -33,7 +33,7 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 	volumeMounts := c.getRegistrationVolumeMounts()
 
 	registrationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: c.getFullContainerName("registration"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: c.GetFullContainerName("registration"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: c.getRegistrationVolumeMounts(),

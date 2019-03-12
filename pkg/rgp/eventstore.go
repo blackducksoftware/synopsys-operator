@@ -11,12 +11,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Eventstore stores the event store configuration
 type Eventstore struct {
 	Namespace     string
 	StorageClass  string
 	DiskSizeInGiB int
 }
 
+// NewEventstore returns the event store
 func NewEventstore(namespace string, storageClass string, diskSizeInGiB int) *Eventstore {
 	// Set the disk size to 100Gb if the size is not provided.
 	if diskSizeInGiB == 0 {

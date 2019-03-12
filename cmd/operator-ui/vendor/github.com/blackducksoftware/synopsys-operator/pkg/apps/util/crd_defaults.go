@@ -21,9 +21,20 @@ under the License.
 
 package util
 
-import alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-import opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-import blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+import (
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	//samplev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
+)
+
+// GetSampleDefaultValue creates a sample crd configuration object with defaults
+//func GetSampleDefaultValue() *samplev1.SampleSpec {
+//	return &samplev1.SampleSpec{
+//		Namespace:   "namesapce",
+//		SampleValue: "Value",
+//	}
+//}
 
 // GetAlertDefaultValue creates a alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {

@@ -181,58 +181,57 @@ func (c *Creater) createIngress(spec *v1.RgpSpec) error {
 				{
 					Host: spec.IngressHost,
 					IngressRuleValue: v1beta1.IngressRuleValue{
-						HTTP: &v1beta1.HTTPIngressRuleValue{
-							[]v1beta1.HTTPIngressPath{
-								{
-									Path: "/api/auth/v0",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: "auth-server",
-										ServicePort: intstr.FromInt(8080),
-									},
-								},
-								{
-									Path: "/api/auth",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: "auth-server",
-										ServicePort: intstr.FromInt(8080),
-									},
-								},
-								{
-									Path: "/reporting",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: "frontend-service",
-										ServicePort: intstr.FromInt(80),
-									},
-								},
-								{
-									Path: "/reporting/tps",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: "tools-portfolio-service",
-										ServicePort: intstr.FromInt(60281),
-									},
-								},
-								{
-									Path: "/reporting/im",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: "rp-issue-manager",
-										ServicePort: intstr.FromInt(6888),
-									},
-								},
-								{
-									Path: "/reporting/rpps",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: "rp-portfolio-service",
-										ServicePort: intstr.FromInt(60289),
-									},
-								},
-								{
-									Path: "/reporting/rs",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: "rp-issue-manager",
-										ServicePort: intstr.FromInt(7979),
-									},
+						HTTP: &v1beta1.HTTPIngressRuleValue{Paths: []v1beta1.HTTPIngressPath{
+							{
+								Path: "/api/auth/v0",
+								Backend: v1beta1.IngressBackend{
+									ServiceName: "auth-server",
+									ServicePort: intstr.FromInt(8080),
 								},
 							},
+							{
+								Path: "/api/auth",
+								Backend: v1beta1.IngressBackend{
+									ServiceName: "auth-server",
+									ServicePort: intstr.FromInt(8080),
+								},
+							},
+							{
+								Path: "/reporting",
+								Backend: v1beta1.IngressBackend{
+									ServiceName: "frontend-service",
+									ServicePort: intstr.FromInt(80),
+								},
+							},
+							{
+								Path: "/reporting/tps",
+								Backend: v1beta1.IngressBackend{
+									ServiceName: "tools-portfolio-service",
+									ServicePort: intstr.FromInt(60281),
+								},
+							},
+							{
+								Path: "/reporting/im",
+								Backend: v1beta1.IngressBackend{
+									ServiceName: "rp-issue-manager",
+									ServicePort: intstr.FromInt(6888),
+								},
+							},
+							{
+								Path: "/reporting/rpps",
+								Backend: v1beta1.IngressBackend{
+									ServiceName: "rp-portfolio-service",
+									ServicePort: intstr.FromInt(60289),
+								},
+							},
+							{
+								Path: "/reporting/rs",
+								Backend: v1beta1.IngressBackend{
+									ServiceName: "rp-issue-manager",
+									ServicePort: intstr.FromInt(7979),
+								},
+							},
+						},
 						},
 					},
 				},

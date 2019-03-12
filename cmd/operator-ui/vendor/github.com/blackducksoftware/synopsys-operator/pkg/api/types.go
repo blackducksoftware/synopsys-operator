@@ -28,6 +28,7 @@ import (
 // ComponentList defines the list of components for an app
 type ComponentList struct {
 	ReplicationControllers []*components.ReplicationController
+	StateFulSets           []*components.StatefulSet
 	Services               []*components.Service
 	ConfigMaps             []*components.ConfigMap
 	ServiceAccounts        []*components.ServiceAccount
