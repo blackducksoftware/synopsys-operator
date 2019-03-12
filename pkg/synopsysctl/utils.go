@@ -27,6 +27,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"k8s.io/client-go/kubernetes"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
@@ -45,6 +47,7 @@ import (
 
 // These vars set by setResourceClients() in root command's init()
 var restconfig *rest.Config
+var kubeClient *kubernetes.Clientset
 var blackduckClient *blackduckclientset.Clientset
 var opssightClient *opssightclientset.Clientset
 var alertClient *alertclientset.Clientset
@@ -188,6 +191,7 @@ func RunKubeEditorCmd(args ...string) error {
 // and the resource clients
 func setResourceClients() {
 	restconfig = getKubeRestConfig()
+	kubeClient = getKubeClient(restconfig)
 	bClient, err := blackduckclientset.NewForConfig(restconfig)
 	if err != nil {
 		panic(fmt.Errorf("Error creating the Blackduck Clientset: %s", err))
@@ -236,6 +240,15 @@ func getKubeRestConfig() *rest.Config {
 		panic(err)
 	}
 	return restconfig
+}
+
+// getKubeClient gets the kubernetes client
+func getKubeClient(kubeConfig *rest.Config) *kubernetes.Clientset {
+	client, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		panic(err)
+	}
+	return client
 }
 
 // homeDir determines the user's home directory path
