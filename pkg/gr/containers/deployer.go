@@ -43,13 +43,13 @@ func (g *GrDeployer) GetDeployer() (*horizondeployer.Deployer, error) {
 
 	deployer, _ := horizondeployer.NewDeployer(g.kubeConfig)
 
-
 	deployer.AddDeployment(g.GetFrontendDeployment())
 	deployer.AddDeployment(g.GetIssueManagerDeployment())
 	deployer.AddDeployment(g.GetPolarisDeployment())
 	deployer.AddDeployment(g.GetPortfolioDeployment())
 	deployer.AddDeployment(g.GetReportDeployment())
 	deployer.AddDeployment(g.GetToolsPortfolioDeployment())
+	deployer.AddDeployment(g.GetAuthServerDeployment())
 
 	deployer.AddService(g.GetFrontendService())
 	deployer.AddService(g.GetIssueManagerService())
@@ -57,6 +57,7 @@ func (g *GrDeployer) GetDeployer() (*horizondeployer.Deployer, error) {
 	deployer.AddService(g.GetPortfolioService())
 	deployer.AddService(g.GetReportService())
 	deployer.AddService(g.GetToolsPortfolioService())
+	deployer.AddService(g.GetAuthServerService())
 
 	return deployer, nil
 }

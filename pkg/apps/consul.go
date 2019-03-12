@@ -42,7 +42,7 @@ func (c *Consul) GetConsulStatefulSet() *components.StatefulSet {
 	volumes := c.getConsulVolumes()
 	volumeMounts := c.getConsulVolumeMounts()
 
-	var containers  []* util.Container
+	var containers []*util.Container
 
 	containers = append(containers, &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
@@ -113,8 +113,8 @@ func (c *Consul) GetConsulStatefulSet() *components.StatefulSet {
 				ActionConfig: horizonapi.ActionConfig{
 					Command: []string{"consul", "members"},
 				},
-				Delay:           300,
-				Timeout:         5,
+				Delay:   300,
+				Timeout: 5,
 			},
 		},
 	})
@@ -123,36 +123,36 @@ func (c *Consul) GetConsulStatefulSet() *components.StatefulSet {
 		Name:      "consul",
 		Namespace: c.namespace,
 		Replicas:  util.IntToInt32(3),
-		Service: "consul",
+		Service:   "consul",
 	}
 
 	stateFulSet := util.CreateStateFulSetFromContainer(stateFulSetConfig, "", containers, volumes, nil, nil)
 
 	claim, _ := util.CreatePersistentVolumeClaim("datadir", c.namespace, "1Gi", c.storageClass, horizonapi.ReadWriteOnce)
 	stateFulSet.AddVolumeClaimTemplate(*claim)
-	return 	stateFulSet
+	return stateFulSet
 }
 
 // GetConsulService will return the postgres service
 func (c *Consul) GetConsulServices() *components.Service {
 	// Consul service
 	consul := components.NewService(horizonapi.ServiceConfig{
-		Name:                     "consul",
-		Namespace:                c.namespace,
-		IPServiceType:            horizonapi.ClusterIPServiceTypeDefault,
+		Name:          "consul",
+		Namespace:     c.namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeDefault,
 	})
 	consul.AddSelectors(map[string]string{
 		"app": "consul",
 	})
 	consul.AddPort(horizonapi.ServicePortConfig{Name: "http", Port: 8500})
 	consul.AddPort(horizonapi.ServicePortConfig{Name: "rpc", Port: 8400})
-	consul.AddPort(horizonapi.ServicePortConfig{Name: "serflan-tcp", Port: 8301, Protocol:horizonapi.ProtocolTCP})
-	consul.AddPort(horizonapi.ServicePortConfig{Name: "serflan-udp", Port: 8301, Protocol:horizonapi.ProtocolUDP})
-	consul.AddPort(horizonapi.ServicePortConfig{Name: "serfwan-tcp", Port: 8302, Protocol:horizonapi.ProtocolTCP})
-	consul.AddPort(horizonapi.ServicePortConfig{Name: "serfwan-udp", Port: 8302, Protocol:horizonapi.ProtocolUDP})
+	consul.AddPort(horizonapi.ServicePortConfig{Name: "serflan-tcp", Port: 8301, Protocol: horizonapi.ProtocolTCP})
+	consul.AddPort(horizonapi.ServicePortConfig{Name: "serflan-udp", Port: 8301, Protocol: horizonapi.ProtocolUDP})
+	consul.AddPort(horizonapi.ServicePortConfig{Name: "serfwan-tcp", Port: 8302, Protocol: horizonapi.ProtocolTCP})
+	consul.AddPort(horizonapi.ServicePortConfig{Name: "serfwan-udp", Port: 8302, Protocol: horizonapi.ProtocolUDP})
 	consul.AddPort(horizonapi.ServicePortConfig{Name: "server", Port: 8300})
-	consul.AddPort(horizonapi.ServicePortConfig{Name: "consuldns-tcp", Port: 8600, Protocol:horizonapi.ProtocolTCP})
-	consul.AddPort(horizonapi.ServicePortConfig{Name: "consuldns-udp", Port: 8600, Protocol:horizonapi.ProtocolUDP})
+	consul.AddPort(horizonapi.ServicePortConfig{Name: "consuldns-tcp", Port: 8600, Protocol: horizonapi.ProtocolTCP})
+	consul.AddPort(horizonapi.ServicePortConfig{Name: "consuldns-udp", Port: 8600, Protocol: horizonapi.ProtocolUDP})
 
 	return consul
 }
@@ -193,11 +193,10 @@ func (c *Consul) GetConsulSecrets() *components.Secret {
 		Type:      horizonapi.SecretTypeOpaque,
 	})
 
-	rand, _ :=  util.RandomString(24)
+	rand, _ := util.RandomString(24)
 	gossipKey.AddStringData(map[string]string{
 		"gossip-key": rand,
 	})
 
 	return gossipKey
 }
-

@@ -183,7 +183,7 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 	for _, containerConfig := range containers {
 		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
 			containerConfig.ActionConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
-		if len(containerConfig.Capabilities) > 0{
+		if len(containerConfig.Capabilities) > 0 {
 			container.AddAddCapabilities(containerConfig.Capabilities)
 		}
 		pod.AddContainer(container)

@@ -38,7 +38,6 @@ func (g *GrDeployer) GetFrontendPod() *components.Pod {
 	return pod
 }
 
-
 func (g *GrDeployer) GetFrontendService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "frontend-service",
@@ -54,6 +53,6 @@ func (g *GrDeployer) GetFrontendService() *components.Service {
 
 func (g *GrDeployer) getFrontendEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ROOT_DOMAIN", KeyOrVal: g.Grspec.IngressHost})
+	envs = append(envs, g.getSwipEnvConfigs()...)
 	return envs
 }

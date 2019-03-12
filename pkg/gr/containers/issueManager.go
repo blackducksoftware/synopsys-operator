@@ -6,8 +6,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
-
-
 func (g *GrDeployer) GetIssueManagerDeployment() *components.Deployment {
 	deployConfig := &horizonapi.DeploymentConfig{
 		Name:      "rp-issue-manager",
@@ -42,7 +40,6 @@ func (g *GrDeployer) GetIssueManagerPod() *components.Pod {
 	return util.CreatePod("rp-issue-manager", "", g.getReportVolumes(), containers, nil, nil)
 }
 
-
 func (g *GrDeployer) GetIssueManagerService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "rp-issue-manager",
@@ -64,7 +61,7 @@ func (g *GrDeployer) getIssueManagerVolumes() []*components.Volume {
 		VolumeName:      "vault-cacert",
 		MapOrSecretName: "vault-ca-certificate",
 		Items: map[string]horizonapi.KeyAndMode{
-			"vault_cacrt": {KeyOrPath:"tls.crt", Mode: util.IntToInt32(420)},
+			"vault_cacrt": {KeyOrPath: "tls.crt", Mode: util.IntToInt32(420)},
 		},
 	}))
 
@@ -72,7 +69,7 @@ func (g *GrDeployer) getIssueManagerVolumes() []*components.Volume {
 		VolumeName:      "vault-client-key",
 		MapOrSecretName: "auth-client-tls-certificate",
 		Items: map[string]horizonapi.KeyAndMode{
-			"vault_client_key": {KeyOrPath:"tls.key", Mode: util.IntToInt32(420)},
+			"vault_client_key": {KeyOrPath: "tls.key", Mode: util.IntToInt32(420)},
 		},
 	}))
 
@@ -80,13 +77,12 @@ func (g *GrDeployer) getIssueManagerVolumes() []*components.Volume {
 		VolumeName:      "vault-client-cert",
 		MapOrSecretName: "auth-client-tls-certificate",
 		Items: map[string]horizonapi.KeyAndMode{
-			"vault_client_cert": {KeyOrPath:"tls.crt", Mode: util.IntToInt32(420)},
+			"vault_client_cert": {KeyOrPath: "tls.crt", Mode: util.IntToInt32(420)},
 		},
 	}))
 
 	return volumes
 }
-
 
 func (g *GrDeployer) getIssueManagerVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
@@ -97,24 +93,16 @@ func (g *GrDeployer) getIssueManagerVolumeMounts() []*horizonapi.VolumeMountConf
 	return volumeMounts
 }
 
-
 func (g *GrDeployer) getIssueManagerEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_server_key"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_server_cert"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_client_key"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_client_cert"})
 
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "CONNECTION_POOL_SIZE", KeyOrVal: "10"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "LOG_LEVEL", KeyOrVal: "INFO"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SPRING_PROFILE", KeyOrVal: "production"})
-
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_HOST", KeyOrVal: "postgres"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_PORT", KeyOrVal: "5432"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_PASSWORD", KeyOrVal: "test"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_USERNAME", KeyOrVal: "admin"})
-
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ROOT_DOMAIN", KeyOrVal: g.Grspec.IngressHost})
+	envs = append(envs, g.getCommonEnvConfigs()...)
+	envs = append(envs, g.getSwipEnvConfigs()...)
+	envs = append(envs, g.getPostgresEnvConfigs()...)
 
 	return envs
 }

@@ -40,7 +40,6 @@ func (g *GrDeployer) GetReportPod() *components.Pod {
 	return util.CreatePod("report-service", "", g.getReportVolumes(), containers, nil, nil)
 }
 
-
 func (g *GrDeployer) GetReportService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "report-service",
@@ -62,7 +61,7 @@ func (g *GrDeployer) getReportVolumes() []*components.Volume {
 		VolumeName:      "vault-cacert",
 		MapOrSecretName: "vault-ca-certificate",
 		Items: map[string]horizonapi.KeyAndMode{
-			"vault_cacrt": {KeyOrPath:"tls.crt", Mode: util.IntToInt32(420)},
+			"vault_cacrt": {KeyOrPath: "tls.crt", Mode: util.IntToInt32(420)},
 		},
 	}))
 
@@ -70,7 +69,7 @@ func (g *GrDeployer) getReportVolumes() []*components.Volume {
 		VolumeName:      "vault-client-key",
 		MapOrSecretName: "auth-client-tls-certificate",
 		Items: map[string]horizonapi.KeyAndMode{
-			"vault_client_key": {KeyOrPath:"tls.key", Mode: util.IntToInt32(420)},
+			"vault_client_key": {KeyOrPath: "tls.key", Mode: util.IntToInt32(420)},
 		},
 	}))
 
@@ -78,13 +77,12 @@ func (g *GrDeployer) getReportVolumes() []*components.Volume {
 		VolumeName:      "vault-client-cert",
 		MapOrSecretName: "auth-client-tls-certificate",
 		Items: map[string]horizonapi.KeyAndMode{
-			"vault_client_cert": {KeyOrPath:"tls.crt", Mode: util.IntToInt32(420)},
+			"vault_client_cert": {KeyOrPath: "tls.crt", Mode: util.IntToInt32(420)},
 		},
 	}))
 
 	return volumes
 }
-
 
 func (g *GrDeployer) getReportVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
@@ -95,32 +93,25 @@ func (g *GrDeployer) getReportVolumeMounts() []*horizonapi.VolumeMountConfig {
 	return volumeMounts
 }
 
-
 func (g *GrDeployer) getReportEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	//envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromPodIP, NameOrPrefix: "POD_IP"})
 	//envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLUSTER_ADDR", KeyOrVal: "https://$(POD_IP):8201"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_server_key"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_server_cert"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_client_key"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_client_cert"})
 
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_HOST", KeyOrVal: "postgres"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_PORT", KeyOrVal: "5432"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_PASSWORD", KeyOrVal: "test"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_USERNAME", KeyOrVal: "admin"})
-
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "CONNECTION_POOL_SIZE", KeyOrVal: "10"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "LOG_LEVEL", KeyOrVal: "INFO"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SPRING_PROFILE", KeyOrVal: "production"})
+	envs = append(envs, g.getCommonEnvConfigs()...)
+	envs = append(envs, g.getSwipEnvConfigs()...)
+	envs = append(envs, g.getPostgresEnvConfigs()...)
 
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MINIO_HOST", KeyOrVal: "minio"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MINIO_PORT", KeyOrVal: "9000"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MINIO_BUCKET", KeyOrVal: "reports"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MINIO_REGION", KeyOrVal: "us-central1"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MINIO_ACCESS_KEY", KeyOrVal: "access_key", FromName:"minio-keys"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MINIO_SECRET_KEY", KeyOrVal: "secret_key", FromName:"minio-keys"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MINIO_ACCESS_KEY", KeyOrVal: "access_key", FromName: "minio-keys"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MINIO_SECRET_KEY", KeyOrVal: "secret_key", FromName: "minio-keys"})
 
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ROOT_DOMAIN", KeyOrVal: g.Grspec.IngressHost})
 	return envs
 }

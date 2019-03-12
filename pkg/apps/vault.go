@@ -28,12 +28,12 @@ import (
 )
 
 type Vault struct {
-	namespace    string
-	vaultConfig  string
+	namespace   string
+	vaultConfig string
 	//vaultCaCert  string
 	//vaultTLSCert string
 	//vaultTLSKey  string
-	vaultSecrets map[string]string
+	vaultSecrets    map[string]string
 	vaultCacertPath string
 	//vaultTLSSecretName string
 	//vaultTLSMountPath string
@@ -94,15 +94,15 @@ func (v *Vault) GetPod() *components.Pod {
 		LivenessProbeConfigs: []*horizonapi.ProbeConfig{
 			{
 				Delay: 180,
-				ActionConfig:    horizonapi.ActionConfig{
-					URL:     "https://:8200/v1/sys/health?standbycode=204&uninitcode=204&",
+				ActionConfig: horizonapi.ActionConfig{
+					URL: "https://:8200/v1/sys/health?standbycode=204&uninitcode=204&",
 				},
 			},
 		},
 	}
 
 	containers = append(containers, container)
-	return util.CreatePod("vault","", v.getVaultVolumes(), containers, nil, nil)
+	return util.CreatePod("vault", "", v.getVaultVolumes(), containers, nil, nil)
 }
 
 // GetConsulService will return the postgres service
@@ -133,7 +133,7 @@ func (v *Vault) getVaultVolumes() []*components.Volume {
 	}))
 	volumes = append(volumes, emptyDir)
 
-	for k, _ := range  v.vaultSecrets {
+	for k, _ := range v.vaultSecrets {
 		volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 			VolumeName:      k,
 			MapOrSecretName: k,
@@ -148,7 +148,7 @@ func (v *Vault) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-config", MountPath: "/vault/config/"})
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-root", MountPath: "/root/"})
 
-	for k, v := range  v.vaultSecrets {
+	for k, v := range v.vaultSecrets {
 		volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: k, MountPath: v})
 	}
 

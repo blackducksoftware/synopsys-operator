@@ -29,7 +29,7 @@ func (v *Vault) GetConfigmap() *components.ConfigMap {
 
 func (v *Vault) GetJob() *v1.Job {
 
-	cloneJob := &v1.Job{
+	job := &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vault-init",
 		},
@@ -65,7 +65,7 @@ func (v *Vault) GetJob() *v1.Job {
 		},
 	}
 
-	return cloneJob
+	return job
 }
 
 func (v *Vault) GetDeployment() *components.Deployment {
@@ -99,7 +99,6 @@ func (v *Vault) GetDeployment() *components.Deployment {
 
 	return util.CreateDeploymentFromContainer(deployConfig, "vault-init", containers, v.getVaultVolumes(), nil, nil)
 }
-
 
 func (v *Vault) getVaultVolumes() []*components.Volume {
 	var volumes []*components.Volume
@@ -138,7 +137,6 @@ func (v *Vault) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
 	return volumeMounts
 }
 
-
 func (v *Vault) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_ADDR", KeyOrVal: "https://vault:8200"})
@@ -152,33 +150,33 @@ func (v *Vault) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 
 	return envs
 }
-func  (v *Vault) GetSidecarUnsealContainer() *components.Container {
+func (v *Vault) GetSidecarUnsealContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name: "vault-sidecar",
-		Image: "gcr.io/snps-swip-staging/vault-util:latest",
-		PullPolicy:horizonapi.PullIfNotPresent,
-		Command: []string{"vault-sidecar", "/vault/init"},
+		Name:       "vault-sidecar",
+		Image:      "gcr.io/snps-swip-staging/vault-util:latest",
+		PullPolicy: horizonapi.PullIfNotPresent,
+		Command:    []string{"vault-sidecar", "/vault/init"},
 	})
 
 	container.AddEnv(horizonapi.EnvConfig{
-		Type:horizonapi.EnvVal,
+		Type:         horizonapi.EnvVal,
 		NameOrPrefix: "VAULT_ADDR",
-		KeyOrVal: "https://localhost:8200",
+		KeyOrVal:     "https://localhost:8200",
 	})
 
 	container.AddEnv(horizonapi.EnvConfig{
-		Type:horizonapi.EnvVal,
+		Type:         horizonapi.EnvVal,
 		NameOrPrefix: "VAULT_CACERT",
-		KeyOrVal: "/vault/tls/ca.crt",
+		KeyOrVal:     "/vault/tls/ca.crt",
 	})
 
 	container.AddVolumeMount(horizonapi.VolumeMountConfig{
-		Name: "vault-tls-certificate",
+		Name:      "vault-tls-certificate",
 		MountPath: "/vault/tls",
 	})
 
 	container.AddVolumeMount(horizonapi.VolumeMountConfig{
-		Name: "vault-init-secret",
+		Name:      "vault-init-secret",
 		MountPath: "/vault/init",
 	})
 

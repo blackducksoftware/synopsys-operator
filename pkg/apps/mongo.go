@@ -66,7 +66,7 @@ func (p *Mongo) GetMongoReplicationController() *components.ReplicationControlle
 		ContainerConfig: &horizonapi.ContainerConfig{
 			Name:       mongoName,
 			Image:      p.Image,
-			PullPolicy: horizonapi.PullAlways,
+			PullPolicy: horizonapi.PullIfNotPresent,
 			MinMem:     p.MinMemory,
 			MaxMem:     p.MaxMemory,
 			MinCPU:     p.MinCPU,
@@ -123,10 +123,23 @@ func (p *Mongo) getMongoVolumeMounts() []*horizonapi.VolumeMountConfig {
 // getMongoEnvconfigs will return the Mongo environment variable configurations
 func (p *Mongo) getMongoEnvconfigs() []*horizonapi.EnvConfig {
 	mongoEnvs := []*horizonapi.EnvConfig{}
-	mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MONGODB_DATABASE", KeyOrVal: p.Database})
-	mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MONGODB_USER", KeyOrVal: p.User})
-	mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MONGODB_PASSWORD", KeyOrVal: p.UserPasswordSecretKey, FromName: p.PasswordSecretName})
-	mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MONGODB_ADMIN_PASSWORD", KeyOrVal: p.AdminPasswordSecretKey, FromName: p.PasswordSecretName})
+	if len(p.Database) > 0 {
+		mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MONGODB_DATABASE", KeyOrVal: p.Database})
+	}
+
+	if len(p.User) > 0 {
+		mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MONGODB_USER", KeyOrVal: p.User})
+	}
+
+	if len (p.UserPasswordSecretKey) > 0 && len(p.PasswordSecretName) > 0 {
+		mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MONGODB_PASSWORD", KeyOrVal: p.UserPasswordSecretKey, FromName: p.PasswordSecretName})
+	}
+
+	if len (p.AdminPasswordSecretKey) > 0 && len(p.PasswordSecretName) > 0 {
+		mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MONGODB_ADMIN_PASSWORD", KeyOrVal: p.AdminPasswordSecretKey, FromName: p.PasswordSecretName})
+
+	}
+
 	for _, EnvConfigMapRef := range p.EnvConfigMapRefs {
 		mongoEnvs = append(mongoEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: EnvConfigMapRef})
 	}
