@@ -36,8 +36,24 @@ import (
 //	}
 //}
 
-// GetHubDefaultValue creates a hub crd configuration object
-// with defaults
+// GetAlertDefaultValue creates a alert crd configuration object with defaults
+func GetAlertDefaultValue() *alertv1.AlertSpec {
+	port := 8443
+	hubPort := 443
+	standAlone := true
+
+	return &alertv1.AlertSpec{
+		Port:           &port,
+		BlackduckPort:  &hubPort,
+		StandAlone:     &standAlone,
+		AlertMemory:    "512M",
+		CfsslMemory:    "640M",
+		AlertImageName: "blackduck-alert",
+		CfsslImageName: "hub-cfssl",
+	}
+}
+
+// GetHubDefaultValue creates a hub crd configuration object with defaults
 func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Size:            "Small",
@@ -139,8 +155,7 @@ func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetOpsSightDefaultValue creates a perceptor crd configuration object
-// with defaults
+// GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Perceptor: &opssightv1.Perceptor{
@@ -172,11 +187,10 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		ScannerPod: &opssightv1.ScannerPod{
 			Name: "perceptor-scanner",
 			ImageFacade: &opssightv1.ImageFacade{
-				Port:               3004,
-				InternalRegistries: []opssightv1.RegistryAuth{},
-				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-				ServiceAccount:     "perceptor-scanner",
-				Name:               "perceptor-imagefacade",
+				Port:           3004,
+				Image:          "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
+				ServiceAccount: "perceptor-scanner",
+				Name:           "perceptor-imagefacade",
 			},
 			Scanner: &opssightv1.Scanner{
 				Name:                 "perceptor-scanner",
@@ -204,15 +218,12 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			PerceptorDumpIntervalSeconds: 60,
 		},
 		Blackduck: &opssightv1.Blackduck{
-			User:                         "sysadmin",
-			Port:                         443,
-			ConcurrentScanLimit:          2,
-			TotalScanLimit:               1000,
-			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
-			InitialCount:                 0,
-			MaxCount:                     0,
-			DeleteHubThresholdPercentage: 50,
-			BlackduckSpec:                GetHubDefaultValue(),
+			InitialCount:                       0,
+			MaxCount:                           0,
+			ConnectionsEnvironmentVariableName: "blackduck.json",
+			TLSVerification:                    false,
+			DeleteBlackDuckThresholdPercentage: 50,
+			BlackduckSpec:                      GetHubDefaultValue(),
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,

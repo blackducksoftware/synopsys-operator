@@ -22,14 +22,16 @@ under the License.
 package opssight
 
 import (
+	"encoding/json"
 	"fmt"
-	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/horizon/pkg/components"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -38,6 +40,9 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -76,101 +81,107 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 		return errors.Annotatef(err, "unable to find namespace %s", namespace)
 	}
 
-	rcs, err := util.GetAllReplicationControllersForNamespace(ac.kubeClient, namespace)
+	// get all replication controller for the namespace
+	rcs, err := util.ListReplicationControllers(ac.kubeClient, namespace, "")
 	if err != nil {
-		return errors.Annotatef(err, "unable to find deployments in %s", namespace)
+		return errors.Annotatef(err, "unable to list the replication controller in %s", namespace)
 	}
 
-	var downstream bool
-	for _, rc := range rcs.Items {
-		if strings.Contains(rc.Name, "opssight") {
-			downstream = true
-			break
-		}
-	}
-	// Delete the namespace
-	err = util.DeleteNamespace(ac.kubeClient, namespace)
+	// get only opssight related replication controller for the namespace
+	opssightRCs, err := util.ListReplicationControllers(ac.kubeClient, namespace, "app=opssight")
 	if err != nil {
-		return errors.Annotatef(err, "unable to delete namespace %s", namespace)
+		return errors.Annotatef(err, "unable to list the opssight's replication controller in %s", namespace)
 	}
 
-	for {
-		// Verify whether the namespace was deleted
-		ns, err := util.GetNamespace(ac.kubeClient, namespace)
-		log.Infof("namespace: %v, status: %v", namespace, ns.Status)
+	// if both the length same, then delete the namespace, if different, delete only the replication controller
+	if len(rcs.Items) == len(opssightRCs.Items) {
+		// Delete the namespace
+		err = util.DeleteNamespace(ac.kubeClient, namespace)
 		if err != nil {
-			log.Infof("deleted the namespace %+v", namespace)
-			break
+			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
 		}
-		time.Sleep(10 * time.Second)
-	}
 
-	// Delete a Cluster Role
-	clusterRoles := []string{}
-	if downstream {
-		clusterRoles = []string{"opssight-pod-processor", "opssight-image-processor"}
+		for {
+			// Verify whether the namespace was deleted
+			ns, err := util.GetNamespace(ac.kubeClient, namespace)
+			log.Infof("namespace: %v, status: %v", namespace, ns.Status)
+			if err != nil {
+				log.Infof("deleted the namespace %+v", namespace)
+				break
+			}
+			time.Sleep(10 * time.Second)
+		}
 	} else {
-		clusterRoles = []string{"pod-perceiver", "image-perceiver"}
-	}
-
-	for _, clusterRole := range clusterRoles {
-		err := util.DeleteClusterRole(ac.kubeClient, clusterRole)
-		if err != nil {
-			log.Errorf("unable to delete the cluster role for %+v", clusterRole)
+		// delete the replication controller
+		for _, opssightRC := range opssightRCs.Items {
+			err = util.DeleteReplicationController(ac.kubeClient, namespace, opssightRC.GetName())
+			if err != nil {
+				return errors.Annotatef(err, "unable to delete the %s replication controller in %s namespace", opssightRC.GetName(), namespace)
+			}
 		}
 	}
 
-	// Delete a Cluster Role Binding
-	clusterRoleBindings := []string{}
-	if downstream {
-		clusterRoleBindings = []string{"opssight-pod-processor", "opssight-image-processor", "opssight-scanner"}
-	} else {
-		clusterRoleBindings = []string{"pod-perceiver", "image-perceiver", "perceptor-scanner"}
-	}
-	for _, clusterRoleBinding := range clusterRoleBindings {
-		err := util.DeleteClusterRoleBinding(ac.kubeClient, clusterRoleBinding)
-		if err != nil {
-			log.Errorf("unable to delete the cluster role binding for %+v", clusterRoleBinding)
+	clusterRoleBindings, err := util.ListClusterRoleBindings(ac.kubeClient, "app=opssight")
+
+	for _, clusterRoleBinding := range clusterRoleBindings.Items {
+		if len(clusterRoleBinding.Subjects) == 1 {
+			if !strings.EqualFold(clusterRoleBinding.RoleRef.Name, "cluster-admin") {
+				log.Debugf("deleting cluster role %s", clusterRoleBinding.RoleRef.Name)
+				err = util.DeleteClusterRole(ac.kubeClient, clusterRoleBinding.RoleRef.Name)
+				if err != nil {
+					log.Errorf("unable to delete the cluster role for %+v", clusterRoleBinding.RoleRef.Name)
+				}
+			}
+
+			log.Debugf("deleting cluster role binding %s", clusterRoleBinding.GetName())
+			err = util.DeleteClusterRoleBinding(ac.kubeClient, clusterRoleBinding.GetName())
+			if err != nil {
+				log.Errorf("unable to delete the cluster role binding for %+v", clusterRoleBinding.GetName())
+			}
+		} else {
+			log.Debugf("updating cluster role binding %s", clusterRoleBinding.GetName())
+			clusterRoleBinding.Subjects = removeSubjects(clusterRoleBinding.Subjects, namespace)
+			_, err = util.UpdateClusterRoleBinding(ac.kubeClient, &clusterRoleBinding)
+			if err != nil {
+				log.Errorf("unable to update the cluster role binding for %+v", clusterRoleBinding.GetName())
+			}
 		}
 	}
 
 	return nil
 }
 
+func removeSubjects(subjects []rbacv1.Subject, namespace string) []rbacv1.Subject {
+	newSubjects := []rbacv1.Subject{}
+	for _, subject := range subjects {
+		if !strings.EqualFold(subject.Namespace, namespace) {
+			newSubjects = append(newSubjects, subject)
+		}
+	}
+	return newSubjects
+}
+
 // CreateOpsSight will create the Black Duck OpsSight
-func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
-	log.Debugf("create OpsSight details for %s: %+v", createOpsSight.Namespace, createOpsSight)
+func (ac *Creater) CreateOpsSight(opsSight *opssightapi.OpsSightSpec) error {
+	log.Debugf("create OpsSight details for %s: %+v", opsSight.Namespace, opsSight)
 
 	// get the registry auth credentials for default OpenShift internal docker registries
 	if !ac.config.DryRun {
-		ac.addRegistryAuth(createOpsSight)
+		ac.addRegistryAuth(opsSight)
 	}
 
-	opssight := NewSpecConfig(createOpsSight)
+	opssight := NewSpecConfig(ac.kubeClient, opsSight, ac.config.DryRun)
 
 	components, err := opssight.GetComponents()
 	if err != nil {
-		return errors.Annotatef(err, "unable to get opssight components for %s", createOpsSight.Namespace)
+		return errors.Annotatef(err, "unable to get opssight components for %s", opsSight.Namespace)
 	}
 
-	// setting up hub password in perceptor secret
+	// setting up blackduck password in perceptor secret
 	if !ac.config.DryRun {
-		var hubPassword string
-		var err error
-		for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
-			// get the secret from the default operator namespace, then copy it into the hub namespace.
-			hubPassword, err = GetDefaultPasswords(ac.kubeClient, ac.config.Namespace)
-			if err == nil {
-				break
-			} else {
-				log.Infof("wasn't able to get hub password, sleeping 5 seconds.  try = %v", dbInitTry)
-				time.Sleep(5 * time.Second)
-			}
-		}
-
 		for _, secret := range components.Secrets {
-			if strings.EqualFold(secret.GetName(), createOpsSight.SecretName) {
-				secret.AddData(map[string][]byte{"HubUserPassword": []byte(hubPassword)})
+			if strings.EqualFold(secret.GetName(), opsSight.SecretName) {
+				ac.addSecretData(opsSight, secret)
 				break
 			}
 		}
@@ -178,30 +189,455 @@ func (ac *Creater) CreateOpsSight(createOpsSight *v1.OpsSightSpec) error {
 
 	deployer, err := util.NewDeployer(ac.kubeConfig)
 	if err != nil {
-		return errors.Annotatef(err, "unable to get deployer object for %s", createOpsSight.Namespace)
+		return errors.Annotatef(err, "unable to get deployer object for %s", opsSight.Namespace)
 	}
 	// Note: controllers that need to continually run to update your app
 	// should be added in PreDeploy().
-	deployer.PreDeploy(components, createOpsSight.Namespace)
+	deployer.PreDeploy(components, opsSight.Namespace)
 
 	if !ac.config.DryRun {
 		err = deployer.Run()
 		if err != nil {
-			log.Errorf("unable to deploy opssight %s due to %+v", createOpsSight.Namespace, err)
+			log.Errorf("unable to deploy opssight %s due to %+v", opsSight.Namespace, err)
 		}
 		deployer.StartControllers()
 		// if OpenShift, add a privileged role to scanner account
-		err = ac.postDeploy(opssight, createOpsSight.Namespace)
+		err = ac.postDeploy(opssight, opsSight.Namespace)
 		if err != nil {
 			return errors.Trace(err)
 		}
 
-		err = ac.deployHub(createOpsSight)
+		err = ac.deployHub(opsSight)
 		if err != nil {
 			return errors.Trace(err)
 		}
 	}
 
+	return nil
+}
+
+// StopOpsSight will stop the Black Duck OpsSight
+func (ac *Creater) StopOpsSight(opssight *opssightapi.OpsSightSpec) error {
+	rcl, err := util.ListReplicationControllers(ac.kubeClient, opssight.Namespace, "app=opssight")
+	for _, rc := range rcl.Items {
+		if util.Int32ToInt(rc.Spec.Replicas) > 0 {
+			err := util.PatchReplicationControllerForReplicas(ac.kubeClient, rc, 0)
+			if err != nil {
+				return fmt.Errorf("unable to patch %s replication controller with replicas %d in %s namespace because %+v", rc.Name, 0, opssight.Namespace, err)
+			}
+		}
+	}
+	return err
+}
+
+// ReplicationControllerComparator used to compare Replication controller attributes
+type ReplicationControllerComparator struct {
+	Image    string
+	Replicas *int32
+	MinCPU   *resource.Quantity
+	MaxCPU   *resource.Quantity
+	MinMem   *resource.Quantity
+	MaxMem   *resource.Quantity
+}
+
+// UpdateOpsSight will update the Black Duck OpsSight
+func (ac *Creater) UpdateOpsSight(opssight *opssightapi.OpsSightSpec) error {
+	newConfigMapConfig := NewSpecConfig(ac.kubeClient, opssight, ac.config.DryRun)
+	// check whether the configmap is changed, if so update the configmap
+	isConfigMapUpdated, err := ac.updateConfigMap(opssight, newConfigMapConfig)
+	if err != nil {
+		return errors.Annotate(err, "update configmap:")
+	}
+
+	// check whether the secret is changed, if so update the secret
+	isSecretUpdated, err := ac.updateSecret(opssight, newConfigMapConfig)
+	if err != nil {
+		return errors.Annotate(err, "update secret:")
+	}
+
+	// check whether any replication controller, configmap, secret, services, cluster role or cluster role binding is updated, if so create/patch the replication controller
+	err = ac.update(opssight, newConfigMapConfig, isConfigMapUpdated, isSecretUpdated)
+	if err != nil {
+		return errors.Annotate(err, "update replication controller:")
+	}
+
+	return nil
+}
+
+func (ac *Creater) updateConfigMap(opssight *opssightapi.OpsSightSpec, newConfigMapConfig *SpecConfig) (bool, error) {
+	configMapName := fmt.Sprintf("%s.json", opssight.ConfigMapName)
+	// build new configmap data for comparing
+	newConfig, err := newConfigMapConfig.configMap.horizonConfigMap(opssight.ConfigMapName, opssight.Namespace, configMapName)
+	if err != nil {
+		return false, errors.Annotatef(err, "unable to create horizon configmap %s in opssight namespace %s", opssight.ConfigMapName, opssight.Namespace)
+	}
+	newConfigMapKube, err := newConfig.ToKube()
+	if err != nil {
+		return false, errors.Annotatef(err, "unable to convert configmap %s to kube in opssight namespace %s", opssight.ConfigMapName, opssight.Namespace)
+	}
+	newConfigMap := newConfigMapKube.(*corev1.ConfigMap)
+	newConfigMapData := newConfigMap.Data
+
+	// getting old configmap data
+	oldConfigMap, err := util.GetConfigMap(ac.kubeClient, opssight.Namespace, opssight.ConfigMapName)
+	if err != nil {
+		return false, errors.Annotatef(err, "unable to find the configmap %s in opssight namespace %s", opssight.ConfigMapName, opssight.Namespace)
+	}
+	oldConfigMapData := oldConfigMap.Data
+
+	// compare for difference between old and new configmap data, if changed update the configmap
+	if !reflect.DeepEqual(newConfigMapData, oldConfigMapData) {
+		oldConfigMap.Data = newConfigMapData
+		err = util.UpdateConfigMap(ac.kubeClient, opssight.Namespace, oldConfigMap)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to update the configmap %s in namespace %s", opssight.ConfigMapName, opssight.Namespace)
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+func (ac *Creater) updateSecret(opssight *opssightapi.OpsSightSpec, newConfigMapConfig *SpecConfig) (bool, error) {
+	secretName := opssight.SecretName
+	// build new secret data for comparing
+	secret := newConfigMapConfig.PerceptorSecret()
+	err := ac.addSecretData(opssight, secret)
+	if err != nil {
+		return false, errors.Annotate(err, fmt.Sprintf("unable to add secret data to %s secret in %s namespace", secretName, opssight.Namespace))
+	}
+	newSecretKube, err := secret.ToKube()
+	if err != nil {
+		return false, errors.Annotatef(err, "unable to convert secret %s to kube in opssight namespace %s", secretName, opssight.Namespace)
+	}
+	newSecret := newSecretKube.(*corev1.Secret)
+	newSecretData := newSecret.Data
+
+	// getting old secret data
+	oldSecret, err := util.GetSecret(ac.kubeClient, opssight.Namespace, secretName)
+	if err != nil {
+		return false, errors.Annotatef(err, "unable to find the secret %s in namespace %s", secretName, opssight.Namespace)
+	}
+	oldSecretData := oldSecret.Data
+
+	// compare for difference between old and new secret data, if changed update the secret
+	if !reflect.DeepEqual(newSecretData, oldSecretData) {
+		oldSecret.Data = newSecretData
+		err = util.UpdateSecret(ac.kubeClient, opssight.Namespace, oldSecret)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to update the secret %s in namespace %s", secretName, opssight.Namespace)
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+func (ac *Creater) update(opssight *opssightapi.OpsSightSpec, newConfigMapConfig *SpecConfig, isConfigMapUpdated bool, isSecretUpdated bool) error {
+	// get new components build from the latest updates
+	components, err := newConfigMapConfig.GetComponents()
+	if err != nil {
+		return errors.Annotatef(err, "unable to get opssight components for %s", opssight.Namespace)
+	}
+
+	// add or remove the services
+	err = ac.addOrRemoveServices(opssight.Namespace, components.Services, "app=opssight")
+	if err != nil {
+		return errors.Annotatef(err, "unable to add opssight services for %s", opssight.Namespace)
+	}
+
+	// add or remove the cluster roles
+	err = ac.addOrRemoveClusterRoles(opssight.Namespace, components.ClusterRoles, "app=opssight")
+	if err != nil {
+		return errors.Annotatef(err, "unable to add opssight cluster roles for %s", opssight.Namespace)
+	}
+
+	// add or remove the cluster role bindings
+	err = ac.addOrRemoveClusterRoleBindings(opssight.Namespace, components.ClusterRoleBindings, "app=opssight")
+	if err != nil {
+		return errors.Annotatef(err, "unable to add opssight cluster role bindings for %s", opssight.Namespace)
+	}
+
+	// add, remove or update the replication controller
+	err = ac.addRemoveOrUpdateRC(opssight, components.ReplicationControllers, isConfigMapUpdated, isSecretUpdated, "app=opssight")
+	if err != nil {
+		return errors.Annotatef(err, "opssight replication controller")
+	}
+
+	return nil
+}
+
+func (ac *Creater) addOrRemoveServices(namespace string, services []*components.Service, labelSelector string) error {
+	deployer, err := util.NewDeployer(ac.kubeConfig)
+	if err != nil {
+		return errors.Annotatef(err, "unable to get deployer object for %s", namespace)
+	}
+
+	// add services
+	isRun := false
+	for _, service := range services {
+		_, err := util.GetService(ac.kubeClient, namespace, service.GetName())
+		if err != nil {
+			deployer.Deployer.AddService(service)
+			isRun = true
+		}
+	}
+
+	if isRun {
+		err = deployer.Deployer.Run()
+		if err != nil {
+			log.Debugf("unable to deploy service object due to %+v", err)
+		}
+	}
+
+	// remove the existing services
+	// get the services from the cluster
+	oldServices, err := util.ListServices(ac.kubeClient, namespace, labelSelector)
+	if err != nil {
+		return errors.Annotatef(err, "unable to list the services for %s", namespace)
+	}
+
+	// construct the new services using horizon to kube method
+	newServices := make(map[string]*corev1.Service)
+	for _, newSvc := range services {
+		newServiceKube, err := newSvc.ToKube()
+		if err != nil {
+			return errors.Annotatef(err, "unable to convert service %s to kube in opssight namespace %s", newSvc.GetName(), namespace)
+		}
+		newServices[newSvc.GetName()] = newServiceKube.(*corev1.Service)
+	}
+
+	// compare the old and new service and delete if needed
+	for _, oldService := range oldServices.Items {
+		if _, ok := newServices[oldService.GetName()]; !ok {
+			err = util.DeleteService(ac.kubeClient, namespace, oldService.GetName())
+			if err != nil {
+				return errors.Annotatef(err, "unable to delete service %s in opssight namespace %s", oldService.GetName(), namespace)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (ac *Creater) addOrRemoveClusterRoles(namespace string, clusterRoles []*components.ClusterRole, labelSelector string) error {
+	// add cluster role
+	deployer, err := util.NewDeployer(ac.kubeConfig)
+	if err != nil {
+		return errors.Annotatef(err, "unable to get deployer object for %s", namespace)
+	}
+	isRun := false
+	for _, clusterRole := range clusterRoles {
+		_, err := util.GetClusterRole(ac.kubeClient, clusterRole.GetName())
+		if err != nil {
+			deployer.Deployer.AddClusterRole(clusterRole)
+			isRun = true
+		}
+	}
+
+	if isRun {
+		err = deployer.Deployer.Run()
+		if err != nil {
+			log.Debugf("unable to deploy cluster role object due to %+v", err)
+		}
+	}
+
+	// remove the existing cluster role
+	// get the cluster roles from the cluster
+	oldClusterRoles, err := util.ListClusterRoles(ac.kubeClient, labelSelector)
+	if err != nil {
+		return errors.Annotatef(err, "unable to list the cluster roles for %s", namespace)
+	}
+
+	// construct the new cluster roles using horizon to kube method
+	newClusterRoles := make(map[string]*rbacv1.ClusterRole)
+	for _, newCr := range clusterRoles {
+		newClusterRoleKube, err := newCr.ToKube()
+		if err != nil {
+			return errors.Annotatef(err, "unable to convert cluster roles %s to kube in opssight namespace %s", newCr.GetName(), namespace)
+		}
+		newClusterRoles[newCr.GetName()] = newClusterRoleKube.(*rbacv1.ClusterRole)
+	}
+
+	// compare the old and new cluster role and delete if needed
+	for _, oldClusterRole := range oldClusterRoles.Items {
+		if _, ok := newClusterRoles[oldClusterRole.GetName()]; !ok {
+			err = util.DeleteClusterRole(ac.kubeClient, oldClusterRole.GetName())
+			if err != nil {
+				return errors.Annotatef(err, "unable to delete cluster role %s in opssight namespace %s", oldClusterRole.GetName(), namespace)
+			}
+		}
+	}
+	return nil
+}
+
+func (ac *Creater) addOrRemoveClusterRoleBindings(namespace string, clusterRoleBindings []*components.ClusterRoleBinding, labelSelector string) error {
+
+	// add new cluster role bindings
+	deployer, err := util.NewDeployer(ac.kubeConfig)
+	if err != nil {
+		return errors.Annotatef(err, "unable to get deployer object for %s", namespace)
+	}
+	isRun := false
+	for _, clusterRoleBinding := range clusterRoleBindings {
+		_, err := util.GetClusterRoleBinding(ac.kubeClient, clusterRoleBinding.GetName())
+		if err != nil {
+			deployer.Deployer.AddClusterRoleBinding(clusterRoleBinding)
+			isRun = true
+		}
+	}
+
+	if isRun {
+		err = deployer.Deployer.Run()
+		if err != nil {
+			log.Debugf("unable to deploy cluster role binding object due to %+v", err)
+		}
+	}
+
+	// remove the existing cluster role bindings
+	// get the cluster role bindings from the cluster
+	oldClusterRoleBindings, err := util.ListClusterRoleBindings(ac.kubeClient, labelSelector)
+	if err != nil {
+		return errors.Annotatef(err, "unable to list the cluster role bindings for %s", namespace)
+	}
+
+	// construct the new cluster role bindings using horizon to kube method
+	newClusterRoleBindings := make(map[string]*rbacv1.ClusterRoleBinding)
+	for _, newCrb := range clusterRoleBindings {
+		newClusterRoleBindingKube, err := newCrb.ToKube()
+		if err != nil {
+			return errors.Annotatef(err, "unable to convert cluster role bindings %s to kube in opssight namespace %s", newCrb.GetName(), namespace)
+		}
+		newClusterRoleBindings[newCrb.GetName()] = newClusterRoleBindingKube.(*rbacv1.ClusterRoleBinding)
+	}
+
+	// compare the old and new cluster role binding and delete if needed
+	for _, oldClusterRoleBinding := range oldClusterRoleBindings.Items {
+		if _, ok := newClusterRoleBindings[oldClusterRoleBinding.GetName()]; !ok {
+			err = util.DeleteClusterRoleBinding(ac.kubeClient, oldClusterRoleBinding.GetName())
+			if err != nil {
+				return errors.Annotatef(err, "unable to delete cluster role binding %s in opssight namespace %s", oldClusterRoleBinding.GetName(), namespace)
+			}
+		}
+	}
+	return nil
+}
+
+func (ac *Creater) addRemoveOrUpdateRC(opssight *opssightapi.OpsSightSpec, replicationControllers []*components.ReplicationController,
+	isConfigMapUpdated bool, isSecretUpdated bool, labelSelector string) error {
+	// get old replication controller
+	rcl, err := util.ListReplicationControllers(ac.kubeClient, opssight.Namespace, labelSelector)
+	if err != nil {
+		return errors.Annotatef(err, "unable to get opssight replication controllers for %s", opssight.Namespace)
+	}
+
+	oldRCs := make(map[string]corev1.ReplicationController)
+	for _, rc := range rcl.Items {
+		oldRCs[rc.GetName()] = rc
+	}
+
+	// construct the new services using horizon to kube method
+	newReplicationControllers := make(map[string]*corev1.ReplicationController)
+	for _, newRc := range replicationControllers {
+		newReplicationControllerKube, err := newRc.ToKube()
+		if err != nil {
+			return errors.Annotatef(err, "unable to convert replication controller %s to kube in opssight namespace %s", newRc.GetName(), opssight.Namespace)
+		}
+		newReplicationControllers[newRc.GetName()] = newReplicationControllerKube.(*corev1.ReplicationController)
+	}
+
+	// compare the old and new service and delete if needed
+	for _, oldReplicationController := range oldRCs {
+		if _, ok := newReplicationControllers[oldReplicationController.GetName()]; !ok {
+			err = util.DeleteReplicationController(ac.kubeClient, opssight.Namespace, oldReplicationController.GetName())
+			if err != nil {
+				return errors.Annotatef(err, "unable to delete replication controller %s in opssight namespace %s", oldReplicationController.GetName(), opssight.Namespace)
+			}
+		}
+	}
+
+	// iterate through the replication controller list for any changes
+	for _, component := range replicationControllers {
+		newRC := newReplicationControllers[component.GetName()]
+		oldRC := oldRCs[newRC.GetName()]
+
+		// if the replication controller is not found in the cluster, create it
+		if _, ok := oldRCs[newRC.GetName()]; !ok {
+			deployer, err := util.NewDeployer(ac.kubeConfig)
+			if err != nil {
+				return errors.Annotatef(err, "unable to get deployer object for %s", opssight.Namespace)
+			}
+			deployer.Deployer.AddReplicationController(component)
+			deployer.Deployer.Run()
+		}
+
+		// if config map or secret is updated, patch the replication controller
+		if isConfigMapUpdated || isSecretUpdated {
+			err = util.PatchReplicationController(ac.kubeClient, oldRC, *newRC)
+			if err != nil {
+				return errors.Annotatef(err, "unable to patch rc %s to kube in opssight namespace %s", component.GetName(), opssight.Namespace)
+			}
+			continue
+		}
+
+		// check whether the replication controller or its container got changed
+		isChanged := false
+		for _, oldContainer := range oldRC.Spec.Template.Spec.Containers {
+			for _, newContainer := range newRC.Spec.Template.Spec.Containers {
+				if strings.EqualFold(oldContainer.Name, newContainer.Name) &&
+					!reflect.DeepEqual(
+						ReplicationControllerComparator{
+							Image:    oldContainer.Image,
+							Replicas: oldRC.Spec.Replicas,
+							MinCPU:   oldContainer.Resources.Requests.Cpu(),
+							MaxCPU:   oldContainer.Resources.Limits.Cpu(),
+							MinMem:   oldContainer.Resources.Requests.Memory(),
+							MaxMem:   oldContainer.Resources.Limits.Memory(),
+						},
+						ReplicationControllerComparator{
+							Image:    newContainer.Image,
+							Replicas: newRC.Spec.Replicas,
+							MinCPU:   newContainer.Resources.Requests.Cpu(),
+							MaxCPU:   newContainer.Resources.Limits.Cpu(),
+							MinMem:   newContainer.Resources.Requests.Memory(),
+							MaxMem:   newContainer.Resources.Limits.Memory(),
+						}) {
+					isChanged = true
+				}
+			}
+		}
+
+		// if changed from the above step, patch the replication controller
+		if isChanged {
+			err = util.PatchReplicationController(ac.kubeClient, oldRC, *newRC)
+			if err != nil {
+				return errors.Annotatef(err, "unable to patch rc %s to kube in opssight namespace %s", component.GetName(), opssight.Namespace)
+			}
+		}
+	}
+	return nil
+}
+
+func (ac *Creater) addSecretData(opsSight *opssightapi.OpsSightSpec, secret *components.Secret) error {
+	blackduckPasswords := make(map[string]interface{})
+	// adding External Black Duck passwords
+	for _, host := range opsSight.Blackduck.ExternalHosts {
+		blackduckPasswords[host.Domain] = &host
+	}
+	bytes, err := json.Marshal(blackduckPasswords)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	secret.AddData(map[string][]byte{opsSight.Blackduck.ConnectionsEnvironmentVariableName: bytes})
+
+	// adding Secured registries credential
+	securedRegistries := make(map[string]interface{})
+	for _, internalRegistry := range opsSight.ScannerPod.ImageFacade.InternalRegistries {
+		securedRegistries[internalRegistry.URL] = &internalRegistry
+	}
+	bytes, err = json.Marshal(securedRegistries)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
 	return nil
 }
 
@@ -219,7 +655,7 @@ func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder stri
 	return hubPassword, nil
 }
 
-func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
+func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 	// if OpenShift, get the registry auth informations
 	if ac.routeClient == nil {
 		return
@@ -251,7 +687,7 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *v1.OpsSightSpec) {
 		log.Errorf("unable to read the service account token file due to %+v", err)
 	} else {
 		for _, internalRegistry := range internalRegistries {
-			registryAuth := v1.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
+			registryAuth := &opssightapi.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
 			opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightSpec.ScannerPod.ImageFacade.InternalRegistries, registryAuth)
 		}
 	}
@@ -271,7 +707,7 @@ func (ac *Creater) postDeploy(opssight *SpecConfig, namespace string) error {
 	return nil
 }
 
-func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
+func (ac *Creater) deployHub(createOpsSight *opssightapi.OpsSightSpec) error {
 	if createOpsSight.Blackduck.InitialCount > createOpsSight.Blackduck.MaxCount {
 		createOpsSight.Blackduck.InitialCount = createOpsSight.Blackduck.MaxCount
 	}
@@ -289,7 +725,7 @@ func (ac *Creater) deployHub(createOpsSight *v1.OpsSightSpec) error {
 
 		hubSpec := createOpsSight.Blackduck.BlackduckSpec
 		hubSpec.Namespace = name
-		createHub := &hub_v2.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
+		createHub := &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
 		log.Debugf("hub[%d]: %+v", i, createHub)
 		_, err = util.CreateHub(ac.hubClient, name, createHub)
 		if err != nil {

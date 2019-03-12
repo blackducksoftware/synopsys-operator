@@ -28,7 +28,7 @@ import (
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/google/go-cmp/cmp"
 	"github.com/koki/short/types"
@@ -40,7 +40,7 @@ import (
 // TestUpstreamPerceptor will test the upstream deployment
 func TestUpstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
-	opssight := NewSpecConfig(defaultValues)
+	opssight := NewSpecConfig(nil, defaultValues, true)
 
 	components, err := opssight.GetComponents()
 
@@ -64,7 +64,7 @@ func TestUpstreamPerceptor(t *testing.T) {
 func TestDownstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
 
-	opssight := NewSpecConfig(defaultValues)
+	opssight := NewSpecConfig(nil, defaultValues, true)
 
 	components, err := opssight.GetComponents()
 	fmt.Printf("tests of %+v temporarily disabled -- reenable using ginkgo (err: %+v)", components, err)
@@ -84,7 +84,7 @@ func TestDownstreamPerceptor(t *testing.T) {
 	// validateServices(t, components.Services, defaultValues)
 }
 
-func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components.ClusterRoleBinding, opssightSpec *opssightv1.OpsSightSpec) {
+func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components.ClusterRoleBinding, opssightSpec *opssightapi.OpsSightSpec) {
 	if len(clusterRoleBindings) != 3 {
 		t.Errorf("cluster role binding length not equal to 3, actual: %d", len(clusterRoleBindings))
 	}
@@ -106,7 +106,7 @@ func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components
 	}
 }
 
-func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, opssightSpec *opssightv1.OpsSightSpec) {
+func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, opssightSpec *opssightapi.OpsSightSpec) {
 	if len(clusterRoles) != 2 {
 		t.Errorf("cluster role length not equal to 2, actual: %d", len(clusterRoles))
 	}
@@ -126,7 +126,7 @@ func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, 
 	}
 }
 
-func validateConfigMaps(t *testing.T, configMaps []*components.ConfigMap, opssightSpec *opssightv1.OpsSightSpec) {
+func validateConfigMaps(t *testing.T, configMaps []*components.ConfigMap, opssightSpec *opssightapi.OpsSightSpec) {
 	if len(configMaps) != 6 {
 		t.Errorf("config maps length not equal to 6, actual: %d", len(configMaps))
 	}
@@ -164,7 +164,7 @@ func validateConfigMaps(t *testing.T, configMaps []*components.ConfigMap, opssig
 	}
 }
 
-func validateDeployments(t *testing.T, deployments []*components.Deployment, opssightSpec *opssightv1.OpsSightSpec) {
+func validateDeployments(t *testing.T, deployments []*components.Deployment, opssightSpec *opssightapi.OpsSightSpec) {
 	if len(deployments) != 1 {
 		t.Errorf("deployments length not equal to 1, actual: %d", len(deployments))
 	}
@@ -214,7 +214,7 @@ func validateDeployments(t *testing.T, deployments []*components.Deployment, ops
 	}
 }
 
-func validateReplicationControllers(t *testing.T, replicationControllers []*components.ReplicationController, opssightSpec *opssightv1.OpsSightSpec) {
+func validateReplicationControllers(t *testing.T, replicationControllers []*components.ReplicationController, opssightSpec *opssightapi.OpsSightSpec) {
 	if len(replicationControllers) != 4 {
 		t.Errorf("replication controllers length not equal to 5, actual: %d", len(replicationControllers))
 	}
@@ -401,7 +401,7 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 	}
 }
 
-func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *opssightv1.OpsSightSpec) {
+func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *opssightapi.OpsSightSpec) {
 	if len(secrets) != 1 {
 		t.Errorf("secrets length not equal to 1, actual: %d", len(secrets))
 	}
@@ -417,7 +417,7 @@ func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *o
 	}
 }
 
-func validateServiceAccounts(t *testing.T, serviceAccounts []*components.ServiceAccount, opssightSpec *opssightv1.OpsSightSpec) {
+func validateServiceAccounts(t *testing.T, serviceAccounts []*components.ServiceAccount, opssightSpec *opssightapi.OpsSightSpec) {
 	if len(serviceAccounts) != 3 {
 		t.Errorf("service account length not equal to 3, actual: %d", len(serviceAccounts))
 	}
@@ -437,7 +437,7 @@ func validateServiceAccounts(t *testing.T, serviceAccounts []*components.Service
 	}
 }
 
-func validateServices(t *testing.T, services []*components.Service, opssightSpec *opssightv1.OpsSightSpec) {
+func validateServices(t *testing.T, services []*components.Service, opssightSpec *opssightapi.OpsSightSpec) {
 	if len(services) != 6 {
 		t.Errorf("services length not equal to 6, actual: %d", len(services))
 	}
@@ -537,9 +537,9 @@ func prettyPrintObj(components *api.ComponentList) {
 }
 
 // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
-func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
-	return &opssightv1.OpsSightSpec{
-		Perceptor: &opssightv1.Perceptor{
+func getOpsSightDefaultValue() *opssightapi.OpsSightSpec {
+	return &opssightapi.OpsSightSpec{
+		Perceptor: &opssightapi.Perceptor{
 			Name:                           "perceptor",
 			Port:                           3001,
 			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
@@ -549,15 +549,15 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			UnknownImagePauseMilliseconds:  15000,
 			ClientTimeoutMilliseconds:      100000,
 		},
-		Perceiver: &opssightv1.Perceiver{
+		Perceiver: &opssightapi.Perceiver{
 			EnableImagePerceiver: false,
 			EnablePodPerceiver:   true,
 			Port:                 3002,
-			ImagePerceiver: &opssightv1.ImagePerceiver{
+			ImagePerceiver: &opssightapi.ImagePerceiver{
 				Name:  "image-perceiver",
 				Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
 			},
-			PodPerceiver: &opssightv1.PodPerceiver{
+			PodPerceiver: &opssightapi.PodPerceiver{
 				Name:  "pod-perceiver",
 				Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
 			},
@@ -565,15 +565,15 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			AnnotationIntervalSeconds: 30,
 			DumpIntervalMinutes:       30,
 		},
-		ScannerPod: &opssightv1.ScannerPod{
-			ImageFacade: &opssightv1.ImageFacade{
+		ScannerPod: &opssightapi.ScannerPod{
+			ImageFacade: &opssightapi.ImageFacade{
 				Port:               3004,
-				InternalRegistries: []opssightv1.RegistryAuth{},
+				InternalRegistries: []*opssightapi.RegistryAuth{},
 				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
 				ServiceAccount:     "perceptor-scanner",
 				Name:               "perceptor-imagefacade",
 			},
-			Scanner: &opssightv1.Scanner{
+			Scanner: &opssightapi.Scanner{
 				Name:                 "perceptor-scanner",
 				Port:                 3003,
 				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
@@ -581,27 +581,22 @@ func getOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			},
 			ReplicaCount: 1,
 		},
-		Prometheus: &opssightv1.Prometheus{
+		Prometheus: &opssightapi.Prometheus{
 			Name:  "prometheus",
 			Image: "docker.io/prom/prometheus:v2.1.0",
 			Port:  9090,
 		},
-		Skyfire: &opssightv1.Skyfire{
+		Skyfire: &opssightapi.Skyfire{
 			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
 			Name:           "skyfire",
 			Port:           3005,
 			ServiceAccount: "skyfire",
 		},
-		Blackduck: &opssightv1.Blackduck{
-			User:                         "sysadmin",
-			Port:                         443,
-			ConcurrentScanLimit:          2,
-			TotalScanLimit:               1000,
-			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
-			InitialCount:                 1,
-			MaxCount:                     1,
-			DeleteHubThresholdPercentage: 50,
-			BlackduckSpec:                nil,
+		Blackduck: &opssightapi.Blackduck{
+			InitialCount:                       1,
+			MaxCount:                           1,
+			DeleteBlackDuckThresholdPercentage: 50,
+			BlackduckSpec:                      nil,
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,
