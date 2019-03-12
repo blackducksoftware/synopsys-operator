@@ -1,0 +1,8 @@
+<div class="page-header">
+  <h1>New Rgp</h1>
+</div>
+
+<%= form_for(rgp, {action: rgpsPath(), method: "POST"}) { %>
+  <%= partial("rgps/form.html") %>
+  <a href="<%= rgpsPath() %>" class="btn btn-warning" data-confirm="Are you sure?">Cancel</a>
+<% } %>
