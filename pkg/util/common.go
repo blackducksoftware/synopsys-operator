@@ -767,8 +767,8 @@ func GetClusterRole(clientset *kubernetes.Clientset, name string) (*rbacv1.Clust
 	return clientset.Rbac().ClusterRoles().Get(name, metav1.GetOptions{})
 }
 
-// ListClusterRole list a cluster role
-func ListClusterRole(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleList, error) {
+// ListClusterRoles list a cluster role
+func ListClusterRoles(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleList, error) {
 	return clientset.Rbac().ClusterRoles().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
