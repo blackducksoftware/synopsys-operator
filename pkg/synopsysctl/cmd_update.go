@@ -39,6 +39,26 @@ var updateBlackduckCtl ResourceCtl
 var updateOpsSightCtl ResourceCtl
 var updateAlertCtl ResourceCtl
 
+type OperatorVersions struct {
+	Blackduck string
+	OpsSight  string
+	Alert     string
+}
+
+// Lookup table for crd versions that are compatible with operator verions
+var operatorVersionLookup = map[string]OperatorVersions{
+	"2019.0.0": OperatorVersions{
+		Blackduck: "v1",
+		OpsSight:  "v1",
+		Alert:     "v1",
+	},
+	"2019.1.1": OperatorVersions{
+		Blackduck: "v1",
+		OpsSight:  "v1",
+		Alert:     "v1",
+	},
+}
+
 // updateCmd provides functionality to update/upgrade features of
 // Synopsys resources
 var updateCmd = &cobra.Command{
@@ -63,6 +83,12 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 		log.Debugf("Updating the Synopsys-Operator: %s\n", namespace)
+		// Get Spec of Synopsys-Operator
+
+		// Check if Version has changed -> migration script
+
+		// else just change spec fields
+
 		return nil
 	},
 }
