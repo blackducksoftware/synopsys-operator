@@ -25,11 +25,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -58,8 +56,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 // CreateContainer will create the container
@@ -381,16 +377,16 @@ func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.Na
 
 // DeleteNamespace will delete the namespace
 func DeleteNamespace(clientset *kubernetes.Clientset, namespace string) error {
-	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
+	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
-// GetPods will get the input pods corresponding to a namespace
-func GetPods(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Pod, error) {
+// GetPod will get the input pods corresponding to a namespace
+func GetPod(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Pod, error) {
 	return clientset.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
 }
 
-// GetAllPodsForNamespace will get all the pods corresponding to a namespace
-func GetAllPodsForNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.PodList, error) {
+// ListPods will get all the pods corresponding to a namespace
+func ListPods(clientset *kubernetes.Clientset, namespace string) (*corev1.PodList, error) {
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 }
 
@@ -399,8 +395,8 @@ func GetReplicationController(clientset *kubernetes.Clientset, namespace string,
 	return clientset.CoreV1().ReplicationControllers(namespace).Get(name, metav1.GetOptions{})
 }
 
-// GetReplicationControllerList will get the replication controllers corresponding to a namespace
-func GetReplicationControllerList(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ReplicationControllerList, error) {
+// ListReplicationControllers will get the replication controllers corresponding to a namespace
+func ListReplicationControllers(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ReplicationControllerList, error) {
 	return clientset.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
@@ -414,8 +410,8 @@ func GetDeployment(clientset *kubernetes.Clientset, namespace string, name strin
 	return clientset.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
 }
 
-// GetAllDeploymentsForNamespace will get all the deployments corresponding to a namespace
-func GetAllDeploymentsForNamespace(clientset *kubernetes.Clientset, namespace string) (*appsv1.DeploymentList, error) {
+// ListDeployments will get all the deployments corresponding to a namespace
+func ListDeployments(clientset *kubernetes.Clientset, namespace string) (*appsv1.DeploymentList, error) {
 	return clientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
 }
 
@@ -443,7 +439,7 @@ func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storag
 
 // DeletePersistentVolume will delete the persistent volume
 func DeletePersistentVolume(clientset *kubernetes.Clientset, name string) error {
-	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{})
+	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
 // CreatePersistentVolumeClaim will create the persistent volume claim
@@ -477,7 +473,7 @@ func ValidateServiceEndpoint(clientset *kubernetes.Clientset, namespace string, 
 	var endpoint *corev1.Endpoints
 	var err error
 	for i := 0; i < 20; i++ {
-		endpoint, err = GetServiceEndPoints(clientset, namespace, name)
+		endpoint, err = GetServiceEndPoint(clientset, namespace, name)
 		if err != nil {
 			log.Infof("waiting for %s endpoint in %s", name, namespace)
 			time.Sleep(10 * time.Second)
@@ -498,7 +494,7 @@ func WaitForServiceEndpointReady(clientset *kubernetes.Clientset, namespace stri
 		if len(subset.NotReadyAddresses) > 0 {
 			for {
 				log.Infof("waiting for %s in %s to be cloned/backed up", name, namespace)
-				svc, err := GetServiceEndPoints(clientset, namespace, name)
+				svc, err := GetServiceEndPoint(clientset, namespace, name)
 				if err != nil {
 					return fmt.Errorf("unable to get service endpoint %s in %s because %+v", name, namespace, err)
 				}
@@ -517,7 +513,7 @@ func WaitForServiceEndpointReady(clientset *kubernetes.Clientset, namespace stri
 
 // ValidatePodsAreRunningInNamespace will validate whether the pods are running in a given namespace
 func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespace string, timeoutInSeconds int64) error {
-	pods, err := GetAllPodsForNamespace(clientset, namespace)
+	pods, err := ListPods(clientset, namespace)
 	if err != nil {
 		return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
 	}
@@ -554,7 +550,7 @@ func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodLis
 
 // FilterPodByNamePrefixInNamespace will filter the pod based on pod name prefix from a list a pods in a given namespace
 func FilterPodByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace string, prefix string) (*corev1.Pod, error) {
-	pods, err := GetAllPodsForNamespace(clientset, namespace)
+	pods, err := ListPods(clientset, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
 	}
@@ -601,53 +597,28 @@ func NewStringReader(ss []string) io.Reader {
 	return reader
 }
 
-// NewKubeClientFromOutsideCluster will get the kube Configuration from outside the cluster
-func newKubeClientFromOutsideCluster() (*rest.Config, error) {
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		log.Errorf("error creating default client config: %s", err)
-		return nil, err
-	}
-	return config, err
-}
-
-// GetKubeConfig will get the kube configuration
-func GetKubeConfig() (*rest.Config, error) {
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.Infof("unable to get in cluster config due to %v", err)
-		log.Infof("trying to use local config")
-		config, err = newKubeClientFromOutsideCluster()
-		if err != nil {
-			log.Errorf("unable to retrive the local config due to %v", err)
-			log.Panicf("failed to find a valid cluster config")
-		}
-	}
-
-	return config, err
-}
-
 // GetService will get the service information for the input service name inside the input namespace
 func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*corev1.Service, error) {
 	return clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 }
 
-// GetServiceEndPoints will get the service endpoint information for the input service name inside the input namespace
-func GetServiceEndPoints(clientset *kubernetes.Clientset, namespace string, serviceName string) (*corev1.Endpoints, error) {
+// ListServices will list the service information for the input service name inside the input namespace
+func ListServices(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ServiceList, error) {
+	return clientset.CoreV1().Services(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// DeleteService will delete the service information for the input service name inside the input namespace
+func DeleteService(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().Services(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+}
+
+// GetServiceEndPoint will get the service endpoint information for the input service name inside the input namespace
+func GetServiceEndPoint(clientset *kubernetes.Clientset, namespace string, serviceName string) (*corev1.Endpoints, error) {
 	return clientset.CoreV1().Endpoints(namespace).Get(serviceName, metav1.GetOptions{})
 }
 
-// ListStorageClass will list all the storageClass in the cluster
-func ListStorageClass(clientset *kubernetes.Clientset) (*v1beta1.StorageClassList, error) {
+// ListStorageClasses will list all the storageClass in the cluster
+func ListStorageClasses(clientset *kubernetes.Clientset) (*v1beta1.StorageClassList, error) {
 	return clientset.StorageV1beta1().StorageClasses().List(metav1.ListOptions{})
 }
 
@@ -776,8 +747,8 @@ func GetClusterRoleBinding(clientset *kubernetes.Clientset, name string) (*rbacv
 	return clientset.Rbac().ClusterRoleBindings().Get(name, metav1.GetOptions{})
 }
 
-// ListClusterRoleBinding list a cluster role binding
-func ListClusterRoleBinding(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleBindingList, error) {
+// ListClusterRoleBindings list a cluster role binding
+func ListClusterRoleBindings(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleBindingList, error) {
 	return clientset.Rbac().ClusterRoleBindings().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
@@ -788,7 +759,7 @@ func UpdateClusterRoleBinding(clientset *kubernetes.Clientset, clusterRoleBindin
 
 // DeleteClusterRoleBinding delete a cluster role binding
 func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{})
+	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
 // GetClusterRole get a cluster role
@@ -803,7 +774,7 @@ func ListClusterRole(clientset *kubernetes.Clientset, labelSelector string) (*rb
 
 // DeleteClusterRole delete a cluster role binding
 func DeleteClusterRole(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{})
+	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
 // GetOpenShiftRoutes get a OpenShift routes
