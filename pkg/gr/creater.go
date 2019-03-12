@@ -104,7 +104,7 @@ func (c *Creater) Create(spec *v1.GrSpec) error {
 	})
 	//
 
-	postgresClaim, _ := util.CreatePersistentVolumeClaim("postgresClaim", spec.Namespace, "20Gi", spec.StorageClass, horizonapi.ReadWriteOnce)
+	postgresClaim, _ := util.CreatePersistentVolumeClaim("postgres", spec.Namespace, "20Gi", spec.StorageClass, horizonapi.ReadWriteOnce)
 	postgres := apps.Postgres{
 		Namespace: spec.Namespace,
 		PVCName:                "postgres",
