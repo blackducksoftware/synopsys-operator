@@ -46,8 +46,8 @@ import (
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/api/storage/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -285,14 +285,14 @@ func CreateServiceWithMultiplePort(name string, label string, namespace string, 
 }
 
 // CreateSecretFromFile will create the secret from file
-func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, namespace string, name string, dataKey string) (*v1.Secret, error) {
+func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, namespace string, name string, dataKey string) (*corev1.Secret, error) {
 	file, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
 		log.Panicf("Unable to read the secret file %s due to error: %v\n", jsonFile, err)
 	}
 
-	return clientset.CoreV1().Secrets(namespace).Create(&v1.Secret{
-		Type:       v1.SecretTypeOpaque,
+	return clientset.CoreV1().Secrets(namespace).Create(&corev1.Secret{
+		Type:       corev1.SecretTypeOpaque,
 		StringData: map[string]string{dataKey: string(file)},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -301,9 +301,9 @@ func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, name
 }
 
 // CreateSecret will create the secret
-func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string, stringData map[string]string) (*v1.Secret, error) {
-	return clientset.CoreV1().Secrets(namespace).Create(&v1.Secret{
-		Type:       v1.SecretTypeOpaque,
+func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string, stringData map[string]string) (*corev1.Secret, error) {
+	return clientset.CoreV1().Secrets(namespace).Create(&corev1.Secret{
+		Type:       corev1.SecretTypeOpaque,
 		StringData: stringData,
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -312,12 +312,12 @@ func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string
 }
 
 // GetSecret will create the secret
-func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (*v1.Secret, error) {
+func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Secret, error) {
 	return clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 }
 
 // UpdateSecret updates a secret
-func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *v1.Secret) error {
+func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *corev1.Secret) error {
 	_, err := clientset.CoreV1().Secrets(namespace).Update(secret)
 	return err
 }
@@ -329,12 +329,12 @@ func ReadFromFile(filePath string) ([]byte, error) {
 }
 
 // GetConfigMap will get the config map
-func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string) (*v1.ConfigMap, error) {
+func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ConfigMap, error) {
 	return clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 }
 
 // UpdateConfigMap updates a config map
-func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *v1.ConfigMap) error {
+func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *corev1.ConfigMap) error {
 	_, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
 	return err
 }
@@ -365,8 +365,8 @@ func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMa
 // }
 
 // CreateNamespace will create the namespace
-func CreateNamespace(clientset *kubernetes.Clientset, namespace string) (*v1.Namespace, error) {
-	return clientset.CoreV1().Namespaces().Create(&v1.Namespace{
+func CreateNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.Namespace, error) {
+	return clientset.CoreV1().Namespaces().Create(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      namespace,
@@ -375,7 +375,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, namespace string) (*v1.Nam
 }
 
 // GetNamespace will get the namespace
-func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*v1.Namespace, error) {
+func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.Namespace, error) {
 	return clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 }
 
@@ -473,8 +473,8 @@ func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize str
 }
 
 // ValidateServiceEndpoint will validate whether the service endpoint is ready to serve
-func ValidateServiceEndpoint(clientset *kubernetes.Clientset, namespace string, name string) (*v1.Endpoints, error) {
-	var endpoint *v1.Endpoints
+func ValidateServiceEndpoint(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Endpoints, error) {
+	var endpoint *corev1.Endpoints
 	var err error
 	for i := 0; i < 20; i++ {
 		endpoint, err = GetServiceEndPoints(clientset, namespace, name)
@@ -637,12 +637,12 @@ func GetKubeConfig() (*rest.Config, error) {
 }
 
 // GetService will get the service information for the input service name inside the input namespace
-func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*v1.Service, error) {
+func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*corev1.Service, error) {
 	return clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 }
 
 // GetServiceEndPoints will get the service endpoint information for the input service name inside the input namespace
-func GetServiceEndPoints(clientset *kubernetes.Clientset, namespace string, serviceName string) (*v1.Endpoints, error) {
+func GetServiceEndPoints(clientset *kubernetes.Clientset, namespace string, serviceName string) (*corev1.Endpoints, error) {
 	return clientset.CoreV1().Endpoints(namespace).Get(serviceName, metav1.GetOptions{})
 }
 
@@ -652,7 +652,7 @@ func ListStorageClass(clientset *kubernetes.Clientset) (*v1beta1.StorageClassLis
 }
 
 // GetPVC will get the PVC for the given name
-func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*v1.PersistentVolumeClaim, error) {
+func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.PersistentVolumeClaim, error) {
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 }
 
@@ -771,9 +771,34 @@ func CreateClusterRoleBinding(namespace string, name string, serviceAccountName 
 	return clusterRoleBinding
 }
 
+// GetClusterRoleBinding get a cluster role
+func GetClusterRoleBinding(clientset *kubernetes.Clientset, name string) (*rbacv1.ClusterRoleBinding, error) {
+	return clientset.Rbac().ClusterRoleBindings().Get(name, metav1.GetOptions{})
+}
+
+// ListClusterRoleBinding list a cluster role binding
+func ListClusterRoleBinding(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleBindingList, error) {
+	return clientset.Rbac().ClusterRoleBindings().List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// UpdateClusterRoleBinding updates the cluster role binding
+func UpdateClusterRoleBinding(clientset *kubernetes.Clientset, clusterRoleBinding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
+	return clientset.Rbac().ClusterRoleBindings().Update(clusterRoleBinding)
+}
+
 // DeleteClusterRoleBinding delete a cluster role binding
 func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
 	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{})
+}
+
+// GetClusterRole get a cluster role
+func GetClusterRole(clientset *kubernetes.Clientset, name string) (*rbacv1.ClusterRole, error) {
+	return clientset.Rbac().ClusterRoles().Get(name, metav1.GetOptions{})
+}
+
+// ListClusterRole list a cluster role
+func ListClusterRole(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleList, error) {
+	return clientset.Rbac().ClusterRoles().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // DeleteClusterRole delete a cluster role binding

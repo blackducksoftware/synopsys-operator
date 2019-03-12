@@ -53,7 +53,7 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: p.config.Perceptor.Name,
 	})
-	pod.AddLabels(map[string]string{"name": p.config.Perceptor.Name})
+	pod.AddLabels(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
 	cont, err := p.perceptorContainer()
 	if err != nil {
 		return nil, errors.Trace(err)

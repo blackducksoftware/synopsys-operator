@@ -281,6 +281,7 @@ func (p *SpecConfig) ScannerClusterRoleBinding() *components.ClusterRoleBinding 
 		Kind:     "ClusterRole",
 		Name:     "cluster-admin",
 	})
+	scannerCRB.AddLabels(map[string]string{"name": p.config.ScannerPod.Name, "app": "opssight"})
 
 	return scannerCRB
 }

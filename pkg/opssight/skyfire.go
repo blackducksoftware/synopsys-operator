@@ -195,6 +195,7 @@ func (p *SpecConfig) PerceptorSkyfireClusterRole() *components.ClusterRole {
 		Resources: []string{"pods", "nodes", "namespaces"},
 		Verbs:     []string{"get", "watch", "list", "create", "delete"},
 	})
+	clusterRole.AddLabels(map[string]string{"name": "skyfire", "app": "opssight"})
 
 	return clusterRole
 }
@@ -215,6 +216,7 @@ func (p *SpecConfig) PerceptorSkyfireClusterRoleBinding(clusterRole *components.
 		Kind:     "ClusterRole",
 		Name:     clusterRole.GetName(),
 	})
+	clusterRoleBinding.AddLabels(map[string]string{"name": "skyfire", "app": "opssight"})
 
 	return clusterRoleBinding
 }

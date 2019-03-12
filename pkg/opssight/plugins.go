@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 	"time"
 
@@ -136,6 +137,23 @@ func (p *Updater) Run(ch <-chan struct{}) {
 				err := p.updateOpsSight(obj)
 				if err != nil {
 					logger.Errorf("unable to update opssight because %+v", err)
+				}
+			},
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				old, ok := oldObj.(*opssightapi.OpsSight)
+				if !ok {
+					log.Error("unable to cast old object for opssight update event")
+				}
+				new, ok := newObj.(*opssightapi.OpsSight)
+				if !ok {
+					log.Error("unable to cast new object for opssight update event")
+				}
+				if old.ResourceVersion != new.ResourceVersion && !reflect.DeepEqual(old.Spec, new.Spec) {
+					logger.Debugf("configmap updater opssight update event! %v ", newObj)
+					err := p.updateOpsSight(newObj)
+					if err != nil {
+						logger.Errorf("unable to update opssight because %+v", err)
+					}
 				}
 			},
 		},
@@ -310,19 +328,35 @@ func (p *Updater) updateOpsSightCRD(opsSightSpec *opssightapi.OpsSightSpec, hubs
 
 // appendBlackDuckHosts will append the hosts of external and internal Black Duck
 func (p *Updater) appendBlackDuckHosts(existingBlackDucks []*opssightapi.Host, internalBlackDucks []*opssightapi.Host) []*opssightapi.Host {
-	for _, internalBlackDuck := range internalBlackDucks {
+	finalBlackDucks := []*opssightapi.Host{}
+	// remove the deleted Black Duck from the final Black Duck list
+	for _, existingBlackDuck := range existingBlackDucks {
 		isExist := false
-		for _, existingBlackDuck := range existingBlackDucks {
+		for _, internalBlackDuck := range internalBlackDucks {
 			if strings.EqualFold(internalBlackDuck.Domain, existingBlackDuck.Domain) {
 				isExist = true
 				break
 			}
 		}
-		if !isExist {
-			existingBlackDucks = append(existingBlackDucks, internalBlackDuck)
+		if isExist {
+			finalBlackDucks = append(finalBlackDucks, existingBlackDuck)
 		}
 	}
-	return existingBlackDucks
+
+	// add the new Black Duck to the final Black Duck list
+	for _, internalBlackDuck := range internalBlackDucks {
+		isExist := false
+		for _, finalBlackDuck := range finalBlackDucks {
+			if strings.EqualFold(internalBlackDuck.Domain, finalBlackDuck.Domain) {
+				isExist = true
+				break
+			}
+		}
+		if !isExist {
+			finalBlackDucks = append(finalBlackDucks, internalBlackDuck)
+		}
+	}
+	return finalBlackDucks
 }
 
 // updatePerceptorSecret will update the secrets
@@ -386,6 +420,21 @@ func (p *Updater) patchReplicationController(namespace string, name string, repl
 
 // appendBlackDuckSecrets will append the secrets of external and internal Black Duck
 func (p *Updater) appendBlackDuckSecrets(existingBlackDucks map[string]*opssightapi.Host, internalBlackDucks []*opssightapi.Host) map[string]*opssightapi.Host {
+	// remove the deleted Black Duck from the Black Duck secret
+	for _, existingBlackDuck := range existingBlackDucks {
+		isExist := false
+		for _, internalBlackDuck := range internalBlackDucks {
+			if strings.EqualFold(internalBlackDuck.Domain, existingBlackDuck.Domain) {
+				isExist = true
+				break
+			}
+		}
+		if !isExist {
+			delete(existingBlackDucks, existingBlackDuck.Domain)
+		}
+	}
+
+	// add the new Black Duck to the Black Duck secret
 	for _, internalBlackDuck := range internalBlackDucks {
 		if _, ok := existingBlackDucks[internalBlackDuck.Domain]; !ok {
 			existingBlackDucks[internalBlackDuck.Domain] = internalBlackDuck

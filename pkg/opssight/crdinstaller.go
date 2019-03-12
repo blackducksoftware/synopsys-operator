@@ -22,6 +22,7 @@ under the License.
 package opssight
 
 import (
+	"reflect"
 	"strings"
 	"time"
 
@@ -133,6 +134,7 @@ func (c *CRDInstaller) CreateQueue() {
 
 // AddInformerEventHandler will add the event handlers for the informers
 func (c *CRDInstaller) AddInformerEventHandler() {
+	log.Debugf("adding informer event handler for opssight")
 	c.config.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			// convert the resource object into a key (in this case
@@ -147,12 +149,18 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(newObj)
-			log.Infof("update opssight: %s", key)
-			if err == nil {
-				c.config.queue.Add(key)
+			old := oldObj.(*opssightapi.OpsSight)
+			new := newObj.(*opssightapi.OpsSight)
+			if old.ResourceVersion != new.ResourceVersion && !reflect.DeepEqual(old.Spec, new.Spec) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
+				log.Infof("update opssight: %s", key)
+				if err == nil {
+					c.config.queue.Add(key)
+				} else {
+					log.Errorf("unable to update OpsSight: %v", err)
+				}
 			} else {
-				log.Errorf("unable to update OpsSight: %v", err)
+				log.Debugf("ignoring the update event for opssight due to deep equal on spec")
 			}
 		},
 		DeleteFunc: func(obj interface{}) {

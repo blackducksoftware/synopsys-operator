@@ -199,6 +199,7 @@ func (p *SpecConfig) PodPerceiverClusterRole() *components.ClusterRole {
 		Resources: []string{"pods"},
 		Verbs:     []string{"get", "watch", "list", "update"},
 	})
+	clusterRole.AddLabels(map[string]string{"name": p.config.Perceiver.PodPerceiver.Name, "app": "opssight"})
 
 	return clusterRole
 }
@@ -214,6 +215,7 @@ func (p *SpecConfig) ImagePerceiverClusterRole() *components.ClusterRole {
 		Resources: []string{"images"},
 		Verbs:     []string{"get", "watch", "list", "update"},
 	})
+	clusterRole.AddLabels(map[string]string{"name": p.config.Perceiver.ImagePerceiver.Name, "app": "opssight"})
 
 	return clusterRole
 }
@@ -234,6 +236,7 @@ func (p *SpecConfig) PodPerceiverClusterRoleBinding(clusterRole *components.Clus
 		Kind:     "ClusterRole",
 		Name:     clusterRole.GetName(),
 	})
+	clusterRoleBinding.AddLabels(map[string]string{"name": p.config.Perceiver.PodPerceiver.Name, "app": "opssight"})
 
 	return clusterRoleBinding
 }
@@ -254,6 +257,7 @@ func (p *SpecConfig) ImagePerceiverClusterRoleBinding(clusterRole *components.Cl
 		Kind:     "ClusterRole",
 		Name:     clusterRole.GetName(),
 	})
+	clusterRoleBinding.AddLabels(map[string]string{"name": p.config.Perceiver.ImagePerceiver.Name, "app": "opssight"})
 
 	return clusterRoleBinding
 }
