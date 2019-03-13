@@ -1,8 +1,13 @@
-<div class="page-header">
-  <h1>Edit Rgp</h1>
-</div>
-
-<%= form_for(rgp, {action: rgpPath({ rgp_id: rgp.ID }), method: "PUT"}) { %>
+<header class="App-header">
+   <img src="<%= rootPath() %>assets/images/logo.png" class="Company-logo" alt="Synopsys" />
+   <section class="App-sub-header">
+      <section class="Icon-wrap-header">
+         <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
+      </section>
+      <h4>Edit a Reporting and Governance Platform instance</h4>
+   </section>
+</header>
+<br/>
+<%= form_for(rgp, {action: rgpPath({ rgp_id: rgp.Spec.Namespace }), method: "POST"}) { %>
   <%= partial("rgps/form.html") %>
-  <a href="<%= rgpPath({ rgp_id: rgp.ID }) %>" class="btn btn-warning" data-confirm="Are you sure?">Cancel</a>
 <% } %>

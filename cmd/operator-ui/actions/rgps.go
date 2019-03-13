@@ -4,11 +4,14 @@ import (
 	"fmt"
 
 	"github.com/blackducksoftware/synopsys-operator/cmd/operator-ui/models"
-	rgpclient "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned" // rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
+	rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
+	rgpclient "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/pop"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -48,6 +51,7 @@ func NewRgpResource(kubeConfig *rest.Config) (*RgpsResource, error) {
 // List gets all Rgps. This function is mapped to the path
 // GET /rgps
 func (v RgpsResource) List(c buffalo.Context) error {
+	log.Infof("rgpClient: %+v", v.rgpClient)
 	rgps, err := util.ListRgps(v.rgpClient, "")
 	if err != nil {
 		return c.Error(500, err)
@@ -67,7 +71,7 @@ func (v RgpsResource) Show(c buffalo.Context) error {
 	}
 
 	// Allocate an empty Rgp
-	rgp := &models.Rgp{}
+	rgp := &rgpapi.Rgp{}
 
 	// To find the Rgp the parameter rgp_id is used.
 	if err := tx.Find(rgp, c.Param("rgp_id")); err != nil {
@@ -80,46 +84,64 @@ func (v RgpsResource) Show(c buffalo.Context) error {
 // New renders the form for creating a new Rgp.
 // This function is mapped to the path GET /rgps/new
 func (v RgpsResource) New(c buffalo.Context) error {
-	return c.Render(200, r.Auto(c, &models.Rgp{}))
+	// Make Rgp available inside the html template
+	c.Set("rgp", rgpapi.Rgp{})
+
+	return c.Render(200, r.HTML("rgps/new.html", "old_application.html"))
+}
+
+func (v RgpsResource) redirect(c buffalo.Context, rgp *rgpapi.Rgp, err error) error {
+	if err != nil {
+		c.Flash().Add("warning", err.Error())
+		log.Debugf("edit rgp in create: %+v", rgp)
+		c.Set("rgp", rgp)
+		return c.Render(422, r.HTML("rgps/new.html", "old_application.html"))
+	}
+	return nil
 }
 
 // Create adds a Rgp to the DB. This function is mapped to the
 // path POST /rgps
 func (v RgpsResource) Create(c buffalo.Context) error {
 	// Allocate an empty Rgp
-	rgp := &models.Rgp{}
+	rgp := &rgpapi.Rgp{}
 
-	// Bind rgp to the html form elements
+	// Bind blackduck to the html form elements
 	if err := c.Bind(rgp); err != nil {
+		log.Errorf("unable to bind rgp %+v because %+v", c, err)
 		return errors.WithStack(err)
 	}
 
-	// Get the DB connection from the context
-	tx, ok := c.Value("tx").(*pop.Connection)
-	if !ok {
-		return errors.WithStack(errors.New("no transaction found"))
+	log.Infof("create rgp: %+v", rgp)
+
+	_, err := util.GetRgp(v.rgpClient, rgp.Spec.Namespace, rgp.Spec.Namespace)
+
+	if err == nil {
+		return v.redirect(c, rgp, fmt.Errorf("Reporting and Governance Platform instance %s already exist", rgp.Spec.Namespace))
 	}
 
-	// Validate the data from the html form
-	verrs, err := tx.ValidateAndCreate(rgp)
+	_, err = util.GetNamespace(v.kubeClient, rgp.Spec.Namespace)
+
 	if err != nil {
-		return errors.WithStack(err)
+		ns, err := util.CreateNamespace(v.kubeClient, rgp.Spec.Namespace)
+		if err != nil {
+			return v.redirect(c, rgp, err)
+		}
+		log.Infof("created namespace for %s is %+v", rgp.Spec.Namespace, ns)
 	}
 
-	if verrs.HasAny() {
-		// Make the errors available inside the html template
-		c.Set("errors", verrs)
+	_, err = util.CreateRgp(v.rgpClient, rgp.Spec.Namespace, &rgpapi.Rgp{ObjectMeta: metav1.ObjectMeta{Name: rgp.Spec.Namespace}, Spec: rgp.Spec})
 
-		// Render again the new.html template that the user can
-		// correct the input.
-		return c.Render(422, r.Auto(c, rgp))
+	if err != nil {
+		return v.redirect(c, rgp, err)
 	}
-
 	// If there are no errors set a success message
-	c.Flash().Add("success", "Rgp was created successfully")
+	c.Flash().Add("success", "Reporting and Governance Platform was created successfully")
 
-	// and redirect to the rgps index page
-	return c.Render(201, r.Auto(c, rgp))
+	rgps, _ := util.ListRgps(v.rgpClient, "")
+	c.Set("rgps", rgps.Items)
+	// and redirect to the blackducks index page
+	return c.Redirect(302, "/rgps/%s", rgp.Spec.Namespace)
 }
 
 // Edit renders a edit form for a Rgp. This function is
