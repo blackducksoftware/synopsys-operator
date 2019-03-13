@@ -69,7 +69,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 
 // ObjectDeleted will be called for delete events
 func (h *Handler) ObjectDeleted(name string) {
-	log.Debugf("ObjectDeleted: %+v", name)
+	log.Debugf("ObjectDeleted: %s", name)
 	err := util.DeleteNamespace(h.kubeClient, name)
 	if err != nil {
 		log.Error(err.Error())
