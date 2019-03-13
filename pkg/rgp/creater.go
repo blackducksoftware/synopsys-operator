@@ -183,6 +183,11 @@ func (c *Creater) createIngress(spec *v1.RgpSpec) error {
 			},
 		},
 		Spec: v1beta1.IngressSpec{
+			TLS: []v1beta1.IngressTLS{
+				{
+					Hosts: []string{spec.IngressHost},
+				},
+			},
 			Rules: []v1beta1.IngressRule{
 				{
 					Host: spec.IngressHost,
