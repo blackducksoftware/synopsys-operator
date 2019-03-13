@@ -38,13 +38,11 @@ func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPasswor
 		"CREATE DATABASE bds_hub owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;",
 		"CREATE DATABASE bds_hub_report owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;",
 		"CREATE DATABASE bdio owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;",
-		"ALTER USER blackduck WITH NOCREATEDB NOREPLICATION BYPASSRLS;",
+		"ALTER USER blackduck WITH NOCREATEDB SUPERUSER NOREPLICATION BYPASSRLS;",
 		"CREATE USER blackduck_user WITH NOCREATEDB NOSUPERUSER NOREPLICATION NOBYPASSRLS;",
 		fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", userPassword),
 		"CREATE USER blackduck_reporter;",
 		"CREATE USER blackduck_replication REPLICATION CONNECTION LIMIT 5;",
-		"GRANT blackduck_user TO blackduck;",
-		"GRANT blackduck_reporter TO blackduck;",
 	}, true)
 	if err != nil {
 		return err
@@ -74,11 +72,6 @@ func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPasswor
 		"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;",
 		"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;",
 		"ALTER DATABASE bds_hub_report SET standard_conforming_strings TO OFF;",
-		"CREATE SCHEMA IF NOT EXISTS bds_hub_external;",
-		"GRANT CREATE ON SCHEMA bds_hub_external TO blackduck;",
-		"CREATE EXTENSION IF NOT EXISTS postgres_fdw WITH SCHEMA bds_hub_external;",
-		"GRANT USAGE ON FOREIGN DATA WRAPPER postgres_fdw TO blackduck;",
-		"CREATE USER MAPPING FOR blackduck SERVER hub_db_server OPTIONS (user 'blackduck_user');",
 	}, false)
 	if err != nil {
 		return err
