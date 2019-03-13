@@ -56,7 +56,7 @@ func init() {
 // It is assumed that the secret in perceptor will roll over any time this is updated, and
 // if not, that there is a problem in the orchestration environment.
 
-// Updater ...
+// Updater stores the opssight updater configuration
 type Updater struct {
 	config         *protoform.Config
 	kubeClient     *kubernetes.Clientset
@@ -64,7 +64,7 @@ type Updater struct {
 	opssightClient *opssightclientset.Clientset
 }
 
-// NewUpdater ...
+// NewUpdater returns the opssight updater configuration
 func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *Updater {
 	return &Updater{
 		config:         config,
@@ -74,7 +74,8 @@ func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubC
 	}
 }
 
-// Run ...
+// Run watches for Black Duck and OpsSight events and update the internal Black Duck hosts in Perceptor secret and
+// then patch the corresponding replication controller
 func (p *Updater) Run(ch <-chan struct{}) {
 	logger.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
 
@@ -164,6 +165,7 @@ func (p *Updater) Run(ch <-chan struct{}) {
 	go opssightController.Run(ch)
 }
 
+// isBlackDuckRunning return whether the Black Duck instance is in running state
 func (p *Updater) isBlackDuckRunning(obj interface{}) bool {
 	blackduck, _ := obj.(*blackduckapi.Blackduck)
 	if strings.EqualFold(blackduck.Status.State, "Running") {
@@ -172,6 +174,7 @@ func (p *Updater) isBlackDuckRunning(obj interface{}) bool {
 	return false
 }
 
+// isOpsSightRunning return whether the OpsSight is in running state
 func (p *Updater) isOpsSightRunning(obj interface{}) bool {
 	opssight, _ := obj.(*opssightapi.OpsSight)
 	if strings.EqualFold(opssight.Status.State, "Running") {
@@ -180,7 +183,7 @@ func (p *Updater) isOpsSightRunning(obj interface{}) bool {
 	return false
 }
 
-// updateAllHubs will update the hubs in opssight resources
+// updateAllHubs will update the Black Duck instances in opssight resources
 func (p *Updater) updateAllHubs() []error {
 	opssights, err := util.GetOpsSights(p.opssightClient)
 	if err != nil {
@@ -201,7 +204,7 @@ func (p *Updater) updateAllHubs() []error {
 	return errList
 }
 
-// updateOpsSight will update the opssight resource with latest hubs
+// updateOpsSight will update the opssight resource with latest Black Duck instances
 func (p *Updater) updateOpsSight(obj interface{}) error {
 	opssight, ok := obj.(*opssightapi.OpsSight)
 	if !ok {
@@ -224,7 +227,7 @@ func (p *Updater) updateOpsSight(obj interface{}) error {
 	return err
 }
 
-// update will list all hubs in the cluster, and send them to opssight as scan targets.
+// update will list all Black Ducks in the cluster, and send them to opssight as scan targets.
 func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 	hubType := opssight.Spec.Blackduck.BlackduckSpec.Type
 	allHubs := p.getAllHubs(hubType)
@@ -263,6 +266,7 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 	return nil
 }
 
+// getAllHubs get only the internal Black Duck instances from the cluster
 func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 	hosts := []*opssightapi.Host{}
 	hubsList, _ := util.ListHubs(p.hubClient, p.config.Namespace)
@@ -292,6 +296,7 @@ func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 	return hosts
 }
 
+// getDefaultPassword get the default password for the hub
 func (p *Updater) getDefaultPassword() string {
 	var hubPassword string
 	var err error
@@ -388,6 +393,7 @@ func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, 
 	return nil
 }
 
+// patchOpsSightReplicationController restarts the opssight replication controller
 func (p *Updater) patchOpsSightReplicationController(namespace string, name string) error {
 	err := p.patchReplicationController(namespace, name, 0)
 	if err != nil {
@@ -401,6 +407,7 @@ func (p *Updater) patchOpsSightReplicationController(namespace string, name stri
 	return nil
 }
 
+// patchReplicationController patch the opssight replication controller
 func (p *Updater) patchReplicationController(namespace string, name string, replicas int) error {
 	// Get the replication controllers
 	rc, err := util.GetReplicationController(p.kubeClient, namespace, name)
