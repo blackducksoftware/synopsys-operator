@@ -103,22 +103,6 @@ var deployCmd = &cobra.Command{
 		})
 		environmentDeployer.AddNamespace(ns)
 
-		// create a secret
-		secret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
-			APIVersion: "v1",
-			// ClusterName : "cluster",
-			Name:      deploySecretName,
-			Namespace: deployNamespace,
-			Type:      secretType,
-		})
-		secret.AddData(map[string][]byte{
-			"ADMIN_PASSWORD":    []byte(deploySecretAdminPassword),
-			"POSTGRES_PASSWORD": []byte(deploySecretPostgresPassword),
-			"USER_PASSWORD":     []byte(deploySecretUserPassword),
-			"HUB_PASSWORD":      []byte(deploySecretBlackduckPassword),
-		})
-		environmentDeployer.AddSecret(secret)
-
 		// Deploy Resources for the Synopsys Operator
 		err = environmentDeployer.Run()
 		if err != nil {
@@ -131,6 +115,12 @@ var deployCmd = &cobra.Command{
 			Namespace:                deployNamespace,
 			SynopsysOperatorImage:    deploySynopsysOperatorImage,
 			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
+			SecretName:               deploySecretName,
+			SecretType:               secretType,
+			SecretAdminPassword:      deploySecretAdminPassword,
+			SecretPostgresPassword:   deploySecretPostgresPassword,
+			SecretUserPassword:       deploySecretUserPassword,
+			SecretBlackduckPassword:  deploySecretBlackduckPassword,
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {

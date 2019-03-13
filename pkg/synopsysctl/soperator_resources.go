@@ -274,3 +274,21 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRoleBinding() *horizonc
 
 	return synopsysOperatorClusterRoleBinding
 }
+
+func (specConfig *SOperatorSpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
+	// create a secret
+	synopsysOperatorSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
+		APIVersion: "v1",
+		// ClusterName : "cluster",
+		Name:      specConfig.SecretName,
+		Namespace: specConfig.Namespace,
+		Type:      specConfig.SecretType,
+	})
+	synopsysOperatorSecret.AddData(map[string][]byte{
+		"ADMIN_PASSWORD":    []byte(specConfig.SecretAdminPassword),
+		"POSTGRES_PASSWORD": []byte(specConfig.SecretPostgresPassword),
+		"USER_PASSWORD":     []byte(specConfig.SecretUserPassword),
+		"HUB_PASSWORD":      []byte(specConfig.SecretBlackduckPassword),
+	})
+	return synopsysOperatorSecret
+}

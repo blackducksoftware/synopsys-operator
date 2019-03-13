@@ -22,6 +22,7 @@ under the License.
 package synopsysctl
 
 import (
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 )
@@ -33,6 +34,12 @@ type SOperatorSpecConfig struct {
 	Namespace                string
 	SynopsysOperatorImage    string
 	BlackduckRegistrationKey string
+	SecretName               string
+	SecretType               horizonapi.SecretType
+	SecretAdminPassword      string
+	SecretPostgresPassword   string
+	SecretUserPassword       string
+	SecretBlackduckPassword  string
 }
 
 // NewSOperator will create a SOperator type
@@ -62,6 +69,9 @@ func (specConfig *SOperatorSpecConfig) GetComponents() (*api.ComponentList, erro
 		},
 		ClusterRoleBindings: []*components.ClusterRoleBinding{
 			specConfig.GetOperatorClusterRoleBinding(),
+		},
+		Secrets: []*components.Secret{
+			specConfig.GetOperatorSecret(),
 		},
 	}
 	return components, nil
