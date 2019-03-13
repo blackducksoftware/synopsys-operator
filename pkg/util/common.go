@@ -34,6 +34,8 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -647,6 +649,11 @@ func GetOpsSights(clientSet *opssightclientset.Clientset) (*opssightapi.OpsSight
 	return clientSet.SynopsysV1().OpsSights(metav1.NamespaceAll).List(metav1.ListOptions{})
 }
 
+// UpdateOpsSight will update OpsSight in the cluster
+func UpdateOpsSight(opssightClientset *opssightclientset.Clientset, namespace string, opssight *opssightapi.OpsSight) (*opssightapi.OpsSight, error) {
+	return opssightClientset.SynopsysV1().OpsSights(namespace).Update(opssight)
+}
+
 // ListHubs will list all hubs in the cluster
 func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*blackduckapi.BlackduckList, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).List(metav1.ListOptions{})
@@ -662,9 +669,24 @@ func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub
 	return hubClientset.SynopsysV1().Blackducks(namespace).Create(createHub)
 }
 
+// UpdateHub will update Hub in the cluster
+func UpdateHub(hubClientset *hubclientset.Clientset, namespace string, blackduck *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
+	return hubClientset.SynopsysV1().Blackducks(namespace).Update(blackduck)
+}
+
 // GetHub will get hubs in the cluster
 func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*blackduckapi.Blackduck, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).Get(name, metav1.GetOptions{})
+}
+
+// CreateAlert will create alert in the cluster
+func CreateAlert(alertClientset *alertclientset.Clientset, namespace string, createAlert *alertapi.Alert) (*alertapi.Alert, error) {
+	return alertClientset.SynopsysV1().Alerts(namespace).Create(createAlert)
+}
+
+// UpdateAlert will update Alert in the cluster
+func UpdateAlert(alertClientset *alertclientset.Clientset, namespace string, alert *alertapi.Alert) (*alertapi.Alert, error) {
+	return alertClientset.SynopsysV1().Alerts(namespace).Update(alert)
 }
 
 // ListHubPV will list all the persistent volumes attached to each hub in the cluster
