@@ -23,9 +23,11 @@ package alert
 
 import (
 	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	log "github.com/sirupsen/logrus"
 )
 
 // getAlertConfigMap returns a new ConfigMap for an Alert
@@ -35,13 +37,29 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 		Namespace: a.config.Namespace,
 	})
 
-	configMap.AddData(map[string]string{
-		"ALERT_SERVER_PORT":           fmt.Sprintf("%d", *a.config.Port),
-		"PUBLIC_HUB_WEBSERVER_HOST":   a.config.BlackduckHost,
-		"PUBLIC_HUB_WEBSERVER_PORT":   fmt.Sprintf("%d", *a.config.BlackduckPort),
-		"ALERT_ENCRYPTION_PASSWORD":   a.config.EncryptionPassword,
-		"ALERTENCRYPTION_GLOBAL_SALT": a.config.EncryptionGlobalSalt,
-	})
+	// Create Data with Required Environs
+	configMapData := map[string]string{
+		"ALERT_SERVER_PORT":            fmt.Sprintf("%d", *a.config.Port),
+		"PUBLIC_HUB_WEBSERVER_HOST":    a.config.BlackduckHost,
+		"PUBLIC_HUB_WEBSERVER_PORT":    fmt.Sprintf("%d", *a.config.BlackduckPort),
+		"ALERT_ENCRYPTION_PASSWORD":    a.config.EncryptionPassword,
+		"ALERT_ENCRYPTION_GLOBAL_SALT": a.config.EncryptionGlobalSalt,
+	}
+
+	// Add additional Environs
+	for _, environ := range a.config.Environs {
+		vals := strings.Split(environ, ":")
+		if len(vals) != 2 {
+			log.Errorf("Could not split environ '%s' on ':'", environ)
+		} else if _, inMap := configMapData[strings.Trim(vals[0], " ")]; inMap {
+			log.Errorf("Duplicate environ '%s'", environ)
+		} else {
+			configMapData[strings.Trim(vals[0], " ")] = strings.Trim(vals[1], " ") // trim removes leading/trailing " "
+		}
+	}
+
+	// Add data to the ConfigMap
+	configMap.AddData(configMapData)
 
 	return configMap
 }
