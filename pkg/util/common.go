@@ -411,8 +411,13 @@ func GetDeployment(clientset *kubernetes.Clientset, namespace string, name strin
 }
 
 // ListDeployments will get all the deployments corresponding to a namespace
-func ListDeployments(clientset *kubernetes.Clientset, namespace string) (*appsv1.DeploymentList, error) {
-	return clientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
+func ListDeployments(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*appsv1.DeploymentList, error) {
+	return clientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// DeleteDeployment will delete the deployment corresponding to a namespace and name
+func DeleteDeployment(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
 // CreatePersistentVolume will create the persistent volume
@@ -877,6 +882,50 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 		return err
 	}
 	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// PatchDeploymentForReplicas patch a deployment for replica update
+func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old appsv1.Deployment, replicas int) error {
+	oldData, err := json.Marshal(old)
+	if err != nil {
+		return err
+	}
+	new := old.DeepCopy()
+	new.Spec.Replicas = IntToInt32(replicas)
+	newData, err := json.Marshal(new)
+	if err != nil {
+		return err
+	}
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, appsv1.Deployment{})
+	if err != nil {
+		return err
+	}
+	_, err = clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// PatchDeployment patch a deployment
+func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1.Deployment) error {
+	oldData, err := json.Marshal(old)
+	if err != nil {
+		return err
+	}
+	newData, err := json.Marshal(new)
+	if err != nil {
+		return err
+	}
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, appsv1.Deployment{})
+	if err != nil {
+		return err
+	}
+	_, err = clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
 	if err != nil {
 		return err
 	}
