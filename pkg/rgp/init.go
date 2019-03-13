@@ -256,10 +256,20 @@ func (c *Creater) vaultInit(namespace string) error {
 func (c *Creater) dbInit(namespace string) error {
 	databaseName := "postgres"
 	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", namespace)
+
 	postgresDB, err := OpenDatabaseConnection(hostName, databaseName, "admin", "test", "postgres")
 	// log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
 		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
+	}
+
+	for {
+		log.Debug("executing SELECT 1")
+		_, err := postgresDB.Exec( "SELECT 1;")
+		if err == nil {
+			break
+		}
+		time.Sleep(5 * time.Second)
 	}
 
 	_, err = postgresDB.Exec("CREATE DATABASE \"tools-portfolio\";")
