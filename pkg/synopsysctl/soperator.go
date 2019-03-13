@@ -43,11 +43,17 @@ type SOperatorSpecConfig struct {
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey string) *SOperatorSpecConfig {
+func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, secretName, adminPassword, postrgresPassword, userPassword, blackduckpassword string, secretType horizonapi.SecretType) *SOperatorSpecConfig {
 	return &SOperatorSpecConfig{
 		Namespace:                namespace,
 		SynopsysOperatorImage:    synopsysOperatorImage,
 		BlackduckRegistrationKey: blackduckRegistrationKey,
+		SecretName:               secretName,
+		SecretType:               secretType,
+		SecretAdminPassword:      adminPassword,
+		SecretPostgresPassword:   postrgresPassword,
+		SecretUserPassword:       userPassword,
+		SecretBlackduckPassword:  blackduckpassword,
 	}
 }
 
