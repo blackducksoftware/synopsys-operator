@@ -103,8 +103,12 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 	deployer.AddService(containerCreater.GetDocumentationService())
 
 	// solr
-	deployer.AddReplicationController(containerCreater.GetSolrDeployment())
-	deployer.AddService(containerCreater.GetSolrService())
+	// As part of Black Duck 2019.4.0, solr is decommissioned
+	solrRC := containerCreater.GetSolrDeployment()
+	if solrRC != nil {
+		deployer.AddReplicationController(solrRC)
+		deployer.AddService(containerCreater.GetSolrService())
+	}
 
 	// registration
 	deployer.AddReplicationController(containerCreater.GetRegistrationDeployment())
@@ -130,6 +134,14 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 	deployer.AddService(containerCreater.GetWebAppService())
 	deployer.AddService(containerCreater.GetLogStashService())
 
+	// Upload cache
+	// As part of Black Duck 2019.4.0, upload cache is part of Black Duck
+	uploadCacheRC := containerCreater.GetUploadCacheDeployment()
+	if uploadCacheRC != nil {
+		deployer.AddReplicationController(containerCreater.GetUploadCacheDeployment())
+		deployer.AddService(containerCreater.GetUploadCacheService())
+	}
+
 	if hc.isBinaryAnalysisEnabled {
 		// Binary Scanner
 		deployer.AddReplicationController(containerCreater.GetBinaryScannerDeployment())
@@ -137,10 +149,6 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 		// Rabbitmq
 		deployer.AddReplicationController(containerCreater.GetRabbitmqDeployment())
 		deployer.AddService(containerCreater.GetRabbitmqService())
-
-		// Upload cache
-		deployer.AddReplicationController(containerCreater.GetUploadCacheDeployment())
-		deployer.AddService(containerCreater.GetUploadCacheService())
 	}
 }
 
