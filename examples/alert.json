@@ -19,6 +19,10 @@
 		"port": 8443,
 		"standAlone": true,
 		"alertMemory": "2560M",
-		"cfsslMemory": "640M"
+		"cfsslMemory": "640M",
+		"environs": [
+			"ALERT_ENCRYPTION_PASSWORD:<<PASSWORD>>",
+			"ALERT_ENCRYPTION_GLOBAL_SALT:<<ENCRYPTION>>"
+		]
 	}
 }
