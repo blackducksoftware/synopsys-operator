@@ -63,7 +63,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Info(gr.Name)
 
 	gr.Status.State = "Creating"
-	gr, err = h.grClient.SynopsysV1().Rgps(gr.Namespace).Update(gr)
+	gr, err = h.grClient.SynopsysV1().Rgps(h.config.Namespace).Update(gr)
 	if err != nil{
 		log.Error(err.Error())
 		return
@@ -80,7 +80,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		gr.Status.State = "Running"
 	}
 
-	_, err = h.grClient.SynopsysV1().Rgps(gr.Namespace).Update(gr)
+	_, err = h.grClient.SynopsysV1().Rgps(h.config.Namespace).Update(gr)
 	if err != nil{
 		log.Error(err.Error())
 	}
