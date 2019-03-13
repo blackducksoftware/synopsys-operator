@@ -63,7 +63,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		log.Error("Unable to cast to Alert object")
 		return
 	}
-	if strings.EqualFold(alertv1.Spec.State, "") {
+	if strings.EqualFold(alertv1.Status.State, "") {
 		// merge with default values
 		newSpec := alertv1.Spec
 		alertDefaultSpec := h.defaults
@@ -72,11 +72,11 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		if err != nil {
 			log.Errorf("unable to merge the alert structs for %s due to %+v", alertv1.Name, err)
 			//Set spec/state  and status/state to started
-			h.updateState("error", "error", fmt.Sprintf("unable to merge the alert structs for %s due to %+v", alertv1.Name, err), alertv1)
+			h.updateState("error", fmt.Sprintf("unable to merge the alert structs for %s due to %+v", alertv1.Name, err), alertv1)
 		} else {
 			alertv1.Spec = newSpec
 			// update status
-			alertv1, err := h.updateState("pending", "creating", "", alertv1)
+			alertv1, err := h.updateState("creating", "", alertv1)
 
 			if err == nil {
 				alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient)
@@ -85,9 +85,9 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				err = alertCreator.CreateAlert(&alertv1.Spec)
 
 				if err != nil {
-					h.updateState("error", "error", fmt.Sprintf("%+v", err), alertv1)
+					h.updateState("error", fmt.Sprintf("%+v", err), alertv1)
 				} else {
-					h.updateState("running", "running", "", alertv1)
+					h.updateState("running", "", alertv1)
 				}
 			}
 		}
@@ -106,8 +106,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("objectUpdated: %+v", objNew)
 }
 
-func (h *Handler) updateState(specState string, statusState string, errorMessage string, alert *alert_v1.Alert) (*alert_v1.Alert, error) {
-	alert.Spec.State = specState
+func (h *Handler) updateState(statusState string, errorMessage string, alert *alert_v1.Alert) (*alert_v1.Alert, error) {
 	alert.Status.State = statusState
 	alert.Status.ErrorMessage = errorMessage
 	alert, err := h.updateAlertObject(alert)

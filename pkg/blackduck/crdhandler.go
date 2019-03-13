@@ -232,7 +232,7 @@ func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
 
 	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
 		for i := 0; i < 20; i++ {
-			registrationPod, err := util.GetPods(h.kubeClient, createHub.Namespace, registrationPod.Name)
+			registrationPod, err := util.GetPod(h.kubeClient, createHub.Namespace, registrationPod.Name)
 			if err != nil {
 				log.Errorf("unable to find the registration pod in %s because %+v", createHub.Namespace, err)
 				return err

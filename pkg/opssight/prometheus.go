@@ -32,16 +32,13 @@ import (
 
 // PerceptorMetricsDeployment creates a deployment for perceptor metrics
 func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error) {
-	replicas := int32(0)
-	if p.config.EnableMetrics {
-		replicas = 1
-	}
+	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
 		Name:      "prometheus",
 		Namespace: p.config.Namespace,
 	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": "prometheus"})
+	deployment.AddMatchLabelsSelectors(map[string]string{"app": "opssight"})
 
 	pod, err := p.perceptorMetricsPod()
 	if err != nil {
@@ -56,7 +53,7 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "prometheus",
 	})
-	pod.AddLabels(map[string]string{"app": "prometheus"})
+	pod.AddLabels(map[string]string{"app": "opssight"})
 
 	pod.AddContainer(p.perceptorMetricsContainer())
 
@@ -130,8 +127,8 @@ func (p *SpecConfig) PerceptorMetricsService() *components.Service {
 	})
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	service.AddLabels(map[string]string{"name": "prometheus"})
-	service.AddSelectors(map[string]string{"app": "prometheus"})
+	service.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
+	service.AddSelectors(map[string]string{"app": "opssight"})
 
 	return service
 }
