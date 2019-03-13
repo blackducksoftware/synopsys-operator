@@ -3,7 +3,6 @@ package actions
 import (
 	"fmt"
 
-	"github.com/blackducksoftware/synopsys-operator/cmd/operator-ui/models"
 	rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
 	rgpclient "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -147,88 +146,37 @@ func (v RgpsResource) Create(c buffalo.Context) error {
 // Edit renders a edit form for a Rgp. This function is
 // mapped to the path GET /rgps/{rgp_id}/edit
 func (v RgpsResource) Edit(c buffalo.Context) error {
-	// Get the DB connection from the context
-	tx, ok := c.Value("tx").(*pop.Connection)
-	if !ok {
-		return errors.WithStack(errors.New("no transaction found"))
-	}
-
-	// Allocate an empty Rgp
-	rgp := &models.Rgp{}
-
-	if err := tx.Find(rgp, c.Param("rgp_id")); err != nil {
-		return c.Error(404, err)
-	}
-
-	return c.Render(200, r.Auto(c, rgp))
+	return c.Error(404, errors.New("resource not implemented"))
 }
 
 // Update changes a Rgp in the DB. This function is mapped to
 // the path PUT /rgps/{rgp_id}
 func (v RgpsResource) Update(c buffalo.Context) error {
-	// Get the DB connection from the context
-	tx, ok := c.Value("tx").(*pop.Connection)
-	if !ok {
-		return errors.WithStack(errors.New("no transaction found"))
-	}
-
-	// Allocate an empty Rgp
-	rgp := &models.Rgp{}
-
-	if err := tx.Find(rgp, c.Param("rgp_id")); err != nil {
-		return c.Error(404, err)
-	}
-
-	// Bind Rgp to the html form elements
-	if err := c.Bind(rgp); err != nil {
-		return errors.WithStack(err)
-	}
-
-	verrs, err := tx.ValidateAndUpdate(rgp)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	if verrs.HasAny() {
-		// Make the errors available inside the html template
-		c.Set("errors", verrs)
-
-		// Render again the edit.html template that the user can
-		// correct the input.
-		return c.Render(422, r.Auto(c, rgp))
-	}
-
-	// If there are no errors set a success message
-	c.Flash().Add("success", "Rgp was updated successfully")
-
-	// and redirect to the rgps index page
-	return c.Render(200, r.Auto(c, rgp))
+	return c.Error(404, errors.New("resource not implemented"))
 }
 
 // Destroy deletes a Rgp from the DB. This function is mapped
 // to the path DELETE /rgps/{rgp_id}
 func (v RgpsResource) Destroy(c buffalo.Context) error {
-	// Get the DB connection from the context
-	tx, ok := c.Value("tx").(*pop.Connection)
-	if !ok {
-		return errors.WithStack(errors.New("no transaction found"))
-	}
+	log.Infof("delete rgp request %v", c.Param("rgp"))
 
-	// Allocate an empty Rgp
-	rgp := &models.Rgp{}
-
-	// To find the Rgp the parameter rgp_id is used.
-	if err := tx.Find(rgp, c.Param("rgp_id")); err != nil {
+	_, err := util.GetRgp(v.rgpClient, c.Param("rgp_id"), c.Param("rgp_id"))
+	// To find the Blackduck the parameter blackduck_id is used.
+	if err != nil {
 		return c.Error(404, err)
 	}
 
-	if err := tx.Destroy(rgp); err != nil {
-		return errors.WithStack(err)
+	// This is on the event loop.
+	err = v.rgpClient.SynopsysV1().Rgps(c.Param("rgp_id")).Delete(c.Param("rgp_id"), &metav1.DeleteOptions{})
+
+	// To find the Blackduck the parameter blackduck_id is used.
+	if err != nil {
+		return c.Error(404, err)
 	}
 
 	// If there are no errors set a flash message
-	c.Flash().Add("success", "Rgp was destroyed successfully")
+	c.Flash().Add("success", "Reporting and Governance Platform was deleted successfully")
 
 	// Redirect to the rgps index page
-	return c.Render(200, r.Auto(c, rgp))
+	return c.Redirect(302, "/rgps")
 }
