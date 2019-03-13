@@ -24,7 +24,6 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +40,6 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -272,30 +270,7 @@ func (ac *Creater) updateConfigMap(opssight *opssightapi.OpsSightSpec, newConfig
 	if err != nil {
 		return false, errors.Annotatef(err, "unable to create horizon configmap %s in opssight namespace %s", opssight.ConfigMapName, opssight.Namespace)
 	}
-	newConfigMapKube, err := newConfig.ToKube()
-	if err != nil {
-		return false, errors.Annotatef(err, "unable to convert configmap %s to kube in opssight namespace %s", opssight.ConfigMapName, opssight.Namespace)
-	}
-	newConfigMap := newConfigMapKube.(*corev1.ConfigMap)
-	newConfigMapData := newConfigMap.Data
-
-	// getting old configmap data
-	oldConfigMap, err := util.GetConfigMap(ac.kubeClient, opssight.Namespace, opssight.ConfigMapName)
-	if err != nil {
-		return false, errors.Annotatef(err, "unable to find the configmap %s in opssight namespace %s", opssight.ConfigMapName, opssight.Namespace)
-	}
-	oldConfigMapData := oldConfigMap.Data
-
-	// compare for difference between old and new configmap data, if changed update the configmap
-	if !reflect.DeepEqual(newConfigMapData, oldConfigMapData) {
-		oldConfigMap.Data = newConfigMapData
-		err = util.UpdateConfigMap(ac.kubeClient, opssight.Namespace, oldConfigMap)
-		if err != nil {
-			return false, errors.Annotatef(err, "unable to update the configmap %s in namespace %s", opssight.ConfigMapName, opssight.Namespace)
-		}
-		return true, nil
-	}
-	return false, nil
+	return crdupdater.UpdateConfigMap(ac.kubeClient, opssight.Namespace, configMapName, newConfig)
 }
 
 func (ac *Creater) updateSecret(opssight *opssightapi.OpsSightSpec, newConfigMapConfig *SpecConfig) (bool, error) {
@@ -306,30 +281,7 @@ func (ac *Creater) updateSecret(opssight *opssightapi.OpsSightSpec, newConfigMap
 	if err != nil {
 		return false, errors.Annotate(err, fmt.Sprintf("unable to add secret data to %s secret in %s namespace", secretName, opssight.Namespace))
 	}
-	newSecretKube, err := secret.ToKube()
-	if err != nil {
-		return false, errors.Annotatef(err, "unable to convert secret %s to kube in opssight namespace %s", secretName, opssight.Namespace)
-	}
-	newSecret := newSecretKube.(*corev1.Secret)
-	newSecretData := newSecret.Data
-
-	// getting old secret data
-	oldSecret, err := util.GetSecret(ac.kubeClient, opssight.Namespace, secretName)
-	if err != nil {
-		return false, errors.Annotatef(err, "unable to find the secret %s in namespace %s", secretName, opssight.Namespace)
-	}
-	oldSecretData := oldSecret.Data
-
-	// compare for difference between old and new secret data, if changed update the secret
-	if !reflect.DeepEqual(newSecretData, oldSecretData) {
-		oldSecret.Data = newSecretData
-		err = util.UpdateSecret(ac.kubeClient, opssight.Namespace, oldSecret)
-		if err != nil {
-			return false, errors.Annotatef(err, "unable to update the secret %s in namespace %s", secretName, opssight.Namespace)
-		}
-		return true, nil
-	}
-	return false, nil
+	return crdupdater.UpdateSecret(ac.kubeClient, opssight.Namespace, secretName, secret)
 }
 
 func (ac *Creater) update(opssight *opssightapi.OpsSightSpec, newConfigMapConfig *SpecConfig, isConfigMapUpdated bool, isSecretUpdated bool) error {
