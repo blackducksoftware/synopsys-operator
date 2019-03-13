@@ -23,6 +23,7 @@ package crdupdater
 import (
 	"testing"
 	// "github.com/blackducksoftware/horizon/pkg/components"
+	// "github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 )
 
 // TestUpdater will test the updater
@@ -31,29 +32,34 @@ func TestUpdater(t *testing.T) {
 	// if err != nil {
 	// 	t.Errorf("unable to get the kube config due to %+v", err)
 	// }
-	//
+
 	// kubeClient, err := protoform.GetKubeClientSet(kubeConfig)
 	// if err != nil {
 	// 	t.Errorf("unable to get the kube client due to %+v", err)
 	// }
-	//
+
 	// updater := NewUpdater()
-	//
-	// service, err := NewService(nil, nil, []*components.Service{}, "opssight-test", "app=opssight")
+
+	// service, err := NewService(kubeConfig, kubeClient, []*components.Service{}, "opssight-test", "app=opssight")
 	// if err != nil {
 	// 	t.Errorf("unable to create the service object due to %+v", err)
 	// }
 	// updater.AddUpdater(service)
-	//
-	// clusterRole, err := NewClusterRole(nil, nil, []*components.ClusterRole{}, "opssight-test", "app=opssight")
+
+	// clusterRole, err := NewClusterRole(kubeConfig, kubeClient, []*components.ClusterRole{}, "opssight-test", "app=opssight")
 	// if err != nil {
 	// 	t.Errorf("unable to create the cluster role object due to %+v", err)
 	// }
 	// updater.AddUpdater(clusterRole)
-	//
-	// clusterRoleBinding, err := NewClusterRoleBinding(nil, nil, []*components.ClusterRoleBinding{}, "opssight-test", "app=opssight")
+
+	// clusterRoleBinding, err := NewClusterRoleBinding(kubeConfig, kubeClient, []*components.ClusterRoleBinding{}, "opssight-test", "app=opssight")
 	// if err != nil {
 	// 	t.Errorf("unable to create the cluster role binding object due to %+v", err)
 	// }
 	// updater.AddUpdater(clusterRoleBinding)
+
+	// replicationController, err := NewReplicationController(kubeConfig, kubeClient, []*components.ReplicationController{}, "opssight-test", "app=opssight", false)
+	// if err != nil {
+	// 	t.Errorf("unable to create the replication controller object due to %+v", err)
+	// }
 }

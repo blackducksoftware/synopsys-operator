@@ -340,134 +340,41 @@ func (ac *Creater) update(opssight *opssightapi.OpsSightSpec, newConfigMapConfig
 	}
 
 	updater := crdupdater.NewUpdater()
-	// add or remove the services
-	service, err := crdupdater.NewService(ac.kubeConfig, ac.kubeClient, components.Services, opssight.Namespace, "app=opssight")
-	if err != nil {
-		return errors.Annotatef(err, "unable to create the service object")
-	}
-	updater.AddUpdater(service)
 
 	// add or remove the cluster roles
 	clusterRole, err := crdupdater.NewClusterRole(ac.kubeConfig, ac.kubeClient, components.ClusterRoles, opssight.Namespace, "app=opssight")
 	if err != nil {
-		return errors.Annotatef(err, "unable to create the cluster role object")
+		return errors.Annotatef(err, "unable to create the cluster role object:")
 	}
 	updater.AddUpdater(clusterRole)
 
 	// add or remove the cluster role bindings
 	clusterRoleBinding, err := crdupdater.NewClusterRoleBinding(ac.kubeConfig, ac.kubeClient, components.ClusterRoleBindings, opssight.Namespace, "app=opssight")
 	if err != nil {
-		return errors.Annotatef(err, "unable to create the cluster role binding object")
+		return errors.Annotatef(err, "unable to create the cluster role binding object:")
 	}
 	updater.AddUpdater(clusterRoleBinding)
 
-	// update service, cluster role and cluster role binding
+	// add, patch or remove the replication controllers
+	replicationController, err := crdupdater.NewReplicationController(ac.kubeConfig, ac.kubeClient, components.ReplicationControllers, opssight.Namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
+	if err != nil {
+		return errors.Annotatef(err, "unable to create the replication controller object:")
+	}
+	updater.AddUpdater(replicationController)
+
+	// add or remove the services
+	service, err := crdupdater.NewService(ac.kubeConfig, ac.kubeClient, components.Services, opssight.Namespace, "app=opssight")
+	if err != nil {
+		return errors.Annotatef(err, "unable to create the service object:")
+	}
+	updater.AddUpdater(service)
+
+	// update service, cluster role, cluster role binding and replication controller
 	err = updater.Update()
 	if err != nil {
-		return errors.Annotatef(err, "unable to update service, cluster role or cluster role binding object")
+		return errors.Annotatef(err, "unable to update service, cluster role, cluster role binding or replication controller object:")
 	}
 
-	// add, remove or update the replication controller
-	err = ac.addRemoveOrUpdateRC(opssight, components.ReplicationControllers, isConfigMapUpdated, isSecretUpdated, "app=opssight")
-	if err != nil {
-		return errors.Annotatef(err, "opssight replication controller")
-	}
-
-	return nil
-}
-
-func (ac *Creater) addRemoveOrUpdateRC(opssight *opssightapi.OpsSightSpec, replicationControllers []*components.ReplicationController,
-	isConfigMapUpdated bool, isSecretUpdated bool, labelSelector string) error {
-	// get old replication controller
-	rcl, err := util.ListReplicationControllers(ac.kubeClient, opssight.Namespace, labelSelector)
-	if err != nil {
-		return errors.Annotatef(err, "unable to get opssight replication controllers for %s", opssight.Namespace)
-	}
-
-	oldRCs := make(map[string]corev1.ReplicationController)
-	for _, rc := range rcl.Items {
-		oldRCs[rc.GetName()] = rc
-	}
-
-	// construct the new replication controllers using horizon to kube method
-	newReplicationControllers := make(map[string]*corev1.ReplicationController)
-	for _, newRc := range replicationControllers {
-		newReplicationControllerKube, err := newRc.ToKube()
-		if err != nil {
-			return errors.Annotatef(err, "unable to convert replication controller %s to kube in opssight namespace %s", newRc.GetName(), opssight.Namespace)
-		}
-		newReplicationControllers[newRc.GetName()] = newReplicationControllerKube.(*corev1.ReplicationController)
-	}
-
-	// compare the old and new service and delete if needed
-	for _, oldReplicationController := range oldRCs {
-		if _, ok := newReplicationControllers[oldReplicationController.GetName()]; !ok {
-			err = util.DeleteReplicationController(ac.kubeClient, opssight.Namespace, oldReplicationController.GetName())
-			if err != nil {
-				return errors.Annotatef(err, "unable to delete replication controller %s in opssight namespace %s", oldReplicationController.GetName(), opssight.Namespace)
-			}
-		}
-	}
-
-	// iterate through the replication controller list for any changes
-	for _, component := range replicationControllers {
-		newRC := newReplicationControllers[component.GetName()]
-		oldRC := oldRCs[newRC.GetName()]
-
-		// if the replication controller is not found in the cluster, create it
-		if _, ok := oldRCs[newRC.GetName()]; !ok {
-			deployer, err := util.NewDeployer(ac.kubeConfig)
-			if err != nil {
-				return errors.Annotatef(err, "unable to get deployer object for %s", opssight.Namespace)
-			}
-			deployer.Deployer.AddReplicationController(component)
-			deployer.Deployer.Run()
-		}
-
-		// if config map or secret is updated, patch the replication controller
-		if isConfigMapUpdated || isSecretUpdated {
-			err = util.PatchReplicationController(ac.kubeClient, oldRC, *newRC)
-			if err != nil {
-				return errors.Annotatef(err, "unable to patch rc %s to kube in opssight namespace %s", component.GetName(), opssight.Namespace)
-			}
-			continue
-		}
-
-		// check whether the replication controller or its container got changed
-		isChanged := false
-		for _, oldContainer := range oldRC.Spec.Template.Spec.Containers {
-			for _, newContainer := range newRC.Spec.Template.Spec.Containers {
-				if strings.EqualFold(oldContainer.Name, newContainer.Name) &&
-					!reflect.DeepEqual(
-						ReplicationControllerComparator{
-							Image:    oldContainer.Image,
-							Replicas: oldRC.Spec.Replicas,
-							MinCPU:   oldContainer.Resources.Requests.Cpu(),
-							MaxCPU:   oldContainer.Resources.Limits.Cpu(),
-							MinMem:   oldContainer.Resources.Requests.Memory(),
-							MaxMem:   oldContainer.Resources.Limits.Memory(),
-						},
-						ReplicationControllerComparator{
-							Image:    newContainer.Image,
-							Replicas: newRC.Spec.Replicas,
-							MinCPU:   newContainer.Resources.Requests.Cpu(),
-							MaxCPU:   newContainer.Resources.Limits.Cpu(),
-							MinMem:   newContainer.Resources.Requests.Memory(),
-							MaxMem:   newContainer.Resources.Limits.Memory(),
-						}) {
-					isChanged = true
-				}
-			}
-		}
-
-		// if changed from the above step, patch the replication controller
-		if isChanged {
-			err = util.PatchReplicationController(ac.kubeClient, oldRC, *newRC)
-			if err != nil {
-				return errors.Annotatef(err, "unable to patch rc %s to kube in opssight namespace %s", component.GetName(), opssight.Namespace)
-			}
-		}
-	}
 	return nil
 }
 

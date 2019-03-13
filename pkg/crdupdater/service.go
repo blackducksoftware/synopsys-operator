@@ -38,28 +38,57 @@ type Service struct {
 	namespace     string
 	services      []*components.Service
 	labelSelector string
+	oldServices   map[string]*corev1.Service
+	newServices   map[string]*corev1.Service
 }
 
 // NewService returns the service
-func NewService(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, services []*components.Service, namespace string, labelSelector string) (*Service, error) {
+func NewService(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, services []*components.Service, namespace string,
+	labelSelector string) (*Service, error) {
 	deployer, err := util.NewDeployer(kubeConfig)
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", namespace)
 	}
-	return &Service{kubeConfig: kubeConfig, kubeClient: kubeClient, deployer: deployer, namespace: namespace, services: services, labelSelector: labelSelector}, nil
+	return &Service{
+		kubeConfig:    kubeConfig,
+		kubeClient:    kubeClient,
+		deployer:      deployer,
+		namespace:     namespace,
+		services:      services,
+		labelSelector: labelSelector,
+		oldServices:   make(map[string]*corev1.Service, 0),
+		newServices:   make(map[string]*corev1.Service, 0),
+	}, nil
 }
 
-// get get the service
-func (s *Service) get(name string) (interface{}, error) {
-	return util.GetService(s.kubeClient, s.namespace, name)
+// buildNewAndOldObject builds the old and new service
+func (s *Service) buildNewAndOldObject() error {
+	// build old service
+	oldSvcs, err := s.list()
+	if err != nil {
+		return errors.Annotatef(err, "unable to get services for %s", s.namespace)
+	}
+	for _, oldSvc := range oldSvcs.(*corev1.ServiceList).Items {
+		s.oldServices[oldSvc.GetName()] = &oldSvc
+	}
+
+	// build new service
+	for _, newSvc := range s.services {
+		newServiceKube, err := newSvc.ToKube()
+		if err != nil {
+			return errors.Annotatef(err, "unable to convert service %s to kube %s", newSvc.GetName(), s.namespace)
+		}
+		s.newServices[newSvc.GetName()] = newServiceKube.(*corev1.Service)
+	}
+
+	return nil
 }
 
 // add adds the service
 func (s *Service) add() error {
 	isAdded := false
 	for _, service := range s.services {
-		_, err := s.get(service.GetName())
-		if err != nil {
+		if _, ok := s.oldServices[service.GetName()]; !ok {
 			s.deployer.Deployer.AddService(service)
 			isAdded = true
 		}
@@ -78,37 +107,26 @@ func (s *Service) list() (interface{}, error) {
 	return util.ListServices(s.kubeClient, s.namespace, s.labelSelector)
 }
 
-// delete deletes the serive
+// delete deletes the service
 func (s *Service) delete(name string) error {
 	return util.DeleteService(s.kubeClient, s.namespace, name)
 }
 
 // remove removes the service
 func (s *Service) remove() error {
-	oldSvcs, err := s.list()
-	if err != nil {
-		return errors.Annotatef(err, "unable to list the services for %s", s.namespace)
-	}
-	oldServices := oldSvcs.(*corev1.ServiceList)
-
-	// construct the new services using horizon to kube method
-	newServices := make(map[string]*corev1.Service)
-	for _, newSvc := range s.services {
-		newServiceKube, err := newSvc.ToKube()
-		if err != nil {
-			return errors.Annotatef(err, "unable to convert service %s to kube in opssight %s", newSvc.GetName(), s.namespace)
-		}
-		newServices[newSvc.GetName()] = newServiceKube.(*corev1.Service)
-	}
-
 	// compare the old and new service and delete if needed
-	for _, oldService := range oldServices.Items {
-		if _, ok := newServices[oldService.GetName()]; !ok {
-			err = s.delete(oldService.GetName())
+	for _, oldService := range s.oldServices {
+		if _, ok := s.newServices[oldService.GetName()]; !ok {
+			err := s.delete(oldService.GetName())
 			if err != nil {
 				return errors.Annotatef(err, "unable to delete service %s in namespace %s", oldService.GetName(), s.namespace)
 			}
 		}
 	}
+	return nil
+}
+
+// patch patches the service
+func (s *Service) patch(rc interface{}) error {
 	return nil
 }

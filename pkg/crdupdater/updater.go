@@ -27,11 +27,12 @@ import (
 
 // AddOrRemoveComponents consist of methods to add or remove the components for update events
 type AddOrRemoveComponents interface {
-	get(name string) (interface{}, error)
+	buildNewAndOldObject() error
 	add() error
 	list() (interface{}, error)
 	delete(name string) error
 	remove() error
+	patch(interface{}) error
 }
 
 // Updater handles in updating the components
@@ -55,9 +56,13 @@ func (u *Updater) AddUpdater(updater AddOrRemoveComponents) {
 // Update add or remove the components
 func (u *Updater) Update() error {
 	for _, updater := range u.updaters {
-		err := updater.add()
+		err := updater.buildNewAndOldObject()
 		if err != nil {
-			return errors.Annotatef(err, "add components:")
+			return errors.Annotatef(err, "build components:")
+		}
+		err = updater.add()
+		if err != nil {
+			return errors.Annotatef(err, "add/patch components:")
 		}
 		err = updater.remove()
 		if err != nil {

@@ -32,34 +32,63 @@ import (
 
 // ClusterRoleBinding stores the configuration to add or delete the cluster role binding
 type ClusterRoleBinding struct {
-	kubeConfig          *rest.Config
-	kubeClient          *kubernetes.Clientset
-	deployer            *util.DeployerHelper
-	namespace           string
-	clusterRoleBindings []*components.ClusterRoleBinding
-	labelSelector       string
+	kubeConfig             *rest.Config
+	kubeClient             *kubernetes.Clientset
+	deployer               *util.DeployerHelper
+	namespace              string
+	clusterRoleBindings    []*components.ClusterRoleBinding
+	labelSelector          string
+	oldClusterRoleBindings map[string]*rbacv1.ClusterRoleBinding
+	newClusterRoleBindings map[string]*rbacv1.ClusterRoleBinding
 }
 
 // NewClusterRoleBinding returns the cluster role binding
-func NewClusterRoleBinding(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, clusterRoleBindings []*components.ClusterRoleBinding, namespace string, labelSelector string) (*ClusterRoleBinding, error) {
+func NewClusterRoleBinding(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, clusterRoleBindings []*components.ClusterRoleBinding,
+	namespace string, labelSelector string) (*ClusterRoleBinding, error) {
 	deployer, err := util.NewDeployer(kubeConfig)
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", namespace)
 	}
-	return &ClusterRoleBinding{kubeConfig: kubeConfig, kubeClient: kubeClient, deployer: deployer, namespace: namespace, clusterRoleBindings: clusterRoleBindings, labelSelector: labelSelector}, nil
+	return &ClusterRoleBinding{
+		kubeConfig:             kubeConfig,
+		kubeClient:             kubeClient,
+		deployer:               deployer,
+		namespace:              namespace,
+		clusterRoleBindings:    clusterRoleBindings,
+		labelSelector:          labelSelector,
+		oldClusterRoleBindings: make(map[string]*rbacv1.ClusterRoleBinding, 0),
+		newClusterRoleBindings: make(map[string]*rbacv1.ClusterRoleBinding, 0),
+	}, nil
 }
 
-// get get the cluster role binding
-func (c *ClusterRoleBinding) get(name string) (interface{}, error) {
-	return util.GetClusterRoleBinding(c.kubeClient, name)
+// buildNewAndOldObject builds the old and new cluster role binding
+func (c *ClusterRoleBinding) buildNewAndOldObject() error {
+	// build old cluster role binding
+	oldCrbs, err := c.list()
+	if err != nil {
+		return errors.Annotatef(err, "unable to get cluster role bindings for %s", c.namespace)
+	}
+	for _, oldCrb := range oldCrbs.(*rbacv1.ClusterRoleBindingList).Items {
+		c.oldClusterRoleBindings[oldCrb.GetName()] = &oldCrb
+	}
+
+	// build new cluster role binding
+	for _, newCrb := range c.clusterRoleBindings {
+		newClusterRoleBindingKube, err := newCrb.ToKube()
+		if err != nil {
+			return errors.Annotatef(err, "unable to convert cluster role binding %s to kube %s", newCrb.GetName(), c.namespace)
+		}
+		c.newClusterRoleBindings[newCrb.GetName()] = newClusterRoleBindingKube.(*rbacv1.ClusterRoleBinding)
+	}
+
+	return nil
 }
 
 // add adds the cluster role binding
 func (c *ClusterRoleBinding) add() error {
 	isAdded := false
 	for _, clusterRoleBinding := range c.clusterRoleBindings {
-		_, err := c.get(clusterRoleBinding.GetName())
-		if err != nil {
+		if _, ok := c.oldClusterRoleBindings[clusterRoleBinding.GetName()]; !ok {
 			c.deployer.Deployer.AddClusterRoleBinding(clusterRoleBinding)
 			isAdded = true
 		}
@@ -85,31 +114,19 @@ func (c *ClusterRoleBinding) delete(name string) error {
 
 // remove removes the cluster role binding
 func (c *ClusterRoleBinding) remove() error {
-	oldCrbs, err := c.list()
-	if err != nil {
-		return errors.Annotatef(err, "unable to list the cluster role binding for %s", c.namespace)
-	}
-
-	oldClusterRoleBindings := oldCrbs.(*rbacv1.ClusterRoleBindingList)
-
-	// construct the new cluster role using horizon to kube method
-	newClusterRoleBindings := make(map[string]*rbacv1.ClusterRoleBinding)
-	for _, newCrb := range c.clusterRoleBindings {
-		newClusterRoleBindingKube, err := newCrb.ToKube()
-		if err != nil {
-			return errors.Annotatef(err, "unable to convert cluster role binding %s to kube in namespace %s", newCrb.GetName(), c.namespace)
-		}
-		newClusterRoleBindings[newCrb.GetName()] = newClusterRoleBindingKube.(*rbacv1.ClusterRoleBinding)
-	}
-
-	// compare the old and new cluster role and delete if needed
-	for _, oldClusterRoleBinding := range oldClusterRoleBindings.Items {
-		if _, ok := newClusterRoleBindings[oldClusterRoleBinding.GetName()]; !ok {
-			err = c.delete(oldClusterRoleBinding.GetName())
+	// compare the old and new cluster role binding and delete if needed
+	for _, oldClusterRoleBinding := range c.oldClusterRoleBindings {
+		if _, ok := c.newClusterRoleBindings[oldClusterRoleBinding.GetName()]; !ok {
+			err := c.delete(oldClusterRoleBinding.GetName())
 			if err != nil {
 				return errors.Annotatef(err, "unable to delete cluster role binding %s in namespace %s", oldClusterRoleBinding.GetName(), c.namespace)
 			}
 		}
 	}
+	return nil
+}
+
+// patch patches the cluster role binding
+func (c *ClusterRoleBinding) patch(rc interface{}) error {
 	return nil
 }
