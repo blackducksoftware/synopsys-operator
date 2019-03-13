@@ -188,6 +188,7 @@ var updateOpsSightCmd = &cobra.Command{
 				log.Errorf("%s", err)
 				return nil
 			}
+
 			// Update OpsSight's CRD
 			newOpsSight := *currOpsSight //make copy
 			newOpsSight.Spec = newSpec
@@ -220,35 +221,30 @@ var updateOpsSightCmd = &cobra.Command{
 
 			// Create Updater to run OpsSight's Updaters
 			opsSightUpdater := crdupdater.NewUpdater()
-
 			// Create Updater to add or remove OpsSight's ClusterRoles
 			clusterRoleUpdater, err := crdupdater.NewClusterRole(restconfig, kubeClient, newHorizonComponents.ClusterRoles, newOpsSight.Spec.Namespace, "app=opssight")
 			if err != nil {
 				return fmt.Errorf("unable to create cluster role updater: %s", err)
 			}
 			opsSightUpdater.AddUpdater(clusterRoleUpdater)
-
 			// Create Updater to add or remove OpsSight's ClusterRoleBindings
 			clusterRoleBindingUpdater, err := crdupdater.NewClusterRoleBinding(restconfig, kubeClient, newHorizonComponents.ClusterRoleBindings, newOpsSight.Spec.Namespace, "app=opssight")
 			if err != nil {
 				return fmt.Errorf("unable to create cluster role binding updater: %s", err)
 			}
 			opsSightUpdater.AddUpdater(clusterRoleBindingUpdater)
-
 			// Create Updater to add, patch or remove OpsSight's ReplicationControllers
 			replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newHorizonComponents.ReplicationControllers, newOpsSight.Spec.Namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
 			if err != nil {
 				return fmt.Errorf("unable to create replication controller updater: %s", err)
 			}
 			opsSightUpdater.AddUpdater(replicationControllerUpdater)
-
 			// Create Updater to add or remove OpsSight's Services
 			serviceUpdater, err := crdupdater.NewService(restconfig, kubeClient, newHorizonComponents.Services, newOpsSight.Spec.Namespace, "app=opssight")
 			if err != nil {
 				return fmt.Errorf("unable to create service object updater: %s", err)
 			}
 			opsSightUpdater.AddUpdater(serviceUpdater)
-
 			// Run OpsSight's Updater
 			err = opsSightUpdater.Update()
 			if err != nil {
