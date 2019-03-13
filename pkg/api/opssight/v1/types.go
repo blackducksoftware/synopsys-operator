@@ -65,7 +65,7 @@ type Blackduck struct {
 	// Auto scaling parameters
 	InitialCount                       int               `json:"initialCount"`
 	MaxCount                           int               `json:"maxCount"`
-	DeleteBlackDuckThresholdPercentage int               `json:"deleteBlackDuckThresholdPercentage"`
+	DeleteBlackduckThresholdPercentage int               `json:"deleteBlackduckThresholdPercentage"`
 	BlackduckSpec                      *v1.BlackduckSpec `json:"blackduckSpec"`
 }
 
