@@ -20,7 +20,7 @@
           <th>Ingress Class</th>
           <th>Ingress Host</th>
           <th>Status</th>
-          <th>IP Address</th>
+          <th>Host</th>
           <th colspan="3">Error Message</th>
           <th>&nbsp;</th>
           <th>&nbsp;</th>
@@ -34,7 +34,7 @@
                 <td><%= rgp.Spec.IngressClass %></td>
                 <td><%= rgp.Spec.IngressHost %></td>
                 <td><%= rgp.Status.State %></td>
-                <td><a href="https://<%= rgp.Status.IP %>" target="_blank"><%= rgp.Status.IP %></a></td>
+                <td><a href="https://<%= rgp.Status.Fqdn %>" target="_blank"><%= rgp.Status.Fqdn %></a></td>
                 <td colspan="3"><%= rgp.Status.ErrorMessage %></td>
                 <td>
                     <a href="<%= rgpPath({ rgp_id: rgp.Spec.Namespace }) %>" class="btn btn-info">View</a>

@@ -64,7 +64,16 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 	err := creater.Create(&gr.Spec)
 	if err != nil {
 		log.Error(err.Error())
+		gr.Status.ErrorMessage = err.Error()
 	}
+	gr.Status.Fqdn = gr.Spec.IngressHost
+	gr.Status.State = "Running"
+
+	_, err = h.grClient.SynopsysV1().Rgps(gr.Namespace).Update(gr)
+	if err != nil{
+		log.Errorf("Couldn't update %s", gr.Name)
+	}
+
 }
 
 // ObjectDeleted will be called for delete events
