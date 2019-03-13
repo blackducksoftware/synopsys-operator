@@ -65,7 +65,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 	gr.Status.State = "Creating"
 	gr, err = h.grClient.SynopsysV1().Rgps(gr.Namespace).Update(gr)
 	if err != nil{
-		log.Errorf("Couldn't update")
+		log.Error(err.Error())
 		return
 	}
 
@@ -82,7 +82,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 
 	_, err = h.grClient.SynopsysV1().Rgps(gr.Namespace).Update(gr)
 	if err != nil{
-		log.Errorf("Couldn't update %s", gr.Name)
+		log.Error(err.Error())
 	}
 
 }
