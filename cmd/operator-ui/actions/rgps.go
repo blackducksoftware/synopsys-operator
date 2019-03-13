@@ -7,7 +7,6 @@ import (
 	rgpclient "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/gobuffalo/buffalo"
-	"github.com/gobuffalo/pop"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,7 +54,7 @@ func (v RgpsResource) List(c buffalo.Context) error {
 	if err != nil {
 		return c.Error(500, err)
 	}
-	// Make blackducks available inside the html template
+	// Make rgps available inside the html template
 	c.Set("rgps", rgps.Items)
 	return c.Render(200, r.HTML("rgps/index.html", "old_application.html"))
 }
@@ -63,21 +62,13 @@ func (v RgpsResource) List(c buffalo.Context) error {
 // Show gets the data for one Rgp. This function is mapped to
 // the path GET /rgps/{rgp_id}
 func (v RgpsResource) Show(c buffalo.Context) error {
-	// Get the DB connection from the context
-	tx, ok := c.Value("tx").(*pop.Connection)
-	if !ok {
-		return errors.WithStack(errors.New("no transaction found"))
+	rgp, err := util.GetRgp(v.rgpClient, c.Param("rgp_id"), c.Param("rgp_id"))
+	if err != nil {
+		return c.Error(500, err)
 	}
-
-	// Allocate an empty Rgp
-	rgp := &rgpapi.Rgp{}
-
-	// To find the Rgp the parameter rgp_id is used.
-	if err := tx.Find(rgp, c.Param("rgp_id")); err != nil {
-		return c.Error(404, err)
-	}
-
-	return c.Render(200, r.Auto(c, rgp))
+	// Make rgp available inside the html template
+	c.Set("rgp", rgp)
+	return c.Render(200, r.HTML("rgps/show.html", "old_application.html"))
 }
 
 // New renders the form for creating a new Rgp.
@@ -105,7 +96,7 @@ func (v RgpsResource) Create(c buffalo.Context) error {
 	// Allocate an empty Rgp
 	rgp := &rgpapi.Rgp{}
 
-	// Bind blackduck to the html form elements
+	// Bind rgp to the html form elements
 	if err := c.Bind(rgp); err != nil {
 		log.Errorf("unable to bind rgp %+v because %+v", c, err)
 		return errors.WithStack(err)
@@ -139,7 +130,7 @@ func (v RgpsResource) Create(c buffalo.Context) error {
 
 	rgps, _ := util.ListRgps(v.rgpClient, "")
 	c.Set("rgps", rgps.Items)
-	// and redirect to the blackducks index page
+	// and redirect to the rgps index page
 	return c.Redirect(302, "/rgps/%s", rgp.Spec.Namespace)
 }
 
@@ -161,7 +152,7 @@ func (v RgpsResource) Destroy(c buffalo.Context) error {
 	log.Infof("delete rgp request %v", c.Param("rgp"))
 
 	_, err := util.GetRgp(v.rgpClient, c.Param("rgp_id"), c.Param("rgp_id"))
-	// To find the Blackduck the parameter blackduck_id is used.
+	// To find the Rgp the parameter rgp_id is used.
 	if err != nil {
 		return c.Error(404, err)
 	}
@@ -169,7 +160,7 @@ func (v RgpsResource) Destroy(c buffalo.Context) error {
 	// This is on the event loop.
 	err = v.rgpClient.SynopsysV1().Rgps(c.Param("rgp_id")).Delete(c.Param("rgp_id"), &metav1.DeleteOptions{})
 
-	// To find the Blackduck the parameter blackduck_id is used.
+	// To find the Rgp the parameter rgp_id is used.
 	if err != nil {
 		return c.Error(404, err)
 	}
