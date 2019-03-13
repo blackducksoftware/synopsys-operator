@@ -238,7 +238,7 @@ func (c *Creater) createIngress(spec *v1.RgpSpec) error {
 							{
 								Path: "/reporting/rs",
 								Backend: v1beta1.IngressBackend{
-									ServiceName: "rp-issue-manager",
+									ServiceName: "report-service",
 									ServicePort: intstr.FromInt(7979),
 								},
 							},
