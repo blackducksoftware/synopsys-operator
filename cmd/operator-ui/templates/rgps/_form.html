@@ -1,0 +1,15 @@
+<body>
+   <div class="new-container">
+      <%= f.InputTag("Spec.Namespace", {value: rgp.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
+      <%= f.InputTag("Spec.StorageClass", {value: rgp.Spec.StorageClass, label: "PVC Storage Class"}) %>
+      <%= f.InputTag("Spec.IngressClass", {value: rgp.Spec.IngressClass, label: "Ingress Class"}) %>
+      <%= f.InputTag("Spec.IngressHost", {value: rgp.Spec.IngressHost, label: "Ingress Host"}) %>
+      <center>
+         <a href="<%= rgpsPath() %>" class="btn btn-info">Cancel</a>
+         <button class="btn btn-success" role="submit">Create</button>
+         <a href="" class="btn btn-warning" data-confirm="Are you sure?">Clear</a>
+      </center>
+      <br/>
+      <br/>
+   </div>
+</body>

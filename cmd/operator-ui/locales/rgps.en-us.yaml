@@ -1,0 +1,6 @@
+- id: "rgp.created.success"
+  translation: "Reporting and Governance Platform was successfully created."
+- id: "rgp.updated.success"
+  translation: "Reporting and Governance Platform was successfully updated."
+- id: "rgp.destroyed.success"
+  translation: "Reporting and Governance Platform was successfully destroyed."

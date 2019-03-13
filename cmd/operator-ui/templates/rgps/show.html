@@ -1,0 +1,104 @@
+<header class="App-header">
+    <img src="<%= rootPath() %>assets/images/logo.png" class="Company-logo" alt="Synopsys" />
+    <section class="App-sub-header">
+      <section class="Icon-wrap-header">
+        <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
+      </section>
+      <h4>View Reporting and Governance Platform Instance</h4>
+    </section>
+  </header>
+  <br/>
+  
+  <div class="list-container">
+    <div class="page-header">
+      <h1><%= rgp.Spec.Namespace %></h1>
+    </div>
+  
+    <table class="Detail-table">
+      <tbody>
+        <tr>
+          <td>
+            <h5>Namespace</h5>
+          </td>
+          <td>&nbsp;</td>
+          <td><h6>:</h6></td>
+          <td>&nbsp;</td>
+          <td>
+            <h6><%= rgp.Spec.Namespace %></h6>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h5>PVC Storage Class</h5>
+          </td>
+          <td>&nbsp;</td>
+          <td><h6>:</h6></td>
+          <td>&nbsp;</td>
+          <td>
+            <h6><%= rgp.Spec.StorageClass %></h6>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h5>Ingress Class</h5>
+          </td>
+          <td>&nbsp;</td>
+          <td><h6>:</h6></td>
+          <td>&nbsp;</td>
+          <td>
+            <h6><%= rgp.Spec.IngressClass %></h6>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h5>Ingress Host</h5>
+          </td>
+          <td>&nbsp;</td>
+          <td><h6>:</h6></td>
+          <td>&nbsp;</td>
+          <td>
+            <h6><%= rgp.Spec.IngressHost %></h6>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h5>IP</h5>
+          </td>
+          <td>&nbsp;</td>
+          <td><h6>:</h6></td>
+          <td>&nbsp;</td>
+          <td>
+            <a href="https://<%= rgp.Status.IP %>" target="_blank"><%= rgp.Status.IP %></a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h5>Status</h5>
+          </td>
+          <td>&nbsp;</td>
+          <td><h6>:</h6></td>
+          <td>&nbsp;</td>
+          <td>
+            <h6><%= rgp.Status.State %></h6>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h5>Error Message</h5>
+          </td>
+          <td>&nbsp;</td>
+          <td><h6>:</h6></td>
+          <td>&nbsp;</td>
+          <td>
+            <h6><%= rgp.Status.ErrorMessage %></h6>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <br/>
+    <ul class="list-unstyled list-inline">
+      <li class="list-inline-item"><a href="<%= rgpsPath() %>" class="btn btn-info">Close</a></li>
+      <li class="list-inline-item"><a href="<%= rgpPath({ rgp_id: rgp.Spec.Namespace })%>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
+    </ul>
+  </div>
+  

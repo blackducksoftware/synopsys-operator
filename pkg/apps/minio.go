@@ -27,6 +27,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// Minio stores the minio configuration
 type Minio struct {
 	namespace string
 	pvcName   string
@@ -34,6 +35,7 @@ type Minio struct {
 	secretKey string
 }
 
+// NewMinio returns the Minio configuration
 func NewMinio(namespace string, pvcName string, accessKey string, secretKey string) *Minio {
 	return &Minio{namespace: namespace, pvcName: pvcName, accessKey: accessKey, secretKey: secretKey}
 }

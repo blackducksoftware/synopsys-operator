@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/blackducksoftware/synopsys-operator"
-  branch = "master"
+  branch = "rgp-ui"
 	
 [[constraint]]
   name = "github.com/sirupsen/logrus"
@@ -21,7 +21,7 @@
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "8.0.0"
+  version = "v8.0.0"
 
 [[override]]
   name = "k8s.io/api"
@@ -33,11 +33,11 @@
 
 [[override]]
   name = "k8s.io/apiextensions-apiserver"
-  revision = "b5a9dfcf0afdc336c921e56e70166b5e291e77f5"
+  revision = "e798125b68b9e62ce80c2b4f1157e96da7b3b1c7"
 
 [[override]]
   name = "k8s.io/kube-aggregator"
-  revision = "89512616b165a8d1280cf4b7dfdc266e96d8abe1"
+  revision = "29c7989121fc30258c674f31aff9bbd393dfab5e"
 
 # DO NOT DELETE
 [[prune.project]] # buffalo

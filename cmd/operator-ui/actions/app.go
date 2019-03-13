@@ -68,7 +68,13 @@ func App() *buffalo.App {
 		if err != nil {
 			log.Panic(err)
 		}
+
+		rgpResource, err := NewRgpResource(kubeConfig)
+		if err != nil {
+			log.Panic(err)
+		}
 		app.Resource("/blackducks", blackDuckResource)
+		app.Resource("/rgps", rgpResource)
 		app.ServeFiles("/", assetsBox) // serve files from the public directory
 	}
 

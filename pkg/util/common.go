@@ -38,8 +38,10 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	hub_v2 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssight_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	rgpclientset "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -238,6 +240,7 @@ func CreateReplicationControllerFromContainer(replicationControllerConfig *horiz
 	return rc
 }
 
+// CreateStateFulSet will create the stateful set
 func CreateStateFulSet(stateFulSetConfig *horizonapi.StatefulSetConfig, pod *components.Pod) *components.StatefulSet {
 	stateFulSet := components.NewStatefulSet(*stateFulSetConfig)
 	stateFulSet.AddMatchLabelsSelectors(pod.GetObj().Labels)
@@ -245,6 +248,7 @@ func CreateStateFulSet(stateFulSetConfig *horizonapi.StatefulSetConfig, pod *com
 	return stateFulSet
 }
 
+// CreateStateFulSetFromContainer will create the stateful set from the container
 func CreateStateFulSetFromContainer(stateFulSetConfig *horizonapi.StatefulSetConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.StatefulSet {
 	pod := CreatePod(stateFulSetConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs)
 	stateFulSet := CreateStateFulSet(stateFulSetConfig, pod)
@@ -694,6 +698,26 @@ func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub
 // GetHub will get hubs in the cluster
 func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*hub_v2.Blackduck, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).Get(name, metav1.GetOptions{})
+}
+
+// ListRgps will list all rgps in the cluster
+func ListRgps(rgpClientset *rgpclientset.Clientset, namespace string) (*rgpapi.RgpList, error) {
+	return rgpClientset.SynopsysV1().Rgps(namespace).List(metav1.ListOptions{})
+}
+
+// WatchRgps will watch for rgp events in the cluster
+func WatchRgps(rgpClientset *rgpclientset.Clientset, namespace string) (watch.Interface, error) {
+	return rgpClientset.SynopsysV1().Rgps(namespace).Watch(metav1.ListOptions{})
+}
+
+// CreateRgp will create rgp in the cluster
+func CreateRgp(rgpClientset *rgpclientset.Clientset, namespace string, createHub *rgpapi.Rgp) (*rgpapi.Rgp, error) {
+	return rgpClientset.SynopsysV1().Rgps(namespace).Create(createHub)
+}
+
+// GetRgp will get rgp in the cluster
+func GetRgp(rgpClientset *rgpclientset.Clientset, namespace string, name string) (*rgpapi.Rgp, error) {
+	return rgpClientset.SynopsysV1().Rgps(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListHubPV will list all the persistent volumes attached to each hub in the cluster

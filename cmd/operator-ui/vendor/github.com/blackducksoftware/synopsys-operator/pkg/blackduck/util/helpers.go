@@ -29,7 +29,7 @@ import (
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	hubClient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,13 +51,67 @@ func GetHubVersion(environs []string) string {
 	return ""
 }
 
+// GetIPAddress will provide the IP address of LoadBalancer or NodePort service
+func GetIPAddress(kubeClient *kubernetes.Clientset, namespace string, retryCount int, waitInSeconds int) (string, error) {
+	ipAddress, err := getLoadBalancerIPAddress(kubeClient, namespace, "webserver-lb", retryCount, waitInSeconds)
+	if err != nil {
+		ipAddress, err = getNodePortIPAddress(kubeClient, namespace, "webserver-np")
+		if err != nil {
+			return "", err
+		}
+	}
+	return ipAddress, nil
+}
+
+func getLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string, retryCount int, waitInSeconds int) (string, error) {
+	for i := 0; i < retryCount; i++ {
+		time.Sleep(time.Duration(waitInSeconds) * time.Second)
+		service, err := util.GetService(kubeClient, namespace, serviceName)
+		if err != nil {
+			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
+		}
+
+		log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
+
+		if len(service.Status.LoadBalancer.Ingress) > 0 {
+			ipAddress := service.Status.LoadBalancer.Ingress[0].IP
+			return ipAddress, nil
+		}
+	}
+	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
+}
+
+func getNodePortIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
+	// Get the node port service
+	service, err := util.GetService(kubeClient, namespace, serviceName)
+	if err != nil {
+		return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
+	}
+
+	var nodePort []int32
+	// Get the nodeport
+	for _, port := range service.Spec.Ports {
+		log.Debugf("[%s] node port: %v", namespace, port.NodePort)
+		nodePort = append(nodePort, port.NodePort)
+	}
+	return intArrayToStringArray(nodePort, ","), nil
+}
+
+func intArrayToStringArray(intArr []int32, delim string) string {
+	var strArr []string
+	for i := range intArr {
+		strArr = append(strArr, fmt.Sprintf("<<NODE_IP_ADDRESS>>:%+v", intArr[i]))
+	}
+	return strings.Join(strArr, delim)
+}
+
 // GetDefaultPasswords returns admin,user,postgres passwords for db maintainance tasks.  Should only be used during
 // initialization, or for 'babysitting' ephemeral hub instances (which might have postgres restarts)
 // MAKE SURE YOU SEND THE NAMESPACE OF THE SECRET SOURCE (operator), NOT OF THE new hub  THAT YOUR TRYING TO CREATE !
 func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder string) (adminPassword string, userPassword string, postgresPassword string, err error) {
 	blackduckSecret, err := util.GetSecret(kubeClient, nsOfSecretHolder, "blackduck-secret")
 	if err != nil {
-		logrus.Infof("warning: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD, USER_PASSWORD, POSTGRES_PASSWORD")
+		log.Infof("warning: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD, USER_PASSWORD, POSTGRES_PASSWORD")
 		return "", "", "", err
 	}
 	adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
@@ -80,7 +134,7 @@ func UpdateState(h *hubClient.Clientset, namespace string, statusState string, e
 	}
 	hub, err = updateHubObject(h, namespace, hub)
 	if err != nil {
-		logrus.Errorf("couldn't update the state of hub object: %s", err.Error())
+		log.Errorf("couldn't update the state of hub object: %s", err.Error())
 	}
 	return hub, err
 }

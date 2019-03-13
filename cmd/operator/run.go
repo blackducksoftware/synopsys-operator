@@ -23,15 +23,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
-	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/installer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/gr"
-	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"os"
 	"time"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
+	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/installer"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/rgp"
 	"github.com/sirupsen/logrus"
 	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
 )
@@ -90,7 +90,7 @@ func runProtoform(configPath string) {
 	}
 	deployer.AddController(opssSightController)
 
-	grcontroller := gr.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, nil, stopCh)
+	grcontroller := rgp.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, nil, stopCh)
 	deployer.AddController(grcontroller)
 
 	logrus.Info("Starting deployer.  All controllers have been added to Protoform.")

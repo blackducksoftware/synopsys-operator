@@ -1,0 +1,14 @@
+<header class="App-header">
+    <img src="<%= rootPath() %>assets/images/logo.png" class="Company-logo" alt="Synopsys" />
+    <section class="App-sub-header">
+       <section class="Icon-wrap-header">
+          <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
+       </section>
+       <h4>Create a Reporting and Governance Platform Instance</h4>
+    </section>
+ </header>
+ <br/>
+
+ <%= form_for(rgp, {action: rgpsPath(), method: "POST"}) { %>
+  <%= partial("rgps/form.html") %>
+ <% } %>

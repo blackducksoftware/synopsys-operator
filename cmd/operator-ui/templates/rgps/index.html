@@ -1,0 +1,58 @@
+<header class="App-header">
+    <img src="<%= rootPath() %>assets/images/logo.png" class="Company-logo" alt="Synopsys" />
+    <section class="App-sub-header">
+       <section class="Icon-wrap-header">
+          <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
+       </section>
+       <h4>Reporting and Governance Platform Instances</h4>
+    </section>
+ </header>
+ <br/>
+ <div class="list-container">
+    <ul class="list-unstyled list-inline">
+       <li class="list-inline-item"><a href="<%= rootPath() %>" class="btn btn-info">Home</a></li>
+       <li class="list-inline-item"><a href="<%= newRgpsPath() %>" class="btn btn-primary">Create</a></li>
+    </ul>
+    <table class="table table-striped">
+       <thead class="list-header-container">
+          <th>Namespace</th>
+          <th>PVC Storage Class</th>
+          <th>Ingress Class</th>
+          <th>Ingress Host</th>
+          <th>Status</th>
+          <th>IP Address</th>
+          <th colspan="3">Error Message</th>
+          <th>&nbsp;</th>
+          <th>&nbsp;</th>
+       </thead>
+       <tbody>
+          <%= if (len(rgps) > 0) { %>
+            <%= for (rgp) in rgps { %>
+              <tr>
+                <td><%= rgp.Spec.Namespace %></td>
+                <td><%= rgp.Spec.StorageClass %></td>
+                <td><%= rgp.Spec.IngressClass %></td>
+                <td><%= rgp.Spec.IngressHost %></td>
+                <td><%= rgp.Status.State %></td>
+                <td><a href="https://<%= rgp.Status.IP %>" target="_blank"><%= rgp.Status.IP %></a></td>
+                <td colspan="3"><%= rgp.Status.ErrorMessage %></td>
+                <td>
+                    <a href="<%= rgpPath({ rgp_id: rgp.Spec.Namespace }) %>" class="btn btn-info">View</a>
+                </td>
+                <td>
+                    <a href="<%= rgpPath({ rgp_id: rgp.Spec.Namespace }) %>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
+                </td>
+              </tr>
+            <% } %>
+          <% } else { %>
+            <tr>
+              <td colspan="11">
+                  <center>
+                    <h5>No Reporting and Governance instances found</h5>
+                  </center>
+              </td>
+            </tr>
+          <% } %>
+       </tbody>
+    </table>
+ </div>

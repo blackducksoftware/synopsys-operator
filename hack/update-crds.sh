@@ -20,8 +20,8 @@ pushd $GOPATH/src/k8s.io
 popd 
 
 pushd $GOPATH/src/k8s.io/code-generator
-  crds=( blackduck opssight alert )
-  crdVersions=( v1 v1 v1 )
+  crds=( blackduck opssight alert rgp )
+  crdVersions=( v1 v1 v1 v1 )
   j=0
   for i in "${crds[@]}" ; do
     set +x
