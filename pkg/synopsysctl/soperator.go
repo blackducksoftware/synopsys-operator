@@ -34,7 +34,6 @@ type SOperatorSpecConfig struct {
 	Namespace                string
 	SynopsysOperatorImage    string
 	BlackduckRegistrationKey string
-	SecretName               string
 	SecretType               horizonapi.SecretType
 	SecretAdminPassword      string
 	SecretPostgresPassword   string
@@ -48,7 +47,6 @@ func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, se
 		Namespace:                namespace,
 		SynopsysOperatorImage:    synopsysOperatorImage,
 		BlackduckRegistrationKey: blackduckRegistrationKey,
-		SecretName:               secretName,
 		SecretType:               secretType,
 		SecretAdminPassword:      adminPassword,
 		SecretPostgresPassword:   postrgresPassword,

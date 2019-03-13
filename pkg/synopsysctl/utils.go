@@ -39,6 +39,7 @@ import (
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -55,6 +56,28 @@ var alertClient *alertclientset.Clientset
 // These vars used by KubeCmd
 var openshift bool
 var kube bool
+
+func kubeSecretTypeToHorizon(secretType corev1.SecretType) (horizonapi.SecretType, error) {
+	switch secretType {
+	case corev1.SecretTypeOpaque:
+		return horizonapi.SecretTypeOpaque, nil
+	case corev1.SecretTypeServiceAccountToken:
+		return horizonapi.SecretTypeServiceAccountToken, nil
+	case corev1.SecretTypeDockercfg:
+		return horizonapi.SecretTypeDockercfg, nil
+	case corev1.SecretTypeDockerConfigJson:
+		return horizonapi.SecretTypeDockerConfigJSON, nil
+	case corev1.SecretTypeBasicAuth:
+		return horizonapi.SecretTypeBasicAuth, nil
+	case corev1.SecretTypeSSHAuth:
+		return horizonapi.SecretTypeSSHAuth, nil
+	case corev1.SecretTypeTLS:
+		return horizonapi.SecretTypeTLS, nil
+	default:
+		return horizonapi.SecretTypeOpaque, fmt.Errorf("Invalid Secret Type: %+v", secretType)
+	}
+	return horizonapi.SecretTypeOpaque, fmt.Errorf("Invalid Secret Type: %+v", secretType)
+}
 
 // getBlackduckFromCluster returns the CRD for a blackduck in namespace
 func getBlackduckFromCluster(namespace string) (*blackduckv1.Blackduck, error) {

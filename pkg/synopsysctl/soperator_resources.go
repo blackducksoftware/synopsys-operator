@@ -280,7 +280,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorSecret() *horizoncomponents.Se
 	synopsysOperatorSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 		APIVersion: "v1",
 		// ClusterName : "cluster",
-		Name:      specConfig.SecretName,
+		Name:      "blackduck-secret",
 		Namespace: specConfig.Namespace,
 		Type:      specConfig.SecretType,
 	})

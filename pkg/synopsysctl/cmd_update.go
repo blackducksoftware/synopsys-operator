@@ -84,7 +84,38 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 		log.Debugf("Updating the Synopsys-Operator: %s\n", namespace)
-		// Get Spec of Synopsys-Operator
+		// Get Components of Current Synopsys-Operator
+		currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+		currImage := currPod.Spec.Containers[0].Image
+		currRegKey := currPod.Spec.Containers[0].Env[0].Value
+		currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
+		currSecretType, err := kubeSecretTypeToHorizon(currSecret.Type)
+		currSOperatorSpec := SOperatorSpecConfig{
+			Namespace:                namespace,
+			SynopsysOperatorImage:    currImage,
+			BlackduckRegistrationKey: currRegKey,
+			SecretType:               currSecretType,
+			SecretAdminPassword:      deploySecretAdminPassword,
+			SecretPostgresPassword:   deploySecretPostgresPassword,
+			SecretUserPassword:       deploySecretUserPassword,
+			SecretBlackduckPassword:  deploySecretBlackduckPassword,
+		}
+		currSOperatorComponents, err := currSOperatorSpec.GetComponents()
+		fmt.Printf("%+v\n", currSOperatorComponents)
+
+		// Get Components of New Synopsys-Operator
+		newSOperatorSpec := SOperatorSpecConfig{
+			Namespace:                deployNamespace,
+			SynopsysOperatorImage:    deploySynopsysOperatorImage,
+			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
+			SecretType:               secretType,
+			SecretAdminPassword:      deploySecretAdminPassword,
+			SecretPostgresPassword:   deploySecretPostgresPassword,
+			SecretUserPassword:       deploySecretUserPassword,
+			SecretBlackduckPassword:  deploySecretBlackduckPassword,
+		}
+		newSOperatorComponents, err := newSOperatorSpec.GetComponents()
+		fmt.Printf("%+v\n", newSOperatorComponents)
 
 		// Check if Version has changed -> migration script
 		// 1. Get local copies of specs of all instances of crds (ex: opssight crds)
@@ -92,6 +123,24 @@ var updateOperatorCmd = &cobra.Command{
 		// 3. Create the new CRD definition
 		// 4. Update the local specs of all instances with the new versions
 		// 5. Update the resources in the cluster with the new specs (that contain the new version)
+
+		// Update S-O ReplicationController if necessary
+
+		// Update S-O Service if necessary
+
+		// Update S-O ConfigMap if necessary
+
+		// Update S-O ServiceAccount if necessary
+
+		// Update S-O ClusterRoleBinding if necessary
+
+		// Update S-O Secret if necessary
+
+		// Update Prometheus Deployment
+
+		// Update Prometheus Service
+
+		// Update Prometheus ConfigMap
 
 		// else just change spec fields
 
@@ -319,6 +368,15 @@ func init() {
 	rootCmd.AddCommand(updateCmd)
 
 	// Add Operator Commands
+	updateOperatorCmd.Flags().StringVarP(&deploySynopsysOperatorImage, "synopsys-operator-image", "i", deploySynopsysOperatorImage, "synopsys operator image URL")
+	updateOperatorCmd.Flags().StringVarP(&deployPrometheusImage, "prometheus-image", "p", deployPrometheusImage, "prometheus image URL")
+	updateOperatorCmd.Flags().StringVarP(&deployBlackduckRegistrationKey, "blackduck-registration-key", "k", deployBlackduckRegistrationKey, "key to register with KnowledgeBase")
+	updateOperatorCmd.Flags().StringVarP(&deployDockerConfigPath, "docker-config", "d", deployDockerConfigPath, "path to docker config (image pull secrets etc)")
+	updateOperatorCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret for postgres and blackduck")
+	updateOperatorCmd.Flags().StringVar(&deploySecretAdminPassword, "admin-password", deploySecretAdminPassword, "postgres admin password")
+	updateOperatorCmd.Flags().StringVar(&deploySecretPostgresPassword, "postgres-password", deploySecretPostgresPassword, "postgres password")
+	updateOperatorCmd.Flags().StringVar(&deploySecretUserPassword, "user-password", deploySecretUserPassword, "postgres user password")
+	updateOperatorCmd.Flags().StringVar(&deploySecretBlackduckPassword, "blackduck-password", deploySecretBlackduckPassword, "blackduck password for 'sysadmin' account")
 	updateCmd.AddCommand(updateOperatorCmd)
 
 	// Add Bladuck Commands

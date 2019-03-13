@@ -38,7 +38,6 @@ var deploySynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator
 var deployPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var deployBlackduckRegistrationKey = ""
 var deployDockerConfigPath = ""
-var deploySecretName = "blackduck-secret"
 var deploySecretType = "Opaque"
 var deploySecretAdminPassword = "YmxhY2tkdWNr"
 var deploySecretPostgresPassword = "YmxhY2tkdWNr"
@@ -115,7 +114,6 @@ var deployCmd = &cobra.Command{
 			Namespace:                deployNamespace,
 			SynopsysOperatorImage:    deploySynopsysOperatorImage,
 			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
-			SecretName:               deploySecretName,
 			SecretType:               secretType,
 			SecretAdminPassword:      deploySecretAdminPassword,
 			SecretPostgresPassword:   deploySecretPostgresPassword,
@@ -187,7 +185,6 @@ func init() {
 	deployCmd.Flags().StringVarP(&deployPrometheusImage, "prometheus-image", "p", deployPrometheusImage, "prometheus image URL")
 	deployCmd.Flags().StringVarP(&deployBlackduckRegistrationKey, "blackduck-registration-key", "k", deployBlackduckRegistrationKey, "key to register with KnowledgeBase")
 	deployCmd.Flags().StringVarP(&deployDockerConfigPath, "docker-config", "d", deployDockerConfigPath, "path to docker config (image pull secrets etc)")
-	deployCmd.Flags().StringVar(&deploySecretName, "secret-name", deploySecretName, "name of kubernetes secret for postgres and blackduck")
 	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret for postgres and blackduck")
 	deployCmd.Flags().StringVar(&deploySecretAdminPassword, "admin-password", deploySecretAdminPassword, "postgres admin password")
 	deployCmd.Flags().StringVar(&deploySecretPostgresPassword, "postgres-password", deploySecretPostgresPassword, "postgres password")
