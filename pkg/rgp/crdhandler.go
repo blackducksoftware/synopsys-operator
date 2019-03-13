@@ -53,6 +53,7 @@ func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 
 // ObjectCreated will be called for create events
 func (h *Handler) ObjectCreated(obj interface{}) {
+	var err error
 	log.Debugf("ObjectCreated: %+v", obj)
 	gr, ok := obj.(*v1.Rgp)
 	if !ok {
@@ -60,14 +61,24 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		return
 	}
 	log.Info(gr.Name)
+
+	gr.Status.State = "Creating"
+	gr, err = h.grClient.SynopsysV1().Rgps(gr.Namespace).Update(gr)
+	if err != nil{
+		log.Errorf("Couldn't update")
+		return
+	}
+
 	creater := NewCreater(h.kubeConfig, h.kubeClient, h.grClient)
-	err := creater.Create(&gr.Spec)
+	err = creater.Create(&gr.Spec)
 	if err != nil {
 		log.Error(err.Error())
 		gr.Status.ErrorMessage = err.Error()
+		gr.Status.State = "Error"
+	} else {
+		gr.Status.Fqdn = gr.Spec.IngressHost
+		gr.Status.State = "Running"
 	}
-	gr.Status.Fqdn = gr.Spec.IngressHost
-	gr.Status.State = "Running"
 
 	_, err = h.grClient.SynopsysV1().Rgps(gr.Namespace).Update(gr)
 	if err != nil{
