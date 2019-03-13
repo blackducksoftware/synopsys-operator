@@ -41,7 +41,6 @@ import (
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -227,16 +226,6 @@ func (ac *Creater) StopOpsSight(opssight *opssightapi.OpsSightSpec) error {
 		}
 	}
 	return err
-}
-
-// ReplicationControllerComparator used to compare Replication controller attributes
-type ReplicationControllerComparator struct {
-	Image    string
-	Replicas *int32
-	MinCPU   *resource.Quantity
-	MaxCPU   *resource.Quantity
-	MinMem   *resource.Quantity
-	MaxMem   *resource.Quantity
 }
 
 // UpdateOpsSight will update the Black Duck OpsSight
