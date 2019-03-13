@@ -164,13 +164,13 @@ var updateOpsSightCmd = &cobra.Command{
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
-		// Get the OpsSight
-		opsSight, err := getOpsSightFromCluster(opsSightNamespace)
+		// Get the current OpsSight
+		currOpsSight, err := getOpsSightFromCluster(opsSightNamespace)
 		if err != nil {
 			log.Errorf("Error getting OpsSight: %s", err)
 			return nil
 		}
-		updateOpsSightCtl.SetSpec(opsSight.Spec)
+		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 
 		// Check if it can be updated
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
@@ -185,14 +185,22 @@ var updateOpsSightCmd = &cobra.Command{
 			updateOpsSightCtl.SetChangedFlags(flagset)
 			newSpec := updateOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
 			// Build New Horizon-Components from the updated OpsSight Spec
-			opsSightSpecConfig := opssight.NewSpecConfig(kubeClient, &newSpec, true)
-			horizonComponents, err := opsSightSpecConfig.GetComponents()
+			newSpecConfig := opssight.NewSpecConfig(kubeClient, &newSpec, true)
+			newHorizonComponents, err := newSpecConfig.GetComponents()
+			if err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
+			// Update OpsSight's CRD
+			newOpsSight := *currOpsSight //make copy
+			newOpsSight.Spec = newSpec
+			err = updateOpsSightInCluster(opsSightNamespace, &newOpsSight)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 			// Update OpsSight's Config Map
-			newConfigMapHorizon := horizonComponents.ConfigMaps[0]
+			newConfigMapHorizon := newHorizonComponents.ConfigMaps[0]
 			newConfigMapKube, err := newConfigMapHorizon.ToKube()
 			err = updateOpsSightConfigMap(newConfigMapKube.(*corev1.ConfigMap))
 			if err != nil {
@@ -200,7 +208,7 @@ var updateOpsSightCmd = &cobra.Command{
 				return nil
 			}
 			// Update OpsSight's Secret
-			newSecretHorizon := horizonComponents.Secrets[0]
+			newSecretHorizon := newHorizonComponents.Secrets[0]
 			newSecretKube, err := newSecretHorizon.ToKube()
 			err = updateOpsSightSecret(newSecretKube.(*corev1.Secret))
 			if err != nil {
@@ -208,33 +216,29 @@ var updateOpsSightCmd = &cobra.Command{
 				return nil
 			}
 			// Update OpsSight's Services
-			err = updateOpsSightServices(opsSightNamespace, horizonComponents.Services)
+			err = updateOpsSightServices(opsSightNamespace, newHorizonComponents.Services)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 			// Update OpsSight's ClusterRoles
-			err = updateOpsSightClusterRoles(opsSightNamespace, horizonComponents.ClusterRoles)
+			err = updateOpsSightClusterRoles(opsSightNamespace, newHorizonComponents.ClusterRoles)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 			// Update OpsSight's ClusterRoleBindings
-			err = updateOpsSightClusterRoleBindings(opsSightNamespace, horizonComponents.ClusterRoleBindings)
+			err = updateOpsSightClusterRoleBindings(opsSightNamespace, newHorizonComponents.ClusterRoleBindings)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 			// Update OpsSight's Replication Controllers
-			err = updateOpsSightReplicationControllers(&newSpec, horizonComponents.ReplicationControllers, true, true)
+			err = updateOpsSightReplicationControllers(&newSpec, newHorizonComponents.ReplicationControllers, true, true)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
-
-			// Update in cluster
-			opsSight.Spec = newSpec
-			updateOpsSightInCluster(opsSightNamespace, opsSight)
 		}
 		return nil
 	},
@@ -242,16 +246,16 @@ var updateOpsSightCmd = &cobra.Command{
 
 func updateOpsSightConfigMap(newConfigMap *corev1.ConfigMap) error {
 	// Get Current Config Map
-	oldConfigMap, err := util.GetConfigMap(kubeClient, newConfigMap.Namespace, newConfigMap.Namespace)
+	currConfigMap, err := util.GetConfigMap(kubeClient, newConfigMap.Namespace, newConfigMap.Namespace)
 	if err != nil {
 		return err
 	}
-	// Compare Data
+	// Update if data differs
 	newConfigMapData := newConfigMap.Data
-	oldConfigMapData := oldConfigMap.Data
-	if !reflect.DeepEqual(newConfigMapData, oldConfigMapData) {
-		oldConfigMap.Data = newConfigMapData
-		err = util.UpdateConfigMap(kubeClient, oldConfigMap.Namespace, oldConfigMap)
+	currConfigMapData := currConfigMap.Data
+	if !reflect.DeepEqual(newConfigMapData, currConfigMapData) {
+		currConfigMap.Data = newConfigMapData
+		err = util.UpdateConfigMap(kubeClient, currConfigMap.Namespace, currConfigMap)
 		if err != nil {
 			return err
 		}
@@ -267,7 +271,7 @@ func updateOpsSightSecret(newSecret *corev1.Secret) error {
 		return err
 	}
 	// TODO addSecret
-	// Compare Data
+	// Update if data differs
 	newSecretData := newSecret.Data
 	oldSecretData := oldSecret.Data
 	if !reflect.DeepEqual(newSecretData, oldSecretData) {
