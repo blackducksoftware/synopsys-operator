@@ -143,7 +143,7 @@ func (c *Creater) Create(spec *v1.RgpSpec) error {
 		return err
 	}
 
-	err = c.dbInit(spec.Namespace)
+	err = c.dbInit(spec.Namespace, pw)
 	if err != nil {
 		log.Error(err)
 		return err

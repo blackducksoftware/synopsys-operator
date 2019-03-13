@@ -253,11 +253,11 @@ func (c *Creater) vaultInit(namespace string) error {
 }
 
 // dbInit create the the databases
-func (c *Creater) dbInit(namespace string) error {
+func (c *Creater) dbInit(namespace string, pw string) error {
 	databaseName := "postgres"
 	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", namespace)
 
-	postgresDB, err := OpenDatabaseConnection(hostName, databaseName, "admin", "test", "postgres")
+	postgresDB, err := OpenDatabaseConnection(hostName, databaseName, "postgres", pw, "postgres")
 	// log.Infof("Db: %+v, error: %+v", db, err)
 	if err != nil {
 		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
