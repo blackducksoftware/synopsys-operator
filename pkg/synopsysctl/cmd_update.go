@@ -22,17 +22,15 @@ under the License.
 package synopsysctl
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/blackducksoftware/horizon/pkg/components"
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
-	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -116,14 +114,12 @@ var updateBlackduckCmd = &cobra.Command{
 		blackduckNamespace := args[0]
 
 		// Get the Blackuck
-		blackduck, err := getBlackduckFromCluster(blackduckNamespace)
+		currBlackduck, err := getBlackduckFromCluster(blackduckNamespace)
 		if err != nil {
 			log.Errorf("Error getting Blackduck: %s", err)
 			return nil
 		}
-
-		// Load Spec into ctl tool
-		updateBlackduckCtl.SetSpec(blackduck.Spec)
+		updateBlackduckCtl.SetSpec(currBlackduck.Spec)
 
 		// Check if it can be updated
 		canUpdate, err := updateBlackduckCtl.CanUpdate()
@@ -132,16 +128,19 @@ var updateBlackduckCmd = &cobra.Command{
 			return nil
 		}
 		if canUpdate {
-			log.Debugf("Updating Blackduck...\n")
-			// Update spec in the ctl tool with flags
+			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateBlackduckCtl.SetChangedFlags(flagset)
-			// Check differences between updated spec
-
-			// Set Spec in the cluster
 			newSpec := updateBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
-			blackduck.Spec = newSpec
-			updateBlackduckInCluster(blackduckNamespace, blackduck)
+			// Create new Blackduck CRD
+			newBlackduck := *currBlackduck //make copy
+			newBlackduck.Spec = newSpec
+			// Update Blackduck
+			_, err = operatorutil.UpdateBlackduck(blackduckClient, newBlackduck.Spec.Namespace, &newBlackduck)
+			if err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
 		}
 		return nil
 	},
@@ -181,103 +180,18 @@ var updateOpsSightCmd = &cobra.Command{
 			flagset := cmd.Flags()
 			updateOpsSightCtl.SetChangedFlags(flagset)
 			newSpec := updateOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
-			// Build New Horizon-Components from the updated OpsSight Spec
-			newSpecConfig := opssight.NewSpecConfig(kubeClient, &newSpec, true)
-			newHorizonComponents, err := newSpecConfig.GetComponents()
-			if err != nil {
-				log.Errorf("%s", err)
-				return nil
-			}
-
-			// Update OpsSight's CRD
+			// Create new OpsSight CRD
 			newOpsSight := *currOpsSight //make copy
 			newOpsSight.Spec = newSpec
-			err = updateOpsSightInCluster(opsSightNamespace, &newOpsSight)
+			// Update OpsSight
+			_, err = operatorutil.UpdateOpsSight(opssightClient, newOpsSight.Spec.Namespace, &newOpsSight)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
-			}
-			// Update OpsSight's Config Map
-			configMapName := fmt.Sprintf("%s.json", newOpsSight.Spec.ConfigMapName)
-			newConfigMapHorizon := newHorizonComponents.ConfigMaps[0]
-			isConfigMapUpdated, err := crdupdater.UpdateConfigMap(kubeClient, newOpsSight.Namespace, configMapName, newConfigMapHorizon)
-			if err != nil {
-				log.Errorf("%s", err)
-				return nil
-			}
-			// Update OpsSight's Secret
-			newSecretName := newOpsSight.Spec.SecretName
-			newSecretHorizon := newHorizonComponents.Secrets[0]
-			err = addSecretData(&newOpsSight.Spec, newSecretHorizon)
-			if err != nil {
-				log.Errorf("%s", err)
-				return nil
-			}
-			isSecretUpdated, err := crdupdater.UpdateSecret(kubeClient, newOpsSight.Namespace, newSecretName, newSecretHorizon)
-			if err != nil {
-				log.Errorf("%s", err)
-				return nil
-			}
-
-			// Create Updater to run OpsSight's Updaters
-			opsSightUpdater := crdupdater.NewUpdater()
-			// Create Updater to add or remove OpsSight's ClusterRoles
-			clusterRoleUpdater, err := crdupdater.NewClusterRole(restconfig, kubeClient, newHorizonComponents.ClusterRoles, newOpsSight.Spec.Namespace, "app=opssight")
-			if err != nil {
-				return fmt.Errorf("unable to create cluster role updater: %s", err)
-			}
-			opsSightUpdater.AddUpdater(clusterRoleUpdater)
-			// Create Updater to add or remove OpsSight's ClusterRoleBindings
-			clusterRoleBindingUpdater, err := crdupdater.NewClusterRoleBinding(restconfig, kubeClient, newHorizonComponents.ClusterRoleBindings, newOpsSight.Spec.Namespace, "app=opssight")
-			if err != nil {
-				return fmt.Errorf("unable to create cluster role binding updater: %s", err)
-			}
-			opsSightUpdater.AddUpdater(clusterRoleBindingUpdater)
-			// Create Updater to add, patch or remove OpsSight's ReplicationControllers
-			replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newHorizonComponents.ReplicationControllers, newOpsSight.Spec.Namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
-			if err != nil {
-				return fmt.Errorf("unable to create replication controller updater: %s", err)
-			}
-			opsSightUpdater.AddUpdater(replicationControllerUpdater)
-			// Create Updater to add or remove OpsSight's Services
-			serviceUpdater, err := crdupdater.NewService(restconfig, kubeClient, newHorizonComponents.Services, newOpsSight.Spec.Namespace, "app=opssight")
-			if err != nil {
-				return fmt.Errorf("unable to create service object updater: %s", err)
-			}
-			opsSightUpdater.AddUpdater(serviceUpdater)
-			// Run OpsSight's Updater
-			err = opsSightUpdater.Update()
-			if err != nil {
-				return fmt.Errorf("unable to update service, cluster role, cluster role binding or replication controller object: %s", err)
 			}
 		}
 		return nil
 	},
-}
-
-func addSecretData(opsSight *opssightv1.OpsSightSpec, secret *components.Secret) error {
-	blackduckPasswords := make(map[string]interface{})
-	// adding External Black Duck passwords
-	for _, host := range opsSight.Blackduck.ExternalHosts {
-		blackduckPasswords[host.Domain] = &host
-	}
-	bytes, err := json.Marshal(blackduckPasswords)
-	if err != nil {
-		return err
-	}
-	secret.AddData(map[string][]byte{opsSight.Blackduck.ConnectionsEnvironmentVariableName: bytes})
-
-	// adding Secured registries credential
-	securedRegistries := make(map[string]interface{})
-	for _, internalRegistry := range opsSight.ScannerPod.ImageFacade.InternalRegistries {
-		securedRegistries[internalRegistry.URL] = &internalRegistry
-	}
-	bytes, err = json.Marshal(securedRegistries)
-	if err != nil {
-		return err
-	}
-	secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
-	return nil
 }
 
 var updateOpsSightImageCmd = &cobra.Command{
@@ -364,12 +278,12 @@ var updateAlertCmd = &cobra.Command{
 		alertNamespace := args[0]
 
 		// Get the Alert
-		alert, err := getAlertFromCluster(alertNamespace)
+		currAlert, err := getAlertFromCluster(alertNamespace)
 		if err != nil {
 			log.Errorf("Error getting Alert: %s", err)
 			return nil
 		}
-		updateAlertCtl.SetSpec(alert.Spec)
+		updateAlertCtl.SetSpec(currAlert.Spec)
 
 		// Check if it can be updated
 		canUpdate, err := updateAlertCtl.CanUpdate()
@@ -378,14 +292,19 @@ var updateAlertCmd = &cobra.Command{
 			return nil
 		}
 		if canUpdate {
-			log.Debugf("Updating...\n")
 			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateAlertCtl.SetChangedFlags(flagset)
-			// Update in cluster
 			newSpec := updateAlertCtl.GetSpec().(alertv1.AlertSpec)
-			alert.Spec = newSpec
-			updateAlertInCluster(alertNamespace, alert)
+			// Create new Alert CRD
+			newAlert := *currAlert //make copy
+			newAlert.Spec = newSpec
+			// Update Alert
+			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
+			if err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
 		}
 		return nil
 	},

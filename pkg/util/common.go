@@ -669,9 +669,9 @@ func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub
 	return hubClientset.SynopsysV1().Blackducks(namespace).Create(createHub)
 }
 
-// UpdateHub will update Hub in the cluster
-func UpdateHub(hubClientset *hubclientset.Clientset, namespace string, blackduck *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
-	return hubClientset.SynopsysV1().Blackducks(namespace).Update(blackduck)
+// UpdateBlackduck will update Hub in the cluster
+func UpdateBlackduck(blackduckClientset *hubclientset.Clientset, namespace string, blackduck *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
+	return blackduckClientset.SynopsysV1().Blackducks(namespace).Update(blackduck)
 }
 
 // GetHub will get hubs in the cluster
