@@ -131,6 +131,12 @@ func (c *Creater) Create(spec *v1.RgpSpec) error {
 		return err
 	}
 
+	// Validate postgres pod is cloned/backed up
+	err = util.WaitForServiceEndpointReady(c.kubeClient, spec.Namespace, "postgres")
+	if err != nil {
+		return err
+	}
+
 	err = util.ValidatePodsAreRunningInNamespace(c.kubeClient, spec.Namespace, 600)
 	if err != nil {
 		log.Error(err)
