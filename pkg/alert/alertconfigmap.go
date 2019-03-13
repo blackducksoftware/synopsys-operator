@@ -51,10 +51,14 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 		vals := strings.Split(environ, ":")
 		if len(vals) != 2 {
 			log.Errorf("Could not split environ '%s' on ':'", environ)
-		} else if _, inMap := configMapData[strings.Trim(vals[0], " ")]; inMap {
-			log.Errorf("Duplicate environ '%s'", environ)
+			continue
+		}
+		environKey := strings.Trim(vals[0], " ") // trim removes leading/trailing " "
+		environVal := strings.Trim(vals[1], " ")
+		if _, inMap := configMapData[environKey]; inMap {
+			log.Errorf("Duplicate environ '%s'", environKey)
 		} else {
-			configMapData[strings.Trim(vals[0], " ")] = strings.Trim(vals[1], " ") // trim removes leading/trailing " "
+			configMapData[environKey] = environVal
 		}
 	}
 
