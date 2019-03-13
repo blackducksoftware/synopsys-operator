@@ -60,6 +60,11 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		log.Error("Unable to cast object")
 		return
 	}
+
+	if len(gr.Status.State) > 0 {
+		return
+	}
+
 	log.Info(gr.Name)
 
 	gr.Status.State = "Creating"
