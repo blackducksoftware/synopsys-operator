@@ -29,6 +29,7 @@ import (
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -84,68 +85,132 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 		log.Debugf("Updating the Synopsys-Operator: %s\n", namespace)
-		// Get Components of Current Synopsys-Operator
-		currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
-		currImage := currPod.Spec.Containers[0].Image
-		currRegKey := currPod.Spec.Containers[0].Env[0].Value
-		currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
-		currSecretType, err := kubeSecretTypeToHorizon(currSecret.Type)
-		currSOperatorSpec := SOperatorSpecConfig{
-			Namespace:                namespace,
-			SynopsysOperatorImage:    currImage,
-			BlackduckRegistrationKey: currRegKey,
-			SecretType:               currSecretType,
-			SecretAdminPassword:      deploySecretAdminPassword,
-			SecretPostgresPassword:   deploySecretPostgresPassword,
-			SecretUserPassword:       deploySecretUserPassword,
-			SecretBlackduckPassword:  deploySecretBlackduckPassword,
-		}
-		currSOperatorComponents, err := currSOperatorSpec.GetComponents()
-		fmt.Printf("%+v\n", currSOperatorComponents)
-
-		// Get Components of New Synopsys-Operator
-		newSOperatorSpec := SOperatorSpecConfig{
-			Namespace:                deployNamespace,
-			SynopsysOperatorImage:    deploySynopsysOperatorImage,
-			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
-			SecretType:               secretType,
-			SecretAdminPassword:      deploySecretAdminPassword,
-			SecretPostgresPassword:   deploySecretPostgresPassword,
-			SecretUserPassword:       deploySecretUserPassword,
-			SecretBlackduckPassword:  deploySecretBlackduckPassword,
-		}
-		newSOperatorComponents, err := newSOperatorSpec.GetComponents()
-		fmt.Printf("%+v\n", newSOperatorComponents)
-
-		// Check if Version has changed -> migration script
-		// 1. Get local copies of specs of all instances of crds (ex: opssight crds)
-		// 2. Delete the CRD definition
-		// 3. Create the new CRD definition
-		// 4. Update the local specs of all instances with the new versions
-		// 5. Update the resources in the cluster with the new specs (that contain the new version)
-
-		// Update S-O ReplicationController if necessary
-
-		// Update S-O Service if necessary
-
-		// Update S-O ConfigMap if necessary
-
-		// Update S-O ServiceAccount if necessary
-
-		// Update S-O ClusterRoleBinding if necessary
-
-		// Update S-O Secret if necessary
-
-		// Update Prometheus Deployment
-
-		// Update Prometheus Service
-
-		// Update Prometheus ConfigMap
-
-		// else just change spec fields
+		updateSynopsysOperator(namespace)
+		updatePrometheus(namespace)
 
 		return nil
 	},
+}
+
+func updateSynopsysOperator(namespace string) error {
+	// Get Components of Current Synopsys-Operator
+	currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+	var currImage string
+	var currRegKey string
+	for _, container := range currPod.Spec.Containers {
+		if container.Name == "synopsys-operator" {
+			continue
+		}
+		currImage = container.Image
+		for _, env := range container.Env {
+			if env.Name != "REGISTRATION_KEY" {
+				continue
+			}
+			currRegKey = container.Env[0].Value
+		}
+	}
+	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
+	currSecretType, err := kubeSecretTypeToHorizon(currSecret.Type)
+	currSOperatorSpec := SOperatorSpecConfig{
+		Namespace:                namespace,
+		SynopsysOperatorImage:    currImage,
+		BlackduckRegistrationKey: currRegKey,
+		SecretType:               currSecretType,
+		SecretAdminPassword:      deploySecretAdminPassword,
+		SecretPostgresPassword:   deploySecretPostgresPassword,
+		SecretUserPassword:       deploySecretUserPassword,
+		SecretBlackduckPassword:  deploySecretBlackduckPassword,
+	}
+	currSOperatorComponents, err := currSOperatorSpec.GetComponents()
+	fmt.Printf("%+v\n", currSOperatorComponents)
+
+	// Get Components of New Synopsys-Operator
+	newSOperatorSpec := SOperatorSpecConfig{
+		Namespace:                deployNamespace,
+		SynopsysOperatorImage:    deploySynopsysOperatorImage,
+		BlackduckRegistrationKey: deployBlackduckRegistrationKey,
+		SecretType:               secretType,
+		SecretAdminPassword:      deploySecretAdminPassword,
+		SecretPostgresPassword:   deploySecretPostgresPassword,
+		SecretUserPassword:       deploySecretUserPassword,
+		SecretBlackduckPassword:  deploySecretBlackduckPassword,
+	}
+	newSOperatorComponents, err := newSOperatorSpec.GetComponents()
+	fmt.Printf("%+v\n", newSOperatorComponents)
+
+	// Check if Version has changed -> migration script
+	// 1. Get local copies of specs of all instances of crds (ex: opssight crds)
+	// 2. Delete the CRD definition
+	// 3. Create the new CRD definition
+	// 4. Update the local specs of all instances with the new versions
+	// 5. Update the resources in the cluster with the new specs (that contain the new version)
+
+	// Update S-O ConfigMap if necessary
+	isConfigMapUpdated, err := crdupdater.UpdateConfigMap(kubeClient, deployNamespace, "synopsys-operator", newSOperatorComponents.ConfigMaps[0])
+
+	// Update S-O Secret if necessary
+	isSecretUpdated, err := crdupdater.UpdateSecret(kubeClient, deployNamespace, "blackduck-secret", newSOperatorComponents.Secrets[0])
+
+	operatorUpdater := crdupdater.NewUpdater()
+
+	// Update S-O ReplicationController if necessary
+	replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newSOperatorComponents.ReplicationControllers, namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
+	operatorUpdater.AddUpdater(replicationControllerUpdater)
+
+	// Update S-O Service if necessary
+	serviceUpdater, err := crdupdater.NewService(restconfig, kubeClient, newSOperatorComponents.Services, namespace, "app=opssight")
+	operatorUpdater.AddUpdater(serviceUpdater)
+
+	// Update S-O ServiceAccount if necessary
+
+	// Update S-O ClusterRoleBinding if necessary
+	clusterRoleBindingUpdater, err := crdupdater.NewClusterRoleBinding(restconfig, kubeClient, newSOperatorComponents.ClusterRoleBindings, namespace, "app=opssight")
+	operatorUpdater.AddUpdater(clusterRoleBindingUpdater)
+
+	err = operatorUpdater.Update()
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+	return nil
+}
+
+func updatePrometheus(namespace string) error {
+	// Get Components of Current Prometheus
+	currPod, err := operatorutil.GetPod(kubeClient, namespace, "prometheus")
+	currPrometheusImage := currPod.Spec.Containers[0].Image
+	currPrometheusSpecConfig := PrometheusSpecConfig{
+		Namespace:       deployNamespace,
+		PrometheusImage: currPrometheusImage,
+	}
+	currPrometheusComponents, err := currPrometheusSpecConfig.GetComponents()
+	fmt.Printf("%+v\n", currPrometheusComponents)
+
+	// Get Components of New Prometheus
+	newPrometheusSpecConfig := PrometheusSpecConfig{
+		Namespace:       deployNamespace,
+		PrometheusImage: deployPrometheusImage,
+	}
+	newPrometheusComponents, err := newPrometheusSpecConfig.GetComponents()
+	fmt.Printf("%+v\n", newPrometheusComponents)
+
+	prometheusUpdater := crdupdater.NewUpdater()
+
+	// Update Prometheus ConfigMap
+	_, err = crdupdater.UpdateConfigMap(kubeClient, deployNamespace, "prometheus", newPrometheusComponents.ConfigMaps[0])
+
+	// Update Prometheus Deployment
+	deploymentUpdater, err := crdupdater.NewDeployment(restconfig, kubeClient, newPrometheusComponents.Deployments, namespace, "app=prometheus", false)
+	prometheusUpdater.AddUpdater(deploymentUpdater)
+
+	// Update Prometheus Service
+	serviceUpdater, err := crdupdater.NewService(restconfig, kubeClient, newPrometheusComponents.Services, namespace, "app=prometheus")
+	prometheusUpdater.AddUpdater(serviceUpdater)
+
+	err = prometheusUpdater.Update()
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+	return nil
 }
 
 var updateBlackduckCmd = &cobra.Command{
