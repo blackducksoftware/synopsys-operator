@@ -22,6 +22,7 @@ under the License.
 package rgp
 
 import (
+	"fmt"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	grclientset "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned"
@@ -81,7 +82,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 		gr.Status.ErrorMessage = err.Error()
 		gr.Status.State = "Error"
 	} else {
-		gr.Status.Fqdn = gr.Spec.IngressHost
+		gr.Status.Fqdn = fmt.Sprintf("%s/reporting",gr.Spec.IngressHost)
 		gr.Status.State = "Running"
 	}
 
