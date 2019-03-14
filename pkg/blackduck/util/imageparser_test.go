@@ -26,6 +26,26 @@ import (
 	"testing"
 )
 
+func TestParseImageVersion(t *testing.T) {
+	version := "2019.1.0"
+	_, err := ParseImageVersion(version)
+	if err != nil {
+		t.Errorf("unable to parse image version: %+v", err)
+	}
+
+	version = "2019.a.b.c"
+	versions, err := ParseImageVersion(version)
+	if err == nil {
+		t.Errorf("unable to get image version: %+v", versions)
+	}
+
+	version = "2019.1.0-SNAPSHOT"
+	versions, err = ParseImageVersion(version)
+	if err == nil {
+		t.Errorf("unable to get image version: %+v", versions)
+	}
+}
+
 func TestParseImageString(t *testing.T) {
 	testcases := []struct {
 		description    string

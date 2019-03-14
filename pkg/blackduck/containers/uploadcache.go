@@ -22,10 +22,13 @@ under the License.
 package containers
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
@@ -79,23 +82,38 @@ func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 // getUploadCacheVolumes will return the uploadCache volumes
 func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
-	var uploadCacheDataEmptyDir *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-uploadcache") {
-		uploadCacheDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", "blackduck-uploadcache")
+	var uploadCacheDataDir *components.Volume
+	var uploadCacheDataKey *components.Volume
+	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-uploadcache-data") {
+		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", "blackduck-uploadcache-data")
+		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", "blackduck-uploadcache-key")
 	} else {
-		uploadCacheDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
+		uploadCacheDataDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
+		uploadCacheDataKey, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-key")
 	}
-	volumes := []*components.Volume{uploadCacheSecurityEmptyDir, uploadCacheDataEmptyDir}
+	volumes := []*components.Volume{uploadCacheSecurityEmptyDir, uploadCacheDataDir, uploadCacheDataKey}
 	return volumes
 }
 
 // getUploadCacheVolumeMounts will return the uploadCache volume mounts
 func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
+	prefix := c.getMountPrefixPath()
 	volumesMounts := []*horizonapi.VolumeMountConfig{
-		{Name: "dir-uploadcache-security", MountPath: "/opt/blackduck/hub/hub-upload-cache/security"},
-		{Name: "dir-uploadcache-data", MountPath: "/opt/blackduck/hub/hub-upload-cache/uploads"},
+		{Name: "dir-uploadcache-security", MountPath: fmt.Sprintf("%s/security", prefix)},
+		{Name: "dir-uploadcache-data", MountPath: fmt.Sprintf("%s/uploads", prefix)},
+		{Name: "dir-uploadcache-key", MountPath: fmt.Sprintf("%s/keys", prefix)},
 	}
 	return volumesMounts
+}
+
+func (c *Creater) getMountPrefixPath() string {
+	blackduckVersion := hubutils.GetHubVersion(c.hubSpec.Environs)
+	versions, err := hubutils.ParseImageVersion(blackduckVersion)
+	year, _ := strconv.Atoi(versions[1])
+	if err == nil && year > 2018 {
+		return "/opt/blackduck/hub/blackduck-upload-cache"
+	}
+	return "/opt/blackduck/hub/hub-upload-cache"
 }
 
 // GetUploadCacheService will return the uploadCache service
