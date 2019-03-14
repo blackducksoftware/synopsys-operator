@@ -43,31 +43,27 @@ var updateOpsSightCtl ResourceCtl
 var updateAlertCtl ResourceCtl
 
 type OperatorVersions struct {
-	BlackduckVersion string
-	BlackduckName    string
-	OpsSightVersion  string
-	OpsSightName     string
-	AlertVersion     string
-	AlertName        string
+	Blackduck CrdData
+	OpsSight  CrdData
+	Alert     CrdData
+}
+
+type CrdData struct {
+	Name    string
+	Version string
 }
 
 // Lookup table for crd versions that are compatible with operator verions
 var operatorVersionLookup = map[string]OperatorVersions{
 	"2019.0.0": OperatorVersions{
-		BlackduckVersion: "v1",
-		BlackduckName:    "hub.synopsys.com",
-		OpsSightVersion:  "v1",
-		OpsSightName:     "opssights.synopsys.com",
-		AlertVersion:     "v1",
-		AlertName:        "alerts.synopsys.com",
+		Blackduck: CrdData{Name: "hub.synopsys.com", Version: "v1"},
+		OpsSight:  CrdData{Name: "opssights.synopsys.com", Version: "v1"},
+		Alert:     CrdData{Name: "alerts.synopsys.com", Version: "v1"},
 	},
 	"2019.1.1": OperatorVersions{
-		BlackduckVersion: "v1",
-		BlackduckName:    "blackducks.synopsys.com",
-		OpsSightVersion:  "v1",
-		OpsSightName:     "opssights.synopsys.com",
-		AlertVersion:     "v1",
-		AlertName:        "alerts.synopsys.com",
+		Blackduck: CrdData{Name: "blackducks.synopsys.com", Version: "v1"},
+		OpsSight:  CrdData{Name: "opssights.synopsys.com", Version: "v1"},
+		Alert:     CrdData{Name: "alerts.synopsys.com", Version: "v1"},
 	},
 }
 
@@ -106,29 +102,29 @@ var updateOperatorCmd = &cobra.Command{
 			currOpsSightCRDs, err := operatorutil.GetOpsSights(opssightClient)
 			currAlertCRDs, err := operatorutil.GetAlerts(alertClient)
 			// Change CRD specs to have new versions
-			newBlackduckCRDs, err := setBlackduckCrdVersions(currBlackduckCRDs.Items, newCrdNames.BlackduckVersion)
-			newOpsSightCRDs, err := setOpsSightCrdVersions(currOpsSightCRDs.Items, newCrdNames.OpsSightVersion)
-			newAlertCRDs, err := setAlertCrdVersions(currAlertCRDs.Items, newCrdNames.AlertVersion)
+			newBlackduckCRDs, err := setBlackduckCrdVersions(currBlackduckCRDs.Items, newCrdNames.Blackduck.Version)
+			newOpsSightCRDs, err := setOpsSightCrdVersions(currOpsSightCRDs.Items, newCrdNames.OpsSight.Version)
+			newAlertCRDs, err := setAlertCrdVersions(currAlertCRDs.Items, newCrdNames.Alert.Version)
 			// Delete the CRD definitions from the cluster
-			RunKubeCmd("delete", "crd", "blackducks.synopsys.com")
-			RunKubeCmd("delete", "crd", "opssights.synopsys.com")
-			RunKubeCmd("delete", "crd", "alerts.synopsys.com")
+			RunKubeCmd("delete", "crd", currCrdNames.Blackduck.Name)
+			RunKubeCmd("delete", "crd", currCrdNames.OpsSight.Name)
+			RunKubeCmd("delete", "crd", currCrdNames.Alert.Name)
 			// Update the Synopsys-Operator's Kubernetes Components (this will deploy new crds)
 			updateSynopsysOperator(namespace)
 			updatePrometheus(namespace)
 			// Update the resources in the cluster with the new versions
 			for _, crd := range newBlackduckCRDs {
-				if crd.TypeMeta.APIVersion != currCrdNames.BlackduckVersion {
+				if crd.TypeMeta.APIVersion != currCrdNames.Blackduck.Version {
 					_, err = operatorutil.UpdateBlackduck(blackduckClient, crd.Spec.Namespace, &crd)
 				}
 			}
 			for _, crd := range newOpsSightCRDs {
-				if crd.TypeMeta.APIVersion != currCrdNames.OpsSightVersion {
+				if crd.TypeMeta.APIVersion != currCrdNames.OpsSight.Version {
 					_, err = operatorutil.UpdateOpsSight(opssightClient, crd.Spec.Namespace, &crd)
 				}
 			}
 			for _, crd := range newAlertCRDs {
-				if crd.TypeMeta.APIVersion != currCrdNames.AlertVersion {
+				if crd.TypeMeta.APIVersion != currCrdNames.Alert.Version {
 					_, err = operatorutil.UpdateAlert(alertClient, crd.Spec.Namespace, &crd)
 				}
 			}
