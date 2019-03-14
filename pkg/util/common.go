@@ -634,6 +634,41 @@ func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*co
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 }
 
+// CreateHub will create hub in the cluster
+func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
+	return hubClientset.SynopsysV1().Blackducks(namespace).Create(createHub)
+}
+
+// ListHubs will list all hubs in the cluster
+func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*blackduckapi.BlackduckList, error) {
+	return hubClientset.SynopsysV1().Blackducks(namespace).List(metav1.ListOptions{})
+}
+
+// GetHub will get hubs in the cluster
+func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*blackduckapi.Blackduck, error) {
+	return hubClientset.SynopsysV1().Blackducks(namespace).Get(name, metav1.GetOptions{})
+}
+
+// GetBlackducks gets all blackducks
+func GetBlackducks(clientSet *hubclientset.Clientset) (*blackduckapi.BlackduckList, error) {
+	return clientSet.SynopsysV1().Blackducks(metav1.NamespaceAll).List(metav1.ListOptions{})
+}
+
+// UpdateBlackduck will update Hub in the cluster
+func UpdateBlackduck(blackduckClientset *hubclientset.Clientset, namespace string, blackduck *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
+	return blackduckClientset.SynopsysV1().Blackducks(namespace).Update(blackduck)
+}
+
+// WatchHubs will watch for hub events in the cluster
+func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.Interface, error) {
+	return hubClientset.SynopsysV1().Blackducks(namespace).Watch(metav1.ListOptions{})
+}
+
+// CreateOpsSight will create opsSight in the cluster
+func CreateOpsSight(opssightClientset *opssightclientset.Clientset, namespace string, opssight *opssightapi.OpsSight) (*opssightapi.OpsSight, error) {
+	return opssightClientset.SynopsysV1().OpsSights(namespace).Create(opssight)
+}
+
 // ListOpsSights will list all opssights in the cluster
 func ListOpsSights(opssightClientset *opssightclientset.Clientset, namespace string) (*opssightapi.OpsSightList, error) {
 	return opssightClientset.SynopsysV1().OpsSights(namespace).List(metav1.ListOptions{})
@@ -654,39 +689,29 @@ func UpdateOpsSight(opssightClientset *opssightclientset.Clientset, namespace st
 	return opssightClientset.SynopsysV1().OpsSights(namespace).Update(opssight)
 }
 
-// ListHubs will list all hubs in the cluster
-func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*blackduckapi.BlackduckList, error) {
-	return hubClientset.SynopsysV1().Blackducks(namespace).List(metav1.ListOptions{})
-}
-
-// WatchHubs will watch for hub events in the cluster
-func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.Interface, error) {
-	return hubClientset.SynopsysV1().Blackducks(namespace).Watch(metav1.ListOptions{})
-}
-
-// CreateHub will create hub in the cluster
-func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
-	return hubClientset.SynopsysV1().Blackducks(namespace).Create(createHub)
-}
-
-// UpdateBlackduck will update Hub in the cluster
-func UpdateBlackduck(blackduckClientset *hubclientset.Clientset, namespace string, blackduck *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
-	return blackduckClientset.SynopsysV1().Blackducks(namespace).Update(blackduck)
-}
-
-// GetHub will get hubs in the cluster
-func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*blackduckapi.Blackduck, error) {
-	return hubClientset.SynopsysV1().Blackducks(namespace).Get(name, metav1.GetOptions{})
-}
-
 // CreateAlert will create alert in the cluster
 func CreateAlert(alertClientset *alertclientset.Clientset, namespace string, createAlert *alertapi.Alert) (*alertapi.Alert, error) {
 	return alertClientset.SynopsysV1().Alerts(namespace).Create(createAlert)
 }
 
-// UpdateAlert will update Alert in the cluster
-func UpdateAlert(alertClientset *alertclientset.Clientset, namespace string, alert *alertapi.Alert) (*alertapi.Alert, error) {
-	return alertClientset.SynopsysV1().Alerts(namespace).Update(alert)
+// ListAlerts will list all alerts in the cluster
+func ListAlerts(clientSet *alertclientset.Clientset, namespace string) (*alertapi.AlertList, error) {
+	return clientSet.SynopsysV1().Alerts(namespace).List(metav1.ListOptions{})
+}
+
+// GetAlert will get Alert in the cluster
+func GetAlert(clientSet *alertclientset.Clientset, namespace string, name string) (*alertapi.Alert, error) {
+	return clientSet.SynopsysV1().Alerts(namespace).Get(name, metav1.GetOptions{})
+}
+
+// GetAlerts gets all alerts
+func GetAlerts(clientSet *alertclientset.Clientset) (*alertapi.AlertList, error) {
+	return clientSet.SynopsysV1().Alerts(metav1.NamespaceAll).List(metav1.ListOptions{})
+}
+
+// UpdateAlert will update an Alert in the cluster
+func UpdateAlert(clientSet *alertclientset.Clientset, namespace string, alert *alertapi.Alert) (*alertapi.Alert, error) {
+	return clientSet.SynopsysV1().Alerts(namespace).Update(alert)
 }
 
 // ListHubPV will list all the persistent volumes attached to each hub in the cluster
