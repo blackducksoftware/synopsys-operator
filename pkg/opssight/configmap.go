@@ -29,7 +29,7 @@ import (
 	"github.com/juju/errors"
 )
 
-// PerceiverConfig ...
+// PerceiverConfig stores the Perceiver configuration
 type PerceiverConfig struct {
 	AnnotationIntervalSeconds int
 	DumpIntervalMinutes       int
@@ -38,21 +38,21 @@ type PerceiverConfig struct {
 	Image                     *ImagePerceiverConfig
 }
 
-// ImagePerceiverConfig ...
+// ImagePerceiverConfig stores the Image Perceiver configuration
 type ImagePerceiverConfig struct{}
 
-// PodPerceiverConfig ...
+// PodPerceiverConfig stores the Pod Perceiver configuration
 type PodPerceiverConfig struct {
 	NamespaceFilter string
 }
 
-// BlackDuckConfig ...
+// BlackDuckConfig stores the Black Duck configuration
 type BlackDuckConfig struct {
 	ConnectionsEnvironmentVariableName string
 	TLSVerification                    bool
 }
 
-// PerceptorTimingsConfig ...
+// PerceptorTimingsConfig stores the Perceptor configuration
 type PerceptorTimingsConfig struct {
 	CheckForStalledScansPauseHours int
 	StalledScanClientTimeoutHours  int
@@ -61,7 +61,7 @@ type PerceptorTimingsConfig struct {
 	ClientTimeoutMilliseconds      int
 }
 
-// PerceptorConfig ...
+// PerceptorConfig stores the Perceptor configuration
 type PerceptorConfig struct {
 	Timings     *PerceptorTimingsConfig
 	UseMockMode bool
@@ -69,14 +69,14 @@ type PerceptorConfig struct {
 	Port        int
 }
 
-// ScannerConfig ...
+// ScannerConfig stores the Perceptor Scanner configuration
 type ScannerConfig struct {
 	Port                          int
 	ImageDirectory                string
 	BlackDuckClientTimeoutSeconds int
 }
 
-// ImageFacadeConfig ...
+// ImageFacadeConfig stores the Perceptor Image Facade configuration
 type ImageFacadeConfig struct {
 	Host             string
 	Port             int
@@ -84,7 +84,7 @@ type ImageFacadeConfig struct {
 	CreateImagesOnly bool
 }
 
-// SkyfireConfig ...
+// SkyfireConfig stores the Skyfire configuration
 type SkyfireConfig struct {
 	UseInClusterConfig            bool
 	Port                          int
@@ -95,7 +95,7 @@ type SkyfireConfig struct {
 	BlackDuckDumpPauseSeconds     int
 }
 
-// MainOpssightConfigMap ...
+// MainOpssightConfigMap stores the opssight configmap
 type MainOpssightConfigMap struct {
 	Perceiver   *PerceiverConfig
 	BlackDuck   *BlackDuckConfig

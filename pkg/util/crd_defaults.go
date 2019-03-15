@@ -205,7 +205,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			MaxCount:                           0,
 			ConnectionsEnvironmentVariableName: "blackduck.json",
 			TLSVerification:                    false,
-			DeleteBlackDuckThresholdPercentage: 50,
+			DeleteBlackduckThresholdPercentage: 50,
 			BlackduckSpec:                      GetHubDefaultValue(),
 		},
 		EnableMetrics: true,

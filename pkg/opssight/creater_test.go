@@ -595,7 +595,7 @@ func getOpsSightDefaultValue() *opssightapi.OpsSightSpec {
 		Blackduck: &opssightapi.Blackduck{
 			InitialCount:                       1,
 			MaxCount:                           1,
-			DeleteBlackDuckThresholdPercentage: 50,
+			DeleteBlackduckThresholdPercentage: 50,
 			BlackduckSpec:                      nil,
 		},
 		EnableMetrics: true,

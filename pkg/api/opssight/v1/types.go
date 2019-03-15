@@ -22,7 +22,7 @@ under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -56,7 +56,7 @@ type Host struct {
 	ConcurrentScanLimit int    `json:"concurrentScanLimit"`
 }
 
-// Blackduck ...
+// Blackduck stores the Black Duck instance
 type Blackduck struct {
 	ExternalHosts                      []*Host `json:"externalHosts"`
 	ConnectionsEnvironmentVariableName string  `json:"connectionsEnvironmentVariableName"`
@@ -65,11 +65,11 @@ type Blackduck struct {
 	// Auto scaling parameters
 	InitialCount                       int               `json:"initialCount"`
 	MaxCount                           int               `json:"maxCount"`
-	DeleteBlackDuckThresholdPercentage int               `json:"deleteBlackDuckThresholdPercentage"`
+	DeleteBlackduckThresholdPercentage int               `json:"deleteBlackduckThresholdPercentage"`
 	BlackduckSpec                      *v1.BlackduckSpec `json:"blackduckSpec"`
 }
 
-// Perceptor ...
+// Perceptor stores the Perceptor configuration
 type Perceptor struct {
 	Name                           string `json:"name"`
 	Image                          string `json:"image"`
@@ -81,7 +81,7 @@ type Perceptor struct {
 	ClientTimeoutMilliseconds      int    `json:"clientTimeoutMilliseconds"`
 }
 
-// ScannerPod ...
+// ScannerPod stores the Perceptor scanner and Image Facade configuration
 type ScannerPod struct {
 	Name           string       `json:"name"`
 	Scanner        *Scanner     `json:"scanner"`
@@ -90,7 +90,7 @@ type ScannerPod struct {
 	ImageDirectory string       `json:"imageDirectory"`
 }
 
-// Scanner ...
+// Scanner stores the Perceptor scanner configuration
 type Scanner struct {
 	Name                 string `json:"name"`
 	Image                string `json:"image"`
@@ -98,7 +98,7 @@ type Scanner struct {
 	ClientTimeoutSeconds int    `json:"clientTimeoutSeconds"`
 }
 
-// ImageFacade ...
+// ImageFacade stores the Image Facade configuration
 type ImageFacade struct {
 	Name               string          `json:"name"`
 	Image              string          `json:"image"`
@@ -108,20 +108,20 @@ type ImageFacade struct {
 	ServiceAccount     string          `json:"serviceAccount"`
 }
 
-// ImagePerceiver ...
+// ImagePerceiver stores the Image Perceiver configuration
 type ImagePerceiver struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
 }
 
-// PodPerceiver ...
+// PodPerceiver stores the Pod Perceiver configuration
 type PodPerceiver struct {
 	Name            string `json:"name"`
 	Image           string `json:"image"`
 	NamespaceFilter string `json:"namespaceFilter,omitempty"`
 }
 
-// Perceiver ...
+// Perceiver stores the Perceiver configuration
 type Perceiver struct {
 	EnableImagePerceiver      bool            `json:"enableImagePerceiver"`
 	EnablePodPerceiver        bool            `json:"enablePodPerceiver"`
@@ -133,7 +133,7 @@ type Perceiver struct {
 	Port                      int             `json:"port"`
 }
 
-// Skyfire ...
+// Skyfire stores the Skyfire configuration
 type Skyfire struct {
 	Name           string `json:"name"`
 	Image          string `json:"image"`

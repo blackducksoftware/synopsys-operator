@@ -95,7 +95,7 @@ type Ctl struct {
 	BlackduckPasswordEnvVar                          string
 	BlackduckInitialCount                            int
 	BlackduckMaxCount                                int
-	BlackduckDeleteBlackDuckThresholdPercentage      int
+	BlackduckDeleteBlackduckThresholdPercentage      int
 }
 
 // NewOpsSightCtl creates a new Ctl struct
@@ -160,7 +160,7 @@ func NewOpsSightCtl() *Ctl {
 		BlackduckTLSVerification:                         false,
 		BlackduckInitialCount:                            0,
 		BlackduckMaxCount:                                0,
-		BlackduckDeleteBlackDuckThresholdPercentage:      0,
+		BlackduckDeleteBlackduckThresholdPercentage:      0,
 	}
 }
 
@@ -271,7 +271,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "TODO")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Blackducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Blackducks that can be created")
-	cmd.Flags().IntVar(&ctl.BlackduckDeleteBlackDuckThresholdPercentage, "blackduck-delete-blackduck-threshold-percentage", ctl.BlackduckDeleteBlackDuckThresholdPercentage, "TODO")
+	cmd.Flags().IntVar(&ctl.BlackduckDeleteBlackduckThresholdPercentage, "blackduck-delete-blackduck-threshold-percentage", ctl.BlackduckDeleteBlackduckThresholdPercentage, "TODO")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -605,7 +605,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
 			}
-			ctl.Spec.Blackduck.DeleteBlackDuckThresholdPercentage = ctl.BlackduckDeleteBlackDuckThresholdPercentage
+			ctl.Spec.Blackduck.DeleteBlackduckThresholdPercentage = ctl.BlackduckDeleteBlackduckThresholdPercentage
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
