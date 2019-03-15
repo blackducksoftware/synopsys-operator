@@ -68,6 +68,14 @@ type Ctl struct {
 	PerceiverDumpIntervalMinutes                     int
 	PerceiverServiceAccount                          string
 	PerceiverPort                                    int
+	ConfigMapName                                    string
+	SecretName                                       string
+	DefaultCPU                                       string
+	DefaultMem                                       string
+	ScannerCPU                                       string
+	ScannerMem                                       string
+	LogLevel                                         string
+	EnableMetrics                                    bool
 	PrometheusName                                   string
 	PrometheusImage                                  string
 	PrometheusPort                                   int
@@ -81,21 +89,13 @@ type Ctl struct {
 	SkyfireHubDumpPauseSeconds                       int
 	SkyfireKubeDumpIntervalSeconds                   int
 	SkyfirePerceptorDumpIntervalSeconds              int
-	BlackduckHosts                                   []string
-	BlackduckUser                                    string
-	BlackduckPort                                    int
-	BlackduckConcurrentScanLimit                     int
-	BlackduckTotalScanLimit                          int
+	BlackduckExternalHostsJSON                       []string
+	BlackduckConnectionsEnvironmentVaraiableName     string
+	BlackduckTLSVerification                         bool
 	BlackduckPasswordEnvVar                          string
 	BlackduckInitialCount                            int
 	BlackduckMaxCount                                int
-	BlackduckDeleteHubThresholdPercentage            int
-	EnableMetrics                                    bool
-	DefaultCPU                                       string
-	DefaultMem                                       string
-	LogLevel                                         string
-	ConfigMapName                                    string
-	SecretName                                       string
+	BlackduckDeleteBlackduckThresholdPercentage      int
 }
 
 // NewOpsSightCtl creates a new Ctl struct
@@ -134,6 +134,14 @@ func NewOpsSightCtl() *Ctl {
 		PerceiverDumpIntervalMinutes:                     0,
 		PerceiverServiceAccount:                          "",
 		PerceiverPort:                                    0,
+		ConfigMapName:                                    "",
+		SecretName:                                       "",
+		DefaultCPU:                                       "",
+		DefaultMem:                                       "",
+		ScannerCPU:                                       "",
+		ScannerMem:                                       "",
+		LogLevel:                                         "",
+		EnableMetrics:                                    false,
 		PrometheusName:                                   "",
 		PrometheusImage:                                  "",
 		PrometheusPort:                                   0,
@@ -147,21 +155,12 @@ func NewOpsSightCtl() *Ctl {
 		SkyfireHubDumpPauseSeconds:                       0,
 		SkyfireKubeDumpIntervalSeconds:                   0,
 		SkyfirePerceptorDumpIntervalSeconds:              0,
-		BlackduckHosts:                                   []string{},
-		BlackduckUser:                                    "",
-		BlackduckPort:                                    0,
-		BlackduckConcurrentScanLimit:                     0,
-		BlackduckTotalScanLimit:                          0,
-		BlackduckPasswordEnvVar:                          "",
+		BlackduckExternalHostsJSON:                       []string{},
+		BlackduckConnectionsEnvironmentVaraiableName:     "",
+		BlackduckTLSVerification:                         false,
 		BlackduckInitialCount:                            0,
 		BlackduckMaxCount:                                0,
-		BlackduckDeleteHubThresholdPercentage:            0,
-		EnableMetrics:                                    false,
-		DefaultCPU:                                       "",
-		DefaultMem:                                       "",
-		LogLevel:                                         "",
-		ConfigMapName:                                    "",
-		SecretName:                                       "",
+		BlackduckDeleteBlackduckThresholdPercentage:      0,
 	}
 }
 
@@ -241,6 +240,13 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "perceiver-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "TODO")
 	cmd.Flags().StringVar(&ctl.PerceiverServiceAccount, "perceiver-service-account", ctl.PerceiverServiceAccount, "TODO")
 	cmd.Flags().IntVar(&ctl.PerceiverPort, "perceiver-port", ctl.PerceiverPort, "Port for the Perceiver")
+	cmd.Flags().StringVar(&ctl.SecretName, "secretname", ctl.SecretName, "TODO")
+	cmd.Flags().StringVar(&ctl.DefaultCPU, "defaultcpu", ctl.DefaultCPU, "TODO")
+	cmd.Flags().StringVar(&ctl.DefaultMem, "defaultmem", ctl.DefaultMem, "TODO")
+	cmd.Flags().StringVar(&ctl.ScannerCPU, "scannercpu", ctl.ScannerCPU, "TODO")
+	cmd.Flags().StringVar(&ctl.ScannerMem, "scannermem", ctl.ScannerMem, "TODO")
+	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "TODO")
+	cmd.Flags().BoolVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "TODO")
 	cmd.Flags().StringVar(&ctl.PrometheusName, "prometheus-name", ctl.PrometheusName, "Name of Prometheus")
 	cmd.Flags().StringVar(&ctl.PrometheusName, "prometheus-image", ctl.PrometheusName, "Image for Prometheus")
 	cmd.Flags().IntVar(&ctl.PrometheusPort, "prometheus-port", ctl.PrometheusPort, "Port for Prometheus")
@@ -254,21 +260,11 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying Blackducks")
 	cmd.Flags().IntVar(&ctl.SkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", ctl.SkyfireKubeDumpIntervalSeconds, "Seconds Skyfire waits between querying the KubeAPI")
 	cmd.Flags().IntVar(&ctl.SkyfirePerceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", ctl.SkyfirePerceptorDumpIntervalSeconds, "Seconds Skyfire waits between querying the Perceptor Model")
-	cmd.Flags().StringSliceVar(&ctl.BlackduckHosts, "blackduck-hosts", ctl.BlackduckHosts, "List of Blackduck Hosts")
-	cmd.Flags().StringVar(&ctl.BlackduckUser, "blackduck-user", ctl.BlackduckUser, "Username for Blackducks")
-	cmd.Flags().IntVar(&ctl.BlackduckPort, "blackduck-port", ctl.BlackduckPort, "Port for Blackducks")
-	cmd.Flags().IntVar(&ctl.BlackduckConcurrentScanLimit, "blackduck-concurrent-scan-limit", ctl.BlackduckConcurrentScanLimit, "TODO")
-	cmd.Flags().IntVar(&ctl.BlackduckTotalScanLimit, "blackduck-total-scan-limit", ctl.BlackduckTotalScanLimit, "TODO")
+	cmd.Flags().StringSliceVar(&ctl.BlackduckExternalHostsJSON, "blackduck-external-hosts", ctl.BlackduckExternalHostsJSON, "List of Blackduck External Hosts")
 	cmd.Flags().StringVar(&ctl.BlackduckPasswordEnvVar, "blackduck-password-environment-variable", ctl.BlackduckPasswordEnvVar, "Name of Environment Variable with the Password for Blackducks")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Blackducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Blackducks that can be created")
-	cmd.Flags().IntVar(&ctl.BlackduckDeleteHubThresholdPercentage, "blackduck-delete-blackduck-threshold-percentage", ctl.BlackduckDeleteHubThresholdPercentage, "TODO")
-	cmd.Flags().BoolVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "TODO")
-	cmd.Flags().StringVar(&ctl.DefaultCPU, "default-cpu", ctl.DefaultCPU, "Number of CPUs for OpsSight")
-	cmd.Flags().StringVar(&ctl.DefaultMem, "default-mem", ctl.DefaultMem, "Memory for OpsSight")
-	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "Log Level for OpsSight")
-	cmd.Flags().StringVar(&ctl.ConfigMapName, "config-map-name", ctl.ConfigMapName, "Name of the config map for OpsSight")
-	cmd.Flags().StringVar(&ctl.SecretName, "secret-name", ctl.SecretName, "Name of the secret for OpsSight")
+	cmd.Flags().IntVar(&ctl.BlackduckDeleteBlackduckThresholdPercentage, "blackduck-delete-blackduck-threshold-percentage", ctl.BlackduckDeleteBlackduckThresholdPercentage, "TODO")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -393,7 +389,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			for _, registryJSON := range ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice {
 				registry := &opssightv1.RegistryAuth{}
 				json.Unmarshal([]byte(registryJSON), registry)
-				ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ctl.Spec.ScannerPod.ImageFacade.InternalRegistries, *registry)
+				ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ctl.Spec.ScannerPod.ImageFacade.InternalRegistries, registry)
 			}
 		case "scannerpod-imagefacade-image-puller-type":
 			if ctl.Spec.ScannerPod == nil {
@@ -491,6 +487,22 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
 			}
 			ctl.Spec.Perceiver.Port = ctl.PerceiverPort
+		case "configmapname":
+			ctl.Spec.ConfigMapName = ctl.ConfigMapName
+		case "secretname":
+			ctl.Spec.SecretName = ctl.SecretName
+		case "defaultcpu":
+			ctl.Spec.DefaultCPU = ctl.DefaultCPU
+		case "defaultmem":
+			ctl.Spec.DefaultMem = ctl.DefaultMem
+		case "scannercpu":
+			ctl.Spec.ScannerCPU = ctl.ScannerCPU
+		case "scannermem":
+			ctl.Spec.ScannerMem = ctl.ScannerMem
+		case "log-level":
+			ctl.Spec.LogLevel = ctl.LogLevel
+		case "enable-metrics":
+			ctl.Spec.EnableMetrics = ctl.EnableMetrics
 		case "prometheus-name":
 			if ctl.Spec.Prometheus == nil {
 				ctl.Spec.Prometheus = &opssightv1.Prometheus{}
@@ -553,36 +565,25 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
 			}
 			ctl.Spec.Skyfire.PerceptorDumpIntervalSeconds = ctl.SkyfirePerceptorDumpIntervalSeconds
-		case "blackduck-hosts":
+		case "blackduck-external-hosts":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
 			}
-			ctl.Spec.Blackduck.Hosts = ctl.BlackduckHosts
-		case "blackduck-user":
+			for _, hostJSON := range ctl.BlackduckExternalHostsJSON {
+				host := &opssightv1.Host{}
+				json.Unmarshal([]byte(hostJSON), host)
+				ctl.Spec.Blackduck.ExternalHosts = append(ctl.Spec.Blackduck.ExternalHosts, host)
+			}
+		case "blackduck-connections-environment-variable-name":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
 			}
-			ctl.Spec.Blackduck.User = ctl.BlackduckUser
-		case "blackduck-port":
+			ctl.Spec.Blackduck.ConnectionsEnvironmentVariableName = ctl.BlackduckConnectionsEnvironmentVaraiableName
+		case "blackduck-TLS-verification":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
 			}
-			ctl.Spec.Blackduck.Port = ctl.BlackduckPort
-		case "blackduck-concurrent-scan-limit":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
-			}
-			ctl.Spec.Blackduck.ConcurrentScanLimit = ctl.BlackduckConcurrentScanLimit
-		case "blackduck-total-scan-limit":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
-			}
-			ctl.Spec.Blackduck.TotalScanLimit = ctl.BlackduckTotalScanLimit
-		case "blackduck-password-environment-variable":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
-			}
-			ctl.Spec.Blackduck.PasswordEnvVar = ctl.BlackduckPasswordEnvVar
+			ctl.Spec.Blackduck.TLSVerification = ctl.BlackduckTLSVerification
 		case "blackduck-initial-count":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
@@ -597,19 +598,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
 			}
-			ctl.Spec.Blackduck.DeleteHubThresholdPercentage = ctl.BlackduckDeleteHubThresholdPercentage
-		case "enable-metrics":
-			ctl.Spec.EnableMetrics = ctl.EnableMetrics
-		case "default-cpu":
-			ctl.Spec.DefaultCPU = ctl.DefaultCPU
-		case "default-mem":
-			ctl.Spec.DefaultMem = ctl.DefaultMem
-		case "log-level":
-			ctl.Spec.LogLevel = ctl.LogLevel
-		case "config-map-name":
-			ctl.Spec.ConfigMapName = ctl.ConfigMapName
-		case "secret-name":
-			ctl.Spec.SecretName = ctl.SecretName
+			ctl.Spec.Blackduck.DeleteBlackduckThresholdPercentage = ctl.BlackduckDeleteBlackduckThresholdPercentage
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}

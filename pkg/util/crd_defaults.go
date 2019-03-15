@@ -139,8 +139,7 @@ func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetOpsSightDefaultValue creates a perceptor crd configuration object
-// with defaults
+// GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
 func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Perceptor: &opssightv1.Perceptor{
@@ -172,11 +171,10 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		ScannerPod: &opssightv1.ScannerPod{
 			Name: "perceptor-scanner",
 			ImageFacade: &opssightv1.ImageFacade{
-				Port:               3004,
-				InternalRegistries: []opssightv1.RegistryAuth{},
-				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-				ServiceAccount:     "perceptor-scanner",
-				Name:               "perceptor-imagefacade",
+				Port:           3004,
+				Image:          "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
+				ServiceAccount: "perceptor-scanner",
+				Name:           "perceptor-imagefacade",
 			},
 			Scanner: &opssightv1.Scanner{
 				Name:                 "perceptor-scanner",
@@ -204,15 +202,12 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 			PerceptorDumpIntervalSeconds: 60,
 		},
 		Blackduck: &opssightv1.Blackduck{
-			User:                         "sysadmin",
-			Port:                         443,
-			ConcurrentScanLimit:          2,
-			TotalScanLimit:               1000,
-			PasswordEnvVar:               "PCP_HUBUSERPASSWORD",
-			InitialCount:                 0,
-			MaxCount:                     0,
-			DeleteHubThresholdPercentage: 50,
-			BlackduckSpec:                GetHubDefaultValue(),
+			InitialCount:                       0,
+			MaxCount:                           0,
+			ConnectionsEnvironmentVariableName: "blackduck.json",
+			TLSVerification:                    false,
+			DeleteBlackduckThresholdPercentage: 50,
+			BlackduckSpec:                      GetHubDefaultValue(),
 		},
 		EnableMetrics: true,
 		EnableSkyfire: false,
@@ -228,11 +223,11 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 // with defaults and a Disabled Hub
 func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 	blackduck := opssightv1.Blackduck{
-		User:                "sysadmin",
-		ConcurrentScanLimit: 2,
-		TotalScanLimit:      1000,
-		InitialCount:        0,
-		MaxCount:            0,
+		ExternalHosts:                      []*opssightv1.Host{},
+		ConnectionsEnvironmentVariableName: "",
+		TLSVerification:                    true,
+		InitialCount:                       0,
+		MaxCount:                           0,
 		BlackduckSpec: &blackduckv1.BlackduckSpec{
 			Size:              "small",
 			DbPrototype:       "",
@@ -283,7 +278,7 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 				Name:               "opssight-image-getter",
 				Image:              "docker.io/blackducksoftware/opssight-image-getter:master",
 				Port:               3004,
-				InternalRegistries: []opssightv1.RegistryAuth{},
+				InternalRegistries: []*opssightv1.RegistryAuth{},
 				ImagePullerType:    "skopeo",
 				ServiceAccount:     "opssight-scanner",
 			},

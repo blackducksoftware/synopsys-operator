@@ -332,7 +332,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 			User:     regUser,
 			Password: regPass,
 		}
-		ops.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ops.Spec.ScannerPod.ImageFacade.InternalRegistries, newReg)
+		ops.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ops.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
 		// Update OpsSight with Internal Registry
 		err = updateOpsSightSpecInCluster(opsSightName, ops)
 		if err != nil {
@@ -345,18 +345,19 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 
 // editOpsSightAddHostCmd adds a Blackduck Host to an OpsSight
 var editOpsSightAddHostCmd = &cobra.Command{
-	Use:   "addHost NAMESPACE BLACKDUCK_HOST",
+	Use:   "addHost NAMESPACE DOMAIN PORT",
 	Short: "Add a Blackduck Host to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return fmt.Errorf("This command takes 2 arguments")
+		if len(args) != 3 {
+			return fmt.Errorf("This command takes 3 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding Blackduck Host to OpsSight\n")
 		opssightName := args[0]
-		host := args[1]
+		domain := args[1]
+		port := args[2]
 		// Get OpsSight Spec
 		ops, err := getOpsSightSpecFromCluster(opssightName)
 		if err != nil {
@@ -364,7 +365,14 @@ var editOpsSightAddHostCmd = &cobra.Command{
 			return nil
 		}
 		// Add Host to Spec
-		ops.Spec.Blackduck.Hosts = append(ops.Spec.Blackduck.Hosts, host)
+		host := opssightv1.Host{}
+		host.Domain = domain
+		intPort, err := strconv.ParseInt(port, 0, 64)
+		if err != nil {
+			log.Errorf("Couldn't convert Port '%s' to int", port)
+		}
+		host.Port = int(intPort)
+		ops.Spec.Blackduck.ExternalHosts = append(ops.Spec.Blackduck.ExternalHosts, &host)
 		// Update OpsSight with Host
 		err = updateOpsSightSpecInCluster(opssightName, ops)
 		if err != nil {
