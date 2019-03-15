@@ -27,6 +27,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
+	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -110,7 +111,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		// Deploy synopsys-operator
-		soperatorSpec := SOperatorSpecConfig{
+		soperatorSpec := soperator.SOperatorSpecConfig{
 			Namespace:                deployNamespace,
 			SynopsysOperatorImage:    deploySynopsysOperatorImage,
 			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
@@ -136,7 +137,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		// Deploy prometheus
-		promtheusSpec := PrometheusSpecConfig{
+		promtheusSpec := soperator.PrometheusSpecConfig{
 			Namespace:       deployNamespace,
 			PrometheusImage: deployPrometheusImage,
 		}

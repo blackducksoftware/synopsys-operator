@@ -32,6 +32,7 @@ import (
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -41,36 +42,6 @@ import (
 var updateBlackduckCtl ResourceCtl
 var updateOpsSightCtl ResourceCtl
 var updateAlertCtl ResourceCtl
-
-type OperatorVersions struct {
-	Blackduck CrdData
-	OpsSight  CrdData
-	Alert     CrdData
-}
-
-type CrdData struct {
-	Name    string
-	Version string
-}
-
-func getCrdDataList(version string) []CrdData {
-	data := operatorVersionLookup[version]
-	return []CrdData{data.Blackduck, data.OpsSight, data.Alert}
-}
-
-// Lookup table for crd versions that are compatible with operator verions
-var operatorVersionLookup = map[string]OperatorVersions{
-	"2019.0.0": OperatorVersions{
-		Blackduck: CrdData{Name: "hub.synopsys.com", Version: "v1"},
-		OpsSight:  CrdData{Name: "opssights.synopsys.com", Version: "v1"},
-		Alert:     CrdData{Name: "alerts.synopsys.com", Version: "v1"},
-	},
-	"2019.1.1": OperatorVersions{
-		Blackduck: CrdData{Name: "blackducks.synopsys.com", Version: "v1"},
-		OpsSight:  CrdData{Name: "opssights.synopsys.com", Version: "v1"},
-		Alert:     CrdData{Name: "alerts.synopsys.com", Version: "v1"},
-	},
-}
 
 // updateCmd provides functionality to update/upgrade features of
 // Synopsys resources
@@ -96,12 +67,27 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 		log.Debugf("Updating the Synopsys-Operator: %s\n", namespace)
-		imageChanged := true
+		currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+		if err != nil {
+			log.Errorf("Failed to get Synopsys-Operator Pod: %s", err)
+			return nil
+		}
+		var currImage string
+		for _, container := range currPod.Spec.Containers {
+			if container.Name == "synopsys-operator" {
+				continue
+			}
+			currImage = container.Image
+		}
+		imageChanged := false
+		if currImage != deploySynopsysOperatorImage {
+			imageChanged = true
+		}
 		currOperatorVersion := "2019.0.0"
 		newOperatorVersion := "2019.0.0"
 		if imageChanged {
-			currCrdNames := operatorVersionLookup[currOperatorVersion]
-			newCrdNames := operatorVersionLookup[newOperatorVersion]
+			currCrdNames := soperator.OperatorVersionLookup[currOperatorVersion]
+			newCrdNames := soperator.OperatorVersionLookup[newOperatorVersion]
 			// Get local copies of CRD specs of all instances
 			currBlackduckCRDs, err := operatorutil.GetBlackducks(blackduckClient)
 			currOpsSightCRDs, err := operatorutil.GetOpsSights(opssightClient)
@@ -111,7 +97,7 @@ var updateOperatorCmd = &cobra.Command{
 			newOpsSightCRDs, err := setOpsSightCrdVersions(currOpsSightCRDs.Items, newCrdNames.OpsSight.Version)
 			newAlertCRDs, err := setAlertCrdVersions(currAlertCRDs.Items, newCrdNames.Alert.Version)
 			// Delete the CRD definitions from the cluster
-			for _, crd := range getCrdDataList(currOperatorVersion) {
+			for _, crd := range soperator.GetCrdDataList(currOperatorVersion) {
 				RunKubeCmd("delete", "crd", crd.Name)
 			}
 			// Update the Synopsys-Operator's Kubernetes Components (TODO this will deploy new crds)
@@ -186,7 +172,7 @@ func updateSynopsysOperator(namespace string) error {
 	}
 	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
 	currSecretType, err := kubeSecretTypeToHorizon(currSecret.Type)
-	currSOperatorSpec := SOperatorSpecConfig{
+	currSOperatorSpec := soperator.SOperatorSpecConfig{
 		Namespace:                namespace,
 		SynopsysOperatorImage:    currImage,
 		BlackduckRegistrationKey: currRegKey,
@@ -200,7 +186,7 @@ func updateSynopsysOperator(namespace string) error {
 	fmt.Printf("%+v\n", currSOperatorComponents)
 
 	// Get Components of New Synopsys-Operator
-	newSOperatorSpec := SOperatorSpecConfig{
+	newSOperatorSpec := soperator.SOperatorSpecConfig{
 		Namespace:                deployNamespace,
 		SynopsysOperatorImage:    deploySynopsysOperatorImage,
 		BlackduckRegistrationKey: deployBlackduckRegistrationKey,
@@ -246,7 +232,7 @@ func updatePrometheus(namespace string) error {
 	// Get Components of Current Prometheus
 	currPod, err := operatorutil.GetPod(kubeClient, namespace, "prometheus")
 	currPrometheusImage := currPod.Spec.Containers[0].Image
-	currPrometheusSpecConfig := PrometheusSpecConfig{
+	currPrometheusSpecConfig := soperator.PrometheusSpecConfig{
 		Namespace:       deployNamespace,
 		PrometheusImage: currPrometheusImage,
 	}
@@ -254,7 +240,7 @@ func updatePrometheus(namespace string) error {
 	fmt.Printf("%+v\n", currPrometheusComponents)
 
 	// Get Components of New Prometheus
-	newPrometheusSpecConfig := PrometheusSpecConfig{
+	newPrometheusSpecConfig := soperator.PrometheusSpecConfig{
 		Namespace:       deployNamespace,
 		PrometheusImage: deployPrometheusImage,
 	}
