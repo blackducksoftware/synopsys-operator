@@ -33,7 +33,7 @@ func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
 	volumeMounts := c.getZookeeperVolumeMounts()
 
 	zookeeperContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: c.getFullContainerName("zookeeper"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: c.GetFullContainerName("zookeeper"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: zookeeperMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: volumeMounts,
