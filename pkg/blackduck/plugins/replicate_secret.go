@@ -166,7 +166,7 @@ func (r *SecretReplicator) deletePod(namespace string) error {
 	log.Debugf("deleting pod %s/%s", namespace, "webserver")
 
 	// Get all pods corresponding to the hub namespace
-	pods, err := util.GetAllPodsForNamespace(r.client, namespace)
+	pods, err := util.ListPods(r.client, namespace)
 	if err != nil {
 		return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
 	}
