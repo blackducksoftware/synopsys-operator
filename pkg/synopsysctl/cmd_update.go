@@ -31,7 +31,6 @@ import (
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
-	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -76,41 +75,72 @@ var updateOperatorCmd = &cobra.Command{
 		currOperatorVersion := strings.Split(currImage, ":")[1]
 		newOperatorVersion := strings.Split(deploySynopsysOperatorImage, ":")[1]
 
-		currCrdNames := soperator.OperatorVersionLookup[currOperatorVersion]
-		newCrdNames := soperator.OperatorVersionLookup[newOperatorVersion]
+		newCrdNames := soperator.SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
 		// Get CRDs that need to be updated
-		oldBlackducks, _ := getBlackducksToUpdate(newCrdNames.Blackduck.Version)
-		oldOpsSights, _ := getOpsSightsToUpdate(newCrdNames.OpsSight.Version)
-		oldAlerts, _ := getAlertsToUpdate(newCrdNames.Alert.Version)
+		oldBlackducks, _ := getBlackducksToUpdate(newCrdNames.Blackduck.APIVersion)
+		oldOpsSights, _ := getOpsSightsToUpdate(newCrdNames.OpsSight.APIVersion)
+		oldAlerts, _ := getAlertsToUpdate(newCrdNames.Alert.APIVersion)
 
 		// Delete the CRD definitions from the cluster
-		for _, crd := range soperator.GetCrdDataList(currOperatorVersion) {
-			RunKubeCmd("delete", "crd", crd.Name)
+		for _, crd := range soperator.SOperatorCRDVersionMap.GetIterableCRDVersions(currOperatorVersion) {
+			RunKubeCmd("delete", "crd", crd.CRDName)
 		}
 		// Update the Synopsys-Operator's Kubernetes Components (TODO this will deploy new crds)
-		updateSynopsysOperator(namespace)
-		updatePrometheus(namespace)
+		// Get Components of Current Synopsys-Operator
+		currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+		var currRegKey string
+		for _, container := range currPod.Spec.Containers {
+			for _, env := range container.Env {
+				if env.Name != "REGISTRATION_KEY" {
+					continue
+				}
+				currRegKey = container.Env[0].Value
+			}
+		}
+		currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
+		currSecretType, err := kubeSecretTypeToHorizon(currSecret.Type)
+		currSOperatorSpec := soperator.SOperatorSpecConfig{
+			Namespace:                namespace,
+			SynopsysOperatorImage:    currImage,
+			BlackduckRegistrationKey: currRegKey,
+			SecretType:               currSecretType,
+			SecretAdminPassword:      deploySecretAdminPassword,
+			SecretPostgresPassword:   deploySecretPostgresPassword,
+			SecretUserPassword:       deploySecretUserPassword,
+			SecretBlackduckPassword:  deploySecretBlackduckPassword,
+		}
+		newSOperatorSpec := soperator.SOperatorSpecConfig{
+			Namespace:                deployNamespace,
+			SynopsysOperatorImage:    deploySynopsysOperatorImage,
+			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
+			SecretType:               secretType,
+			SecretAdminPassword:      deploySecretAdminPassword,
+			SecretPostgresPassword:   deploySecretPostgresPassword,
+			SecretUserPassword:       deploySecretUserPassword,
+			SecretBlackduckPassword:  deploySecretBlackduckPassword,
+		}
+		// TODO: make this only take the newOperatorSpec
+		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, currSOperatorSpec, newSOperatorSpec)
+		// Get Components of Current Prometheus
+		currPod, err = operatorutil.GetPod(kubeClient, namespace, "prometheus")
+		currPrometheusImage := currPod.Spec.Containers[0].Image
+		currPrometheusSpecConfig := soperator.PrometheusSpecConfig{
+			Namespace:       deployNamespace,
+			PrometheusImage: currPrometheusImage,
+		}
+		newPrometheusSpecConfig := soperator.PrometheusSpecConfig{
+			Namespace:       deployNamespace,
+			PrometheusImage: deployPrometheusImage,
+		}
+		soperator.UpdatePrometheus(restconfig, kubeClient, namespace, currPrometheusSpecConfig, newPrometheusSpecConfig)
 		// Update the resources in the cluster with the new versions
-		for _, crd := range oldBlackducks {
-			if crd.TypeMeta.APIVersion != currCrdNames.Blackduck.Version {
-				_, err = operatorutil.UpdateBlackduck(blackduckClient, crd.Spec.Namespace, &crd)
-			}
-		}
-		for _, crd := range oldOpsSights {
-			if crd.TypeMeta.APIVersion != currCrdNames.OpsSight.Version {
-				_, err = operatorutil.UpdateOpsSight(opssightClient, crd.Spec.Namespace, &crd)
-			}
-		}
-		for _, crd := range oldAlerts {
-			if crd.TypeMeta.APIVersion != currCrdNames.Alert.Version {
-				_, err = operatorutil.UpdateAlert(alertClient, crd.Spec.Namespace, &crd)
-			}
-		}
+		updateBlackducks(oldBlackducks)
+		updateOpsSights(oldOpsSights)
+		updateAlerts(oldAlerts)
 		if err != nil {
 			log.Errorf("An Error Occurred")
 			return nil
 		}
-
 		return nil
 	},
 }
@@ -130,6 +160,17 @@ func getBlackducksToUpdate(newVersion string) ([]blackduckv1.Blackduck, error) {
 	return newCRDs, nil
 }
 
+// TODO: move into pkg/util/common.go
+func updateBlackducks(blackduckCRDs []blackduckv1.Blackduck) error {
+	for _, crd := range blackduckCRDs {
+		_, err := operatorutil.UpdateBlackduck(blackduckClient, crd.Spec.Namespace, &crd)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func getOpsSightsToUpdate(newVersion string) ([]opssightv1.OpsSight, error) {
 	currCRDs, err := operatorutil.GetOpsSights(opssightClient)
 	if err != nil {
@@ -143,6 +184,16 @@ func getOpsSightsToUpdate(newVersion string) ([]opssightv1.OpsSight, error) {
 		}
 	}
 	return newCRDs, nil
+}
+
+func updateOpsSights(opsSightCRDs []opssightv1.OpsSight) error {
+	for _, crd := range opsSightCRDs {
+		_, err := operatorutil.UpdateOpsSight(opssightClient, crd.Spec.Namespace, &crd)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getAlertsToUpdate(newVersion string) ([]alertv1.Alert, error) {
@@ -160,116 +211,12 @@ func getAlertsToUpdate(newVersion string) ([]alertv1.Alert, error) {
 	return newCRDs, nil
 }
 
-func updateSynopsysOperator(namespace string) error {
-	// Get Components of Current Synopsys-Operator
-	currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
-	var currImage string
-	var currRegKey string
-	for _, container := range currPod.Spec.Containers {
-		if container.Name == "synopsys-operator" {
-			continue
+func updateAlerts(alertCRDs []alertv1.Alert) error {
+	for _, crd := range alertCRDs {
+		_, err := operatorutil.UpdateAlert(alertClient, crd.Spec.Namespace, &crd)
+		if err != nil {
+			return err
 		}
-		currImage = container.Image
-		for _, env := range container.Env {
-			if env.Name != "REGISTRATION_KEY" {
-				continue
-			}
-			currRegKey = container.Env[0].Value
-		}
-	}
-	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
-	currSecretType, err := kubeSecretTypeToHorizon(currSecret.Type)
-	currSOperatorSpec := soperator.SOperatorSpecConfig{
-		Namespace:                namespace,
-		SynopsysOperatorImage:    currImage,
-		BlackduckRegistrationKey: currRegKey,
-		SecretType:               currSecretType,
-		SecretAdminPassword:      deploySecretAdminPassword,
-		SecretPostgresPassword:   deploySecretPostgresPassword,
-		SecretUserPassword:       deploySecretUserPassword,
-		SecretBlackduckPassword:  deploySecretBlackduckPassword,
-	}
-	currSOperatorComponents, err := currSOperatorSpec.GetComponents()
-	fmt.Printf("%+v\n", currSOperatorComponents)
-
-	// Get Components of New Synopsys-Operator
-	newSOperatorSpec := soperator.SOperatorSpecConfig{
-		Namespace:                deployNamespace,
-		SynopsysOperatorImage:    deploySynopsysOperatorImage,
-		BlackduckRegistrationKey: deployBlackduckRegistrationKey,
-		SecretType:               secretType,
-		SecretAdminPassword:      deploySecretAdminPassword,
-		SecretPostgresPassword:   deploySecretPostgresPassword,
-		SecretUserPassword:       deploySecretUserPassword,
-		SecretBlackduckPassword:  deploySecretBlackduckPassword,
-	}
-	newSOperatorComponents, err := newSOperatorSpec.GetComponents()
-	fmt.Printf("%+v\n", newSOperatorComponents)
-
-	// Update S-O ConfigMap if necessary
-	isConfigMapUpdated, err := crdupdater.UpdateConfigMap(kubeClient, deployNamespace, "synopsys-operator", newSOperatorComponents.ConfigMaps[0])
-
-	// Update S-O Secret if necessary
-	isSecretUpdated, err := crdupdater.UpdateSecret(kubeClient, deployNamespace, "blackduck-secret", newSOperatorComponents.Secrets[0])
-
-	operatorUpdater := crdupdater.NewUpdater()
-
-	// Update S-O ReplicationController if necessary
-	replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newSOperatorComponents.ReplicationControllers, namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
-	operatorUpdater.AddUpdater(replicationControllerUpdater)
-
-	// Update S-O Service if necessary
-	serviceUpdater, err := crdupdater.NewService(restconfig, kubeClient, newSOperatorComponents.Services, namespace, "app=opssight")
-	operatorUpdater.AddUpdater(serviceUpdater)
-
-	// Update S-O ServiceAccount if necessary
-
-	// Update S-O ClusterRoleBinding if necessary
-	clusterRoleBindingUpdater, err := crdupdater.NewClusterRoleBinding(restconfig, kubeClient, newSOperatorComponents.ClusterRoleBindings, namespace, "app=opssight")
-	operatorUpdater.AddUpdater(clusterRoleBindingUpdater)
-
-	err = operatorUpdater.Update()
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	return nil
-}
-
-func updatePrometheus(namespace string) error {
-	// Get Components of Current Prometheus
-	currPod, err := operatorutil.GetPod(kubeClient, namespace, "prometheus")
-	currPrometheusImage := currPod.Spec.Containers[0].Image
-	currPrometheusSpecConfig := soperator.PrometheusSpecConfig{
-		Namespace:       deployNamespace,
-		PrometheusImage: currPrometheusImage,
-	}
-	currPrometheusComponents, err := currPrometheusSpecConfig.GetComponents()
-	fmt.Printf("%+v\n", currPrometheusComponents)
-
-	// Get Components of New Prometheus
-	newPrometheusSpecConfig := soperator.PrometheusSpecConfig{
-		Namespace:       deployNamespace,
-		PrometheusImage: deployPrometheusImage,
-	}
-	newPrometheusComponents, err := newPrometheusSpecConfig.GetComponents()
-	fmt.Printf("%+v\n", newPrometheusComponents)
-
-	prometheusUpdater := crdupdater.NewUpdater()
-
-	// Update Prometheus ConfigMap
-	_, err = crdupdater.UpdateConfigMap(kubeClient, deployNamespace, "prometheus", newPrometheusComponents.ConfigMaps[0])
-
-	// Update Prometheus Deployment
-	deploymentUpdater, err := crdupdater.NewDeployment(restconfig, kubeClient, newPrometheusComponents.Deployments, namespace, "app=prometheus", false)
-	prometheusUpdater.AddUpdater(deploymentUpdater)
-
-	// Update Prometheus Service
-	serviceUpdater, err := crdupdater.NewService(restconfig, kubeClient, newPrometheusComponents.Services, namespace, "app=prometheus")
-	prometheusUpdater.AddUpdater(serviceUpdater)
-
-	err = prometheusUpdater.Update()
-	if err != nil {
-		return fmt.Errorf("%s", err)
 	}
 	return nil
 }
