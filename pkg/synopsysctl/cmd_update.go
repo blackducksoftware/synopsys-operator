@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -67,90 +68,96 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 		log.Debugf("Updating the Synopsys-Operator: %s\n", namespace)
-		currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+		currImage, err := GetOperatorImage(namespace)
 		if err != nil {
-			log.Errorf("Failed to get Synopsys-Operator Pod: %s", err)
+			log.Errorf("%s", err)
 			return nil
 		}
-		var currImage string
-		for _, container := range currPod.Spec.Containers {
-			if container.Name == "synopsys-operator" {
-				continue
-			}
-			currImage = container.Image
+		currOperatorVersion := strings.Split(currImage, ":")[1]
+		newOperatorVersion := strings.Split(deploySynopsysOperatorImage, ":")[1]
+
+		currCrdNames := soperator.OperatorVersionLookup[currOperatorVersion]
+		newCrdNames := soperator.OperatorVersionLookup[newOperatorVersion]
+		// Get CRDs that need to be updated
+		oldBlackducks, _ := getBlackducksToUpdate(newCrdNames.Blackduck.Version)
+		oldOpsSights, _ := getOpsSightsToUpdate(newCrdNames.OpsSight.Version)
+		oldAlerts, _ := getAlertsToUpdate(newCrdNames.Alert.Version)
+
+		// Delete the CRD definitions from the cluster
+		for _, crd := range soperator.GetCrdDataList(currOperatorVersion) {
+			RunKubeCmd("delete", "crd", crd.Name)
 		}
-		imageChanged := false
-		if currImage != deploySynopsysOperatorImage {
-			imageChanged = true
+		// Update the Synopsys-Operator's Kubernetes Components (TODO this will deploy new crds)
+		updateSynopsysOperator(namespace)
+		updatePrometheus(namespace)
+		// Update the resources in the cluster with the new versions
+		for _, crd := range oldBlackducks {
+			if crd.TypeMeta.APIVersion != currCrdNames.Blackduck.Version {
+				_, err = operatorutil.UpdateBlackduck(blackduckClient, crd.Spec.Namespace, &crd)
+			}
 		}
-		currOperatorVersion := "2019.0.0"
-		newOperatorVersion := "2019.0.0"
-		if imageChanged {
-			currCrdNames := soperator.OperatorVersionLookup[currOperatorVersion]
-			newCrdNames := soperator.OperatorVersionLookup[newOperatorVersion]
-			// Get local copies of CRD specs of all instances
-			currBlackduckCRDs, err := operatorutil.GetBlackducks(blackduckClient)
-			currOpsSightCRDs, err := operatorutil.GetOpsSights(opssightClient)
-			currAlertCRDs, err := operatorutil.GetAlerts(alertClient)
-			// Change CRD specs to have new versions
-			newBlackduckCRDs, err := setBlackduckCrdVersions(currBlackduckCRDs.Items, newCrdNames.Blackduck.Version)
-			newOpsSightCRDs, err := setOpsSightCrdVersions(currOpsSightCRDs.Items, newCrdNames.OpsSight.Version)
-			newAlertCRDs, err := setAlertCrdVersions(currAlertCRDs.Items, newCrdNames.Alert.Version)
-			// Delete the CRD definitions from the cluster
-			for _, crd := range soperator.GetCrdDataList(currOperatorVersion) {
-				RunKubeCmd("delete", "crd", crd.Name)
+		for _, crd := range oldOpsSights {
+			if crd.TypeMeta.APIVersion != currCrdNames.OpsSight.Version {
+				_, err = operatorutil.UpdateOpsSight(opssightClient, crd.Spec.Namespace, &crd)
 			}
-			// Update the Synopsys-Operator's Kubernetes Components (TODO this will deploy new crds)
-			updateSynopsysOperator(namespace)
-			updatePrometheus(namespace)
-			// Update the resources in the cluster with the new versions
-			for _, crd := range newBlackduckCRDs {
-				if crd.TypeMeta.APIVersion != currCrdNames.Blackduck.Version {
-					_, err = operatorutil.UpdateBlackduck(blackduckClient, crd.Spec.Namespace, &crd)
-				}
+		}
+		for _, crd := range oldAlerts {
+			if crd.TypeMeta.APIVersion != currCrdNames.Alert.Version {
+				_, err = operatorutil.UpdateAlert(alertClient, crd.Spec.Namespace, &crd)
 			}
-			for _, crd := range newOpsSightCRDs {
-				if crd.TypeMeta.APIVersion != currCrdNames.OpsSight.Version {
-					_, err = operatorutil.UpdateOpsSight(opssightClient, crd.Spec.Namespace, &crd)
-				}
-			}
-			for _, crd := range newAlertCRDs {
-				if crd.TypeMeta.APIVersion != currCrdNames.Alert.Version {
-					_, err = operatorutil.UpdateAlert(alertClient, crd.Spec.Namespace, &crd)
-				}
-			}
-			if err != nil {
-				log.Errorf("An Error Occurred")
-				return nil
-			}
-		} else {
-			updateSynopsysOperator(namespace)
-			updatePrometheus(namespace)
+		}
+		if err != nil {
+			log.Errorf("An Error Occurred")
+			return nil
 		}
 
 		return nil
 	},
 }
 
-func setBlackduckCrdVersions(blackduckList []blackduckv1.Blackduck, version string) ([]blackduckv1.Blackduck, error) {
-	for _, crd := range blackduckList {
-		crd.TypeMeta.APIVersion = version
+func getBlackducksToUpdate(newVersion string) ([]blackduckv1.Blackduck, error) {
+	currCRDs, err := operatorutil.GetBlackducks(blackduckClient)
+	if err != nil {
+		return nil, fmt.Errorf("%s", err)
 	}
-	return blackduckList, nil
+	newCRDs := []blackduckv1.Blackduck{}
+	for _, crd := range currCRDs.Items {
+		if newVersion != crd.TypeMeta.APIVersion {
+			crd.TypeMeta.APIVersion = newVersion
+			newCRDs = append(newCRDs, crd)
+		}
+	}
+	return newCRDs, nil
 }
 
-func setOpsSightCrdVersions(opsSightList []opssightv1.OpsSight, version string) ([]opssightv1.OpsSight, error) {
-	for _, crd := range opsSightList {
-		crd.TypeMeta.APIVersion = version
+func getOpsSightsToUpdate(newVersion string) ([]opssightv1.OpsSight, error) {
+	currCRDs, err := operatorutil.GetOpsSights(opssightClient)
+	if err != nil {
+		return nil, fmt.Errorf("%s", err)
 	}
-	return opsSightList, nil
+	newCRDs := []opssightv1.OpsSight{}
+	for _, crd := range currCRDs.Items {
+		if newVersion != crd.TypeMeta.APIVersion {
+			crd.TypeMeta.APIVersion = newVersion
+			newCRDs = append(newCRDs, crd)
+		}
+	}
+	return newCRDs, nil
 }
 
-func setAlertCrdVersions(alertList []alertv1.Alert, version string) ([]alertv1.Alert, error) {
-	for _, crd := range alertList {
-		crd.TypeMeta.APIVersion = version
+func getAlertsToUpdate(newVersion string) ([]alertv1.Alert, error) {
+	curCRDs, err := operatorutil.GetAlerts(alertClient)
+	if err != nil {
+		return nil, fmt.Errorf("%s", err)
 	}
-	return alertList, nil
+	newCRDs := []alertv1.Alert{}
+	for _, crd := range curCRDs.Items {
+		if newVersion != crd.TypeMeta.APIVersion {
+			crd.TypeMeta.APIVersion = newVersion
+			newCRDs = append(newCRDs, crd)
+		}
+	}
+	return newCRDs, nil
 }
 
 func updateSynopsysOperator(namespace string) error {

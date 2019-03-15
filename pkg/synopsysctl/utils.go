@@ -38,6 +38,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -154,6 +155,23 @@ func GetOperatorNamespace() (string, error) {
 		return "", fmt.Errorf("%s", namespace)
 	}
 	return destroyNamespace, nil
+}
+
+// GetOperatorImage returns the image for the synopsys-operator from
+// the cluster
+func GetOperatorImage(namespace string) (string, error) {
+	currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+	if err != nil {
+		return "", fmt.Errorf("Failed to get Synopsys-Operator Pod: %s", err)
+	}
+	var currImage string
+	for _, container := range currPod.Spec.Containers {
+		if container.Name == "synopsys-operator" {
+			continue
+		}
+		currImage = container.Image
+	}
+	return currImage, nil
 }
 
 // RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
