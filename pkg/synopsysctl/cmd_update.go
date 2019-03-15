@@ -109,7 +109,7 @@ var updateOperatorCmd = &cobra.Command{
 			RunKubeCmd("delete", "crd", currCrdNames.Blackduck.Name)
 			RunKubeCmd("delete", "crd", currCrdNames.OpsSight.Name)
 			RunKubeCmd("delete", "crd", currCrdNames.Alert.Name)
-			// Update the Synopsys-Operator's Kubernetes Components (this will deploy new crds)
+			// Update the Synopsys-Operator's Kubernetes Components (TODO this will deploy new crds)
 			updateSynopsysOperator(namespace)
 			updatePrometheus(namespace)
 			// Update the resources in the cluster with the new versions
