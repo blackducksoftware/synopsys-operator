@@ -51,6 +51,9 @@ type HandlerInterface interface {
 // State contains the state of the OpsSight
 type State string
 
+// DesiredState contains the desired state of the OpsSight
+type DesiredState string
+
 const (
 	// Creating is used when OpsSight is installing or deploying
 	Creating State = "Creating"
@@ -64,6 +67,11 @@ const (
 	Updating State = "Updating"
 	// Error is used when OpsSight deployment errored out
 	Error State = "Error"
+
+	// Start is used when OpsSight deployment to be created or updated
+	Start DesiredState = "Start"
+	// Stop is used when OpsSight deployment to be stopped
+	Stop DesiredState = "Stop"
 )
 
 // Handler will store the configuration that is required to initiantiate the informers callback
@@ -95,7 +103,7 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 		return errors.Errorf("unable to cast opssight object")
 	}
 
-	if strings.EqualFold(opssight.Spec.DesiredState, "") && strings.EqualFold(opssight.Status.State, "") {
+	if strings.EqualFold(opssight.Spec.DesiredState, string(Start)) && strings.EqualFold(opssight.Status.State, "") {
 		log.Debugf("inside creation event of opssight %s", opssight.Spec.Namespace)
 		newSpec := opssight.Spec
 		defaultSpec := h.Defaults
@@ -182,7 +190,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Error(errors.Annotate(err, "unable to update stopped state"))
 			return
 		}
-	case "UPDATE":
+	case "START":
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
 		opssight, err := h.updateState(Updating, "", opssight)
 		if err != nil {

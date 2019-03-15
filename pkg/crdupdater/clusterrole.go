@@ -127,6 +127,6 @@ func (c *ClusterRole) remove() error {
 }
 
 // patch patches the cluster role
-func (c *ClusterRole) patch(rc interface{}) error {
+func (c *ClusterRole) patch(cr interface{}) error {
 	return nil
 }

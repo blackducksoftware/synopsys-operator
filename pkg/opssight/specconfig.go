@@ -23,7 +23,6 @@ package opssight
 
 import (
 	"fmt"
-	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -149,7 +148,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 			log.Debugf("%s cluster role binding not exist!!!", scannerClusterRoleBinding.GetName())
 			components.ClusterRoleBindings = append(components.ClusterRoleBindings, scannerClusterRoleBinding)
 		} else {
-			if !isClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
+			if !util.IsClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
 				clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: scannerClusterRoleBinding.GetName(), Namespace: p.config.Namespace, Kind: "ServiceAccount"})
 				_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
 				if err != nil {
@@ -180,7 +179,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 				log.Debugf("%s cluster role binding not exist!!!", podClusterRoleBinding.GetName())
 				components.ClusterRoleBindings = append(components.ClusterRoleBindings, podClusterRoleBinding)
 			} else {
-				if !isClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
+				if !util.IsClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
 					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: podClusterRoleBinding.GetName(), Namespace: p.config.Namespace, Kind: "ServiceAccount"})
 					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
 					if err != nil {
@@ -212,7 +211,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 				log.Debugf("%s cluster role binding not exist!!!", imageClusterRoleBinding.GetName())
 				components.ClusterRoleBindings = append(components.ClusterRoleBindings, imageClusterRoleBinding)
 			} else {
-				if !isClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
+				if !util.IsClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
 					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: imageClusterRoleBinding.GetName(), Namespace: p.config.Namespace, Kind: "ServiceAccount"})
 					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
 					if err != nil {
@@ -244,7 +243,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 				log.Debugf("%s cluster role binding not exist!!!", skyfireClusterRoleBinding.GetName())
 				components.ClusterRoleBindings = append(components.ClusterRoleBindings, skyfireClusterRoleBinding)
 			} else {
-				if !isClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
+				if !util.IsClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
 					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: skyfireClusterRoleBinding.GetName(), Namespace: p.config.Namespace, Kind: "ServiceAccount"})
 					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
 					if err != nil {
@@ -271,13 +270,4 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	return components, nil
-}
-
-func isClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace string) bool {
-	for _, subject := range subjects {
-		if strings.EqualFold(subject.Namespace, namespace) {
-			return true
-		}
-	}
-	return false
 }

@@ -259,7 +259,7 @@ func (ac *Creater) updateConfigMap(opssight *opssightapi.OpsSightSpec, newConfig
 	if err != nil {
 		return false, errors.Annotatef(err, "unable to create horizon configmap %s in opssight namespace %s", opssight.ConfigMapName, opssight.Namespace)
 	}
-	return crdupdater.UpdateConfigMap(ac.kubeClient, opssight.Namespace, configMapName, newConfig)
+	return crdupdater.UpdateConfigMap(ac.kubeConfig, ac.kubeClient, opssight.Namespace, configMapName, newConfig)
 }
 
 func (ac *Creater) updateSecret(opssight *opssightapi.OpsSightSpec, newConfigMapConfig *SpecConfig) (bool, error) {
@@ -270,7 +270,7 @@ func (ac *Creater) updateSecret(opssight *opssightapi.OpsSightSpec, newConfigMap
 	if err != nil {
 		return false, errors.Annotate(err, fmt.Sprintf("unable to add secret data to %s secret in %s namespace", secretName, opssight.Namespace))
 	}
-	return crdupdater.UpdateSecret(ac.kubeClient, opssight.Namespace, secretName, secret)
+	return crdupdater.UpdateSecret(ac.kubeConfig, ac.kubeClient, opssight.Namespace, secretName, secret)
 }
 
 func (ac *Creater) update(opssight *opssightapi.OpsSightSpec, newConfigMapConfig *SpecConfig, isConfigMapUpdated bool, isSecretUpdated bool) error {

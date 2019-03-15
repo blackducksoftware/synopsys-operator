@@ -312,10 +312,20 @@ func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (
 	return clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 }
 
+// ListSecrets will list the secret
+func ListSecrets(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.SecretList, error) {
+	return clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+}
+
 // UpdateSecret updates a secret
 func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *corev1.Secret) error {
 	_, err := clientset.CoreV1().Secrets(namespace).Update(secret)
 	return err
+}
+
+// DeleteSecret will delete the secret
+func DeleteSecret(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // ReadFromFile will read the file
@@ -329,10 +339,20 @@ func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string
 	return clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 }
 
+// ListConfigMaps will list the config map
+func ListConfigMaps(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ConfigMapList, error) {
+	return clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
+}
+
 // UpdateConfigMap updates a config map
 func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *corev1.ConfigMap) error {
 	_, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
 	return err
+}
+
+// DeleteConfigMap will delete the config map
+func DeleteConfigMap(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().ConfigMaps(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // // CreateSecret will create the secret
@@ -765,6 +785,16 @@ func UpdateClusterRoleBinding(clientset *kubernetes.Clientset, clusterRoleBindin
 // DeleteClusterRoleBinding delete a cluster role binding
 func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
 	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+}
+
+// IsClusterRoleBindingSubjectExist checks whether the namespace is already exist in the subject of cluster role binding
+func IsClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace string) bool {
+	for _, subject := range subjects {
+		if strings.EqualFold(subject.Namespace, namespace) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetClusterRole get a cluster role

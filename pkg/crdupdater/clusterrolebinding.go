@@ -127,6 +127,6 @@ func (c *ClusterRoleBinding) remove() error {
 }
 
 // patch patches the cluster role binding
-func (c *ClusterRoleBinding) patch(rc interface{}) error {
+func (c *ClusterRoleBinding) patch(crb interface{}) error {
 	return nil
 }
