@@ -53,6 +53,11 @@ type CrdData struct {
 	Version string
 }
 
+func getCrdDataList(version string) []CrdData {
+	data := operatorVersionLookup[version]
+	return []CrdData{data.Blackduck, data.OpsSight, data.Alert}
+}
+
 // Lookup table for crd versions that are compatible with operator verions
 var operatorVersionLookup = map[string]OperatorVersions{
 	"2019.0.0": OperatorVersions{
@@ -106,9 +111,9 @@ var updateOperatorCmd = &cobra.Command{
 			newOpsSightCRDs, err := setOpsSightCrdVersions(currOpsSightCRDs.Items, newCrdNames.OpsSight.Version)
 			newAlertCRDs, err := setAlertCrdVersions(currAlertCRDs.Items, newCrdNames.Alert.Version)
 			// Delete the CRD definitions from the cluster
-			RunKubeCmd("delete", "crd", currCrdNames.Blackduck.Name)
-			RunKubeCmd("delete", "crd", currCrdNames.OpsSight.Name)
-			RunKubeCmd("delete", "crd", currCrdNames.Alert.Name)
+			for _, crd := range getCrdDataList(currOperatorVersion) {
+				RunKubeCmd("delete", "crd", crd.Name)
+			}
 			// Update the Synopsys-Operator's Kubernetes Components (TODO this will deploy new crds)
 			updateSynopsysOperator(namespace)
 			updatePrometheus(namespace)

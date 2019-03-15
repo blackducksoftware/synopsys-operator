@@ -22,7 +22,6 @@ under the License.
 package synopsysctl
 
 import (
-	"encoding/json"
 	"fmt"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
@@ -31,6 +30,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,8 +127,7 @@ var createBlackduckCmd = &cobra.Command{
 			Spec: blackduckSpec,
 		}
 		if mockBlackduck {
-			prettyPrint, _ := json.MarshalIndent(blackduck, "", "    ")
-			fmt.Printf("%s\n", prettyPrint)
+			util.PrettyPrint(blackduck)
 		} else {
 			// Create namespace for the Blackduck
 			err := DeployCRDNamespace(restconfig, blackduckName)
@@ -192,8 +191,7 @@ var createOpsSightCmd = &cobra.Command{
 			Spec: opssightSpec,
 		}
 		if mockOpsSight {
-			prettyPrint, _ := json.MarshalIndent(opssight, "", "    ")
-			fmt.Printf("%s\n", prettyPrint)
+			util.PrettyPrint(opssight)
 		} else {
 			// Create namespace for the OpsSight
 			err := DeployCRDNamespace(restconfig, opsSightName)
@@ -256,8 +254,7 @@ var createAlertCmd = &cobra.Command{
 			Spec: alertSpec,
 		}
 		if mockAlert {
-			prettyPrint, _ := json.MarshalIndent(alert, "", "    ")
-			fmt.Printf("%s\n", prettyPrint)
+			util.PrettyPrint(alert)
 		} else {
 			// Create namespace for the Alert
 			err := DeployCRDNamespace(restconfig, alertName)
