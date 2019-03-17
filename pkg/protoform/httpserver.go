@@ -25,7 +25,6 @@ import (
 	"os"
 
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	"github.com/gin-gonic/contrib/static"
 	gin "github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -39,13 +38,13 @@ func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.C
 	go func() {
 		// data, err := ioutil.ReadFile("/public/index.html")
 		// Set the router as the default one shipped with Gin
-		router := gin.Default()
+		router := gin.New()
 		gin.SetMode(gin.ReleaseMode)
 		// Serve frontend static files
-		router.Use(static.Serve("/", static.LocalFile("/views", true)))
+		// router.Use(static.Serve("/", static.LocalFile("/views", true)))
 
 		// prints debug stuff out.
-		router.Use(GinRequestLogger())
+		// router.Use(GinRequestLogger())
 
 		// prometheus metrics
 		prometheus.Unregister(prometheus.NewProcessCollector(os.Getpid(), ""))
