@@ -38,8 +38,8 @@ func SetupHTTPServer(kubeClient *kubernetes.Clientset, hubClient *hubclientset.C
 	go func() {
 		// data, err := ioutil.ReadFile("/public/index.html")
 		// Set the router as the default one shipped with Gin
-		router := gin.New()
 		gin.SetMode(gin.ReleaseMode)
+		router := gin.New()
 		// Serve frontend static files
 		// router.Use(static.Serve("/", static.LocalFile("/views", true)))
 
