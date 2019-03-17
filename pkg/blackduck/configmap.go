@@ -35,7 +35,7 @@ import (
 func (hc *Creater) createHubConfig(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) map[string]*components.ConfigMap {
 	configMaps := make(map[string]*components.ConfigMap)
 
-	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-config"})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "blackduck-config"})
 	hubData := map[string]string{
 		"PUBLIC_HUB_WEBSERVER_HOST": "localhost",
 		"PUBLIC_HUB_WEBSERVER_PORT": "443",
@@ -58,9 +58,9 @@ func (hc *Creater) createHubConfig(createHub *v1.BlackduckSpec, hubContainerFlav
 
 	hubConfig.AddData(hubData)
 
-	configMaps["hub-config"] = hubConfig
+	configMaps["blackduck-config"] = hubConfig
 
-	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-db-config"})
+	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "blackduck-db-config"})
 
 	if createHub.ExternalPostgres != nil {
 		hubDbConfig.AddData(map[string]string{
@@ -78,18 +78,18 @@ func (hc *Creater) createHubConfig(createHub *v1.BlackduckSpec, hubContainerFlav
 		})
 	}
 
-	configMaps["hub-db-config"] = hubDbConfig
+	configMaps["blackduck-db-config"] = hubDbConfig
 
-	hubConfigResources := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-config-resources"})
+	hubConfigResources := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "blackduck-config-resources"})
 	hubConfigResources.AddData(map[string]string{
 		"webapp-mem":    hubContainerFlavor.WebappHubMaxMemory,
 		"jobrunner-mem": hubContainerFlavor.JobRunnerHubMaxMemory,
 		"scan-mem":      hubContainerFlavor.ScanHubMaxMemory,
 	})
 
-	configMaps["hub-config-resources"] = hubConfigResources
+	configMaps["blackduck-config-resources"] = hubConfigResources
 
-	hubDbConfigGranular := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-db-config-granular"})
+	hubDbConfigGranular := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "blackduck-db-config-granular"})
 	if createHub.ExternalPostgres != nil {
 		hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": strconv.FormatBool(createHub.ExternalPostgres.PostgresSsl)})
 		if createHub.ExternalPostgres.PostgresSsl {
@@ -99,24 +99,7 @@ func (hc *Creater) createHubConfig(createHub *v1.BlackduckSpec, hubContainerFlav
 		hubDbConfigGranular.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 	}
 
-	configMaps["hub-db-config-granular"] = hubDbConfigGranular
-
-	binaryAnalysisConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "binary-analysis-config"})
-
-	binaryAnalysisData := map[string]string{}
-	for _, value := range createHub.Environs {
-		values := strings.SplitN(value, ":", 2)
-		if len(values) == 2 {
-			mapKey := strings.Trim(values[0], " ")
-			mapValue := strings.Trim(values[1], " ")
-			if len(mapKey) > 0 && len(mapValue) > 0 {
-				binaryAnalysisData[mapKey] = mapValue
-			}
-		}
-	}
-	binaryAnalysisConfig.AddData(binaryAnalysisData)
-
-	configMaps["binary-analysis-config"] = binaryAnalysisConfig
+	configMaps["blackduck-db-config-granular"] = hubDbConfigGranular
 
 	return configMaps
 }

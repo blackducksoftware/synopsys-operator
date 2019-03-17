@@ -330,7 +330,7 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec, hubContainer
 		return nil, fmt.Errorf("unable to create the horizon deployer because %+v", err)
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, nil, nil, nil, nil)
+	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, nil, nil, nil, nil)
 	postgresImage := containerCreater.GetFullContainerName("postgres")
 	if len(postgresImage) == 0 {
 		postgresImage = "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1"
@@ -353,7 +353,7 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec, hubContainer
 		PasswordSecretName:     "db-creds",
 		UserPasswordSecretKey:  "HUB_POSTGRES_USER_PASSWORD_FILE",
 		AdminPasswordSecretKey: "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
-		EnvConfigMapRefs:       []string{"hub-db-config", "hub-db-config-granular"},
+		EnvConfigMapRefs:       []string{"blackduck-db-config", "blackduck-db-config-granular"},
 	}
 	log.Debugf("postgres: %+v", postgres)
 
@@ -392,26 +392,25 @@ func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec, hubContaine
 func (hc *Creater) getHubDeployer(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) (*horizon.Deployer, error) {
 	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
 
+	// All ConfigMap environment variables
+	allConfigEnv := []*horizonapi.EnvConfig{
+		{Type: horizonapi.EnvFromConfigMap, FromName: "blackduck-config"},
+		{Type: horizonapi.EnvFromConfigMap, FromName: "blackduck-db-config"},
+		{Type: horizonapi.EnvFromConfigMap, FromName: "blackduck-db-config-granular"},
+	}
+
+	err := hc.addAnyUIDToServiceAccount(createHub)
+	if err != nil {
+		log.Error(err)
+	}
+
+	// Create all hub deployments
 	// Create a horizon deployer for each hub
 	deployer, err := horizon.NewDeployer(hc.KubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create the horizon deployer because %+v", err)
 	}
 
-	// All ConfigMap environment variables
-	allConfigEnv := []*horizonapi.EnvConfig{
-		{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"},
-		{Type: horizonapi.EnvFromConfigMap, FromName: "hub-db-config"},
-		{Type: horizonapi.EnvFromConfigMap, FromName: "hub-db-config-granular"},
-	}
-
-	err = hc.addAnyUIDToServiceAccount(createHub)
-	if err != nil {
-		log.Error(err)
-	}
-
-	// Create all hub deployments
-	deployer, _ = horizon.NewDeployer(hc.KubeConfig)
 	hc.AddToDeployer(deployer, createHub, hubContainerFlavor, allConfigEnv)
 
 	log.Debugf("%+v", deployer)
