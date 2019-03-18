@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gobuffalo/flect"
-	"github.com/gobuffalo/uuid"
 	"github.com/gobuffalo/x/defaults"
+	"github.com/gofrs/uuid"
 )
 
 type manyToManyAssociation struct {

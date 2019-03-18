@@ -104,7 +104,7 @@ func (v BlackducksResource) New(c buffalo.Context) error {
 func (v BlackducksResource) common(c buffalo.Context, bd *blackduckv1.Blackduck) error {
 	var storageList map[string]string
 	storageList = make(map[string]string)
-	storageClasses, err := util.ListStorageClass(v.kubeClient)
+	storageClasses, err := util.ListStorageClasses(v.kubeClient)
 	if err != nil {
 		c.Error(404, fmt.Errorf("\"message\": \"Failed to List the storage class due to %+v\"", err))
 	}

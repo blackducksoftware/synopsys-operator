@@ -147,6 +147,14 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 		return "", nil, true, err
 	}
 
+	// OpenShift routes
+	ipAddress := ""
+	if hc.routeClient != nil {
+		route, _ := util.CreateOpenShiftRoutes(hc.routeClient, createHub.Spec.Namespace, createHub.Spec.Namespace, "Service", "webserver")
+		log.Debugf("openshift route host: %s", route.Spec.Host)
+		ipAddress = route.Spec.Host
+	}
+
 	// Validate all pods are in running state
 	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Spec.Namespace, hc.Config.PodWaitTimeoutSeconds)
 	if err != nil {
@@ -164,19 +172,6 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 			pvcVolumeNames[v.Name] = pvName
 		}
 	}
-
-	// OpenShift routes
-	ipAddress := ""
-	if hc.routeClient != nil {
-		route, err := util.CreateOpenShiftRoutes(hc.routeClient, createHub.Spec.Namespace, createHub.Spec.Namespace, "Service", "webserver")
-		if err != nil {
-			return "", pvcVolumeNames, false, err
-		}
-		log.Debugf("openshift route host: %s", route.Spec.Host)
-		ipAddress = route.Spec.Host
-	}
-
-	time.Sleep(1 * time.Minute)
 
 	if strings.EqualFold(ipAddress, "") {
 		ipAddress, err = hubutils.GetIPAddress(hc.KubeClient, createHub.Spec.Namespace, 10, 10)
@@ -340,9 +335,13 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec, hubContainer
 	if len(postgresImage) == 0 {
 		postgresImage = "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1"
 	}
+	var pvcName string
+	if createHub.PersistentStorage {
+		pvcName = "blackduck-postgres"
+	}
 	postgres := apps.Postgres{
 		Namespace:              createHub.Namespace,
-		PVCName:                "blackduck-postgres",
+		PVCName:                pvcName,
 		Port:                   containers.PostgresPort,
 		Image:                  postgresImage,
 		MinCPU:                 hubContainerFlavor.PostgresCPULimit,
