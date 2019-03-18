@@ -654,9 +654,20 @@ func GetBlackducks(clientSet *hubclientset.Clientset) (*blackduckapi.BlackduckLi
 	return clientSet.SynopsysV1().Blackducks(metav1.NamespaceAll).List(metav1.ListOptions{})
 }
 
-// UpdateBlackduck will update Hub in the cluster
+// UpdateBlackduck will update Blackduck in the cluster
 func UpdateBlackduck(blackduckClientset *hubclientset.Clientset, namespace string, blackduck *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
 	return blackduckClientset.SynopsysV1().Blackducks(namespace).Update(blackduck)
+}
+
+// UpdateBlackducks will update a set of Blackducks in the cluster
+func UpdateBlackducks(clientSet *hubclientset.Clientset, blackduckCRDs []blackduckapi.Blackduck) error {
+	for _, crd := range blackduckCRDs {
+		_, err := UpdateBlackduck(clientSet, crd.Spec.Namespace, &crd)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // WatchHubs will watch for hub events in the cluster
@@ -689,6 +700,17 @@ func UpdateOpsSight(opssightClientset *opssightclientset.Clientset, namespace st
 	return opssightClientset.SynopsysV1().OpsSights(namespace).Update(opssight)
 }
 
+// UpdateOpsSights will update a set of OpsSights in the cluster
+func UpdateOpsSights(clientSet *opssightclientset.Clientset, opsSightCRDs []opssightapi.OpsSight) error {
+	for _, crd := range opsSightCRDs {
+		_, err := UpdateOpsSight(clientSet, crd.Spec.Namespace, &crd)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // CreateAlert will create alert in the cluster
 func CreateAlert(alertClientset *alertclientset.Clientset, namespace string, createAlert *alertapi.Alert) (*alertapi.Alert, error) {
 	return alertClientset.SynopsysV1().Alerts(namespace).Create(createAlert)
@@ -712,6 +734,17 @@ func GetAlerts(clientSet *alertclientset.Clientset) (*alertapi.AlertList, error)
 // UpdateAlert will update an Alert in the cluster
 func UpdateAlert(clientSet *alertclientset.Clientset, namespace string, alert *alertapi.Alert) (*alertapi.Alert, error) {
 	return clientSet.SynopsysV1().Alerts(namespace).Update(alert)
+}
+
+// UpdateAlerts will update a set of Alerts in the cluster
+func UpdateAlerts(clientSet *alertclientset.Clientset, alertCRDs []alertapi.Alert) error {
+	for _, crd := range alertCRDs {
+		_, err := UpdateAlert(clientSet, crd.Spec.Namespace, &crd)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ListHubPV will list all the persistent volumes attached to each hub in the cluster

@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"fmt"
 
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +43,7 @@ var describeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"describe"}, args...)
-		out, err := RunKubeCmd(kubeCmdArgs...)
+		out, err := util.RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
 			log.Errorf("Error Describing the Resource: %s", out)
 			return nil
@@ -67,7 +68,7 @@ var describeBlackduckCmd = &cobra.Command{
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
-		out, err := RunKubeCmd("describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
+		out, err := util.RunKubeCmd("describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
 		if err != nil {
 			log.Errorf("Error Describing the Blackduck: %s", out)
 			return nil
@@ -92,7 +93,7 @@ var describeOpsSightCmd = &cobra.Command{
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
-		out, err := RunKubeCmd("describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
+		out, err := util.RunKubeCmd("describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
 		if err != nil {
 			log.Errorf("Error Describing the OpsSight: %s", out)
 			return nil
@@ -117,7 +118,7 @@ var describeAlertCmd = &cobra.Command{
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
-		out, err := RunKubeCmd("describe", "alert", alertNamespace, "-n", alertNamespace)
+		out, err := util.RunKubeCmd("describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
 			log.Errorf("Error Describing the Alert: %s\n", out)
 			return nil

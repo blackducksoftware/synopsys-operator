@@ -28,6 +28,7 @@ import (
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -85,7 +86,7 @@ var deployCmd = &cobra.Command{
 			deployNamespace = args[0]
 		}
 		// check if operator is already installed
-		out, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
+		out, err := util.RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 		if err == nil {
 			log.Errorf("Synopsys-Operator is already installed in namespace %s.", out)
 			return nil
@@ -111,7 +112,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		// Deploy synopsys-operator
-		soperatorSpec := soperator.SOperatorSpecConfig{
+		soperatorSpec := soperator.SpecConfig{
 			Namespace:                deployNamespace,
 			SynopsysOperatorImage:    deploySynopsysOperatorImage,
 			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
@@ -156,19 +157,19 @@ var deployCmd = &cobra.Command{
 		}
 
 		// create secrets (TDDO I think this only works on OpenShift)
-		RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", deployDockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
-		RunKubeCmd("secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
-		RunKubeCmd("secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
-		RunKubeCmd("scale", "replicationcontroller", "synopsys-operator", "--replicas=0")
-		RunKubeCmd("scale", "replicationcontroller", "synopsys-operator", "--replicas=1")
+		util.RunKubeCmd("create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", deployDockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
+		util.RunKubeCmd("secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
+		util.RunKubeCmd("secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
+		util.RunKubeCmd("scale", "replicationcontroller", "synopsys-operator", "--replicas=0")
+		util.RunKubeCmd("scale", "replicationcontroller", "synopsys-operator", "--replicas=1")
 
 		// expose the routes
 		if exposeUI {
-			out, err = RunKubeCmd("expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", deployNamespace))
+			out, err = util.RunKubeCmd("expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", deployNamespace))
 			if err != nil {
 				log.Warnf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
 			}
-			out, err = RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", deployNamespace)
+			out, err = util.RunKubeCmd("create", "route", "edge", "--service=synopsys-operator-tcp", "-n", deployNamespace)
 			if err != nil {
 				log.Warnf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
 			}

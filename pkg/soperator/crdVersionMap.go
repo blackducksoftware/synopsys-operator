@@ -68,7 +68,7 @@ func (m *operatorCRDVersionMap) GetCRDVersions(operatorVersion string) operatorV
 }
 
 // GetIterableAPIVersions returns a list of CrdData for a version that can be iterated over
-func (m *operatorCRDVersionMap) GetIterableCRDVersions(operatorVersion string) []crdVersionData {
+func (m *operatorCRDVersionMap) GetIterableCRDData(operatorVersion string) []crdVersionData {
 	data := m.GetCRDVersions(operatorVersion)
 	CrdDataList := []crdVersionData{}
 	if data.Blackduck != nil {

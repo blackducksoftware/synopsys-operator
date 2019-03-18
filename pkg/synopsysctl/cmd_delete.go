@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"fmt"
 
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +44,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Deleting a Non-Synopsys Resource")
 		kubeCmdArgs := append([]string{"delete"}, args...)
-		out, err := RunKubeCmd(kubeCmdArgs...)
+		out, err := util.RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
 			log.Errorf("Error Deleting the Resource: %s", out)
 			return nil

@@ -27,10 +27,10 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 )
 
-// SOperatorSpecConfig represents the SOperator component
+// SpecConfig represents the SOperator component
 // Its methods include GetComponents() and any functions
 // that create Kubernetes Resources for the SOperator
-type SOperatorSpecConfig struct {
+type SpecConfig struct {
 	Namespace                string
 	SynopsysOperatorImage    string
 	BlackduckRegistrationKey string
@@ -42,8 +42,8 @@ type SOperatorSpecConfig struct {
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, secretName, adminPassword, postrgresPassword, userPassword, blackduckpassword string, secretType horizonapi.SecretType) *SOperatorSpecConfig {
-	return &SOperatorSpecConfig{
+func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, secretName, adminPassword, postrgresPassword, userPassword, blackduckpassword string, secretType horizonapi.SecretType) *SpecConfig {
+	return &SpecConfig{
 		Namespace:                namespace,
 		SynopsysOperatorImage:    synopsysOperatorImage,
 		BlackduckRegistrationKey: blackduckRegistrationKey,
@@ -57,7 +57,7 @@ func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, se
 
 // GetComponents will return a ComponentList representing all
 // Kubernetes Resources for the SOperator
-func (specConfig *SOperatorSpecConfig) GetComponents() (*api.ComponentList, error) {
+func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{
 		ReplicationControllers: []*components.ReplicationController{
 			specConfig.GetOperatorReplicationController(),

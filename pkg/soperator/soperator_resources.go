@@ -29,7 +29,7 @@ import (
 )
 
 // GetOperatorReplicationController creates a ReplicationController Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horizoncomponents.ReplicationController {
+func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncomponents.ReplicationController {
 	// Add the Replication Controller to the Deployer
 	var synopsysOperatorRCReplicas int32 = 1
 	synopsysOperatorRC := horizoncomponents.NewReplicationController(horizonapi.ReplicationControllerConfig{
@@ -180,7 +180,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horiz
 }
 
 // GetOperatorService creates a Service Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorService() *horizoncomponents.Service {
+func (specConfig *SpecConfig) GetOperatorService() *horizoncomponents.Service {
 
 	// Add the Service to the Deployer
 	synopsysOperatorService := horizoncomponents.NewService(horizonapi.ServiceConfig{
@@ -223,7 +223,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorService() *horizoncomponents.S
 }
 
 // GetOperatorConfigMap creates a ConfigMap Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMap {
+func (specConfig *SpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMap {
 	// Config Map
 	synopsysOperatorConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
 		APIVersion: "v1",
@@ -238,7 +238,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorConfigMap() *horizoncomponents
 }
 
 // GetOperatorServiceAccount creates a ServiceAccount Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorServiceAccount() *horizoncomponents.ServiceAccount {
+func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.ServiceAccount {
 	// Service Account
 	synopsysOperatorServiceAccount := horizoncomponents.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		APIVersion: "v1",
@@ -252,7 +252,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorServiceAccount() *horizoncompo
 }
 
 // GetOperatorClusterRoleBinding creates a ClusterRoleBinding Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
+func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
 	// Cluster Role Binding
 	synopsysOperatorClusterRoleBinding := horizoncomponents.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
@@ -275,7 +275,8 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRoleBinding() *horizonc
 	return synopsysOperatorClusterRoleBinding
 }
 
-func (specConfig *SOperatorSpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
+// GetOperatorSecret creates a Secret Horizon component for the Synopsys-Operaotor
+func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 	// create a secret
 	synopsysOperatorSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 		APIVersion: "v1",

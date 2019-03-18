@@ -24,7 +24,6 @@ package synopsysctl
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -61,55 +60,13 @@ var updateOperatorCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		namespace, err := GetOperatorNamespace()
+		namespace, err := soperator.GetOperatorNamespace()
 		if err != nil {
 			log.Errorf("Error finding Synopsys-Operator: %s", err)
 			return nil
 		}
-		log.Debugf("Updating the Synopsys-Operator: %s\n", namespace)
-		currImage, err := GetOperatorImage(namespace)
-		if err != nil {
-			log.Errorf("%s", err)
-			return nil
-		}
-		currOperatorVersion := strings.Split(currImage, ":")[1]
-		newOperatorVersion := strings.Split(deploySynopsysOperatorImage, ":")[1]
-
-		newCrdNames := soperator.SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
-		// Get CRDs that need to be updated
-		oldBlackducks, _ := getBlackducksToUpdate(newCrdNames.Blackduck.APIVersion)
-		oldOpsSights, _ := getOpsSightsToUpdate(newCrdNames.OpsSight.APIVersion)
-		oldAlerts, _ := getAlertsToUpdate(newCrdNames.Alert.APIVersion)
-
-		// Delete the CRD definitions from the cluster
-		for _, crd := range soperator.SOperatorCRDVersionMap.GetIterableCRDVersions(currOperatorVersion) {
-			RunKubeCmd("delete", "crd", crd.CRDName)
-		}
-		// Update the Synopsys-Operator's Kubernetes Components (TODO this will deploy new crds)
-		// Get Components of Current Synopsys-Operator
-		currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
-		var currRegKey string
-		for _, container := range currPod.Spec.Containers {
-			for _, env := range container.Env {
-				if env.Name != "REGISTRATION_KEY" {
-					continue
-				}
-				currRegKey = container.Env[0].Value
-			}
-		}
-		currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
-		currSecretType, err := kubeSecretTypeToHorizon(currSecret.Type)
-		currSOperatorSpec := soperator.SOperatorSpecConfig{
-			Namespace:                namespace,
-			SynopsysOperatorImage:    currImage,
-			BlackduckRegistrationKey: currRegKey,
-			SecretType:               currSecretType,
-			SecretAdminPassword:      deploySecretAdminPassword,
-			SecretPostgresPassword:   deploySecretPostgresPassword,
-			SecretUserPassword:       deploySecretUserPassword,
-			SecretBlackduckPassword:  deploySecretBlackduckPassword,
-		}
-		newSOperatorSpec := soperator.SOperatorSpecConfig{
+		log.Debugf("Updating the Synopsys-Operator in namespace %s\n", namespace)
+		newSOperatorSpec := soperator.SpecConfig{
 			Namespace:                deployNamespace,
 			SynopsysOperatorImage:    deploySynopsysOperatorImage,
 			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
@@ -119,106 +76,16 @@ var updateOperatorCmd = &cobra.Command{
 			SecretUserPassword:       deploySecretUserPassword,
 			SecretBlackduckPassword:  deploySecretBlackduckPassword,
 		}
-		// TODO: make this only take the newOperatorSpec
-		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, currSOperatorSpec, newSOperatorSpec)
-		// Get Components of Current Prometheus
-		currPod, err = operatorutil.GetPod(kubeClient, namespace, "prometheus")
-		currPrometheusImage := currPod.Spec.Containers[0].Image
-		currPrometheusSpecConfig := soperator.PrometheusSpecConfig{
-			Namespace:       deployNamespace,
-			PrometheusImage: currPrometheusImage,
-		}
+		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, newSOperatorSpec, blackduckClient, opssightClient, alertClient)
+
+		log.Debugf("Updating Prometheus in namespace %s\n", namespace)
 		newPrometheusSpecConfig := soperator.PrometheusSpecConfig{
 			Namespace:       deployNamespace,
 			PrometheusImage: deployPrometheusImage,
 		}
-		soperator.UpdatePrometheus(restconfig, kubeClient, namespace, currPrometheusSpecConfig, newPrometheusSpecConfig)
-		// Update the resources in the cluster with the new versions
-		updateBlackducks(oldBlackducks)
-		updateOpsSights(oldOpsSights)
-		updateAlerts(oldAlerts)
-		if err != nil {
-			log.Errorf("An Error Occurred")
-			return nil
-		}
+		soperator.UpdatePrometheus(restconfig, kubeClient, namespace, newPrometheusSpecConfig)
 		return nil
 	},
-}
-
-func getBlackducksToUpdate(newVersion string) ([]blackduckv1.Blackduck, error) {
-	currCRDs, err := operatorutil.GetBlackducks(blackduckClient)
-	if err != nil {
-		return nil, fmt.Errorf("%s", err)
-	}
-	newCRDs := []blackduckv1.Blackduck{}
-	for _, crd := range currCRDs.Items {
-		if newVersion != crd.TypeMeta.APIVersion {
-			crd.TypeMeta.APIVersion = newVersion
-			newCRDs = append(newCRDs, crd)
-		}
-	}
-	return newCRDs, nil
-}
-
-// TODO: move into pkg/util/common.go
-func updateBlackducks(blackduckCRDs []blackduckv1.Blackduck) error {
-	for _, crd := range blackduckCRDs {
-		_, err := operatorutil.UpdateBlackduck(blackduckClient, crd.Spec.Namespace, &crd)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func getOpsSightsToUpdate(newVersion string) ([]opssightv1.OpsSight, error) {
-	currCRDs, err := operatorutil.GetOpsSights(opssightClient)
-	if err != nil {
-		return nil, fmt.Errorf("%s", err)
-	}
-	newCRDs := []opssightv1.OpsSight{}
-	for _, crd := range currCRDs.Items {
-		if newVersion != crd.TypeMeta.APIVersion {
-			crd.TypeMeta.APIVersion = newVersion
-			newCRDs = append(newCRDs, crd)
-		}
-	}
-	return newCRDs, nil
-}
-
-func updateOpsSights(opsSightCRDs []opssightv1.OpsSight) error {
-	for _, crd := range opsSightCRDs {
-		_, err := operatorutil.UpdateOpsSight(opssightClient, crd.Spec.Namespace, &crd)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func getAlertsToUpdate(newVersion string) ([]alertv1.Alert, error) {
-	curCRDs, err := operatorutil.GetAlerts(alertClient)
-	if err != nil {
-		return nil, fmt.Errorf("%s", err)
-	}
-	newCRDs := []alertv1.Alert{}
-	for _, crd := range curCRDs.Items {
-		if newVersion != crd.TypeMeta.APIVersion {
-			crd.TypeMeta.APIVersion = newVersion
-			newCRDs = append(newCRDs, crd)
-		}
-	}
-	return newCRDs, nil
-}
-
-func updateAlerts(alertCRDs []alertv1.Alert) error {
-	for _, crd := range alertCRDs {
-		_, err := operatorutil.UpdateAlert(alertClient, crd.Spec.Namespace, &crd)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 var updateBlackduckCmd = &cobra.Command{

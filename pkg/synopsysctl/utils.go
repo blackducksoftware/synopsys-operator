@@ -24,7 +24,6 @@ package synopsysctl
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/blackducksoftware/horizon/pkg/deployer"
@@ -40,9 +39,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -57,28 +54,6 @@ var alertClient *alertclientset.Clientset
 // These vars used by KubeCmd
 var openshift bool
 var kube bool
-
-func kubeSecretTypeToHorizon(secretType corev1.SecretType) (horizonapi.SecretType, error) {
-	switch secretType {
-	case corev1.SecretTypeOpaque:
-		return horizonapi.SecretTypeOpaque, nil
-	case corev1.SecretTypeServiceAccountToken:
-		return horizonapi.SecretTypeServiceAccountToken, nil
-	case corev1.SecretTypeDockercfg:
-		return horizonapi.SecretTypeDockercfg, nil
-	case corev1.SecretTypeDockerConfigJson:
-		return horizonapi.SecretTypeDockerConfigJSON, nil
-	case corev1.SecretTypeBasicAuth:
-		return horizonapi.SecretTypeBasicAuth, nil
-	case corev1.SecretTypeSSHAuth:
-		return horizonapi.SecretTypeSSHAuth, nil
-	case corev1.SecretTypeTLS:
-		return horizonapi.SecretTypeTLS, nil
-	default:
-		return horizonapi.SecretTypeOpaque, fmt.Errorf("Invalid Secret Type: %+v", secretType)
-	}
-	return horizonapi.SecretTypeOpaque, fmt.Errorf("Invalid Secret Type: %+v", secretType)
-}
 
 // getBlackduckFromCluster returns the CRD for a blackduck in namespace
 func getBlackduckFromCluster(namespace string) (*blackduckv1.Blackduck, error) {
@@ -131,100 +106,6 @@ func updateAlertInCluster(namespace string, crd *alertv1.Alert) error {
 	if err != nil {
 		return fmt.Errorf("Error Editing Alert: %+v", err)
 	}
-	return nil
-}
-
-// determineClusterClients sets bool values to true
-// if it can find kube/oc in the path
-func determineClusterClients() {
-	_, exists := exec.LookPath("kubectl")
-	if exists == nil {
-		kube = true
-	}
-	_, ocexists := exec.LookPath("oc")
-	if ocexists == nil {
-		openshift = true
-	}
-}
-
-// GetOperatorNamespace returns the namespace of the Synopsys-Operator by
-// looking at its cluster role binding
-func GetOperatorNamespace() (string, error) {
-	namespace, err := RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
-	if err != nil {
-		return "", fmt.Errorf("%s", namespace)
-	}
-	return destroyNamespace, nil
-}
-
-// GetOperatorImage returns the image for the synopsys-operator from
-// the cluster
-func GetOperatorImage(namespace string) (string, error) {
-	currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
-	if err != nil {
-		return "", fmt.Errorf("Failed to get Synopsys-Operator Pod: %s", err)
-	}
-	var currImage string
-	for _, container := range currPod.Spec.Containers {
-		if container.Name == "synopsys-operator" {
-			continue
-		}
-		currImage = container.Image
-	}
-	return currImage, nil
-}
-
-// RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
-// TODO consider replacing w/ go api but not crucial for now.
-func RunKubeCmd(args ...string) (string, error) {
-	determineClusterClients()
-
-	var cmd2 *exec.Cmd
-
-	// cluster-info in kube doesnt seem to be in
-	// some versions of oc, but status is.
-	// double check this.
-	if args[0] == "cluster-info" && openshift {
-		args[0] = "status"
-	}
-	if openshift {
-		cmd2 = exec.Command("oc", args...)
-	} else if kube {
-		cmd2 = exec.Command("kubectl", args...)
-	}
-	stdoutErr, err := cmd2.CombinedOutput()
-	if err != nil {
-		return string(stdoutErr), err
-	}
-	//time.Sleep(1 * time.Second) TODO why did Jay put this here???
-	return string(stdoutErr), nil
-}
-
-// RunKubeEditorCmd is a wrapper for oc/kubectl but redirects
-// input/output to the user - ex: let user control text editor
-func RunKubeEditorCmd(args ...string) error {
-	determineClusterClients()
-
-	var cmd *exec.Cmd
-
-	// cluster-info in kube doesnt seem to be in
-	// some versions of oc, but status is.
-	// double check this.
-	if args[0] == "cluster-info" && openshift {
-		args[0] = "status"
-	}
-	if openshift {
-		cmd = exec.Command("oc", args...)
-	} else if kube {
-		cmd = exec.Command("kubectl", args...)
-	}
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-	//time.Sleep(1 * time.Second) TODO why did Jay put this here???
 	return nil
 }
 

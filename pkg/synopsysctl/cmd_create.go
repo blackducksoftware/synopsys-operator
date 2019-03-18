@@ -72,7 +72,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"create"}, args...)
-		out, err := RunKubeCmd(kubeCmdArgs...)
+		out, err := util.RunKubeCmd(kubeCmdArgs...)
 		if err != nil {
 			return fmt.Errorf("Error Creating the Resource with KubeCmd: %s", err)
 		}
