@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gobuffalo/pop/nulls"
+	"github.com/gobuffalo/nulls"
 	"github.com/gobuffalo/x/httpx"
 	"github.com/monoculum/formam"
 	"github.com/pkg/errors"
@@ -74,6 +74,10 @@ func Register(contentType string, fn Binder) {
 // is "application/xml" it will use "xml.NewDecoder". The default
 // binder is "https://github.com/monoculum/formam".
 func Exec(req *http.Request, value interface{}) error {
+	if ba, ok := value.(Bindable); ok {
+		return ba.Bind(req)
+	}
+
 	ct := httpx.ContentType(req)
 	if ct == "" {
 		return errors.New("blank content type")
