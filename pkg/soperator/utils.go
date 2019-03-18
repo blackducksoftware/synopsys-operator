@@ -88,6 +88,23 @@ func GetUpdatedAlertCRDs(alertClient *alertclientset.Clientset, newVersion strin
 	return newCRDs, nil
 }
 
+// TODO
+func GetOperatorSpecConfig(kubeClient *kubernetes.Clientset, namespace string) {
+	namespace := GetOperatorNamespace()
+	image := GetOperatorImage(kubeClient, namespace)
+	newSOperatorSpec := soperator.SpecConfig{
+		Namespace:                namespace,
+		SynopsysOperatorImage:    image,
+		BlackduckRegistrationKey: deployBlackduckRegistrationKey,
+		SecretType:               secretType,
+		SecretAdminPassword:      deploySecretAdminPassword,
+		SecretPostgresPassword:   deploySecretPostgresPassword,
+		SecretUserPassword:       deploySecretUserPassword,
+		SecretBlackduckPassword:  deploySecretBlackduckPassword,
+	}
+
+}
+
 // GetOperatorNamespace returns the namespace of the Synopsys-Operator by
 // looking at its cluster role binding
 func GetOperatorNamespace() (string, error) {
