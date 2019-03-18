@@ -746,6 +746,16 @@ func CreateServiceAccount(namespace string, name string) *components.ServiceAcco
 	return serviceAccount
 }
 
+// ListServiceAccounts list a service account
+func ListServiceAccounts(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ServiceAccountList, error) {
+	return clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// DeleteServiceAccount delete a service account
+func DeleteServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().ServiceAccounts(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+}
+
 // CreateClusterRoleBinding creates a cluster role binding
 func CreateClusterRoleBinding(namespace string, name string, serviceAccountName string, clusterRoleAPIGroup string, clusterRoleKind string, clusterRoleName string) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{

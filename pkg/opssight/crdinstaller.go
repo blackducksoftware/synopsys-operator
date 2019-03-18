@@ -55,7 +55,7 @@ func NewCRDInstaller(config interface{}) (*CRDInstaller, error) {
 	}
 	c := &CRDInstaller{config: dependentConfig}
 
-	c.config.resyncPeriod = 0
+	c.config.resyncPeriod = time.Duration(30) * time.Second
 	c.config.indexers = cache.Indexers{}
 
 	return c, nil

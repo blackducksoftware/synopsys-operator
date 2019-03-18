@@ -34,30 +34,23 @@ import (
 
 // ConfigMap stores the configuration to add or delete the config map object
 type ConfigMap struct {
-	kubeConfig    *rest.Config
-	kubeClient    *kubernetes.Clientset
+	config        *CommonConfig
 	deployer      *util.DeployerHelper
-	namespace     string
 	configMaps    []*components.ConfigMap
-	labelSelector string
 	oldConfigMaps map[string]*corev1.ConfigMap
 	newConfigMaps map[string]*corev1.ConfigMap
 }
 
 // NewConfigMap returns the config map
-func NewConfigMap(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, configMaps []*components.ConfigMap,
-	namespace string, labelSelector string) (*ConfigMap, error) {
-	deployer, err := util.NewDeployer(kubeConfig)
+func NewConfigMap(config *CommonConfig, configMaps []*components.ConfigMap) (*ConfigMap, error) {
+	deployer, err := util.NewDeployer(config.kubeConfig)
 	if err != nil {
-		return nil, errors.Annotatef(err, "unable to get deployer object for %s", namespace)
+		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
 	return &ConfigMap{
-		kubeConfig:    kubeConfig,
-		kubeClient:    kubeClient,
+		config:        config,
 		deployer:      deployer,
-		namespace:     namespace,
 		configMaps:    configMaps,
-		labelSelector: labelSelector,
 		oldConfigMaps: make(map[string]*corev1.ConfigMap, 0),
 		newConfigMaps: make(map[string]*corev1.ConfigMap, 0),
 	}, nil
@@ -68,7 +61,7 @@ func (c *ConfigMap) buildNewAndOldObject() error {
 	// build old config map
 	oldConfigMaps, err := c.list()
 	if err != nil {
-		return errors.Annotatef(err, "unable to get config maps for %s", c.namespace)
+		return errors.Annotatef(err, "unable to get config maps for %s", c.config.namespace)
 	}
 	for _, oldConfigMap := range oldConfigMaps.(*corev1.ConfigMapList).Items {
 		c.oldConfigMaps[oldConfigMap.GetName()] = &oldConfigMap
@@ -78,7 +71,7 @@ func (c *ConfigMap) buildNewAndOldObject() error {
 	for _, newConfigMap := range c.configMaps {
 		newConfigMapKube, err := newConfigMap.ToKube()
 		if err != nil {
-			return errors.Annotatef(err, "unable to convert config map %s to kube %s", newConfigMap.GetName(), c.namespace)
+			return errors.Annotatef(err, "unable to convert config map %s to kube %s", newConfigMap.GetName(), c.config.namespace)
 		}
 		c.newConfigMaps[newConfigMap.GetName()] = newConfigMapKube.(*corev1.ConfigMap)
 	}
@@ -87,36 +80,38 @@ func (c *ConfigMap) buildNewAndOldObject() error {
 }
 
 // add adds the config map
-func (c *ConfigMap) add() error {
+func (c *ConfigMap) add(isPatched bool) (bool, error) {
 	isAdded := false
+	isUpdated := false
+	var err error
 	for _, configMap := range c.configMaps {
 		if _, ok := c.oldConfigMaps[configMap.GetName()]; !ok {
 			c.deployer.Deployer.AddConfigMap(configMap)
 			isAdded = true
 		} else {
-			err := c.patch(configMap)
+			isUpdated, err = c.patch(configMap, isPatched)
 			if err != nil {
-				return errors.Annotatef(err, "patch config map:")
+				return false, errors.Annotatef(err, "patch config map:")
 			}
 		}
 	}
-	if isAdded {
-		err := c.deployer.Deployer.Run()
+	if isAdded && !c.config.dryRun {
+		err = c.deployer.Deployer.Run()
 		if err != nil {
-			return errors.Annotatef(err, "unable to deploy config map in %s", c.namespace)
+			return false, errors.Annotatef(err, "unable to deploy config map in %s", c.config.namespace)
 		}
 	}
-	return nil
+	return isAdded || isUpdated, nil
 }
 
 // list lists all the config maps
 func (c *ConfigMap) list() (interface{}, error) {
-	return util.ListConfigMaps(c.kubeClient, c.namespace, c.labelSelector)
+	return util.ListConfigMaps(c.config.kubeClient, c.config.namespace, c.config.labelSelector)
 }
 
 // delete deletes the config map
 func (c *ConfigMap) delete(name string) error {
-	return util.DeleteConfigMap(c.kubeClient, c.namespace, name)
+	return util.DeleteConfigMap(c.config.kubeClient, c.config.namespace, name)
 }
 
 // remove removes the config map
@@ -126,7 +121,7 @@ func (c *ConfigMap) remove() error {
 		if _, ok := c.newConfigMaps[oldConfigMap.GetName()]; !ok {
 			err := c.delete(oldConfigMap.GetName())
 			if err != nil {
-				return errors.Annotatef(err, "unable to delete config map %s in namespace %s", oldConfigMap.GetName(), c.namespace)
+				return errors.Annotatef(err, "unable to delete config map %s in namespace %s", oldConfigMap.GetName(), c.config.namespace)
 			}
 		}
 	}
@@ -134,19 +129,20 @@ func (c *ConfigMap) remove() error {
 }
 
 // patch patches the config map
-func (c *ConfigMap) patch(cm interface{}) error {
+func (c *ConfigMap) patch(cm interface{}, isPatched bool) (bool, error) {
 	configMap := cm.(*components.ConfigMap)
 	configMapName := configMap.GetName()
 	oldConfigMap := c.oldConfigMaps[configMapName]
 	newConfigMap := c.newConfigMaps[configMapName]
-	if !reflect.DeepEqual(newConfigMap.Data, oldConfigMap.Data) {
+	if !reflect.DeepEqual(newConfigMap.Data, oldConfigMap.Data) && !c.config.dryRun {
 		oldConfigMap.Data = newConfigMap.Data
-		err := util.UpdateConfigMap(c.kubeClient, c.namespace, oldConfigMap)
+		err := util.UpdateConfigMap(c.config.kubeClient, c.config.namespace, oldConfigMap)
 		if err != nil {
-			return errors.Annotatef(err, "unable to update the config map %s in namespace %s", configMapName, c.namespace)
+			return false, errors.Annotatef(err, "unable to update the config map %s in namespace %s", configMapName, c.config.namespace)
 		}
+		return true, nil
 	}
-	return nil
+	return false, nil
 }
 
 // UpdateConfigMap updates the config map by comparing the old and new config map data

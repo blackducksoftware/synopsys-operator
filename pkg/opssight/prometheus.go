@@ -36,7 +36,7 @@ func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
 		Name:      "prometheus",
-		Namespace: p.config.Namespace,
+		Namespace: p.opssight.Namespace,
 	})
 	deployment.AddMatchLabelsSelectors(map[string]string{"app": "opssight"})
 
@@ -70,13 +70,13 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 
 func (p *SpecConfig) perceptorMetricsContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
-		Name:  p.config.Prometheus.Name,
-		Image: p.config.Prometheus.Image,
-		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d"},
+		Name:  p.opssight.Prometheus.Name,
+		Image: p.opssight.Prometheus.Image,
+		Args:  []string{"--log.level=debug", "--opssight.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d"},
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.config.Prometheus.Port),
+		ContainerPort: fmt.Sprintf("%d", p.opssight.Prometheus.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 		Name:          "web",
 	})
@@ -116,7 +116,7 @@ func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 func (p *SpecConfig) PerceptorMetricsService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "prometheus",
-		Namespace:     p.config.Namespace,
+		Namespace:     p.opssight.Namespace,
 		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
 	})
 
@@ -137,7 +137,7 @@ func (p *SpecConfig) PerceptorMetricsService() *components.Service {
 func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
 		Name:      "prometheus",
-		Namespace: p.config.Namespace,
+		Namespace: p.opssight.Namespace,
 	})
 
 	/*
@@ -166,18 +166,18 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 		}
 	*/
 	targets := []string{
-		fmt.Sprintf("%s:%d", p.config.Perceptor.Name, p.config.Perceptor.Port),
-		fmt.Sprintf("%s:%d", p.config.ScannerPod.Scanner.Name, p.config.ScannerPod.Scanner.Port),
-		fmt.Sprintf("%s:%d", p.config.ScannerPod.ImageFacade.Name, p.config.ScannerPod.ImageFacade.Port),
+		fmt.Sprintf("%s:%d", p.opssight.Perceptor.Name, p.opssight.Perceptor.Port),
+		fmt.Sprintf("%s:%d", p.opssight.ScannerPod.Scanner.Name, p.opssight.ScannerPod.Scanner.Port),
+		fmt.Sprintf("%s:%d", p.opssight.ScannerPod.ImageFacade.Name, p.opssight.ScannerPod.ImageFacade.Port),
 	}
-	if p.config.Perceiver.EnableImagePerceiver {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Perceiver.ImagePerceiver.Name, p.config.Perceiver.Port))
+	if p.opssight.Perceiver.EnableImagePerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.opssight.Perceiver.ImagePerceiver.Name, p.opssight.Perceiver.Port))
 	}
-	if p.config.Perceiver.EnablePodPerceiver {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Perceiver.PodPerceiver.Name, p.config.Perceiver.Port))
+	if p.opssight.Perceiver.EnablePodPerceiver {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.opssight.Perceiver.PodPerceiver.Name, p.opssight.Perceiver.Port))
 	}
-	if p.config.EnableSkyfire {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.config.Skyfire.Name, p.config.Skyfire.PrometheusPort))
+	if p.opssight.EnableSkyfire {
+		targets = append(targets, fmt.Sprintf("%s:%d", p.opssight.Skyfire.Name, p.opssight.Skyfire.PrometheusPort))
 	}
 	data := map[string]interface{}{
 		"global": map[string]interface{}{
@@ -199,6 +199,7 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	configMap.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
 	configMap.AddData(map[string]string{"prometheus.yml": string(bytes)})
 
 	return configMap, nil

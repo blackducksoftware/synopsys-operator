@@ -30,107 +30,96 @@ import (
 	"github.com/juju/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // Deployment stores the configuration to add or delete the replication controller object
 type Deployment struct {
-	kubeConfig     *rest.Config
-	kubeClient     *kubernetes.Clientset
+	config         *CommonConfig
 	deployer       *util.DeployerHelper
-	namespace      string
 	deployments    []*components.Deployment
-	labelSelector  string
-	isPatched      bool
 	oldDeployments map[string]*appsv1.Deployment
 	newDeployments map[string]*appsv1.Deployment
 }
 
 // NewDeployment returns the replication controller
-func NewDeployment(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, deployments []*components.Deployment,
-	namespace string, labelSelector string, isPatched bool) (*Deployment, error) {
-	deployer, err := util.NewDeployer(kubeConfig)
+func NewDeployment(config *CommonConfig, deployments []*components.Deployment) (*Deployment, error) {
+	deployer, err := util.NewDeployer(config.kubeConfig)
 	if err != nil {
-		return nil, errors.Annotatef(err, "unable to get deployer object for %s", namespace)
+		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
 	return &Deployment{
-		kubeConfig:     kubeConfig,
-		kubeClient:     kubeClient,
+		config:         config,
 		deployer:       deployer,
-		namespace:      namespace,
 		deployments:    deployments,
-		labelSelector:  labelSelector,
-		isPatched:      isPatched,
 		oldDeployments: make(map[string]*appsv1.Deployment, 0),
 		newDeployments: make(map[string]*appsv1.Deployment, 0),
 	}, nil
 }
 
 // buildNewAndOldObject builds the old and new replication controller
-func (r *Deployment) buildNewAndOldObject() error {
+func (d *Deployment) buildNewAndOldObject() error {
 	// build old replication controller
-	oldRCs, err := r.list()
+	oldRCs, err := d.list()
 	if err != nil {
-		return errors.Annotatef(err, "unable to get replication controllers for %s", r.namespace)
+		return errors.Annotatef(err, "unable to get replication controllers for %s", d.config.namespace)
 	}
 	for _, oldRC := range oldRCs.(*appsv1.DeploymentList).Items {
-		r.oldDeployments[oldRC.GetName()] = &oldRC
+		d.oldDeployments[oldRC.GetName()] = &oldRC
 	}
 
 	// build new replication controller
-	for _, newRc := range r.deployments {
+	for _, newRc := range d.deployments {
 		newDeploymentKube, err := newRc.ToKube()
 		if err != nil {
-			return errors.Annotatef(err, "unable to convert replication controller %s to kube %s", newRc.GetName(), r.namespace)
+			return errors.Annotatef(err, "unable to convert replication controller %s to kube %s", newRc.GetName(), d.config.namespace)
 		}
-		r.newDeployments[newRc.GetName()] = newDeploymentKube.(*appsv1.Deployment)
+		d.newDeployments[newRc.GetName()] = newDeploymentKube.(*appsv1.Deployment)
 	}
 
 	return nil
 }
 
 // add adds the replication controller
-func (r *Deployment) add() error {
+func (d *Deployment) add(isPatched bool) (bool, error) {
 	isAdded := false
-	for _, deployment := range r.deployments {
-		if _, ok := r.oldDeployments[deployment.GetName()]; !ok {
-			r.deployer.Deployer.AddDeployment(deployment)
+	for _, deployment := range d.deployments {
+		if _, ok := d.oldDeployments[deployment.GetName()]; !ok {
+			d.deployer.Deployer.AddDeployment(deployment)
 			isAdded = true
 		} else {
-			err := r.patch(deployment)
+			_, err := d.patch(deployment, isPatched)
 			if err != nil {
-				return errors.Annotatef(err, "patch replication controller:")
+				return false, errors.Annotatef(err, "patch replication controller:")
 			}
 		}
 	}
-	if isAdded {
-		err := r.deployer.Deployer.Run()
+	if isAdded && !d.config.dryRun {
+		err := d.deployer.Deployer.Run()
 		if err != nil {
-			return errors.Annotatef(err, "unable to deploy replication controller in %s", r.namespace)
+			return false, errors.Annotatef(err, "unable to deploy replication controller in %s", d.config.namespace)
 		}
 	}
-	return nil
+	return false, nil
 }
 
 // list lists all the replication controllers
-func (r *Deployment) list() (interface{}, error) {
-	return util.ListDeployments(r.kubeClient, r.namespace, r.labelSelector)
+func (d *Deployment) list() (interface{}, error) {
+	return util.ListDeployments(d.config.kubeClient, d.config.namespace, d.config.labelSelector)
 }
 
 // delete deletes the replication controller
-func (r *Deployment) delete(name string) error {
-	return util.DeleteDeployment(r.kubeClient, r.namespace, name)
+func (d *Deployment) delete(name string) error {
+	return util.DeleteDeployment(d.config.kubeClient, d.config.namespace, name)
 }
 
 // remove removes the replication controller
-func (r *Deployment) remove() error {
+func (d *Deployment) remove() error {
 	// compare the old and new replication controller and delete if needed
-	for _, oldDeployment := range r.oldDeployments {
-		if _, ok := r.newDeployments[oldDeployment.GetName()]; !ok {
-			err := r.delete(oldDeployment.GetName())
+	for _, oldDeployment := range d.oldDeployments {
+		if _, ok := d.newDeployments[oldDeployment.GetName()]; !ok {
+			err := d.delete(oldDeployment.GetName())
 			if err != nil {
-				return errors.Annotatef(err, "unable to delete replication controller %s in namespace %s", oldDeployment.GetName(), r.namespace)
+				return errors.Annotatef(err, "unable to delete replication controller %s in namespace %s", oldDeployment.GetName(), d.config.namespace)
 			}
 		}
 	}
@@ -148,27 +137,27 @@ type deploymentComparator struct {
 }
 
 // patch patches the replication controller
-func (r *Deployment) patch(rc interface{}) error {
+func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 	deployment := rc.(*components.Deployment)
 	// check isPatched, why?
 	// if there is any configuration change, irrespective of comparing any changes, patch the replication controller
-	if r.isPatched {
-		err := util.PatchDeployment(r.kubeClient, *r.newDeployments[deployment.GetName()], *r.oldDeployments[deployment.GetName()])
+	if isPatched && !d.config.dryRun {
+		err := util.PatchDeployment(d.config.kubeClient, *d.newDeployments[deployment.GetName()], *d.oldDeployments[deployment.GetName()])
 		if err != nil {
-			return errors.Annotatef(err, "unable to patch replication controller %s in namespace %s", deployment.GetName(), r.namespace)
+			return false, errors.Annotatef(err, "unable to patch replication controller %s in namespace %s", deployment.GetName(), d.config.namespace)
 		}
-		return nil
+		return false, nil
 	}
 
 	// check whether the replication controller or its container got changed
 	isChanged := false
-	for _, oldContainer := range r.oldDeployments[deployment.GetName()].Spec.Template.Spec.Containers {
-		for _, newContainer := range r.newDeployments[deployment.GetName()].Spec.Template.Spec.Containers {
-			if strings.EqualFold(oldContainer.Name, newContainer.Name) &&
+	for _, oldContainer := range d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Containers {
+		for _, newContainer := range d.newDeployments[deployment.GetName()].Spec.Template.Spec.Containers {
+			if strings.EqualFold(oldContainer.Name, newContainer.Name) && !d.config.dryRun &&
 				!reflect.DeepEqual(
 					deploymentComparator{
 						Image:    oldContainer.Image,
-						Replicas: r.oldDeployments[deployment.GetName()].Spec.Replicas,
+						Replicas: d.oldDeployments[deployment.GetName()].Spec.Replicas,
 						MinCPU:   oldContainer.Resources.Requests.Cpu(),
 						MaxCPU:   oldContainer.Resources.Limits.Cpu(),
 						MinMem:   oldContainer.Resources.Requests.Memory(),
@@ -176,7 +165,7 @@ func (r *Deployment) patch(rc interface{}) error {
 					},
 					deploymentComparator{
 						Image:    newContainer.Image,
-						Replicas: r.newDeployments[deployment.GetName()].Spec.Replicas,
+						Replicas: d.newDeployments[deployment.GetName()].Spec.Replicas,
 						MinCPU:   newContainer.Resources.Requests.Cpu(),
 						MaxCPU:   newContainer.Resources.Limits.Cpu(),
 						MinMem:   newContainer.Resources.Requests.Memory(),
@@ -189,10 +178,10 @@ func (r *Deployment) patch(rc interface{}) error {
 
 	// if there is any change from the above step, patch the replication controller
 	if isChanged {
-		err := util.PatchDeployment(r.kubeClient, *r.newDeployments[deployment.GetName()], *r.oldDeployments[deployment.GetName()])
+		err := util.PatchDeployment(d.config.kubeClient, *d.newDeployments[deployment.GetName()], *d.oldDeployments[deployment.GetName()])
 		if err != nil {
-			return errors.Annotatef(err, "unable to patch rc %s to kube in namespace %s", deployment.GetName(), r.namespace)
+			return false, errors.Annotatef(err, "unable to patch rc %s to kube in namespace %s", deployment.GetName(), d.config.namespace)
 		}
 	}
-	return nil
+	return false, nil
 }

@@ -26,38 +26,29 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // Service stores the configuration to add or delete the service object
 type Service struct {
-	kubeConfig    *rest.Config
-	kubeClient    *kubernetes.Clientset
-	deployer      *util.DeployerHelper
-	namespace     string
-	services      []*components.Service
-	labelSelector string
-	oldServices   map[string]*corev1.Service
-	newServices   map[string]*corev1.Service
+	config      *CommonConfig
+	deployer    *util.DeployerHelper
+	services    []*components.Service
+	oldServices map[string]*corev1.Service
+	newServices map[string]*corev1.Service
 }
 
 // NewService returns the service
-func NewService(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, services []*components.Service, namespace string,
-	labelSelector string) (*Service, error) {
-	deployer, err := util.NewDeployer(kubeConfig)
+func NewService(config *CommonConfig, services []*components.Service) (*Service, error) {
+	deployer, err := util.NewDeployer(config.kubeConfig)
 	if err != nil {
-		return nil, errors.Annotatef(err, "unable to get deployer object for %s", namespace)
+		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
 	return &Service{
-		kubeConfig:    kubeConfig,
-		kubeClient:    kubeClient,
-		deployer:      deployer,
-		namespace:     namespace,
-		services:      services,
-		labelSelector: labelSelector,
-		oldServices:   make(map[string]*corev1.Service, 0),
-		newServices:   make(map[string]*corev1.Service, 0),
+		config:      config,
+		deployer:    deployer,
+		services:    services,
+		oldServices: make(map[string]*corev1.Service, 0),
+		newServices: make(map[string]*corev1.Service, 0),
 	}, nil
 }
 
@@ -66,7 +57,7 @@ func (s *Service) buildNewAndOldObject() error {
 	// build old service
 	oldSvcs, err := s.list()
 	if err != nil {
-		return errors.Annotatef(err, "unable to get services for %s", s.namespace)
+		return errors.Annotatef(err, "unable to get services for %s", s.config.namespace)
 	}
 	for _, oldSvc := range oldSvcs.(*corev1.ServiceList).Items {
 		s.oldServices[oldSvc.GetName()] = &oldSvc
@@ -76,7 +67,7 @@ func (s *Service) buildNewAndOldObject() error {
 	for _, newSvc := range s.services {
 		newServiceKube, err := newSvc.ToKube()
 		if err != nil {
-			return errors.Annotatef(err, "unable to convert service %s to kube %s", newSvc.GetName(), s.namespace)
+			return errors.Annotatef(err, "unable to convert service %s to kube %s", newSvc.GetName(), s.config.namespace)
 		}
 		s.newServices[newSvc.GetName()] = newServiceKube.(*corev1.Service)
 	}
@@ -85,7 +76,7 @@ func (s *Service) buildNewAndOldObject() error {
 }
 
 // add adds the service
-func (s *Service) add() error {
+func (s *Service) add(isPatched bool) (bool, error) {
 	isAdded := false
 	for _, service := range s.services {
 		if _, ok := s.oldServices[service.GetName()]; !ok {
@@ -93,23 +84,23 @@ func (s *Service) add() error {
 			isAdded = true
 		}
 	}
-	if isAdded {
+	if isAdded && !s.config.dryRun {
 		err := s.deployer.Deployer.Run()
 		if err != nil {
-			return errors.Annotatef(err, "unable to deploy service in %s", s.namespace)
+			return false, errors.Annotatef(err, "unable to deploy service in %s", s.config.namespace)
 		}
 	}
-	return nil
+	return isAdded, nil
 }
 
 // list lists all the services
 func (s *Service) list() (interface{}, error) {
-	return util.ListServices(s.kubeClient, s.namespace, s.labelSelector)
+	return util.ListServices(s.config.kubeClient, s.config.namespace, s.config.labelSelector)
 }
 
 // delete deletes the service
 func (s *Service) delete(name string) error {
-	return util.DeleteService(s.kubeClient, s.namespace, name)
+	return util.DeleteService(s.config.kubeClient, s.config.namespace, name)
 }
 
 // remove removes the service
@@ -119,7 +110,7 @@ func (s *Service) remove() error {
 		if _, ok := s.newServices[oldService.GetName()]; !ok {
 			err := s.delete(oldService.GetName())
 			if err != nil {
-				return errors.Annotatef(err, "unable to delete service %s in namespace %s", oldService.GetName(), s.namespace)
+				return errors.Annotatef(err, "unable to delete service %s in namespace %s", oldService.GetName(), s.config.namespace)
 			}
 		}
 	}
@@ -127,6 +118,6 @@ func (s *Service) remove() error {
 }
 
 // patch patches the service
-func (s *Service) patch(rc interface{}) error {
-	return nil
+func (s *Service) patch(rc interface{}, isPatched bool) (bool, error) {
+	return false, nil
 }

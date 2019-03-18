@@ -34,8 +34,8 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      p.config.Perceptor.Name,
-		Namespace: p.config.Namespace,
+		Name:      p.opssight.Perceptor.Name,
+		Namespace: p.opssight.Namespace,
 	})
 	pod, err := p.perceptorPod()
 	if err != nil {
@@ -45,15 +45,15 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	rc.AddLabelSelectors(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
+	rc.AddLabelSelectors(map[string]string{"name": p.opssight.Perceptor.Name, "app": "opssight"})
 	return rc, nil
 }
 
 func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: p.config.Perceptor.Name,
+		Name: p.opssight.Perceptor.Name,
 	})
-	pod.AddLabels(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
+	pod.AddLabels(map[string]string{"name": p.opssight.Perceptor.Name, "app": "opssight"})
 	cont, err := p.perceptorContainer()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -63,7 +63,7 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	err = pod.AddVolume(p.configMapVolume(p.config.Perceptor.Name))
+	err = pod.AddVolume(p.configMapVolume(p.opssight.Perceptor.Name))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -72,17 +72,17 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 }
 
 func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
-	name := p.config.Perceptor.Name
+	name := p.opssight.Perceptor.Name
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    name,
-		Image:   p.config.Perceptor.Image,
+		Image:   p.opssight.Perceptor.Image,
 		Command: []string{fmt.Sprintf("./%s", name)},
-		Args:    []string{fmt.Sprintf("/etc/%s/%s.json", name, p.config.ConfigMapName)},
-		MinCPU:  p.config.DefaultCPU,
-		MinMem:  p.config.DefaultMem,
+		Args:    []string{fmt.Sprintf("/etc/%s/%s.json", name, p.opssight.ConfigMapName)},
+		MinCPU:  p.opssight.DefaultCPU,
+		MinMem:  p.opssight.DefaultMem,
 	})
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.config.Perceptor.Port),
+		ContainerPort: fmt.Sprintf("%d", p.opssight.Perceptor.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
@@ -93,7 +93,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		return nil, errors.Trace(err)
 	}
 
-	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.config.SecretName})
+	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.SecretName})
 
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -105,21 +105,21 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 // PerceptorService creates a service for perceptor
 func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      p.config.Perceptor.Name,
-		Namespace: p.config.Namespace,
+		Name:      p.opssight.Perceptor.Name,
+		Namespace: p.opssight.Namespace,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(p.config.Perceptor.Port),
-		TargetPort: fmt.Sprintf("%d", p.config.Perceptor.Port),
+		Port:       int32(p.opssight.Perceptor.Port),
+		TargetPort: fmt.Sprintf("%d", p.opssight.Perceptor.Port),
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	service.AddLabels(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": p.config.Perceptor.Name})
+	service.AddLabels(map[string]string{"name": p.opssight.Perceptor.Name, "app": "opssight"})
+	service.AddSelectors(map[string]string{"name": p.opssight.Perceptor.Name})
 
 	return service, nil
 }
@@ -127,10 +127,11 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 // PerceptorSecret create a secret for perceptor
 func (p *SpecConfig) PerceptorSecret() *components.Secret {
 	secretConfig := horizonapi.SecretConfig{
-		Name:      p.config.SecretName,
-		Namespace: p.config.Namespace,
+		Name:      p.opssight.SecretName,
+		Namespace: p.opssight.Namespace,
 		Type:      horizonapi.SecretTypeOpaque,
 	}
 	secret := components.NewSecret(secretConfig)
+	secret.AddLabels(map[string]string{"name": p.opssight.SecretName, "app": "opssight"})
 	return secret
 }
