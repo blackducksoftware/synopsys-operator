@@ -23,18 +23,35 @@ package util
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 )
 
 func TestParseImageVersion(t *testing.T) {
-	version := "2019.1.0"
-	_, err := ParseImageVersion(version)
+	version := "1.0.6"
+	versions, err := ParseImageVersion(version)
+	t.Logf("versions: %+v", versions)
+	if err != nil {
+		t.Errorf("unable to parse image version: %+v", err)
+	}
+	if len(versions) == 4 {
+		version1, _ := strconv.Atoi(versions[1])
+		version3, _ := strconv.Atoi(versions[3])
+		if err == nil && version1 >= 1 && version3 > 3 {
+			t.Logf("/opt/blackduck/hub/blackduck-upload-cache")
+		} else {
+			t.Logf("/opt/blackduck/hub/hub-upload-cache")
+		}
+	}
+
+	version = "2019.1.0"
+	_, err = ParseImageVersion(version)
 	if err != nil {
 		t.Errorf("unable to parse image version: %+v", err)
 	}
 
 	version = "2019.a.b.c"
-	versions, err := ParseImageVersion(version)
+	versions, err = ParseImageVersion(version)
 	if err == nil {
 		t.Errorf("unable to get image version: %+v", versions)
 	}

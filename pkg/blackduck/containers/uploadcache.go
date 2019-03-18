@@ -109,9 +109,12 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 func (c *Creater) getMountPrefixPath() string {
 	blackduckVersion := hubutils.GetHubVersion(c.hubSpec.Environs)
 	versions, err := hubutils.ParseImageVersion(blackduckVersion)
-	year, _ := strconv.Atoi(versions[1])
-	if err == nil && year > 2018 {
-		return "/opt/blackduck/hub/blackduck-upload-cache"
+	if len(versions) == 4 {
+		version1, _ := strconv.Atoi(versions[1])
+		version3, _ := strconv.Atoi(versions[3])
+		if err == nil && version1 >= 1 && version3 > 3 {
+			return "/opt/blackduck/hub/blackduck-upload-cache"
+		}
 	}
 	return "/opt/blackduck/hub/hub-upload-cache"
 }
