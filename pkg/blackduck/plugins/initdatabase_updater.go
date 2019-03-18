@@ -27,6 +27,7 @@ import (
 	"time"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
@@ -168,17 +169,17 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *blackduckv1.Blac
 				dbNeedsInitBecause := ""
 
 				log.Debugf("%v : Checking connection now...", hubSpec.Namespace)
-				db, err := blackduck.OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
+				db, err := apps.NewDatabase(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
 				log.Debugf("%v : Done checking [ error status == %v ] ...", hubSpec.Namespace, err)
 				if err != nil {
 					dbNeedsInitBecause = "couldnt connect !"
 				} else {
-					_, err := db.Exec("SELECT * FROM USER;")
-					if err != nil {
+					errs := db.ExecuteStatements([]string{"SELECT * FROM USER;"})
+					if len(errs) > 0 {
 						dbNeedsInitBecause = "couldnt select!"
 					}
 				}
-				db.Close()
+				db.CloseDatabaseConnection()
 
 				if dbNeedsInitBecause != "" {
 					log.Warnf("%v: database needs init because (%v), ::: %v ", hubSpec.Namespace, dbNeedsInitBecause, err)

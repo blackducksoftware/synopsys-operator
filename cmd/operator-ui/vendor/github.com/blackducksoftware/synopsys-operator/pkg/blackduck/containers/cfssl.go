@@ -31,7 +31,7 @@ import (
 func (c *Creater) GetCfsslDeployment() *components.ReplicationController {
 	cfsslVolumeMounts := c.getCfsslolumeMounts()
 	cfsslContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: c.getFullContainerName("cfssl"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: c.GetFullContainerName("cfssl"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.CfsslMemoryLimit, MaxMem: c.hubContainerFlavor.CfsslMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: cfsslVolumeMounts,

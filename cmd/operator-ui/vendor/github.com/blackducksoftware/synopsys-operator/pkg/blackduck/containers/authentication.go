@@ -34,7 +34,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.AuthenticationHubMaxMemory})
 
 	hubAuthContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: c.getFullContainerName("authentication"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: c.GetFullContainerName("authentication"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   authEnvs,
 		VolumeMounts: volumeMounts,

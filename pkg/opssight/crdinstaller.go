@@ -22,16 +22,17 @@ under the License.
 package opssight
 
 import (
+	"reflect"
 	"strings"
 	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	opssightinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
+	opssightinformer "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -103,7 +104,7 @@ func (c *CRDInstaller) Deploy() error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	configMapEditor := NewConfigMapUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
+	configMapEditor := NewUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
 	configMapEditor.Run(c.config.StopCh)
 
 	return nil
@@ -115,7 +116,7 @@ func (c *CRDInstaller) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *CRDInstaller) CreateInformer() {
-	c.config.informer = opssightinformerv1.NewOpsSightInformer(
+	c.config.informer = opssightinformer.NewOpsSightInformer(
 		c.config.customClientSet,
 		c.config.Config.Namespace,
 		c.config.resyncPeriod,
@@ -133,6 +134,7 @@ func (c *CRDInstaller) CreateQueue() {
 
 // AddInformerEventHandler will add the event handlers for the informers
 func (c *CRDInstaller) AddInformerEventHandler() {
+	log.Debugf("adding informer event handler for opssight")
 	c.config.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			// convert the resource object into a key (in this case
@@ -147,12 +149,18 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(newObj)
-			log.Infof("update opssight: %s", key)
-			if err == nil {
-				c.config.queue.Add(key)
+			old := oldObj.(*opssightapi.OpsSight)
+			new := newObj.(*opssightapi.OpsSight)
+			if old.ResourceVersion != new.ResourceVersion && !reflect.DeepEqual(old.Spec, new.Spec) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
+				log.Infof("update opssight: %s", key)
+				if err == nil {
+					c.config.queue.Add(key)
+				} else {
+					log.Errorf("unable to update OpsSight: %v", err)
+				}
 			} else {
-				log.Errorf("unable to update OpsSight: %v", err)
+				log.Debugf("ignoring the update event for opssight due to deep equal on spec")
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -204,15 +212,15 @@ func (c *CRDInstaller) CreateHandler() {
 	}
 
 	c.config.handler = &Handler{
-		Config:            c.config.Config,
-		KubeConfig:        c.config.KubeConfig,
-		Clientset:         c.config.KubeClientSet,
-		OpsSightClientset: c.config.customClientSet,
-		Namespace:         c.config.Config.Namespace,
-		OSSecurityClient:  osClient,
-		RouteClient:       routeClient,
-		Defaults:          c.config.Defaults.(*v1.OpsSightSpec),
-		HubClient:         hubClient,
+		Config:           c.config.Config,
+		KubeConfig:       c.config.KubeConfig,
+		KubeClient:       c.config.KubeClientSet,
+		OpsSightClient:   c.config.customClientSet,
+		Namespace:        c.config.Config.Namespace,
+		OSSecurityClient: osClient,
+		RouteClient:      routeClient,
+		Defaults:         c.config.Defaults.(*opssightapi.OpsSightSpec),
+		HubClient:        hubClient,
 	}
 }
 

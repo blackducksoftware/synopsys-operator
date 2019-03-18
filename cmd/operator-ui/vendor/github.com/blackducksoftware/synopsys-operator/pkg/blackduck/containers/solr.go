@@ -22,6 +22,8 @@ under the License.
 package containers
 
 import (
+	"strings"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -29,9 +31,14 @@ import (
 
 // GetSolrDeployment will return the solr deployment
 func (c *Creater) GetSolrDeployment() *components.ReplicationController {
+	image := c.GetFullContainerName("solr")
+	if strings.EqualFold(image, "") {
+		return nil
+	}
+
 	solrVolumeMount := c.getSolrVolumeMounts()
 	solrContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: c.getFullContainerName("solr"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: image,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.SolrMemoryLimit, MaxMem: c.hubContainerFlavor.SolrMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: solrVolumeMount,

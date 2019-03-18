@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/installer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
 	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
 )

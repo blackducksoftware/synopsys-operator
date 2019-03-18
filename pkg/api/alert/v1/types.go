@@ -52,11 +52,9 @@ type AlertSpec struct {
 	BlackduckPort     *int   `json:"blackduckPort,omitempty"`
 	Port              *int   `json:"port"`
 	StandAlone        *bool  `json:"standAlone"`
-
-	// Should be passed like: e.g "1300Mi"
-	AlertMemory string `json:"alertMemory.omitempty"`
-	CfsslMemory string `json:"cfsslMemory.omitempty"`
-	State       string `json:"state"`
+	AlertMemory       string `json:"alertMemory,omitempty"` // Should be passed like: e.g "1300Mi"
+	CfsslMemory       string `json:"cfsslMemory,omitempty"` // Should be passed like: e.g "1300Mi"
+	DesiredState      string `json:"desiredState,omitempty"`
 }
 
 // AlertStatus is the status for a Alert resource

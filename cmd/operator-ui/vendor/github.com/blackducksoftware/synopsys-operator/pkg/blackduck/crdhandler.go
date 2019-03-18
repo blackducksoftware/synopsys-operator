@@ -195,10 +195,14 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	if !strings.EqualFold(string(state), blackduck.Spec.DesiredState) {
 		isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(blackduck.Spec.Environs)
 		hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
+		hubContainerFlavor, err := hubCreator.getContainersFlavor(blackduck)
+		if err != nil {
+			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
+		}
 		switch blackduck.Spec.DesiredState {
 		case "Running":
 			log.Infof("Starting Hub: %s", blackduck.Name)
-			if err := hubCreator.Start(blackduck); err != nil {
+			if err := hubCreator.Start(blackduck, hubContainerFlavor); err != nil {
 				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
 			} else {
 				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
@@ -206,7 +210,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 
 		case "Stopped":
 			log.Infof("Stopping Hub: %s", blackduck.Name)
-			if err := hubCreator.Stop(&blackduck.Spec); err != nil {
+			if err := hubCreator.Stop(&blackduck.Spec, hubContainerFlavor); err != nil {
 				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
 			} else {
 				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
@@ -228,7 +232,7 @@ func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
 
 	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
 		for i := 0; i < 20; i++ {
-			registrationPod, err := util.GetPods(h.kubeClient, createHub.Namespace, registrationPod.Name)
+			registrationPod, err := util.GetPod(h.kubeClient, createHub.Namespace, registrationPod.Name)
 			if err != nil {
 				log.Errorf("unable to find the registration pod in %s because %+v", createHub.Namespace, err)
 				return err
