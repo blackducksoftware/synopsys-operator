@@ -153,7 +153,10 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 	// OpenShift routes
 	ipAddress := ""
 	if hc.routeClient != nil {
-		route, _ := util.CreateOpenShiftRoutes(hc.routeClient, createHub.Spec.Namespace, createHub.Spec.Namespace, "Service", "webserver")
+		route, err := util.CreateOpenShiftRoutes(hc.routeClient, createHub.Spec.Namespace, createHub.Spec.Namespace, "Service", "webserver")
+		if err != nil {
+			log.Errorf("unable to create the openshift route due to %+v", err)
+		}
 		log.Debugf("openshift route host: %s", route.Spec.Host)
 		ipAddress = route.Spec.Host
 	}

@@ -46,7 +46,7 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 	deployer.AddServiceAccount(util.CreateServiceAccount(createHub.Namespace, createHub.Namespace))
 
 	// Create a cluster role binding and associated it to a service account
-	deployer.AddClusterRoleBinding(util.CreateClusterRoleBinding(createHub.Namespace, createHub.Namespace, createHub.Namespace, "", "ClusterRole", "cluster-admin"))
+	deployer.AddClusterRoleBinding(util.CreateClusterRoleBinding(createHub.Namespace, createHub.Namespace, createHub.Namespace, "", "ClusterRole", "synopsys-operator-admin"))
 
 	// We only start the postgres container if the external DB configuration struct is empty
 	if createHub.PersistentStorage {
