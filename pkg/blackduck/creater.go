@@ -124,7 +124,10 @@ func (hc *Creater) CreateHub(createHub *v1.Blackduck) (string, map[string]string
 
 	// Deploy namespace, service account, clusterrolebinding and pvc
 	err = deployer.Run()
-	if err != nil {
+	if err != nil && strings.Contains(err.Error(), "cannot create") {
+		log.Errorf("init deployments failed for %s because %+v", createHub.Spec.Namespace, err)
+		return "", nil, true, err
+	} else if err != nil {
 		log.Errorf("init deployments failed for %s because %+v", createHub.Spec.Namespace, err)
 	}
 	// time.Sleep(20 * time.Second)
