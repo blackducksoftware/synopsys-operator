@@ -44,6 +44,7 @@ import (
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/api/storage/v1beta1"
@@ -314,7 +315,7 @@ func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (
 
 // ListSecrets will list the secret
 func ListSecrets(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.SecretList, error) {
-	return clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	return clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateSecret updates a secret
@@ -341,7 +342,7 @@ func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string
 
 // ListConfigMaps will list the config map
 func ListConfigMaps(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ConfigMapList, error) {
-	return clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
+	return clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateConfigMap updates a config map
@@ -802,10 +803,20 @@ func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) erro
 	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
-// IsClusterRoleBindingSubjectExist checks whether the namespace is already exist in the subject of cluster role binding
-func IsClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace string) bool {
+// IsClusterRoleBindingSubjectNamespaceExist checks whether the namespace is already exist in the subject of cluster role binding
+func IsClusterRoleBindingSubjectNamespaceExist(subjects []rbacv1.Subject, namespace string) bool {
 	for _, subject := range subjects {
 		if strings.EqualFold(subject.Namespace, namespace) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsClusterRoleBindingSubjectExist checks whether the namespace is already exist in the subject of cluster role binding
+func IsClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace string, name string) bool {
+	for _, subject := range subjects {
+		if strings.EqualFold(subject.Namespace, namespace) && strings.EqualFold(subject.Name, name) {
 			return true
 		}
 	}
@@ -957,7 +968,7 @@ func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old appsv1.Depl
 }
 
 // PatchDeployment patch a deployment
-func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1.Deployment) error {
+func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1beta2.Deployment) error {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return err

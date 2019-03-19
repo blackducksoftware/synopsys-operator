@@ -90,7 +90,7 @@ func (c *ClusterRole) add(isPatched bool) (bool, error) {
 			return false, errors.Annotatef(err, "unable to deploy cluster role in %s", c.config.namespace)
 		}
 	}
-	return isAdded, nil
+	return false, nil
 }
 
 // get gets the cluster role

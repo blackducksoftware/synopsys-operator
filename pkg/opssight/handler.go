@@ -175,7 +175,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		if err != nil {
 			recordError("unable to stop opssight")
 			h.updateState(Error, err.Error(), opssight)
-			log.Errorf("unable to handle object stop: %s", err.Error())
+			log.Errorf("handle object stop: %s", err.Error())
 			return
 		}
 		opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)
@@ -202,7 +202,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		if err != nil {
 			recordError("unable to update opssight")
 			h.updateState(Error, err.Error(), opssight)
-			log.Errorf("unable to handle object update: %s", err.Error())
+			log.Errorf("handle object update: %s", err.Error())
 			return
 		}
 		opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)

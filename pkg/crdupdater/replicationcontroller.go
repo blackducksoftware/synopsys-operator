@@ -147,7 +147,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 	// check isPatched, why?
 	// if there is any configuration change, irrespective of comparing any changes, patch the replication controller
 	if isPatched && !r.config.dryRun {
-		err := util.PatchReplicationController(r.config.kubeClient, *r.newReplicationControllers[replicationController.GetName()], *r.oldReplicationControllers[replicationController.GetName()])
+		err := util.PatchReplicationController(r.config.kubeClient, *r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch replication controller %s in namespace %s", replicationController.GetName(), r.config.namespace)
 		}
@@ -183,7 +183,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 
 	// if there is any change from the above step, patch the replication controller
 	if isChanged {
-		err := util.PatchReplicationController(r.config.kubeClient, *r.newReplicationControllers[replicationController.GetName()], *r.oldReplicationControllers[replicationController.GetName()])
+		err := util.PatchReplicationController(r.config.kubeClient, *r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch rc %s to kube in namespace %s", replicationController.GetName(), r.config.namespace)
 		}

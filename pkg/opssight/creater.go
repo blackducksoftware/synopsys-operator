@@ -121,7 +121,7 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 
 	for _, clusterRoleBinding := range clusterRoleBindings.Items {
 		if len(clusterRoleBinding.Subjects) == 1 {
-			if !strings.EqualFold(clusterRoleBinding.RoleRef.Name, "cluster-admin") {
+			if !strings.EqualFold(clusterRoleBinding.RoleRef.Name, "synopsys-operator-admin") {
 				log.Debugf("deleting cluster role %s", clusterRoleBinding.RoleRef.Name)
 				err = util.DeleteClusterRole(ac.kubeClient, clusterRoleBinding.RoleRef.Name)
 				if err != nil {

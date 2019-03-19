@@ -22,6 +22,9 @@ under the License.
 package crdupdater
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
@@ -78,19 +81,27 @@ func (c *ClusterRoleBinding) buildNewAndOldObject() error {
 // add adds the cluster role binding
 func (c *ClusterRoleBinding) add(isPatched bool) (bool, error) {
 	isAdded := false
+	var err error
 	for _, clusterRoleBinding := range c.clusterRoleBindings {
 		if _, ok := c.oldClusterRoleBindings[clusterRoleBinding.GetName()]; !ok {
+			log.Printf("cluster role binding %s added to deployer", clusterRoleBinding.GetName())
 			c.deployer.Deployer.AddClusterRoleBinding(clusterRoleBinding)
 			isAdded = true
+		} else {
+			_, err = c.patch(clusterRoleBinding, isPatched)
+			if err != nil {
+				return false, errors.Annotatef(err, "patch cluster role")
+			}
 		}
 	}
+	log.Printf("c.config.dryRun: %+v, isAdded: %+v", c.config.dryRun, isAdded)
 	if isAdded && !c.config.dryRun {
 		err := c.deployer.Deployer.Run()
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to deploy cluster role binding in %s", c.config.namespace)
 		}
 	}
-	return isAdded, nil
+	return false, nil
 }
 
 // get gets the cluster role binding
@@ -124,5 +135,18 @@ func (c *ClusterRoleBinding) remove() error {
 
 // patch patches the cluster role binding
 func (c *ClusterRoleBinding) patch(crb interface{}, isPatched bool) (bool, error) {
+	clusterRoleBinding := crb.(*components.ClusterRoleBinding)
+	clusterRoleBindingName := clusterRoleBinding.GetName()
+	oldclusterRoleBinding := c.oldClusterRoleBindings[clusterRoleBindingName]
+	newClusterRoleBinding := c.newClusterRoleBindings[clusterRoleBindingName]
+	for _, subject := range newClusterRoleBinding.Subjects {
+		if !util.IsClusterRoleBindingSubjectExist(oldclusterRoleBinding.Subjects, subject.Namespace, subject.Name) {
+			oldclusterRoleBinding.Subjects = append(oldclusterRoleBinding.Subjects, rbacv1.Subject{Name: subject.Name, Namespace: subject.Namespace, Kind: "ServiceAccount"})
+			_, err := util.UpdateClusterRoleBinding(c.config.kubeClient, oldclusterRoleBinding)
+			if err != nil {
+				return false, errors.Annotate(err, fmt.Sprintf("failed to update %s cluster role binding", clusterRoleBinding.GetName()))
+			}
+		}
+	}
 	return false, nil
 }

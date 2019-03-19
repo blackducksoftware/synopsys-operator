@@ -22,6 +22,7 @@ under the License.
 package crdupdater
 
 import (
+	"log"
 	"reflect"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -64,6 +65,7 @@ func (s *Secret) buildNewAndOldObject() error {
 		return errors.Annotatef(err, "unable to get secrets for %s", s.config.namespace)
 	}
 	for _, oldSecret := range oldSecrets.(*corev1.SecretList).Items {
+		log.Printf("secret name: %s", oldSecret.Name)
 		s.oldSecrets[oldSecret.GetName()] = &oldSecret
 	}
 

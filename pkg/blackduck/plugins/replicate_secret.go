@@ -220,18 +220,20 @@ func (r *SecretReplicator) updateDependents(secret *v1.Secret, dependents []stri
 // cert2 -> hub3, hub4, hub5
 // etc...
 func getMapOfNginxCertificatesToHubs(hubClient *hubclientset.Clientset, namespace string) (map[string][]string, error) {
-	hubList, err := util.ListHubs(hubClient, namespace)
-	if err != nil {
-		log.Errorf("unable to list the hubs due to %+v", err)
-		return nil, err
+	for {
+		hubList, err := util.ListHubs(hubClient, namespace)
+		if err != nil {
+			log.Errorf("unable to list the hubs due to %+v", err)
+			continue
+		}
+		dependencyMap := make(map[string][]string)
+		for _, hub := range hubList.Items {
+			replicas := dependencyMap[hub.Spec.CertificateName]
+			replicas = append(replicas, hub.Name)
+			dependencyMap[hub.Spec.CertificateName] = replicas
+		}
+		log.Debugf("dependencyMap: %+v", dependencyMap)
+		return dependencyMap, nil
 	}
 
-	dependencyMap := make(map[string][]string)
-	for _, hub := range hubList.Items {
-		replicas := dependencyMap[hub.Spec.CertificateName]
-		replicas = append(replicas, hub.Name)
-		dependencyMap[hub.Spec.CertificateName] = replicas
-	}
-	log.Debugf("dependencyMap: %+v", dependencyMap)
-	return dependencyMap, nil
 }

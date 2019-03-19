@@ -279,7 +279,7 @@ func (p *SpecConfig) ScannerClusterRoleBinding() *components.ClusterRoleBinding 
 	scannerCRB.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
 		Kind:     "ClusterRole",
-		Name:     "cluster-admin",
+		Name:     "synopsys-operator-admin",
 	})
 	scannerCRB.AddLabels(map[string]string{"name": p.opssight.ScannerPod.Name, "app": "opssight"})
 

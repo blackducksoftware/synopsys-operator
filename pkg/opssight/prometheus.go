@@ -72,7 +72,7 @@ func (p *SpecConfig) perceptorMetricsContainer() *components.Container {
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  p.opssight.Prometheus.Name,
 		Image: p.opssight.Prometheus.Image,
-		Args:  []string{"--log.level=debug", "--opssight.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d"},
+		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d"},
 	})
 
 	container.AddPort(horizonapi.PortConfig{

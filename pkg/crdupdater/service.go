@@ -90,7 +90,7 @@ func (s *Service) add(isPatched bool) (bool, error) {
 			return false, errors.Annotatef(err, "unable to deploy service in %s", s.config.namespace)
 		}
 	}
-	return isAdded, nil
+	return false, nil
 }
 
 // get gets the service

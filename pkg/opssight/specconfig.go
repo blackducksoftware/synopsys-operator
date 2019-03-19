@@ -29,10 +29,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
-	log "github.com/sirupsen/logrus"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -142,24 +139,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
 
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
-	scannerClusterRoleBinding := p.ScannerClusterRoleBinding()
-	if p.dryRun {
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, scannerClusterRoleBinding)
-	} else {
-		clusterRoleBinding, err := util.GetClusterRoleBinding(p.kubeClient, scannerClusterRoleBinding.GetName())
-		if err != nil {
-			log.Debugf("%s cluster role binding not exist!!!", scannerClusterRoleBinding.GetName())
-			components.ClusterRoleBindings = append(components.ClusterRoleBindings, scannerClusterRoleBinding)
-		} else {
-			if !util.IsClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.opssight.Namespace) {
-				clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: scannerClusterRoleBinding.GetName(), Namespace: p.opssight.Namespace, Kind: "ServiceAccount"})
-				_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
-				if err != nil {
-					return nil, errors.Annotate(err, fmt.Sprintf("failed to update the %s cluster role binding", scannerClusterRoleBinding.GetName()))
-				}
-			}
-		}
-	}
+	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 
 	// Add Pod Perceiver
 	if p.opssight.Perceiver.EnablePodPerceiver {
@@ -172,25 +152,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
 		podClusterRole := p.PodPerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, podClusterRole)
-
-		podClusterRoleBinding := p.PodPerceiverClusterRoleBinding(podClusterRole)
-		if p.dryRun {
-			components.ClusterRoleBindings = append(components.ClusterRoleBindings, podClusterRoleBinding)
-		} else {
-			clusterRoleBinding, err := util.GetClusterRoleBinding(p.kubeClient, podClusterRoleBinding.GetName())
-			if err != nil {
-				log.Debugf("%s cluster role binding not exist!!!", podClusterRoleBinding.GetName())
-				components.ClusterRoleBindings = append(components.ClusterRoleBindings, podClusterRoleBinding)
-			} else {
-				if !util.IsClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.opssight.Namespace) {
-					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: podClusterRoleBinding.GetName(), Namespace: p.opssight.Namespace, Kind: "ServiceAccount"})
-					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
-					if err != nil {
-						return nil, errors.Annotate(err, fmt.Sprintf("failed to update the %s cluster role binding", podClusterRoleBinding.GetName()))
-					}
-				}
-			}
-		}
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(podClusterRole))
 	}
 
 	// Add Image Perceiver
@@ -204,25 +166,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
 		imageClusterRole := p.ImagePerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, imageClusterRole)
-
-		imageClusterRoleBinding := p.ImagePerceiverClusterRoleBinding(imageClusterRole)
-		if p.dryRun {
-			components.ClusterRoleBindings = append(components.ClusterRoleBindings, imageClusterRoleBinding)
-		} else {
-			clusterRoleBinding, err := util.GetClusterRoleBinding(p.kubeClient, imageClusterRoleBinding.GetName())
-			if err != nil {
-				log.Debugf("%s cluster role binding not exist!!!", imageClusterRoleBinding.GetName())
-				components.ClusterRoleBindings = append(components.ClusterRoleBindings, imageClusterRoleBinding)
-			} else {
-				if !util.IsClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.opssight.Namespace) {
-					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: imageClusterRoleBinding.GetName(), Namespace: p.opssight.Namespace, Kind: "ServiceAccount"})
-					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
-					if err != nil {
-						return nil, errors.Annotate(err, fmt.Sprintf("failed to update the %s cluster role binding", imageClusterRoleBinding.GetName()))
-					}
-				}
-			}
-		}
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(imageClusterRole))
 	}
 
 	// Add skyfire
@@ -236,25 +180,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ServiceAccounts = append(components.ServiceAccounts, p.PerceptorSkyfireServiceAccount())
 		skyfireClusterRole := p.PerceptorSkyfireClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, skyfireClusterRole)
-
-		skyfireClusterRoleBinding := p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole)
-		if p.dryRun {
-			components.ClusterRoleBindings = append(components.ClusterRoleBindings, skyfireClusterRoleBinding)
-		} else {
-			clusterRoleBinding, err := util.GetClusterRoleBinding(p.kubeClient, skyfireClusterRoleBinding.GetName())
-			if err != nil {
-				log.Debugf("%s cluster role binding not exist!!!", skyfireClusterRoleBinding.GetName())
-				components.ClusterRoleBindings = append(components.ClusterRoleBindings, skyfireClusterRoleBinding)
-			} else {
-				if !util.IsClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.opssight.Namespace) {
-					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: skyfireClusterRoleBinding.GetName(), Namespace: p.opssight.Namespace, Kind: "ServiceAccount"})
-					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
-					if err != nil {
-						return nil, errors.Annotate(err, fmt.Sprintf("failed to update the %s cluster role binding", skyfireClusterRoleBinding.GetName()))
-					}
-				}
-			}
-		}
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole))
 	}
 
 	// Add Metrics

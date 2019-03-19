@@ -29,6 +29,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -38,7 +39,7 @@ type Deployment struct {
 	deployer       *util.DeployerHelper
 	deployments    []*components.Deployment
 	oldDeployments map[string]*appsv1.Deployment
-	newDeployments map[string]*appsv1.Deployment
+	newDeployments map[string]*appsv1beta2.Deployment
 }
 
 // NewDeployment returns the deployment
@@ -52,7 +53,7 @@ func NewDeployment(config *CommonConfig, deployments []*components.Deployment) (
 		deployer:       deployer,
 		deployments:    deployments,
 		oldDeployments: make(map[string]*appsv1.Deployment, 0),
-		newDeployments: make(map[string]*appsv1.Deployment, 0),
+		newDeployments: make(map[string]*appsv1beta2.Deployment, 0),
 	}, nil
 }
 
@@ -73,7 +74,7 @@ func (d *Deployment) buildNewAndOldObject() error {
 		if err != nil {
 			return errors.Annotatef(err, "unable to convert deployment %s to kube %s", newRc.GetName(), d.config.namespace)
 		}
-		d.newDeployments[newRc.GetName()] = newDeploymentKube.(*appsv1.Deployment)
+		d.newDeployments[newRc.GetName()] = newDeploymentKube.(*appsv1beta2.Deployment)
 	}
 
 	return nil
@@ -147,7 +148,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 	// check isPatched, why?
 	// if there is any configuration change, irrespective of comparing any changes, patch the deployment
 	if isPatched && !d.config.dryRun {
-		err := util.PatchDeployment(d.config.kubeClient, *d.newDeployments[deployment.GetName()], *d.oldDeployments[deployment.GetName()])
+		err := util.PatchDeployment(d.config.kubeClient, *d.oldDeployments[deployment.GetName()], *d.newDeployments[deployment.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch deployment %s in namespace %s", deployment.GetName(), d.config.namespace)
 		}
@@ -183,7 +184,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 
 	// if there is any change from the above step, patch the deployment
 	if isChanged {
-		err := util.PatchDeployment(d.config.kubeClient, *d.newDeployments[deployment.GetName()], *d.oldDeployments[deployment.GetName()])
+		err := util.PatchDeployment(d.config.kubeClient, *d.oldDeployments[deployment.GetName()], *d.newDeployments[deployment.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch rc %s to kube in namespace %s", deployment.GetName(), d.config.namespace)
 		}
