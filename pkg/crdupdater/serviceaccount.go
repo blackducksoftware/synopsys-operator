@@ -93,6 +93,11 @@ func (s *ServiceAccount) add(isPatched bool) (bool, error) {
 	return isAdded, nil
 }
 
+// get gets the service account
+func (s *ServiceAccount) get(name string) (interface{}, error) {
+	return util.GetServiceAccount(s.config.kubeClient, s.config.namespace, name)
+}
+
 // list lists all the service accounts
 func (s *ServiceAccount) list() (interface{}, error) {
 	return util.ListServiceAccounts(s.config.kubeClient, s.config.namespace, s.config.labelSelector)
@@ -118,6 +123,6 @@ func (s *ServiceAccount) remove() error {
 }
 
 // patch patches the service account
-func (s *ServiceAccount) patch(cr interface{}, isPatched bool) (bool, error) {
+func (s *ServiceAccount) patch(sa interface{}, isPatched bool) (bool, error) {
 	return false, nil
 }

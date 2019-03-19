@@ -173,29 +173,23 @@ func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSightSpec) error {
 		return errors.Annotatef(err, "unable to get opssight components for %s", opssight.Namespace)
 	}
 
-	deployer, err := util.NewDeployer(ac.kubeConfig)
-	if err != nil {
-		return errors.Annotatef(err, "unable to get deployer object for %s", opssight.Namespace)
+	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssight.Namespace, components, "app=opssight")
+	errs := commonConfig.CRUDComponents()
+
+	if len(errs) > 0 {
+		return fmt.Errorf("update components errors: %+v", errs)
 	}
-	// Note: controllers that need to continually run to update your app
-	// should be added in PreDeploy().
-	deployer.PreDeploy(components, opssight.Namespace)
 
 	if !ac.config.DryRun {
-		err = deployer.Run()
-		if err != nil {
-			log.Errorf("unable to deploy opssight %s due to %+v", opssight.Namespace, err)
-		}
-		deployer.StartControllers()
 		// if OpenShift, add a privileged role to scanner account
 		err = ac.postDeploy(spec, opssight.Namespace)
 		if err != nil {
-			return errors.Trace(err)
+			return errors.Annotatef(err, "post deploy")
 		}
 
 		err = ac.deployHub(opssight)
 		if err != nil {
-			return errors.Trace(err)
+			return errors.Annotatef(err, "deploy hub")
 		}
 	}
 
@@ -226,7 +220,8 @@ func (ac *Creater) UpdateOpsSight(opssight *opssightapi.OpsSightSpec) error {
 		return errors.Annotatef(err, "unable to get opssight components for %s", opssight.Namespace)
 	}
 
-	errors := crdupdater.CRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssight.Namespace, components, "app=opssight")
+	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssight.Namespace, components, "app=opssight")
+	errors := commonConfig.CRUDComponents()
 
 	if len(errors) > 0 {
 		return fmt.Errorf("unable to update components due to %+v", errors)

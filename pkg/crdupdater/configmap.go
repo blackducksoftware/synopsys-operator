@@ -104,6 +104,11 @@ func (c *ConfigMap) add(isPatched bool) (bool, error) {
 	return isAdded || isUpdated, nil
 }
 
+// get gets the config map
+func (c *ConfigMap) get(name string) (interface{}, error) {
+	return util.GetConfigMap(c.config.kubeClient, c.config.namespace, name)
+}
+
 // list lists all the config maps
 func (c *ConfigMap) list() (interface{}, error) {
 	return util.ListConfigMaps(c.config.kubeClient, c.config.namespace, c.config.labelSelector)

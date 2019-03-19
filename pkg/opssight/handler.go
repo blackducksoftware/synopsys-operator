@@ -90,7 +90,7 @@ type Handler struct {
 // ObjectCreated will be called for create opssight events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	if err := h.handleObjectCreated(obj); err != nil {
-		log.Errorf("unable to handle object created: %s", err.Error())
+		log.Errorf("handle object created: %s", err.Error())
 	}
 }
 
@@ -130,7 +130,7 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 		if err != nil {
 			recordError("unable to create opssight")
 			h.updateState(Error, err.Error(), opssight)
-			return errors.Annotatef(err, "unable to create opssight %s", opssight.Name)
+			return errors.Annotatef(err, "create opssight %s", opssight.Name)
 		}
 		h.updateState(Running, "", opssight)
 	} else {

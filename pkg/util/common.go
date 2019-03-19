@@ -746,6 +746,11 @@ func CreateServiceAccount(namespace string, name string) *components.ServiceAcco
 	return serviceAccount
 }
 
+// GetServiceAccount get a service account
+func GetServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ServiceAccount, error) {
+	return clientset.CoreV1().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
+}
+
 // ListServiceAccounts list a service account
 func ListServiceAccounts(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ServiceAccountList, error) {
 	return clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})

@@ -93,6 +93,11 @@ func (s *Service) add(isPatched bool) (bool, error) {
 	return isAdded, nil
 }
 
+// get gets the service
+func (s *Service) get(name string) (interface{}, error) {
+	return util.GetService(s.config.kubeClient, s.config.namespace, name)
+}
+
 // list lists all the services
 func (s *Service) list() (interface{}, error) {
 	return util.ListServices(s.config.kubeClient, s.config.namespace, s.config.labelSelector)
@@ -118,6 +123,6 @@ func (s *Service) remove() error {
 }
 
 // patch patches the service
-func (s *Service) patch(rc interface{}, isPatched bool) (bool, error) {
+func (s *Service) patch(svc interface{}, isPatched bool) (bool, error) {
 	return false, nil
 }

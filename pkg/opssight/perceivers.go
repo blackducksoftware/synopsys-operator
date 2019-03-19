@@ -195,7 +195,7 @@ func (p *SpecConfig) PodPerceiverClusterRole() *components.ClusterRole {
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		APIGroups: []string{"*"},
+		APIGroups: []string{""},
 		Resources: []string{"pods"},
 		Verbs:     []string{"get", "watch", "list", "update"},
 	})
@@ -211,7 +211,7 @@ func (p *SpecConfig) ImagePerceiverClusterRole() *components.ClusterRole {
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		APIGroups: []string{"*"},
+		APIGroups: []string{""},
 		Resources: []string{"images"},
 		Verbs:     []string{"get", "watch", "list", "update"},
 	})

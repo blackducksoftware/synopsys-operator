@@ -104,6 +104,11 @@ func (s *Secret) add(isPatched bool) (bool, error) {
 	return isAdded || isUpdated, nil
 }
 
+// get gets the secret
+func (s *Secret) get(name string) (interface{}, error) {
+	return util.GetSecret(s.config.kubeClient, s.config.namespace, name)
+}
+
 // list lists all the secrets
 func (s *Secret) list() (interface{}, error) {
 	return util.ListSecrets(s.config.kubeClient, s.config.namespace, s.config.labelSelector)

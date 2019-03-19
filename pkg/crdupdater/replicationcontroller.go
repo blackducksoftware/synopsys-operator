@@ -102,6 +102,11 @@ func (r *ReplicationController) add(isPatched bool) (bool, error) {
 	return false, nil
 }
 
+// get gets the replication controller
+func (r *ReplicationController) get(name string) (interface{}, error) {
+	return util.GetReplicationController(r.config.kubeClient, r.config.namespace, name)
+}
+
 // list lists all the replication controllers
 func (r *ReplicationController) list() (interface{}, error) {
 	return util.ListReplicationControllers(r.config.kubeClient, r.config.namespace, r.config.labelSelector)

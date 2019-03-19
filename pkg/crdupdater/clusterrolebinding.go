@@ -93,6 +93,11 @@ func (c *ClusterRoleBinding) add(isPatched bool) (bool, error) {
 	return isAdded, nil
 }
 
+// get gets the cluster role binding
+func (c *ClusterRoleBinding) get(name string) (interface{}, error) {
+	return util.GetClusterRoleBinding(c.config.kubeClient, name)
+}
+
 // list lists all the cluster role bindings
 func (c *ClusterRoleBinding) list() (interface{}, error) {
 	return util.ListClusterRoleBindings(c.config.kubeClient, c.config.labelSelector)
