@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -34,75 +33,76 @@ import (
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
-	corev1 "k8s.io/api/core/v1"
+	log "github.com/sirupsen/logrus"
 )
 
-// GetUpdatedBlackduckCRDs finds all Blackducks with different versions and returns their CRDs
-// with the new version
-func GetUpdatedBlackduckCRDs(blackduckClient *blackduckclientset.Clientset, newVersion string) ([]blackduckv1.Blackduck, error) {
+// RemoveBlackduckVersion finds all Blackducks with a different version, returns their specs with
+// the new version, and deletes the old CRD if it changed the version of all Blackducks
+func RemoveBlackduckVersion(blackduckClient *blackduckclientset.Clientset, newVersion string, oldCRDName string) ([]blackduckv1.Blackduck, error) {
+	log.Debugf("Collecting all Blackducks of version: %s", newVersion)
 	currCRDs, err := operatorutil.GetBlackducks(blackduckClient)
 	if err != nil {
 		return nil, fmt.Errorf("%s", err)
 	}
 	newCRDs := []blackduckv1.Blackduck{}
 	for _, crd := range currCRDs.Items {
-		if newVersion != crd.TypeMeta.APIVersion {
+		log.Debugf("Found Blackduck version '%s': %s", crd.TypeMeta.APIVersion, crd.Name)
+		if crd.TypeMeta.APIVersion != newVersion {
 			crd.TypeMeta.APIVersion = newVersion
 			newCRDs = append(newCRDs, crd)
 		}
 	}
+	// Delete the CRD if changing all instances
+	if len(newCRDs) == len(currCRDs.Items) {
+		operatorutil.RunKubeCmd("delete", "crd", oldCRDName)
+	}
 	return newCRDs, nil
 }
 
-// GetUpdatedOpsSightCRDs finds all OpsSights with different versions and returns their CRDs
-// with the new version
-func GetUpdatedOpsSightCRDs(opssightClient *opssightclientset.Clientset, newVersion string) ([]opssightv1.OpsSight, error) {
+// RemoveOpsSightVersion finds all OpsSights with a different version, returns their specs with
+// the new version, and deletes the old CRD if it changed the version of all OpsSights
+func RemoveOpsSightVersion(opssightClient *opssightclientset.Clientset, newVersion string, oldCRDName string) ([]opssightv1.OpsSight, error) {
+	log.Debugf("Collecting all OpsSights of version: %s", newVersion)
 	currCRDs, err := operatorutil.GetOpsSights(opssightClient)
 	if err != nil {
 		return nil, fmt.Errorf("%s", err)
 	}
 	newCRDs := []opssightv1.OpsSight{}
 	for _, crd := range currCRDs.Items {
-		if newVersion != crd.TypeMeta.APIVersion {
+		log.Debugf("Found OpsSight version '%s': %s", crd.TypeMeta.APIVersion, crd.Name)
+		if crd.TypeMeta.APIVersion != newVersion {
 			crd.TypeMeta.APIVersion = newVersion
 			newCRDs = append(newCRDs, crd)
 		}
 	}
+	// Delete the CRD if changing all instances
+	if len(newCRDs) == len(currCRDs.Items) {
+		operatorutil.RunKubeCmd("delete", "crd", oldCRDName)
+	}
 	return newCRDs, nil
 }
 
-// GetUpdatedAlertCRDs finds all Alerts with different versions and returns their CRDs
-// with the new version
-func GetUpdatedAlertCRDs(alertClient *alertclientset.Clientset, newVersion string) ([]alertv1.Alert, error) {
-	curCRDs, err := operatorutil.GetAlerts(alertClient)
+// RemoveAlertVersion finds all Alerts with a different version, returns their specs with
+// the new version, and deletes the old CRD if it changed the version of all Alerts
+func RemoveAlertVersion(alertClient *alertclientset.Clientset, newVersion string, oldCRDName string) ([]alertv1.Alert, error) {
+	log.Debugf("Collecting all Alerts of version: %s", newVersion)
+	currCRDs, err := operatorutil.GetAlerts(alertClient)
 	if err != nil {
 		return nil, fmt.Errorf("%s", err)
 	}
 	newCRDs := []alertv1.Alert{}
-	for _, crd := range curCRDs.Items {
-		if newVersion != crd.TypeMeta.APIVersion {
+	for _, crd := range currCRDs.Items {
+		log.Debugf("Found Alert version '%s': %s", crd.TypeMeta.APIVersion, crd.Name)
+		if crd.TypeMeta.APIVersion != newVersion {
 			crd.TypeMeta.APIVersion = newVersion
 			newCRDs = append(newCRDs, crd)
 		}
 	}
-	return newCRDs, nil
-}
-
-// TODO
-func GetOperatorSpecConfig(kubeClient *kubernetes.Clientset, namespace string) {
-	namespace := GetOperatorNamespace()
-	image := GetOperatorImage(kubeClient, namespace)
-	newSOperatorSpec := soperator.SpecConfig{
-		Namespace:                namespace,
-		SynopsysOperatorImage:    image,
-		BlackduckRegistrationKey: deployBlackduckRegistrationKey,
-		SecretType:               secretType,
-		SecretAdminPassword:      deploySecretAdminPassword,
-		SecretPostgresPassword:   deploySecretPostgresPassword,
-		SecretUserPassword:       deploySecretUserPassword,
-		SecretBlackduckPassword:  deploySecretBlackduckPassword,
+	// Delete the CRD if changing all instances
+	if len(newCRDs) == len(currCRDs.Items) {
+		operatorutil.RunKubeCmd("delete", "crd", oldCRDName)
 	}
-
+	return newCRDs, nil
 }
 
 // GetOperatorNamespace returns the namespace of the Synopsys-Operator by
@@ -130,26 +130,4 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 		currImage = container.Image
 	}
 	return currImage, nil
-}
-
-// KubeSecretTypeToHorizon converts a kubernetes SecretType to Horizon's SecretType
-func KubeSecretTypeToHorizon(secretType corev1.SecretType) (horizonapi.SecretType, error) {
-	switch secretType {
-	case corev1.SecretTypeOpaque:
-		return horizonapi.SecretTypeOpaque, nil
-	case corev1.SecretTypeServiceAccountToken:
-		return horizonapi.SecretTypeServiceAccountToken, nil
-	case corev1.SecretTypeDockercfg:
-		return horizonapi.SecretTypeDockercfg, nil
-	case corev1.SecretTypeDockerConfigJson:
-		return horizonapi.SecretTypeDockerConfigJSON, nil
-	case corev1.SecretTypeBasicAuth:
-		return horizonapi.SecretTypeBasicAuth, nil
-	case corev1.SecretTypeSSHAuth:
-		return horizonapi.SecretTypeSSHAuth, nil
-	case corev1.SecretTypeTLS:
-		return horizonapi.SecretTypeTLS, nil
-	default:
-		return horizonapi.SecretTypeOpaque, fmt.Errorf("Invalid Secret Type: %+v", secretType)
-	}
 }

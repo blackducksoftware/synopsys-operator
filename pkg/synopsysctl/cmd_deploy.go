@@ -59,23 +59,11 @@ var deployCmd = &cobra.Command{
 			return fmt.Errorf("This command only accepts up to 1 argument")
 		}
 		// Check the Secret Type
-		switch deploySecretType {
-		case "Opaque":
-			secretType = horizonapi.SecretTypeOpaque
-		case "ServiceAccountToken":
-			secretType = horizonapi.SecretTypeServiceAccountToken
-		case "Dockercfg":
-			secretType = horizonapi.SecretTypeDockercfg
-		case "DockerConfigJSON":
-			secretType = horizonapi.SecretTypeDockerConfigJSON
-		case "BasicAuth":
-			secretType = horizonapi.SecretTypeBasicAuth
-		case "SSHAuth":
-			secretType = horizonapi.SecretTypeSSHAuth
-		case "TypeTLS":
-			secretType = horizonapi.SecretTypeTLS
-		default:
-			return fmt.Errorf("Invalid Secret Type: %s", deploySecretType)
+		var err error
+		secretType, err = SecretTypeNameToHorizon(deploySecretType)
+		if err != nil {
+			log.Errorf("Failed to Convert Secret Type: %s", err)
+			return nil
 		}
 		return nil
 	},

@@ -42,6 +42,16 @@ var updateBlackduckCtl ResourceCtl
 var updateOpsSightCtl ResourceCtl
 var updateAlertCtl ResourceCtl
 
+// Update Defaults
+var updateSynopsysOperatorImage = ""
+var updatePrometheusImage = ""
+var updateBlackduckRegistrationKey = ""
+var updateSecretType = ""
+var updateSecretAdminPassword = ""
+var updateSecretPostgresPassword = ""
+var updateSecretUserPassword = ""
+var updateSecretBlackduckPassword = ""
+
 // updateCmd provides functionality to update/upgrade features of
 // Synopsys resources
 var updateCmd = &cobra.Command{
@@ -57,6 +67,10 @@ var updateOperatorCmd = &cobra.Command{
 	Use:   "operator",
 	Short: "Update the Synopsys-Operator",
 	Args: func(cmd *cobra.Command, args []string) error {
+		if !(cmd.Flag("secret-type").Changed && cmd.Flag("admin-password").Changed && cmd.Flag("postgres-password").Changed && cmd.Flag("user-password").Changed && cmd.Flag("blackduck-password").Changed) {
+			log.Errorf("Must update all Secret Flags: --admin-password, --postgres-password, --user-password, --blackduck-password")
+			return nil
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,24 +80,31 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 		log.Debugf("Updating the Synopsys-Operator in namespace %s\n", namespace)
-		newSOperatorSpec := soperator.SpecConfig{
-			Namespace:                deployNamespace,
-			SynopsysOperatorImage:    deploySynopsysOperatorImage,
-			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
-			SecretType:               secretType,
-			SecretAdminPassword:      deploySecretAdminPassword,
-			SecretPostgresPassword:   deploySecretPostgresPassword,
-			SecretUserPassword:       deploySecretUserPassword,
-			SecretBlackduckPassword:  deploySecretBlackduckPassword,
+		// Create new Synopsys-Operator Spec
+		updateSecretTypeConverted, err := SecretTypeNameToHorizon(updateSecretType)
+		if err != nil {
+			log.Errorf("Failed to convert SecretType: %s", err)
+			return nil
 		}
-		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, newSOperatorSpec, blackduckClient, opssightClient, alertClient)
+		newSOperatorSpec := soperator.SpecConfig{
+			Namespace:                namespace,
+			SynopsysOperatorImage:    updateSynopsysOperatorImage,
+			BlackduckRegistrationKey: updateBlackduckRegistrationKey,
+			SecretType:               updateSecretTypeConverted,
+			SecretAdminPassword:      updateSecretAdminPassword,
+			SecretPostgresPassword:   updateSecretPostgresPassword,
+			SecretUserPassword:       updateSecretUserPassword,
+			SecretBlackduckPassword:  updateSecretBlackduckPassword,
+		}
+
+		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, newSOperatorSpec, blackduckClient, opssightClient, alertClient, cmd)
 
 		log.Debugf("Updating Prometheus in namespace %s\n", namespace)
 		newPrometheusSpecConfig := soperator.PrometheusSpecConfig{
-			Namespace:       deployNamespace,
-			PrometheusImage: deployPrometheusImage,
+			Namespace:       namespace,
+			PrometheusImage: updatePrometheusImage,
 		}
-		soperator.UpdatePrometheus(restconfig, kubeClient, namespace, newPrometheusSpecConfig)
+		soperator.UpdatePrometheus(restconfig, kubeClient, namespace, newPrometheusSpecConfig, cmd)
 		return nil
 	},
 }
@@ -379,15 +400,14 @@ func init() {
 	rootCmd.AddCommand(updateCmd)
 
 	// Add Operator Commands
-	updateOperatorCmd.Flags().StringVarP(&deploySynopsysOperatorImage, "synopsys-operator-image", "i", deploySynopsysOperatorImage, "synopsys operator image URL")
-	updateOperatorCmd.Flags().StringVarP(&deployPrometheusImage, "prometheus-image", "p", deployPrometheusImage, "prometheus image URL")
-	updateOperatorCmd.Flags().StringVarP(&deployBlackduckRegistrationKey, "blackduck-registration-key", "k", deployBlackduckRegistrationKey, "key to register with KnowledgeBase")
-	updateOperatorCmd.Flags().StringVarP(&deployDockerConfigPath, "docker-config", "d", deployDockerConfigPath, "path to docker config (image pull secrets etc)")
-	updateOperatorCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret for postgres and blackduck")
-	updateOperatorCmd.Flags().StringVar(&deploySecretAdminPassword, "admin-password", deploySecretAdminPassword, "postgres admin password")
-	updateOperatorCmd.Flags().StringVar(&deploySecretPostgresPassword, "postgres-password", deploySecretPostgresPassword, "postgres password")
-	updateOperatorCmd.Flags().StringVar(&deploySecretUserPassword, "user-password", deploySecretUserPassword, "postgres user password")
-	updateOperatorCmd.Flags().StringVar(&deploySecretBlackduckPassword, "blackduck-password", deploySecretBlackduckPassword, "blackduck password for 'sysadmin' account")
+	updateOperatorCmd.Flags().StringVarP(&updateSynopsysOperatorImage, "synopsys-operator-image", "i", updateSynopsysOperatorImage, "synopsys operator image URL")
+	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "prometheus-image", "p", updatePrometheusImage, "prometheus image URL")
+	updateOperatorCmd.Flags().StringVarP(&updateBlackduckRegistrationKey, "blackduck-registration-key", "k", updateBlackduckRegistrationKey, "key to register with KnowledgeBase")
+	updateOperatorCmd.Flags().StringVar(&updateSecretType, "secret-type", updateSecretType, "type of kubernetes secret for postgres and blackduck")
+	updateOperatorCmd.Flags().StringVar(&updateSecretAdminPassword, "admin-password", updateSecretAdminPassword, "postgres admin password")
+	updateOperatorCmd.Flags().StringVar(&updateSecretPostgresPassword, "postgres-password", updateSecretPostgresPassword, "postgres password")
+	updateOperatorCmd.Flags().StringVar(&updateSecretUserPassword, "user-password", updateSecretUserPassword, "postgres user password")
+	updateOperatorCmd.Flags().StringVar(&updateSecretBlackduckPassword, "blackduck-password", updateSecretBlackduckPassword, "blackduck password for 'sysadmin' account")
 	updateCmd.AddCommand(updateOperatorCmd)
 
 	// Add Bladuck Commands

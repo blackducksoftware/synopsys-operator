@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
+	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -38,39 +39,35 @@ import (
 
 // UpdateSynopsysOperator updates the Synopsys-Operator's kubernetes componenets and changes
 // all CRDs to versions that the Operator can use
-func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset) error {
-	// Get CRDs that need to be updated
+func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset, cmd *cobra.Command) error {
 	log.Debugf("Getting CRDs to update to Versions the new Operator can handle")
-	newOperatorVersion := strings.Split(newSOperatorSpec.SynopsysOperatorImage, ":")[1]
-	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
-	oldBlackducks, err := GetUpdatedBlackduckCRDs(blackduckClient, newCrdData.Blackduck.APIVersion)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	oldOpsSights, err := GetUpdatedOpsSightCRDs(opssightClient, newCrdData.OpsSight.APIVersion)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	oldAlerts, err := GetUpdatedAlertCRDs(alertClient, newCrdData.Alert.APIVersion)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-
-	// Delete the current CRD definitions from the cluster
-	log.Debugf("Deleting the CRD definitions from cluster")
 	currImage, err := GetOperatorImage(kubeClient, namespace)
 	if err != nil {
 		log.Errorf("%s", err)
 		return nil
 	}
+	// Get CRD Version Data
+	newOperatorVersion := strings.Split(newSOperatorSpec.SynopsysOperatorImage, ":")[1]
 	currOperatorVersion := strings.Split(currImage, ":")[1]
-	for _, crd := range SOperatorCRDVersionMap.GetIterableCRDData(currOperatorVersion) {
-		operatorutil.RunKubeCmd("delete", "crd", crd.CRDName)
+	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
+	currCrdData := SOperatorCRDVersionMap.GetCRDVersions(currOperatorVersion)
+	// Delete old CRDs and get CRD Specs that need to be updated (specs have new version set)
+	oldBlackducks, err := RemoveBlackduckVersion(blackduckClient, newCrdData.Blackduck.APIVersion, currCrdData.Blackduck.CRDName)
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+	oldOpsSights, err := RemoveOpsSightVersion(opssightClient, newCrdData.OpsSight.APIVersion, currCrdData.OpsSight.CRDName)
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+	oldAlerts, err := RemoveAlertVersion(alertClient, newCrdData.Alert.APIVersion, currCrdData.Alert.CRDName)
+	if err != nil {
+		return fmt.Errorf("%s", err)
 	}
 
 	// Update the Synopsys-Operator's Components
 	log.Debugf("Updating Synopsys-Operator's Componenets")
-	err = UpdateSynopsysOperatorComponents(restconfig, kubeClient, namespace, newSOperatorSpec)
+	err = UpdateSOperatorComponentsByFlags(restconfig, kubeClient, namespace, newSOperatorSpec, cmd)
 	if err != nil {
 		return err
 	}
@@ -93,93 +90,58 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	return nil
 }
 
-// UpdateSynopsysOperatorComponents updates kubernete's resources for the Synopsys-Operator by comparing
-// it's current componenets with the new componenets
-func UpdateSynopsysOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig) error {
-	// Get Components of New Synopsys-Operator
+// UpdateSOperatorComponentsByFlags updates kubernete's resources for the Synopsys-Operator by checking
+// what flags were changed and updating the respective components
+func UpdateSOperatorComponentsByFlags(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig, cmd *cobra.Command) error {
 	newSOperatorComponents, err := newSOperatorSpec.GetComponents()
 	if err != nil {
-		return fmt.Errorf("Failed to Create New Components: %s", err)
+		return fmt.Errorf("Error creating new SOperator Components: %s", err)
 	}
-
-	// Update S-O ConfigMap if necessary
-	isConfigMapUpdated, err := crdupdater.UpdateConfigMap(kubeClient, namespace, "synopsys-operator", newSOperatorComponents.ConfigMaps[0])
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	var isConfigMapUpdated bool
+	var isSecretUpdated bool
+	// Update the Secret if the type or password changed
+	if cmd.Flag("secret-type").Changed || cmd.Flag("admin-password").Changed || cmd.Flag("postgres-password").Changed || cmd.Flag("user-password").Changed || cmd.Flag("blackduck-password").Changed {
+		isSecretUpdated, err = crdupdater.UpdateSecret(kubeClient, namespace, "blackduck-secret", newSOperatorComponents.Secrets[0])
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
 	}
-
-	// Update S-O Secret if necessary
-	isSecretUpdated, err := crdupdater.UpdateSecret(kubeClient, namespace, "blackduck-secret", newSOperatorComponents.Secrets[0])
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-
-	operatorUpdater := crdupdater.NewUpdater()
-
-	// Update S-O ReplicationController if necessary
-	replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newSOperatorComponents.ReplicationControllers, namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	operatorUpdater.AddUpdater(replicationControllerUpdater)
-
-	// Update S-O Service if necessary
-	serviceUpdater, err := crdupdater.NewService(restconfig, kubeClient, newSOperatorComponents.Services, namespace, "app=opssight")
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	operatorUpdater.AddUpdater(serviceUpdater)
-
-	// Update S-O ServiceAccount if necessary
-
-	// Update S-O ClusterRoleBinding if necessary
-	clusterRoleBindingUpdater, err := crdupdater.NewClusterRoleBinding(restconfig, kubeClient, newSOperatorComponents.ClusterRoleBindings, namespace, "app=opssight")
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	operatorUpdater.AddUpdater(clusterRoleBindingUpdater)
-
-	err = operatorUpdater.Update()
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	// Update the Replication Controller if the image or reg key changed
+	if cmd.Flag("synopsys-operator-image").Changed || cmd.Flag("blackduck-registration-key").Changed {
+		operatorUpdater := crdupdater.NewUpdater()
+		replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newSOperatorComponents.ReplicationControllers, namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+		operatorUpdater.AddUpdater(replicationControllerUpdater)
+		err = operatorUpdater.Update()
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
 	}
 	return nil
 }
 
-// UpdatePrometheus updates kubernete's resources for Prometheus by comparing
-// it's current componenets with the new componenets
-func UpdatePrometheus(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig PrometheusSpecConfig) error {
+// UpdatePrometheusByFlags updates kubernete's resources for Prometheus by checking
+// what flags were changed and updating the respective components
+func UpdatePrometheusByFlags(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig PrometheusSpecConfig, cmd *cobra.Command) error {
 	// Get Components of New Prometheus
 	newPrometheusComponents, err := newPrometheusSpecConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("%s", err)
 	}
 
-	prometheusUpdater := crdupdater.NewUpdater()
-
-	// Update Prometheus ConfigMap
-	_, err = crdupdater.UpdateConfigMap(kubeClient, namespace, "prometheus", newPrometheusComponents.ConfigMaps[0])
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-
-	// Update Prometheus Deployment
-	deploymentUpdater, err := crdupdater.NewDeployment(restconfig, kubeClient, newPrometheusComponents.Deployments, namespace, "app=prometheus", false)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	prometheusUpdater.AddUpdater(deploymentUpdater)
-
-	// Update Prometheus Service
-	serviceUpdater, err := crdupdater.NewService(restconfig, kubeClient, newPrometheusComponents.Services, namespace, "app=prometheus")
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	prometheusUpdater.AddUpdater(serviceUpdater)
-
-	err = prometheusUpdater.Update()
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	if cmd.Flag("prometheus-image").Changed {
+		prometheusUpdater := crdupdater.NewUpdater()
+		deploymentUpdater, err := crdupdater.NewDeployment(restconfig, kubeClient, newPrometheusComponents.Deployments, namespace, "app=prometheus", false)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+		prometheusUpdater.AddUpdater(deploymentUpdater)
+		err = prometheusUpdater.Update()
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
 	}
 	return nil
 }
