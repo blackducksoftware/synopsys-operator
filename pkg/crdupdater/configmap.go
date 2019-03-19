@@ -140,8 +140,13 @@ func (c *ConfigMap) patch(cm interface{}, isPatched bool) (bool, error) {
 	oldConfigMap := c.oldConfigMaps[configMapName]
 	newConfigMap := c.newConfigMaps[configMapName]
 	if !reflect.DeepEqual(newConfigMap.Data, oldConfigMap.Data) && !c.config.dryRun {
+		cm, err := c.get(configMapName)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to get the config map %s in namespace %s", configMapName, c.config.namespace)
+		}
+		oldConfigMap = cm.(*corev1.ConfigMap)
 		oldConfigMap.Data = newConfigMap.Data
-		err := util.UpdateConfigMap(c.config.kubeClient, c.config.namespace, oldConfigMap)
+		err = util.UpdateConfigMap(c.config.kubeClient, c.config.namespace, oldConfigMap)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the config map %s in namespace %s", configMapName, c.config.namespace)
 		}

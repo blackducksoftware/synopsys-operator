@@ -142,9 +142,14 @@ func (s *Secret) patch(i interface{}, isPatched bool) (bool, error) {
 	oldSecret := s.oldSecrets[secretName]
 	newSecret := s.newSecrets[secretName]
 	if (!reflect.DeepEqual(newSecret.Data, oldSecret.Data) || !reflect.DeepEqual(newSecret.StringData, oldSecret.StringData)) && !s.config.dryRun {
+		srt, err := s.get(secretName)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to get the secret %s in namespace %s", secretName, s.config.namespace)
+		}
+		oldSecret = srt.(*corev1.Secret)
 		oldSecret.Data = newSecret.Data
 		oldSecret.StringData = newSecret.StringData
-		err := util.UpdateSecret(s.config.kubeClient, s.config.namespace, oldSecret)
+		err = util.UpdateSecret(s.config.kubeClient, s.config.namespace, oldSecret)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the secret %s in namespace %s", secretName, s.config.namespace)
 		}

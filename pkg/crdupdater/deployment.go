@@ -90,7 +90,7 @@ func (d *Deployment) add(isPatched bool) (bool, error) {
 		} else {
 			_, err := d.patch(deployment, isPatched)
 			if err != nil {
-				return false, errors.Annotatef(err, "patch deployment:")
+				return false, errors.Annotatef(err, "patch deployment")
 			}
 		}
 	}

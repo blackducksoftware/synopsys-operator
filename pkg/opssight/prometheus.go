@@ -38,6 +38,7 @@ func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error
 		Name:      "prometheus",
 		Namespace: p.opssight.Namespace,
 	})
+	deployment.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
 	deployment.AddMatchLabelsSelectors(map[string]string{"app": "opssight"})
 
 	pod, err := p.perceptorMetricsPod()
@@ -53,7 +54,7 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "prometheus",
 	})
-	pod.AddLabels(map[string]string{"app": "opssight"})
+	pod.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
 
 	pod.AddContainer(p.perceptorMetricsContainer())
 
