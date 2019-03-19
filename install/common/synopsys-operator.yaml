@@ -90,7 +90,7 @@ items:
   - apiGroups: ["apiextensions.k8s.io"]
     resources:
     - customresourcedefinitions
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
   - apiGroups: ["security.openshift.io"]
     resources:
     - securitycontextconstraints
@@ -103,7 +103,25 @@ items:
     resources:
     - clusterrolebindings
     - clusterroles
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles"]
+    verbs: ["bind"]
+    resourceNames: ["admin","edit","view"]
+  - apiGroups: ["batch", "extensions"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+  - apiGroups: ["extensions", "apps"]
+    resources: 
+    - deployments
+    - deployments/scale
+    - deployments/rollback
+    - statefulsets
+    - statefulsets/scale
+    - replicasets
+    - replicasets/scale
+    - daemonsets
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
   - apiGroups: [""]
     resources:
     - namespaces
@@ -112,10 +130,9 @@ items:
     - services
     - secrets
     - replicationcontrollers
-    - deployments
-    - statefulsets
+    - replicationcontrollers/scale
     - serviceaccounts
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
   - apiGroups: [""]
     resources:
     - pods
@@ -128,7 +145,16 @@ items:
     verbs: ["create"]
   - apiGroups: ["synopsys.com"]
     resources: ["*"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+    - storageclasses
+    - volumeattachments
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["image.openshift.io"]
+    resources:
+    - images
+    verbs: ["get", "list", "watch"]
 - kind: ClusterRoleBinding
   apiVersion: rbac.authorization.k8s.io/v1beta1
   metadata:
