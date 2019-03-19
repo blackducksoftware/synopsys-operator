@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"strconv"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -76,7 +77,7 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 	})
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: "8443",
+		ContainerPort: strconv.Itoa(*a.config.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 

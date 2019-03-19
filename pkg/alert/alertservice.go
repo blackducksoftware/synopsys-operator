@@ -22,6 +22,9 @@ under the License.
 package alert
 
 import (
+	"fmt"
+	"strconv"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
@@ -35,10 +38,10 @@ func (a *SpecConfig) getAlertService() *components.Service {
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       8443,
-		TargetPort: "8443",
+		Port:       int32(*a.config.Port),
+		TargetPort: strconv.Itoa(*a.config.Port),
 		Protocol:   horizonapi.ProtocolTCP,
-		Name:       "8443-tcp",
+		Name:       fmt.Sprintf("%s-tcp", strconv.Itoa(*a.config.Port)),
 	})
 
 	service.AddSelectors(map[string]string{"app": "alert"})
@@ -55,10 +58,10 @@ func (a *SpecConfig) getAlertExposedService() *components.Service {
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       8443,
-		TargetPort: "8443",
+		Port:       int32(*a.config.Port),
+		TargetPort: strconv.Itoa(*a.config.Port),
 		Protocol:   horizonapi.ProtocolTCP,
-		Name:       "8443-tcp",
+		Name:       fmt.Sprintf("%s-tcp", strconv.Itoa(*a.config.Port)),
 	})
 
 	service.AddSelectors(map[string]string{"app": "alert"})

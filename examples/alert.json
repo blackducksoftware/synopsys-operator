@@ -10,7 +10,7 @@
 		"registry": "docker.io",
 		"imagePath": "blackducksoftware",
 		"alertImageName": "blackduck-alert",
-		"alertImageVersion": "2.1.0",
+		"alertImageVersion": "3.1.0",
 		"cfsslImageName": "blackduck-cfssl",
 		"cfsslImageVersion": "1.0.0",
 		"blackduckHost": "",
