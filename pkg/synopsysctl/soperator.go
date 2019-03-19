@@ -63,6 +63,9 @@ func (specConfig *SOperatorSpecConfig) GetComponents() (*api.ComponentList, erro
 		ClusterRoleBindings: []*components.ClusterRoleBinding{
 			specConfig.GetOperatorClusterRoleBinding(),
 		},
+		ClusterRoles: []*components.ClusterRole{
+			specConfig.GetOperatorClusterRole(),
+		},
 	}
 	return components, nil
 }

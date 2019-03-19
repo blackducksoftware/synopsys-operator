@@ -26,6 +26,9 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	log "github.com/sirupsen/logrus"
 )
 
 // GetOperatorReplicationController creates a ReplicationController Horizon component for the Synopsys-Operaotor
@@ -273,4 +276,87 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRoleBinding() *horizonc
 	})
 
 	return synopsysOperatorClusterRoleBinding
+}
+
+// GetOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys-Operaotor
+func (specConfig *SOperatorSpecConfig) GetOperatorClusterRole() *horizoncomponents.ClusterRole {
+	synopsysOperatorClusterRole := horizoncomponents.NewClusterRole(horizonapi.ClusterRoleConfig{
+		APIVersion: "rbac.authorization.k8s.io/v1beta1",
+		//ClusterName : "string,"
+		Name:      "synopsys-operator-admin",
+		Namespace: specConfig.Namespace,
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+		APIGroups:       []string{"apiextensions.k8s.io"},
+		Resources:       []string{"customresourcedefinitions"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+		APIGroups:       []string{"rbac.authorization.k8s.io"},
+		Resources:       []string{"clusterrolebindings", "clusterroles"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+		APIGroups:       []string{""},
+		Resources:       []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "deployments", "statefulsets", "serviceaccounts"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch"},
+		APIGroups:       []string{""},
+		Resources:       []string{"pods", "pods/log", "endpoints"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"create"},
+		APIGroups:       []string{""},
+		Resources:       []string{"pods/exec"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+		APIGroups:       []string{"synopsys.com"},
+		Resources:       []string{"*"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	// Add Openshift rules
+	restConfig := util.GetKubeRestConfig()
+	routeClient, err := routeclient.NewForConfig(restConfig) // kube doesn't have a routeclient
+	if routeClient != nil && err == nil {                    // openshift: have a routeClient and no error
+		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+			Verbs:           []string{"get", "update", "patch"},
+			APIGroups:       []string{"security.openshift.io"},
+			Resources:       []string{"securitycontextconstraints"},
+			ResourceNames:   []string{},
+			NonResourceURLs: []string{},
+		})
+
+		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+			Verbs:           []string{"get", "create"},
+			APIGroups:       []string{"route.openshift.io"},
+			Resources:       []string{"routes"},
+			ResourceNames:   []string{},
+			NonResourceURLs: []string{},
+		})
+	} else if err != nil { // Kube or Error
+		log.Warnf("Skipping Openshift Cluster Role Rules: %s", err)
+	}
+
+	return synopsysOperatorClusterRole
 }

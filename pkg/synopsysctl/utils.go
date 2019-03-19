@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
@@ -36,11 +35,9 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	log "github.com/sirupsen/logrus"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // These vars set by setResourceClients() in root command's init()
@@ -187,7 +184,7 @@ func RunKubeEditorCmd(args ...string) error {
 // setResourceClients sets the global variables for the kuberentes rest config
 // and the resource clients
 func setResourceClients() {
-	restconfig = getKubeRestConfig()
+	restconfig = util.GetKubeRestConfig()
 	bClient, err := blackduckclientset.NewForConfig(restconfig)
 	if err != nil {
 		panic(fmt.Errorf("Error creating the Blackduck Clientset: %s", err))
@@ -203,47 +200,6 @@ func setResourceClients() {
 		panic(fmt.Errorf("Error creating the Alert Clientset: %s", err))
 	}
 	alertClient = aClient
-}
-
-// getKubeRestConfig gets the user's kubeconfig from their system
-func getKubeRestConfig() *rest.Config {
-	log.Debugf("Getting Kube Rest Config\n")
-	// Determine Config Paths
-	var masterURL = ""
-	var kubeconfigpath = ""
-	if home := homeDir(); home != "" {
-		kubeconfigpath = filepath.Join(home, ".kube", "config")
-	} else {
-		kubeconfigpath = ""
-	}
-	// Get Rest Config using Paths
-	var restconfig *rest.Config
-	var err error
-	if masterURL == "" && kubeconfigpath == "" {
-		restconfig, err = rest.InClusterConfig() // if no paths then use in-cluster config
-	} else {
-		restconfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-			&clientcmd.ClientConfigLoadingRules{
-				ExplicitPath: kubeconfigpath,
-			},
-			&clientcmd.ConfigOverrides{
-				ClusterInfo: clientcmdapi.Cluster{
-					Server: masterURL,
-				},
-			}).ClientConfig()
-	}
-	if err != nil {
-		panic(err)
-	}
-	return restconfig
-}
-
-// homeDir determines the user's home directory path
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }
 
 // DeployCRDNamespace creates an empty Horizon namespace
