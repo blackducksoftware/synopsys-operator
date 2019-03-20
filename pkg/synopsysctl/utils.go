@@ -40,7 +40,6 @@ import (
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -195,48 +194,4 @@ func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
 		return fmt.Errorf("Error deploying namespace with Horizon : %s", err)
 	}
 	return nil
-}
-
-// KubeSecretTypeToHorizon converts a kubernetes SecretType to Horizon's SecretType
-func KubeSecretTypeToHorizon(secretType corev1.SecretType) (horizonapi.SecretType, error) {
-	switch secretType {
-	case corev1.SecretTypeOpaque:
-		return horizonapi.SecretTypeOpaque, nil
-	case corev1.SecretTypeServiceAccountToken:
-		return horizonapi.SecretTypeServiceAccountToken, nil
-	case corev1.SecretTypeDockercfg:
-		return horizonapi.SecretTypeDockercfg, nil
-	case corev1.SecretTypeDockerConfigJson:
-		return horizonapi.SecretTypeDockerConfigJSON, nil
-	case corev1.SecretTypeBasicAuth:
-		return horizonapi.SecretTypeBasicAuth, nil
-	case corev1.SecretTypeSSHAuth:
-		return horizonapi.SecretTypeSSHAuth, nil
-	case corev1.SecretTypeTLS:
-		return horizonapi.SecretTypeTLS, nil
-	default:
-		return horizonapi.SecretTypeOpaque, fmt.Errorf("Invalid Secret Type: %+v", secretType)
-	}
-}
-
-// SecretTypeNameToHorizon converts a SecretType Name String to Horizon's SecretType
-func SecretTypeNameToHorizon(secretType string) (horizonapi.SecretType, error) {
-	switch secretType {
-	case "Opaque":
-		return horizonapi.SecretTypeOpaque, nil
-	case "ServiceAccountToken":
-		return horizonapi.SecretTypeServiceAccountToken, nil
-	case "Dockercfg":
-		return horizonapi.SecretTypeDockercfg, nil
-	case "DockerConfigJSON":
-		return horizonapi.SecretTypeDockerConfigJSON, nil
-	case "BasicAuth":
-		return horizonapi.SecretTypeBasicAuth, nil
-	case "SSHAuth":
-		return horizonapi.SecretTypeSSHAuth, nil
-	case "TypeTLS":
-		return horizonapi.SecretTypeTLS, nil
-	default:
-		return horizonapi.SecretTypeOpaque, fmt.Errorf("Invalid Secret Type: %s", deploySecretType)
-	}
 }

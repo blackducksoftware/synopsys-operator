@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -110,7 +109,7 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 	}
 	var currImage string
 	for _, container := range currPod.Spec.Containers {
-		if container.Name == "synopsys-operator" {
+		if container.Name != "synopsys-operator" {
 			continue
 		}
 		currImage = container.Image
@@ -118,6 +117,45 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 	return currImage, nil
 }
 
-func GetCurrentComponents(kubeClient *kubernetes.Clientset, namespace string) (*api.ComponentList, error) {
-	return nil, nil
+// GetCurrentComponentsSpec returns a spec that respesents the current Synopsys-Operator in
+// the cluster
+func GetCurrentComponentsSpec(kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
+	sOperatorSpec := SpecConfig{}
+	// Set the Namespace
+	sOperatorSpec.Namespace = namespace
+	// Set the image and reg key
+	currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Synopsys-Operator Pod: %s", err)
+	}
+	for _, container := range currPod.Spec.Containers {
+		if container.Name != "synopsys-operator" {
+			continue
+		}
+		sOperatorSpec.SynopsysOperatorImage = container.Image
+		for _, env := range container.Env {
+			if env.Name != "REGISTRATION_KEY" {
+				continue
+			}
+			sOperatorSpec.BlackduckRegistrationKey = env.Value
+		}
+	}
+	// Set the secretType and secret data
+	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "synopsys-operator")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Synopsys-Operator secret: %s", err)
+	}
+	currKubeSecret := currSecret.Type
+	currHorizonSecretType, err := operatorutil.KubeSecretTypeToHorizon(currKubeSecret)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create Current Synopsys-Operator Spec: %s", err)
+	}
+	sOperatorSpec.SecretType = currHorizonSecretType
+	currKubeSecretData := currSecret.Data
+	sOperatorSpec.SecretAdminPassword = string(currKubeSecretData["ADMIN_PASSWORD"])
+	sOperatorSpec.SecretPostgresPassword = string(currKubeSecretData["POSTGRES_PASSWORD"])
+	sOperatorSpec.SecretUserPassword = string(currKubeSecretData["USER_PASSWORD"])
+	sOperatorSpec.SecretBlackduckPassword = string(currKubeSecretData["HUB_PASSWORD"])
+
+	return &sOperatorSpec, nil
 }
