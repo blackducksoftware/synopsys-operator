@@ -126,7 +126,7 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 		}
 
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
-		err = opssightCreator.CreateOpsSight(&opssight.Spec)
+		err = opssightCreator.CreateOpsSight(opssight)
 		if err != nil {
 			recordError("unable to create opssight")
 			h.updateState(Error, err.Error(), opssight)
@@ -198,7 +198,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Error(errors.Annotate(err, "unable to update updating state"))
 			return
 		}
-		err = opssightCreator.UpdateOpsSight(&opssight.Spec)
+		err = opssightCreator.UpdateOpsSight(opssight)
 		if err != nil {
 			recordError("unable to update opssight")
 			h.updateState(Error, err.Error(), opssight)

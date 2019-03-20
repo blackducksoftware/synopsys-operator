@@ -158,22 +158,22 @@ func removeSubjects(subjects []rbacv1.Subject, namespace string) []rbacv1.Subjec
 }
 
 // CreateOpsSight will create the Black Duck OpsSight
-func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSightSpec) error {
+func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSight) error {
 	log.Debugf("create OpsSight details for %s: %+v", opssight.Namespace, opssight)
-
+	opssightSpec := &opssight.Spec
 	// get the registry auth credentials for default OpenShift internal docker registries
 	if !ac.config.DryRun {
-		ac.addRegistryAuth(opssight)
+		ac.addRegistryAuth(opssightSpec)
 	}
 
-	spec := NewSpecConfig(ac.kubeClient, opssight, ac.config.DryRun)
+	spec := NewSpecConfig(ac.config, ac.kubeClient, ac.opssightClient, ac.hubClient, opssight, ac.config.DryRun)
 
 	components, err := spec.GetComponents()
 	if err != nil {
-		return errors.Annotatef(err, "unable to get opssight components for %s", opssight.Namespace)
+		return errors.Annotatef(err, "unable to get opssight components for %s", opssight.Spec.Namespace)
 	}
 
-	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssight.Namespace, components, "app=opssight")
+	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssightSpec.Namespace, components, "app=opssight")
 	errs := commonConfig.CRUDComponents()
 
 	if len(errs) > 0 {
@@ -182,12 +182,12 @@ func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSightSpec) error {
 
 	if !ac.config.DryRun {
 		// if OpenShift, add a privileged role to scanner account
-		err = ac.postDeploy(spec, opssight.Namespace)
+		err = ac.postDeploy(spec, opssightSpec.Namespace)
 		if err != nil {
 			return errors.Annotatef(err, "post deploy")
 		}
 
-		err = ac.deployHub(opssight)
+		err = ac.deployHub(opssightSpec)
 		if err != nil {
 			return errors.Annotatef(err, "deploy hub")
 		}
@@ -211,16 +211,17 @@ func (ac *Creater) StopOpsSight(opssight *opssightapi.OpsSightSpec) error {
 }
 
 // UpdateOpsSight will update the Black Duck OpsSight
-func (ac *Creater) UpdateOpsSight(opssight *opssightapi.OpsSightSpec) error {
-	newConfigMapConfig := NewSpecConfig(ac.kubeClient, opssight, ac.config.DryRun)
+func (ac *Creater) UpdateOpsSight(opssight *opssightapi.OpsSight) error {
+	newConfigMapConfig := NewSpecConfig(ac.config, ac.kubeClient, ac.opssightClient, ac.hubClient, opssight, ac.config.DryRun)
 
+	opssightSpec := &opssight.Spec
 	// get new components build from the latest updates
 	components, err := newConfigMapConfig.GetComponents()
 	if err != nil {
-		return errors.Annotatef(err, "unable to get opssight components for %s", opssight.Namespace)
+		return errors.Annotatef(err, "unable to get opssight components for %s", opssightSpec.Namespace)
 	}
 
-	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssight.Namespace, components, "app=opssight")
+	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssightSpec.Namespace, components, "app=opssight")
 	errors := commonConfig.CRUDComponents()
 
 	if len(errors) > 0 {
@@ -250,13 +251,14 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 		return
 	}
 
-	internalRegistries := []string{}
+	internalRegistries := []*string{}
 	route, err := util.GetOpenShiftRoutes(ac.routeClient, "default", "docker-registry")
 	if err != nil {
 		log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
 	} else {
-		internalRegistries = append(internalRegistries, route.Spec.Host)
-		internalRegistries = append(internalRegistries, fmt.Sprintf("%s:443", route.Spec.Host))
+		internalRegistries = append(internalRegistries, &route.Spec.Host)
+		routeHostPort := fmt.Sprintf("%s:443", route.Spec.Host)
+		internalRegistries = append(internalRegistries, &routeHostPort)
 	}
 
 	registrySvc, err := util.GetService(ac.kubeClient, "default", "docker-registry")
@@ -265,8 +267,10 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 	} else {
 		if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
 			for _, port := range registrySvc.Spec.Ports {
-				internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port))))
-				internalRegistries = append(internalRegistries, fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port))))
+				clusterIPSvc := fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port)))
+				internalRegistries = append(internalRegistries, &clusterIPSvc)
+				clusterIPSvcPort := fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port)))
+				internalRegistries = append(internalRegistries, &clusterIPSvcPort)
 			}
 		}
 	}
@@ -276,8 +280,7 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 		log.Errorf("unable to read the service account token file due to %+v", err)
 	} else {
 		for _, internalRegistry := range internalRegistries {
-			registryAuth := &opssightapi.RegistryAuth{URL: internalRegistry, User: "admin", Password: string(file)}
-			opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightSpec.ScannerPod.ImageFacade.InternalRegistries, registryAuth)
+			opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightSpec.ScannerPod.ImageFacade.InternalRegistries, &opssightapi.RegistryAuth{URL: *internalRegistry, User: "admin", Password: string(file)})
 		}
 	}
 }
@@ -288,7 +291,7 @@ func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
 		scannerServiceAccount := spec.ScannerServiceAccount()
 		perceiverServiceAccount := spec.PodPerceiverServiceAccount()
 		serviceAccounts := []string{fmt.Sprintf("system:serviceaccount:%s:%s", namespace, perceiverServiceAccount.GetName())}
-		if !strings.EqualFold(spec.opssight.ScannerPod.ImageFacade.ImagePullerType, "skopeo") {
+		if !strings.EqualFold(spec.opssight.Spec.ScannerPod.ImageFacade.ImagePullerType, "skopeo") {
 			serviceAccounts = append(serviceAccounts, fmt.Sprintf("system:serviceaccount:%s:%s", namespace, scannerServiceAccount.GetName()))
 		}
 		return util.UpdateOpenShiftSecurityConstraint(ac.osSecurityClient, serviceAccounts, "privileged")

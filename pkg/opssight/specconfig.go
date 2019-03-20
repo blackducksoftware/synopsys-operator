@@ -29,75 +29,82 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/juju/errors"
 	"k8s.io/client-go/kubernetes"
 )
 
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
-	kubeClient *kubernetes.Clientset
-	opssight   *opssightapi.OpsSightSpec
-	configMap  *MainOpssightConfigMap
-	dryRun     bool
+	config         *protoform.Config
+	kubeClient     *kubernetes.Clientset
+	opssightClient *opssightclientset.Clientset
+	hubClient      *hubclientset.Clientset
+	opssight       *opssightapi.OpsSight
+	configMap      *MainOpssightConfigMap
+	dryRun         bool
 }
 
 // NewSpecConfig will create the OpsSight object
-func NewSpecConfig(kubeClient *kubernetes.Clientset, opssight *opssightapi.OpsSightSpec, dryRun bool) *SpecConfig {
+func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, hubClient *hubclientset.Clientset, opssight *opssightapi.OpsSight, dryRun bool) *SpecConfig {
+	opssightSpec := &opssight.Spec
 	configMap := &MainOpssightConfigMap{
-		LogLevel: opssight.LogLevel,
+		LogLevel: opssightSpec.LogLevel,
 		BlackDuck: &BlackDuckConfig{
-			ConnectionsEnvironmentVariableName: opssight.Blackduck.ConnectionsEnvironmentVariableName,
-			TLSVerification:                    opssight.Blackduck.TLSVerification,
+			ConnectionsEnvironmentVariableName: opssightSpec.Blackduck.ConnectionsEnvironmentVariableName,
+			TLSVerification:                    opssightSpec.Blackduck.TLSVerification,
 		},
 		ImageFacade: &ImageFacadeConfig{
 			CreateImagesOnly: false,
 			Host:             "localhost",
-			Port:             opssight.ScannerPod.ImageFacade.Port,
-			ImagePullerType:  opssight.ScannerPod.ImageFacade.ImagePullerType,
+			Port:             opssightSpec.ScannerPod.ImageFacade.Port,
+			ImagePullerType:  opssightSpec.ScannerPod.ImageFacade.ImagePullerType,
 		},
 		Perceiver: &PerceiverConfig{
 			Image: &ImagePerceiverConfig{},
 			Pod: &PodPerceiverConfig{
-				NamespaceFilter: opssight.Perceiver.PodPerceiver.NamespaceFilter,
+				NamespaceFilter: opssightSpec.Perceiver.PodPerceiver.NamespaceFilter,
 			},
-			AnnotationIntervalSeconds: opssight.Perceiver.AnnotationIntervalSeconds,
-			DumpIntervalMinutes:       opssight.Perceiver.DumpIntervalMinutes,
-			Port:                      opssight.Perceiver.Port,
+			AnnotationIntervalSeconds: opssightSpec.Perceiver.AnnotationIntervalSeconds,
+			DumpIntervalMinutes:       opssightSpec.Perceiver.DumpIntervalMinutes,
+			Port:                      opssightSpec.Perceiver.Port,
 		},
 		Perceptor: &PerceptorConfig{
 			Timings: &PerceptorTimingsConfig{
-				CheckForStalledScansPauseHours: opssight.Perceptor.CheckForStalledScansPauseHours,
-				ClientTimeoutMilliseconds:      opssight.Perceptor.ClientTimeoutMilliseconds,
-				ModelMetricsPauseSeconds:       opssight.Perceptor.ModelMetricsPauseSeconds,
-				StalledScanClientTimeoutHours:  opssight.Perceptor.StalledScanClientTimeoutHours,
-				UnknownImagePauseMilliseconds:  opssight.Perceptor.UnknownImagePauseMilliseconds,
+				CheckForStalledScansPauseHours: opssightSpec.Perceptor.CheckForStalledScansPauseHours,
+				ClientTimeoutMilliseconds:      opssightSpec.Perceptor.ClientTimeoutMilliseconds,
+				ModelMetricsPauseSeconds:       opssightSpec.Perceptor.ModelMetricsPauseSeconds,
+				StalledScanClientTimeoutHours:  opssightSpec.Perceptor.StalledScanClientTimeoutHours,
+				UnknownImagePauseMilliseconds:  opssightSpec.Perceptor.UnknownImagePauseMilliseconds,
 			},
-			Host:        opssight.Perceptor.Name,
-			Port:        opssight.Perceptor.Port,
+			Host:        opssightSpec.Perceptor.Name,
+			Port:        opssightSpec.Perceptor.Port,
 			UseMockMode: false,
 		},
 		Scanner: &ScannerConfig{
-			BlackDuckClientTimeoutSeconds: opssight.ScannerPod.Scanner.ClientTimeoutSeconds,
-			ImageDirectory:                opssight.ScannerPod.ImageDirectory,
-			Port:                          opssight.ScannerPod.Scanner.Port,
+			BlackDuckClientTimeoutSeconds: opssightSpec.ScannerPod.Scanner.ClientTimeoutSeconds,
+			ImageDirectory:                opssightSpec.ScannerPod.ImageDirectory,
+			Port:                          opssightSpec.ScannerPod.Scanner.Port,
 		},
 		Skyfire: &SkyfireConfig{
-			BlackDuckClientTimeoutSeconds: opssight.Skyfire.HubClientTimeoutSeconds,
-			BlackDuckDumpPauseSeconds:     opssight.Skyfire.HubDumpPauseSeconds,
-			KubeDumpIntervalSeconds:       opssight.Skyfire.KubeDumpIntervalSeconds,
-			PerceptorDumpIntervalSeconds:  opssight.Skyfire.PerceptorDumpIntervalSeconds,
-			Port:                          opssight.Skyfire.Port,
-			PrometheusPort:                opssight.Skyfire.PrometheusPort,
+			BlackDuckClientTimeoutSeconds: opssightSpec.Skyfire.HubClientTimeoutSeconds,
+			BlackDuckDumpPauseSeconds:     opssightSpec.Skyfire.HubDumpPauseSeconds,
+			KubeDumpIntervalSeconds:       opssightSpec.Skyfire.KubeDumpIntervalSeconds,
+			PerceptorDumpIntervalSeconds:  opssightSpec.Skyfire.PerceptorDumpIntervalSeconds,
+			Port:                          opssightSpec.Skyfire.Port,
+			PrometheusPort:                opssightSpec.Skyfire.PrometheusPort,
 			UseInClusterConfig:            true,
 		},
 	}
-	return &SpecConfig{kubeClient: kubeClient, opssight: opssight, configMap: configMap, dryRun: dryRun}
+	return &SpecConfig{config: config, kubeClient: kubeClient, opssightClient: opssightClient, hubClient: hubClient, opssight: opssight, configMap: configMap, dryRun: dryRun}
 }
 
 func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
 	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
-		MapOrSecretName: p.opssight.ConfigMapName,
+		MapOrSecretName: p.opssight.Spec.ConfigMapName,
 	})
 }
 
@@ -107,9 +114,9 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 
 	// Add config map
 	cm, err := p.configMap.horizonConfigMap(
-		p.opssight.ConfigMapName,
-		p.opssight.Namespace,
-		fmt.Sprintf("%s.json", p.opssight.ConfigMapName))
+		p.opssight.Spec.ConfigMapName,
+		p.opssight.Spec.Namespace,
+		fmt.Sprintf("%s.json", p.opssight.Spec.ConfigMapName))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -142,7 +149,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 
 	// Add Pod Perceiver
-	if p.opssight.Perceiver.EnablePodPerceiver {
+	if p.opssight.Spec.Perceiver.EnablePodPerceiver {
 		rc, err = p.PodPerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create pod perceiver")
@@ -156,7 +163,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	// Add Image Perceiver
-	if p.opssight.Perceiver.EnableImagePerceiver {
+	if p.opssight.Spec.Perceiver.EnableImagePerceiver {
 		rc, err = p.ImagePerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create image perceiver")
@@ -170,7 +177,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	// Add skyfire
-	if p.opssight.EnableSkyfire {
+	if p.opssight.Spec.EnableSkyfire {
 		skyfireRC, err := p.PerceptorSkyfireReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create skyfire")
@@ -184,7 +191,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	// Add Metrics
-	if p.opssight.EnableMetrics {
+	if p.opssight.Spec.EnableMetrics {
 		dep, err := p.PerceptorMetricsDeployment()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create metrics")
@@ -202,26 +209,37 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 }
 
 func (p *SpecConfig) addSecretData(secret *components.Secret) error {
-	blackduckPasswords := make(map[string]interface{})
-	// adding External Black Duck passwords
-	for _, host := range p.opssight.Blackduck.ExternalHosts {
-		blackduckPasswords[host.Domain] = &host
+	blackduckHosts := make(map[string]*opssightapi.Host)
+	// adding External Black Duck credentials
+	for _, host := range p.opssight.Spec.Blackduck.ExternalHosts {
+		blackduckHosts[host.Domain] = host
 	}
+
+	// adding Internal Black Duck credentials
+	configMapEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient)
+	allHubs := configMapEditor.getAllHubs(p.opssight.Spec.Blackduck.BlackduckSpec.Type)
+	blackduckPasswords := configMapEditor.appendBlackDuckSecrets(blackduckHosts, allHubs)
+
+	// marshal the blackduck credentials to bytes
 	bytes, err := json.Marshal(blackduckPasswords)
 	if err != nil {
-		return errors.Trace(err)
+		return errors.Annotatef(err, "unable to marshal blackduck passwords")
 	}
-	secret.AddData(map[string][]byte{p.opssight.Blackduck.ConnectionsEnvironmentVariableName: bytes})
+	secret.AddData(map[string][]byte{p.opssight.Spec.Blackduck.ConnectionsEnvironmentVariableName: bytes})
 
-	// adding Secured registries credential
-	securedRegistries := make(map[string]interface{})
-	for _, internalRegistry := range p.opssight.ScannerPod.ImageFacade.InternalRegistries {
-		securedRegistries[internalRegistry.URL] = &internalRegistry
+	// adding Secured registries credentials
+	securedRegistries := make(map[string]*opssightapi.RegistryAuth)
+	for _, internalRegistry := range p.opssight.Spec.ScannerPod.ImageFacade.InternalRegistries {
+		securedRegistries[internalRegistry.URL] = internalRegistry
 	}
+	// marshal the Secured registries credentials to bytes
 	bytes, err = json.Marshal(securedRegistries)
 	if err != nil {
-		return errors.Trace(err)
+		return errors.Annotatef(err, "unable to marshal secured registries")
 	}
 	secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
+
+	// add internal hosts to status
+	p.opssight.Status.InternalHosts = configMapEditor.appendBlackDuckHosts(p.opssight.Status.InternalHosts, allHubs)
 	return nil
 }

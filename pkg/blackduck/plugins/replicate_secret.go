@@ -224,6 +224,7 @@ func getMapOfNginxCertificatesToHubs(hubClient *hubclientset.Clientset, namespac
 		hubList, err := util.ListHubs(hubClient, namespace)
 		if err != nil {
 			log.Errorf("unable to list the hubs due to %+v", err)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 		dependencyMap := make(map[string][]string)
