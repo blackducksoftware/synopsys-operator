@@ -46,11 +46,8 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 		}
 		environKey := strings.Trim(vals[0], " ") // trim removes leading/trailing " "
 		environVal := strings.Trim(vals[1], " ")
-		if _, inMap := configMapData[environKey]; inMap {
-			log.Errorf("Duplicate environ '%s'", environKey)
-		} else {
-			configMapData[environKey] = environVal
-		}
+		log.Debugf("Adding Environ %s", environKey)
+		configMapData[environKey] = environVal
 	}
 
 	// Add data to the ConfigMap
