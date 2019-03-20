@@ -132,7 +132,7 @@ func (d *Deployment) remove() error {
 	return nil
 }
 
-// deploymentComparator used to compare Replication controller attributes
+// deploymentComparator used to compare deployment attributes
 type deploymentComparator struct {
 	Image    string
 	Replicas *int32
