@@ -34,7 +34,7 @@ func (c *Creater) GetBinaryScannerDeployment() *components.ReplicationController
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.BinaryScannerMemoryLimit,
 			MaxMem: c.hubContainerFlavor.BinaryScannerMemoryLimit, MinCPU: binaryScannerMinCPUUsage, MaxCPU: binaryScannerMaxCPUUsage,
 			Command: []string{"/docker-entrypoint.sh"}},
-		EnvConfigs: c.bdbaConfigEnv,
+		EnvConfigs: c.hubConfigEnv,
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: binaryScannerPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 

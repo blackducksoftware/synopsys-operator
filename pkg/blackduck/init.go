@@ -115,8 +115,13 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 				if len(claim.Size) > 0 {
 					size = claim.Size
 				}
-			case "blackduck-uploadcache":
+			case "blackduck-uploadcache-data":
 				size = "100Gi"
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			case "blackduck-uploadcache-key":
+				size = "2Gi"
 				if len(claim.Size) > 0 {
 					size = claim.Size
 				}

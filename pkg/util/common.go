@@ -539,12 +539,9 @@ func WaitForServiceEndpointReady(clientset *kubernetes.Clientset, namespace stri
 
 // ValidatePodsAreRunningInNamespace will validate whether the pods are running in a given namespace
 func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespace string, timeoutInSeconds int64) error {
-	pods, err := ListPods(clientset, namespace)
-	if err != nil {
-		return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
-	}
-
+	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
 	timeout := time.NewTimer(time.Duration(timeoutInSeconds) * time.Second)
+	// ticker starts and execute the task for every n intervals
 	ticker := time.NewTicker(10 * time.Second)
 	for {
 		select {
@@ -552,6 +549,12 @@ func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespac
 			ticker.Stop()
 			return fmt.Errorf("the pods weren't able to start - timing out after %d seconds", timeoutInSeconds)
 		case <-ticker.C:
+			pods, err := ListPods(clientset, namespace)
+			if err != nil {
+				timeout.Stop()
+				ticker.Stop()
+				return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
+			}
 			if ValidatePodsAreRunning(clientset, pods) {
 				timeout.Stop()
 				ticker.Stop()
