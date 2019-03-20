@@ -36,8 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// RemoveBlackduckVersion finds all Blackducks with a different version, returns their specs with
-// the new version, and deletes the old CRD if it changed the version of all Blackducks
+// RemoveBlackduckVersion finds all Blackducks with a different version, returns their specs with the new version
 func RemoveBlackduckVersion(blackduckClient *blackduckclientset.Clientset, newVersion string, oldCRDName string) ([]blackduckv1.Blackduck, error) {
 	log.Debugf("Collecting all Blackducks of version: %s", newVersion)
 	currCRDs, err := operatorutil.GetBlackducks(blackduckClient)
@@ -52,15 +51,10 @@ func RemoveBlackduckVersion(blackduckClient *blackduckclientset.Clientset, newVe
 			newCRDs = append(newCRDs, crd)
 		}
 	}
-	// Delete the CRD if changing all instances
-	if len(newCRDs) == len(currCRDs.Items) {
-		operatorutil.RunKubeCmd("delete", "crd", oldCRDName)
-	}
 	return newCRDs, nil
 }
 
-// RemoveOpsSightVersion finds all OpsSights with a different version, returns their specs with
-// the new version, and deletes the old CRD if it changed the version of all OpsSights
+// RemoveOpsSightVersion finds all OpsSights with a different version, returns their specs with the new version
 func RemoveOpsSightVersion(opssightClient *opssightclientset.Clientset, newVersion string, oldCRDName string) ([]opssightv1.OpsSight, error) {
 	log.Debugf("Collecting all OpsSights of version: %s", newVersion)
 	currCRDs, err := operatorutil.GetOpsSights(opssightClient)
@@ -75,15 +69,10 @@ func RemoveOpsSightVersion(opssightClient *opssightclientset.Clientset, newVersi
 			newCRDs = append(newCRDs, crd)
 		}
 	}
-	// Delete the CRD if changing all instances
-	if len(newCRDs) == len(currCRDs.Items) {
-		operatorutil.RunKubeCmd("delete", "crd", oldCRDName)
-	}
 	return newCRDs, nil
 }
 
-// RemoveAlertVersion finds all Alerts with a different version, returns their specs with
-// the new version, and deletes the old CRD if it changed the version of all Alerts
+// RemoveAlertVersion finds all Alerts with a different version, returns their specs with the new version
 func RemoveAlertVersion(alertClient *alertclientset.Clientset, newVersion string, oldCRDName string) ([]alertv1.Alert, error) {
 	log.Debugf("Collecting all Alerts of version: %s", newVersion)
 	currCRDs, err := operatorutil.GetAlerts(alertClient)
@@ -97,10 +86,6 @@ func RemoveAlertVersion(alertClient *alertclientset.Clientset, newVersion string
 			crd.TypeMeta.APIVersion = newVersion
 			newCRDs = append(newCRDs, crd)
 		}
-	}
-	// Delete the CRD if changing all instances
-	if len(newCRDs) == len(currCRDs.Items) {
-		operatorutil.RunKubeCmd("delete", "crd", oldCRDName)
 	}
 	return newCRDs, nil
 }

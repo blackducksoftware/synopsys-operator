@@ -25,6 +25,9 @@ import (
 	"fmt"
 	"strings"
 
+	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -51,18 +54,37 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	currOperatorVersion := strings.Split(currImage, ":")[1]
 	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
 	currCrdData := SOperatorCRDVersionMap.GetCRDVersions(currOperatorVersion)
-	// Delete old CRDs and get CRD Specs that need to be updated (specs have new version set)
-	oldBlackducks, err := RemoveBlackduckVersion(blackduckClient, newCrdData.Blackduck.APIVersion, currCrdData.Blackduck.CRDName)
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	// Get CRDs that need to be updated (specs have new version set)
+	var oldBlackducks = []blackduckv1.Blackduck{}
+	if newCrdData.Blackduck.APIVersion != currCrdData.Blackduck.APIVersion {
+		oldBlackducks, err = RemoveBlackduckVersion(blackduckClient, newCrdData.Blackduck.APIVersion, currCrdData.Blackduck.CRDName)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
 	}
-	oldOpsSights, err := RemoveOpsSightVersion(opssightClient, newCrdData.OpsSight.APIVersion, currCrdData.OpsSight.CRDName)
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	var oldOpsSights = []opssightv1.OpsSight{}
+	if newCrdData.OpsSight.APIVersion != currCrdData.OpsSight.APIVersion {
+		oldOpsSights, err = RemoveOpsSightVersion(opssightClient, newCrdData.OpsSight.APIVersion, currCrdData.OpsSight.CRDName)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
 	}
-	oldAlerts, err := RemoveAlertVersion(alertClient, newCrdData.Alert.APIVersion, currCrdData.Alert.CRDName)
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	var oldAlerts = []alertv1.Alert{}
+	if newCrdData.Alert.APIVersion != currCrdData.Alert.APIVersion {
+		oldAlerts, err = RemoveAlertVersion(alertClient, newCrdData.Alert.APIVersion, currCrdData.Alert.CRDName)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+	}
+	// Delete old CRDs
+	if newCrdData.Blackduck.APIVersion != currCrdData.Blackduck.APIVersion {
+		operatorutil.RunKubeCmd("delete", "crd", currCrdData.Blackduck.CRDName)
+	}
+	if newCrdData.OpsSight.APIVersion != currCrdData.OpsSight.APIVersion {
+		operatorutil.RunKubeCmd("delete", "crd", currCrdData.OpsSight.CRDName)
+	}
+	if newCrdData.Alert.APIVersion != currCrdData.Alert.APIVersion {
+		operatorutil.RunKubeCmd("delete", "crd", currCrdData.Alert.CRDName)
 	}
 
 	// Update the Synopsys-Operator's Components
