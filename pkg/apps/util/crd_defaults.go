@@ -39,12 +39,10 @@ import (
 // GetAlertDefaultValue creates a alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {
 	port := 8443
-	hubPort := 443
 	standAlone := true
 
 	return &alertv1.AlertSpec{
 		Port:           &port,
-		BlackduckPort:  &hubPort,
 		StandAlone:     &standAlone,
 		AlertMemory:    "512M",
 		CfsslMemory:    "640M",
