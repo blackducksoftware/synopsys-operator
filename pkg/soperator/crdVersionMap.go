@@ -29,13 +29,13 @@ var SOperatorCRDVersionMap = operatorCRDVersionMap{
 			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
 			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
 		},
-		"2019.1.1": operatorVersions{
+		"2019.1.0": operatorVersions{
 			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
 			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
 			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
 		},
-		"2019.0.0": operatorVersions{
-			Blackduck: &crdVersionData{CRDName: "hub.synopsys.com", APIVersion: "v1"},
+		"2018.12.0": operatorVersions{
+			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
 			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
 			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
 		},

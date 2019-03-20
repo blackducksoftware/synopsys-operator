@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -36,8 +37,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// RemoveBlackduckVersion finds all Blackducks with a different version, returns their specs with the new version
-func RemoveBlackduckVersion(blackduckClient *blackduckclientset.Clientset, newVersion string, oldCRDName string) ([]blackduckv1.Blackduck, error) {
+// GetBlackduckVersionsToRemove finds all Blackducks with a different version, returns their specs with the new version
+func GetBlackduckVersionsToRemove(blackduckClient *blackduckclientset.Clientset, newVersion string, oldCRDName string) ([]blackduckv1.Blackduck, error) {
 	log.Debugf("Collecting all Blackducks of version: %s", newVersion)
 	currCRDs, err := operatorutil.GetBlackducks(blackduckClient)
 	if err != nil {
@@ -54,8 +55,8 @@ func RemoveBlackduckVersion(blackduckClient *blackduckclientset.Clientset, newVe
 	return newCRDs, nil
 }
 
-// RemoveOpsSightVersion finds all OpsSights with a different version, returns their specs with the new version
-func RemoveOpsSightVersion(opssightClient *opssightclientset.Clientset, newVersion string, oldCRDName string) ([]opssightv1.OpsSight, error) {
+// GetOpsSightVersionsToRemove finds all OpsSights with a different version, returns their specs with the new version
+func GetOpsSightVersionsToRemove(opssightClient *opssightclientset.Clientset, newVersion string, oldCRDName string) ([]opssightv1.OpsSight, error) {
 	log.Debugf("Collecting all OpsSights of version: %s", newVersion)
 	currCRDs, err := operatorutil.GetOpsSights(opssightClient)
 	if err != nil {
@@ -72,8 +73,8 @@ func RemoveOpsSightVersion(opssightClient *opssightclientset.Clientset, newVersi
 	return newCRDs, nil
 }
 
-// RemoveAlertVersion finds all Alerts with a different version, returns their specs with the new version
-func RemoveAlertVersion(alertClient *alertclientset.Clientset, newVersion string, oldCRDName string) ([]alertv1.Alert, error) {
+// GetAlertVersionsToRemove finds all Alerts with a different version, returns their specs with the new version
+func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion string, oldCRDName string) ([]alertv1.Alert, error) {
 	log.Debugf("Collecting all Alerts of version: %s", newVersion)
 	currCRDs, err := operatorutil.GetAlerts(alertClient)
 	if err != nil {
@@ -115,4 +116,8 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 		currImage = container.Image
 	}
 	return currImage, nil
+}
+
+func GetCurrentComponents(kubeClient *kubernetes.Clientset, namespace string) (*api.ComponentList, error) {
+	return nil, nil
 }

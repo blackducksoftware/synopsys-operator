@@ -57,33 +57,26 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	// Get CRDs that need to be updated (specs have new version set)
 	var oldBlackducks = []blackduckv1.Blackduck{}
 	if newCrdData.Blackduck.APIVersion != currCrdData.Blackduck.APIVersion {
-		oldBlackducks, err = RemoveBlackduckVersion(blackduckClient, newCrdData.Blackduck.APIVersion, currCrdData.Blackduck.CRDName)
+		oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion, currCrdData.Blackduck.CRDName)
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
+		operatorutil.RunKubeCmd("delete", "crd", currCrdData.Blackduck.CRDName)
 	}
 	var oldOpsSights = []opssightv1.OpsSight{}
 	if newCrdData.OpsSight.APIVersion != currCrdData.OpsSight.APIVersion {
-		oldOpsSights, err = RemoveOpsSightVersion(opssightClient, newCrdData.OpsSight.APIVersion, currCrdData.OpsSight.CRDName)
+		oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion, currCrdData.OpsSight.CRDName)
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
+		operatorutil.RunKubeCmd("delete", "crd", currCrdData.OpsSight.CRDName)
 	}
 	var oldAlerts = []alertv1.Alert{}
 	if newCrdData.Alert.APIVersion != currCrdData.Alert.APIVersion {
-		oldAlerts, err = RemoveAlertVersion(alertClient, newCrdData.Alert.APIVersion, currCrdData.Alert.CRDName)
+		oldAlerts, err = GetAlertVersionsToRemove(alertClient, newCrdData.Alert.APIVersion, currCrdData.Alert.CRDName)
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
-	}
-	// Delete old CRDs
-	if newCrdData.Blackduck.APIVersion != currCrdData.Blackduck.APIVersion {
-		operatorutil.RunKubeCmd("delete", "crd", currCrdData.Blackduck.CRDName)
-	}
-	if newCrdData.OpsSight.APIVersion != currCrdData.OpsSight.APIVersion {
-		operatorutil.RunKubeCmd("delete", "crd", currCrdData.OpsSight.CRDName)
-	}
-	if newCrdData.Alert.APIVersion != currCrdData.Alert.APIVersion {
 		operatorutil.RunKubeCmd("delete", "crd", currCrdData.Alert.CRDName)
 	}
 
