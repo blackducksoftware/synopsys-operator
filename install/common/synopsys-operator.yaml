@@ -104,10 +104,6 @@ items:
     - clusterrolebindings
     - clusterroles
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
-  - apiGroups: ["rbac.authorization.k8s.io"]
-    resources: ["clusterroles"]
-    verbs: ["bind"]
-    resourceNames: ["admin","edit","view"]
   - apiGroups: ["batch", "extensions"]
     resources: ["jobs", "cronjobs"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
@@ -138,7 +134,7 @@ items:
     - pods
     - pods/log
     - endpoints
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list", "watch", "update"]
   - apiGroups: [""]
     resources:
     - pods/exec
