@@ -104,52 +104,31 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	return nil
 }
 
-// UpdateSOperatorComponentsByFlags updates kubernete's resources for the Synopsys-Operator by checking
-// what flags were changed and updating the respective components
-func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig) error {
-	newSOperatorComponents, err := newSOperatorSpec.GetComponents()
+// UpdateSOperatorComponents updates kubernetes resources for the Synopsys-Operator
+func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpecConfig SpecConfig) error {
+	sOperatorComponents, err := newSOperatorSpecConfig.GetComponents()
 	if err != nil {
-		return fmt.Errorf("Error creating new SOperator Components: %s", err)
+		return fmt.Errorf("Failed to Update Operator Components: %s", err)
 	}
-	var isConfigMapUpdated bool
-	var isSecretUpdated bool
-	// Update the Secret if the type or password changed
-	isSecretUpdated, err = crdupdater.UpdateSecret(kubeClient, namespace, "blackduck-secret", newSOperatorComponents.Secrets[0])
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	sOperatorCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, sOperatorComponents, "app=operator")
+	errs := sOperatorCommonConfig.CRUDComponents()
+	if errs != nil {
+		return fmt.Errorf("Failed to Update Operator Components: %+v", errs)
 	}
-	// Update the Replication Controller if the image or reg key changed
-	operatorUpdater := crdupdater.NewUpdater()
-	replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newSOperatorComponents.ReplicationControllers, namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	operatorUpdater.AddUpdater(replicationControllerUpdater)
-	err = operatorUpdater.Update()
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
+
 	return nil
 }
 
-// UpdatePrometheusByFlags updates kubernete's resources for Prometheus by checking
-// what flags were changed and updating the respective components
+// UpdatePrometheus updates kubernetes resources for Prometheus
 func UpdatePrometheus(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig PrometheusSpecConfig) error {
-	// Get Components of New Prometheus
-	newPrometheusComponents, err := newPrometheusSpecConfig.GetComponents()
+	prometheusComponents, err := newPrometheusSpecConfig.GetComponents()
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("Failed to Update Prometheus Components: %s", err)
 	}
-
-	prometheusUpdater := crdupdater.NewUpdater()
-	deploymentUpdater, err := crdupdater.NewDeployment(restconfig, kubeClient, newPrometheusComponents.Deployments, namespace, "app=prometheus", false)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-	prometheusUpdater.AddUpdater(deploymentUpdater)
-	err = prometheusUpdater.Update()
-	if err != nil {
-		return fmt.Errorf("%s", err)
+	prometheusCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, prometheusComponents, "app=prometheus")
+	errs := prometheusCommonConfig.CRUDComponents()
+	if errs != nil {
+		return fmt.Errorf("Failed to Update Operator Components: %+v", errs)
 	}
 	return nil
 }

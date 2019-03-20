@@ -443,11 +443,6 @@ func DeleteDeployment(clientset *kubernetes.Clientset, namespace string, name st
 	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
-// GetServiceAccount gets a service account
-func GetServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ServiceAccount, error) {
-	return clientset.CoreV1().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
-}
-
 // CreatePersistentVolume will create the persistent volume
 func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storageClass string, claimSize string, nfsPath string, nfsServer string) (*corev1.PersistentVolume, error) {
 	pvQuantity, _ := resource.ParseQuantity(claimSize)

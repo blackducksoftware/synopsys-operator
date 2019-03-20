@@ -81,7 +81,7 @@ var updateOperatorCmd = &cobra.Command{
 		}
 		log.Debugf("Updating the Synopsys-Operator in namespace %s\n", namespace)
 		// Create new Synopsys-Operator Spec
-		sOperatorSpec, err := soperator.GetCurrentComponentsSpec(kubeClient, namespace)
+		sOperatorSpecConfig, err := soperator.GetCurrentComponentsSpecConfig(kubeClient, namespace)
 		if err != nil {
 			fmt.Errorf("Error Updating Operator: %s", err)
 		}
@@ -112,15 +112,14 @@ var updateOperatorCmd = &cobra.Command{
 		if cmd.Flag("blackduck-password").Changed {
 			sOperatorSpec.SecretBlackduckPassword = updateSecretBlackduckPassword
 		}
-
 		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, sOperatorSpec, blackduckClient, opssightClient, alertClient)
 
 		log.Debugf("Updating Prometheus in namespace %s\n", namespace)
-		newPrometheusSpecConfig := soperator.PrometheusSpecConfig{
-			Namespace:       namespace,
-			PrometheusImage: updatePrometheusImage,
+		prometheusSpecConfig := soperator.GetCurrentComponentsSpecConfigPrometheus(kubeClient, namespace)
+		if cmd.Flag("prometheus-image").Changed {
+			prometheusSpecConfig.PrometheusImage = updatePrometheusImage
 		}
-		soperator.UpdatePrometheusByFlags(restconfig, kubeClient, namespace, newPrometheusSpecConfig, cmd)
+		soperator.UpdatePrometheus(restconfig, kubeClient, namespace, prometheusSpecConfig, cmd)
 		return nil
 	},
 }

@@ -117,9 +117,9 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 	return currImage, nil
 }
 
-// GetCurrentComponentsSpec returns a spec that respesents the current Synopsys-Operator in
+// GetCurrentComponentsSpecConfig returns a spec that respesents the current Synopsys-Operator in
 // the cluster
-func GetCurrentComponentsSpec(kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
+func GetCurrentComponentsSpecConfig(kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
 	sOperatorSpec := SpecConfig{}
 	// Set the Namespace
 	sOperatorSpec.Namespace = namespace
@@ -158,4 +158,25 @@ func GetCurrentComponentsSpec(kubeClient *kubernetes.Clientset, namespace string
 	sOperatorSpec.SecretBlackduckPassword = string(currKubeSecretData["HUB_PASSWORD"])
 
 	return &sOperatorSpec, nil
+}
+
+// GetCurrentComponentsSpecConfigPrometheus returns a spec that respesents the current prometheus in
+// the cluster
+func GetCurrentComponentsSpecConfigPrometheus(kubeClient *kubernetes.Clientset, namespace string) (*PrometheusSpecConfig, error) {
+	prometheusSpec := PrometheusSpecConfig{}
+	// Set Namespace
+	prometheusSpec.Namespace = namespace
+	// Set Image
+	currPod, err := operatorutil.GetPod(kubeClient, namespace, "prometheus")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get Prometheus Pod: %s", err)
+	}
+	for _, container := range currPod.Spec.Containers {
+		if container.Name != "prometheus" {
+			continue
+		}
+		prometheusSpec.PrometheusImage = container.Image
+	}
+	return &prometheusSpec, nil
+
 }
