@@ -22,7 +22,6 @@ under the License.
 package alert
 
 import (
-	"fmt"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -37,16 +36,8 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 		Namespace: a.config.Namespace,
 	})
 
-	// Create Data with Required Environs
-	configMapData := map[string]string{
-		"ALERT_SERVER_PORT":            fmt.Sprintf("%d", *a.config.Port),
-		"PUBLIC_HUB_WEBSERVER_HOST":    a.config.BlackduckHost,
-		"PUBLIC_HUB_WEBSERVER_PORT":    fmt.Sprintf("%d", *a.config.BlackduckPort),
-		"ALERT_ENCRYPTION_PASSWORD":    a.config.EncryptionPassword,
-		"ALERT_ENCRYPTION_GLOBAL_SALT": a.config.EncryptionGlobalSalt,
-	}
-
-	// Add additional Environs
+	// Add Environs
+	configMapData := map[string]string{}
 	for _, environ := range a.config.Environs {
 		vals := strings.Split(environ, ":")
 		if len(vals) != 2 {
