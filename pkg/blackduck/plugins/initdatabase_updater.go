@@ -106,15 +106,18 @@ func (i *InitDatabaseUpdater) addHub(obj interface{}) {
 	}
 	// Only if the we don't use persistent storage and that we don't use an external database
 	if !hub.Spec.PersistentStorage && hub.Spec.ExternalPostgres == nil {
+		hubName := hub.Name
 		for j := 0; j < 20; j++ {
-			hub, err := util.GetHub(i.HubClient, i.Config.Namespace, hub.Name)
+			hub, err := util.GetHub(i.HubClient, i.Config.Namespace, hubName)
 			if err != nil {
-				log.Errorf("unable to get hub %s due to %+v", hub.Name, err)
+				log.Errorf("unable to get hub %s due to %+v", hubName, err)
+				i.deleteChannel(hubName)
+				return
 			}
 
 			addHubSpec := hub.Spec
 			if strings.EqualFold(hub.Status.State, "running") {
-				i.Hubs[hub.Name] = i.startInitDatabaseUpdater(&addHubSpec)
+				i.Hubs[hubName] = i.startInitDatabaseUpdater(&addHubSpec)
 				break
 			}
 			time.Sleep(10 * time.Second)

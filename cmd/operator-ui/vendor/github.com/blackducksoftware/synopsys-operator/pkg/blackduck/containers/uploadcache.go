@@ -22,6 +22,8 @@ under the License.
 package containers
 
 import (
+	"strings"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -30,6 +32,11 @@ import (
 // GetUploadCacheDeployment will return the uploadCache deployment
 func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 	volumeMounts := c.getUploadCacheVolumeMounts()
+
+	image := c.GetFullContainerName("upload")
+	if strings.EqualFold(image, "") {
+		return nil
+	}
 
 	uploadCacheContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: c.GetFullContainerName("upload"),
