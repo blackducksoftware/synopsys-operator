@@ -55,7 +55,7 @@ func NewCRDInstaller(config interface{}) (*CRDInstaller, error) {
 	}
 	c := &CRDInstaller{config: dependentConfig}
 
-	c.config.resyncPeriod = 0
+	c.config.resyncPeriod = time.Duration(c.config.Config.ResyncIntervalInSeconds) * time.Second
 	c.config.indexers = cache.Indexers{}
 
 	return c, nil
@@ -151,7 +151,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			old := oldObj.(*opssightapi.OpsSight)
 			new := newObj.(*opssightapi.OpsSight)
-			if old.ResourceVersion != new.ResourceVersion && !reflect.DeepEqual(old.Spec, new.Spec) {
+			if !reflect.DeepEqual(old.Spec, new.Spec) || !reflect.DeepEqual(old.Status.InternalHosts, new.Status.InternalHosts) {
 				key, err := cache.MetaNamespaceKeyFunc(newObj)
 				log.Infof("update opssight: %s", key)
 				if err == nil {

@@ -24,10 +24,8 @@ package opssight
 // This is a controller that deletes the hub based on the delete threshold
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
-	"reflect"
 	"strings"
 	"time"
 
@@ -117,52 +115,9 @@ func (p *Updater) Run(ch <-chan struct{}) {
 		},
 	)
 
-	opssightListWatch := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).List(options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Watch(options)
-		},
-	}
-	_, opssightController := cache.NewInformer(opssightListWatch,
-		&opssightapi.OpsSight{},
-		2*time.Second,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				logger.Debugf("configmap updater opssight added event! %v ", obj)
-				running := p.isOpsSightRunning(obj)
-				if running {
-					return
-				}
-				err := p.updateOpsSight(obj)
-				if err != nil {
-					logger.Errorf("unable to update opssight because %+v", err)
-				}
-			},
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				old, ok := oldObj.(*opssightapi.OpsSight)
-				if !ok {
-					log.Error("unable to cast old object for opssight update event")
-				}
-				new, ok := newObj.(*opssightapi.OpsSight)
-				if !ok {
-					log.Error("unable to cast new object for opssight update event")
-				}
-				if old.ResourceVersion != new.ResourceVersion && !reflect.DeepEqual(old.Spec, new.Spec) {
-					logger.Debugf("configmap updater opssight update event! %v ", newObj)
-					err := p.updateOpsSight(newObj)
-					if err != nil {
-						logger.Errorf("unable to update opssight because %+v", err)
-					}
-				}
-			},
-		},
-	)
-
 	// make sure this is called from a go func -- it blocks!
 	go hubController.Run(ch)
-	go opssightController.Run(ch)
+	// go opssightController.Run(ch)
 }
 
 // isBlackDuckRunning return whether the Black Duck instance is in running state
@@ -236,40 +191,16 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 	if err != nil {
 		return errors.Annotate(err, "unable to update opssight CRD")
 	}
-
-	err = p.updatePerceptorSecret(&opssight.Spec, allHubs)
-	if err != nil {
-		return errors.Annotate(err, "unable to update perceptor")
-	}
-
-	perceptorRCName := opssight.Spec.Perceptor.Name
-	err = p.patchOpsSightReplicationController(opssight.Spec.Namespace, perceptorRCName)
-	if err != nil {
-		return errors.Annotate(err, fmt.Sprintf("unable to patch %s replication controller", perceptorRCName))
-	}
-
-	if opssight.Spec.Perceiver.EnablePodPerceiver {
-		podProcessorRCName := opssight.Spec.Perceiver.PodPerceiver.Name
-		err = p.patchOpsSightReplicationController(opssight.Spec.Namespace, podProcessorRCName)
-		if err != nil {
-			return errors.Annotate(err, fmt.Sprintf("unable to patch %s replication controller", podProcessorRCName))
-		}
-	}
-
-	if opssight.Spec.Perceiver.EnableImagePerceiver {
-		imageProcessorRCName := opssight.Spec.Perceiver.ImagePerceiver.Name
-		err = p.patchOpsSightReplicationController(opssight.Spec.Namespace, imageProcessorRCName)
-		if err != nil {
-			return errors.Annotate(err, fmt.Sprintf("unable to patch %s replication controller", imageProcessorRCName))
-		}
-	}
 	return nil
 }
 
 // getAllHubs get only the internal Black Duck instances from the cluster
 func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 	hosts := []*opssightapi.Host{}
-	hubsList, _ := util.ListHubs(p.hubClient, p.config.Namespace)
+	hubsList, err := util.ListHubs(p.hubClient, p.config.Namespace)
+	if err != nil {
+		log.Errorf("unable to list blackducks due to %+v", err)
+	}
 	log.Debugf("total no of Black Duck's: %d", len(hubsList.Items))
 	blackduckPassword := p.getDefaultPassword()
 	for _, hub := range hubsList.Items {
@@ -362,67 +293,6 @@ func (p *Updater) appendBlackDuckHosts(existingBlackDucks []*opssightapi.Host, i
 		}
 	}
 	return finalBlackDucks
-}
-
-// updatePerceptorSecret will update the secrets
-func (p *Updater) updatePerceptorSecret(opsSightSpec *opssightapi.OpsSightSpec, hubs []*opssightapi.Host) error {
-	secretName := opsSightSpec.SecretName
-	logger.WithField("secret", secretName).Info("update perceptor: looking for secret")
-	secret, err := p.kubeClient.CoreV1().Secrets(opsSightSpec.Namespace).Get(secretName, metav1.GetOptions{})
-	if err != nil {
-		return errors.Annotatef(err, "unable to get secret %s in %s", secretName, opsSightSpec.Namespace)
-	}
-
-	blackduckHosts := map[string]*opssightapi.Host{}
-	err = json.Unmarshal(secret.Data[opsSightSpec.Blackduck.ConnectionsEnvironmentVariableName], &blackduckHosts)
-	if err != nil {
-		return errors.Annotatef(err, "unable to get unmarshal the secret %s in %s", secretName, opsSightSpec.Namespace)
-	}
-
-	blackduckPasswords := p.appendBlackDuckSecrets(blackduckHosts, hubs)
-	bytes, err := json.Marshal(blackduckPasswords)
-	if err != nil {
-		return errors.Trace(err)
-	}
-	secret.Data[opsSightSpec.Blackduck.ConnectionsEnvironmentVariableName] = bytes
-
-	_, err = p.kubeClient.CoreV1().Secrets(opsSightSpec.Namespace).Update(secret)
-	if err != nil {
-		return errors.Annotatef(err, "unable to update secret %s in %s", secretName, opsSightSpec.Namespace)
-	}
-	return nil
-}
-
-// patchOpsSightReplicationController restarts the opssight replication controller
-func (p *Updater) patchOpsSightReplicationController(namespace string, name string) error {
-	err := p.patchReplicationController(namespace, name, 0)
-	if err != nil {
-		return errors.Annotate(err, "unable to patch replication controller")
-	}
-
-	err = p.patchReplicationController(namespace, name, 1)
-	if err != nil {
-		return errors.Annotate(err, "unable to patch replication controller")
-	}
-	return nil
-}
-
-// patchReplicationController patch the opssight replication controller
-func (p *Updater) patchReplicationController(namespace string, name string, replicas int) error {
-	// Get the replication controllers
-	rc, err := util.GetReplicationController(p.kubeClient, namespace, name)
-	if err != nil {
-		return fmt.Errorf("unable to find %s replication controller in %s namespace because %+v", name, namespace, err)
-	}
-
-	log.Infof("found %s replication controller in %s namespace successfully", name, namespace)
-
-	err = util.PatchReplicationControllerForReplicas(p.kubeClient, *rc, replicas)
-	if err != nil {
-		return fmt.Errorf("unable to patch %s replication controller with replicas %d in %s namespace because %+v", name, replicas, namespace, err)
-	}
-	log.Infof("patched the %s replication controller with replicas=%d in %s namespace successfully", name, replicas, namespace)
-	return nil
 }
 
 // appendBlackDuckSecrets will append the secrets of external and internal Black Duck

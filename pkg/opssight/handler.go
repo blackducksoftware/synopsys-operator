@@ -51,6 +51,9 @@ type HandlerInterface interface {
 // State contains the state of the OpsSight
 type State string
 
+// DesiredState contains the desired state of the OpsSight
+type DesiredState string
+
 const (
 	// Creating is used when OpsSight is installing or deploying
 	Creating State = "Creating"
@@ -64,6 +67,11 @@ const (
 	Updating State = "Updating"
 	// Error is used when OpsSight deployment errored out
 	Error State = "Error"
+
+	// Start is used when OpsSight deployment to be created or updated
+	Start DesiredState = "Start"
+	// Stop is used when OpsSight deployment to be stopped
+	Stop DesiredState = "Stop"
 )
 
 // Handler will store the configuration that is required to initiantiate the informers callback
@@ -82,7 +90,7 @@ type Handler struct {
 // ObjectCreated will be called for create opssight events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	if err := h.handleObjectCreated(obj); err != nil {
-		log.Errorf("unable to handle object created: %s", err.Error())
+		log.Errorf("handle object created: %s", err.Error())
 	}
 }
 
@@ -95,7 +103,7 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 		return errors.Errorf("unable to cast opssight object")
 	}
 
-	if strings.EqualFold(opssight.Spec.DesiredState, "") && strings.EqualFold(opssight.Status.State, "") {
+	if strings.EqualFold(opssight.Spec.DesiredState, string(Start)) && strings.EqualFold(opssight.Status.State, "") {
 		log.Debugf("inside creation event of opssight %s", opssight.Spec.Namespace)
 		newSpec := opssight.Spec
 		defaultSpec := h.Defaults
@@ -118,11 +126,11 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 		}
 
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
-		err = opssightCreator.CreateOpsSight(&opssight.Spec)
+		err = opssightCreator.CreateOpsSight(opssight)
 		if err != nil {
 			recordError("unable to create opssight")
 			h.updateState(Error, err.Error(), opssight)
-			return errors.Annotatef(err, "unable to create opssight %s", opssight.Name)
+			return errors.Annotatef(err, "create opssight %s", opssight.Name)
 		}
 		h.updateState(Running, "", opssight)
 	} else {
@@ -167,7 +175,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		if err != nil {
 			recordError("unable to stop opssight")
 			h.updateState(Error, err.Error(), opssight)
-			log.Errorf("unable to handle object stop: %s", err.Error())
+			log.Errorf("handle object stop: %s", err.Error())
 			return
 		}
 		opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)
@@ -182,7 +190,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Error(errors.Annotate(err, "unable to update stopped state"))
 			return
 		}
-	case "UPDATE":
+	case "START":
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
 		opssight, err := h.updateState(Updating, "", opssight)
 		if err != nil {
@@ -190,11 +198,11 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Error(errors.Annotate(err, "unable to update updating state"))
 			return
 		}
-		err = opssightCreator.UpdateOpsSight(&opssight.Spec)
+		err = opssightCreator.UpdateOpsSight(opssight)
 		if err != nil {
 			recordError("unable to update opssight")
 			h.updateState(Error, err.Error(), opssight)
-			log.Errorf("unable to handle object update: %s", err.Error())
+			log.Errorf("handle object update: %s", err.Error())
 			return
 		}
 		opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)

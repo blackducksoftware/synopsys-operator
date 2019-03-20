@@ -22,85 +22,89 @@ under the License.
 package opssight
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/juju/errors"
-	log "github.com/sirupsen/logrus"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
-	kubeClient *kubernetes.Clientset
-	config     *opssightapi.OpsSightSpec
-	configMap  *MainOpssightConfigMap
-	dryRun     bool
+	config         *protoform.Config
+	kubeClient     *kubernetes.Clientset
+	opssightClient *opssightclientset.Clientset
+	hubClient      *hubclientset.Clientset
+	opssight       *opssightapi.OpsSight
+	configMap      *MainOpssightConfigMap
+	dryRun         bool
 }
 
 // NewSpecConfig will create the OpsSight object
-func NewSpecConfig(kubeClient *kubernetes.Clientset, config *opssightapi.OpsSightSpec, dryRun bool) *SpecConfig {
+func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, hubClient *hubclientset.Clientset, opssight *opssightapi.OpsSight, dryRun bool) *SpecConfig {
+	opssightSpec := &opssight.Spec
 	configMap := &MainOpssightConfigMap{
-		LogLevel: config.LogLevel,
+		LogLevel: opssightSpec.LogLevel,
 		BlackDuck: &BlackDuckConfig{
-			ConnectionsEnvironmentVariableName: config.Blackduck.ConnectionsEnvironmentVariableName,
-			TLSVerification:                    config.Blackduck.TLSVerification,
+			ConnectionsEnvironmentVariableName: opssightSpec.Blackduck.ConnectionsEnvironmentVariableName,
+			TLSVerification:                    opssightSpec.Blackduck.TLSVerification,
 		},
 		ImageFacade: &ImageFacadeConfig{
 			CreateImagesOnly: false,
 			Host:             "localhost",
-			Port:             config.ScannerPod.ImageFacade.Port,
-			ImagePullerType:  config.ScannerPod.ImageFacade.ImagePullerType,
+			Port:             opssightSpec.ScannerPod.ImageFacade.Port,
+			ImagePullerType:  opssightSpec.ScannerPod.ImageFacade.ImagePullerType,
 		},
 		Perceiver: &PerceiverConfig{
 			Image: &ImagePerceiverConfig{},
 			Pod: &PodPerceiverConfig{
-				NamespaceFilter: config.Perceiver.PodPerceiver.NamespaceFilter,
+				NamespaceFilter: opssightSpec.Perceiver.PodPerceiver.NamespaceFilter,
 			},
-			AnnotationIntervalSeconds: config.Perceiver.AnnotationIntervalSeconds,
-			DumpIntervalMinutes:       config.Perceiver.DumpIntervalMinutes,
-			Port:                      config.Perceiver.Port,
+			AnnotationIntervalSeconds: opssightSpec.Perceiver.AnnotationIntervalSeconds,
+			DumpIntervalMinutes:       opssightSpec.Perceiver.DumpIntervalMinutes,
+			Port:                      opssightSpec.Perceiver.Port,
 		},
 		Perceptor: &PerceptorConfig{
 			Timings: &PerceptorTimingsConfig{
-				CheckForStalledScansPauseHours: config.Perceptor.CheckForStalledScansPauseHours,
-				ClientTimeoutMilliseconds:      config.Perceptor.ClientTimeoutMilliseconds,
-				ModelMetricsPauseSeconds:       config.Perceptor.ModelMetricsPauseSeconds,
-				StalledScanClientTimeoutHours:  config.Perceptor.StalledScanClientTimeoutHours,
-				UnknownImagePauseMilliseconds:  config.Perceptor.UnknownImagePauseMilliseconds,
+				CheckForStalledScansPauseHours: opssightSpec.Perceptor.CheckForStalledScansPauseHours,
+				ClientTimeoutMilliseconds:      opssightSpec.Perceptor.ClientTimeoutMilliseconds,
+				ModelMetricsPauseSeconds:       opssightSpec.Perceptor.ModelMetricsPauseSeconds,
+				StalledScanClientTimeoutHours:  opssightSpec.Perceptor.StalledScanClientTimeoutHours,
+				UnknownImagePauseMilliseconds:  opssightSpec.Perceptor.UnknownImagePauseMilliseconds,
 			},
-			Host:        config.Perceptor.Name,
-			Port:        config.Perceptor.Port,
+			Host:        opssightSpec.Perceptor.Name,
+			Port:        opssightSpec.Perceptor.Port,
 			UseMockMode: false,
 		},
 		Scanner: &ScannerConfig{
-			BlackDuckClientTimeoutSeconds: config.ScannerPod.Scanner.ClientTimeoutSeconds,
-			ImageDirectory:                config.ScannerPod.ImageDirectory,
-			Port:                          config.ScannerPod.Scanner.Port,
+			BlackDuckClientTimeoutSeconds: opssightSpec.ScannerPod.Scanner.ClientTimeoutSeconds,
+			ImageDirectory:                opssightSpec.ScannerPod.ImageDirectory,
+			Port:                          opssightSpec.ScannerPod.Scanner.Port,
 		},
 		Skyfire: &SkyfireConfig{
-			BlackDuckClientTimeoutSeconds: config.Skyfire.HubClientTimeoutSeconds,
-			BlackDuckDumpPauseSeconds:     config.Skyfire.HubDumpPauseSeconds,
-			KubeDumpIntervalSeconds:       config.Skyfire.KubeDumpIntervalSeconds,
-			PerceptorDumpIntervalSeconds:  config.Skyfire.PerceptorDumpIntervalSeconds,
-			Port:                          config.Skyfire.Port,
-			PrometheusPort:                config.Skyfire.PrometheusPort,
+			BlackDuckClientTimeoutSeconds: opssightSpec.Skyfire.HubClientTimeoutSeconds,
+			BlackDuckDumpPauseSeconds:     opssightSpec.Skyfire.HubDumpPauseSeconds,
+			KubeDumpIntervalSeconds:       opssightSpec.Skyfire.KubeDumpIntervalSeconds,
+			PerceptorDumpIntervalSeconds:  opssightSpec.Skyfire.PerceptorDumpIntervalSeconds,
+			Port:                          opssightSpec.Skyfire.Port,
+			PrometheusPort:                opssightSpec.Skyfire.PrometheusPort,
 			UseInClusterConfig:            true,
 		},
 	}
-	return &SpecConfig{kubeClient: kubeClient, config: config, configMap: configMap, dryRun: dryRun}
+	return &SpecConfig{config: config, kubeClient: kubeClient, opssightClient: opssightClient, hubClient: hubClient, opssight: opssight, configMap: configMap, dryRun: dryRun}
 }
 
 func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
 	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
-		MapOrSecretName: p.config.ConfigMapName,
+		MapOrSecretName: p.opssight.Spec.ConfigMapName,
 	})
 }
 
@@ -110,9 +114,9 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 
 	// Add config map
 	cm, err := p.configMap.horizonConfigMap(
-		p.config.ConfigMapName,
-		p.config.Namespace,
-		fmt.Sprintf("%s.json", p.config.ConfigMapName))
+		p.opssight.Spec.ConfigMapName,
+		p.opssight.Spec.Namespace,
+		fmt.Sprintf("%s.json", p.opssight.Spec.ConfigMapName))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -129,7 +133,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, errors.Trace(err)
 	}
 	components.Services = append(components.Services, service)
-	components.Secrets = append(components.Secrets, p.PerceptorSecret())
+	secret := p.PerceptorSecret()
+	if !p.dryRun {
+		p.addSecretData(secret)
+	}
+	components.Secrets = append(components.Secrets, secret)
 
 	// Add Perceptor Scanner
 	scannerRC, err := p.ScannerReplicationController()
@@ -140,27 +148,10 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
 
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
-	scannerClusterRoleBinding := p.ScannerClusterRoleBinding()
-	if p.dryRun {
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, scannerClusterRoleBinding)
-	} else {
-		clusterRoleBinding, err := util.GetClusterRoleBinding(p.kubeClient, scannerClusterRoleBinding.GetName())
-		if err != nil {
-			log.Debugf("%s cluster role binding not exist!!!", scannerClusterRoleBinding.GetName())
-			components.ClusterRoleBindings = append(components.ClusterRoleBindings, scannerClusterRoleBinding)
-		} else {
-			if !isClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
-				clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: scannerClusterRoleBinding.GetName(), Namespace: p.config.Namespace, Kind: "ServiceAccount"})
-				_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
-				if err != nil {
-					return nil, errors.Annotate(err, fmt.Sprintf("failed to update the %s cluster role binding", scannerClusterRoleBinding.GetName()))
-				}
-			}
-		}
-	}
+	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
 
 	// Add Pod Perceiver
-	if p.config.Perceiver.EnablePodPerceiver {
+	if p.opssight.Spec.Perceiver.EnablePodPerceiver {
 		rc, err = p.PodPerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create pod perceiver")
@@ -170,29 +161,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
 		podClusterRole := p.PodPerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, podClusterRole)
-
-		podClusterRoleBinding := p.PodPerceiverClusterRoleBinding(podClusterRole)
-		if p.dryRun {
-			components.ClusterRoleBindings = append(components.ClusterRoleBindings, podClusterRoleBinding)
-		} else {
-			clusterRoleBinding, err := util.GetClusterRoleBinding(p.kubeClient, podClusterRoleBinding.GetName())
-			if err != nil {
-				log.Debugf("%s cluster role binding not exist!!!", podClusterRoleBinding.GetName())
-				components.ClusterRoleBindings = append(components.ClusterRoleBindings, podClusterRoleBinding)
-			} else {
-				if !isClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
-					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: podClusterRoleBinding.GetName(), Namespace: p.config.Namespace, Kind: "ServiceAccount"})
-					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
-					if err != nil {
-						return nil, errors.Annotate(err, fmt.Sprintf("failed to update the %s cluster role binding", podClusterRoleBinding.GetName()))
-					}
-				}
-			}
-		}
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(podClusterRole))
 	}
 
 	// Add Image Perceiver
-	if p.config.Perceiver.EnableImagePerceiver {
+	if p.opssight.Spec.Perceiver.EnableImagePerceiver {
 		rc, err = p.ImagePerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create image perceiver")
@@ -202,29 +175,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
 		imageClusterRole := p.ImagePerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, imageClusterRole)
-
-		imageClusterRoleBinding := p.ImagePerceiverClusterRoleBinding(imageClusterRole)
-		if p.dryRun {
-			components.ClusterRoleBindings = append(components.ClusterRoleBindings, imageClusterRoleBinding)
-		} else {
-			clusterRoleBinding, err := util.GetClusterRoleBinding(p.kubeClient, imageClusterRoleBinding.GetName())
-			if err != nil {
-				log.Debugf("%s cluster role binding not exist!!!", imageClusterRoleBinding.GetName())
-				components.ClusterRoleBindings = append(components.ClusterRoleBindings, imageClusterRoleBinding)
-			} else {
-				if !isClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
-					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: imageClusterRoleBinding.GetName(), Namespace: p.config.Namespace, Kind: "ServiceAccount"})
-					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
-					if err != nil {
-						return nil, errors.Annotate(err, fmt.Sprintf("failed to update the %s cluster role binding", imageClusterRoleBinding.GetName()))
-					}
-				}
-			}
-		}
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(imageClusterRole))
 	}
 
 	// Add skyfire
-	if p.config.EnableSkyfire {
+	if p.opssight.Spec.EnableSkyfire {
 		skyfireRC, err := p.PerceptorSkyfireReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create skyfire")
@@ -234,29 +189,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.ServiceAccounts = append(components.ServiceAccounts, p.PerceptorSkyfireServiceAccount())
 		skyfireClusterRole := p.PerceptorSkyfireClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, skyfireClusterRole)
-
-		skyfireClusterRoleBinding := p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole)
-		if p.dryRun {
-			components.ClusterRoleBindings = append(components.ClusterRoleBindings, skyfireClusterRoleBinding)
-		} else {
-			clusterRoleBinding, err := util.GetClusterRoleBinding(p.kubeClient, skyfireClusterRoleBinding.GetName())
-			if err != nil {
-				log.Debugf("%s cluster role binding not exist!!!", skyfireClusterRoleBinding.GetName())
-				components.ClusterRoleBindings = append(components.ClusterRoleBindings, skyfireClusterRoleBinding)
-			} else {
-				if !isClusterRoleBindingSubjectExist(clusterRoleBinding.Subjects, p.config.Namespace) {
-					clusterRoleBinding.Subjects = append(clusterRoleBinding.Subjects, rbacv1.Subject{Name: skyfireClusterRoleBinding.GetName(), Namespace: p.config.Namespace, Kind: "ServiceAccount"})
-					_, err = util.UpdateClusterRoleBinding(p.kubeClient, clusterRoleBinding)
-					if err != nil {
-						return nil, errors.Annotate(err, fmt.Sprintf("failed to update the %s cluster role binding", skyfireClusterRoleBinding.GetName()))
-					}
-				}
-			}
-		}
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole))
 	}
 
 	// Add Metrics
-	if p.config.EnableMetrics {
+	if p.opssight.Spec.EnableMetrics {
 		dep, err := p.PerceptorMetricsDeployment()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create metrics")
@@ -273,11 +210,38 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	return components, nil
 }
 
-func isClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace string) bool {
-	for _, subject := range subjects {
-		if strings.EqualFold(subject.Namespace, namespace) {
-			return true
-		}
+func (p *SpecConfig) addSecretData(secret *components.Secret) error {
+	blackduckHosts := make(map[string]*opssightapi.Host)
+	// adding External Black Duck credentials
+	for _, host := range p.opssight.Spec.Blackduck.ExternalHosts {
+		blackduckHosts[host.Domain] = host
 	}
-	return false
+
+	// adding Internal Black Duck credentials
+	configMapEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient)
+	allHubs := configMapEditor.getAllHubs(p.opssight.Spec.Blackduck.BlackduckSpec.Type)
+	blackduckPasswords := configMapEditor.appendBlackDuckSecrets(blackduckHosts, allHubs)
+
+	// marshal the blackduck credentials to bytes
+	bytes, err := json.Marshal(blackduckPasswords)
+	if err != nil {
+		return errors.Annotatef(err, "unable to marshal blackduck passwords")
+	}
+	secret.AddData(map[string][]byte{p.opssight.Spec.Blackduck.ConnectionsEnvironmentVariableName: bytes})
+
+	// adding Secured registries credentials
+	securedRegistries := make(map[string]*opssightapi.RegistryAuth)
+	for _, internalRegistry := range p.opssight.Spec.ScannerPod.ImageFacade.InternalRegistries {
+		securedRegistries[internalRegistry.URL] = internalRegistry
+	}
+	// marshal the Secured registries credentials to bytes
+	bytes, err = json.Marshal(securedRegistries)
+	if err != nil {
+		return errors.Annotatef(err, "unable to marshal secured registries")
+	}
+	secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
+
+	// add internal hosts to status
+	p.opssight.Status.InternalHosts = configMapEditor.appendBlackDuckHosts(p.opssight.Status.InternalHosts, allHubs)
+	return nil
 }
