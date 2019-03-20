@@ -81,23 +81,39 @@ var updateOperatorCmd = &cobra.Command{
 		}
 		log.Debugf("Updating the Synopsys-Operator in namespace %s\n", namespace)
 		// Create new Synopsys-Operator Spec
-		updateSecretTypeConverted, err := SecretTypeNameToHorizon(updateSecretType)
+		sOperatorSpec, err := soperator.GetCurrentComponentsSpec(kubeClient, namespace)
 		if err != nil {
-			log.Errorf("Failed to convert SecretType: %s", err)
-			return nil
+			fmt.Errorf("Error Updating Operator: %s", err)
 		}
-		newSOperatorSpec := soperator.SpecConfig{
-			Namespace:                namespace,
-			SynopsysOperatorImage:    updateSynopsysOperatorImage,
-			BlackduckRegistrationKey: updateBlackduckRegistrationKey,
-			SecretType:               updateSecretTypeConverted,
-			SecretAdminPassword:      updateSecretAdminPassword,
-			SecretPostgresPassword:   updateSecretPostgresPassword,
-			SecretUserPassword:       updateSecretUserPassword,
-			SecretBlackduckPassword:  updateSecretBlackduckPassword,
+		// Update Spec with changed values
+		if cmd.Flag("synopsys-operator-image").Changed {
+			sOperatorSpec.SynopsysOperatorImage = updateSynopsysOperatorImage
+		}
+		if cmd.Flag("blackduck-registration-key").Changed {
+			sOperatorSpec.BlackduckRegistrationKey = updateBlackduckRegistrationKey
+		}
+		if cmd.Flag("secret-type").Changed {
+			updateSecretTypeConverted, err := operatorutil.SecretTypeNameToHorizon(updateSecretType)
+			if err != nil {
+				log.Errorf("Failed to convert SecretType: %s", err)
+				return nil
+			}
+			sOperatorSpec.SecretType = updateSecretTypeConverted
+		}
+		if cmd.Flag("admin-password").Changed {
+			sOperatorSpec.SecretAdminPassword = updateSecretAdminPassword
+		}
+		if cmd.Flag("postgres-password").Changed {
+			sOperatorSpec.SecretPostgresPassword = updateSecretPostgresPassword
+		}
+		if cmd.Flag("user-password").Changed {
+			sOperatorSpec.SecretUserPassword = updateSecretUserPassword
+		}
+		if cmd.Flag("blackduck-password").Changed {
+			sOperatorSpec.SecretBlackduckPassword = updateSecretBlackduckPassword
 		}
 
-		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, newSOperatorSpec, blackduckClient, opssightClient, alertClient, cmd)
+		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, sOperatorSpec, blackduckClient, opssightClient, alertClient)
 
 		log.Debugf("Updating Prometheus in namespace %s\n", namespace)
 		newPrometheusSpecConfig := soperator.PrometheusSpecConfig{

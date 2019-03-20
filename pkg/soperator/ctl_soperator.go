@@ -29,7 +29,6 @@ import (
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
-	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -42,7 +41,7 @@ import (
 
 // UpdateSynopsysOperator updates the Synopsys-Operator's kubernetes componenets and changes
 // all CRDs to versions that the Operator can use
-func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset, cmd *cobra.Command) error {
+func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset) error {
 	log.Debugf("Getting CRDs to update to Versions the new Operator can handle")
 	currImage, err := GetOperatorImage(kubeClient, namespace)
 	if err != nil {
@@ -82,7 +81,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 
 	// Update the Synopsys-Operator's Components
 	log.Debugf("Updating Synopsys-Operator's Componenets")
-	err = UpdateSOperatorComponentsByFlags(restconfig, kubeClient, namespace, newSOperatorSpec, cmd)
+	err = UpdateSOperatorComponents(restconfig, kubeClient, namespace, newSOperatorSpec)
 	if err != nil {
 		return err
 	}
@@ -107,7 +106,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 
 // UpdateSOperatorComponentsByFlags updates kubernete's resources for the Synopsys-Operator by checking
 // what flags were changed and updating the respective components
-func UpdateSOperatorComponentsByFlags(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig, cmd *cobra.Command) error {
+func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig) error {
 	newSOperatorComponents, err := newSOperatorSpec.GetComponents()
 	if err != nil {
 		return fmt.Errorf("Error creating new SOperator Components: %s", err)
@@ -115,48 +114,42 @@ func UpdateSOperatorComponentsByFlags(restconfig *rest.Config, kubeClient *kuber
 	var isConfigMapUpdated bool
 	var isSecretUpdated bool
 	// Update the Secret if the type or password changed
-	if cmd.Flag("secret-type").Changed || cmd.Flag("admin-password").Changed || cmd.Flag("postgres-password").Changed || cmd.Flag("user-password").Changed || cmd.Flag("blackduck-password").Changed {
-		isSecretUpdated, err = crdupdater.UpdateSecret(kubeClient, namespace, "blackduck-secret", newSOperatorComponents.Secrets[0])
-		if err != nil {
-			return fmt.Errorf("%s", err)
-		}
+	isSecretUpdated, err = crdupdater.UpdateSecret(kubeClient, namespace, "blackduck-secret", newSOperatorComponents.Secrets[0])
+	if err != nil {
+		return fmt.Errorf("%s", err)
 	}
 	// Update the Replication Controller if the image or reg key changed
-	if cmd.Flag("synopsys-operator-image").Changed || cmd.Flag("blackduck-registration-key").Changed {
-		operatorUpdater := crdupdater.NewUpdater()
-		replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newSOperatorComponents.ReplicationControllers, namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
-		if err != nil {
-			return fmt.Errorf("%s", err)
-		}
-		operatorUpdater.AddUpdater(replicationControllerUpdater)
-		err = operatorUpdater.Update()
-		if err != nil {
-			return fmt.Errorf("%s", err)
-		}
+	operatorUpdater := crdupdater.NewUpdater()
+	replicationControllerUpdater, err := crdupdater.NewReplicationController(restconfig, kubeClient, newSOperatorComponents.ReplicationControllers, namespace, "app=opssight", isConfigMapUpdated || isSecretUpdated)
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+	operatorUpdater.AddUpdater(replicationControllerUpdater)
+	err = operatorUpdater.Update()
+	if err != nil {
+		return fmt.Errorf("%s", err)
 	}
 	return nil
 }
 
 // UpdatePrometheusByFlags updates kubernete's resources for Prometheus by checking
 // what flags were changed and updating the respective components
-func UpdatePrometheusByFlags(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig PrometheusSpecConfig, cmd *cobra.Command) error {
+func UpdatePrometheus(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig PrometheusSpecConfig) error {
 	// Get Components of New Prometheus
 	newPrometheusComponents, err := newPrometheusSpecConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("%s", err)
 	}
 
-	if cmd.Flag("prometheus-image").Changed {
-		prometheusUpdater := crdupdater.NewUpdater()
-		deploymentUpdater, err := crdupdater.NewDeployment(restconfig, kubeClient, newPrometheusComponents.Deployments, namespace, "app=prometheus", false)
-		if err != nil {
-			return fmt.Errorf("%s", err)
-		}
-		prometheusUpdater.AddUpdater(deploymentUpdater)
-		err = prometheusUpdater.Update()
-		if err != nil {
-			return fmt.Errorf("%s", err)
-		}
+	prometheusUpdater := crdupdater.NewUpdater()
+	deploymentUpdater, err := crdupdater.NewDeployment(restconfig, kubeClient, newPrometheusComponents.Deployments, namespace, "app=prometheus", false)
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+	prometheusUpdater.AddUpdater(deploymentUpdater)
+	err = prometheusUpdater.Update()
+	if err != nil {
+		return fmt.Errorf("%s", err)
 	}
 	return nil
 }

@@ -28,6 +28,7 @@ import (
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
+	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -60,7 +61,7 @@ var deployCmd = &cobra.Command{
 		}
 		// Check the Secret Type
 		var err error
-		secretType, err = SecretTypeNameToHorizon(deploySecretType)
+		secretType, err = operatorutil.SecretTypeNameToHorizon(deploySecretType)
 		if err != nil {
 			log.Errorf("Failed to Convert Secret Type: %s", err)
 			return nil
