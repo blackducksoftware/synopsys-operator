@@ -134,7 +134,9 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.Services = append(components.Services, service)
 	secret := p.PerceptorSecret()
-	p.addSecretData(secret)
+	if !p.dryRun {
+		p.addSecretData(secret)
+	}
 	components.Secrets = append(components.Secrets, secret)
 
 	// Add Perceptor Scanner
