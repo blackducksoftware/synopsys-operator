@@ -104,7 +104,7 @@ var updateOperatorCmd = &cobra.Command{
 			Namespace:       namespace,
 			PrometheusImage: updatePrometheusImage,
 		}
-		soperator.UpdatePrometheus(restconfig, kubeClient, namespace, newPrometheusSpecConfig, cmd)
+		soperator.UpdatePrometheusByFlags(restconfig, kubeClient, namespace, newPrometheusSpecConfig, cmd)
 		return nil
 	},
 }
