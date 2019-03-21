@@ -45,7 +45,7 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	rc.AddLabelSelectors(map[string]string{"name": p.config.Perceptor.Name})
+	rc.AddLabelSelectors(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
 	return rc, nil
 }
 
@@ -53,7 +53,7 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: p.config.Perceptor.Name,
 	})
-	pod.AddLabels(map[string]string{"name": p.config.Perceptor.Name})
+	pod.AddLabels(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
 	cont, err := p.perceptorContainer()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -93,12 +93,8 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		return nil, errors.Trace(err)
 	}
 
-	err = container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: p.config.Blackduck.PasswordEnvVar,
-		Type:         horizonapi.EnvFromSecret,
-		KeyOrVal:     "HubUserPassword",
-		FromName:     p.config.SecretName,
-	})
+	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.config.SecretName})
+
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -122,6 +118,7 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 		return nil, errors.Trace(err)
 	}
 
+	service.AddLabels(map[string]string{"name": p.config.Perceptor.Name, "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": p.config.Perceptor.Name})
 
 	return service, nil

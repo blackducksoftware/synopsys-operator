@@ -27,6 +27,7 @@ import (
 	"time"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
@@ -105,15 +106,18 @@ func (i *InitDatabaseUpdater) addHub(obj interface{}) {
 	}
 	// Only if the we don't use persistent storage and that we don't use an external database
 	if !hub.Spec.PersistentStorage && hub.Spec.ExternalPostgres == nil {
+		hubName := hub.Name
 		for j := 0; j < 20; j++ {
-			hub, err := util.GetHub(i.HubClient, i.Config.Namespace, hub.Name)
+			hub, err := util.GetHub(i.HubClient, i.Config.Namespace, hubName)
 			if err != nil {
-				log.Errorf("unable to get hub %s due to %+v", hub.Name, err)
+				log.Errorf("unable to get hub %s due to %+v", hubName, err)
+				i.deleteChannel(hubName)
+				return
 			}
 
 			addHubSpec := hub.Spec
 			if strings.EqualFold(hub.Status.State, "running") {
-				i.Hubs[hub.Name] = i.startInitDatabaseUpdater(&addHubSpec)
+				i.Hubs[hubName] = i.startInitDatabaseUpdater(&addHubSpec)
 				break
 			}
 			time.Sleep(10 * time.Second)
@@ -168,17 +172,17 @@ func (i *InitDatabaseUpdater) startInitDatabaseUpdater(hubSpec *blackduckv1.Blac
 				dbNeedsInitBecause := ""
 
 				log.Debugf("%v : Checking connection now...", hubSpec.Namespace)
-				db, err := blackduck.OpenDatabaseConnection(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
+				db, err := apps.NewDatabase(hostName, "bds_hub", "postgres", postgresPassword, "postgres")
 				log.Debugf("%v : Done checking [ error status == %v ] ...", hubSpec.Namespace, err)
 				if err != nil {
 					dbNeedsInitBecause = "couldnt connect !"
 				} else {
-					_, err := db.Exec("SELECT * FROM USER;")
-					if err != nil {
+					errs := db.ExecuteStatements([]string{"SELECT * FROM USER;"})
+					if len(errs) > 0 {
 						dbNeedsInitBecause = "couldnt select!"
 					}
 				}
-				db.Close()
+				db.CloseDatabaseConnection()
 
 				if dbNeedsInitBecause != "" {
 					log.Warnf("%v: database needs init because (%v), ::: %v ", hubSpec.Namespace, dbNeedsInitBecause, err)

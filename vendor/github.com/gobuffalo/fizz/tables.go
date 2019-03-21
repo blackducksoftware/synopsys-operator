@@ -65,6 +65,10 @@ func (t Table) Fizz() string {
 	for _, i := range t.Indexes {
 		buff.WriteString(fmt.Sprintf("\t%s\n", i.String()))
 	}
+	// Write foreign keys
+	for _, fk := range t.ForeignKeys {
+		buff.WriteString(fmt.Sprintf("\t%s\n", fk.String()))
+	}
 	buff.WriteString("}")
 	return buff.String()
 }
@@ -92,6 +96,9 @@ func (t *Table) Column(name string, colType string, options Options) error {
 		ColType: colType,
 		Options: options,
 		Primary: primary,
+	}
+	if t.columnsCache == nil {
+		t.columnsCache = make(map[string]struct{})
 	}
 	t.columnsCache[name] = struct{}{}
 	// Ensure id is first

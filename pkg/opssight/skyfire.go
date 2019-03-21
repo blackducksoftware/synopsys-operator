@@ -31,16 +31,13 @@ import (
 
 // PerceptorSkyfireReplicationController creates a replication controller for perceptor skyfire
 func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.ReplicationController, error) {
-	replicas := int32(0)
-	if p.config.EnableSkyfire {
-		replicas = 1
-	}
+	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      p.config.Skyfire.Name,
 		Namespace: p.config.Namespace,
 	})
-	rc.AddLabelSelectors(map[string]string{"name": p.config.Skyfire.Name})
+	rc.AddLabelSelectors(map[string]string{"name": p.config.Skyfire.Name, "app": "opssight"})
 	pod, err := p.perceptorSkyfirePod()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create skyfire volumes")
@@ -55,7 +52,7 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 		Name:           p.config.Skyfire.Name,
 		ServiceAccount: p.config.Skyfire.ServiceAccount,
 	})
-	pod.AddLabels(map[string]string{"name": p.config.Skyfire.Name})
+	pod.AddLabels(map[string]string{"name": p.config.Skyfire.Name, "app": "opssight"})
 
 	cont, err := p.perceptorSkyfireContainer()
 	if err != nil {
@@ -128,12 +125,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 		return nil, err
 	}
 
-	err = container.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: p.config.Blackduck.PasswordEnvVar,
-		Type:         horizonapi.EnvFromSecret,
-		KeyOrVal:     "HubUserPassword",
-		FromName:     p.config.SecretName,
-	})
+	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.config.SecretName})
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +168,7 @@ func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 		Name:       "skyfire-prometheus",
 	})
 
+	service.AddLabels(map[string]string{"name": p.config.Skyfire.Name, "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": p.config.Skyfire.Name})
 
 	return service
@@ -202,6 +195,7 @@ func (p *SpecConfig) PerceptorSkyfireClusterRole() *components.ClusterRole {
 		Resources: []string{"pods", "nodes", "namespaces"},
 		Verbs:     []string{"get", "watch", "list", "create", "delete"},
 	})
+	clusterRole.AddLabels(map[string]string{"name": "skyfire", "app": "opssight"})
 
 	return clusterRole
 }
@@ -222,6 +216,7 @@ func (p *SpecConfig) PerceptorSkyfireClusterRoleBinding(clusterRole *components.
 		Kind:     "ClusterRole",
 		Name:     clusterRole.GetName(),
 	})
+	clusterRoleBinding.AddLabels(map[string]string{"name": "skyfire", "app": "opssight"})
 
 	return clusterRoleBinding
 }

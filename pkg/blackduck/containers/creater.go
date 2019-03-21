@@ -49,21 +49,19 @@ type Creater struct {
 	hubContainerFlavor *ContainerFlavor
 	hubConfigEnv       []*horizonapi.EnvConfig
 	allConfigEnv       []*horizonapi.EnvConfig
-	bdbaConfigEnv      []*horizonapi.EnvConfig
 	dbSecretVolume     *components.Volume
 	proxySecretVolume  *components.Volume
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, hubSpec *v1.BlackduckSpec, hubContainerFlavor *ContainerFlavor, hubConfigEnv []*horizonapi.EnvConfig,
-	allConfigEnv []*horizonapi.EnvConfig, bdbaConfigEnv []*horizonapi.EnvConfig, dbSecretVolume *components.Volume, proxySecretVolume *components.Volume) *Creater {
+	allConfigEnv []*horizonapi.EnvConfig, dbSecretVolume *components.Volume, proxySecretVolume *components.Volume) *Creater {
 	return &Creater{
 		config:             config,
 		hubSpec:            hubSpec,
 		hubContainerFlavor: hubContainerFlavor,
 		hubConfigEnv:       hubConfigEnv,
 		allConfigEnv:       allConfigEnv,
-		bdbaConfigEnv:      bdbaConfigEnv,
 		dbSecretVolume:     dbSecretVolume,
 		proxySecretVolume:  proxySecretVolume,
 	}
@@ -72,6 +70,7 @@ func NewCreater(config *protoform.Config, hubSpec *v1.BlackduckSpec, hubContaine
 // GetFullContainerName returns the tag that is specified for a container by trying to look in the custom tags provided,
 // if those arent filled, it uses the "HubVersion" as a default, which works for blackduck < 5.1.0.
 func (c *Creater) GetFullContainerName(baseContainer string) string {
+	blackduckVersion := hubutils.GetHubVersion(c.hubSpec.Environs)
 	for _, reg := range c.hubSpec.ImageRegistries {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
@@ -84,11 +83,19 @@ func (c *Creater) GetFullContainerName(baseContainer string) string {
 			return reg
 		}
 	}
-	if strings.EqualFold(baseContainer, "postgres") {
+
+	ignoredContainers := []string{"postgres", "appcheck", "rabbitmq", "upload"}
+	for _, ignoredContainer := range ignoredContainers {
+		if strings.EqualFold(baseContainer, ignoredContainer) {
+			return ""
+		}
+	}
+
+	if strings.EqualFold(baseContainer, "solr") && strings.HasPrefix(blackduckVersion, "20") {
 		return ""
 	}
 
-	img := fmt.Sprintf("docker.io/blackducksoftware/hub-%v:%v", baseContainer, hubutils.GetHubVersion(c.hubSpec.Environs))
+	img := fmt.Sprintf("docker.io/blackducksoftware/hub-%v:%v", baseContainer, blackduckVersion)
 	log.Warnf("Couldn't get container name for : %v, set it manually in the deployment, returning a reasonable default instead %v.", baseContainer, img)
 	log.Warn("In the future, you should provide fully qualified images for every single container when running the blackduck operator.")
 	return img
