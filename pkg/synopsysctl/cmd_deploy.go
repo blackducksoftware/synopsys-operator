@@ -39,7 +39,6 @@ var exposeUI = false
 var deployNamespace = "synopsys-operator"
 var deploySynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
 var deployPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
-var deployBlackduckRegistrationKey = ""
 var deployDockerConfigPath = ""
 var deploySecretType = "Opaque"
 var deploySecretAdminPassword = "YmxhY2tkdWNr"
@@ -102,14 +101,13 @@ var deployCmd = &cobra.Command{
 
 		// Deploy synopsys-operator
 		soperatorSpec := soperator.SpecConfig{
-			Namespace:                deployNamespace,
-			SynopsysOperatorImage:    deploySynopsysOperatorImage,
-			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
-			SecretType:               secretType,
-			SecretAdminPassword:      deploySecretAdminPassword,
-			SecretPostgresPassword:   deploySecretPostgresPassword,
-			SecretUserPassword:       deploySecretUserPassword,
-			SecretBlackduckPassword:  deploySecretBlackduckPassword,
+			Namespace:               deployNamespace,
+			SynopsysOperatorImage:   deploySynopsysOperatorImage,
+			SecretType:              secretType,
+			SecretAdminPassword:     deploySecretAdminPassword,
+			SecretPostgresPassword:  deploySecretPostgresPassword,
+			SecretUserPassword:      deploySecretUserPassword,
+			SecretBlackduckPassword: deploySecretBlackduckPassword,
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
@@ -174,7 +172,6 @@ func init() {
 	deployCmd.Flags().BoolVar(&exposeUI, "expose-ui", exposeUI, "Expose the Synopsys-Operator's User Interface")
 	deployCmd.Flags().StringVarP(&deploySynopsysOperatorImage, "synopsys-operator-image", "i", deploySynopsysOperatorImage, "synopsys operator image URL")
 	deployCmd.Flags().StringVarP(&deployPrometheusImage, "prometheus-image", "p", deployPrometheusImage, "prometheus image URL")
-	deployCmd.Flags().StringVarP(&deployBlackduckRegistrationKey, "blackduck-registration-key", "k", deployBlackduckRegistrationKey, "key to register with KnowledgeBase")
 	deployCmd.Flags().StringVarP(&deployDockerConfigPath, "docker-config", "d", deployDockerConfigPath, "path to docker config (image pull secrets etc)")
 	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret for postgres and blackduck")
 	deployCmd.Flags().StringVar(&deploySecretAdminPassword, "admin-password", deploySecretAdminPassword, "postgres admin password")

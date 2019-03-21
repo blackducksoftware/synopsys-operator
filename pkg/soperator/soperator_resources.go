@@ -97,12 +97,6 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		//HostPort:      "string",
 		ContainerPort: "8080",
 	})
-	synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: "REGISTRATION_KEY",
-		Type:         horizonapi.EnvVal,
-		KeyOrVal:     specConfig.BlackduckRegistrationKey,
-		//FromName:     "string",
-	})
 	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/etc/synopsys-operator",
 		//Propagation: "*MountPropagationType",

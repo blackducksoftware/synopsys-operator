@@ -133,12 +133,6 @@ func GetCurrentComponentsSpecConfig(kubeClient *kubernetes.Clientset, namespace 
 			continue
 		}
 		sOperatorSpec.SynopsysOperatorImage = container.Image
-		for _, env := range container.Env {
-			if env.Name != "REGISTRATION_KEY" {
-				continue
-			}
-			sOperatorSpec.BlackduckRegistrationKey = env.Value
-		}
 	}
 	// Set the secretType and secret data
 	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "synopsys-operator")

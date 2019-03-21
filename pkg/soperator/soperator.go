@@ -31,27 +31,25 @@ import (
 // Its methods include GetComponents() and any functions
 // that create Kubernetes Resources for the SOperator
 type SpecConfig struct {
-	Namespace                string
-	SynopsysOperatorImage    string
-	BlackduckRegistrationKey string
-	SecretType               horizonapi.SecretType
-	SecretAdminPassword      string
-	SecretPostgresPassword   string
-	SecretUserPassword       string
-	SecretBlackduckPassword  string
+	Namespace               string
+	SynopsysOperatorImage   string
+	SecretType              horizonapi.SecretType
+	SecretAdminPassword     string
+	SecretPostgresPassword  string
+	SecretUserPassword      string
+	SecretBlackduckPassword string
 }
 
 // NewSOperator will create a SOperator type
 func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, secretName, adminPassword, postrgresPassword, userPassword, blackduckpassword string, secretType horizonapi.SecretType) *SpecConfig {
 	return &SpecConfig{
-		Namespace:                namespace,
-		SynopsysOperatorImage:    synopsysOperatorImage,
-		BlackduckRegistrationKey: blackduckRegistrationKey,
-		SecretType:               secretType,
-		SecretAdminPassword:      adminPassword,
-		SecretPostgresPassword:   postrgresPassword,
-		SecretUserPassword:       userPassword,
-		SecretBlackduckPassword:  blackduckpassword,
+		Namespace:               namespace,
+		SynopsysOperatorImage:   synopsysOperatorImage,
+		SecretType:              secretType,
+		SecretAdminPassword:     adminPassword,
+		SecretPostgresPassword:  postrgresPassword,
+		SecretUserPassword:      userPassword,
+		SecretBlackduckPassword: blackduckpassword,
 	}
 }
 
