@@ -134,12 +134,12 @@ var deployCmd = &cobra.Command{
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
-			log.Errorf("Error creating Horizon Deployer for Synopsys-Operator: %s", err)
+			log.Errorf("Error creating Deployer for Synopsys-Operator: %s", err)
 			return nil
 		}
 		synopsysOperatorComponents, err := soperatorSpec.GetComponents()
 		if err != nil {
-			log.Errorf("Error creating Horizon Components for Synopsys-Operator: %s", err)
+			log.Errorf("Error creating Components for Synopsys-Operator: %s", err)
 		}
 		for _, rc := range synopsysOperatorComponents.ReplicationControllers {
 			synopsysOperatorDeployer.AddReplicationController(rc)
@@ -168,7 +168,7 @@ var deployCmd = &cobra.Command{
 
 		err = synopsysOperatorDeployer.Run()
 		if err != nil {
-			return fmt.Errorf("Error deploying Synopsys Operator with Horizon : %s", err)
+			return fmt.Errorf("Error deploying Synopsys Operator: %s", err)
 		}
 
 		// Deploy prometheus
@@ -178,7 +178,7 @@ var deployCmd = &cobra.Command{
 		}
 		prometheusDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
-			log.Errorf("Error creating Horizon Deployer for Prometheus: %s", err)
+			log.Errorf("Error creating Deployer for Prometheus: %s", err)
 			return nil
 		}
 		prometheusDeployer.AddService(promtheusSpec.GetPrometheusService())
@@ -186,7 +186,7 @@ var deployCmd = &cobra.Command{
 		prometheusDeployer.AddConfigMap(promtheusSpec.GetPrometheusConfigMap())
 		err = prometheusDeployer.Run()
 		if err != nil {
-			log.Errorf("Error deploying Prometheus with Horizon : %s", err)
+			log.Errorf("Error deploying Prometheus: %s", err)
 			return nil
 		}
 
