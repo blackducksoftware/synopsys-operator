@@ -100,6 +100,9 @@ func runProtoform(configPath string) {
 		webhook.NewOperatorWebhook(deployer.KubeConfig).Start()
 	}()
 
+	// Start the prometheus endpoint
+	protoform.SetupHTTPServer()
+
 	if deployer.Config.OperatorTimeBombInSeconds > 0 {
 		go func() {
 			timeout := time.Duration(deployer.Config.OperatorTimeBombInSeconds) * time.Second
