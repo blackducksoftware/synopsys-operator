@@ -35,7 +35,7 @@ func (c *Creater) GetRabbitmqDeployment() *components.ReplicationController {
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: c.GetFullContainerName("rabbitmq"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RabbitmqMemoryLimit, MaxMem: c.hubContainerFlavor.RabbitmqMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
-		EnvConfigs:   c.bdbaConfigEnv,
+		EnvConfigs:   c.hubConfigEnv,
 		VolumeMounts: volumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: rabbitmqPort, Protocol: horizonapi.ProtocolTCP}},
 	}
