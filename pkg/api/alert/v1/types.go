@@ -54,6 +54,7 @@ type AlertSpec struct {
 	// Should be passed like: e.g "1300Mi"
 	AlertMemory string `json:"alertMemory,omitempty"`
 	CfsslMemory string `json:"cfsslMemory,omitempty"`
+	PVCMemory   string `json:"pvcMemory"`
 
 	DesiredState string `json:"desiredState,omitempty"`
 }

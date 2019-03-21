@@ -338,6 +338,7 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		CfsslMemory:    "640M",
 		AlertImageName: "blackduck-alert",
 		CfsslImageName: "hub-cfssl",
+		PVCMemory:      "800M",
 	}
 }
 
@@ -358,5 +359,6 @@ func GetAlertDefaultValue2() *alertv1.AlertSpec {
 		StandAlone:        &standAlone,
 		AlertMemory:       "512M",
 		CfsslMemory:       "640M",
+		PVCMemory:         "800M",
 	}
 }

@@ -45,6 +45,7 @@ type Ctl struct {
 	StandAlone        bool
 	AlertMemory       string
 	CfsslMemory       string
+	PVCMemory         string
 	Environs          []string
 	DesiredState      string
 }
@@ -63,6 +64,7 @@ func NewAlertCtl() *Ctl {
 		StandAlone:        false,
 		AlertMemory:       "",
 		CfsslMemory:       "",
+		PVCMemory:         "",
 		Environs:          []string{},
 		DesiredState:      "",
 	}
@@ -115,6 +117,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
+	cmd.Flags().StringVar(&ctl.PVCMemory, "pvc-memory", ctl.PVCMemory, "Memory allocation for the Persistent Volume Claim")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environs for the Alert")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "State of the Alert")
 }
@@ -150,6 +153,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.AlertMemory = ctl.AlertMemory
 		case "cfssl-memory":
 			ctl.Spec.CfsslMemory = ctl.CfsslMemory
+		case "pvc-memory":
+			ctl.Spec.PVCMemory = ctl.PVCMemory
 		case "environs":
 			ctl.Spec.Environs = ctl.Environs
 		case "desired-state":
