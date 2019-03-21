@@ -64,8 +64,6 @@ var destroyCmd = &cobra.Command{
 			"delete crd opssights.synopsys.com",
 			"delete clusterrolebinding synopsys-operator-admin",
 			"delete clusterrole synopsys-operator-admin",
-			"delete clusterrole skyfire",
-			"delete clusterrole pod-perceiver",
 		}
 
 		for cmd := range cleanCommands {
