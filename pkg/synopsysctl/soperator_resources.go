@@ -113,6 +113,13 @@ func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horiz
 		//SubPath:     "string",
 		//ReadOnly:    "*bool",
 	})
+	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
+		MountPath: "/opt/synopsys-operator/tls",
+		//Propagation: "*MountPropagationType",
+		Name: "synopsys-operator-tls",
+		//SubPath:     "string",
+		//ReadOnly:    "*bool",
+	})
 
 	synopsysOperatorContainerUI := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name: "synopsys-operator-ui",
@@ -173,10 +180,17 @@ func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horiz
 		//Required:        "*bool",
 	})
 
+	synopsysOperatorTlSVolume := horizoncomponents.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      "synopsys-operator-tls",
+		MapOrSecretName: "synopsys-operator-tls",
+		DefaultMode:     &synopsysOperatorVolumeDefaultMode,
+	})
+
 	synopsysOperatorPod.AddLabels(synopsysOperatorPodLabels)
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainer)
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainerUI)
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
+	synopsysOperatorPod.AddVolume(synopsysOperatorTlSVolume)
 	synopsysOperatorRC.AddPod(synopsysOperatorPod)
 
 	return synopsysOperatorRC
@@ -218,6 +232,13 @@ func (specConfig *SOperatorSpecConfig) GetOperatorService() *horizoncomponents.S
 		Name:       "synopsys-operator",
 		Port:       8080,
 		TargetPort: "8080",
+		//NodePort:   "int32",
+		Protocol: horizonapi.ProtocolTCP,
+	})
+	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
+		Name:       "synopsys-operator-tls",
+		Port:       443,
+		TargetPort: "443",
 		//NodePort:   "int32",
 		Protocol: horizonapi.ProtocolTCP,
 	})
