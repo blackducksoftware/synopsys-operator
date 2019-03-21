@@ -26,7 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 )
@@ -336,7 +336,10 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRole() *horizoncomponen
 	})
 
 	// Add Openshift rules
-	restConfig := util.GetKubeRestConfig()
+	restConfig, err := protoform.GetKubeConfig()
+	if err != nil {
+		log.Errorf("Error getting Kube Rest Config: %s", err)
+	}
 	routeClient, err := routeclient.NewForConfig(restConfig) // kube doesn't have a routeclient
 	if routeClient != nil && err == nil {                    // openshift: have a routeClient and no error
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{

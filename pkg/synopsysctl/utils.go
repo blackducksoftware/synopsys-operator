@@ -35,7 +35,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -184,7 +184,11 @@ func RunKubeEditorCmd(args ...string) error {
 // setResourceClients sets the global variables for the kuberentes rest config
 // and the resource clients
 func setResourceClients() {
-	restconfig = util.GetKubeRestConfig()
+	var err error
+	restconfig, err = protoform.GetKubeConfig()
+	if err != nil {
+		panic(fmt.Errorf("Error getting Kube Rest Config: %s", err))
+	}
 	bClient, err := blackduckclientset.NewForConfig(restconfig)
 	if err != nil {
 		panic(fmt.Errorf("Error creating the Blackduck Clientset: %s", err))
