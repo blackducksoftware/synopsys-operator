@@ -136,9 +136,6 @@ func (c *CommonConfig) CRUDComponents() []error {
 	}
 
 	if !c.dryRun {
-		// add default controllers
-		c.AddController("Pod List Controller", util.NewPodListController(c.namespace))
-
 		deployer, err := util.NewDeployer(c.kubeConfig)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("unable to get deployer object for %+v", err))

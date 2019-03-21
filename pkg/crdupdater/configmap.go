@@ -27,6 +27,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -116,6 +117,7 @@ func (c *ConfigMap) list() (interface{}, error) {
 
 // delete deletes the config map
 func (c *ConfigMap) delete(name string) error {
+	log.Infof("deleting the config map %s in %s namespace", name, c.config.namespace)
 	return util.DeleteConfigMap(c.config.kubeClient, c.config.namespace, name)
 }
 
@@ -140,6 +142,7 @@ func (c *ConfigMap) patch(cm interface{}, isPatched bool) (bool, error) {
 	oldConfigMap := c.oldConfigMaps[configMapName]
 	newConfigMap := c.newConfigMaps[configMapName]
 	if !reflect.DeepEqual(newConfigMap.Data, oldConfigMap.Data) && !c.config.dryRun {
+		log.Infof("updating the config map %s in %s namespace", configMapName, c.config.namespace)
 		cm, err := c.get(configMapName)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to get the config map %s in namespace %s", configMapName, c.config.namespace)

@@ -28,6 +28,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -114,6 +115,7 @@ func (r *ReplicationController) list() (interface{}, error) {
 
 // delete deletes the replication controller
 func (r *ReplicationController) delete(name string) error {
+	log.Infof("deleting the replication controller %s in %s namespace", name, r.config.namespace)
 	return util.DeleteReplicationController(r.config.kubeClient, r.config.namespace, name)
 }
 
@@ -147,6 +149,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 	// check isPatched, why?
 	// if there is any configuration change, irrespective of comparing any changes, patch the replication controller
 	if isPatched && !r.config.dryRun {
+		log.Infof("updating the replication controller %s in %s namespace", replicationController.GetName(), r.config.namespace)
 		err := util.PatchReplicationController(r.config.kubeClient, *r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch replication controller %s in namespace %s", replicationController.GetName(), r.config.namespace)
@@ -183,6 +186,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 
 	// if there is any change from the above step, patch the replication controller
 	if isChanged {
+		log.Infof("updating the replication controller %s in %s namespace", replicationController.GetName(), r.config.namespace)
 		err := util.PatchReplicationController(r.config.kubeClient, *r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch rc %s to kube in namespace %s", replicationController.GetName(), r.config.namespace)

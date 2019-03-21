@@ -160,8 +160,6 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 				} else {
 					log.Errorf("unable to update OpsSight: %v", err)
 				}
-			} else {
-				log.Debugf("ignoring the update event for opssight due to deep equal on spec")
 			}
 		},
 		DeleteFunc: func(obj interface{}) {

@@ -22,12 +22,12 @@ under the License.
 package crdupdater
 
 import (
-	"log"
 	"reflect"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -65,7 +65,6 @@ func (s *Secret) buildNewAndOldObject() error {
 		return errors.Annotatef(err, "unable to get secrets for %s", s.config.namespace)
 	}
 	for _, oldSecret := range oldSecrets.(*corev1.SecretList).Items {
-		log.Printf("secret name: %s", oldSecret.Name)
 		s.oldSecrets[oldSecret.GetName()] = &oldSecret
 	}
 
@@ -118,6 +117,7 @@ func (s *Secret) list() (interface{}, error) {
 
 // delete deletes the secret
 func (s *Secret) delete(name string) error {
+	log.Infof("deleting the secret %s in %s namespace", name, s.config.namespace)
 	return util.DeleteSecret(s.config.kubeClient, s.config.namespace, name)
 }
 
@@ -142,6 +142,7 @@ func (s *Secret) patch(i interface{}, isPatched bool) (bool, error) {
 	oldSecret := s.oldSecrets[secretName]
 	newSecret := s.newSecrets[secretName]
 	if (!reflect.DeepEqual(newSecret.Data, oldSecret.Data) || !reflect.DeepEqual(newSecret.StringData, oldSecret.StringData)) && !s.config.dryRun {
+		log.Infof("updating the secret %s in %s namespace", secretName, s.config.namespace)
 		srt, err := s.get(secretName)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to get the secret %s in namespace %s", secretName, s.config.namespace)
