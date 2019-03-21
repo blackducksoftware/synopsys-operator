@@ -27,11 +27,10 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // getAlertDeployment returns a new deployment for an Alert
-func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
+func (a *SpecConfig) getAlertDeployment() *components.Deployment {
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
@@ -40,17 +39,15 @@ func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
 	})
 	deployment.AddMatchLabelsSelectors(map[string]string{"app": "alert", "tier": "alert"})
 
-	pod, err := a.getAlertPod()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create pod: %v", err)
-	}
+	pod := a.getAlertPod()
+
 	deployment.AddPod(pod)
 
-	return deployment, nil
+	return deployment
 }
 
 // getAlertPod returns a new Pod for an Alert
-func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
+func (a *SpecConfig) getAlertPod() *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "alert",
 	})
@@ -58,13 +55,11 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 
 	pod.AddContainer(a.getAlertContainer())
 
-	vol, err := a.getAlertVolume()
-	if err != nil {
-		return nil, fmt.Errorf("error creating volumes: %v", err)
-	}
+	vol := a.getAlertVolume()
+
 	pod.AddVolume(vol)
 
-	return pod, nil
+	return pod
 }
 
 // getAlertContainer returns a new Container for an Alert
@@ -106,22 +101,12 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 }
 
 // getAlertVolume returns a new Volume for an Alert
-func (a *SpecConfig) getAlertVolume() (*components.Volume, error) {
+func (a *SpecConfig) getAlertVolume() *components.Volume {
 	vol := components.NewPVCVolume(horizonapi.PVCVolumeConfig{
 		VolumeName: "dir-alert",
 		PVCName:    "alert-pvc",
 		ReadOnly:   true,
 	})
 
-	return vol, nil
-}
-
-func (a *SpecConfig) getPersistentVolumeClaim() (*components.PersistentVolumeClaim, error) {
-	size := "100Gi"
-	storageClass := ""
-	pvc, err := operatorutil.CreatePersistentVolumeClaim("alert-pvc", a.config.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the postgres PVC %s in namespace %s because %+v", "alert-pvc", a.config.Namespace, err)
-	}
-	return pvc, nil
+	return vol
 }

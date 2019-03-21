@@ -42,15 +42,16 @@ func NewAlert(config *v1.AlertSpec) *SpecConfig {
 func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
 
-	// Add alert
-	dep, err := a.getAlertDeployment()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create alert deployment: %v", err)
-	}
-	components.Deployments = append(components.Deployments, dep)
+	// Add alert components
+	components.Deployments = append(components.Deployments, a.getAlertDeployment())
 	components.Services = append(components.Services, a.getAlertService())
 	components.Services = append(components.Services, a.getAlertExposedService())
 	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
+	pvc, err := a.getAlertPersistentVolumeClaim()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get alert components: %s", err)
+	}
+	components.PersistentVolumeClaims = append(components.PersistentVolumeClaims, pvc)
 
 	// Add cfssl if running in stand alone mode
 	if *a.config.StandAlone {
