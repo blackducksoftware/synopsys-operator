@@ -306,15 +306,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRole() *horizoncomponen
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 		APIGroups:       []string{""},
-		Resources:       []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "deployments", "statefulsets", "serviceaccounts"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
-	})
-
-	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch"},
-		APIGroups:       []string{""},
-		Resources:       []string{"pods", "pods/log", "endpoints"},
+		Resources:       []string{"*"},
 		ResourceNames:   []string{},
 		NonResourceURLs: []string{},
 	})
@@ -351,7 +343,7 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRole() *horizoncomponen
 		})
 
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:           []string{"get", "create"},
+			Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 			APIGroups:       []string{"route.openshift.io"},
 			Resources:       []string{"routes"},
 			ResourceNames:   []string{},
