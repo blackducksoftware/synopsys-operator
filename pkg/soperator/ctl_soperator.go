@@ -41,7 +41,7 @@ import (
 
 // UpdateSynopsysOperator updates the Synopsys-Operator's kubernetes componenets and changes
 // all CRDs to versions that the Operator can use
-func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec SpecConfig, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset) error {
+func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec *SpecConfig, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset) error {
 	log.Debugf("Getting CRDs to update to Versions the new Operator can handle")
 	currImage, err := GetOperatorImage(kubeClient, namespace)
 	if err != nil {
@@ -105,7 +105,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 }
 
 // UpdateSOperatorComponents updates kubernetes resources for the Synopsys-Operator
-func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpecConfig SpecConfig) error {
+func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpecConfig *SpecConfig) error {
 	sOperatorComponents, err := newSOperatorSpecConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("Failed to Update Operator Components: %s", err)
@@ -120,7 +120,7 @@ func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.C
 }
 
 // UpdatePrometheus updates kubernetes resources for Prometheus
-func UpdatePrometheus(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig PrometheusSpecConfig) error {
+func UpdatePrometheus(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig *PrometheusSpecConfig) error {
 	prometheusComponents, err := newPrometheusSpecConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("Failed to Update Prometheus Components: %s", err)

@@ -226,7 +226,10 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMa
 		Namespace: specConfig.Namespace,
 	})
 
-	synopsysOperatorConfigMap.AddData(map[string]string{"config.json": fmt.Sprintf("{\"OperatorTimeBombInSeconds\":\"315576000\", \"DryRun\": false, \"LogLevel\": \"debug\", \"Namespace\": \"%s\", \"Threadiness\": 5, \"PostgresRestartInMins\": 10, \"NFSPath\" : \"/kubenfs\"}", specConfig.Namespace)})
+	cmData := map[string]string{}
+	cmData["config.json"] = fmt.Sprintf("{\"OperatorTimeBombInSeconds\":\"315576000\", \"DryRun\": false, \"LogLevel\": \"debug\", \"Namespace\": \"%s\", \"Threadiness\": 5, \"PostgresRestartInMins\": 10, \"NFSPath\" : \"/kubenfs\"}", specConfig.Namespace)
+	cmData["image"] = specConfig.SynopsysOperatorImage
+	synopsysOperatorConfigMap.AddData(cmData)
 
 	return synopsysOperatorConfigMap
 }

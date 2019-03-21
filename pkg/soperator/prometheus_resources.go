@@ -181,7 +181,11 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncompone
 		Name:      "prometheus",
 		Namespace: specConfig.Namespace,
 	})
-	prometheusConfigMap.AddData(map[string]string{"prometheus.yml": "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"})
+
+	cmData := map[string]string{}
+	cmData["prometheus.yml"] = "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"
+	cmData["image"] = specConfig.PrometheusImage
+	prometheusConfigMap.AddData(cmData)
 
 	return prometheusConfigMap
 }

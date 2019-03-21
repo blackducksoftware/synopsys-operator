@@ -120,20 +120,18 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 // GetCurrentComponentsSpecConfig returns a spec that respesents the current Synopsys-Operator in
 // the cluster
 func GetCurrentComponentsSpecConfig(kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
+	log.Debugf("Creating New Synopsys-Operator SpecConfig")
 	sOperatorSpec := SpecConfig{}
 	// Set the Namespace
 	sOperatorSpec.Namespace = namespace
-	// Set the image and reg key
-	currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+	// Set the image
+	currCM, err := operatorutil.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get Synopsys-Operator Pod: %s", err)
+		return nil, fmt.Errorf("Failed to get Synopsys-Operator ConfigMap: %s", err)
 	}
-	for _, container := range currPod.Spec.Containers {
-		if container.Name != "synopsys-operator" {
-			continue
-		}
-		sOperatorSpec.SynopsysOperatorImage = container.Image
-	}
+	sOperatorSpec.SynopsysOperatorImage = currCM.Data["image"]
+	log.Debugf("Added image %s to Synopsys-Operator SpecConfig", sOperatorSpec.SynopsysOperatorImage)
+
 	// Set the secretType and secret data
 	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
@@ -150,6 +148,7 @@ func GetCurrentComponentsSpecConfig(kubeClient *kubernetes.Clientset, namespace 
 	sOperatorSpec.SecretPostgresPassword = string(currKubeSecretData["POSTGRES_PASSWORD"])
 	sOperatorSpec.SecretUserPassword = string(currKubeSecretData["USER_PASSWORD"])
 	sOperatorSpec.SecretBlackduckPassword = string(currKubeSecretData["HUB_PASSWORD"])
+	log.Debugf("Added Secret Data to Synopsys-Operator SpecConfig")
 
 	return &sOperatorSpec, nil
 }
@@ -157,20 +156,18 @@ func GetCurrentComponentsSpecConfig(kubeClient *kubernetes.Clientset, namespace 
 // GetCurrentComponentsSpecConfigPrometheus returns a spec that respesents the current prometheus in
 // the cluster
 func GetCurrentComponentsSpecConfigPrometheus(kubeClient *kubernetes.Clientset, namespace string) (*PrometheusSpecConfig, error) {
+	log.Debugf("Creating New Prometheus SpecConfig")
 	prometheusSpec := PrometheusSpecConfig{}
 	// Set Namespace
 	prometheusSpec.Namespace = namespace
 	// Set Image
-	currPod, err := operatorutil.GetPod(kubeClient, namespace, "prometheus")
+	currCM, err := operatorutil.GetConfigMap(kubeClient, namespace, "prometheus")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get Prometheus Pod: %s", err)
+		return nil, fmt.Errorf("Failed to get Prometheus ConfigMap: %s", err)
 	}
-	for _, container := range currPod.Spec.Containers {
-		if container.Name != "prometheus" {
-			continue
-		}
-		prometheusSpec.PrometheusImage = container.Image
-	}
+	prometheusSpec.PrometheusImage = currCM.Data["image"]
+	log.Debugf("Added image %s to Prometheus SpecConfig", prometheusSpec.PrometheusImage)
+
 	return &prometheusSpec, nil
 
 }
