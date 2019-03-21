@@ -27,6 +27,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // getAlertDeployment returns a new deployment for an Alert
@@ -106,13 +107,21 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 
 // getAlertVolume returns a new Volume for an Alert
 func (a *SpecConfig) getAlertVolume() (*components.Volume, error) {
-	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
+	vol := components.NewPVCVolume(horizonapi.PVCVolumeConfig{
 		VolumeName: "dir-alert",
-		Medium:     horizonapi.StorageMediumDefault,
+		PVCName:    "alert-pvc",
+		ReadOnly:   true,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create empty dir volume: %v", err)
-	}
 
 	return vol, nil
+}
+
+func (a *SpecConfig) getPersistentVolumeClaim() (*components.PersistentVolumeClaim, error) {
+	size := "100Gi"
+	storageClass := ""
+	pvc, err := operatorutil.CreatePersistentVolumeClaim("alert-pvc", a.config.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the postgres PVC %s in namespace %s because %+v", "alert-pvc", a.config.Namespace, err)
+	}
+	return pvc, nil
 }
