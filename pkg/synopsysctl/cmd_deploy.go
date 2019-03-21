@@ -55,7 +55,7 @@ var deployCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument")
+			return fmt.Errorf("this command only accepts up to 1 argument")
 		}
 		// Check the Secret Type
 		switch deploySecretType {
@@ -74,7 +74,7 @@ var deployCmd = &cobra.Command{
 		case "TypeTLS":
 			secretType = horizonapi.SecretTypeTLS
 		default:
-			return fmt.Errorf("Invalid Secret Type: %s", deploySecretType)
+			return fmt.Errorf("invalid Secret Type: %s", deploySecretType)
 		}
 		return nil
 	},
@@ -168,7 +168,8 @@ var deployCmd = &cobra.Command{
 
 		err = synopsysOperatorDeployer.Run()
 		if err != nil {
-			return fmt.Errorf("Error deploying Synopsys Operator: %s", err)
+			log.Errorf("Error deploying Synopsys Operator: %s", err)
+			return nil
 		}
 
 		// Deploy prometheus

@@ -54,7 +54,7 @@ var kube bool
 func getBlackduckSpecFromCluster(namespace string) (*blackduckv1.Blackduck, error) {
 	blackduck, err := blackduckClient.SynopsysV1().Blackducks(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
-		return blackduck, fmt.Errorf("Error Editing Blackduck: %+v", err)
+		return blackduck, fmt.Errorf("error Editing Blackduck: %+v", err)
 	}
 	return blackduck, nil
 }
@@ -63,7 +63,7 @@ func getBlackduckSpecFromCluster(namespace string) (*blackduckv1.Blackduck, erro
 func updateBlackduckSpecInCluster(namespace string, crd *blackduckv1.Blackduck) error {
 	_, err := blackduckClient.SynopsysV1().Blackducks(namespace).Update(crd)
 	if err != nil {
-		return fmt.Errorf("Error Editing Blackduck: %+v", err)
+		return fmt.Errorf("error Editing Blackduck: %+v", err)
 	}
 	return nil
 }
@@ -72,7 +72,7 @@ func updateBlackduckSpecInCluster(namespace string, crd *blackduckv1.Blackduck) 
 func getOpsSightSpecFromCluster(namespace string) (*opssightv1.OpsSight, error) {
 	opssight, err := opssightClient.SynopsysV1().OpsSights(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
-		return opssight, fmt.Errorf("Error Editing OpsSight: %+v", err)
+		return opssight, fmt.Errorf("error Editing OpsSight: %+v", err)
 	}
 	return opssight, nil
 }
@@ -81,7 +81,7 @@ func getOpsSightSpecFromCluster(namespace string) (*opssightv1.OpsSight, error) 
 func updateOpsSightSpecInCluster(namespace string, crd *opssightv1.OpsSight) error {
 	_, err := opssightClient.SynopsysV1().OpsSights(namespace).Update(crd)
 	if err != nil {
-		return fmt.Errorf("Error Editing OpsSight: %+v", err)
+		return fmt.Errorf("error Editing OpsSight: %+v", err)
 	}
 	return nil
 }
@@ -90,7 +90,7 @@ func updateOpsSightSpecInCluster(namespace string, crd *opssightv1.OpsSight) err
 func getAlertSpecFromCluster(namespace string) (*alertv1.Alert, error) {
 	alert, err := alertClient.SynopsysV1().Alerts(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
-		return alert, fmt.Errorf("Error Editing Alert: %+v", err)
+		return alert, fmt.Errorf("error Editing Alert: %+v", err)
 	}
 	return alert, nil
 }
@@ -99,7 +99,7 @@ func getAlertSpecFromCluster(namespace string) (*alertv1.Alert, error) {
 func updateAlertSpecInCluster(namespace string, crd *alertv1.Alert) error {
 	_, err := alertClient.SynopsysV1().Alerts(namespace).Update(crd)
 	if err != nil {
-		return fmt.Errorf("Error Editing Alert: %+v", err)
+		return fmt.Errorf("error Editing Alert: %+v", err)
 	}
 	return nil
 }
@@ -187,21 +187,21 @@ func setResourceClients() {
 	var err error
 	restconfig, err = protoform.GetKubeConfig()
 	if err != nil {
-		panic(fmt.Errorf("Error getting Kube Rest Config: %s", err))
+		panic(fmt.Errorf("error getting Kube Rest Config: %s", err))
 	}
 	bClient, err := blackduckclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("Error creating the Blackduck Clientset: %s", err))
+		panic(fmt.Errorf("error creating the Blackduck Clientset: %s", err))
 	}
 	blackduckClient = bClient
 	oClient, err := opssightclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("Error creating the OpsSight Clientset: %s", err))
+		panic(fmt.Errorf("error creating the OpsSight Clientset: %s", err))
 	}
 	opssightClient = oClient
 	aClient, err := alertclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("Error creating the Alert Clientset: %s", err))
+		panic(fmt.Errorf("error creating the Alert Clientset: %s", err))
 	}
 	alertClient = aClient
 }
@@ -216,7 +216,7 @@ func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
 	namespaceDeployer.AddNamespace(ns)
 	err = namespaceDeployer.Run()
 	if err != nil {
-		return fmt.Errorf("Error deploying namespace with Horizon : %s", err)
+		return fmt.Errorf("error deploying namespace with Horizon : %s", err)
 	}
 	return nil
 }
