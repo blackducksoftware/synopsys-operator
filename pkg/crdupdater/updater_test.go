@@ -62,4 +62,17 @@ func TestUpdater(t *testing.T) {
 	// if err != nil {
 	// 	t.Errorf("unable to create the replication controller object due to %+v", err)
 	// }
+	// updater.AddUpdater(replicationController)
+
+	// configMap, err := NewConfigMap(kubeConfig, kubeClient, []*components.ConfigMap{}, "opssight-test", "app=opssight")
+	// if err != nil {
+	// 	t.Errorf("unable to create the config map object due to %+v", err)
+	// }
+	// updater.AddUpdater(configMap)
+
+	// secret, err := NewSecret(kubeConfig, kubeClient, []*components.Secret{}, "opssight-test", "app=opssight")
+	// if err != nil {
+	// 	t.Errorf("unable to create the secret object due to %+v", err)
+	// }
+	// updater.AddUpdater(secret)
 }

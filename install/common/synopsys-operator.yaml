@@ -76,7 +76,7 @@ items:
   metadata:
     name: synopsys-operator
   data:
-    config.json: '{"OperatorTimeBombInSeconds":"315576000", "DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "PostgresRestartInMins": 10, "PodWaitTimeoutSeconds": "600"}'
+    config.json: '{"OperatorTimeBombInSeconds":"315576000", "DryRun": false, "LogLevel": "debug", "Namespace": "${NAMESPACE}", "Threadiness": 5, "PostgresRestartInMins": 10, "PodWaitTimeoutSeconds": "600", "ResyncIntervalInSeconds": 30}'
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
