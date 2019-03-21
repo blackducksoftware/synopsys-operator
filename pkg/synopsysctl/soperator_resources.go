@@ -306,7 +306,15 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRole() *horizoncomponen
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 		APIGroups:       []string{""},
-		Resources:       []string{"*"},
+		Resources:       []string{"namespaces", "pods", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "deployments", "statefulsets", "serviceaccounts"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch"},
+		APIGroups:       []string{""},
+		Resources:       []string{"pods/log", "endpoints"},
 		ResourceNames:   []string{},
 		NonResourceURLs: []string{},
 	})
