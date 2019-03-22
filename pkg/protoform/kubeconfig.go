@@ -23,6 +23,7 @@ package protoform
 
 import (
 	"flag"
+	"os"
 	"path/filepath"
 
 	"github.com/juju/errors"
@@ -30,21 +31,48 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/homedir" //_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// GetKubeConfig will return the kube config
+// GetKubeConfig  will return the kube config
 func GetKubeConfig() (*rest.Config, error) {
-	var err error
-	var kubeConfig *rest.Config
-	// creates the in-cluster config
-	kubeConfig, err = rest.InClusterConfig()
-	if err != nil {
-		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
-		kubeConfig, err = newKubeClientFromOutsideCluster()
+	log.Debugf("Getting Kube Rest Config\n")
+	// Determine Config Paths
+	var kubeconfigpath = ""
+	if home := homeDir(); home != "" {
+		kubeconfigpath = filepath.Join(home, ".kube", "config")
+	} else {
+		kubeconfigpath = ""
 	}
+	// Get Rest Config using Paths
+	var restconfig *rest.Config
+	var err error
+	if kubeconfigpath == "" {
+		restconfig, err = rest.InClusterConfig() // if no paths then use in-cluster config
+	} else {
+		restconfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			&clientcmd.ClientConfigLoadingRules{
+				ExplicitPath: kubeconfigpath,
+			},
+			&clientcmd.ConfigOverrides{
+				ClusterInfo: clientcmdapi.Cluster{
+					Server: "",
+				},
+			}).ClientConfig()
+	}
+	if err != nil {
+		return nil, err
+	}
+	return restconfig, nil
+}
 
-	return kubeConfig, err
+// homeDir determines the user's home directory path
+func homeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
 }
 
 // GetKubeClientSet will return the kube clientset

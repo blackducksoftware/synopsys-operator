@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
@@ -36,11 +35,9 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	log "github.com/sirupsen/logrus"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // These vars set by setResourceClients() in root command's init()
@@ -57,7 +54,7 @@ var kube bool
 func getBlackduckSpecFromCluster(namespace string) (*blackduckv1.Blackduck, error) {
 	blackduck, err := blackduckClient.SynopsysV1().Blackducks(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
-		return blackduck, fmt.Errorf("Error Editing Blackduck: %+v", err)
+		return blackduck, fmt.Errorf("error Editing Blackduck: %+v", err)
 	}
 	return blackduck, nil
 }
@@ -66,7 +63,7 @@ func getBlackduckSpecFromCluster(namespace string) (*blackduckv1.Blackduck, erro
 func updateBlackduckSpecInCluster(namespace string, crd *blackduckv1.Blackduck) error {
 	_, err := blackduckClient.SynopsysV1().Blackducks(namespace).Update(crd)
 	if err != nil {
-		return fmt.Errorf("Error Editing Blackduck: %+v", err)
+		return fmt.Errorf("error Editing Blackduck: %+v", err)
 	}
 	return nil
 }
@@ -75,7 +72,7 @@ func updateBlackduckSpecInCluster(namespace string, crd *blackduckv1.Blackduck) 
 func getOpsSightSpecFromCluster(namespace string) (*opssightv1.OpsSight, error) {
 	opssight, err := opssightClient.SynopsysV1().OpsSights(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
-		return opssight, fmt.Errorf("Error Editing OpsSight: %+v", err)
+		return opssight, fmt.Errorf("error Editing OpsSight: %+v", err)
 	}
 	return opssight, nil
 }
@@ -84,7 +81,7 @@ func getOpsSightSpecFromCluster(namespace string) (*opssightv1.OpsSight, error) 
 func updateOpsSightSpecInCluster(namespace string, crd *opssightv1.OpsSight) error {
 	_, err := opssightClient.SynopsysV1().OpsSights(namespace).Update(crd)
 	if err != nil {
-		return fmt.Errorf("Error Editing OpsSight: %+v", err)
+		return fmt.Errorf("error Editing OpsSight: %+v", err)
 	}
 	return nil
 }
@@ -93,7 +90,7 @@ func updateOpsSightSpecInCluster(namespace string, crd *opssightv1.OpsSight) err
 func getAlertSpecFromCluster(namespace string) (*alertv1.Alert, error) {
 	alert, err := alertClient.SynopsysV1().Alerts(namespace).Get(namespace, metav1.GetOptions{})
 	if err != nil {
-		return alert, fmt.Errorf("Error Editing Alert: %+v", err)
+		return alert, fmt.Errorf("error Editing Alert: %+v", err)
 	}
 	return alert, nil
 }
@@ -102,7 +99,7 @@ func getAlertSpecFromCluster(namespace string) (*alertv1.Alert, error) {
 func updateAlertSpecInCluster(namespace string, crd *alertv1.Alert) error {
 	_, err := alertClient.SynopsysV1().Alerts(namespace).Update(crd)
 	if err != nil {
-		return fmt.Errorf("Error Editing Alert: %+v", err)
+		return fmt.Errorf("error Editing Alert: %+v", err)
 	}
 	return nil
 }
@@ -187,63 +184,26 @@ func RunKubeEditorCmd(args ...string) error {
 // setResourceClients sets the global variables for the kuberentes rest config
 // and the resource clients
 func setResourceClients() {
-	restconfig = getKubeRestConfig()
+	var err error
+	restconfig, err = protoform.GetKubeConfig()
+	if err != nil {
+		panic(fmt.Errorf("error getting Kube Rest Config: %s", err))
+	}
 	bClient, err := blackduckclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("Error creating the Blackduck Clientset: %s", err))
+		panic(fmt.Errorf("error creating the Blackduck Clientset: %s", err))
 	}
 	blackduckClient = bClient
 	oClient, err := opssightclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("Error creating the OpsSight Clientset: %s", err))
+		panic(fmt.Errorf("error creating the OpsSight Clientset: %s", err))
 	}
 	opssightClient = oClient
 	aClient, err := alertclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("Error creating the Alert Clientset: %s", err))
+		panic(fmt.Errorf("error creating the Alert Clientset: %s", err))
 	}
 	alertClient = aClient
-}
-
-// getKubeRestConfig gets the user's kubeconfig from their system
-func getKubeRestConfig() *rest.Config {
-	log.Debugf("Getting Kube Rest Config\n")
-	// Determine Config Paths
-	var masterURL = ""
-	var kubeconfigpath = ""
-	if home := homeDir(); home != "" {
-		kubeconfigpath = filepath.Join(home, ".kube", "config")
-	} else {
-		kubeconfigpath = ""
-	}
-	// Get Rest Config using Paths
-	var restconfig *rest.Config
-	var err error
-	if masterURL == "" && kubeconfigpath == "" {
-		restconfig, err = rest.InClusterConfig() // if no paths then use in-cluster config
-	} else {
-		restconfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-			&clientcmd.ClientConfigLoadingRules{
-				ExplicitPath: kubeconfigpath,
-			},
-			&clientcmd.ConfigOverrides{
-				ClusterInfo: clientcmdapi.Cluster{
-					Server: masterURL,
-				},
-			}).ClientConfig()
-	}
-	if err != nil {
-		panic(err)
-	}
-	return restconfig
-}
-
-// homeDir determines the user's home directory path
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }
 
 // DeployCRDNamespace creates an empty Horizon namespace
@@ -256,7 +216,7 @@ func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
 	namespaceDeployer.AddNamespace(ns)
 	err = namespaceDeployer.Run()
 	if err != nil {
-		return fmt.Errorf("Error deploying namespace with Horizon : %s", err)
+		return fmt.Errorf("error deploying namespace with Horizon : %s", err)
 	}
 	return nil
 }

@@ -55,7 +55,7 @@ var deployCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument")
+			return fmt.Errorf("this command only accepts up to 1 argument")
 		}
 		// Check the Secret Type
 		switch deploySecretType {
@@ -74,7 +74,7 @@ var deployCmd = &cobra.Command{
 		case "TypeTLS":
 			secretType = horizonapi.SecretTypeTLS
 		default:
-			return fmt.Errorf("Invalid Secret Type: %s", deploySecretType)
+			return fmt.Errorf("invalid Secret Type: %s", deploySecretType)
 		}
 		return nil
 	},
@@ -134,17 +134,42 @@ var deployCmd = &cobra.Command{
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
-			log.Errorf("Error creating Horizon Deployer for Synopsys Operator: %s", err)
+			log.Errorf("Error creating Deployer for Synopsys-Operator: %s", err)
 			return nil
 		}
-		synopsysOperatorDeployer.AddReplicationController(soperatorSpec.GetOperatorReplicationController())
-		synopsysOperatorDeployer.AddService(soperatorSpec.GetOperatorService())
-		synopsysOperatorDeployer.AddConfigMap(soperatorSpec.GetOperatorConfigMap())
-		synopsysOperatorDeployer.AddServiceAccount(soperatorSpec.GetOperatorServiceAccount())
-		synopsysOperatorDeployer.AddClusterRoleBinding(soperatorSpec.GetOperatorClusterRoleBinding())
+		synopsysOperatorComponents, err := soperatorSpec.GetComponents()
+		if err != nil {
+			log.Errorf("Error creating Components for Synopsys-Operator: %s", err)
+		}
+		for _, rc := range synopsysOperatorComponents.ReplicationControllers {
+			synopsysOperatorDeployer.AddReplicationController(rc)
+		}
+		for _, svc := range synopsysOperatorComponents.Services {
+			synopsysOperatorDeployer.AddService(svc)
+		}
+		for _, cm := range synopsysOperatorComponents.ConfigMaps {
+			synopsysOperatorDeployer.AddConfigMap(cm)
+		}
+		for _, sa := range synopsysOperatorComponents.ServiceAccounts {
+			synopsysOperatorDeployer.AddServiceAccount(sa)
+		}
+		for _, crb := range synopsysOperatorComponents.ClusterRoleBindings {
+			synopsysOperatorDeployer.AddClusterRoleBinding(crb)
+		}
+		for _, cr := range synopsysOperatorComponents.ClusterRoles {
+			synopsysOperatorDeployer.AddClusterRole(cr)
+		}
+		for _, d := range synopsysOperatorComponents.Deployments {
+			synopsysOperatorDeployer.AddDeployment(d)
+		}
+		for _, s := range synopsysOperatorComponents.Secrets {
+			synopsysOperatorDeployer.AddSecret(s)
+		}
+
 		err = synopsysOperatorDeployer.Run()
 		if err != nil {
-			return fmt.Errorf("Error deploying Synopsys Operator with Horizon : %s", err)
+			log.Errorf("Error deploying Synopsys Operator: %s", err)
+			return nil
 		}
 
 		// Deploy prometheus
@@ -154,7 +179,7 @@ var deployCmd = &cobra.Command{
 		}
 		prometheusDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
-			log.Errorf("Error creating Horizon Deployer for Prometheus: %s", err)
+			log.Errorf("Error creating Deployer for Prometheus: %s", err)
 			return nil
 		}
 		prometheusDeployer.AddService(promtheusSpec.GetPrometheusService())
@@ -162,7 +187,7 @@ var deployCmd = &cobra.Command{
 		prometheusDeployer.AddConfigMap(promtheusSpec.GetPrometheusConfigMap())
 		err = prometheusDeployer.Run()
 		if err != nil {
-			log.Errorf("Error deploying Prometheus with Horizon : %s", err)
+			log.Errorf("Error deploying Prometheus: %s", err)
 			return nil
 		}
 
