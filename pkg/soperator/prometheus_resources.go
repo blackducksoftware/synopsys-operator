@@ -55,6 +55,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponent
 		Protocol: horizonapi.ProtocolTCP,
 	})
 
+	prometheusService.AddLabels(map[string]string{"app": "prometheus"})
 	return prometheusService
 }
 
@@ -167,8 +168,10 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 	prometheusPod.AddContainer(prometheusContainer)
 	prometheusPod.AddVolume(prometheusEmptyDirVolume)
 	prometheusPod.AddVolume(prometheusConfigMapVolume)
+	prometheusPod.AddLabels(map[string]string{"app": "prometheus"})
 	prometheusDeployment.AddPod(prometheusPod)
 
+	prometheusDeployment.AddLabels(map[string]string{"app": "prometheus"})
 	return prometheusDeployment
 }
 
@@ -187,5 +190,6 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncompone
 	cmData["image"] = specConfig.PrometheusImage
 	prometheusConfigMap.AddData(cmData)
 
+	prometheusConfigMap.AddLabels(map[string]string{"app": "prometheus"})
 	return prometheusConfigMap
 }

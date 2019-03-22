@@ -65,7 +65,10 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		//ForceNonRoot:           "*bool",
 	})
 
-	synopsysOperatorPodLabels := map[string]string{"name": "synopsys-operator"}
+	synopsysOperatorPodLabels := map[string]string{
+		"name": "synopsys-operator",
+		"app":  "synopsys-operator",
+	}
 
 	synopsysOperatorContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator",
@@ -170,6 +173,7 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
 	synopsysOperatorRC.AddPod(synopsysOperatorPod)
 
+	synopsysOperatorRC.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorRC
 }
 
@@ -213,6 +217,7 @@ func (specConfig *SpecConfig) GetOperatorService() *horizoncomponents.Service {
 		Protocol: horizonapi.ProtocolTCP,
 	})
 
+	synopsysOperatorService.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorService
 }
 
@@ -231,6 +236,7 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMa
 	cmData["image"] = specConfig.SynopsysOperatorImage
 	synopsysOperatorConfigMap.AddData(cmData)
 
+	synopsysOperatorConfigMap.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorConfigMap
 }
 
@@ -245,6 +251,7 @@ func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.Ser
 		//AutomountToken: "*bool",
 	})
 
+	synopsysOperatorServiceAccount.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorServiceAccount
 }
 
@@ -269,6 +276,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 		Name:     "cluster-admin",
 	})
 
+	synopsysOperatorClusterRoleBinding.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorClusterRoleBinding
 }
 
@@ -288,5 +296,7 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 		"USER_PASSWORD":     []byte(specConfig.SecretUserPassword),
 		"HUB_PASSWORD":      []byte(specConfig.SecretBlackduckPassword),
 	})
+
+	synopsysOperatorSecret.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorSecret
 }

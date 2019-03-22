@@ -119,7 +119,7 @@ func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.C
 	if err != nil {
 		return fmt.Errorf("Failed to Update Operator Components: %s", err)
 	}
-	sOperatorCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, sOperatorComponents, "app=operator")
+	sOperatorCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, sOperatorComponents, "app=synopsys-operator")
 	errs := sOperatorCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("Failed to Update Operator Components: %+v", errs)
