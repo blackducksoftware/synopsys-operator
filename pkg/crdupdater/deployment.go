@@ -28,6 +28,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -115,6 +116,7 @@ func (d *Deployment) list() (interface{}, error) {
 
 // delete deletes the deployment
 func (d *Deployment) delete(name string) error {
+	log.Infof("deleting the deployment %s in %s namespace", name, d.config.namespace)
 	return util.DeleteDeployment(d.config.kubeClient, d.config.namespace, name)
 }
 
@@ -132,7 +134,7 @@ func (d *Deployment) remove() error {
 	return nil
 }
 
-// deploymentComparator used to compare Replication controller attributes
+// deploymentComparator used to compare deployment attributes
 type deploymentComparator struct {
 	Image    string
 	Replicas *int32
@@ -148,6 +150,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 	// check isPatched, why?
 	// if there is any configuration change, irrespective of comparing any changes, patch the deployment
 	if isPatched && !d.config.dryRun {
+		log.Infof("updating the deployment %s in %s namespace", deployment.GetName(), d.config.namespace)
 		err := util.PatchDeployment(d.config.kubeClient, *d.oldDeployments[deployment.GetName()], *d.newDeployments[deployment.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch deployment %s in namespace %s", deployment.GetName(), d.config.namespace)
@@ -184,6 +187,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 
 	// if there is any change from the above step, patch the deployment
 	if isChanged {
+		log.Infof("updating the deployment %s in %s namespace", deployment.GetName(), d.config.namespace)
 		err := util.PatchDeployment(d.config.kubeClient, *d.oldDeployments[deployment.GetName()], *d.newDeployments[deployment.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch rc %s to kube in namespace %s", deployment.GetName(), d.config.namespace)

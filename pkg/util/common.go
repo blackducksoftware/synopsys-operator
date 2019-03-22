@@ -182,6 +182,10 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 	for _, containerConfig := range containers {
 		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
 			containerConfig.ActionConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
+		// Adds a PreStop if given, originally added to enable graceful pg shutdown
+		if containerConfig.PreStopConfig != nil {
+			container.AddPreStopAction(*containerConfig.PreStopConfig)
+		}
 		pod.AddContainer(container)
 	}
 

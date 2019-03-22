@@ -25,6 +25,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
@@ -105,6 +106,7 @@ func (c *ClusterRole) list() (interface{}, error) {
 
 // delete deletes the cluster role
 func (c *ClusterRole) delete(name string) error {
+	log.Infof("deleting the cluster role: %s", name)
 	return util.DeleteClusterRole(c.config.kubeClient, name)
 }
 

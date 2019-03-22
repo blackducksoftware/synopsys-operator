@@ -55,6 +55,7 @@ func NewCRDInstaller(config interface{}) (*CRDInstaller, error) {
 	}
 	c := &CRDInstaller{config: dependentConfig}
 
+	log.Debugf("resync period: %d", c.config.Config.ResyncIntervalInSeconds)
 	c.config.resyncPeriod = time.Duration(c.config.Config.ResyncIntervalInSeconds) * time.Second
 	c.config.indexers = cache.Indexers{}
 
@@ -151,7 +152,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			old := oldObj.(*opssightapi.OpsSight)
 			new := newObj.(*opssightapi.OpsSight)
-			if !reflect.DeepEqual(old.Spec, new.Spec) || !reflect.DeepEqual(old.Status.InternalHosts, new.Status.InternalHosts) {
+			if strings.EqualFold(old.Status.State, string(Running)) || !reflect.DeepEqual(old.Spec, new.Spec) || !reflect.DeepEqual(old.Status.InternalHosts, new.Status.InternalHosts) {
 				key, err := cache.MetaNamespaceKeyFunc(newObj)
 				log.Infof("update opssight: %s", key)
 				if err == nil {
@@ -159,8 +160,6 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 				} else {
 					log.Errorf("unable to update OpsSight: %v", err)
 				}
-			} else {
-				log.Debugf("ignoring the update event for opssight due to deep equal on spec")
 			}
 		},
 		DeleteFunc: func(obj interface{}) {

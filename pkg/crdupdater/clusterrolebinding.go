@@ -23,11 +23,11 @@ package crdupdater
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
@@ -94,7 +94,6 @@ func (c *ClusterRoleBinding) add(isPatched bool) (bool, error) {
 			}
 		}
 	}
-	log.Printf("c.config.dryRun: %+v, isAdded: %+v", c.config.dryRun, isAdded)
 	if isAdded && !c.config.dryRun {
 		err := c.deployer.Deployer.Run()
 		if err != nil {
@@ -116,6 +115,7 @@ func (c *ClusterRoleBinding) list() (interface{}, error) {
 
 // delete deletes the cluster role binding
 func (c *ClusterRoleBinding) delete(name string) error {
+	log.Infof("deleting the cluster role binding: %s", name)
 	return util.DeleteClusterRoleBinding(c.config.kubeClient, name)
 }
 

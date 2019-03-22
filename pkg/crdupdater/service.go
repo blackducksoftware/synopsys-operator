@@ -25,6 +25,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -105,6 +106,7 @@ func (s *Service) list() (interface{}, error) {
 
 // delete deletes the service
 func (s *Service) delete(name string) error {
+	log.Infof("deleting the service %s in %s namespace", name, s.config.namespace)
 	return util.DeleteService(s.config.kubeClient, s.config.namespace, name)
 }
 

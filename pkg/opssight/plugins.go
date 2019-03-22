@@ -201,10 +201,8 @@ func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 	if err != nil {
 		log.Errorf("unable to list blackducks due to %+v", err)
 	}
-	log.Debugf("total no of Black Duck's: %d", len(hubsList.Items))
 	blackduckPassword := p.getDefaultPassword()
 	for _, hub := range hubsList.Items {
-		log.Debugf("Black Duck type: %s, OpsSight Type: %s", hub.Spec.Type, hubType)
 		if strings.EqualFold(hub.Spec.Type, hubType) {
 			var concurrentScanLimit int
 			switch strings.ToUpper(hub.Spec.Size) {
@@ -219,11 +217,9 @@ func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 			}
 			host := &opssightapi.Host{Domain: fmt.Sprintf("webserver.%s.svc", hub.Name), ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysadmin", Port: 443, Password: blackduckPassword}
 			hosts = append(hosts, host)
-			logger.Infof("Blackduck config map controller, namespace is %s", hub.Name)
 		}
 	}
-
-	logger.Debugf("allHubHosts: %+v", hosts)
+	log.Debugf("total no of Black Duck's for type %s is %d", hubType, len(hosts))
 	return hosts
 }
 
