@@ -119,6 +119,7 @@ var deployCmd = &cobra.Command{
 		synopsysOperatorDeployer.AddConfigMap(soperatorSpec.GetOperatorConfigMap())
 		synopsysOperatorDeployer.AddServiceAccount(soperatorSpec.GetOperatorServiceAccount())
 		synopsysOperatorDeployer.AddClusterRoleBinding(soperatorSpec.GetOperatorClusterRoleBinding())
+		synopsysOperatorDeployer.AddSecret(soperatorSpec.GetOperatorSecret())
 		err = synopsysOperatorDeployer.Run()
 		if err != nil {
 			return fmt.Errorf("Error deploying Synopsys Operator with Horizon : %s", err)

@@ -67,10 +67,6 @@ var updateOperatorCmd = &cobra.Command{
 	Use:   "operator",
 	Short: "Update the Synopsys-Operator",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if !(cmd.Flag("secret-type").Changed && cmd.Flag("admin-password").Changed && cmd.Flag("postgres-password").Changed && cmd.Flag("user-password").Changed && cmd.Flag("blackduck-password").Changed) {
-			log.Errorf("Must update all Secret Flags: --admin-password, --postgres-password, --user-password, --blackduck-password")
-			return nil
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -88,9 +84,11 @@ var updateOperatorCmd = &cobra.Command{
 		}
 		// Update Spec with changed values
 		if cmd.Flag("synopsys-operator-image").Changed {
+			log.Debugf("Updating SynopsysOperatorImage to %s", updateSynopsysOperatorImage)
 			sOperatorSpecConfig.SynopsysOperatorImage = updateSynopsysOperatorImage
 		}
 		if cmd.Flag("secret-type").Changed {
+			log.Debugf("Updating SecretType to %s", updateSecretType)
 			updateSecretTypeConverted, err := operatorutil.SecretTypeNameToHorizon(updateSecretType)
 			if err != nil {
 				log.Errorf("Failed to convert SecretType: %s", err)
@@ -99,18 +97,25 @@ var updateOperatorCmd = &cobra.Command{
 			sOperatorSpecConfig.SecretType = updateSecretTypeConverted
 		}
 		if cmd.Flag("admin-password").Changed {
+			log.Debugf("Updating SecretAdminPassword")
 			sOperatorSpecConfig.SecretAdminPassword = updateSecretAdminPassword
 		}
 		if cmd.Flag("postgres-password").Changed {
+			log.Debugf("Updating SecretPostgresPassword")
 			sOperatorSpecConfig.SecretPostgresPassword = updateSecretPostgresPassword
 		}
 		if cmd.Flag("user-password").Changed {
+			log.Debugf("Updating SecretUserPassword")
 			sOperatorSpecConfig.SecretUserPassword = updateSecretUserPassword
 		}
 		if cmd.Flag("blackduck-password").Changed {
+			log.Debugf("Updating SecretBlackduckPassword")
 			sOperatorSpecConfig.SecretBlackduckPassword = updateSecretBlackduckPassword
 		}
-		soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, sOperatorSpecConfig, blackduckClient, opssightClient, alertClient)
+		err = soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, sOperatorSpecConfig, blackduckClient, opssightClient, alertClient)
+		if err != nil {
+			log.Errorf("Failed to Updated Synopsys-Operator: %s", err)
+		}
 
 		log.Debugf("Updating Prometheus in namespace %s\n", namespace)
 		prometheusSpecConfig, err := soperator.GetCurrentComponentsSpecConfigPrometheus(kubeClient, namespace)
@@ -118,9 +123,13 @@ var updateOperatorCmd = &cobra.Command{
 			log.Errorf("Error Updating the Operator: %s", err)
 		}
 		if cmd.Flag("prometheus-image").Changed {
+			log.Debugf("Updating PrometheusImage to %s", updatePrometheusImage)
 			prometheusSpecConfig.PrometheusImage = updatePrometheusImage
 		}
-		soperator.UpdatePrometheus(restconfig, kubeClient, namespace, prometheusSpecConfig)
+		err = soperator.UpdatePrometheus(restconfig, kubeClient, namespace, prometheusSpecConfig)
+		if err != nil {
+			log.Errorf("Failed to Updated Prometheus: %s", err)
+		}
 		return nil
 	},
 }

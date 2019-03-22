@@ -23,6 +23,7 @@ package soperator
 
 import (
 	"fmt"
+	"strings"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -95,26 +96,19 @@ func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion 
 func GetOperatorNamespace() (string, error) {
 	namespace, err := operatorutil.RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 	if err != nil {
-		return "", fmt.Errorf("%s", namespace)
+		return "", fmt.Errorf("%s", err)
 	}
-	return namespace, nil
+	return strings.Trim(namespace, "'"), nil
 }
 
 // GetOperatorImage returns the image for the synopsys-operator from
 // the cluster
 func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (string, error) {
-	currPod, err := operatorutil.GetPod(kubeClient, namespace, "synopsys-operator")
+	currCM, err := operatorutil.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
-		return "", fmt.Errorf("Failed to get Synopsys-Operator Pod: %s", err)
+		return "", fmt.Errorf("Failed to get Operator Image: %s", err)
 	}
-	var currImage string
-	for _, container := range currPod.Spec.Containers {
-		if container.Name != "synopsys-operator" {
-			continue
-		}
-		currImage = container.Image
-	}
-	return currImage, nil
+	return currCM.Data["image"], nil
 }
 
 // GetCurrentComponentsSpecConfig returns a spec that respesents the current Synopsys-Operator in
@@ -130,10 +124,10 @@ func GetCurrentComponentsSpecConfig(kubeClient *kubernetes.Clientset, namespace 
 		return nil, fmt.Errorf("Failed to get Synopsys-Operator ConfigMap: %s", err)
 	}
 	sOperatorSpec.SynopsysOperatorImage = currCM.Data["image"]
-	log.Debugf("Added image %s to Synopsys-Operator SpecConfig", sOperatorSpec.SynopsysOperatorImage)
+	log.Debugf("Got current Synopsys-Operator Image from Cluster: %s", sOperatorSpec.SynopsysOperatorImage)
 
 	// Set the secretType and secret data
-	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "synopsys-operator")
+	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get Synopsys-Operator secret: %s", err)
 	}
@@ -148,7 +142,7 @@ func GetCurrentComponentsSpecConfig(kubeClient *kubernetes.Clientset, namespace 
 	sOperatorSpec.SecretPostgresPassword = string(currKubeSecretData["POSTGRES_PASSWORD"])
 	sOperatorSpec.SecretUserPassword = string(currKubeSecretData["USER_PASSWORD"])
 	sOperatorSpec.SecretBlackduckPassword = string(currKubeSecretData["HUB_PASSWORD"])
-	log.Debugf("Added Secret Data to Synopsys-Operator SpecConfig")
+	log.Debugf("Got current Synopsys-Operator Secret Data from Cluster")
 
 	return &sOperatorSpec, nil
 }

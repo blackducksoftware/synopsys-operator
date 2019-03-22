@@ -56,7 +56,7 @@ var destroyCmd = &cobra.Command{
 		// Delete the namespace
 		out, err := util.RunKubeCmd("delete", "ns", destroyNamespace)
 		if err != nil {
-			log.Errorf("Could not delete %s - %s\n", destroyNamespace, err)
+			log.Errorf("Could not delete %s - %s", destroyNamespace, out)
 			return nil
 		}
 		cleanCommands := [...]string{

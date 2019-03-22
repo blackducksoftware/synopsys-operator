@@ -22,6 +22,7 @@ under the License.
 package util
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 )
@@ -29,8 +30,8 @@ import (
 // DetermineClusterClients returns bool values as true
 // if it can find kube/oc in the path
 func DetermineClusterClients() (bool, bool) {
-	var kube bool
-	var openshift bool
+	kube := false
+	openshift := false
 	_, exists := exec.LookPath("kubectl")
 	if exists == nil {
 		kube = true
@@ -59,6 +60,8 @@ func RunKubeCmd(args ...string) (string, error) {
 		cmd2 = exec.Command("oc", args...)
 	} else if kube {
 		cmd2 = exec.Command("kubectl", args...)
+	} else {
+		return "", fmt.Errorf("Could not determine if openshift or kube")
 	}
 	stdoutErr, err := cmd2.CombinedOutput()
 	if err != nil {
