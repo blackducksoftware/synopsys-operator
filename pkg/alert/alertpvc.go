@@ -35,7 +35,7 @@ func (a *SpecConfig) getAlertPersistentVolumeClaim() (*components.PersistentVolu
 	storageClass := ""
 	pvc, err := operatorutil.CreatePersistentVolumeClaim(name, a.config.Namespace, a.config.PVCMemory, storageClass, horizonapi.ReadWriteMany)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the postgres PVC %s in namespace %s because %+v", name, a.config.Namespace, err)
+		return nil, fmt.Errorf("failed to create the PVC %s in namespace %s because %+v", name, a.config.Namespace, err)
 	}
 	return pvc, nil
 }
