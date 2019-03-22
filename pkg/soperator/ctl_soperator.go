@@ -42,7 +42,6 @@ import (
 // UpdateSynopsysOperator updates the Synopsys-Operator's kubernetes componenets and changes
 // all CRDs to versions that the Operator can use
 func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec *SpecConfig, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset) error {
-	log.Debugf("Getting CRDs that need new versions")
 	currImage, err := GetOperatorImage(kubeClient, namespace)
 	if err != nil {
 		log.Errorf("Failed to Update the Synopsys Operator: %s", err)
@@ -54,6 +53,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
 	currCrdData := SOperatorCRDVersionMap.GetCRDVersions(currOperatorVersion)
 	// Get CRDs that need to be updated (specs have new version set)
+	log.Debugf("Getting CRDs that need new versions")
 	var oldBlackducks = []blackduckv1.Blackduck{}
 	if newCrdData.Blackduck.APIVersion != currCrdData.Blackduck.APIVersion {
 		oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion, currCrdData.Blackduck.CRDName)
