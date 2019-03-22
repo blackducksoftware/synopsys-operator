@@ -38,7 +38,7 @@ type Secret struct {
 	config     *CommonConfig
 	deployer   *util.DeployerHelper
 	secrets    []*components.Secret
-	oldSecrets map[string]*corev1.Secret
+	oldSecrets map[string]corev1.Secret
 	newSecrets map[string]*corev1.Secret
 }
 
@@ -52,7 +52,7 @@ func NewSecret(config *CommonConfig, secrets []*components.Secret) (*Secret, err
 		config:     config,
 		deployer:   deployer,
 		secrets:    secrets,
-		oldSecrets: make(map[string]*corev1.Secret, 0),
+		oldSecrets: make(map[string]corev1.Secret, 0),
 		newSecrets: make(map[string]*corev1.Secret, 0),
 	}, nil
 }
@@ -65,7 +65,7 @@ func (s *Secret) buildNewAndOldObject() error {
 		return errors.Annotatef(err, "unable to get secrets for %s", s.config.namespace)
 	}
 	for _, oldSecret := range oldSecrets.(*corev1.SecretList).Items {
-		s.oldSecrets[oldSecret.GetName()] = &oldSecret
+		s.oldSecrets[oldSecret.GetName()] = oldSecret
 	}
 
 	// build new secret
@@ -147,10 +147,10 @@ func (s *Secret) patch(i interface{}, isPatched bool) (bool, error) {
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to get the secret %s in namespace %s", secretName, s.config.namespace)
 		}
-		oldSecret = srt.(*corev1.Secret)
-		oldSecret.Data = newSecret.Data
-		oldSecret.StringData = newSecret.StringData
-		err = util.UpdateSecret(s.config.kubeClient, s.config.namespace, oldSecret)
+		oldLatestSecret := srt.(*corev1.Secret)
+		oldLatestSecret.Data = newSecret.Data
+		oldLatestSecret.StringData = newSecret.StringData
+		err = util.UpdateSecret(s.config.kubeClient, s.config.namespace, oldLatestSecret)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the secret %s in namespace %s", secretName, s.config.namespace)
 		}

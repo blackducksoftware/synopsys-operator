@@ -38,20 +38,19 @@ import (
 // GetKubeConfig  will return the kube config
 func GetKubeConfig() (*rest.Config, error) {
 	log.Debugf("Getting Kube Rest Config\n")
-	// Determine Config Paths
-	var kubeconfigpath = ""
-	if home := homeDir(); home != "" {
-		kubeconfigpath = filepath.Join(home, ".kube", "config")
-	} else {
-		kubeconfigpath = ""
-	}
-	// Get Rest Config using Paths
-	var restconfig *rest.Config
 	var err error
-	if kubeconfigpath == "" {
-		restconfig, err = rest.InClusterConfig() // if no paths then use in-cluster config
-	} else {
-		restconfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+	var kubeConfig *rest.Config
+	// creates the in-cluster config
+	kubeConfig, err = rest.InClusterConfig()
+	if err != nil {
+		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
+		// Determine Config Paths
+		var kubeconfigpath = ""
+		if home := homeDir(); home != "" {
+			kubeconfigpath = filepath.Join(home, ".kube", "config")
+		}
+
+		kubeConfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			&clientcmd.ClientConfigLoadingRules{
 				ExplicitPath: kubeconfigpath,
 			},
@@ -60,11 +59,11 @@ func GetKubeConfig() (*rest.Config, error) {
 					Server: "",
 				},
 			}).ClientConfig()
+		if err != nil {
+			return nil, err
+		}
 	}
-	if err != nil {
-		return nil, err
-	}
-	return restconfig, nil
+	return kubeConfig, nil
 }
 
 // homeDir determines the user's home directory path

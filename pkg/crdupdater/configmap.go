@@ -38,7 +38,7 @@ type ConfigMap struct {
 	config        *CommonConfig
 	deployer      *util.DeployerHelper
 	configMaps    []*components.ConfigMap
-	oldConfigMaps map[string]*corev1.ConfigMap
+	oldConfigMaps map[string]corev1.ConfigMap
 	newConfigMaps map[string]*corev1.ConfigMap
 }
 
@@ -52,7 +52,7 @@ func NewConfigMap(config *CommonConfig, configMaps []*components.ConfigMap) (*Co
 		config:        config,
 		deployer:      deployer,
 		configMaps:    configMaps,
-		oldConfigMaps: make(map[string]*corev1.ConfigMap, 0),
+		oldConfigMaps: make(map[string]corev1.ConfigMap, 0),
 		newConfigMaps: make(map[string]*corev1.ConfigMap, 0),
 	}, nil
 }
@@ -64,8 +64,9 @@ func (c *ConfigMap) buildNewAndOldObject() error {
 	if err != nil {
 		return errors.Annotatef(err, "unable to get config maps for %s", c.config.namespace)
 	}
+
 	for _, oldConfigMap := range oldConfigMaps.(*corev1.ConfigMapList).Items {
-		c.oldConfigMaps[oldConfigMap.GetName()] = &oldConfigMap
+		c.oldConfigMaps[oldConfigMap.GetName()] = oldConfigMap
 	}
 
 	// build new config map
@@ -141,15 +142,17 @@ func (c *ConfigMap) patch(cm interface{}, isPatched bool) (bool, error) {
 	configMapName := configMap.GetName()
 	oldConfigMap := c.oldConfigMaps[configMapName]
 	newConfigMap := c.newConfigMaps[configMapName]
-	if !reflect.DeepEqual(newConfigMap.Data, oldConfigMap.Data) && !c.config.dryRun {
+
+	if (!reflect.DeepEqual(newConfigMap.Data, oldConfigMap.Data) || !reflect.DeepEqual(newConfigMap.BinaryData, oldConfigMap.BinaryData)) && !c.config.dryRun {
 		log.Infof("updating the config map %s in %s namespace", configMapName, c.config.namespace)
 		cm, err := c.get(configMapName)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to get the config map %s in namespace %s", configMapName, c.config.namespace)
 		}
-		oldConfigMap = cm.(*corev1.ConfigMap)
-		oldConfigMap.Data = newConfigMap.Data
-		err = util.UpdateConfigMap(c.config.kubeClient, c.config.namespace, oldConfigMap)
+		oldLatestConfigMap := cm.(*corev1.ConfigMap)
+		oldLatestConfigMap.Data = newConfigMap.Data
+		oldLatestConfigMap.BinaryData = newConfigMap.BinaryData
+		err = util.UpdateConfigMap(c.config.kubeClient, c.config.namespace, oldLatestConfigMap)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the config map %s in namespace %s", configMapName, c.config.namespace)
 		}
