@@ -34,7 +34,7 @@ type ClusterRole struct {
 	config          *CommonConfig
 	deployer        *util.DeployerHelper
 	clusterRoles    []*components.ClusterRole
-	oldClusterRoles map[string]*rbacv1.ClusterRole
+	oldClusterRoles map[string]rbacv1.ClusterRole
 	newClusterRoles map[string]*rbacv1.ClusterRole
 }
 
@@ -48,7 +48,7 @@ func NewClusterRole(config *CommonConfig, clusterRoles []*components.ClusterRole
 		config:          config,
 		deployer:        deployer,
 		clusterRoles:    clusterRoles,
-		oldClusterRoles: make(map[string]*rbacv1.ClusterRole, 0),
+		oldClusterRoles: make(map[string]rbacv1.ClusterRole, 0),
 		newClusterRoles: make(map[string]*rbacv1.ClusterRole, 0),
 	}, nil
 }
@@ -60,8 +60,9 @@ func (c *ClusterRole) buildNewAndOldObject() error {
 	if err != nil {
 		return errors.Annotatef(err, "unable to get cluster roles for %s", c.config.namespace)
 	}
+
 	for _, oldCr := range oldCrs.(*rbacv1.ClusterRoleList).Items {
-		c.oldClusterRoles[oldCr.GetName()] = &oldCr
+		c.oldClusterRoles[oldCr.GetName()] = oldCr
 	}
 
 	// build new cluster role

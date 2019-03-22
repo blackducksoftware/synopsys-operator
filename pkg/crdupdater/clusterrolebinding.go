@@ -36,7 +36,7 @@ type ClusterRoleBinding struct {
 	config                 *CommonConfig
 	deployer               *util.DeployerHelper
 	clusterRoleBindings    []*components.ClusterRoleBinding
-	oldClusterRoleBindings map[string]*rbacv1.ClusterRoleBinding
+	oldClusterRoleBindings map[string]rbacv1.ClusterRoleBinding
 	newClusterRoleBindings map[string]*rbacv1.ClusterRoleBinding
 }
 
@@ -50,7 +50,7 @@ func NewClusterRoleBinding(config *CommonConfig, clusterRoleBindings []*componen
 		config:                 config,
 		deployer:               deployer,
 		clusterRoleBindings:    clusterRoleBindings,
-		oldClusterRoleBindings: make(map[string]*rbacv1.ClusterRoleBinding, 0),
+		oldClusterRoleBindings: make(map[string]rbacv1.ClusterRoleBinding, 0),
 		newClusterRoleBindings: make(map[string]*rbacv1.ClusterRoleBinding, 0),
 	}, nil
 }
@@ -62,8 +62,9 @@ func (c *ClusterRoleBinding) buildNewAndOldObject() error {
 	if err != nil {
 		return errors.Annotatef(err, "unable to get cluster role bindings for %s", c.config.namespace)
 	}
+
 	for _, oldCrb := range oldCrbs.(*rbacv1.ClusterRoleBindingList).Items {
-		c.oldClusterRoleBindings[oldCrb.GetName()] = &oldCrb
+		c.oldClusterRoleBindings[oldCrb.GetName()] = oldCrb
 	}
 
 	// build new cluster role binding
@@ -142,7 +143,7 @@ func (c *ClusterRoleBinding) patch(crb interface{}, isPatched bool) (bool, error
 	for _, subject := range newClusterRoleBinding.Subjects {
 		if !util.IsClusterRoleBindingSubjectExist(oldclusterRoleBinding.Subjects, subject.Namespace, subject.Name) {
 			oldclusterRoleBinding.Subjects = append(oldclusterRoleBinding.Subjects, rbacv1.Subject{Name: subject.Name, Namespace: subject.Namespace, Kind: "ServiceAccount"})
-			_, err := util.UpdateClusterRoleBinding(c.config.kubeClient, oldclusterRoleBinding)
+			_, err := util.UpdateClusterRoleBinding(c.config.kubeClient, &oldclusterRoleBinding)
 			if err != nil {
 				return false, errors.Annotate(err, fmt.Sprintf("failed to update %s cluster role binding", clusterRoleBinding.GetName()))
 			}
