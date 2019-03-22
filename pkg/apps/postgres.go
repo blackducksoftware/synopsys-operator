@@ -26,6 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
@@ -54,6 +55,7 @@ type Postgres struct {
 	UserPasswordSecretKey  string
 	AdminPasswordSecretKey string
 	EnvConfigMapRefs       []string
+	Config                 *protoform.Config
 }
 
 // GetPostgresReplicationController will return the postgres replication controller
@@ -91,8 +93,7 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 	pod := util.CreatePod(postgresName, "", postgresVolumes, []*util.Container{postgresExternalContainerConfig}, initContainers, []horizonapi.AffinityConfig{})
 
 	// increase TerminationGracePeriod to better handle pg shutdown
-	var terminationGracePeriod int64 = 90
-	pod.GetObj().PodTemplate.TerminationGracePeriod = &terminationGracePeriod
+	pod.GetObj().PodTemplate.TerminationGracePeriod = &p.Config.TerminationGracePeriodSeconds
 
 	postgres := util.CreateReplicationController(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
 		Name: postgresName, Replicas: util.IntToInt32(1)}, pod)
