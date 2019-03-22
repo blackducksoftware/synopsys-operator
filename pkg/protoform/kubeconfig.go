@@ -43,7 +43,7 @@ func GetKubeConfig() (*rest.Config, error) {
 	// creates the in-cluster config
 	kubeConfig, err = rest.InClusterConfig()
 	if err != nil {
-		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
+		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %+v", err)
 		// Determine Config Paths
 		var kubeconfigpath = ""
 		if home := homeDir(); home != "" {
