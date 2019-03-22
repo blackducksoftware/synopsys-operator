@@ -45,7 +45,6 @@ var updateAlertCtl ResourceCtl
 // Update Defaults
 var updateSynopsysOperatorImage = ""
 var updatePrometheusImage = ""
-var updateBlackduckRegistrationKey = ""
 var updateSecretType = ""
 var updateSecretAdminPassword = ""
 var updateSecretPostgresPassword = ""
@@ -427,7 +426,6 @@ func init() {
 	// Add Operator Commands
 	updateOperatorCmd.Flags().StringVarP(&updateSynopsysOperatorImage, "synopsys-operator-image", "i", updateSynopsysOperatorImage, "synopsys operator image URL")
 	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "prometheus-image", "p", updatePrometheusImage, "prometheus image URL")
-	updateOperatorCmd.Flags().StringVarP(&updateBlackduckRegistrationKey, "blackduck-registration-key", "k", updateBlackduckRegistrationKey, "key to register with KnowledgeBase")
 	updateOperatorCmd.Flags().StringVar(&updateSecretType, "secret-type", updateSecretType, "type of kubernetes secret for postgres and blackduck")
 	updateOperatorCmd.Flags().StringVar(&updateSecretAdminPassword, "admin-password", updateSecretAdminPassword, "postgres admin password")
 	updateOperatorCmd.Flags().StringVar(&updateSecretPostgresPassword, "postgres-password", updateSecretPostgresPassword, "postgres password")
