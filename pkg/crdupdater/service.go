@@ -34,7 +34,7 @@ type Service struct {
 	config      *CommonConfig
 	deployer    *util.DeployerHelper
 	services    []*components.Service
-	oldServices map[string]*corev1.Service
+	oldServices map[string]corev1.Service
 	newServices map[string]*corev1.Service
 }
 
@@ -48,7 +48,7 @@ func NewService(config *CommonConfig, services []*components.Service) (*Service,
 		config:      config,
 		deployer:    deployer,
 		services:    services,
-		oldServices: make(map[string]*corev1.Service, 0),
+		oldServices: make(map[string]corev1.Service, 0),
 		newServices: make(map[string]*corev1.Service, 0),
 	}, nil
 }
@@ -61,7 +61,7 @@ func (s *Service) buildNewAndOldObject() error {
 		return errors.Annotatef(err, "unable to get services for %s", s.config.namespace)
 	}
 	for _, oldSvc := range oldSvcs.(*corev1.ServiceList).Items {
-		s.oldServices[oldSvc.GetName()] = &oldSvc
+		s.oldServices[oldSvc.GetName()] = oldSvc
 	}
 
 	// build new service

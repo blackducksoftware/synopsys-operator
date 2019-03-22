@@ -39,7 +39,7 @@ type Deployment struct {
 	config         *CommonConfig
 	deployer       *util.DeployerHelper
 	deployments    []*components.Deployment
-	oldDeployments map[string]*appsv1.Deployment
+	oldDeployments map[string]appsv1.Deployment
 	newDeployments map[string]*appsv1beta2.Deployment
 }
 
@@ -53,7 +53,7 @@ func NewDeployment(config *CommonConfig, deployments []*components.Deployment) (
 		config:         config,
 		deployer:       deployer,
 		deployments:    deployments,
-		oldDeployments: make(map[string]*appsv1.Deployment, 0),
+		oldDeployments: make(map[string]appsv1.Deployment, 0),
 		newDeployments: make(map[string]*appsv1beta2.Deployment, 0),
 	}, nil
 }
@@ -66,7 +66,7 @@ func (d *Deployment) buildNewAndOldObject() error {
 		return errors.Annotatef(err, "unable to get deployments for %s", d.config.namespace)
 	}
 	for _, oldRC := range oldRCs.(*appsv1.DeploymentList).Items {
-		d.oldDeployments[oldRC.GetName()] = &oldRC
+		d.oldDeployments[oldRC.GetName()] = oldRC
 	}
 
 	// build new deployment
@@ -151,7 +151,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 	// if there is any configuration change, irrespective of comparing any changes, patch the deployment
 	if isPatched && !d.config.dryRun {
 		log.Infof("updating the deployment %s in %s namespace", deployment.GetName(), d.config.namespace)
-		err := util.PatchDeployment(d.config.kubeClient, *d.oldDeployments[deployment.GetName()], *d.newDeployments[deployment.GetName()])
+		err := util.PatchDeployment(d.config.kubeClient, d.oldDeployments[deployment.GetName()], *d.newDeployments[deployment.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch deployment %s in namespace %s", deployment.GetName(), d.config.namespace)
 		}
@@ -188,7 +188,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 	// if there is any change from the above step, patch the deployment
 	if isChanged {
 		log.Infof("updating the deployment %s in %s namespace", deployment.GetName(), d.config.namespace)
-		err := util.PatchDeployment(d.config.kubeClient, *d.oldDeployments[deployment.GetName()], *d.newDeployments[deployment.GetName()])
+		err := util.PatchDeployment(d.config.kubeClient, d.oldDeployments[deployment.GetName()], *d.newDeployments[deployment.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch rc %s to kube in namespace %s", deployment.GetName(), d.config.namespace)
 		}

@@ -34,7 +34,7 @@ type ServiceAccount struct {
 	config             *CommonConfig
 	deployer           *util.DeployerHelper
 	serviceAccounts    []*components.ServiceAccount
-	oldServiceAccounts map[string]*corev1.ServiceAccount
+	oldServiceAccounts map[string]corev1.ServiceAccount
 	newServiceAccounts map[string]*corev1.ServiceAccount
 }
 
@@ -48,7 +48,7 @@ func NewServiceAccount(config *CommonConfig, serviceAccounts []*components.Servi
 		config:             config,
 		deployer:           deployer,
 		serviceAccounts:    serviceAccounts,
-		oldServiceAccounts: make(map[string]*corev1.ServiceAccount, 0),
+		oldServiceAccounts: make(map[string]corev1.ServiceAccount, 0),
 		newServiceAccounts: make(map[string]*corev1.ServiceAccount, 0),
 	}, nil
 }
@@ -61,7 +61,7 @@ func (s *ServiceAccount) buildNewAndOldObject() error {
 		return errors.Annotatef(err, "unable to get service accounts for %s", s.config.namespace)
 	}
 	for _, oldServiceAccount := range oldServiceAccounts.(*corev1.ServiceAccountList).Items {
-		s.oldServiceAccounts[oldServiceAccount.GetName()] = &oldServiceAccount
+		s.oldServiceAccounts[oldServiceAccount.GetName()] = oldServiceAccount
 	}
 
 	// build new service account

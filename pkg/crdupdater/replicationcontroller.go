@@ -38,7 +38,7 @@ type ReplicationController struct {
 	config                    *CommonConfig
 	deployer                  *util.DeployerHelper
 	replicationControllers    []*components.ReplicationController
-	oldReplicationControllers map[string]*corev1.ReplicationController
+	oldReplicationControllers map[string]corev1.ReplicationController
 	newReplicationControllers map[string]*corev1.ReplicationController
 }
 
@@ -52,7 +52,7 @@ func NewReplicationController(config *CommonConfig, replicationControllers []*co
 		config:                    config,
 		deployer:                  deployer,
 		replicationControllers:    replicationControllers,
-		oldReplicationControllers: make(map[string]*corev1.ReplicationController, 0),
+		oldReplicationControllers: make(map[string]corev1.ReplicationController, 0),
 		newReplicationControllers: make(map[string]*corev1.ReplicationController, 0),
 	}, nil
 }
@@ -65,7 +65,7 @@ func (r *ReplicationController) buildNewAndOldObject() error {
 		return errors.Annotatef(err, "unable to get replication controllers for %s", r.config.namespace)
 	}
 	for _, oldRC := range oldRCs.(*corev1.ReplicationControllerList).Items {
-		r.oldReplicationControllers[oldRC.GetName()] = &oldRC
+		r.oldReplicationControllers[oldRC.GetName()] = oldRC
 	}
 
 	// build new replication controller
@@ -150,7 +150,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 	// if there is any configuration change, irrespective of comparing any changes, patch the replication controller
 	if isPatched && !r.config.dryRun {
 		log.Infof("updating the replication controller %s in %s namespace", replicationController.GetName(), r.config.namespace)
-		err := util.PatchReplicationController(r.config.kubeClient, *r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()])
+		err := util.PatchReplicationController(r.config.kubeClient, r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch replication controller %s in namespace %s", replicationController.GetName(), r.config.namespace)
 		}
@@ -187,7 +187,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 	// if there is any change from the above step, patch the replication controller
 	if isChanged {
 		log.Infof("updating the replication controller %s in %s namespace", replicationController.GetName(), r.config.namespace)
-		err := util.PatchReplicationController(r.config.kubeClient, *r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()])
+		err := util.PatchReplicationController(r.config.kubeClient, r.oldReplicationControllers[replicationController.GetName()], *r.newReplicationControllers[replicationController.GetName()])
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to patch rc %s to kube in namespace %s", replicationController.GetName(), r.config.namespace)
 		}
