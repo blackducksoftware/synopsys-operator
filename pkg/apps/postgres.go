@@ -88,9 +88,14 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
 
-	postgres := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
-		Name: postgresName, Replicas: util.IntToInt32(1)}, "", []*util.Container{postgresExternalContainerConfig},
-		postgresVolumes, initContainers, []horizonapi.AffinityConfig{})
+	pod := util.CreatePod(postgresName, "", postgresVolumes, []*util.Container{postgresExternalContainerConfig}, initContainers, []horizonapi.AffinityConfig{})
+
+	// increase TerminationGracePeriod to better handle pg shutdown
+	var terminationGracePeriod int64 = 90
+	pod.GetObj().PodTemplate.TerminationGracePeriod = &terminationGracePeriod
+
+	postgres := util.CreateReplicationController(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
+		Name: postgresName, Replicas: util.IntToInt32(1)}, pod)
 
 	return postgres
 }
