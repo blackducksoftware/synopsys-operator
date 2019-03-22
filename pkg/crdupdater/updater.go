@@ -25,48 +25,57 @@ import (
 	"github.com/juju/errors"
 )
 
-// AddOrRemoveComponents consist of methods to add or remove the components for update events
-type AddOrRemoveComponents interface {
+// UpdateComponents consist of methods to add, patch or remove the components for update events
+type UpdateComponents interface {
 	buildNewAndOldObject() error
-	add() error
+	add(bool) (bool, error)
+	get(name string) (interface{}, error)
 	list() (interface{}, error)
 	delete(name string) error
 	remove() error
-	patch(interface{}) error
+	patch(interface{}, bool) (bool, error)
 }
 
 // Updater handles in updating the components
 type Updater struct {
-	updaters []AddOrRemoveComponents
+	updaters []UpdateComponents
+	dryRun   bool
 }
 
 // NewUpdater will create the specification that is used for updating the components
-func NewUpdater() *Updater {
+func NewUpdater(dryRun bool) *Updater {
 	updater := Updater{
-		updaters: make([]AddOrRemoveComponents, 0),
+		updaters: make([]UpdateComponents, 0),
+		dryRun:   dryRun,
 	}
 	return &updater
 }
 
 // AddUpdater will add the updater to the list
-func (u *Updater) AddUpdater(updater AddOrRemoveComponents) {
+func (u *Updater) AddUpdater(updater UpdateComponents) {
 	u.updaters = append(u.updaters, updater)
 }
 
 // Update add or remove the components
 func (u *Updater) Update() error {
+	isPatched := false
 	for _, updater := range u.updaters {
-		err := updater.buildNewAndOldObject()
-		if err != nil {
-			return errors.Annotatef(err, "build components:")
+		if !u.dryRun {
+			err := updater.buildNewAndOldObject()
+			if err != nil {
+				return errors.Annotatef(err, "build components:")
+			}
 		}
-		err = updater.add()
+		isUpdated, err := updater.add(isPatched)
+		isPatched = isPatched || isUpdated
 		if err != nil {
 			return errors.Annotatef(err, "add/patch components:")
 		}
-		err = updater.remove()
-		if err != nil {
-			return errors.Annotatef(err, "remove components:")
+		if !u.dryRun {
+			err = updater.remove()
+			if err != nil {
+				return errors.Annotatef(err, "remove components:")
+			}
 		}
 	}
 	return nil

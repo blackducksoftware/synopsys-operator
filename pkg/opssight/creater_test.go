@@ -40,7 +40,7 @@ import (
 // TestUpstreamPerceptor will test the upstream deployment
 func TestUpstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
-	opssight := NewSpecConfig(nil, defaultValues, true)
+	opssight := NewSpecConfig(nil, nil, nil, nil, defaultValues, true)
 
 	components, err := opssight.GetComponents()
 
@@ -64,7 +64,7 @@ func TestUpstreamPerceptor(t *testing.T) {
 func TestDownstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
 
-	opssight := NewSpecConfig(nil, defaultValues, true)
+	opssight := NewSpecConfig(nil, nil, nil, nil, defaultValues, true)
 
 	components, err := opssight.GetComponents()
 	fmt.Printf("tests of %+v temporarily disabled -- reenable using ginkgo (err: %+v)", components, err)
@@ -537,72 +537,74 @@ func prettyPrintObj(components *api.ComponentList) {
 }
 
 // GetOpsSightDefaultValue creates a perceptor crd configuration object with defaults
-func getOpsSightDefaultValue() *opssightapi.OpsSightSpec {
-	return &opssightapi.OpsSightSpec{
-		Perceptor: &opssightapi.Perceptor{
-			Name:                           "perceptor",
-			Port:                           3001,
-			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
-			CheckForStalledScansPauseHours: 999999,
-			StalledScanClientTimeoutHours:  999999,
-			ModelMetricsPauseSeconds:       15,
-			UnknownImagePauseMilliseconds:  15000,
-			ClientTimeoutMilliseconds:      100000,
-		},
-		Perceiver: &opssightapi.Perceiver{
-			EnableImagePerceiver: false,
-			EnablePodPerceiver:   true,
-			Port:                 3002,
-			ImagePerceiver: &opssightapi.ImagePerceiver{
-				Name:  "image-perceiver",
-				Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
+func getOpsSightDefaultValue() *opssightapi.OpsSight {
+	return &opssightapi.OpsSight{
+		Spec: opssightapi.OpsSightSpec{
+			Perceptor: &opssightapi.Perceptor{
+				Name:                           "perceptor",
+				Port:                           3001,
+				Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
+				CheckForStalledScansPauseHours: 999999,
+				StalledScanClientTimeoutHours:  999999,
+				ModelMetricsPauseSeconds:       15,
+				UnknownImagePauseMilliseconds:  15000,
+				ClientTimeoutMilliseconds:      100000,
 			},
-			PodPerceiver: &opssightapi.PodPerceiver{
-				Name:  "pod-perceiver",
-				Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
+			Perceiver: &opssightapi.Perceiver{
+				EnableImagePerceiver: false,
+				EnablePodPerceiver:   true,
+				Port:                 3002,
+				ImagePerceiver: &opssightapi.ImagePerceiver{
+					Name:  "image-perceiver",
+					Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
+				},
+				PodPerceiver: &opssightapi.PodPerceiver{
+					Name:  "pod-perceiver",
+					Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
+				},
+				ServiceAccount:            "perceiver",
+				AnnotationIntervalSeconds: 30,
+				DumpIntervalMinutes:       30,
 			},
-			ServiceAccount:            "perceiver",
-			AnnotationIntervalSeconds: 30,
-			DumpIntervalMinutes:       30,
-		},
-		ScannerPod: &opssightapi.ScannerPod{
-			ImageFacade: &opssightapi.ImageFacade{
-				Port:               3004,
-				InternalRegistries: []*opssightapi.RegistryAuth{},
-				Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-				ServiceAccount:     "perceptor-scanner",
-				Name:               "perceptor-imagefacade",
+			ScannerPod: &opssightapi.ScannerPod{
+				ImageFacade: &opssightapi.ImageFacade{
+					Port:               3004,
+					InternalRegistries: []*opssightapi.RegistryAuth{},
+					Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
+					ServiceAccount:     "perceptor-scanner",
+					Name:               "perceptor-imagefacade",
+				},
+				Scanner: &opssightapi.Scanner{
+					Name:                 "perceptor-scanner",
+					Port:                 3003,
+					Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
+					ClientTimeoutSeconds: 600,
+				},
+				ReplicaCount: 1,
 			},
-			Scanner: &opssightapi.Scanner{
-				Name:                 "perceptor-scanner",
-				Port:                 3003,
-				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
-				ClientTimeoutSeconds: 600,
+			Prometheus: &opssightapi.Prometheus{
+				Name:  "prometheus",
+				Image: "docker.io/prom/prometheus:v2.1.0",
+				Port:  9090,
 			},
-			ReplicaCount: 1,
+			Skyfire: &opssightapi.Skyfire{
+				Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
+				Name:           "skyfire",
+				Port:           3005,
+				ServiceAccount: "skyfire",
+			},
+			Blackduck: &opssightapi.Blackduck{
+				InitialCount:                       1,
+				MaxCount:                           1,
+				DeleteBlackduckThresholdPercentage: 50,
+				BlackduckSpec:                      nil,
+			},
+			EnableMetrics: true,
+			EnableSkyfire: false,
+			DefaultCPU:    "300m",
+			DefaultMem:    "1300Mi",
+			LogLevel:      "debug",
+			SecretName:    "perceptor",
 		},
-		Prometheus: &opssightapi.Prometheus{
-			Name:  "prometheus",
-			Image: "docker.io/prom/prometheus:v2.1.0",
-			Port:  9090,
-		},
-		Skyfire: &opssightapi.Skyfire{
-			Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
-			Name:           "skyfire",
-			Port:           3005,
-			ServiceAccount: "skyfire",
-		},
-		Blackduck: &opssightapi.Blackduck{
-			InitialCount:                       1,
-			MaxCount:                           1,
-			DeleteBlackduckThresholdPercentage: 50,
-			BlackduckSpec:                      nil,
-		},
-		EnableMetrics: true,
-		EnableSkyfire: false,
-		DefaultCPU:    "300m",
-		DefaultMem:    "1300Mi",
-		LogLevel:      "debug",
-		SecretName:    "perceptor",
 	}
 }
