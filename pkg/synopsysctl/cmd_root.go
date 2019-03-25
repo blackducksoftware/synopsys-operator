@@ -38,7 +38,7 @@ var cluster string
 var kubeconfig string
 var context string
 var insecureSkipTLSVerify = false
-var logLevel int
+var logLevel string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -63,7 +63,16 @@ var rootCmd = &cobra.Command{
 			log.Warnf("Flag %s is Not Implemented", "insecure-skip-tls-verify")
 		}
 		if flagset.Changed("log-level") {
-			log.Warnf("Flag %s is Not Implemented", "log-level")
+			val, err := flagset.GetString("log-level")
+			if err != nil {
+				log.Errorf("Failed to get value for log-level")
+			}
+			log.Debugf("Setting log-level to %s", val)
+			lvl, err := log.ParseLevel(val)
+			if err != nil {
+				log.Errorf("Log-Level %s is not a valid level", val)
+			}
+			log.SetLevel(lvl)
 		}
 		return nil
 	},
@@ -102,7 +111,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "Path to the kubeconfig file to use for CLI requests")
 	rootCmd.PersistentFlags().StringVar(&context, "context", context, "The name of the kubeconfig context to use")
 	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "Server's certificate won't be validated. HTTPS will be less secure")
-	rootCmd.PersistentFlags().IntVar(&logLevel, "log-level", logLevel, "Log Level for the Synopsys-Operator")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", logLevel, "Log Level for the Synopsys-Operator")
 }
 
 // initConfig reads in config file and ENV variables if set.
