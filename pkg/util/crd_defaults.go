@@ -215,6 +215,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
 		ConfigMapName: "opssight",
+		DesiredState:  "START",
 	}
 }
 
@@ -322,6 +323,7 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 		DefaultMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
+		DesiredState:  "START",
 	}
 }
 
