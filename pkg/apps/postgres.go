@@ -40,20 +40,21 @@ const (
 
 // Postgres will provide the postgres container configuration
 type Postgres struct {
-	Namespace              string
-	PVCName                string
-	Port                   string
-	Image                  string
-	MinCPU                 string
-	MaxCPU                 string
-	MinMemory              string
-	MaxMemory              string
-	Database               string
-	User                   string
-	PasswordSecretName     string
-	UserPasswordSecretKey  string
-	AdminPasswordSecretKey string
-	EnvConfigMapRefs       []string
+	Namespace                     string
+	PVCName                       string
+	Port                          string
+	Image                         string
+	MinCPU                        string
+	MaxCPU                        string
+	MinMemory                     string
+	MaxMemory                     string
+	Database                      string
+	User                          string
+	PasswordSecretName            string
+	UserPasswordSecretKey         string
+	AdminPasswordSecretKey        string
+	EnvConfigMapRefs              []string
+	TerminationGracePeriodSeconds int64
 }
 
 // GetPostgresReplicationController will return the postgres replication controller
@@ -88,9 +89,13 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
 
-	postgres := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
-		Name: postgresName, Replicas: util.IntToInt32(1)}, "", []*util.Container{postgresExternalContainerConfig},
-		postgresVolumes, initContainers, []horizonapi.AffinityConfig{})
+	pod := util.CreatePod(postgresName, "", postgresVolumes, []*util.Container{postgresExternalContainerConfig}, initContainers, []horizonapi.AffinityConfig{})
+
+	// increase TerminationGracePeriod to better handle pg shutdown
+	pod.GetObj().PodTemplate.TerminationGracePeriod = &p.TerminationGracePeriodSeconds
+
+	postgres := util.CreateReplicationController(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
+		Name: postgresName, Replicas: util.IntToInt32(1)}, pod)
 
 	return postgres
 }

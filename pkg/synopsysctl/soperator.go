@@ -30,17 +30,19 @@ import (
 // Its methods include GetComponents() and any functions
 // that create Kubernetes Resources for the SOperator
 type SOperatorSpecConfig struct {
-	Namespace                string
-	SynopsysOperatorImage    string
-	BlackduckRegistrationKey string
+	Namespace                     string
+	SynopsysOperatorImage         string
+	BlackduckRegistrationKey      string
+	TerminationGracePeriodSeconds int64
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey string) *SOperatorSpecConfig {
+func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey string, terminationGracePeriodSeconds int64) *SOperatorSpecConfig {
 	return &SOperatorSpecConfig{
-		Namespace:                namespace,
-		SynopsysOperatorImage:    synopsysOperatorImage,
-		BlackduckRegistrationKey: blackduckRegistrationKey,
+		Namespace:                     namespace,
+		SynopsysOperatorImage:         synopsysOperatorImage,
+		BlackduckRegistrationKey:      blackduckRegistrationKey,
+		TerminationGracePeriodSeconds: terminationGracePeriodSeconds,
 	}
 }
 
