@@ -36,6 +36,7 @@ import (
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -187,21 +188,21 @@ func setResourceClients() {
 	var err error
 	restconfig, err = protoform.GetKubeConfig()
 	if err != nil {
-		panic(fmt.Errorf("error getting Kube Rest Config: %s", err))
+		log.Errorf("error getting Kube Rest Config: %s", err)
 	}
 	bClient, err := blackduckclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("error creating the Blackduck Clientset: %s", err))
+		log.Errorf("error creating the Blackduck Clientset: %s", err)
 	}
 	blackduckClient = bClient
 	oClient, err := opssightclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("error creating the OpsSight Clientset: %s", err))
+		log.Errorf("error creating the OpsSight Clientset: %s", err)
 	}
 	opssightClient = oClient
 	aClient, err := alertclientset.NewForConfig(restconfig)
 	if err != nil {
-		panic(fmt.Errorf("error creating the Alert Clientset: %s", err))
+		log.Errorf("error creating the Alert Clientset: %s", err)
 	}
 	alertClient = aClient
 }
