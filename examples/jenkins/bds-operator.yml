@@ -39,6 +39,10 @@ objects:
     - USE_ALERT:0
     - CFSSL:cfssl:8888
     - HUB_POSTGRES_ADMIN:blackduck
+    - BDS_RELENG_DEPLOY_USER:${BDS_RELENG_DEPLOY_USER}
+    - BDS_RELENG_KEEP_HOURS:${BDS_RELENG_KEEP_HOURS}
+    - BDS_RELENG_BUILD_INFO:${BDS_RELENG_BUILD_INFO}
+    - BDS_RELENG_DEP_DETAILS_FILENAME:${BDS_RELENG_DEP_DETAILS_FILENAME}
     imageRegistries:
     - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${APPCHECK_WORKER_IMAGE}
     - ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${RABBITMQ_IMAGE}
@@ -59,6 +63,14 @@ parameters:
   name: HUB_TYPE
 - description: Name of the hub instance
   name: HUB_NAME
+- description: User or process that deployed the environment
+  name: BDS_RELENG_DEPLOY_USER
+- description: Number of hours to keep environment running
+  name: BDS_RELENG_KEEP_HOURS
+- description: Details of the build process which deploying the environment
+  name: BDS_RELENG_BUILD_INFO
+- description: Name of file on Artifactory with deployment details
+  name: BDS_RELENG_DEP_DETAILS_FILENAME
 - description: Actual Hub version, without the build number
   name: ACTUAL_HUB_VERSION
 - description: Docker registry to pull images from

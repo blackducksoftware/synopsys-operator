@@ -37,6 +37,7 @@ var deployNamespace = "synopsys-operator"
 var deploySynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
 var deployPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var deployBlackduckRegistrationKey = ""
+var deployTerminationGracePeriodSeconds int64 = 180
 var deployDockerConfigPath = ""
 var deploySecretName = "blackduck-secret"
 var deploySecretType = "Opaque"
@@ -128,9 +129,10 @@ var deployCmd = &cobra.Command{
 
 		// Deploy synopsys-operator
 		soperatorSpec := SOperatorSpecConfig{
-			Namespace:                deployNamespace,
-			SynopsysOperatorImage:    deploySynopsysOperatorImage,
-			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
+			Namespace:                     deployNamespace,
+			SynopsysOperatorImage:         deploySynopsysOperatorImage,
+			BlackduckRegistrationKey:      deployBlackduckRegistrationKey,
+			TerminationGracePeriodSeconds: deployTerminationGracePeriodSeconds,
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
@@ -228,6 +230,7 @@ func init() {
 	deployCmd.Flags().StringVar(&deploySecretPostgresPassword, "postgres-password", deploySecretPostgresPassword, "postgres password")
 	deployCmd.Flags().StringVar(&deploySecretUserPassword, "user-password", deploySecretUserPassword, "postgres user password")
 	deployCmd.Flags().StringVar(&deploySecretBlackduckPassword, "blackduck-password", deploySecretBlackduckPassword, "blackduck password for 'sysadmin' account")
+	deployCmd.Flags().Int64VarP(&deployTerminationGracePeriodSeconds, "postgres-termination-grace-period", "t", deployTerminationGracePeriodSeconds, "termination grace period in seconds for shutting down postgres")
 
 	// Set Log Level
 	log.SetLevel(log.DebugLevel)
