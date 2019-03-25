@@ -924,13 +924,13 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 }
 
 // PatchReplicationControllerForReplicas patch a replication controller for replica update
-func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old *corev1.ReplicationController, replicas int) (*corev1.ReplicationController, error) {
+func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old *corev1.ReplicationController, replicas *int32) (*corev1.ReplicationController, error) {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return nil, err
 	}
 	new := old.DeepCopy()
-	new.Spec.Replicas = IntToInt32(replicas)
+	new.Spec.Replicas = replicas
 	newData, err := json.Marshal(new)
 	if err != nil {
 		return nil, err
@@ -965,12 +965,12 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 		return err
 	}
 
-	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, 0)
+	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, IntToInt32(0))
 	if err != nil {
 		return err
 	}
 
-	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, 1)
+	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, new.Spec.Replicas)
 	if err != nil {
 		return err
 	}
@@ -978,13 +978,13 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 }
 
 // PatchDeploymentForReplicas patch a deployment for replica update
-func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old *appsv1.Deployment, replicas int) (*appsv1.Deployment, error) {
+func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old *appsv1.Deployment, replicas *int32) (*appsv1.Deployment, error) {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return nil, err
 	}
 	new := old.DeepCopy()
-	new.Spec.Replicas = IntToInt32(replicas)
+	new.Spec.Replicas = replicas
 	newData, err := json.Marshal(new)
 	if err != nil {
 		return nil, err
@@ -1019,12 +1019,12 @@ func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new
 		return err
 	}
 
-	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, 0)
+	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, IntToInt32(0))
 	if err != nil {
 		return err
 	}
 
-	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, 1)
+	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, new.Spec.Replicas)
 	if err != nil {
 		return err
 	}
