@@ -61,7 +61,7 @@ import (
 
 // CreateContainer will create the container
 func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, ports []*horizonapi.PortConfig,
-	actionConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
+	actionConfig *horizonapi.ActionConfig, preStopConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
 
 	container := components.NewContainer(*config)
 
@@ -79,6 +79,11 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 
 	if actionConfig != nil {
 		container.AddPostStartAction(*actionConfig)
+	}
+
+	// Adds a PreStop if given, originally added to enable graceful pg shutdown
+	if preStopConfig != nil {
+		container.AddPreStopAction(*preStopConfig)
 	}
 
 	for _, livenessProbe := range livenessProbeConfigs {
@@ -179,17 +184,13 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 
 	for _, containerConfig := range containers {
 		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
-			containerConfig.ActionConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
-		// Adds a PreStop if given, originally added to enable graceful pg shutdown
-		if containerConfig.PreStopConfig != nil {
-			container.AddPreStopAction(*containerConfig.PreStopConfig)
-		}
+			containerConfig.ActionConfig, containerConfig.PreStopConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
 		pod.AddContainer(container)
 	}
 
 	for _, initContainerConfig := range initContainers {
 		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts,
-			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
+			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.PreStopConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
 		err := pod.AddInitContainer(initContainer)
 		if err != nil {
 			log.Printf("failed to create the init container because %+v", err)
