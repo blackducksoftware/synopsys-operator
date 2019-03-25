@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -729,6 +730,11 @@ func IntToInt64(i int) *int64 {
 	return &j
 }
 
+// IntToUInt32 will convert from int to uint32
+func IntToUInt32(i int) uint32 {
+	return uint32(i)
+}
+
 func getBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
@@ -845,6 +851,16 @@ func DeleteClusterRole(clientset *kubernetes.Clientset, name string) error {
 	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
 }
 
+// IsClusterRoleRuleExist checks whether the namespace is already exist in the rule of cluster role
+func IsClusterRoleRuleExist(oldRules []rbacv1.PolicyRule, newRule rbacv1.PolicyRule) bool {
+	for _, oldRule := range oldRules {
+		if reflect.DeepEqual(oldRule, newRule) {
+			return true
+		}
+	}
+	return false
+}
+
 // GetOpenShiftRoutes get a OpenShift routes
 func GetOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Get(name, metav1.GetOptions{})
@@ -908,26 +924,26 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 }
 
 // PatchReplicationControllerForReplicas patch a replication controller for replica update
-func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old corev1.ReplicationController, replicas int) error {
+func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old *corev1.ReplicationController, replicas int) (*corev1.ReplicationController, error) {
 	oldData, err := json.Marshal(old)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	new := old.DeepCopy()
 	new.Spec.Replicas = IntToInt32(replicas)
 	newData, err := json.Marshal(new)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.ReplicationController{})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	rc, err := clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return rc, nil
 }
 
 // PatchReplicationController patch a replication controller
@@ -944,7 +960,17 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 	if err != nil {
 		return err
 	}
-	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	newRc, err := clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
+
+	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, 0)
+	if err != nil {
+		return err
+	}
+
+	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, 1)
 	if err != nil {
 		return err
 	}
@@ -952,26 +978,26 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 }
 
 // PatchDeploymentForReplicas patch a deployment for replica update
-func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old appsv1.Deployment, replicas int) error {
+func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old *appsv1.Deployment, replicas int) (*appsv1.Deployment, error) {
 	oldData, err := json.Marshal(old)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	new := old.DeepCopy()
 	new.Spec.Replicas = IntToInt32(replicas)
 	newData, err := json.Marshal(new)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, appsv1.Deployment{})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	newDeployment, err := clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return newDeployment, nil
 }
 
 // PatchDeployment patch a deployment
@@ -988,7 +1014,17 @@ func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new
 	if err != nil {
 		return err
 	}
-	_, err = clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	newDeployment, err := clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
+
+	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, 0)
+	if err != nil {
+		return err
+	}
+
+	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, 1)
 	if err != nil {
 		return err
 	}
