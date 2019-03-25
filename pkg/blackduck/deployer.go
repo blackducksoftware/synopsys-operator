@@ -42,9 +42,7 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 	allConfigEnv []*horizonapi.EnvConfig) {
 
 	// Blackduck ConfigMap environment variables
-	hubConfigEnv := []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"}}
-
-	binaryAnalysisEnv := []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "binary-analysis-config"}}
+	hubConfigEnv := []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "blackduck-config"}}
 
 	dbSecretVolume := components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "db-passwords",
@@ -55,8 +53,6 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 		},
 		DefaultMode: util.IntToInt32(420),
 	})
-
-	// dbEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("cloudsql")
 
 	var proxySecretVolume *components.Volume
 
@@ -74,7 +70,7 @@ func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.Black
 		}
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, hubConfigEnv, allConfigEnv, binaryAnalysisEnv, dbSecretVolume, proxySecretVolume)
+	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor, hubConfigEnv, allConfigEnv, dbSecretVolume, proxySecretVolume)
 
 	// cfssl
 	deployer.AddReplicationController(containerCreater.GetCfsslDeployment())
@@ -187,7 +183,7 @@ func (hc *Creater) addAnyUIDToServiceAccount(createHub *v1.BlackduckSpec) error 
 
 // AddExposeServices add the nodeport / LB services
 func (hc *Creater) AddExposeServices(deployer *horizon.Deployer, createHub *v1.BlackduckSpec) {
-	containerCreater := containers.NewCreater(hc.Config, createHub, nil, nil, nil, nil, nil, nil)
+	containerCreater := containers.NewCreater(hc.Config, createHub, nil, nil, nil, nil, nil)
 	deployer.AddService(containerCreater.GetWebServerNodePortService())
 	deployer.AddService(containerCreater.GetWebServerLoadBalancerService())
 }

@@ -25,38 +25,30 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // ClusterRole stores the configuration to add or delete the cluster role
 type ClusterRole struct {
-	kubeConfig      *rest.Config
-	kubeClient      *kubernetes.Clientset
+	config          *CommonConfig
 	deployer        *util.DeployerHelper
-	namespace       string
 	clusterRoles    []*components.ClusterRole
-	labelSelector   string
-	oldClusterRoles map[string]*rbacv1.ClusterRole
+	oldClusterRoles map[string]rbacv1.ClusterRole
 	newClusterRoles map[string]*rbacv1.ClusterRole
 }
 
 // NewClusterRole returns the cluster role
-func NewClusterRole(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, clusterRoles []*components.ClusterRole,
-	namespace string, labelSelector string) (*ClusterRole, error) {
-	deployer, err := util.NewDeployer(kubeConfig)
+func NewClusterRole(config *CommonConfig, clusterRoles []*components.ClusterRole) (*ClusterRole, error) {
+	deployer, err := util.NewDeployer(config.kubeConfig)
 	if err != nil {
-		return nil, errors.Annotatef(err, "unable to get deployer object for %s", namespace)
+		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
 	return &ClusterRole{
-		kubeConfig:      kubeConfig,
-		kubeClient:      kubeClient,
+		config:          config,
 		deployer:        deployer,
-		namespace:       namespace,
 		clusterRoles:    clusterRoles,
-		labelSelector:   labelSelector,
-		oldClusterRoles: make(map[string]*rbacv1.ClusterRole, 0),
+		oldClusterRoles: make(map[string]rbacv1.ClusterRole, 0),
 		newClusterRoles: make(map[string]*rbacv1.ClusterRole, 0),
 	}, nil
 }
@@ -66,17 +58,18 @@ func (c *ClusterRole) buildNewAndOldObject() error {
 	// build old cluster role
 	oldCrs, err := c.list()
 	if err != nil {
-		return errors.Annotatef(err, "unable to get cluster roles for %s", c.namespace)
+		return errors.Annotatef(err, "unable to get cluster roles for %s", c.config.namespace)
 	}
+
 	for _, oldCr := range oldCrs.(*rbacv1.ClusterRoleList).Items {
-		c.oldClusterRoles[oldCr.GetName()] = &oldCr
+		c.oldClusterRoles[oldCr.GetName()] = oldCr
 	}
 
 	// build new cluster role
 	for _, newCr := range c.clusterRoles {
 		newClusterRoleKube, err := newCr.ToKube()
 		if err != nil {
-			return errors.Annotatef(err, "unable to convert cluster role %s to kube %s", newCr.GetName(), c.namespace)
+			return errors.Annotatef(err, "unable to convert cluster role %s to kube %s", newCr.GetName(), c.config.namespace)
 		}
 		c.newClusterRoles[newCr.GetName()] = newClusterRoleKube.(*rbacv1.ClusterRole)
 	}
@@ -85,7 +78,7 @@ func (c *ClusterRole) buildNewAndOldObject() error {
 }
 
 // add adds the cluster role
-func (c *ClusterRole) add() error {
+func (c *ClusterRole) add(isPatched bool) (bool, error) {
 	isAdded := false
 	for _, clusterRole := range c.clusterRoles {
 		if _, ok := c.oldClusterRoles[clusterRole.GetName()]; !ok {
@@ -93,23 +86,29 @@ func (c *ClusterRole) add() error {
 			isAdded = true
 		}
 	}
-	if isAdded {
+	if isAdded && !c.config.dryRun {
 		err := c.deployer.Deployer.Run()
 		if err != nil {
-			return errors.Annotatef(err, "unable to deploy cluster role in %s", c.namespace)
+			return false, errors.Annotatef(err, "unable to deploy cluster role in %s", c.config.namespace)
 		}
 	}
-	return nil
+	return false, nil
+}
+
+// get gets the cluster role
+func (c *ClusterRole) get(name string) (interface{}, error) {
+	return util.GetClusterRole(c.config.kubeClient, name)
 }
 
 // list lists all the cluster roles
 func (c *ClusterRole) list() (interface{}, error) {
-	return util.ListClusterRoles(c.kubeClient, c.labelSelector)
+	return util.ListClusterRoles(c.config.kubeClient, c.config.labelSelector)
 }
 
 // delete deletes the cluster role
 func (c *ClusterRole) delete(name string) error {
-	return util.DeleteClusterRole(c.kubeClient, name)
+	log.Infof("deleting the cluster role: %s", name)
+	return util.DeleteClusterRole(c.config.kubeClient, name)
 }
 
 // remove removes the cluster role
@@ -119,7 +118,7 @@ func (c *ClusterRole) remove() error {
 		if _, ok := c.newClusterRoles[oldClusterRole.GetName()]; !ok {
 			err := c.delete(oldClusterRole.GetName())
 			if err != nil {
-				return errors.Annotatef(err, "unable to delete cluster role %s in namespace %s", oldClusterRole.GetName(), c.namespace)
+				return errors.Annotatef(err, "unable to delete cluster role %s in namespace %s", oldClusterRole.GetName(), c.config.namespace)
 			}
 		}
 	}
@@ -127,6 +126,6 @@ func (c *ClusterRole) remove() error {
 }
 
 // patch patches the cluster role
-func (c *ClusterRole) patch(rc interface{}) error {
-	return nil
+func (c *ClusterRole) patch(cr interface{}, isPatched bool) (bool, error) {
+	return false, nil
 }

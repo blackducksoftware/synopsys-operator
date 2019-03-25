@@ -183,14 +183,6 @@
   revision = "5545eab6dad3bbbd6c5ae9186383c2a9d23c0dae"
 
 [[projects]]
-  branch = "master"
-  digest = "1:555fef7420c108d88754e41e02299fd10f67dc6602d643944611a4100132d3cf"
-  name = "github.com/gin-gonic/contrib"
-  packages = ["static"]
-  pruneopts = "UT"
-  revision = "54ff787f7c73aec36275e1384c705389b1772ba9"
-
-[[projects]]
   digest = "1:d5083934eb25e45d17f72ffa86cae3814f4a9d6c073c4f16b64147169b245606"
   name = "github.com/gin-gonic/gin"
   packages = [
@@ -1801,7 +1793,6 @@
     "github.com/blackducksoftware/horizon/pkg/api",
     "github.com/blackducksoftware/horizon/pkg/components",
     "github.com/blackducksoftware/horizon/pkg/deployer",
-    "github.com/gin-gonic/contrib/static",
     "github.com/gin-gonic/gin",
     "github.com/gobuffalo/buffalo",
     "github.com/gobuffalo/buffalo/render",

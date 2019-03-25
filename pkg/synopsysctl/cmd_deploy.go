@@ -37,6 +37,7 @@ var deployNamespace = "synopsys-operator"
 var deploySynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
 var deployPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var deployBlackduckRegistrationKey = ""
+var deployTerminationGracePeriodSeconds int64 = 180
 var deployDockerConfigPath = ""
 var deploySecretName = "blackduck-secret"
 var deploySecretType = "Opaque"
@@ -55,7 +56,7 @@ var deployCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument")
+			return fmt.Errorf("this command only accepts up to 1 argument")
 		}
 		// Check the Secret Type
 		switch deploySecretType {
@@ -74,7 +75,7 @@ var deployCmd = &cobra.Command{
 		case "TypeTLS":
 			secretType = horizonapi.SecretTypeTLS
 		default:
-			return fmt.Errorf("Invalid Secret Type: %s", deploySecretType)
+			return fmt.Errorf("invalid Secret Type: %s", deploySecretType)
 		}
 		return nil
 	},
@@ -128,23 +129,49 @@ var deployCmd = &cobra.Command{
 
 		// Deploy synopsys-operator
 		soperatorSpec := SOperatorSpecConfig{
-			Namespace:                deployNamespace,
-			SynopsysOperatorImage:    deploySynopsysOperatorImage,
-			BlackduckRegistrationKey: deployBlackduckRegistrationKey,
+			Namespace:                     deployNamespace,
+			SynopsysOperatorImage:         deploySynopsysOperatorImage,
+			BlackduckRegistrationKey:      deployBlackduckRegistrationKey,
+			TerminationGracePeriodSeconds: deployTerminationGracePeriodSeconds,
 		}
 		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
-			log.Errorf("Error creating Horizon Deployer for Synopsys Operator: %s", err)
+			log.Errorf("Error creating Deployer for Synopsys-Operator: %s", err)
 			return nil
 		}
-		synopsysOperatorDeployer.AddReplicationController(soperatorSpec.GetOperatorReplicationController())
-		synopsysOperatorDeployer.AddService(soperatorSpec.GetOperatorService())
-		synopsysOperatorDeployer.AddConfigMap(soperatorSpec.GetOperatorConfigMap())
-		synopsysOperatorDeployer.AddServiceAccount(soperatorSpec.GetOperatorServiceAccount())
-		synopsysOperatorDeployer.AddClusterRoleBinding(soperatorSpec.GetOperatorClusterRoleBinding())
+		synopsysOperatorComponents, err := soperatorSpec.GetComponents()
+		if err != nil {
+			log.Errorf("Error creating Components for Synopsys-Operator: %s", err)
+		}
+		for _, rc := range synopsysOperatorComponents.ReplicationControllers {
+			synopsysOperatorDeployer.AddReplicationController(rc)
+		}
+		for _, svc := range synopsysOperatorComponents.Services {
+			synopsysOperatorDeployer.AddService(svc)
+		}
+		for _, cm := range synopsysOperatorComponents.ConfigMaps {
+			synopsysOperatorDeployer.AddConfigMap(cm)
+		}
+		for _, sa := range synopsysOperatorComponents.ServiceAccounts {
+			synopsysOperatorDeployer.AddServiceAccount(sa)
+		}
+		for _, crb := range synopsysOperatorComponents.ClusterRoleBindings {
+			synopsysOperatorDeployer.AddClusterRoleBinding(crb)
+		}
+		for _, cr := range synopsysOperatorComponents.ClusterRoles {
+			synopsysOperatorDeployer.AddClusterRole(cr)
+		}
+		for _, d := range synopsysOperatorComponents.Deployments {
+			synopsysOperatorDeployer.AddDeployment(d)
+		}
+		for _, s := range synopsysOperatorComponents.Secrets {
+			synopsysOperatorDeployer.AddSecret(s)
+		}
+
 		err = synopsysOperatorDeployer.Run()
 		if err != nil {
-			return fmt.Errorf("Error deploying Synopsys Operator with Horizon : %s", err)
+			log.Errorf("Error deploying Synopsys Operator: %s", err)
+			return nil
 		}
 
 		// Deploy prometheus
@@ -154,7 +181,7 @@ var deployCmd = &cobra.Command{
 		}
 		prometheusDeployer, err := deployer.NewDeployer(restconfig)
 		if err != nil {
-			log.Errorf("Error creating Horizon Deployer for Prometheus: %s", err)
+			log.Errorf("Error creating Deployer for Prometheus: %s", err)
 			return nil
 		}
 		prometheusDeployer.AddService(promtheusSpec.GetPrometheusService())
@@ -162,7 +189,7 @@ var deployCmd = &cobra.Command{
 		prometheusDeployer.AddConfigMap(promtheusSpec.GetPrometheusConfigMap())
 		err = prometheusDeployer.Run()
 		if err != nil {
-			log.Errorf("Error deploying Prometheus with Horizon : %s", err)
+			log.Errorf("Error deploying Prometheus: %s", err)
 			return nil
 		}
 
@@ -203,6 +230,7 @@ func init() {
 	deployCmd.Flags().StringVar(&deploySecretPostgresPassword, "postgres-password", deploySecretPostgresPassword, "postgres password")
 	deployCmd.Flags().StringVar(&deploySecretUserPassword, "user-password", deploySecretUserPassword, "postgres user password")
 	deployCmd.Flags().StringVar(&deploySecretBlackduckPassword, "blackduck-password", deploySecretBlackduckPassword, "blackduck password for 'sysadmin' account")
+	deployCmd.Flags().Int64VarP(&deployTerminationGracePeriodSeconds, "postgres-termination-grace-period", "t", deployTerminationGracePeriodSeconds, "termination grace period in seconds for shutting down postgres")
 
 	// Set Log Level
 	log.SetLevel(log.DebugLevel)

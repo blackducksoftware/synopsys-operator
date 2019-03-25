@@ -44,6 +44,7 @@ import (
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/api/storage/v1beta1"
@@ -60,7 +61,7 @@ import (
 
 // CreateContainer will create the container
 func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, ports []*horizonapi.PortConfig,
-	actionConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
+	actionConfig *horizonapi.ActionConfig, preStopConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
 
 	container := components.NewContainer(*config)
 
@@ -78,6 +79,11 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 
 	if actionConfig != nil {
 		container.AddPostStartAction(*actionConfig)
+	}
+
+	// Adds a PreStop if given, originally added to enable graceful pg shutdown
+	if preStopConfig != nil {
+		container.AddPreStopAction(*preStopConfig)
 	}
 
 	for _, livenessProbe := range livenessProbeConfigs {
@@ -178,13 +184,13 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 
 	for _, containerConfig := range containers {
 		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
-			containerConfig.ActionConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
+			containerConfig.ActionConfig, containerConfig.PreStopConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
 		pod.AddContainer(container)
 	}
 
 	for _, initContainerConfig := range initContainers {
 		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts,
-			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
+			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.PreStopConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
 		err := pod.AddInitContainer(initContainer)
 		if err != nil {
 			log.Printf("failed to create the init container because %+v", err)
@@ -312,10 +318,20 @@ func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (
 	return clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 }
 
+// ListSecrets will list the secret
+func ListSecrets(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.SecretList, error) {
+	return clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
 // UpdateSecret updates a secret
 func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *corev1.Secret) error {
 	_, err := clientset.CoreV1().Secrets(namespace).Update(secret)
 	return err
+}
+
+// DeleteSecret will delete the secret
+func DeleteSecret(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // ReadFromFile will read the file
@@ -329,10 +345,20 @@ func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string
 	return clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 }
 
+// ListConfigMaps will list the config map
+func ListConfigMaps(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ConfigMapList, error) {
+	return clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
 // UpdateConfigMap updates a config map
 func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *corev1.ConfigMap) error {
 	_, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
 	return err
+}
+
+// DeleteConfigMap will delete the config map
+func DeleteConfigMap(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().ConfigMaps(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // // CreateSecret will create the secret
@@ -518,12 +544,9 @@ func WaitForServiceEndpointReady(clientset *kubernetes.Clientset, namespace stri
 
 // ValidatePodsAreRunningInNamespace will validate whether the pods are running in a given namespace
 func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespace string, timeoutInSeconds int64) error {
-	pods, err := ListPods(clientset, namespace)
-	if err != nil {
-		return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
-	}
-
+	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
 	timeout := time.NewTimer(time.Duration(timeoutInSeconds) * time.Second)
+	// ticker starts and execute the task for every n intervals
 	ticker := time.NewTicker(10 * time.Second)
 	for {
 		select {
@@ -531,6 +554,12 @@ func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespac
 			ticker.Stop()
 			return fmt.Errorf("the pods weren't able to start - timing out after %d seconds", timeoutInSeconds)
 		case <-ticker.C:
+			pods, err := ListPods(clientset, namespace)
+			if err != nil {
+				timeout.Stop()
+				ticker.Stop()
+				return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
+			}
 			if ValidatePodsAreRunning(clientset, pods) {
 				timeout.Stop()
 				ticker.Stop()
@@ -726,6 +755,21 @@ func CreateServiceAccount(namespace string, name string) *components.ServiceAcco
 	return serviceAccount
 }
 
+// GetServiceAccount get a service account
+func GetServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ServiceAccount, error) {
+	return clientset.CoreV1().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
+}
+
+// ListServiceAccounts list a service account
+func ListServiceAccounts(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ServiceAccountList, error) {
+	return clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// DeleteServiceAccount delete a service account
+func DeleteServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().ServiceAccounts(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+}
+
 // CreateClusterRoleBinding creates a cluster role binding
 func CreateClusterRoleBinding(namespace string, name string, serviceAccountName string, clusterRoleAPIGroup string, clusterRoleKind string, clusterRoleName string) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
@@ -765,6 +809,26 @@ func UpdateClusterRoleBinding(clientset *kubernetes.Clientset, clusterRoleBindin
 // DeleteClusterRoleBinding delete a cluster role binding
 func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
 	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+}
+
+// IsClusterRoleBindingSubjectNamespaceExist checks whether the namespace is already exist in the subject of cluster role binding
+func IsClusterRoleBindingSubjectNamespaceExist(subjects []rbacv1.Subject, namespace string) bool {
+	for _, subject := range subjects {
+		if strings.EqualFold(subject.Namespace, namespace) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsClusterRoleBindingSubjectExist checks whether the namespace is already exist in the subject of cluster role binding
+func IsClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace string, name string) bool {
+	for _, subject := range subjects {
+		if strings.EqualFold(subject.Namespace, namespace) && strings.EqualFold(subject.Name, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetClusterRole get a cluster role
@@ -912,7 +976,7 @@ func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old appsv1.Depl
 }
 
 // PatchDeployment patch a deployment
-func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1.Deployment) error {
+func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1beta2.Deployment) error {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return err

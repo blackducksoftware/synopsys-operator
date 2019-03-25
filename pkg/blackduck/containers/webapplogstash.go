@@ -30,7 +30,8 @@ import (
 // GetWebappLogstashDeployment will return the webapp and logstash deployment
 func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationController {
 	webappEnvs := c.allConfigEnv
-	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: "webapp-mem", FromName: "hub-config-resources"})
+	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, NameOrPrefix: "HUB_MAX_MEMORY",
+		KeyOrVal: "webapp-mem", FromName: "blackduck-config-resources"})
 
 	webappVolumeMounts := c.getWebappVolumeMounts()
 
