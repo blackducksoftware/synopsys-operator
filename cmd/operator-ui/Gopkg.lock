@@ -48,8 +48,8 @@
   revision = "7868040f1166f40a1ce6f9612def36661cde2b61"
 
 [[projects]]
-  branch = "master"
-  digest = "1:f08c78d09850f866191415796317b0c36ef425ea23137563f3df8b480448ca4b"
+  branch = "jd-version2"
+  digest = "1:22cbf243bff61ba916fc8932dc84fd600bd4f63dce9fbda07567ecc4900516cb"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
@@ -60,11 +60,19 @@
     "pkg/api/opssight",
     "pkg/api/opssight/v1",
     "pkg/apps",
+    "pkg/apps/blackduck",
+    "pkg/apps/blackduck/v1",
+    "pkg/apps/blackduck/v1/containers",
+    "pkg/apps/database",
+    "pkg/apps/database/postgres",
     "pkg/blackduck",
     "pkg/blackduck/client/clientset/versioned",
     "pkg/blackduck/client/clientset/versioned/scheme",
     "pkg/blackduck/client/clientset/versioned/typed/blackduck/v1",
-    "pkg/blackduck/containers",
+    "pkg/blackduck/client/informers/externalversions/blackduck/v1",
+    "pkg/blackduck/client/informers/externalversions/internalinterfaces",
+    "pkg/blackduck/client/listers/blackduck/v1",
+    "pkg/blackduck/plugins",
     "pkg/blackduck/util",
     "pkg/crds",
     "pkg/opssight/client/clientset/versioned",
@@ -74,7 +82,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "7ca4a374ce6085a3ca7287792a1a3965e5e7bc61"
+  revision = "5eb31045d87d48567c689a3836a3fb8c0daeeed5"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"

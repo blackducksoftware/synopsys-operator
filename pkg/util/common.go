@@ -161,7 +161,7 @@ func CreateSecretVolume(volumeName string, secretName string, defaultMode int) (
 }
 
 // CreatePod will create the pod
-func CreatePod(name string, serviceAccount string, volumes []*components.Volume, containers []*Container, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.Pod {
+func CreatePod(name string, serviceAccount string, volumes []*components.Volume, containers []*Container, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string) *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: name,
 	})
@@ -174,10 +174,7 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 		pod.AddVolume(volume)
 	}
 
-	pod.AddLabels(map[string]string{
-		"app":  name,
-		"tier": name,
-	})
+	pod.AddLabels(labels)
 
 	for _, affinityConfig := range affinityConfigs {
 		pod.AddAffinity(affinityConfig)
@@ -214,32 +211,30 @@ func CreateDeployment(deploymentConfig *horizonapi.DeploymentConfig, pod *compon
 }
 
 // CreateDeploymentFromContainer will create a deployment with multiple containers inside a pod
-func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.Deployment {
-	pod := CreatePod(deploymentConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs)
+func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string) *components.Deployment {
+	pod := CreatePod(deploymentConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs, labels)
 	deployment := CreateDeployment(deploymentConfig, pod)
 	return deployment
 }
 
 // CreateReplicationController will create a replication controller
-func CreateReplicationController(replicationControllerConfig *horizonapi.ReplicationControllerConfig, pod *components.Pod) *components.ReplicationController {
+func CreateReplicationController(replicationControllerConfig *horizonapi.ReplicationControllerConfig, pod *components.Pod, labels map[string]string, labelSelector map[string]string) *components.ReplicationController {
 	rc := components.NewReplicationController(*replicationControllerConfig)
-	rc.AddLabelSelectors(map[string]string{
-		"app":  replicationControllerConfig.Name,
-		"tier": replicationControllerConfig.Name,
-	})
+	rc.AddLabelSelectors(labelSelector)
+	rc.AddLabels(labels)
 	rc.AddPod(pod)
 	return rc
 }
 
 // CreateReplicationControllerFromContainer will create a replication controller with multiple containers inside a pod
-func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig) *components.ReplicationController {
-	pod := CreatePod(replicationControllerConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs)
-	rc := CreateReplicationController(replicationControllerConfig, pod)
+func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string, labelSelector map[string]string) *components.ReplicationController {
+	pod := CreatePod(replicationControllerConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs, labels)
+	rc := CreateReplicationController(replicationControllerConfig, pod, labels, labelSelector)
 	return rc
 }
 
 // CreateService will create the service
-func CreateService(name string, label string, namespace string, port string, target string, serviceType horizonapi.ClusterIPServiceType) *components.Service {
+func CreateService(name string, selectLabel map[string]string, namespace string, port string, target string, serviceType horizonapi.ClusterIPServiceType, label map[string]string) *components.Service {
 	svcConfig := horizonapi.ServiceConfig{
 		Name:          name,
 		Namespace:     namespace,
@@ -256,7 +251,8 @@ func CreateService(name string, label string, namespace string, port string, tar
 	}
 
 	mySvc.AddPort(*myPort)
-	mySvc.AddSelectors(map[string]string{"app": label})
+	mySvc.AddSelectors(selectLabel)
+	mySvc.AddLabels(label)
 
 	return mySvc
 }

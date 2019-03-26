@@ -2,10 +2,11 @@ package actions
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
 	"strings"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -156,6 +157,13 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckv1.Blackduck)
 	} else {
 		bd.View.ContainerTags = images
 	}
+
+	kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
+		kubeConfig, err = newKubeClientFromOutsideCluster()
+	}
+	bd.View.SupportedVersions = apps.NewApp(nil, kubeConfig).Blackduck().Versions()
 	return nil
 }
 

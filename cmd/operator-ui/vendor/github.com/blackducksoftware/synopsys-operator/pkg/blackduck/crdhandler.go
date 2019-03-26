@@ -26,6 +26,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -115,20 +116,23 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 				hubVersion := hubutils.GetHubVersion(hubv2.Spec.Environs)
 				hubv2.View.Version = hubVersion
 
-				isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(hubv2.Spec.Environs)
+				//isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(hubv2.Spec.Environs)
 
-				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
-				ip, pvc, updateError, err := hubCreator.CreateHub(hubv2)
+				//hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
+				//ip, pvc, updateError, err := hubCreator.CreateHub(hubv2)
+				//if err != nil {
+				//	log.Errorf("unable to create hub for %s due to %+v", hubv2.Name, err)
+				//}
+
+				app := apps.NewApp(h.config, h.kubeConfig)
+				err = app.Blackduck().Create(hubv2)
+
+				//hubv2.Status.IP = ip
+				//if len(pvc) > 0 {
+				//	hubv2.Status.PVCVolumeName = pvc
+				//}
+
 				if err != nil {
-					log.Errorf("unable to create hub for %s due to %+v", hubv2.Name, err)
-				}
-
-				hubv2.Status.IP = ip
-				if len(pvc) > 0 {
-					hubv2.Status.PVCVolumeName = pvc
-				}
-
-				if updateError {
 					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, hubv2)
 				} else {
 					hubv2.Spec.DesiredState = "Running"
@@ -155,8 +159,6 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
-	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, false)
-
 	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
 	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("blackducks.synopsys.com", v1.GetOptions{})
 	if err != nil || crd.DeletionTimestamp != nil {
@@ -166,7 +168,8 @@ func (h *Handler) ObjectDeleted(name string) {
 	}
 
 	// Voluntary deletion. The CRD still exists but the Blackduck resource has been deleted
-	hubCreator.DeleteHub(name)
+	app := apps.NewApp(h.config, h.kubeConfig)
+	app.Blackduck().Delete(name)
 
 	// h.callHubFederator()
 
@@ -181,42 +184,42 @@ func (h *Handler) ObjectDeleted(name string) {
 
 // ObjectUpdated will be called for update hub events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	blackduck, ok := objNew.(*blackduckv1.Blackduck)
-	if !ok {
-		log.Error("Unable to cast Hub object")
-		return
-	}
-	state, err := h.getCurrentState(blackduck.Spec)
-	if err != nil {
-		log.Errorf("Couldn't get the Hub state of %s: %v", blackduck.Name, err)
-		return
-	}
-
-	if !strings.EqualFold(string(state), blackduck.Spec.DesiredState) {
-		isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(blackduck.Spec.Environs)
-		hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
-		hubContainerFlavor, err := hubCreator.getContainersFlavor(blackduck)
-		if err != nil {
-			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
-		}
-		switch blackduck.Spec.DesiredState {
-		case "Running":
-			log.Infof("Starting Hub: %s", blackduck.Name)
-			if err := hubCreator.Start(blackduck, hubContainerFlavor); err != nil {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
-			} else {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
-			}
-
-		case "Stopped":
-			log.Infof("Stopping Hub: %s", blackduck.Name)
-			if err := hubCreator.Stop(&blackduck.Spec, hubContainerFlavor); err != nil {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
-			} else {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
-			}
-		}
-	}
+	//blackduck, ok := objNew.(*blackduckv1.Blackduck)
+	//if !ok {
+	//	log.Error("Unable to cast Hub object")
+	//	return
+	//}
+	//state, err := h.getCurrentState(blackduck.Spec)
+	//if err != nil {
+	//	log.Errorf("Couldn't get the Hub state of %s: %v", blackduck.Name, err)
+	//	return
+	//}
+	//
+	//if !strings.EqualFold(string(state), blackduck.Spec.DesiredState) {
+	//	isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(blackduck.Spec.Environs)
+	//	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
+	//	hubContainerFlavor, err := hubCreator.getContainersFlavor(blackduck)
+	//	if err != nil {
+	//		hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
+	//	}
+	//	switch blackduck.Spec.DesiredState {
+	//	case "Running":
+	//		log.Infof("Starting Hub: %s", blackduck.Name)
+	//		if err := hubCreator.Start(blackduck, hubContainerFlavor); err != nil {
+	//			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
+	//		} else {
+	//			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
+	//		}
+	//
+	//	case "Stopped":
+	//		log.Infof("Stopping Hub: %s", blackduck.Name)
+	//		if err := hubCreator.Stop(&blackduck.Spec, hubContainerFlavor); err != nil {
+	//			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
+	//		} else {
+	//			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
+	//		}
+	//	}
+	//}
 }
 
 func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {

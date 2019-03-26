@@ -2,6 +2,7 @@
 <div class="new-container">
   <%= f.InputTag("Spec.Namespace", {value: blackduck.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
   <%= f.InputTag("Spec.LicenseKey", {value: blackduck.Spec.LicenseKey, label: "License Key"}) %>
+  <%= f.SelectTag("Spec.Version", {options: blackduck.View.SupportedVersions, value: blackduck.Spec.Version, label: "Version"}) %>
   <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: blackduck.Spec.Size, label: "Size"}) %>
   <%= f.InputTag("Spec.Type", {value: blackduck.Spec.Type, label: "Blackduck Type (OpsSight specific)"}) %>
   <%= f.CheckboxTag("Spec.LivenessProbes", {value: blackduck.Spec.LivenessProbes, label: "Liveness Probes"}) %>
