@@ -145,11 +145,11 @@ func (c *ConfigMap) patch(cm interface{}, isPatched bool) (bool, error) {
 
 	if (!reflect.DeepEqual(newConfigMap.Data, oldConfigMap.Data) || !reflect.DeepEqual(newConfigMap.BinaryData, oldConfigMap.BinaryData)) && !c.config.dryRun {
 		log.Infof("updating the config map %s in %s namespace", configMapName, c.config.namespace)
-		cm, err := c.get(configMapName)
+		getCm, err := c.get(configMapName)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to get the config map %s in namespace %s", configMapName, c.config.namespace)
 		}
-		oldLatestConfigMap := cm.(*corev1.ConfigMap)
+		oldLatestConfigMap := getCm.(*corev1.ConfigMap)
 		oldLatestConfigMap.Data = newConfigMap.Data
 		oldLatestConfigMap.BinaryData = newConfigMap.BinaryData
 		err = util.UpdateConfigMap(c.config.kubeClient, c.config.namespace, oldLatestConfigMap)
