@@ -346,20 +346,21 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec, hubContainer
 		pvcName = "blackduck-postgres"
 	}
 	postgres := apps.Postgres{
-		Namespace:              createHub.Namespace,
-		PVCName:                pvcName,
-		Port:                   containers.PostgresPort,
-		Image:                  postgresImage,
-		MinCPU:                 hubContainerFlavor.PostgresCPULimit,
-		MaxCPU:                 "",
-		MinMemory:              hubContainerFlavor.PostgresMemoryLimit,
-		MaxMemory:              "",
-		Database:               "blackduck",
-		User:                   "blackduck",
-		PasswordSecretName:     "db-creds",
-		UserPasswordSecretKey:  "HUB_POSTGRES_USER_PASSWORD_FILE",
-		AdminPasswordSecretKey: "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
-		EnvConfigMapRefs:       []string{"blackduck-db-config", "blackduck-db-config-granular"},
+		Namespace:                     createHub.Namespace,
+		PVCName:                       pvcName,
+		Port:                          containers.PostgresPort,
+		Image:                         postgresImage,
+		MinCPU:                        hubContainerFlavor.PostgresCPULimit,
+		MaxCPU:                        "",
+		MinMemory:                     hubContainerFlavor.PostgresMemoryLimit,
+		MaxMemory:                     "",
+		Database:                      "blackduck",
+		User:                          "blackduck",
+		PasswordSecretName:            "db-creds",
+		UserPasswordSecretKey:         "HUB_POSTGRES_USER_PASSWORD_FILE",
+		AdminPasswordSecretKey:        "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+		EnvConfigMapRefs:              []string{"blackduck-db-config", "blackduck-db-config-granular"},
+		TerminationGracePeriodSeconds: hc.Config.TerminationGracePeriodSeconds,
 	}
 	log.Debugf("postgres: %+v", postgres)
 

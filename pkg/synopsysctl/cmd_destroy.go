@@ -41,7 +41,7 @@ var destroyCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
+			return fmt.Errorf("this command accepts 0 arguments")
 		}
 		return nil
 	},
@@ -65,8 +65,7 @@ var destroyCmd = &cobra.Command{
 			"delete crd hubs.synopsys.com",
 			"delete crd opssights.synopsys.com",
 			"delete clusterrolebinding synopsys-operator-admin",
-			"delete clusterrole skyfire",
-			"delete clusterrole pod-perceiver",
+			"delete clusterrole synopsys-operator-admin",
 		}
 
 		for cmd := range cleanCommands {

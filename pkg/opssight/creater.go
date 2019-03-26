@@ -201,7 +201,7 @@ func (ac *Creater) StopOpsSight(opssight *opssightapi.OpsSightSpec) error {
 	rcl, err := util.ListReplicationControllers(ac.kubeClient, opssight.Namespace, "app=opssight")
 	for _, rc := range rcl.Items {
 		if util.Int32ToInt(rc.Spec.Replicas) > 0 {
-			err := util.PatchReplicationControllerForReplicas(ac.kubeClient, rc, 0)
+			_, err := util.PatchReplicationControllerForReplicas(ac.kubeClient, &rc, util.IntToInt32(0))
 			if err != nil {
 				return fmt.Errorf("unable to patch %s replication controller with replicas %d in %s namespace because %+v", rc.Name, 0, opssight.Namespace, err)
 			}
