@@ -25,22 +25,55 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	log "github.com/sirupsen/logrus"
 )
 
-// DetermineClusterClients returns bool values as true
-// if it can find kube/oc in the path
-func DetermineClusterClients() (bool, bool) {
-	kube := false
+// DetermineClusterClients returns bool values for which client
+// to use. They will never both be true
+func DetermineClusterClients() (kube, openshift bool) {
 	openshift := false
+	kube := false
+
+	kubectlPath := false
+	ocPath := false
 	_, exists := exec.LookPath("kubectl")
 	if exists == nil {
-		kube = true
+		kubectlPath = true
 	}
 	_, ocexists := exec.LookPath("oc")
 	if ocexists == nil {
-		openshift = true
+		ocPath = true
 	}
-	return kube, openshift
+
+	// Add Openshift rules
+	openshiftTest := false
+	restConfig, err := protoform.GetKubeConfig()
+	if err != nil {
+		log.Errorf("Error getting Kube Rest Config: %s", err)
+	}
+	routeClient, err := routeclient.NewForConfig(restConfig) // kube doesn't have a routeclient
+	if routeClient != nil && err == nil {                    // openshift: have a routeClient and no error
+		openshiftTest = true
+	} else if err != nil { // Kube or Error
+		openshiftTest = false
+	}
+
+	if ocPath && openshiftTest { // if oc exists and the cluster is openshift
+		return false, true
+	}
+	if kubectlPath && !openshiftTest { // if kubectl exists and it isn't openshift
+		return true, false
+	}
+	if ocPath && !kubectlPath && !openshiftTest { // If oc exists, kubectl doesn't exist, and it isn't openshift
+		return false, true
+	}
+	if kubectlPath && !ocPath && openshiftTest { // if kubectl exists, oc doesn't exist, and it is openshift
+		return true, false
+	}
+	return false, false // neither client exists
 }
 
 // RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
