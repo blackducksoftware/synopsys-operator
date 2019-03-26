@@ -126,5 +126,22 @@ func (s *ServiceAccount) remove() error {
 
 // patch patches the service account
 func (s *ServiceAccount) patch(sa interface{}, isPatched bool) (bool, error) {
+	// serviceAccount := sa.(*components.ServiceAccount)
+	// serviceAccountName := serviceAccount.GetName()
+	// oldserviceAccount := s.oldServiceAccounts[serviceAccountName]
+	// newServiceAccount := s.newServiceAccounts[serviceAccountName]
+	// if !reflect.DeepEqual(oldserviceAccount.ImagePullSecrets, newServiceAccount.ImagePullSecrets) && !s.config.dryRun {
+	// 	log.Infof("updating the service account %s for %s namespace", serviceAccountName, s.config.namespace)
+	// 	getSa, err := s.get(serviceAccountName)
+	// 	if err != nil {
+	// 		return false, errors.Annotatef(err, "unable to get the service account %s for namespace %s", serviceAccountName, s.config.namespace)
+	// 	}
+	// 	oldLatestServiceAccount := getSa.(*corev1.ServiceAccount)
+	// 	oldLatestServiceAccount.ImagePullSecrets = newServiceAccount.ImagePullSecrets
+	// 	_, err = util.UpdateServiceAccount(s.config.kubeClient, s.config.namespace, oldLatestServiceAccount)
+	// 	if err != nil {
+	// 		return false, errors.Annotatef(err, "unable to update the service account %s for namespace %s", serviceAccountName, s.config.namespace)
+	// 	}
+	// }
 	return false, nil
 }

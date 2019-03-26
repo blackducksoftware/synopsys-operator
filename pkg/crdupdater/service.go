@@ -22,6 +22,8 @@ under the License.
 package crdupdater
 
 import (
+	"reflect"
+
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
@@ -126,5 +128,22 @@ func (s *Service) remove() error {
 
 // patch patches the service
 func (s *Service) patch(svc interface{}, isPatched bool) (bool, error) {
+	service := svc.(*components.Service)
+	serviceName := service.GetName()
+	oldService := s.oldServices[serviceName]
+	newService := s.newServices[serviceName]
+	if !reflect.DeepEqual(newService.Spec.Ports, oldService.Spec.Ports) && !s.config.dryRun {
+		log.Infof("updating the service %s in %s namespace", serviceName, s.config.namespace)
+		getSvc, err := s.get(serviceName)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to get the service %s in namespace %s", serviceName, s.config.namespace)
+		}
+		oldLatestService := getSvc.(*corev1.Service)
+		oldLatestService.Spec.Ports = newService.Spec.Ports
+		_, err = util.UpdateService(s.config.kubeClient, s.config.namespace, oldLatestService)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to update the service %s in namespace %s", serviceName, s.config.namespace)
+		}
+	}
 	return false, nil
 }
