@@ -111,40 +111,7 @@ var deployCmd = &cobra.Command{
 			SecretBlackduckPassword:       deploySecretBlackduckPassword,
 			TerminationGracePeriodSeconds: deployTerminationGracePeriodSeconds,
 		}
-		synopsysOperatorDeployer, err := deployer.NewDeployer(restconfig)
-		if err != nil {
-			log.Errorf("Error creating Deployer for Synopsys-Operator: %s", err)
-			return nil
-		}
-		synopsysOperatorComponents, err := soperatorSpec.GetComponents()
-		if err != nil {
-			log.Errorf("Error creating Components for Synopsys-Operator: %s", err)
-		}
-		for _, rc := range synopsysOperatorComponents.ReplicationControllers {
-			synopsysOperatorDeployer.AddReplicationController(rc)
-		}
-		for _, svc := range synopsysOperatorComponents.Services {
-			synopsysOperatorDeployer.AddService(svc)
-		}
-		for _, cm := range synopsysOperatorComponents.ConfigMaps {
-			synopsysOperatorDeployer.AddConfigMap(cm)
-		}
-		for _, sa := range synopsysOperatorComponents.ServiceAccounts {
-			synopsysOperatorDeployer.AddServiceAccount(sa)
-		}
-		for _, crb := range synopsysOperatorComponents.ClusterRoleBindings {
-			synopsysOperatorDeployer.AddClusterRoleBinding(crb)
-		}
-		for _, cr := range synopsysOperatorComponents.ClusterRoles {
-			synopsysOperatorDeployer.AddClusterRole(cr)
-		}
-		for _, d := range synopsysOperatorComponents.Deployments {
-			synopsysOperatorDeployer.AddDeployment(d)
-		}
-		for _, s := range synopsysOperatorComponents.Secrets {
-			synopsysOperatorDeployer.AddSecret(s)
-		}
-		err = synopsysOperatorDeployer.Run()
+		err = soperator.UpdateSOperatorComponents(restconfig, kubeClient, deployNamespace, &soperatorSpec)
 		if err != nil {
 			log.Errorf("Error deploying Synopsys Operator: %s", err)
 			return nil
@@ -155,15 +122,7 @@ var deployCmd = &cobra.Command{
 			Namespace:       deployNamespace,
 			PrometheusImage: deployPrometheusImage,
 		}
-		prometheusDeployer, err := deployer.NewDeployer(restconfig)
-		if err != nil {
-			log.Errorf("Error creating Deployer for Prometheus: %s", err)
-			return nil
-		}
-		prometheusDeployer.AddService(promtheusSpec.GetPrometheusService())
-		prometheusDeployer.AddDeployment(promtheusSpec.GetPrometheusDeployment())
-		prometheusDeployer.AddConfigMap(promtheusSpec.GetPrometheusConfigMap())
-		err = prometheusDeployer.Run()
+		err = soperator.UpdatePrometheus(restconfig, kubeClient, deployNamespace, &promtheusSpec)
 		if err != nil {
 			log.Errorf("Error deploying Prometheus: %s", err)
 			return nil
