@@ -26,16 +26,25 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
+
+	"flag"
+	"path/filepath"
+
+	"github.com/juju/errors"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/util/homedir" //_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 // DetermineClusterClients returns bool values for which client
 // to use. They will never both be true
 func DetermineClusterClients() (kube, openshift bool) {
-	openshift := false
-	kube := false
+	openshift = false
+	kube = false
 
 	kubectlPath := false
 	ocPath := false
@@ -50,7 +59,7 @@ func DetermineClusterClients() (kube, openshift bool) {
 
 	// Add Openshift rules
 	openshiftTest := false
-	restConfig, err := protoform.GetKubeConfig()
+	restConfig, err := GetKubeConfig()
 	if err != nil {
 		log.Errorf("Error getting Kube Rest Config: %s", err)
 	}
@@ -62,16 +71,20 @@ func DetermineClusterClients() (kube, openshift bool) {
 	}
 
 	if ocPath && openshiftTest { // if oc exists and the cluster is openshift
+		log.Debugf("oc exists and the cluster is openshift")
 		return false, true
 	}
 	if kubectlPath && !openshiftTest { // if kubectl exists and it isn't openshift
+		log.Debugf("kubectl exists and it isn't openshift")
+		return true, false
+	}
+	if kubectlPath && !ocPath && openshiftTest { // if kubectl exists, oc doesn't exist, and it is openshift
+		log.Debugf("kubectl exists, oc doesn't exist, and it is openshift")
 		return true, false
 	}
 	if ocPath && !kubectlPath && !openshiftTest { // If oc exists, kubectl doesn't exist, and it isn't openshift
+		log.Debugf("oc exists, kubectl doesn't exist, and it isn't openshift")
 		return false, true
-	}
-	if kubectlPath && !ocPath && openshiftTest { // if kubectl exists, oc doesn't exist, and it is openshift
-		return true, false
 	}
 	return false, false // neither client exists
 }
@@ -90,8 +103,10 @@ func RunKubeCmd(args ...string) (string, error) {
 		args[0] = "status"
 	}
 	if openshift {
+		log.Debugf("Using oc client for KubeCmd")
 		cmd2 = exec.Command("oc", args...)
 	} else if kube {
+		log.Debugf("Using kubectl client for KubeCmd")
 		cmd2 = exec.Command("kubectl", args...)
 	} else {
 		return "", fmt.Errorf("Could not determine if openshift or kube")
@@ -130,4 +145,61 @@ func RunKubeEditorCmd(args ...string) error {
 	}
 	//time.Sleep(1 * time.Second) TODO why did Jay put this here???
 	return nil
+}
+
+// GetKubeConfig  will return the kube config
+func GetKubeConfig() (*rest.Config, error) {
+	log.Debugf("Getting Kube Rest Config\n")
+	var err error
+	var kubeConfig *rest.Config
+	// creates the in-cluster config
+	kubeConfig, err = rest.InClusterConfig()
+	if err != nil {
+		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %+v", err)
+		// Determine Config Paths
+		var kubeconfigpath = ""
+		if home := homeDir(); home != "" {
+			kubeconfigpath = filepath.Join(home, ".kube", "config")
+		}
+
+		kubeConfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			&clientcmd.ClientConfigLoadingRules{
+				ExplicitPath: kubeconfigpath,
+			},
+			&clientcmd.ConfigOverrides{
+				ClusterInfo: clientcmdapi.Cluster{
+					Server: "",
+				},
+			}).ClientConfig()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return kubeConfig, nil
+}
+
+// homeDir determines the user's home directory path
+func homeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
+}
+
+// GetKubeClientSet will return the kube clientset
+func GetKubeClientSet(kubeConfig *rest.Config) (*kubernetes.Clientset, error) {
+	return kubernetes.NewForConfig(kubeConfig)
+}
+
+func newKubeClientFromOutsideCluster() (*rest.Config, error) {
+	var kubeConfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeConfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeConfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
+	return config, errors.Annotate(err, "error creating default client config")
 }

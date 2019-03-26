@@ -21,7 +21,9 @@ under the License.
 
 package main
 
-import "github.com/blackducksoftware/synopsys-operator/pkg/synopsysctl"
+import (
+	"github.com/blackducksoftware/synopsys-operator/pkg/synopsysctl"
+)
 
 func main() {
 	synopsysctl.Execute()
