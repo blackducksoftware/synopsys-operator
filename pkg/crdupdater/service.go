@@ -132,7 +132,9 @@ func (s *Service) patch(svc interface{}, isPatched bool) (bool, error) {
 	serviceName := service.GetName()
 	oldService := s.oldServices[serviceName]
 	newService := s.newServices[serviceName]
-	if !reflect.DeepEqual(newService.Spec.Ports, oldService.Spec.Ports) && !s.config.dryRun {
+	if (!reflect.DeepEqual(newService.Spec.Ports, oldService.Spec.Ports) ||
+		!reflect.DeepEqual(newService.Spec.Selector, oldService.Spec.Selector) ||
+		!reflect.DeepEqual(newService.Spec.Type, oldService.Spec.Type)) && !s.config.dryRun {
 		log.Infof("updating the service %s in %s namespace", serviceName, s.config.namespace)
 		getSvc, err := s.get(serviceName)
 		if err != nil {
@@ -140,6 +142,8 @@ func (s *Service) patch(svc interface{}, isPatched bool) (bool, error) {
 		}
 		oldLatestService := getSvc.(*corev1.Service)
 		oldLatestService.Spec.Ports = newService.Spec.Ports
+		oldLatestService.Spec.Selector = newService.Spec.Selector
+		oldLatestService.Spec.Type = newService.Spec.Type
 		_, err = util.UpdateService(s.config.kubeClient, s.config.namespace, oldLatestService)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the service %s in namespace %s", serviceName, s.config.namespace)
