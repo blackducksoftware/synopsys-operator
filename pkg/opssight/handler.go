@@ -96,7 +96,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 
 func (h *Handler) handleObjectCreated(obj interface{}) error {
 	recordEvent("objectCreated")
-	log.Debugf("objectCreated: %+v", obj)
+	// log.Debugf("objectCreated: %+v", obj)
 	opssight, ok := obj.(*opssightapi.OpsSight)
 	if !ok {
 		recordError("unable to cast opssight object")
@@ -154,7 +154,7 @@ func (h *Handler) ObjectDeleted(name string) {
 // ObjectUpdated will be called for update opssight events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	recordEvent("objectUpdated")
-	log.Debugf("objectUpdated: %+v", objNew)
+	// log.Debugf("objectUpdated: %+v", objNew)
 	opssight, ok := objNew.(*opssightapi.OpsSight)
 	if !ok {
 		recordError("unable to cast opssight object")
