@@ -49,15 +49,13 @@ var destroyCmd = &cobra.Command{
 		// Get the namespace of the Synopsys-Operator
 		destroyNamespace, err := soperator.GetOperatorNamespace()
 		if err != nil {
-			log.Errorf("Error finding Synopsys-Operator: %s", err)
-			return nil
+			log.Warnf("Error finding Synopsys-Operator: %s", err)
 		}
 		log.Debugf("Destroying the Synopsys-Operator: %s\n", destroyNamespace)
 		// Delete the namespace
 		out, err := util.RunKubeCmd("delete", "ns", destroyNamespace)
 		if err != nil {
-			log.Errorf("Could not delete %s - %s", destroyNamespace, out)
-			return nil
+			log.Warnf("Could not delete %s - %s", destroyNamespace, out)
 		}
 		cleanCommands := [...]string{
 			"delete crd alerts.synopsys.com",
