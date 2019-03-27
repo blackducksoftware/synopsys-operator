@@ -40,7 +40,7 @@ import (
 
 // GetBlackduckVersionsToRemove finds all Blackducks with a different version, returns their specs with the new version
 func GetBlackduckVersionsToRemove(blackduckClient *blackduckclientset.Clientset, newVersion string, oldCRDName string) ([]blackduckv1.Blackduck, error) {
-	log.Debugf("Collecting all Blackducks of version: %s", newVersion)
+	log.Debugf("Collecting all Blackducks that are not version: %s", newVersion)
 	currCRDs, err := operatorutil.GetBlackducks(blackduckClient)
 	if err != nil {
 		return nil, fmt.Errorf("%s", err)
@@ -58,7 +58,7 @@ func GetBlackduckVersionsToRemove(blackduckClient *blackduckclientset.Clientset,
 
 // GetOpsSightVersionsToRemove finds all OpsSights with a different version, returns their specs with the new version
 func GetOpsSightVersionsToRemove(opssightClient *opssightclientset.Clientset, newVersion string, oldCRDName string) ([]opssightv1.OpsSight, error) {
-	log.Debugf("Collecting all OpsSights of version: %s", newVersion)
+	log.Debugf("Collecting all OpsSights that are not version: %s", newVersion)
 	currCRDs, err := operatorutil.GetOpsSights(opssightClient)
 	if err != nil {
 		return nil, fmt.Errorf("%s", err)
@@ -76,7 +76,7 @@ func GetOpsSightVersionsToRemove(opssightClient *opssightclientset.Clientset, ne
 
 // GetAlertVersionsToRemove finds all Alerts with a different version, returns their specs with the new version
 func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion string, oldCRDName string) ([]alertv1.Alert, error) {
-	log.Debugf("Collecting all Alerts of version: %s", newVersion)
+	log.Debugf("Collecting all Alerts that are not version: %s", newVersion)
 	currCRDs, err := operatorutil.GetAlerts(alertClient)
 	if err != nil {
 		return nil, fmt.Errorf("%s", err)

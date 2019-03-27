@@ -65,6 +65,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 		if err != nil {
 			return fmt.Errorf("%s", out)
 		}
+		log.Debugf("Updating %d Black Ducks", len(oldBlackducks))
 	}
 	var oldOpsSights = []opssightv1.OpsSight{}
 	if newCrdData.OpsSight.APIVersion != currCrdData.OpsSight.APIVersion {
@@ -76,6 +77,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 		if err != nil {
 			return fmt.Errorf("%s", out)
 		}
+		log.Debugf("Updating %d OpsSights", len(oldOpsSights))
 	}
 	var oldAlerts = []alertv1.Alert{}
 	if newCrdData.Alert.APIVersion != currCrdData.Alert.APIVersion {
@@ -87,6 +89,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 		if err != nil {
 			return fmt.Errorf("%s", out)
 		}
+		log.Debugf("Updating %d Alerts", len(oldAlerts))
 	}
 
 	// Update the Synopsys-Operator's Components
