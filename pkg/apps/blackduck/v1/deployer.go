@@ -122,8 +122,12 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 	componentList.Services = append(componentList.Services, containerCreater.GetWebAppService())
 	componentList.Services = append(componentList.Services, containerCreater.GetLogStashService())
 
+	// Service account - https://github.com/blackducksoftware/synopsys-operator/issues/95
+	//componentList.ServiceAccounts= append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
+	//componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
+
 	// TODO fix this
-	if hc.isBinaryAnalysisEnabled {
+	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Upload cache
 		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetUploadCacheDeployment())
 		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())

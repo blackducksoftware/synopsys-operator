@@ -65,8 +65,8 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 	}
 
 	creaters := []Creater{
-		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient, false),
-		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient, false),
+		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
+		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
 	}
 
 	return &Blackduck{

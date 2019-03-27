@@ -7,10 +7,14 @@ import (
 
 // GetServiceAccount will return the service account
 func (c *Creater) GetServiceAccount() *components.ServiceAccount {
-	return components.NewServiceAccount(horizonapi.ServiceAccountConfig{
+	svc := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		Name:      c.hubSpec.Namespace,
 		Namespace: c.hubSpec.Namespace,
 	})
+
+	svc.AddLabels(c.GetVersionLabel("serviceAccount"))
+
+	return svc
 }
 
 // GetClusterRoleBinding will return the cluster role binding
@@ -30,6 +34,8 @@ func (c *Creater) GetClusterRoleBinding() *components.ClusterRoleBinding {
 		Kind:     "ClusterRole",
 		Name:     "synopsys-operator-admin",
 	})
+
+	clusterRoleBinding.AddLabels(c.GetVersionLabel("clusterRoleBinding"))
 
 	return clusterRoleBinding
 }

@@ -191,7 +191,7 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.PreStopConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
 		err := pod.AddInitContainer(initContainer)
 		if err != nil {
-			log.Printf("failed to create the init container because %+v", err)
+			log.Printf("failed to create the init container for pod %s because %+v", name, err)
 		}
 	}
 
@@ -258,7 +258,7 @@ func CreateService(name string, selectLabel map[string]string, namespace string,
 }
 
 // CreateServiceWithMultiplePort will create the service with multiple port
-func CreateServiceWithMultiplePort(name string, label string, namespace string, ports []string, serviceType horizonapi.ClusterIPServiceType) *components.Service {
+func CreateServiceWithMultiplePort(name string, label map[string]string, namespace string, ports []string, serviceType horizonapi.ClusterIPServiceType, selectLabel map[string]string) *components.Service {
 	svcConfig := horizonapi.ServiceConfig{
 		Name:          name,
 		Namespace:     namespace,
@@ -278,7 +278,8 @@ func CreateServiceWithMultiplePort(name string, label string, namespace string, 
 		mySvc.AddPort(*myPort)
 	}
 
-	mySvc.AddSelectors(map[string]string{"app": label})
+	mySvc.AddSelectors(selectLabel)
+	mySvc.AddLabels(label)
 
 	return mySvc
 }

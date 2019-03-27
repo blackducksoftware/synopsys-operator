@@ -57,20 +57,19 @@ import (
 
 // Creater will store the configuration to create the Blackduck
 type Creater struct {
-	Config                  *protoform.Config
-	KubeConfig              *rest.Config
-	KubeClient              *kubernetes.Clientset
-	BlackduckClient         *blackduckclientset.Clientset
-	osSecurityClient        *securityclient.SecurityV1Client
-	routeClient             *routeclient.RouteV1Client
-	isBinaryAnalysisEnabled bool
+	Config           *protoform.Config
+	KubeConfig       *rest.Config
+	KubeClient       *kubernetes.Clientset
+	BlackduckClient  *blackduckclientset.Clientset
+	osSecurityClient *securityclient.SecurityV1Client
+	routeClient      *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
-	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, isBinaryAnalysisEnabled bool) *Creater {
+	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, BlackduckClient: hubClient, osSecurityClient: osSecurityClient,
-		routeClient: routeClient, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
+		routeClient: routeClient}
 }
 
 // Ensure will ensure the instance is correctly deployed
@@ -421,4 +420,20 @@ func (hc *Creater) autoRegisterHub(bdspec *v1.BlackduckSpec) error {
 		}
 	}
 	return fmt.Errorf("unable to register the blackduck %s", bdspec.Namespace)
+}
+
+func (hc *Creater) isBinaryAnalysisEnabled(bdspec *v1.BlackduckSpec) bool {
+	for _, value := range bdspec.Environs {
+		if strings.Contains(value, "USE_BINARY_UPLOADS") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				mapValue := strings.Trim(values[1], " ")
+				if strings.EqualFold(mapValue, "1") {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
 }
