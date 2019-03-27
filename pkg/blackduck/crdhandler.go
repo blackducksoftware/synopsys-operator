@@ -123,15 +123,6 @@ func (h *Handler) ObjectDeleted(name string) {
 	app := apps.NewApp(h.config, h.kubeConfig)
 	app.Blackduck().Delete(name)
 
-	// h.callHubFederator()
-
-	//Set spec/state  and status/state to started
-	// obj.Spec.DesiredState = "deleted"
-	// obj.Status.DesiredState = "deleted"
-	// obj, err = h.updateHubObject(obj)
-	// if err != nil {
-	// 	log.Errorf("Couldn't update Blackduck object: %s", err.Error())
-	// }
 }
 
 // ObjectUpdated will be called for update hub events
@@ -184,51 +175,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
 	}
-
-	// Refresh registration
-	// TODO - Should this be specific to each Blackduck version?
-	//h.autoRegisterHub(&bd.Spec)
-
-}
-
-func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
-	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod, err := util.FilterPodByNamePrefixInNamespace(h.kubeClient, createHub.Namespace, "registration")
-	log.Debugf("registration pod: %+v", registrationPod)
-	if err != nil {
-		log.Errorf("unable to filter the registration pod in %s because %+v", createHub.Namespace, err)
-		return err
-	}
-
-	registrationKey := createHub.LicenseKey
-
-	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
-		for i := 0; i < 20; i++ {
-			registrationPod, err := util.GetPod(h.kubeClient, createHub.Namespace, registrationPod.Name)
-			if err != nil {
-				log.Errorf("unable to find the registration pod in %s because %+v", createHub.Namespace, err)
-				return err
-			}
-
-			// Create the exec into kubernetes pod request
-			req := util.CreateExecContainerRequest(h.kubeClient, registrationPod)
-			// Exec into the kubernetes pod and execute the commands
-			if strings.HasPrefix(hubutils.GetHubVersion(createHub.Environs), "4.") {
-				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate"`, registrationKey)})
-			} else {
-				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
-			}
-
-			if err == nil {
-				log.Infof("hub %s is created and auto registered. Exit!!!!", createHub.Namespace)
-				return nil
-			}
-			log.Infof("error in Stream: %v", err)
-			time.Sleep(10 * time.Second)
-		}
-	}
-	log.Errorf("unable to register the hub for %s.... please manually auto register the hub", createHub.Namespace)
-	return fmt.Errorf("unable to register the hub for %s.... please manually auto register the hub", createHub.Namespace)
 }
 
 func (h *Handler) callHubFederator() {

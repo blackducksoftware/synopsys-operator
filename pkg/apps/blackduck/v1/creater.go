@@ -22,8 +22,11 @@ under the License.
 package blackduck
 
 import (
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
 	"strings"
 	"time"
 
@@ -49,7 +52,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
-	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
 )
 
 // Creater will store the configuration to create the Blackduck
@@ -155,6 +158,15 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	if len(errors) > 0 {
 		return fmt.Errorf("unable to update components due to %+v", errors)
 	}
+
+	if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
+		return err
+	}
+
+	if err := hc.registerIfNeeded(blackduck); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -206,6 +218,7 @@ func (hc *Creater) initPostgres(bdspec *v1.BlackduckSpec) error {
 	if err != nil {
 		return err
 	}
+	defer db.Connection.Close()
 
 	result, err := db.Connection.Exec("SELECT datname FROM pg_catalog.pg_database WHERE datname='bds_hub';")
 	if err != nil {
@@ -215,6 +228,7 @@ func (hc *Creater) initPostgres(bdspec *v1.BlackduckSpec) error {
 	if err != nil {
 		return err
 	}
+
 	// We initialize the DB if the bds_hub database doesn't exist
 	if nbRow == 0 {
 		log.Infof("postres instance %s requires to be re-initialized", bdspec.Namespace)
@@ -333,4 +347,78 @@ func (hc *Creater) getNodePortIPAddress(namespace string, serviceName string) (s
 		}
 	}
 	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
+}
+
+func (hc *Creater) registerIfNeeded(bd *v1.Blackduck) error {
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+		Timeout: time.Second * 10,
+	}
+
+	resp, err := client.Get(fmt.Sprintf("https://webserver.%s.svc:443/api/v1/registrations?summary=true", bd.Spec.Namespace))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	dec := json.NewDecoder(resp.Body)
+	var objmap map[string]*json.RawMessage
+
+	err = dec.Decode(&objmap)
+	if err != nil {
+		return err
+	}
+
+	// Check whether the registration is valid
+	if val, ok := objmap["valid"]; ok {
+		var r bool
+		err := json.Unmarshal(*val, &r)
+		if err != nil {
+			return err
+		}
+
+		// We register if the registration is invalid
+		if !r {
+			if err := hc.autoRegisterHub(&bd.Spec); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (hc *Creater) autoRegisterHub(bdspec *v1.BlackduckSpec) error {
+	// Filter the registration pod to auto register the hub using the registration key from the environment variable
+	registrationPod, err := util.FilterPodByNamePrefixInNamespace(hc.KubeClient, bdspec.Namespace, "registration")
+	if err != nil {
+		return err
+	}
+
+	registrationKey := bdspec.LicenseKey
+
+	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
+		for i := 0; i < 20; i++ {
+			registrationPod, err := util.GetPod(hc.KubeClient, bdspec.Namespace, registrationPod.Name)
+			if err != nil {
+				return err
+			}
+
+			// Create the exec into kubernetes pod request
+			req := util.CreateExecContainerRequest(hc.KubeClient, registrationPod)
+			// Exec into the kubernetes pod and execute the commands
+			err = util.ExecContainer(hc.KubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
+
+			if err == nil {
+				log.Infof("blackduck %s has been registered", bdspec.Namespace)
+				return nil
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
+	return fmt.Errorf("unable to register the blackduck %s", bdspec.Namespace)
 }
