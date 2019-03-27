@@ -716,6 +716,16 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 	return pvList, nil
 }
 
+// IntToPtr will convert int to pointer
+func IntToPtr(i int) *int {
+	return &i
+}
+
+// BoolToPtr will convert bool to pointer
+func BoolToPtr(b bool) *bool {
+	return &b
+}
+
 // Int32ToInt will convert from int32 to int
 func Int32ToInt(i *int32) int {
 	return int(*i)
