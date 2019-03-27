@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -19,15 +19,21 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package blackduck
+package util
 
 import (
-	// log "github.com/sirupsen/logrus"
 	"testing"
+
+	// log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestCertificate(t *testing.T) {
-	_, _ = CreateSelfSignedCert()
-	// log.Infof("Certificate: %s", certificate)
-	// log.Infof("Key: %s", key)
+// TestRandomStringGenerator will test the random string generator
+func TestRandomStringGenerator(t *testing.T) {
+	rand, err := GetRandomString(32)
+	// log.Infof("random string: %s", rand)
+	if err != nil {
+		t.Errorf("unable to get the random string due to %+v", err)
+	}
+	assert.Equal(t, 32, len(rand), "random string length not matching")
 }

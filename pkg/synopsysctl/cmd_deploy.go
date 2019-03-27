@@ -27,6 +27,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -112,11 +113,16 @@ var deployCmd = &cobra.Command{
 			Namespace: deployNamespace,
 			Type:      secretType,
 		})
+		rand, err := util.GetRandomString(32)
+		if err != nil {
+			log.Panicf("unable to get the random string: %+v", err)
+		}
 		secret.AddData(map[string][]byte{
 			"ADMIN_PASSWORD":    []byte(deploySecretAdminPassword),
 			"POSTGRES_PASSWORD": []byte(deploySecretPostgresPassword),
 			"USER_PASSWORD":     []byte(deploySecretUserPassword),
 			"HUB_PASSWORD":      []byte(deploySecretBlackduckPassword),
+			"SEAL_KEY":          []byte(rand),
 		})
 		environmentDeployer.AddSecret(secret)
 

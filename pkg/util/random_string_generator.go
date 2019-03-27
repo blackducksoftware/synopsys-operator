@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -19,15 +19,20 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package blackduck
+package util
 
 import (
-	// log "github.com/sirupsen/logrus"
-	"testing"
+	"crypto/rand"
+	"encoding/hex"
 )
 
-func TestCertificate(t *testing.T) {
-	_, _ = CreateSelfSignedCert()
-	// log.Infof("Certificate: %s", certificate)
-	// log.Infof("Key: %s", key)
+// GetRandomString returns a random hexadecimal string of length n.
+func GetRandomString(n int) (string, error) {
+	b := make([]byte, n)
+
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b)[:n], nil
 }

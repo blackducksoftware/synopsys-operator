@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/sirupsen/logrus"
@@ -52,6 +53,12 @@ func (c *Creater) GetSecrets(adminPassword string, userPassword string, cert str
 			secrets = append(secrets, authCustomCASecret)
 		}
 	}
+
+	// creating secrets to store the seal key
+	uploadCacheSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: "upload-cache", Type: horizonapi.SecretTypeOpaque})
+	uploadCacheSecret.AddData(map[string][]byte{"SEAL_KEY": []byte("blackduck12345678901234567890123")})
+	uploadCacheSecret.AddLabels(c.GetVersionLabel("secret"))
+	secrets = append(secrets, uploadCacheSecret)
 
 	return secrets
 }
