@@ -366,6 +366,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 		log.Warnf("Skipping Openshift Cluster Role Rules: %s", err)
 	}
 
+	synopsysOperatorClusterRole.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorClusterRole
 }
 
