@@ -43,6 +43,7 @@ func (a *SpecConfig) getAlertDeployment() *components.Deployment {
 
 	deployment.AddPod(pod)
 
+	deployment.AddLabels(map[string]string{"app": "alert"})
 	return deployment
 }
 
@@ -59,6 +60,7 @@ func (a *SpecConfig) getAlertPod() *components.Pod {
 
 	pod.AddVolume(vol)
 
+	pod.AddLabels(map[string]string{"app": "alert"})
 	return pod
 }
 

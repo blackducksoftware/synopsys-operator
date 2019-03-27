@@ -42,6 +42,6 @@ func (a *SpecConfig) getCfsslService() *components.Service {
 	})
 
 	service.AddSelectors(map[string]string{"app": "cfssl"})
-
+	service.AddLabels(map[string]string{"app": "cfssl"})
 	return service
 }

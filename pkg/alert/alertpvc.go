@@ -36,5 +36,7 @@ func (a *SpecConfig) getAlertPersistentVolumeClaim() (*components.PersistentVolu
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the PVC %s in namespace %s because %+v", name, a.config.Namespace, err)
 	}
+
+	pvc.AddLabels(map[string]string{"app": "alert"})
 	return pvc, nil
 }

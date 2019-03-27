@@ -45,7 +45,7 @@ func (a *SpecConfig) getAlertService() *components.Service {
 	})
 
 	service.AddSelectors(map[string]string{"app": "alert"})
-
+	service.AddLabels(map[string]string{"app": "alert"})
 	return service
 }
 
@@ -65,6 +65,6 @@ func (a *SpecConfig) getAlertExposedService() *components.Service {
 	})
 
 	service.AddSelectors(map[string]string{"app": "alert"})
-
+	service.AddLabels(map[string]string{"app": "alert"})
 	return service
 }

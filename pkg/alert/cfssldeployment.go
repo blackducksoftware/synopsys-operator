@@ -44,6 +44,7 @@ func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 	}
 	deployment.AddPod(pod)
 
+	deployment.AddLabels(map[string]string{"app": "cfssl"})
 	return deployment, nil
 }
 
@@ -62,6 +63,7 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	}
 	pod.AddVolume(vol)
 
+	pod.AddLabels(map[string]string{"app": "cfssl"})
 	return pod, nil
 }
 
