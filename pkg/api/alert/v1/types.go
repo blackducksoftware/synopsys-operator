@@ -50,6 +50,7 @@ type AlertSpec struct {
 	Port              *int     `json:"port"`
 	StandAlone        *bool    `json:"standAlone"`
 	Environs          []string `json:"environs,omitempty"`
+	PVCStorageClass   string   `json:"pvcStorageClass"`
 
 	// Should be passed like: e.g "1300Mi"
 	AlertMemory string `json:"alertMemory,omitempty"`
