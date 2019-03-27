@@ -36,8 +36,7 @@ import (
 //	}
 //}
 
-// GetHubDefaultValue creates a hub crd configuration object
-// with defaults
+// GetHubDefaultValue creates a hub crd configuration object with defaults
 func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Size:            "Small",
@@ -216,6 +215,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
 		ConfigMapName: "opssight",
+		DesiredState:  "START",
 	}
 }
 
@@ -323,6 +323,7 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 		DefaultMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
+		DesiredState:  "START",
 	}
 }
 

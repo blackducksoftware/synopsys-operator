@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package synopsysctl
+package soperator
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ import (
 )
 
 // GetOperatorReplicationController creates a ReplicationController Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horizoncomponents.ReplicationController {
+func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncomponents.ReplicationController {
 	// Add the Replication Controller to the Deployer
 	var synopsysOperatorRCReplicas int32 = 1
 	synopsysOperatorRC := horizoncomponents.NewReplicationController(horizonapi.ReplicationControllerConfig{
@@ -68,7 +68,10 @@ func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horiz
 		//ForceNonRoot:           "*bool",
 	})
 
-	synopsysOperatorPodLabels := map[string]string{"name": "synopsys-operator"}
+	synopsysOperatorPodLabels := map[string]string{
+		"name": "synopsys-operator",
+		"app":  "synopsys-operator",
+	}
 
 	synopsysOperatorContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator",
@@ -99,12 +102,6 @@ func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horiz
 		//IP:            "string",
 		//HostPort:      "string",
 		ContainerPort: "8080",
-	})
-	synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: "REGISTRATION_KEY",
-		Type:         horizonapi.EnvVal,
-		KeyOrVal:     specConfig.BlackduckRegistrationKey,
-		//FromName:     "string",
 	})
 	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/etc/synopsys-operator",
@@ -179,11 +176,12 @@ func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horiz
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
 	synopsysOperatorRC.AddPod(synopsysOperatorPod)
 
+	synopsysOperatorRC.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorRC
 }
 
 // GetOperatorService creates a Service Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorService() *horizoncomponents.Service {
+func (specConfig *SpecConfig) GetOperatorService() *horizoncomponents.Service {
 
 	// Add the Service to the Deployer
 	synopsysOperatorService := horizoncomponents.NewService(horizonapi.ServiceConfig{
@@ -222,11 +220,12 @@ func (specConfig *SOperatorSpecConfig) GetOperatorService() *horizoncomponents.S
 		Protocol: horizonapi.ProtocolTCP,
 	})
 
+	synopsysOperatorService.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorService
 }
 
 // GetOperatorConfigMap creates a ConfigMap Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMap {
+func (specConfig *SpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMap {
 	// Config Map
 	synopsysOperatorConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
 		APIVersion: "v1",
@@ -235,13 +234,17 @@ func (specConfig *SOperatorSpecConfig) GetOperatorConfigMap() *horizoncomponents
 		Namespace: specConfig.Namespace,
 	})
 
-	synopsysOperatorConfigMap.AddData(map[string]string{"config.json": fmt.Sprintf("{\"OperatorTimeBombInSeconds\":\"315576000\", \"DryRun\": false, \"LogLevel\": \"debug\", \"Namespace\": \"%s\", \"Threadiness\": 5, \"PostgresRestartInMins\": 10, \"PodWaitTimeoutSeconds\" : \"600\", \"ResyncIntervalInSeconds\" : \"30\", \"TerminationGracePeriodSeconds\" : \"%d\"}", specConfig.Namespace, specConfig.TerminationGracePeriodSeconds)})
+	cmData := map[string]string{}
+	cmData["config.json"] = fmt.Sprintf("{\"OperatorTimeBombInSeconds\":\"315576000\", \"DryRun\": false, \"LogLevel\": \"debug\", \"Namespace\": \"%s\", \"Threadiness\": 5, \"PostgresRestartInMins\": 10, \"PodWaitTimeoutSeconds\" : \"600\", \"ResyncIntervalInSeconds\" : \"30\", \"TerminationGracePeriodSeconds\" : \"%d\"}", specConfig.Namespace, specConfig.TerminationGracePeriodSeconds)
+	cmData["image"] = specConfig.SynopsysOperatorImage
+	synopsysOperatorConfigMap.AddData(cmData)
 
+	synopsysOperatorConfigMap.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorConfigMap
 }
 
 // GetOperatorServiceAccount creates a ServiceAccount Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorServiceAccount() *horizoncomponents.ServiceAccount {
+func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.ServiceAccount {
 	// Service Account
 	synopsysOperatorServiceAccount := horizoncomponents.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		APIVersion: "v1",
@@ -251,11 +254,12 @@ func (specConfig *SOperatorSpecConfig) GetOperatorServiceAccount() *horizoncompo
 		//AutomountToken: "*bool",
 	})
 
+	synopsysOperatorServiceAccount.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorServiceAccount
 }
 
 // GetOperatorClusterRoleBinding creates a ClusterRoleBinding Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
+func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
 	// Cluster Role Binding
 	synopsysOperatorClusterRoleBinding := horizoncomponents.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
@@ -275,11 +279,12 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRoleBinding() *horizonc
 		Name:     "cluster-admin",
 	})
 
+	synopsysOperatorClusterRoleBinding.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorClusterRoleBinding
 }
 
 // GetOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys-Operaotor
-func (specConfig *SOperatorSpecConfig) GetOperatorClusterRole() *horizoncomponents.ClusterRole {
+func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.ClusterRole {
 	synopsysOperatorClusterRole := horizoncomponents.NewClusterRole(horizonapi.ClusterRoleConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
 		//ClusterName : "string,"
@@ -361,5 +366,27 @@ func (specConfig *SOperatorSpecConfig) GetOperatorClusterRole() *horizoncomponen
 		log.Warnf("Skipping Openshift Cluster Role Rules: %s", err)
 	}
 
+	synopsysOperatorClusterRole.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorClusterRole
+}
+
+// GetOperatorSecret creates a Secret Horizon component for the Synopsys-Operaotor
+func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
+	// create a secret
+	synopsysOperatorSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
+		APIVersion: "v1",
+		// ClusterName : "cluster",
+		Name:      "blackduck-secret",
+		Namespace: specConfig.Namespace,
+		Type:      specConfig.SecretType,
+	})
+	synopsysOperatorSecret.AddData(map[string][]byte{
+		"ADMIN_PASSWORD":    []byte(specConfig.SecretAdminPassword),
+		"POSTGRES_PASSWORD": []byte(specConfig.SecretPostgresPassword),
+		"USER_PASSWORD":     []byte(specConfig.SecretUserPassword),
+		"HUB_PASSWORD":      []byte(specConfig.SecretBlackduckPassword),
+	})
+
+	synopsysOperatorSecret.AddLabels(map[string]string{"app": "synopsys-operator"})
+	return synopsysOperatorSecret
 }

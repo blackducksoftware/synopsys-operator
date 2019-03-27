@@ -22,7 +22,7 @@ under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
