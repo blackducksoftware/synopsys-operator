@@ -43,7 +43,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"get"}, args...)
-		out, err := util.RunKubeCmd(kubeCmdArgs...)
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
 		if err != nil {
 			log.Errorf("Error Getting the Resource: %s", out)
 			return nil
@@ -66,7 +66,7 @@ var getBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting Blackducks\n")
-		out, err := util.RunKubeCmd("get", "blackducks")
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
 		if err != nil {
 			log.Errorf("Error getting Blackducks: %s", out)
 			return nil
@@ -89,7 +89,7 @@ var getOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting OpsSights\n")
-		out, err := util.RunKubeCmd("get", "opssights")
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "opssights")
 		if err != nil {
 			log.Errorf("Error getting OpsSights: %s", out)
 			return nil
@@ -112,7 +112,7 @@ var getAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting Alerts\n")
-		out, err := util.RunKubeCmd("get", "alerts")
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "alerts")
 		if err != nil {
 			log.Errorf("Error getting Alerts with KubeCmd: %s", out)
 			return nil

@@ -44,7 +44,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Deleting a Non-Synopsys Resource")
 		kubeCmdArgs := append([]string{"delete"}, args...)
-		out, err := util.RunKubeCmd(kubeCmdArgs...)
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
 		if err != nil {
 			log.Errorf("Error Deleting the Resource: %s", out)
 			return nil

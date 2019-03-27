@@ -56,7 +56,7 @@ var rootCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Running Non-Synopsysctl Command\n")
-		out, err := util.RunKubeCmd(args...)
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, args...)
 		if err != nil {
 			log.Errorf("Error with KubeCmd: %s", out)
 			return nil

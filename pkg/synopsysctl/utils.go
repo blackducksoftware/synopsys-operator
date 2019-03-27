@@ -38,6 +38,7 @@ import (
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -133,6 +134,7 @@ func setResourceClients() {
 		log.Errorf("error creating the Alert Clientset: %s", err)
 	}
 	alertClient = aClient
+	kube, openshift = operatorutil.DetermineClusterClients(restconfig)
 }
 
 // getKubeClient gets the kubernetes client

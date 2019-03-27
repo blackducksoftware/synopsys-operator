@@ -55,12 +55,13 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	// Get CRDs that need to be updated (specs have new version set)
 	log.Debugf("Getting CRDs that need new versions")
 	var oldBlackducks = []blackduckv1.Blackduck{}
+	kube, openshift := operatorutil.DetermineClusterClients(restconfig)
 	if newCrdData.Blackduck.APIVersion != currCrdData.Blackduck.APIVersion {
 		oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion, currCrdData.Blackduck.CRDName)
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
-		out, err := operatorutil.RunKubeCmd("delete", "crd", currCrdData.Blackduck.CRDName)
+		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.Blackduck.CRDName)
 		if err != nil {
 			return fmt.Errorf("%s", out)
 		}
@@ -71,7 +72,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
-		out, err := operatorutil.RunKubeCmd("delete", "crd", currCrdData.OpsSight.CRDName)
+		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.OpsSight.CRDName)
 		if err != nil {
 			return fmt.Errorf("%s", out)
 		}
@@ -82,7 +83,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
-		out, err := operatorutil.RunKubeCmd("delete", "crd", currCrdData.Alert.CRDName)
+		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.Alert.CRDName)
 		if err != nil {
 			return fmt.Errorf("%s", out)
 		}

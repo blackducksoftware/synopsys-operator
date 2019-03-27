@@ -47,13 +47,13 @@ var destroyCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get the namespace of the Synopsys-Operator
-		destroyNamespace, err := soperator.GetOperatorNamespace()
+		destroyNamespace, err := soperator.GetOperatorNamespace(restconfig)
 		if err != nil {
 			log.Warnf("Error finding Synopsys-Operator: %s", err)
 		}
 		log.Debugf("Destroying the Synopsys-Operator: %s\n", destroyNamespace)
 		// Delete the namespace
-		out, err := util.RunKubeCmd("delete", "ns", destroyNamespace)
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, "delete", "ns", destroyNamespace)
 		if err != nil {
 			log.Warnf("Could not delete %s - %s", destroyNamespace, out)
 		}
@@ -67,12 +67,8 @@ var destroyCmd = &cobra.Command{
 		}
 
 		for cmd := range cleanCommands {
-			out, err = util.RunKubeCmd(strings.Split(cleanCommands[cmd], " ")...)
-			if err != nil {
-				log.Debugf("Command: %s\n > %s", cleanCommands[cmd], out)
-			} else {
-				log.Debugf("Command: %s\n > %s", cleanCommands[cmd], out)
-			}
+			out, _ = util.RunKubeCmd(restconfig, kube, openshift, strings.Split(cleanCommands[cmd], " ")...)
+			log.Debugf(" > %s", out)
 		}
 		return nil
 	},

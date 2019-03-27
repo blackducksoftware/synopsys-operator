@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -93,8 +94,9 @@ func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion 
 
 // GetOperatorNamespace returns the namespace of the Synopsys-Operator by
 // looking at its cluster role binding
-func GetOperatorNamespace() (string, error) {
-	namespace, err := operatorutil.RunKubeCmd("get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
+func GetOperatorNamespace(restConfig *rest.Config) (string, error) {
+	kube, openshift := operatorutil.DetermineClusterClients(restConfig)
+	namespace, err := operatorutil.RunKubeCmd(restConfig, kube, openshift, "get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
