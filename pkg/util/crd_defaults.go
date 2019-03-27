@@ -332,13 +332,14 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 	standAlone := true
 
 	return &alertv1.AlertSpec{
-		Port:           &port,
-		StandAlone:     &standAlone,
-		AlertMemory:    "512M",
-		CfsslMemory:    "640M",
-		AlertImageName: "blackduck-alert",
-		CfsslImageName: "hub-cfssl",
-		PVCMemory:      "800M",
+		Port:            &port,
+		StandAlone:      &standAlone,
+		AlertMemory:     "512M",
+		CfsslMemory:     "640M",
+		AlertImageName:  "blackduck-alert",
+		CfsslImageName:  "hub-cfssl",
+		PVCStorageClass: "standard",
+		PVCMemory:       "800M",
 	}
 }
 
@@ -357,6 +358,7 @@ func GetAlertDefaultValue2() *alertv1.AlertSpec {
 		CfsslImageVersion: "4.8.1",
 		Port:              &port,
 		StandAlone:        &standAlone,
+		PVCStorageClass:   "standard",
 		AlertMemory:       "512M",
 		CfsslMemory:       "640M",
 		PVCMemory:         "800M",

@@ -43,6 +43,7 @@ type Ctl struct {
 	CfsslImageVersion string
 	Port              int
 	StandAlone        bool
+	PVCStorageClass   string
 	AlertMemory       string
 	CfsslMemory       string
 	PVCMemory         string
@@ -62,6 +63,7 @@ func NewAlertCtl() *Ctl {
 		CfsslImageVersion: "",
 		Port:              0,
 		StandAlone:        false,
+		PVCStorageClass:   "",
 		AlertMemory:       "",
 		CfsslMemory:       "",
 		PVCMemory:         "",
@@ -115,6 +117,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
 	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
+	cmd.Flags().StringVar(&ctl.PVCStorageClass, "storage-class", ctl.PVCStorageClass, "StorageClass for the PVC")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
 	cmd.Flags().StringVar(&ctl.PVCMemory, "pvc-memory", ctl.PVCMemory, "Memory allocation for the Persistent Volume Claim")
@@ -149,6 +152,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.Port = &ctl.Port
 		case "stand-alone":
 			ctl.Spec.StandAlone = &ctl.StandAlone
+		case "storage-class":
+			ctl.Spec.PVCStorageClass = ctl.PVCStorageClass
 		case "alert-memory":
 			ctl.Spec.AlertMemory = ctl.AlertMemory
 		case "cfssl-memory":
