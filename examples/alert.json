@@ -17,7 +17,7 @@
 		"standAlone": true,
 		"alertMemory": "2560M",
 		"cfsslMemory": "640M",
-		"pvcMemory": "800M",
+		"pvcMemory": "100M",
 		"environs": [
 			"ALERT_SERVER_PORT:8443",
 			"PUBLIC_HUB_WEBSERVER_HOST:<<HOST>>",

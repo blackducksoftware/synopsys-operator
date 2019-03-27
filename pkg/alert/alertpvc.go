@@ -32,8 +32,8 @@ import (
 // getAlertPersistentVolumeClaim returns a new PVC for an Alert
 func (a *SpecConfig) getAlertPersistentVolumeClaim() (*components.PersistentVolumeClaim, error) {
 	name := "alert-pvc"
-	storageClass := ""
-	pvc, err := operatorutil.CreatePersistentVolumeClaim(name, a.config.Namespace, a.config.PVCMemory, storageClass, horizonapi.ReadWriteMany)
+	storageClass := "standard"
+	pvc, err := operatorutil.CreatePersistentVolumeClaim(name, a.config.Namespace, a.config.PVCMemory, storageClass, horizonapi.ReadWriteOnce)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the PVC %s in namespace %s because %+v", name, a.config.Namespace, err)
 	}
