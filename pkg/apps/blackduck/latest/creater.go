@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -74,6 +75,7 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
+	newBlackuck := blackduck.DeepCopy()
 	// Create namespace if it doesn't exist
 	_, err := util.GetNamespace(hc.KubeClient, blackduck.Spec.Namespace)
 	if err != nil {
@@ -162,8 +164,33 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 		return err
 	}
 
+	// TODO wait for webserver to be up before we register
 	if err := hc.registerIfNeeded(blackduck); err != nil {
 		return err
+	}
+
+	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
+		newBlackuck.Status.IP, err = hc.getLoadBalancerIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
+		newBlackuck.Status.IP, err = hc.getNodePortIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+	}
+
+	if blackduck.Spec.PersistentStorage {
+		pvcVolumeNames := map[string]string{}
+		for _, v := range blackduck.Spec.PVC {
+			pvName, err := hc.getPVCVolumeName(blackduck.Spec.Namespace, v.Name)
+			if err != nil {
+				continue
+			}
+			pvcVolumeNames[v.Name] = pvName
+		}
+		newBlackuck.Status.PVCVolumeName = pvcVolumeNames
+	}
+
+	if !reflect.DeepEqual(blackduck, newBlackuck) {
+		if _, err := hc.BlackduckClient.SynopsysV1().Blackducks(hc.Config.Namespace).Update(newBlackuck); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -293,22 +320,12 @@ func (hc *Creater) getPostgresComponents(bd *v1.Blackduck) (*api.ComponentList, 
 }
 
 func (hc *Creater) getPVCVolumeName(namespace string, name string) (string, error) {
-	for i := 0; i < 60; i++ {
-		time.Sleep(10 * time.Second)
-		pvc, err := util.GetPVC(hc.KubeClient, namespace, name)
-		if err != nil {
-			return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
-		}
-
-		log.Debugf("pvc: %v", pvc)
-
-		if strings.EqualFold(pvc.Spec.VolumeName, "") {
-			continue
-		} else {
-			return pvc.Spec.VolumeName, nil
-		}
+	pvc, err := util.GetPVC(hc.KubeClient, namespace, name)
+	if err != nil {
+		return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
 	}
-	return "", fmt.Errorf("timeout: unable to get pvc %s in %s namespace", namespace, namespace)
+
+	return pvc.Spec.VolumeName, nil
 }
 
 func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
