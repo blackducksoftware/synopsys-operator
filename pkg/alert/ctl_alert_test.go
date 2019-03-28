@@ -107,9 +107,10 @@ func TestSwitchSpec(t *testing.T) {
 func TestAddSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 
+	// test case: Only Non-Master Flags are added
 	ctl := NewAlertCtl()
 	actualCmd := &cobra.Command{}
-	ctl.AddSpecFlags(actualCmd)
+	ctl.AddSpecFlags(actualCmd, false)
 
 	expectedCmd := &cobra.Command{}
 	expectedCmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
@@ -128,6 +129,29 @@ func TestAddSpecFlags(t *testing.T) {
 	expectedCmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
 
 	assert.Equal(expectedCmd.Flags(), actualCmd.Flags())
+
+	// test case: All Flags are added
+	ctlMaster := NewAlertCtl()
+	actualCmdMaster := &cobra.Command{}
+	ctlMaster.AddSpecFlags(actualCmdMaster, true)
+
+	expectedCmdMaster := &cobra.Command{}
+	expectedCmdMaster.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
+	expectedCmdMaster.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
+	expectedCmdMaster.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
+	expectedCmdMaster.Flags().StringVar(&ctl.AlertImageVersion, "alert-image-version", ctl.AlertImageVersion, "Version of the Alert Image")
+	expectedCmdMaster.Flags().StringVar(&ctl.CfsslImageName, "cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
+	expectedCmdMaster.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
+	expectedCmdMaster.Flags().StringVar(&ctl.BlackduckHost, "blackduck-host", ctl.BlackduckHost, "Host url of Blackduck")
+	expectedCmdMaster.Flags().StringVar(&ctl.BlackduckUser, "blackduck-user", ctl.BlackduckUser, "Username for Blackduck")
+	expectedCmdMaster.Flags().IntVar(&ctl.BlackduckPort, "blackduck-port", ctl.BlackduckPort, "Port for Blackduck")
+	expectedCmdMaster.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
+	expectedCmdMaster.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
+	expectedCmdMaster.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
+	expectedCmdMaster.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
+	expectedCmdMaster.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
+
+	assert.Equal(expectedCmdMaster.Flags(), actualCmdMaster.Flags())
 }
 
 func TestSetChangedFlags(t *testing.T) {
@@ -135,7 +159,7 @@ func TestSetChangedFlags(t *testing.T) {
 
 	actualCtl := NewAlertCtl()
 	cmd := &cobra.Command{}
-	actualCtl.AddSpecFlags(cmd)
+	actualCtl.AddSpecFlags(cmd, true)
 	actualCtl.SetChangedFlags(cmd.Flags())
 
 	expCtl := NewAlertCtl()
