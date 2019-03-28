@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -154,9 +154,8 @@ var updateBlackduckCmd = &cobra.Command{
 			log.Errorf("Error getting Blackduck: %s", err)
 			return nil
 		}
-		updateBlackduckCtl.SetSpec(currBlackduck.Spec)
-
 		// Check if it can be updated
+		updateBlackduckCtl.SetSpec(currBlackduck.Spec)
 		canUpdate, err := updateBlackduckCtl.CanUpdate()
 		if err != nil {
 			log.Errorf("Cannot Update: %s\n", err)
@@ -202,16 +201,14 @@ var updateOpsSightCmd = &cobra.Command{
 			log.Errorf("Error getting OpsSight: %s", err)
 			return nil
 		}
-		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
-
 		// Check if it can be updated
+		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
 			log.Errorf("Cannot Update: %s\n", err)
 			return nil
 		}
 		if canUpdate {
-			log.Debugf("Updating...\n")
 			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateOpsSightCtl.SetChangedFlags(flagset)
@@ -246,37 +243,46 @@ var updateOpsSightImageCmd = &cobra.Command{
 		componentName := args[1]
 		componentImage := args[2]
 		// Get OpsSight Spec
-		opsSightCRD, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
+		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
 		}
-		// Update the Spec with new Image
-		switch componentName {
-		case "Perceptor":
-			opsSightCRD.Spec.Perceptor.Image = componentImage
-		case "Scanner":
-			opsSightCRD.Spec.ScannerPod.Scanner.Image = componentImage
-		case "ImageFacade":
-			opsSightCRD.Spec.ScannerPod.ImageFacade.Image = componentImage
-		case "ImagePerceiver":
-			opsSightCRD.Spec.Perceiver.ImagePerceiver.Image = componentImage
-		case "PodPerceiver":
-			opsSightCRD.Spec.Perceiver.PodPerceiver.Image = componentImage
-		case "Skyfire":
-			opsSightCRD.Spec.Skyfire.Image = componentImage
-		case "Prometheus":
-			opsSightCRD.Spec.Prometheus.Image = componentImage
-		default:
-			log.Errorf("%s is not a valid COMPONENT\n", componentName)
-			log.Errorf("Valid Components: Perceptor, Scanner, ImageFacade, ImagePerceiver, PodPerceiver, Skyfire, Prometheus\n")
-			return fmt.Errorf("Invalid Component Name")
-		}
-		// Update OpsSight with New Image
-		_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, opsSightCRD)
+		// Check if it can be updated
+		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
+		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("Cannot Update OpsSight: %s\n", err)
 			return nil
+		}
+		if canUpdate {
+			// Update the Spec with new Image
+			switch componentName {
+			case "Perceptor":
+				currOpsSight.Spec.Perceptor.Image = componentImage
+			case "Scanner":
+				currOpsSight.Spec.ScannerPod.Scanner.Image = componentImage
+			case "ImageFacade":
+				currOpsSight.Spec.ScannerPod.ImageFacade.Image = componentImage
+			case "ImagePerceiver":
+				currOpsSight.Spec.Perceiver.ImagePerceiver.Image = componentImage
+			case "PodPerceiver":
+				currOpsSight.Spec.Perceiver.PodPerceiver.Image = componentImage
+			case "Skyfire":
+				currOpsSight.Spec.Skyfire.Image = componentImage
+			case "Prometheus":
+				currOpsSight.Spec.Prometheus.Image = componentImage
+			default:
+				log.Errorf("%s is not a valid COMPONENT\n", componentName)
+				log.Errorf("Valid Components: Perceptor, Scanner, ImageFacade, ImagePerceiver, PodPerceiver, Skyfire, Prometheus\n")
+				return fmt.Errorf("Invalid Component Name")
+			}
+			// Update OpsSight with New Image
+			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, currOpsSight)
+			if err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
 		}
 		return nil
 	},
