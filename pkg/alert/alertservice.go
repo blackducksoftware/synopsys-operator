@@ -41,7 +41,7 @@ func (a *SpecConfig) getAlertService() *components.Service {
 		Port:       int32(*a.config.Port),
 		TargetPort: strconv.Itoa(*a.config.Port),
 		Protocol:   horizonapi.ProtocolTCP,
-		Name:       fmt.Sprintf("%s-tcp", strconv.Itoa(*a.config.Port)),
+		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
 
 	service.AddSelectors(map[string]string{"app": "alert"})
@@ -61,7 +61,7 @@ func (a *SpecConfig) getAlertExposedService() *components.Service {
 		Port:       int32(*a.config.Port),
 		TargetPort: strconv.Itoa(*a.config.Port),
 		Protocol:   horizonapi.ProtocolTCP,
-		Name:       fmt.Sprintf("%s-tcp", strconv.Itoa(*a.config.Port)),
+		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
 
 	service.AddSelectors(map[string]string{"app": "alert"})
