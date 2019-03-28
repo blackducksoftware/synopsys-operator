@@ -48,7 +48,7 @@ type Ctl struct {
 	StandAlone        bool
 	AlertMemory       string
 	CfsslMemory       string
-	State             string
+	DesiredState      string
 }
 
 // NewAlertCtl creates a new AlertCtl struct
@@ -68,7 +68,7 @@ func NewAlertCtl() *Ctl {
 		StandAlone:        false,
 		AlertMemory:       "",
 		CfsslMemory:       "",
-		State:             "",
+		DesiredState:      "",
 	}
 }
 
@@ -123,7 +123,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
-	cmd.Flags().StringVar(&ctl.State, "alert-state", ctl.State, "State of the Alert")
+	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -164,6 +164,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.AlertMemory = ctl.AlertMemory
 		case "cfssl-memory":
 			ctl.Spec.CfsslMemory = ctl.CfsslMemory
+		case "alert-desired-state":
+			ctl.Spec.DesiredState = ctl.DesiredState
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
