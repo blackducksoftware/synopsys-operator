@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -29,7 +29,7 @@ import (
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/alert/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
