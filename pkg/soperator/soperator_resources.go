@@ -159,15 +159,19 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		KeyOrVal:     "development",
 		//FromName:     "string",
 	})
+	synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
+		NameOrPrefix: "SEAL_KEY",
+		Type:         horizonapi.EnvFromSecret,
+		KeyOrVal:     "SEAL_KEY",
+		FromName:     "blackduck-secret",
+	})
 
 	// Create config map volume
 	var synopsysOperatorVolumeDefaultMode int32 = 420
 	synopsysOperatorVolume := horizoncomponents.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "synopsys-operator",
 		MapOrSecretName: "synopsys-operator",
-		//Items:           "map[string]KeyAndMode",
-		DefaultMode: &synopsysOperatorVolumeDefaultMode,
-		//Required:        "*bool",
+		DefaultMode:     &synopsysOperatorVolumeDefaultMode,
 	})
 
 	synopsysOperatorPod.AddLabels(synopsysOperatorPodLabels)
@@ -229,9 +233,8 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMa
 	// Config Map
 	synopsysOperatorConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
 		APIVersion: "v1",
-		//ClusterName: "string",
-		Name:      "synopsys-operator",
-		Namespace: specConfig.Namespace,
+		Name:       "synopsys-operator",
+		Namespace:  specConfig.Namespace,
 	})
 
 	cmData := map[string]string{}
@@ -248,10 +251,8 @@ func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.Ser
 	// Service Account
 	synopsysOperatorServiceAccount := horizoncomponents.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		APIVersion: "v1",
-		//ClusterName:    "string",
-		Name:      "synopsys-operator",
-		Namespace: specConfig.Namespace,
-		//AutomountToken: "*bool",
+		Name:       "synopsys-operator",
+		Namespace:  specConfig.Namespace,
 	})
 
 	synopsysOperatorServiceAccount.AddLabels(map[string]string{"app": "synopsys-operator"})
@@ -263,13 +264,11 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 	// Cluster Role Binding
 	synopsysOperatorClusterRoleBinding := horizoncomponents.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
-		//ClusterName: "string",
-		Name:      "synopsys-operator-admin",
-		Namespace: specConfig.Namespace,
+		Name:       "synopsys-operator-admin",
+		Namespace:  specConfig.Namespace,
 	})
 	synopsysOperatorClusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
-		Kind: "ServiceAccount",
-		//APIGroup:  "string",
+		Kind:      "ServiceAccount",
 		Name:      "synopsys-operator",
 		Namespace: specConfig.Namespace,
 	})
@@ -375,16 +374,16 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 	// create a secret
 	synopsysOperatorSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 		APIVersion: "v1",
-		// ClusterName : "cluster",
-		Name:      "blackduck-secret",
-		Namespace: specConfig.Namespace,
-		Type:      specConfig.SecretType,
+		Name:       "blackduck-secret",
+		Namespace:  specConfig.Namespace,
+		Type:       specConfig.SecretType,
 	})
 	synopsysOperatorSecret.AddData(map[string][]byte{
 		"ADMIN_PASSWORD":    []byte(specConfig.SecretAdminPassword),
 		"POSTGRES_PASSWORD": []byte(specConfig.SecretPostgresPassword),
 		"USER_PASSWORD":     []byte(specConfig.SecretUserPassword),
 		"HUB_PASSWORD":      []byte(specConfig.SecretBlackduckPassword),
+		"SEAL_KEY":          []byte(specConfig.SealKey),
 	})
 
 	synopsysOperatorSecret.AddLabels(map[string]string{"app": "synopsys-operator"})

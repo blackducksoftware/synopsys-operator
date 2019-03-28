@@ -25,9 +25,6 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -36,6 +33,8 @@ import (
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // GetBlackduckVersionsToRemove finds all Blackducks with a different version, returns their specs with the new version
@@ -144,6 +143,15 @@ func GetCurrentComponentsSpecConfig(kubeClient *kubernetes.Clientset, namespace 
 	sOperatorSpec.SecretPostgresPassword = string(currKubeSecretData["POSTGRES_PASSWORD"])
 	sOperatorSpec.SecretUserPassword = string(currKubeSecretData["USER_PASSWORD"])
 	sOperatorSpec.SecretBlackduckPassword = string(currKubeSecretData["HUB_PASSWORD"])
+	sealKey := string(currKubeSecretData["SEAL_KEY"])
+	if len(sealKey) == 0 {
+		sealKey, err = operatorutil.GetRandomString(32)
+		if err != nil {
+			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
+		}
+	}
+	sOperatorSpec.SealKey = sealKey
+
 	log.Debugf("Got current Synopsys-Operator Secret Data from Cluster")
 
 	return &sOperatorSpec, nil

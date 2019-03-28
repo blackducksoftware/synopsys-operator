@@ -39,10 +39,12 @@ type SpecConfig struct {
 	SecretUserPassword            string
 	SecretBlackduckPassword       string
 	TerminationGracePeriodSeconds int64
+	SealKey                       string
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, secretName, adminPassword, postrgresPassword, userPassword, blackduckpassword string, secretType horizonapi.SecretType, terminationGracePeriodSeconds int64) *SpecConfig {
+func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, secretName, adminPassword, postrgresPassword, userPassword,
+	blackduckpassword string, secretType horizonapi.SecretType, terminationGracePeriodSeconds int64, sealKey string) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		SynopsysOperatorImage:         synopsysOperatorImage,
@@ -52,6 +54,7 @@ func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, se
 		SecretUserPassword:            userPassword,
 		SecretBlackduckPassword:       blackduckpassword,
 		TerminationGracePeriodSeconds: terminationGracePeriodSeconds,
+		SealKey:                       sealKey,
 	}
 }
 
