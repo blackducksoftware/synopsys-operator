@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -44,6 +45,7 @@ import (
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/api/storage/v1beta1"
@@ -60,7 +62,7 @@ import (
 
 // CreateContainer will create the container
 func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, ports []*horizonapi.PortConfig,
-	actionConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
+	actionConfig *horizonapi.ActionConfig, preStopConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
 
 	container := components.NewContainer(*config)
 
@@ -78,6 +80,11 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 
 	if actionConfig != nil {
 		container.AddPostStartAction(*actionConfig)
+	}
+
+	// Adds a PreStop if given, originally added to enable graceful pg shutdown
+	if preStopConfig != nil {
+		container.AddPreStopAction(*preStopConfig)
 	}
 
 	for _, livenessProbe := range livenessProbeConfigs {
@@ -178,13 +185,13 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 
 	for _, containerConfig := range containers {
 		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
-			containerConfig.ActionConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
+			containerConfig.ActionConfig, containerConfig.PreStopConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
 		pod.AddContainer(container)
 	}
 
 	for _, initContainerConfig := range initContainers {
 		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts,
-			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
+			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.PreStopConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
 		err := pod.AddInitContainer(initContainer)
 		if err != nil {
 			log.Printf("failed to create the init container because %+v", err)
@@ -312,10 +319,20 @@ func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (
 	return clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 }
 
+// ListSecrets will list the secret
+func ListSecrets(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.SecretList, error) {
+	return clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
 // UpdateSecret updates a secret
 func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *corev1.Secret) error {
 	_, err := clientset.CoreV1().Secrets(namespace).Update(secret)
 	return err
+}
+
+// DeleteSecret will delete the secret
+func DeleteSecret(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // ReadFromFile will read the file
@@ -329,10 +346,20 @@ func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string
 	return clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 }
 
+// ListConfigMaps will list the config map
+func ListConfigMaps(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ConfigMapList, error) {
+	return clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
 // UpdateConfigMap updates a config map
 func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *corev1.ConfigMap) error {
 	_, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
 	return err
+}
+
+// DeleteConfigMap will delete the config map
+func DeleteConfigMap(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().ConfigMaps(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // // CreateSecret will create the secret
@@ -377,7 +404,7 @@ func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.Na
 
 // DeleteNamespace will delete the namespace
 func DeleteNamespace(clientset *kubernetes.Clientset, namespace string) error {
-	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
 }
 
 // GetPod will get the input pods corresponding to a namespace
@@ -402,7 +429,7 @@ func ListReplicationControllers(clientset *kubernetes.Clientset, namespace strin
 
 // DeleteReplicationController will delete the replication controller corresponding to a namespace and name
 func DeleteReplicationController(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // GetDeployment will get the deployment corresponding to a namespace and name
@@ -417,7 +444,7 @@ func ListDeployments(clientset *kubernetes.Clientset, namespace string, labelSel
 
 // DeleteDeployment will delete the deployment corresponding to a namespace and name
 func DeleteDeployment(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // CreatePersistentVolume will create the persistent volume
@@ -444,7 +471,7 @@ func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storag
 
 // DeletePersistentVolume will delete the persistent volume
 func DeletePersistentVolume(clientset *kubernetes.Clientset, name string) error {
-	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{})
 }
 
 // CreatePersistentVolumeClaim will create the persistent volume claim
@@ -615,9 +642,14 @@ func ListServices(clientset *kubernetes.Clientset, namespace string, labelSelect
 	return clientset.CoreV1().Services(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
+// UpdateService will update the service information for the input service name inside the input namespace
+func UpdateService(clientset *kubernetes.Clientset, namespace string, service *corev1.Service) (*corev1.Service, error) {
+	return clientset.CoreV1().Services(namespace).Update(service)
+}
+
 // DeleteService will delete the service information for the input service name inside the input namespace
 func DeleteService(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.CoreV1().Services(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().Services(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // GetServiceEndPoint will get the service endpoint information for the input service name inside the input namespace
@@ -687,6 +719,16 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 	return pvList, nil
 }
 
+// IntToPtr will convert int to pointer
+func IntToPtr(i int) *int {
+	return &i
+}
+
+// BoolToPtr will convert bool to pointer
+func BoolToPtr(b bool) *bool {
+	return &b
+}
+
 // Int32ToInt will convert from int32 to int
 func Int32ToInt(i *int32) int {
 	return int(*i)
@@ -702,6 +744,11 @@ func IntToInt32(i int) *int32 {
 func IntToInt64(i int) *int64 {
 	j := int64(i)
 	return &j
+}
+
+// IntToUInt32 will convert from int to uint32
+func IntToUInt32(i int) uint32 {
+	return uint32(i)
 }
 
 func getBytes(n int) ([]byte, error) {
@@ -727,6 +774,26 @@ func CreateServiceAccount(namespace string, name string) *components.ServiceAcco
 	})
 
 	return serviceAccount
+}
+
+// GetServiceAccount get a service account
+func GetServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ServiceAccount, error) {
+	return clientset.CoreV1().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
+}
+
+// ListServiceAccounts list a service account
+func ListServiceAccounts(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ServiceAccountList, error) {
+	return clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// UpdateServiceAccount updates a service account
+func UpdateServiceAccount(clientset *kubernetes.Clientset, namespace string, serviceAccount *corev1.ServiceAccount) (*corev1.ServiceAccount, error) {
+	return clientset.CoreV1().ServiceAccounts(namespace).Update(serviceAccount)
+}
+
+// DeleteServiceAccount delete a service account
+func DeleteServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().ServiceAccounts(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // CreateClusterRoleBinding creates a cluster role binding
@@ -767,7 +834,27 @@ func UpdateClusterRoleBinding(clientset *kubernetes.Clientset, clusterRoleBindin
 
 // DeleteClusterRoleBinding delete a cluster role binding
 func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{})
+}
+
+// IsClusterRoleBindingSubjectNamespaceExist checks whether the namespace is already exist in the subject of cluster role binding
+func IsClusterRoleBindingSubjectNamespaceExist(subjects []rbacv1.Subject, namespace string) bool {
+	for _, subject := range subjects {
+		if strings.EqualFold(subject.Namespace, namespace) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsClusterRoleBindingSubjectExist checks whether the namespace is already exist in the subject of cluster role binding
+func IsClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace string, name string) bool {
+	for _, subject := range subjects {
+		if strings.EqualFold(subject.Namespace, namespace) && strings.EqualFold(subject.Name, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetClusterRole get a cluster role
@@ -780,9 +867,24 @@ func ListClusterRoles(clientset *kubernetes.Clientset, labelSelector string) (*r
 	return clientset.Rbac().ClusterRoles().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
+// UpdateClusterRole updates the cluster role
+func UpdateClusterRole(clientset *kubernetes.Clientset, clusterRole *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
+	return clientset.Rbac().ClusterRoles().Update(clusterRole)
+}
+
 // DeleteClusterRole delete a cluster role binding
 func DeleteClusterRole(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{})
+}
+
+// IsClusterRoleRuleExist checks whether the namespace is already exist in the rule of cluster role
+func IsClusterRoleRuleExist(oldRules []rbacv1.PolicyRule, newRule rbacv1.PolicyRule) bool {
+	for _, oldRule := range oldRules {
+		if reflect.DeepEqual(oldRule, newRule) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetOpenShiftRoutes get a OpenShift routes
@@ -848,26 +950,26 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 }
 
 // PatchReplicationControllerForReplicas patch a replication controller for replica update
-func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old corev1.ReplicationController, replicas int) error {
+func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old *corev1.ReplicationController, replicas *int32) (*corev1.ReplicationController, error) {
 	oldData, err := json.Marshal(old)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	new := old.DeepCopy()
-	new.Spec.Replicas = IntToInt32(replicas)
+	new.Spec.Replicas = replicas
 	newData, err := json.Marshal(new)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.ReplicationController{})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	rc, err := clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return rc, nil
 }
 
 // PatchReplicationController patch a replication controller
@@ -884,7 +986,17 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 	if err != nil {
 		return err
 	}
-	_, err = clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	newRc, err := clientset.CoreV1().ReplicationControllers(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
+
+	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, IntToInt32(0))
+	if err != nil {
+		return err
+	}
+
+	newRc, err = PatchReplicationControllerForReplicas(clientset, newRc, new.Spec.Replicas)
 	if err != nil {
 		return err
 	}
@@ -892,30 +1004,30 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 }
 
 // PatchDeploymentForReplicas patch a deployment for replica update
-func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old appsv1.Deployment, replicas int) error {
+func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old *appsv1.Deployment, replicas *int32) (*appsv1.Deployment, error) {
 	oldData, err := json.Marshal(old)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	new := old.DeepCopy()
-	new.Spec.Replicas = IntToInt32(replicas)
+	new.Spec.Replicas = replicas
 	newData, err := json.Marshal(new)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, appsv1.Deployment{})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	newDeployment, err := clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return newDeployment, nil
 }
 
 // PatchDeployment patch a deployment
-func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1.Deployment) error {
+func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1beta2.Deployment) error {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return err
@@ -928,7 +1040,17 @@ func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new
 	if err != nil {
 		return err
 	}
-	_, err = clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	newDeployment, err := clientset.AppsV1().Deployments(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
+
+	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, IntToInt32(0))
+	if err != nil {
+		return err
+	}
+
+	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, new.Spec.Replicas)
 	if err != nil {
 		return err
 	}

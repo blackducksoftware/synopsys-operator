@@ -120,9 +120,9 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.PVCStorageClass, "storage-class", ctl.PVCStorageClass, "StorageClass for the PVC")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
-	cmd.Flags().StringVar(&ctl.PVCMemory, "pvc-memory", ctl.PVCMemory, "Memory allocation for the Persistent Volume Claim")
-	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environs for the Alert")
-	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "State of the Alert")
+	cmd.Flags().StringVar(&ctl.CfsslMemory, "pvc-memory", ctl.CfsslMemory, "Memory allocation for the PVC")
+	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")
+	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -162,7 +162,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.PVCMemory = ctl.PVCMemory
 		case "environs":
 			ctl.Spec.Environs = ctl.Environs
-		case "desired-state":
+		case "alert-desired-state":
 			ctl.Spec.DesiredState = ctl.DesiredState
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
