@@ -23,7 +23,6 @@ package alert
 
 import (
 	"fmt"
-	"strconv"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -39,7 +38,7 @@ func (a *SpecConfig) getAlertService() *components.Service {
 
 	service.AddPort(horizonapi.ServicePortConfig{
 		Port:       int32(*a.config.Port),
-		TargetPort: strconv.Itoa(*a.config.Port),
+		TargetPort: fmt.Sprintf("%d", *a.config.Port),
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
@@ -59,7 +58,7 @@ func (a *SpecConfig) getAlertExposedService() *components.Service {
 
 	service.AddPort(horizonapi.ServicePortConfig{
 		Port:       int32(*a.config.Port),
-		TargetPort: strconv.Itoa(*a.config.Port),
+		TargetPort: fmt.Sprintf("%d", *a.config.Port),
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
