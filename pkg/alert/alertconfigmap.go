@@ -44,8 +44,8 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 			log.Errorf("Could not split environ '%s' on ':'", environ)
 			continue
 		}
-		environKey := strings.Trim(vals[0], " ") // trim removes leading/trailing " "
-		environVal := strings.Trim(vals[1], " ")
+		environKey := strings.TrimSpace(vals[0])
+		environVal := strings.TrimSpace(vals[1])
 		log.Debugf("Adding Environ %s", environKey)
 		configMapData[environKey] = environVal
 	}
