@@ -99,7 +99,7 @@ func TestSwitchSpec(t *testing.T) {
 	// test cases: default
 	createAlertSpecType := ""
 	assert.EqualError(alertCtl.SwitchSpec(createAlertSpecType),
-		fmt.Sprintf("Alert Spec Type %s does not match: default", createAlertSpecType))
+		fmt.Sprintf("Alert Spec Type %s does not match: default or empty", createAlertSpecType))
 
 }
 

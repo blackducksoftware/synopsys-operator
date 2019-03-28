@@ -93,14 +93,14 @@ func (ctl *Ctl) CheckSpecFlags() error {
 }
 
 // SwitchSpec switches the Alert's Spec to a different predefined spec
-func (ctl *Ctl) SwitchSpec(createAlertSpecType string) error {
-	switch createAlertSpecType {
+func (ctl *Ctl) SwitchSpec(specType string) error {
+	switch specType {
 	case "empty":
 		ctl.Spec = &alertv1.AlertSpec{}
 	case "default":
 		ctl.Spec = crddefaults.GetAlertDefaultValue()
 	default:
-		return fmt.Errorf("Alert Spec Type %s does not match: default", createAlertSpecType)
+		return fmt.Errorf("Alert Spec Type %s does not match: default or empty", specType)
 	}
 	return nil
 }
