@@ -32,14 +32,10 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // These vars set by setResourceClients() in root command's init()
@@ -52,60 +48,6 @@ var alertClient *alertclientset.Clientset
 // These vars used by KubeCmd
 var openshift bool
 var kube bool
-
-// getBlackduckFromCluster returns the CRD for a blackduck in namespace
-func getBlackduckFromCluster(namespace string) (*blackduckv1.Blackduck, error) {
-	blackduck, err := blackduckClient.SynopsysV1().Blackducks(namespace).Get(namespace, metav1.GetOptions{})
-	if err != nil {
-		return blackduck, fmt.Errorf("error Editing Blackduck: %+v", err)
-	}
-	return blackduck, nil
-}
-
-// updateBlackduckInCluster updates the CRD for a blackduck
-func updateBlackduckInCluster(namespace string, crd *blackduckv1.Blackduck) error {
-	_, err := blackduckClient.SynopsysV1().Blackducks(namespace).Update(crd)
-	if err != nil {
-		return fmt.Errorf("error Editing Blackduck: %+v", err)
-	}
-	return nil
-}
-
-// getOpsSightFromCluster returns the CRD for an OpsSight in namespace
-func getOpsSightFromCluster(namespace string) (*opssightv1.OpsSight, error) {
-	opssight, err := opssightClient.SynopsysV1().OpsSights(namespace).Get(namespace, metav1.GetOptions{})
-	if err != nil {
-		return opssight, fmt.Errorf("error Editing OpsSight: %+v", err)
-	}
-	return opssight, nil
-}
-
-// updateOpsSightInCluster updates the CRD for an OpsSight
-func updateOpsSightInCluster(namespace string, crd *opssightv1.OpsSight) error {
-	_, err := opssightClient.SynopsysV1().OpsSights(namespace).Update(crd)
-	if err != nil {
-		return fmt.Errorf("error Editing OpsSight: %+v", err)
-	}
-	return nil
-}
-
-// getAlertFromCluster returns the CRD for an Alert in namespace
-func getAlertFromCluster(namespace string) (*alertv1.Alert, error) {
-	alert, err := alertClient.SynopsysV1().Alerts(namespace).Get(namespace, metav1.GetOptions{})
-	if err != nil {
-		return alert, fmt.Errorf("error Editing Alert: %+v", err)
-	}
-	return alert, nil
-}
-
-// updateAlertInCluster updates the CRD for an Alert
-func updateAlertInCluster(namespace string, crd *alertv1.Alert) error {
-	_, err := alertClient.SynopsysV1().Alerts(namespace).Update(crd)
-	if err != nil {
-		return fmt.Errorf("error Editing Alert: %+v", err)
-	}
-	return nil
-}
 
 // setResourceClients sets the global variables for the kuberentes rest config
 // and the resource clients

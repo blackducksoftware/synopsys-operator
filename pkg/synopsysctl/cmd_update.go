@@ -57,11 +57,11 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update a Synopsys Resource",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating a Synopsys-Operator Resource\n")
-		return nil
+		return fmt.Errorf("Must specify a sub-command")
 	},
 }
 
+// updateOperatorCmd lets the user update the Synopsys-Operator
 var updateOperatorCmd = &cobra.Command{
 	Use:   "operator",
 	Short: "Update the Synopsys-Operator",
@@ -133,6 +133,7 @@ var updateOperatorCmd = &cobra.Command{
 	},
 }
 
+// updateBlackduckCmd lets the user update a BlackDuck instance
 var updateBlackduckCmd = &cobra.Command{
 	Use:   "blackduck NAMESPACE",
 	Short: "Update an instance of Blackduck",
@@ -180,6 +181,7 @@ var updateBlackduckCmd = &cobra.Command{
 	},
 }
 
+// updateOpsSightCmd lets the user update an OpsSight instance
 var updateOpsSightCmd = &cobra.Command{
 	Use:   "opssight NAMESPACE",
 	Short: "Update an instance of OpsSight",
@@ -195,7 +197,7 @@ var updateOpsSightCmd = &cobra.Command{
 		opsSightNamespace := args[0]
 
 		// Get the current OpsSight
-		currOpsSight, err := getOpsSightFromCluster(opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightNamespace, opsSightNamespace)
 		if err != nil {
 			log.Errorf("Error getting OpsSight: %s", err)
 			return nil
@@ -228,6 +230,7 @@ var updateOpsSightCmd = &cobra.Command{
 	},
 }
 
+// updateOpsSightImageCmd lets the user update an image in an OpsSight instance
 var updateOpsSightImageCmd = &cobra.Command{
 	Use:   "image NAMESPACE COMPONENT IMAGE",
 	Short: "Update an image for a component of OpsSight",
@@ -265,7 +268,8 @@ var updateOpsSightImageCmd = &cobra.Command{
 		case "Prometheus":
 			opsSightCRD.Spec.Prometheus.Image = componentImage
 		default:
-			log.Errorf("Invalid COMPONENT")
+			log.Errorf("%s is not a valid COMPONENT\n", componentName)
+			log.Errorf("Valid Components: Perceptor, Scanner, ImageFacade, ImagePerceiver, PodPerceiver, Skyfire, Prometheus\n")
 			return fmt.Errorf("Invalid Component Name")
 		}
 		// Update OpsSight with New Image
@@ -278,7 +282,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 	},
 }
 
-// updateOpsSightAddRegistryCmd
+// updateOpsSightExternalHostCmd lets the user update an OpsSight with an External Host
 var updateOpsSightExternalHostCmd = &cobra.Command{
 	Use:   "externalHost NAMESPACE SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT",
 	Short: "Update an external host for a component of OpsSight",
@@ -304,32 +308,42 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 			log.Errorf("Invalid Concurrent Scan Limit: %s", err)
 		}
 		// Get OpsSight Spec
-		opsSightCRD, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
+		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
 		}
-		// Add External Host to Spec
-		newHost := opssightv1.Host{
-			Scheme:              hostScheme,
-			Domain:              hostDomain,
-			Port:                int(hostPort),
-			User:                hostUser,
-			Password:            hostPassword,
-			ConcurrentScanLimit: int(hostScanLimit),
-		}
-		opsSightCRD.Spec.Blackduck.ExternalHosts = append(opsSightCRD.Spec.Blackduck.ExternalHosts, &newHost)
-		// Update OpsSight with External Host
-		_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, opsSightCRD)
+		// Check if it can be updated
+		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
+		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("Cannot Update OpsSight: %s\n", err)
 			return nil
+		}
+		if canUpdate {
+			// Add External Host to Spec
+			newHost := opssightv1.Host{
+				Scheme:              hostScheme,
+				Domain:              hostDomain,
+				Port:                int(hostPort),
+				User:                hostUser,
+				Password:            hostPassword,
+				ConcurrentScanLimit: int(hostScanLimit),
+			}
+			currOpsSight.Spec.Blackduck.ExternalHosts = append(currOpsSight.Spec.Blackduck.ExternalHosts, &newHost)
+			// Update OpsSight with External Host
+			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, currOpsSight)
+			if err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
 		}
 		return nil
 	},
 }
 
-// updateOpsSightAddRegistryCmd adds a registry to an OpsSight
+// updateOpsSightAddRegistryCmd lets the user update and OpsSight by
+// adding a registry for the ImageFacade
 var updateOpsSightAddRegistryCmd = &cobra.Command{
 	Use:   "registry NAMESPACE URL USER PASSWORD",
 	Short: "Add an Internal Registry to OpsSight's ImageFacade",
@@ -346,28 +360,38 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		regUser := args[2]
 		regPass := args[3]
 		// Get OpsSight Spec
-		opsSightCRD, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
+		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("Error adding Internal Registry while getting OpsSight: %s\n", err)
 			return nil
 		}
-		// Add Internal Registry to Spec
-		newReg := opssightv1.RegistryAuth{
-			URL:      regURL,
-			User:     regUser,
-			Password: regPass,
-		}
-		opsSightCRD.Spec.ScannerPod.ImageFacade.InternalRegistries = append(opsSightCRD.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
-		// Update OpsSight with Internal Registry
-		_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, opsSightCRD)
+		// Check if it can be updated
+		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
+		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("Cannot Update OpsSight: %s\n", err)
 			return nil
+		}
+		if canUpdate {
+			// Add Internal Registry to Spec
+			newReg := opssightv1.RegistryAuth{
+				URL:      regURL,
+				User:     regUser,
+				Password: regPass,
+			}
+			currOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries = append(currOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
+			// Update OpsSight with Internal Registry
+			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, currOpsSight)
+			if err != nil {
+				log.Errorf("Error adding Internal Registry with updating OpsSight: %s\n", err)
+				return nil
+			}
 		}
 		return nil
 	},
 }
 
+// updateAlertCmd lets the user update an Alert Instance
 var updateAlertCmd = &cobra.Command{
 	Use:   "alert NAMESPACE",
 	Short: "Describe an instance of Alert",
@@ -383,9 +407,9 @@ var updateAlertCmd = &cobra.Command{
 		alertNamespace := args[0]
 
 		// Get the Alert
-		currAlert, err := getAlertFromCluster(alertNamespace)
+		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
 		if err != nil {
-			log.Errorf("Error getting Alert: %s", err)
+			log.Errorf("Error Updaing Alert while getting the Alert: %s", err)
 			return nil
 		}
 		updateAlertCtl.SetSpec(currAlert.Spec)
@@ -393,7 +417,7 @@ var updateAlertCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateAlertCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update: %s\n", err)
+			log.Errorf("Cannot Update Alert: %s\n", err)
 			return nil
 		}
 		if canUpdate {
@@ -407,7 +431,7 @@ var updateAlertCmd = &cobra.Command{
 			// Update Alert
 			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
 			if err != nil {
-				log.Errorf("%s", err)
+				log.Errorf("Error Updating the Alert: %s\n", err)
 				return nil
 			}
 		}
