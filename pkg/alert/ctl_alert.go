@@ -97,12 +97,10 @@ func (ctl *Ctl) SwitchSpec(createAlertSpecType string) error {
 	switch createAlertSpecType {
 	case "empty":
 		ctl.Spec = &alertv1.AlertSpec{}
-	case "spec1":
+	case "default":
 		ctl.Spec = crddefaults.GetAlertDefaultValue()
-	case "spec2":
-		ctl.Spec = crddefaults.GetAlertDefaultValue2()
 	default:
-		return fmt.Errorf("Alert Spec Type %s does not match: empty, spec1, spec2", createAlertSpecType)
+		return fmt.Errorf("Alert Spec Type %s does not match: default", createAlertSpecType)
 	}
 	return nil
 }

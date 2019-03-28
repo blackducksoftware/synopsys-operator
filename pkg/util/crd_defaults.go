@@ -347,22 +347,3 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		PVCMemory:         "5G",
 	}
 }
-
-// GetAlertDefaultValue2 creates a alert crd configuration object with defaults
-func GetAlertDefaultValue2() *alertv1.AlertSpec {
-	port := 8443
-	standAlone := true
-
-	return &alertv1.AlertSpec{
-		Port:              &port,
-		StandAlone:        &standAlone,
-		AlertMemory:       "2560M",
-		CfsslMemory:       "640M",
-		AlertImageName:    "blackduck-alert",
-		AlertImageVersion: "3.1.0",
-		CfsslImageName:    "blackduck-cfssl",
-		CfsslImageVersion: "1.0.0",
-		PVCStorageClass:   "",
-		PVCMemory:         "5G",
-	}
-}
