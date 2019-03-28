@@ -326,25 +326,8 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 	}
 }
 
-// GetAlertDefaultValue creates a alert crd configuration object with defaults
+// GetAlertDefaultValue creates an Alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {
-	port := 8443
-	standAlone := true
-
-	return &alertv1.AlertSpec{
-		Port:            &port,
-		StandAlone:      &standAlone,
-		AlertMemory:     "512M",
-		CfsslMemory:     "640M",
-		AlertImageName:  "blackduck-alert",
-		CfsslImageName:  "hub-cfssl",
-		PVCStorageClass: "",
-		PVCMemory:       "800M",
-	}
-}
-
-// GetAlertDefaultValue2 creates an Alert crd configuration object with defaults
-func GetAlertDefaultValue2() *alertv1.AlertSpec {
 	port := 8443
 	standAlone := true
 
@@ -353,14 +336,33 @@ func GetAlertDefaultValue2() *alertv1.AlertSpec {
 		Registry:          "docker.io",
 		ImagePath:         "blackducksoftware",
 		AlertImageName:    "blackduck-alert",
-		AlertImageVersion: "2.1.0",
-		CfsslImageName:    "hub-cfssl",
-		CfsslImageVersion: "4.8.1",
+		AlertImageVersion: "3.1.0",
+		CfsslImageName:    "blackduck-cfssl",
+		CfsslImageVersion: "1.0.0",
 		Port:              &port,
 		StandAlone:        &standAlone,
 		PVCStorageClass:   "",
-		AlertMemory:       "512M",
+		AlertMemory:       "2560M",
 		CfsslMemory:       "640M",
-		PVCMemory:         "800M",
+		PVCMemory:         "5G",
+	}
+}
+
+// GetAlertDefaultValue2 creates a alert crd configuration object with defaults
+func GetAlertDefaultValue2() *alertv1.AlertSpec {
+	port := 8443
+	standAlone := true
+
+	return &alertv1.AlertSpec{
+		Port:              &port,
+		StandAlone:        &standAlone,
+		AlertMemory:       "2560M",
+		CfsslMemory:       "640M",
+		AlertImageName:    "blackduck-alert",
+		AlertImageVersion: "3.1.0",
+		CfsslImageName:    "blackduck-cfssl",
+		CfsslImageVersion: "1.0.0",
+		PVCStorageClass:   "",
+		PVCMemory:         "5G",
 	}
 }
