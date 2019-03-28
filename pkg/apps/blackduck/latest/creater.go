@@ -30,20 +30,11 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
-
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 	postgres2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -51,8 +42,12 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
-	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // Creater will store the configuration to create the Blackduck
@@ -310,42 +305,6 @@ func (hc *Creater) getPVCVolumeName(namespace string, name string) (string, erro
 		}
 	}
 	return "", fmt.Errorf("timeout: unable to get pvc %s in %s namespace", namespace, namespace)
-}
-
-func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
-	for i := 0; i < 10; i++ {
-		time.Sleep(10 * time.Second)
-		service, err := util.GetService(hc.KubeClient, namespace, serviceName)
-		if err != nil {
-			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
-		}
-
-		log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
-
-		if len(service.Status.LoadBalancer.Ingress) > 0 {
-			ipAddress := service.Status.LoadBalancer.Ingress[0].IP
-			return ipAddress, nil
-		}
-	}
-	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
-}
-
-func (hc *Creater) getNodePortIPAddress(namespace string, serviceName string) (string, error) {
-	for i := 0; i < 10; i++ {
-		time.Sleep(10 * time.Second)
-		service, err := util.GetService(hc.KubeClient, namespace, serviceName)
-		if err != nil {
-			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
-		}
-
-		log.Debugf("[%s] service: %v", serviceName, service.Spec.ClusterIP)
-
-		if !strings.EqualFold(service.Spec.ClusterIP, "") {
-			ipAddress := service.Spec.ClusterIP
-			return ipAddress, nil
-		}
-	}
-	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
 }
 
 func (hc *Creater) registerIfNeeded(bd *v1.Blackduck) error {
