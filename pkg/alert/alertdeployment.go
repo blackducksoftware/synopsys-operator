@@ -42,8 +42,6 @@ func (a *SpecConfig) getAlertDeployment() *components.Deployment {
 	pod := a.getAlertPod()
 
 	deployment.AddPod(pod)
-
-	deployment.AddLabels(map[string]string{"app": "alert"})
 	return deployment
 }
 
