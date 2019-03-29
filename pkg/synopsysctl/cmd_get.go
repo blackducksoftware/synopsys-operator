@@ -78,7 +78,7 @@ var getBlackduckCmd = &cobra.Command{
 	},
 }
 
-// getBlackduckCmd lists Blackducks in the cluster
+// getBlackduckRootKeyCmd get the Black Duck root key for source code upload in the cluster
 var getBlackduckRootKeyCmd = &cobra.Command{
 	Use:   "rootKey BLACK_DUCK_NAME",
 	Short: "Get the root key of Black Duck for source code upload",
@@ -116,7 +116,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 
 		// Create the exec into kubernetes pod request
 		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod)
-		err = util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key--cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, sealKey)})
+		err = util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key--cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt > %s.key`, sealKey, namespace)})
 		if err != nil {
 			log.Errorf("unable to exec into upload cache pod in %s because %+v", namespace, err)
 			return nil
