@@ -95,6 +95,14 @@ func (ctl *Ctl) SetSpec(spec interface{}) error {
 
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *Ctl) CheckSpecFlags() error {
+	encryptPassLength := len(ctl.EncryptionPassword)
+	if encryptPassLength > 0 && encryptPassLength < 16 {
+		return fmt.Errorf("flag EncryptionPassword is %d characters. Must be 16 or more characters", encryptPassLength)
+	}
+	globalSaltLength := len(ctl.EncryptionGlobalSalt)
+	if globalSaltLength > 0 && globalSaltLength < 16 {
+		return fmt.Errorf("flag EncryptionGlobalSalt is %d characters. Must be 16 or more characters", globalSaltLength)
+	}
 	return nil
 }
 
