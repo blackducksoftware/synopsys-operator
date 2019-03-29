@@ -22,12 +22,24 @@ under the License.
 package alert
 
 import (
+	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
 // GetAlertSecret creates a Secret Horizon component for the Alert
-func (a *SpecConfig) GetAlertSecret() *components.Secret {
+func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
+	// Check Secret Values
+	encryptPassLength := len(a.config.EncryptionPassword)
+	if encryptPassLength > 0 && encryptPassLength < 16 {
+		return nil, fmt.Errorf("encryption password is %d characters, it must be 16 or more", encryptPassLength)
+	}
+	encryptGlobalSaltLength := len(a.config.EncryptionGlobalSalt)
+	if encryptGlobalSaltLength > 0 && encryptGlobalSaltLength < 16 {
+		return nil, fmt.Errorf("encryption global salt is %d characters, it must be 16 or more", encryptGlobalSaltLength)
+	}
+
 	// create a secret
 	alertSecret := components.NewSecret(horizonapi.SecretConfig{
 		APIVersion: "v1",
@@ -42,6 +54,6 @@ func (a *SpecConfig) GetAlertSecret() *components.Secret {
 	})
 
 	alertSecret.AddLabels(map[string]string{"app": "alert"})
-	return alertSecret
+	return alertSecret, nil
 
 }
