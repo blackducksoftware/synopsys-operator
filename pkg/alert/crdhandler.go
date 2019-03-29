@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	alert_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
@@ -47,18 +47,18 @@ type Handler struct {
 	kubeConfig  *rest.Config
 	kubeClient  *kubernetes.Clientset
 	alertClient *alertclientset.Clientset
-	defaults    *alert_v1.AlertSpec
+	defaults    *alertapi.AlertSpec
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, defaults *alert_v1.AlertSpec) *Handler {
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, defaults *alertapi.AlertSpec) *Handler {
 	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, defaults: defaults}
 }
 
 // ObjectCreated will be called for create alert events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("objectCreated: %+v", obj)
-	alertv1, ok := obj.(*alert_v1.Alert)
+	alertv1, ok := obj.(*alertapi.Alert)
 	if !ok {
 		log.Error("Unable to cast to Alert object")
 		return
@@ -106,7 +106,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("objectUpdated: %+v", objNew)
 }
 
-func (h *Handler) updateState(statusState string, errorMessage string, alert *alert_v1.Alert) (*alert_v1.Alert, error) {
+func (h *Handler) updateState(statusState string, errorMessage string, alert *alertapi.Alert) (*alertapi.Alert, error) {
 	alert.Status.State = statusState
 	alert.Status.ErrorMessage = errorMessage
 	alert, err := h.updateAlertObject(alert)
@@ -116,6 +116,6 @@ func (h *Handler) updateState(statusState string, errorMessage string, alert *al
 	return alert, err
 }
 
-func (h *Handler) updateAlertObject(obj *alert_v1.Alert) (*alert_v1.Alert, error) {
+func (h *Handler) updateAlertObject(obj *alertapi.Alert) (*alertapi.Alert, error) {
 	return h.alertClient.SynopsysV1().Alerts(h.config.Namespace).Update(obj)
 }

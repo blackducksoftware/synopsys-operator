@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"testing"
 
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -36,7 +36,7 @@ func TestNewAlertCtl(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
 	assert.Equal(&Ctl{
-		Spec:              &alertv1.AlertSpec{},
+		Spec:              &alertapi.AlertSpec{},
 		Registry:          "",
 		ImagePath:         "",
 		AlertImageName:    "",
@@ -57,13 +57,13 @@ func TestNewAlertCtl(t *testing.T) {
 func TestGetSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	assert.Equal(alertv1.AlertSpec{}, alertCtl.GetSpec())
+	assert.Equal(alertapi.AlertSpec{}, alertCtl.GetSpec())
 }
 
 func TestSetSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	specToSet := alertv1.AlertSpec{Namespace: "test", Registry: "test"}
+	specToSet := alertapi.AlertSpec{Namespace: "test", Registry: "test"}
 	alertCtl.SetSpec(specToSet)
 	assert.Equal(specToSet, alertCtl.GetSpec())
 
@@ -84,9 +84,9 @@ func TestSwitchSpec(t *testing.T) {
 
 	var tests = []struct {
 		input    string
-		expected alertv1.AlertSpec
+		expected alertapi.AlertSpec
 	}{
-		{input: "empty", expected: alertv1.AlertSpec{}},
+		{input: "empty", expected: alertapi.AlertSpec{}},
 		{input: "default", expected: *crddefaults.GetAlertDefaultValue()},
 	}
 
@@ -151,12 +151,12 @@ func TestSetFlag(t *testing.T) {
 		flagName    string
 		initialCtl  *Ctl
 		changedCtl  *Ctl
-		changedSpec *alertv1.AlertSpec
+		changedSpec *alertapi.AlertSpec
 	}{
 		// case
 		{flagName: "alert-registry",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "changedRegistry",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -172,12 +172,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{Registry: "changedRegistry"},
+			changedSpec: &alertapi.AlertSpec{Registry: "changedRegistry"},
 		},
 		// case
 		{flagName: "image-path",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "changedImagePath",
 				AlertImageName:    "",
@@ -193,12 +193,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{ImagePath: "changedImagePath"},
+			changedSpec: &alertapi.AlertSpec{ImagePath: "changedImagePath"},
 		},
 		// case
 		{flagName: "alert-image-name",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "changedAlertImageName",
@@ -214,12 +214,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{AlertImageName: "changedAlertImageName"},
+			changedSpec: &alertapi.AlertSpec{AlertImageName: "changedAlertImageName"},
 		},
 		// case
 		{flagName: "alert-image-version",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -235,12 +235,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{AlertImageVersion: "changedAlertImageVersion"},
+			changedSpec: &alertapi.AlertSpec{AlertImageVersion: "changedAlertImageVersion"},
 		},
 		// case
 		{flagName: "cfssl-image-name",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -256,12 +256,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{CfsslImageName: "changedCfsslImageName"},
+			changedSpec: &alertapi.AlertSpec{CfsslImageName: "changedCfsslImageName"},
 		},
 		// case
 		{flagName: "cfssl-image-version",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -277,12 +277,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{CfsslImageVersion: "changedCfsslImageVersion"},
+			changedSpec: &alertapi.AlertSpec{CfsslImageVersion: "changedCfsslImageVersion"},
 		},
 		// case
 		{flagName: "port",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -298,12 +298,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{Port: crddefaults.IntToPtr(10)},
+			changedSpec: &alertapi.AlertSpec{Port: crddefaults.IntToPtr(10)},
 		},
 		// case
 		{flagName: "stand-alone",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -319,12 +319,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{StandAlone: crddefaults.BoolToPtr(true)},
+			changedSpec: &alertapi.AlertSpec{StandAlone: crddefaults.BoolToPtr(true)},
 		},
 		// case
 		{flagName: "storage-class",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -340,12 +340,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{PVCStorageClass: "changedStorageClass"},
+			changedSpec: &alertapi.AlertSpec{PVCStorageClass: "changedStorageClass"},
 		},
 		// case
 		{flagName: "alert-memory",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -361,12 +361,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{AlertMemory: "changedAlertMemory"},
+			changedSpec: &alertapi.AlertSpec{AlertMemory: "changedAlertMemory"},
 		},
 		// case
 		{flagName: "cfssl-memory",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -382,12 +382,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{CfsslMemory: "changedCfsslMemory"},
+			changedSpec: &alertapi.AlertSpec{CfsslMemory: "changedCfsslMemory"},
 		},
 		// case
 		{flagName: "pvc-memory",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -403,12 +403,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{PVCSize: "changedPVCSize"},
+			changedSpec: &alertapi.AlertSpec{PVCSize: "changedPVCSize"},
 		},
 		// case
 		{flagName: "environs",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -424,12 +424,12 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{"changedEnviron:Number1", "changedEnviron:Number2"},
 				DesiredState:      "",
 			},
-			changedSpec: &alertv1.AlertSpec{Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"}},
+			changedSpec: &alertapi.AlertSpec{Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"}},
 		},
 		// case
 		{flagName: "alert-desired-state",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Registry:          "",
 				ImagePath:         "",
 				AlertImageName:    "",
@@ -445,7 +445,7 @@ func TestSetFlag(t *testing.T) {
 				Environs:          []string{},
 				DesiredState:      "changedState",
 			},
-			changedSpec: &alertv1.AlertSpec{DesiredState: "changedState"},
+			changedSpec: &alertapi.AlertSpec{DesiredState: "changedState"},
 		},
 	}
 

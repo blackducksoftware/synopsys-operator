@@ -24,7 +24,7 @@ package alert
 import (
 	"fmt"
 
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -34,7 +34,7 @@ import (
 // Ctl type provides functionality for an Alert
 // for the Synopsysctl tool
 type Ctl struct {
-	Spec              *alertv1.AlertSpec
+	Spec              *alertapi.AlertSpec
 	Registry          string
 	ImagePath         string
 	AlertImageName    string
@@ -54,7 +54,7 @@ type Ctl struct {
 // NewAlertCtl creates a new AlertCtl struct
 func NewAlertCtl() *Ctl {
 	return &Ctl{
-		Spec:              &alertv1.AlertSpec{},
+		Spec:              &alertapi.AlertSpec{},
 		Registry:          "",
 		ImagePath:         "",
 		AlertImageName:    "",
@@ -79,7 +79,7 @@ func (ctl *Ctl) GetSpec() interface{} {
 
 // SetSpec sets the Spec for the resource
 func (ctl *Ctl) SetSpec(spec interface{}) error {
-	convertedSpec, ok := spec.(alertv1.AlertSpec)
+	convertedSpec, ok := spec.(alertapi.AlertSpec)
 	if !ok {
 		return fmt.Errorf("Error setting Alert Spec")
 	}
@@ -96,7 +96,7 @@ func (ctl *Ctl) CheckSpecFlags() error {
 func (ctl *Ctl) SwitchSpec(specType string) error {
 	switch specType {
 	case "empty":
-		ctl.Spec = &alertv1.AlertSpec{}
+		ctl.Spec = &alertapi.AlertSpec{}
 	case "default":
 		ctl.Spec = crddefaults.GetAlertDefaultValue()
 	default:

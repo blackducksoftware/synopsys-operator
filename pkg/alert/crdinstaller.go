@@ -29,7 +29,7 @@ import (
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/alert/v1"
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
@@ -169,7 +169,7 @@ func (c *CRDInstaller) CreateHandler() {
 		kubeConfig:  c.kubeConfig,
 		kubeClient:  c.kubeClient,
 		alertClient: c.alertClient,
-		defaults:    c.defaults.(*v1.AlertSpec),
+		defaults:    c.defaults.(*alertapi.AlertSpec),
 	}
 }
 

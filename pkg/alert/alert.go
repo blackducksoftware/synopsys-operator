@@ -25,16 +25,16 @@ import (
 	"fmt"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
 
 // SpecConfig will contain the specification of Alert
 type SpecConfig struct {
-	config *v1.AlertSpec
+	config *alertapi.AlertSpec
 }
 
 // NewAlert will create the Alert object
-func NewAlert(config *v1.AlertSpec) *SpecConfig {
+func NewAlert(config *alertapi.AlertSpec) *SpecConfig {
 	return &SpecConfig{config: config}
 }
 

@@ -25,7 +25,7 @@ import (
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -73,7 +73,7 @@ func (ac *Creater) DeleteAlert(namespace string) {
 }
 
 // CreateAlert will create the Black Duck Alert
-func (ac *Creater) CreateAlert(createAlert *v1.AlertSpec) error {
+func (ac *Creater) CreateAlert(createAlert *alertapi.AlertSpec) error {
 	log.Debugf("Create Alert details for %s: %+v", createAlert.Namespace, createAlert)
 	alert := NewAlert(createAlert)
 	components, err := alert.GetComponents()
