@@ -344,6 +344,6 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		PVCStorageClass:   "",
 		AlertMemory:       "2560M",
 		CfsslMemory:       "640M",
-		PVCMemory:         "5G",
+		PVCSize:           "5G",
 	}
 }
