@@ -131,6 +131,8 @@ func UpdateState(h *hubClient.Clientset, namespace string, statusState string, e
 	hub.Status.State = statusState
 	if err != nil {
 		hub.Status.ErrorMessage = fmt.Sprintf("%+v", err)
+	} else {
+		hub.Status.ErrorMessage = ""
 	}
 	hub, err = updateHubObject(h, namespace, hub)
 	if err != nil {
