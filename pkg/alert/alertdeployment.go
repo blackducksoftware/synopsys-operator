@@ -109,7 +109,7 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 func (a *SpecConfig) getAlertVolume() *components.Volume {
 	vol := components.NewPVCVolume(horizonapi.PVCVolumeConfig{
 		VolumeName: "dir-alert",
-		PVCName:    "alert-pvc",
+		PVCName:    a.config.PVCName,
 		ReadOnly:   false,
 	})
 

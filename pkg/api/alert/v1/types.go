@@ -52,12 +52,13 @@ type AlertSpec struct {
 	EncryptionPassword   string   `json:"EncryptionPassword"`
 	EncryptionGlobalSalt string   `json:"EncryptionGlobalSalt"`
 	Environs             []string `json:"environs,omitempty"`
+	PVCName              string   `json:"pvcName"`
 	PVCStorageClass      string   `json:"pvcStorageClass"`
 
 	// Should be passed like: e.g "1300Mi"
+	PVCSize     string `json:"pvcMemory"`
 	AlertMemory string `json:"alertMemory,omitempty"`
 	CfsslMemory string `json:"cfsslMemory,omitempty"`
-	PVCSize     string `json:"pvcMemory"`
 
 	DesiredState string `json:"desiredState,omitempty"`
 }

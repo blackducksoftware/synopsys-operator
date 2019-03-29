@@ -342,10 +342,11 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		Port:                 &port,
 		EncryptionPassword:   "",
 		EncryptionGlobalSalt: "",
+		PVCName:              "alert-pvc",
 		StandAlone:           &standAlone,
+		PVCSize:              "5G",
 		PVCStorageClass:      "",
 		AlertMemory:          "2560M",
 		CfsslMemory:          "640M",
-		PVCSize:              "5G",
 	}
 }

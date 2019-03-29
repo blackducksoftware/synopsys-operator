@@ -46,10 +46,11 @@ type Ctl struct {
 	EncryptionPassword   string
 	EncryptionGlobalSalt string
 	Environs             []string
+	PVCName              string
 	PVCStorageClass      string
+	PVCSize              string
 	AlertMemory          string
 	CfsslMemory          string
-	PVCSize              string
 	DesiredState         string
 }
 
@@ -68,10 +69,11 @@ func NewAlertCtl() *Ctl {
 		EncryptionPassword:   "",
 		EncryptionGlobalSalt: "",
 		Environs:             []string{},
+		PVCName:              "",
 		PVCStorageClass:      "",
+		PVCSize:              "",
 		AlertMemory:          "",
 		CfsslMemory:          "",
-		PVCSize:              "",
 		DesiredState:         "",
 	}
 }
@@ -122,10 +124,11 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for the Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for the Alert")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")
+	cmd.Flags().StringVar(&ctl.PVCName, "pvc-name", ctl.PVCName, "Name for the PVC")
 	cmd.Flags().StringVar(&ctl.PVCStorageClass, "storage-class", ctl.PVCStorageClass, "StorageClass for the PVC")
+	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation for the PVC")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
-	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation for the PVC")
 	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
 }
 
@@ -160,14 +163,16 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.EncryptionPassword = ctl.EncryptionPassword
 		case "encryption-global-salt":
 			ctl.Spec.EncryptionGlobalSalt = ctl.EncryptionGlobalSalt
+		case "pvc-name":
+			ctl.Spec.PVCName = ctl.PVCName
 		case "storage-class":
 			ctl.Spec.PVCStorageClass = ctl.PVCStorageClass
+		case "pvc-size":
+			ctl.Spec.PVCSize = ctl.PVCSize
 		case "alert-memory":
 			ctl.Spec.AlertMemory = ctl.AlertMemory
 		case "cfssl-memory":
 			ctl.Spec.CfsslMemory = ctl.CfsslMemory
-		case "pvc-size":
-			ctl.Spec.PVCSize = ctl.PVCSize
 		case "environs":
 			ctl.Spec.Environs = ctl.Environs
 		case "alert-desired-state":
