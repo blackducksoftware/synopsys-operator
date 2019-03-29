@@ -114,9 +114,22 @@ func (ctl *Ctl) SetSpec(spec interface{}) error {
 	return nil
 }
 
+func isValidSize(size string) bool {
+	switch size {
+	case
+		"",
+		"small",
+		"medium",
+		"large",
+		"xlarge":
+		return true
+	}
+	return false
+}
+
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *Ctl) CheckSpecFlags() error {
-	if ctl.Size != "" && ctl.Size != "small" && ctl.Size != "medium" && ctl.Size != "large" && ctl.Size != "xlarge" {
+	if !isValidSize(ctl.Size) {
 		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'xlarge'")
 	}
 	for _, pvcJSON := range ctl.PVCJSONSlice {
@@ -235,9 +248,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 			ctl.Spec.ExternalPostgres.PostgresUserPassword = ctl.ExternalPostgresPostgresUserPassword
 		case "pvc-storage-class":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
 			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
 			ctl.Spec.LivenessProbes = ctl.LivenessProbes
