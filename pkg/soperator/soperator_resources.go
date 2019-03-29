@@ -68,11 +68,6 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		//ForceNonRoot:           "*bool",
 	})
 
-	synopsysOperatorPodLabels := map[string]string{
-		"name": "synopsys-operator",
-		"app":  "synopsys-operator",
-	}
-
 	synopsysOperatorContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator",
 		Args:       []string{"/etc/synopsys-operator/config.json"},
@@ -170,10 +165,10 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		//Required:        "*bool",
 	})
 
-	synopsysOperatorPod.AddLabels(synopsysOperatorPodLabels)
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainer)
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainerUI)
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
+	synopsysOperatorPod.AddLabels(map[string]string{"name": "synopsys-operator", "app": "synopsys-operator"})
 	synopsysOperatorRC.AddPod(synopsysOperatorPod)
 
 	synopsysOperatorRC.AddLabels(map[string]string{"app": "synopsys-operator"})

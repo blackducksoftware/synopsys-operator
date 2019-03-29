@@ -47,47 +47,49 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 		log.Errorf("Failed to Update the Synopsys Operator: %s", err)
 		return nil
 	}
+
 	// Get CRD Version Data
 	newOperatorVersion := strings.Split(newSOperatorSpec.SynopsysOperatorImage, ":")[1]
 	currOperatorVersion := strings.Split(currImage, ":")[1]
 	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
 	currCrdData := SOperatorCRDVersionMap.GetCRDVersions(currOperatorVersion)
+
 	// Get CRDs that need to be updated (specs have new version set)
 	log.Debugf("Getting CRDs that need new versions")
 	var oldBlackducks = []blackduckv1.Blackduck{}
 	kube, openshift := operatorutil.DetermineClusterClients(restconfig)
 	if newCrdData.Blackduck.APIVersion != currCrdData.Blackduck.APIVersion {
-		oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion, currCrdData.Blackduck.CRDName)
+		oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion)
 		if err != nil {
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("failed to get Blackduck's to update: %s", err)
 		}
 		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.Blackduck.CRDName)
 		if err != nil {
-			return fmt.Errorf("%s", out)
+			return fmt.Errorf("failed to delete the crd %s: %s", currCrdData.Blackduck.CRDName, out)
 		}
 		log.Debugf("Updating %d Black Ducks", len(oldBlackducks))
 	}
 	var oldOpsSights = []opssightv1.OpsSight{}
 	if newCrdData.OpsSight.APIVersion != currCrdData.OpsSight.APIVersion {
-		oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion, currCrdData.OpsSight.CRDName)
+		oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion)
 		if err != nil {
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("failed to get OpsSights to update: %s", err)
 		}
 		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.OpsSight.CRDName)
 		if err != nil {
-			return fmt.Errorf("%s", out)
+			return fmt.Errorf("failed to delete the crd %s: %s", currCrdData.OpsSight.CRDName, out)
 		}
 		log.Debugf("Updating %d OpsSights", len(oldOpsSights))
 	}
 	var oldAlerts = []alertv1.Alert{}
 	if newCrdData.Alert.APIVersion != currCrdData.Alert.APIVersion {
-		oldAlerts, err = GetAlertVersionsToRemove(alertClient, newCrdData.Alert.APIVersion, currCrdData.Alert.CRDName)
+		oldAlerts, err = GetAlertVersionsToRemove(alertClient, newCrdData.Alert.APIVersion)
 		if err != nil {
-			return fmt.Errorf("%s", err)
+			return fmt.Errorf("failed to get Alerts to update%s", err)
 		}
 		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.Alert.CRDName)
 		if err != nil {
-			return fmt.Errorf("%s", out)
+			return fmt.Errorf("failed to delete the crd %s: %s", currCrdData.Alert.CRDName, out)
 		}
 		log.Debugf("Updating %d Alerts", len(oldAlerts))
 	}
@@ -96,22 +98,22 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	log.Debugf("Updating Synopsys-Operator's Components")
 	err = UpdateSOperatorComponents(restconfig, kubeClient, namespace, newSOperatorSpec)
 	if err != nil {
-		return fmt.Errorf("Failed to Update Synopsys-Operator: %s", err)
+		return fmt.Errorf("failed to update Synopsys-Operator components: %s", err)
 	}
 
 	// Update the CRDs in the cluster with the new versions
 	log.Debugf("Updating CRDs to new Versions")
 	err = operatorutil.UpdateBlackducks(blackduckClient, oldBlackducks)
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("failed to update Black Ducks: %s", err)
 	}
 	err = operatorutil.UpdateOpsSights(opssightClient, oldOpsSights)
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("failed to update OpsSights: %s", err)
 	}
 	err = operatorutil.UpdateAlerts(alertClient, oldAlerts)
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return fmt.Errorf("failed to update Alerts: %s", err)
 	}
 
 	return nil
@@ -121,12 +123,12 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpecConfig *SpecConfig) error {
 	sOperatorComponents, err := newSOperatorSpecConfig.GetComponents()
 	if err != nil {
-		return fmt.Errorf("Failed to Update Operator Components: %s", err)
+		return fmt.Errorf("failed to get Synopsys-Operator components: %s", err)
 	}
 	sOperatorCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, sOperatorComponents, "app=synopsys-operator")
 	errs := sOperatorCommonConfig.CRUDComponents()
 	if errs != nil {
-		return fmt.Errorf("Failed to Update Operator Components: %+v", errs)
+		return fmt.Errorf("failed to update Synopsys-Operator components: %+v", errs)
 	}
 
 	return nil
@@ -136,12 +138,12 @@ func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.C
 func UpdatePrometheus(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig *PrometheusSpecConfig) error {
 	prometheusComponents, err := newPrometheusSpecConfig.GetComponents()
 	if err != nil {
-		return fmt.Errorf("Failed to Update Prometheus Components: %s", err)
+		return fmt.Errorf("failed to get Prometheus components: %s", err)
 	}
 	prometheusCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, prometheusComponents, "app=prometheus")
 	errs := prometheusCommonConfig.CRUDComponents()
 	if errs != nil {
-		return fmt.Errorf("Failed to Update Operator Components: %+v", errs)
+		return fmt.Errorf("failed to update Prometheus components: %+v", errs)
 	}
 	return nil
 }

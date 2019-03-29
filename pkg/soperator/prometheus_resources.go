@@ -45,7 +45,6 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponent
 		//Affinity:                 "string",
 	})
 	prometheusService.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	prometheusService.AddLabels(map[string]string{"name": "prometheus"})
 	prometheusService.AddSelectors(map[string]string{"app": "prometheus"})
 	prometheusService.AddPort(horizonapi.ServicePortConfig{
 		Name:       "prometheus",
@@ -55,7 +54,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponent
 		Protocol: horizonapi.ProtocolTCP,
 	})
 
-	prometheusService.AddLabels(map[string]string{"app": "prometheus"})
+	prometheusService.AddLabels(map[string]string{"name": "prometheus", "app": "prometheus"})
 	return prometheusService
 }
 
