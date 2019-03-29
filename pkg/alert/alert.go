@@ -47,6 +47,8 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.Services = append(components.Services, a.getAlertService())
 	components.Services = append(components.Services, a.getAlertExposedService())
 	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
+	components.Secrets = append(components.Secrets, a.GetAlertSecret())
+
 	pvc, err := a.getAlertPersistentVolumeClaim()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get alert components: %s", err)

@@ -87,6 +87,11 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 		FromName: "blackduck-alert-config",
 	})
 
+	container.AddEnv(horizonapi.EnvConfig{
+		Type:     horizonapi.EnvFromSecret,
+		FromName: "alert-secret",
+	})
+
 	container.AddLivenessProbe(horizonapi.ProbeConfig{
 		ActionConfig: horizonapi.ActionConfig{
 			Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/alert/api/about"},
