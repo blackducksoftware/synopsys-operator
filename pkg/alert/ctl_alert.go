@@ -46,6 +46,7 @@ type Ctl struct {
 	EncryptionPassword   string
 	EncryptionGlobalSalt string
 	Environs             []string
+	PersistentStorage    bool
 	PVCName              string
 	PVCStorageClass      string
 	PVCSize              string
@@ -69,6 +70,7 @@ func NewAlertCtl() *Ctl {
 		EncryptionPassword:   "",
 		EncryptionGlobalSalt: "",
 		Environs:             []string{},
+		PersistentStorage:    false,
 		PVCName:              "",
 		PVCStorageClass:      "",
 		PVCSize:              "",
@@ -132,8 +134,9 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for the Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for the Alert")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")
+	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
 	cmd.Flags().StringVar(&ctl.PVCName, "pvc-name", ctl.PVCName, "Name for the PVC")
-	cmd.Flags().StringVar(&ctl.PVCStorageClass, "storage-class", ctl.PVCStorageClass, "StorageClass for the PVC")
+	cmd.Flags().StringVar(&ctl.PVCStorageClass, "pvc-storage-class", ctl.PVCStorageClass, "StorageClass for the PVC")
 	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation for the PVC")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
@@ -171,6 +174,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.EncryptionPassword = ctl.EncryptionPassword
 		case "encryption-global-salt":
 			ctl.Spec.EncryptionGlobalSalt = ctl.EncryptionGlobalSalt
+		case "persistent-storage":
+			ctl.Spec.PersistentStorage = ctl.PersistentStorage
 		case "pvc-name":
 			ctl.Spec.PVCName = ctl.PVCName
 		case "storage-class":

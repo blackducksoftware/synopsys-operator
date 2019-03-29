@@ -15,6 +15,7 @@
 		"cfsslImageVersion": "1.0.0",
 		"port": 8443,
 		"standAlone": true,
+		"persistentStorage": true,
 		"pvcName": "alert-pvc",
 		"pvcStorageClass": "",
 		"pvcSize": "5G",

@@ -52,6 +52,7 @@ type AlertSpec struct {
 	EncryptionPassword   string   `json:"EncryptionPassword"`
 	EncryptionGlobalSalt string   `json:"EncryptionGlobalSalt"`
 	Environs             []string `json:"environs,omitempty"`
+	PersistentStorage    bool     `json:"persistentStorage"`
 	PVCName              string   `json:"pvcName"`
 	PVCStorageClass      string   `json:"pvcStorageClass"`
 

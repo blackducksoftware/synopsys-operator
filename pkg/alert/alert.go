@@ -43,17 +43,22 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
 
 	// Add alert components
-	components.Deployments = append(components.Deployments, a.getAlertDeployment())
+	dep, err := a.getAlertDeployment()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Alert Deployment: %s", err)
+	}
+	components.Deployments = append(components.Deployments, dep)
 	components.Services = append(components.Services, a.getAlertService())
 	components.Services = append(components.Services, a.getAlertExposedService())
 	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
 	components.Secrets = append(components.Secrets, a.GetAlertSecret())
-
-	pvc, err := a.getAlertPersistentVolumeClaim()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get alert components: %s", err)
+	if a.config.PersistentStorage {
+		pvc, err := a.getAlertPersistentVolumeClaim()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Alert's PVC: %s", err)
+		}
+		components.PersistentVolumeClaims = append(components.PersistentVolumeClaims, pvc)
 	}
-	components.PersistentVolumeClaims = append(components.PersistentVolumeClaims, pvc)
 
 	// Add cfssl if running in stand alone mode
 	if *a.config.StandAlone {

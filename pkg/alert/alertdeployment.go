@@ -30,7 +30,7 @@ import (
 )
 
 // getAlertDeployment returns a new deployment for an Alert
-func (a *SpecConfig) getAlertDeployment() *components.Deployment {
+func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
@@ -39,14 +39,17 @@ func (a *SpecConfig) getAlertDeployment() *components.Deployment {
 	})
 	deployment.AddMatchLabelsSelectors(map[string]string{"app": "alert", "tier": "alert"})
 
-	pod := a.getAlertPod()
+	pod, err := a.getAlertPod()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Alert Pod: %s", err)
+	}
 
 	deployment.AddPod(pod)
-	return deployment
+	return deployment, nil
 }
 
 // getAlertPod returns a new Pod for an Alert
-func (a *SpecConfig) getAlertPod() *components.Pod {
+func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "alert",
 	})
@@ -54,12 +57,18 @@ func (a *SpecConfig) getAlertPod() *components.Pod {
 
 	pod.AddContainer(a.getAlertContainer())
 
-	vol := a.getAlertVolume()
-
-	pod.AddVolume(vol)
+	if a.config.PersistentStorage {
+		pod.AddVolume(a.getAlertPVCVolume())
+	} else {
+		vol, err := a.getAlertEmptyDirVolume()
+		if err != nil {
+			return nil, fmt.Errorf("failed to Add Volume to Alert Pod: %s", err)
+		}
+		pod.AddVolume(vol)
+	}
 
 	pod.AddLabels(map[string]string{"app": "alert"})
-	return pod
+	return pod, nil
 }
 
 // getAlertContainer returns a new Container for an Alert
@@ -105,8 +114,21 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 	return container
 }
 
-// getAlertVolume returns a new Volume for an Alert
-func (a *SpecConfig) getAlertVolume() *components.Volume {
+// getAlertEmptyDirVolume returns a new EmptyDirVolume for an Alert
+func (a *SpecConfig) getAlertEmptyDirVolume() (*components.Volume, error) {
+	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
+		VolumeName: "dir-alert",
+		Medium:     horizonapi.StorageMediumDefault,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Alert EmptyDir: %s", err)
+	}
+
+	return vol, err
+}
+
+// getAlertPVCVolume returns a new PVCVolume for an Alert
+func (a *SpecConfig) getAlertPVCVolume() *components.Volume {
 	vol := components.NewPVCVolume(horizonapi.PVCVolumeConfig{
 		VolumeName: "dir-alert",
 		PVCName:    a.config.PVCName,
