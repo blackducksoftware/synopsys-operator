@@ -40,17 +40,19 @@ type Alert struct {
 
 // AlertSpec is the spec for a Alert resource
 type AlertSpec struct {
-	Namespace         string   `json:"namespace,omitempty"`
-	Registry          string   `json:"registry,omitempty"`
-	ImagePath         string   `json:"imagePath,omitempty"`
-	AlertImageName    string   `json:"alertImageName,omitempty"`
-	AlertImageVersion string   `json:"alertImageVersion,omitempty"`
-	CfsslImageName    string   `json:"cfsslImageName,omitempty"`
-	CfsslImageVersion string   `json:"cfsslImageVersion,omitempty"`
-	Port              *int     `json:"port"`
-	StandAlone        *bool    `json:"standAlone"`
-	Environs          []string `json:"environs,omitempty"`
-	PVCStorageClass   string   `json:"pvcStorageClass"`
+	Namespace            string   `json:"namespace,omitempty"`
+	Registry             string   `json:"registry,omitempty"`
+	ImagePath            string   `json:"imagePath,omitempty"`
+	AlertImageName       string   `json:"alertImageName,omitempty"`
+	AlertImageVersion    string   `json:"alertImageVersion,omitempty"`
+	CfsslImageName       string   `json:"cfsslImageName,omitempty"`
+	CfsslImageVersion    string   `json:"cfsslImageVersion,omitempty"`
+	StandAlone           *bool    `json:"standAlone"`
+	Port                 *int     `json:"port"`
+	EncryptionPassword   string   `json:"EncryptionPassword"`
+	EncryptionGlobalSalt string   `json:"EncryptionGlobalSalt"`
+	Environs             []string `json:"environs,omitempty"`
+	PVCStorageClass      string   `json:"pvcStorageClass"`
 
 	// Should be passed like: e.g "1300Mi"
 	AlertMemory string `json:"alertMemory,omitempty"`

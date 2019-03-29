@@ -34,41 +34,45 @@ import (
 // Ctl type provides functionality for an Alert
 // for the Synopsysctl tool
 type Ctl struct {
-	Spec              *alertapi.AlertSpec
-	Registry          string
-	ImagePath         string
-	AlertImageName    string
-	AlertImageVersion string
-	CfsslImageName    string
-	CfsslImageVersion string
-	Port              int
-	StandAlone        bool
-	PVCStorageClass   string
-	AlertMemory       string
-	CfsslMemory       string
-	PVCSize           string
-	Environs          []string
-	DesiredState      string
+	Spec                 *alertapi.AlertSpec
+	Registry             string
+	ImagePath            string
+	AlertImageName       string
+	AlertImageVersion    string
+	CfsslImageName       string
+	CfsslImageVersion    string
+	StandAlone           bool
+	Port                 int
+	EncryptionPassword   string
+	EncryptionGlobalSalt string
+	Environs             []string
+	PVCStorageClass      string
+	AlertMemory          string
+	CfsslMemory          string
+	PVCSize              string
+	DesiredState         string
 }
 
 // NewAlertCtl creates a new AlertCtl struct
 func NewAlertCtl() *Ctl {
 	return &Ctl{
-		Spec:              &alertapi.AlertSpec{},
-		Registry:          "",
-		ImagePath:         "",
-		AlertImageName:    "",
-		AlertImageVersion: "",
-		CfsslImageName:    "",
-		CfsslImageVersion: "",
-		Port:              0,
-		StandAlone:        false,
-		PVCStorageClass:   "",
-		AlertMemory:       "",
-		CfsslMemory:       "",
-		PVCSize:           "",
-		Environs:          []string{},
-		DesiredState:      "",
+		Spec:                 &alertapi.AlertSpec{},
+		Registry:             "",
+		ImagePath:            "",
+		AlertImageName:       "",
+		AlertImageVersion:    "",
+		CfsslImageName:       "",
+		CfsslImageVersion:    "",
+		StandAlone:           false,
+		Port:                 0,
+		EncryptionPassword:   "",
+		EncryptionGlobalSalt: "",
+		Environs:             []string{},
+		PVCStorageClass:      "",
+		AlertMemory:          "",
+		CfsslMemory:          "",
+		PVCSize:              "",
+		DesiredState:         "",
 	}
 }
 
@@ -113,13 +117,15 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.AlertImageVersion, "alert-image-version", ctl.AlertImageVersion, "Version of the Alert Image")
 	cmd.Flags().StringVar(&ctl.CfsslImageName, "cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
 	cmd.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
-	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
+	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
+	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for the Alert")
+	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for the Alert")
+	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")
 	cmd.Flags().StringVar(&ctl.PVCStorageClass, "storage-class", ctl.PVCStorageClass, "StorageClass for the PVC")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
 	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation for the PVC")
-	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")
 	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
 }
 
@@ -146,10 +152,14 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.CfsslImageName = ctl.CfsslImageName
 		case "cfssl-image-version":
 			ctl.Spec.CfsslImageVersion = ctl.CfsslImageVersion
-		case "port":
-			ctl.Spec.Port = &ctl.Port
 		case "stand-alone":
 			ctl.Spec.StandAlone = &ctl.StandAlone
+		case "port":
+			ctl.Spec.Port = &ctl.Port
+		case "encryption-password":
+			ctl.Spec.EncryptionPassword = ctl.EncryptionPassword
+		case "encryption-global-salt":
+			ctl.Spec.EncryptionGlobalSalt = ctl.EncryptionGlobalSalt
 		case "storage-class":
 			ctl.Spec.PVCStorageClass = ctl.PVCStorageClass
 		case "alert-memory":

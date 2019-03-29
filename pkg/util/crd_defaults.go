@@ -332,18 +332,20 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 	standAlone := true
 
 	return &alertv1.AlertSpec{
-		Namespace:         "alert-test",
-		Registry:          "docker.io",
-		ImagePath:         "blackducksoftware",
-		AlertImageName:    "blackduck-alert",
-		AlertImageVersion: "3.1.0",
-		CfsslImageName:    "blackduck-cfssl",
-		CfsslImageVersion: "1.0.0",
-		Port:              &port,
-		StandAlone:        &standAlone,
-		PVCStorageClass:   "",
-		AlertMemory:       "2560M",
-		CfsslMemory:       "640M",
-		PVCSize:           "5G",
+		Namespace:            "alert-test",
+		Registry:             "docker.io",
+		ImagePath:            "blackducksoftware",
+		AlertImageName:       "blackduck-alert",
+		AlertImageVersion:    "3.1.0",
+		CfsslImageName:       "blackduck-cfssl",
+		CfsslImageVersion:    "1.0.0",
+		Port:                 &port,
+		EncryptionPassword:   "",
+		EncryptionGlobalSalt: "",
+		StandAlone:           &standAlone,
+		PVCStorageClass:      "",
+		AlertMemory:          "2560M",
+		CfsslMemory:          "640M",
+		PVCSize:              "5G",
 	}
 }
