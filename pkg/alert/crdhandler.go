@@ -29,6 +29,7 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/imdario/mergo"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -48,11 +49,12 @@ type Handler struct {
 	kubeClient  *kubernetes.Clientset
 	alertClient *alertclientset.Clientset
 	defaults    *alertapi.AlertSpec
+	routeClient *routeclient.RouteV1Client
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, defaults *alertapi.AlertSpec) *Handler {
-	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, defaults: defaults}
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client, defaults *alertapi.AlertSpec) *Handler {
+	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient, defaults: defaults}
 }
 
 // ObjectCreated will be called for create alert events
@@ -79,7 +81,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 			alertv1, err := h.updateState("creating", "", alertv1)
 
 			if err == nil {
-				alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient)
+				alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
 
 				// create alert instance
 				err = alertCreator.CreateAlert(&alertv1.Spec)
@@ -97,7 +99,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete alert events
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient)
+	alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
 	alertCreator.DeleteAlert(name)
 }
 

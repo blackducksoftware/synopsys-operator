@@ -43,19 +43,27 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
 
 	// Add alert components
+	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
+
 	dep, err := a.getAlertDeployment()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Alert Deployment: %s", err)
 	}
 	components.Deployments = append(components.Deployments, dep)
-	components.Services = append(components.Services, a.getAlertService())
-	components.Services = append(components.Services, a.getAlertExposedService())
-	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
+
+	switch a.config.ExposeService {
+	case "NODEPORT":
+		components.Services = append(components.Services, a.getAlertServiceNodePort())
+	case "LOADBALANCER":
+		components.Services = append(components.Services, a.getAlertServiceLoadBalancer())
+	}
+
 	sec, err := a.GetAlertSecret()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Alert Secret: %s", err)
 	}
 	components.Secrets = append(components.Secrets, sec)
+
 	if a.config.PersistentStorage {
 		pvc, err := a.getAlertPersistentVolumeClaim()
 		if err != nil {

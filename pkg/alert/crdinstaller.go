@@ -22,6 +22,7 @@ under the License.
 package alert
 
 import (
+	"strings"
 	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -31,7 +32,9 @@ import (
 	alertinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/alert/v1"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -164,12 +167,23 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
+	routeClient, err := routeclient.NewForConfig(c.kubeConfig)
+	if err != nil {
+		routeClient = nil
+	} else {
+		_, err := util.GetOpenShiftRoutes(routeClient, "default", "docker-registry")
+		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
+			log.Debugf("Ignoring routes for kubernetes cluster")
+			routeClient = nil
+		}
+	}
 	c.handler = &Handler{
 		config:      c.config,
 		kubeConfig:  c.kubeConfig,
 		kubeClient:  c.kubeClient,
 		alertClient: c.alertClient,
 		defaults:    c.defaults.(*alertapi.AlertSpec),
+		routeClient: routeClient,
 	}
 }
 

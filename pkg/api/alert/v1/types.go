@@ -47,6 +47,7 @@ type AlertSpec struct {
 	AlertImageVersion    string   `json:"alertImageVersion,omitempty"`
 	CfsslImageName       string   `json:"cfsslImageName,omitempty"`
 	CfsslImageVersion    string   `json:"cfsslImageVersion,omitempty"`
+	ExposeService        string   `json:"exposeService"`
 	StandAlone           *bool    `json:"standAlone"`
 	Port                 *int     `json:"port"`
 	EncryptionPassword   string   `json:"EncryptionPassword"`

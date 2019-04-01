@@ -27,6 +27,7 @@ import (
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -37,11 +38,12 @@ type Creater struct {
 	kubeConfig  *rest.Config
 	kubeClient  *kubernetes.Clientset
 	alertClient *alertclientset.Clientset
+	routeClient *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset) *Creater {
-	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient}
+func NewCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client) *Creater {
+	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient}
 }
 
 // DeleteAlert will delete the Black Duck Alert
@@ -92,5 +94,13 @@ func (ac *Creater) CreateAlert(createAlert *alertapi.AlertSpec) error {
 		log.Errorf("unable to deploy alert app due to %+v", err)
 	}
 	deployer.StartControllers()
+
+	// Create Route if on Openshift
+	if ac.routeClient != nil {
+		_, err := util.CreateOpenShiftRoutes(ac.routeClient, createAlert.Namespace, createAlert.Namespace, "Service", "alert")
+		if err != nil {
+			log.Errorf("unable to create the openshift route due to %+v", err)
+		}
+	}
 	return nil
 }

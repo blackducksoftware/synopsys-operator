@@ -339,6 +339,7 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		AlertImageVersion:    "3.1.0",
 		CfsslImageName:       "blackduck-cfssl",
 		CfsslImageVersion:    "1.0.0",
+		ExposeService:        "NODEPORT",
 		Port:                 &port,
 		EncryptionPassword:   "",
 		EncryptionGlobalSalt: "",

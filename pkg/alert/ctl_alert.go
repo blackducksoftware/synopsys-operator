@@ -42,6 +42,7 @@ type Ctl struct {
 	CfsslImageName       string
 	CfsslImageVersion    string
 	StandAlone           bool
+	ExposeService        string
 	Port                 int
 	EncryptionPassword   string
 	EncryptionGlobalSalt string
@@ -66,6 +67,7 @@ func NewAlertCtl() *Ctl {
 		CfsslImageName:       "",
 		CfsslImageVersion:    "",
 		StandAlone:           false,
+		ExposeService:        "",
 		Port:                 0,
 		EncryptionPassword:   "",
 		EncryptionGlobalSalt: "",
@@ -130,6 +132,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.CfsslImageName, "cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
 	cmd.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Type of Service to Expose")
 	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for the Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for the Alert")
@@ -168,6 +171,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.CfsslImageVersion = ctl.CfsslImageVersion
 		case "stand-alone":
 			ctl.Spec.StandAlone = &ctl.StandAlone
+		case "expose-service":
+			ctl.Spec.ExposeService = ctl.ExposeService
 		case "port":
 			ctl.Spec.Port = &ctl.Port
 		case "encryption-password":

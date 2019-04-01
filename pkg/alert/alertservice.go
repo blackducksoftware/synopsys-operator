@@ -28,8 +28,8 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// getAlertService returns a new Service for an Alert
-func (a *SpecConfig) getAlertService() *components.Service {
+// getAlertServiceNodePort returns a new Node Port Service for an Alert
+func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "alert",
 		Namespace:     a.config.Namespace,
@@ -48,8 +48,8 @@ func (a *SpecConfig) getAlertService() *components.Service {
 	return service
 }
 
-// getAlertExposedService returns a new Exposed Service for an Alert
-func (a *SpecConfig) getAlertExposedService() *components.Service {
+// getAlertServiceLoadBalancer returns a new Load Balancer Service for an Alert
+func (a *SpecConfig) getAlertServiceLoadBalancer() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:          "alert-lb",
 		Namespace:     a.config.Namespace,
