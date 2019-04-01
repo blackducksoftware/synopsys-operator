@@ -24,6 +24,7 @@ package soperator
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -102,18 +103,35 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	}
 
 	// Update the CRDs in the cluster with the new versions
+	// loop to wait for kuberentes to register new CRDs
 	log.Debugf("Updating CRDs to new Versions")
-	err = operatorutil.UpdateBlackducks(blackduckClient, oldBlackducks)
-	if err != nil {
-		return fmt.Errorf("failed to update Black Ducks: %s", err)
+	for i := 1; i <= 10; i++ {
+		if err = operatorutil.UpdateBlackducks(blackduckClient, oldBlackducks); err == nil {
+			break
+		}
+		if i >= 10 {
+			return fmt.Errorf("failed to update Black Ducks: %s", err)
+		}
+		time.Sleep(1 * time.Second)
 	}
-	err = operatorutil.UpdateOpsSights(opssightClient, oldOpsSights)
-	if err != nil {
-		return fmt.Errorf("failed to update OpsSights: %s", err)
+	for i := 1; i <= 10; i++ {
+		if err = operatorutil.UpdateOpsSights(opssightClient, oldOpsSights); err == nil {
+			break
+		}
+		if i >= 10 {
+			return fmt.Errorf("failed to update OpsSights: %s", err)
+		}
+		time.Sleep(1 * time.Second)
 	}
-	err = operatorutil.UpdateAlerts(alertClient, oldAlerts)
-	if err != nil {
-		return fmt.Errorf("failed to update Alerts: %s", err)
+	for i := 1; i <= 10; i++ {
+		if err = operatorutil.UpdateAlerts(alertClient, oldAlerts); err == nil {
+			break
+		}
+		if i >= 10 {
+			return fmt.Errorf("failed to update Alerts: %s", err)
+		}
+		log.Debugf("Attempt %d to update Alerts\n", i)
+		time.Sleep(1 * time.Second)
 	}
 
 	return nil
