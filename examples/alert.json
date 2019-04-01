@@ -13,7 +13,7 @@
 		"alertImageVersion": "3.1.0",
 		"cfsslImageName": "blackduck-cfssl",
 		"cfsslImageVersion": "1.0.0",
-		"exposeService": "NODEPORT",
+		"exposeService": "LOADBALANCER",
 		"port": 8443,
 		"standAlone": true,
 		"persistentStorage": true,

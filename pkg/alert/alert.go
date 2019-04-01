@@ -52,18 +52,21 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.Deployments = append(components.Deployments, dep)
 
+	service := a.getAlertService()
+	components.Services = append(components.Services, service)
+
 	switch a.config.ExposeService {
 	case "NODEPORT":
-		log.Debugf("Adding NodePort Service to ComponentList for Alert")
+		log.Debugf("case %s: Adding NodePort Service to ComponentList for Alert", a.config.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceNodePort())
 	case "LOADBALANCER":
-		log.Debugf("Adding LoadBalancer Service to ComponentList for Alert")
+		log.Debugf("case %s: Adding LoadBalancer Service to ComponentList for Alert", a.config.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceLoadBalancer())
 	default:
+		log.Debugf("Not adding a Service to ComponentList for Alert")
 		if a.config.ExposeService != "" {
 			return nil, fmt.Errorf("the ExposeService value '%s' is not valid", a.config.ExposeService)
 		}
-		log.Debugf("Not adding a Service to ComponentList for Alert")
 	}
 
 	sec, err := a.GetAlertSecret()

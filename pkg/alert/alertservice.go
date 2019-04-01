@@ -28,10 +28,30 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
+// getAlertService returns a new cluster Service for an Alert
+func (a *SpecConfig) getAlertService() *components.Service {
+	service := components.NewService(horizonapi.ServiceConfig{
+		Name:          "alert",
+		Namespace:     a.config.Namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeDefault,
+	})
+
+	service.AddPort(horizonapi.ServicePortConfig{
+		Port:       int32(*a.config.Port),
+		TargetPort: fmt.Sprintf("%d", *a.config.Port),
+		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
+	})
+
+	service.AddSelectors(map[string]string{"app": "alert"})
+	service.AddLabels(map[string]string{"app": "alert"})
+	return service
+}
+
 // getAlertServiceNodePort returns a new Node Port Service for an Alert
 func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "alert",
+		Name:          "alert-np",
 		Namespace:     a.config.Namespace,
 		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
 	})

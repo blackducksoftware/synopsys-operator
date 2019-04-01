@@ -58,7 +58,7 @@ type AlertSpec struct {
 	PVCStorageClass      string   `json:"pvcStorageClass"`
 
 	// Should be passed like: e.g "1300Mi"
-	PVCSize     string `json:"pvcMemory"`
+	PVCSize     string `json:"pvcSize"`
 	AlertMemory string `json:"alertMemory,omitempty"`
 	CfsslMemory string `json:"cfsslMemory,omitempty"`
 
