@@ -45,7 +45,6 @@ var updateAlertCtl ResourceCtl
 // Update Defaults
 var updateSynopsysOperatorImage = ""
 var updatePrometheusImage = ""
-var updateSecretType = ""
 var updateSecretAdminPassword = ""
 var updateSecretPostgresPassword = ""
 var updateSecretUserPassword = ""
@@ -86,15 +85,6 @@ var updateOperatorCmd = &cobra.Command{
 		if cmd.Flag("synopsys-operator-image").Changed {
 			log.Debugf("Updating SynopsysOperatorImage to %s", updateSynopsysOperatorImage)
 			sOperatorSpecConfig.SynopsysOperatorImage = updateSynopsysOperatorImage
-		}
-		if cmd.Flag("secret-type").Changed {
-			log.Debugf("Updating SecretType to %s", updateSecretType)
-			updateSecretTypeConverted, err := operatorutil.SecretTypeNameToHorizon(updateSecretType)
-			if err != nil {
-				log.Errorf("Failed to convert SecretType: %s", err)
-				return nil
-			}
-			sOperatorSpecConfig.SecretType = updateSecretTypeConverted
 		}
 		if cmd.Flag("admin-password").Changed {
 			log.Debugf("Updating SecretAdminPassword")
@@ -455,7 +445,6 @@ func init() {
 	// Add Operator Commands
 	updateOperatorCmd.Flags().StringVarP(&updateSynopsysOperatorImage, "synopsys-operator-image", "i", updateSynopsysOperatorImage, "synopsys operator image URL")
 	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "prometheus-image", "p", updatePrometheusImage, "prometheus image URL")
-	updateOperatorCmd.Flags().StringVar(&updateSecretType, "secret-type", updateSecretType, "type of kubernetes secret for postgres and blackduck")
 	updateOperatorCmd.Flags().StringVar(&updateSecretAdminPassword, "admin-password", updateSecretAdminPassword, "postgres admin password")
 	updateOperatorCmd.Flags().StringVar(&updateSecretPostgresPassword, "postgres-password", updateSecretPostgresPassword, "postgres password")
 	updateOperatorCmd.Flags().StringVar(&updateSecretUserPassword, "user-password", updateSecretUserPassword, "postgres user password")
