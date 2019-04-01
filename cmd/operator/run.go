@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck/installer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -70,7 +71,7 @@ func runProtoform(configPath string) {
 	//sampleController := sample.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetSampleDefaultValue(), stopCh)
 	//deployer.AddController(sampleController)
 
-	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetAlertDefaultValue(), stopCh)
+	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, &alertapi.AlertSpec{}, stopCh)
 	deployer.AddController(alertController)
 
 	hubController := installer.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetHubDefaultValue(), stopCh)
