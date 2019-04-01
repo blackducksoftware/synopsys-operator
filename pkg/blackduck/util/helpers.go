@@ -53,9 +53,9 @@ func GetHubVersion(environs []string) string {
 
 // GetIPAddress will provide the IP address of LoadBalancer or NodePort service
 func GetIPAddress(kubeClient *kubernetes.Clientset, namespace string, retryCount int, waitInSeconds int) (string, error) {
-	ipAddress, err := getLoadBalancerIPAddress(kubeClient, namespace, "webserver-lb", retryCount, waitInSeconds)
+	ipAddress, err := GetLoadBalancerIPAddress(kubeClient, namespace, "webserver-lb", retryCount, waitInSeconds)
 	if err != nil {
-		ipAddress, err = getNodePortIPAddress(kubeClient, namespace, "webserver-np")
+		ipAddress, err = GetNodePortIPAddress(kubeClient, namespace, "webserver-np")
 		if err != nil {
 			return "", err
 		}
@@ -63,7 +63,8 @@ func GetIPAddress(kubeClient *kubernetes.Clientset, namespace string, retryCount
 	return ipAddress, nil
 }
 
-func getLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string, retryCount int, waitInSeconds int) (string, error) {
+// GetLoadBalancerIPAddress will return the load balance service ip address
+func GetLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string, retryCount int, waitInSeconds int) (string, error) {
 	for i := 0; i < retryCount; i++ {
 		time.Sleep(time.Duration(waitInSeconds) * time.Second)
 		service, err := util.GetService(kubeClient, namespace, serviceName)
@@ -81,7 +82,8 @@ func getLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string
 	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
 }
 
-func getNodePortIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
+// GetNodePortIPAddress will return the node port service ip address
+func GetNodePortIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
 	// Get the node port service
 	service, err := util.GetService(kubeClient, namespace, serviceName)
 	if err != nil {

@@ -109,7 +109,7 @@ func TestAddSpecFlags(t *testing.T) {
 
 	ctl := NewAlertCtl()
 	actualCmd := &cobra.Command{}
-	ctl.AddSpecFlags(actualCmd)
+	ctl.AddSpecFlags(actualCmd, false)
 
 	expectedCmd := &cobra.Command{}
 	expectedCmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
@@ -135,7 +135,7 @@ func TestSetChangedFlags(t *testing.T) {
 
 	actualCtl := NewAlertCtl()
 	cmd := &cobra.Command{}
-	actualCtl.AddSpecFlags(cmd)
+	actualCtl.AddSpecFlags(cmd, false)
 	actualCtl.SetChangedFlags(cmd.Flags())
 
 	expCtl := NewAlertCtl()
