@@ -66,6 +66,8 @@ type Ctl struct {
 	ImageRegistries                       []string
 	ImageUIDMapJSONSlice                  []string
 	LicenseKey                            string
+	Version                               string
+	ExposeService                         string
 }
 
 // NewBlackduckCtl creates a new Ctl struct
@@ -96,6 +98,8 @@ func NewBlackduckCtl() *Ctl {
 		ImageRegistries:                       []string{},
 		ImageUIDMapJSONSlice:                  []string{},
 		LicenseKey:                            "",
+		Version:                               "",
+		ExposeService:                         "",
 	}
 }
 
@@ -182,6 +186,8 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "TODO")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose service type [Loadbalancer/Nodeport]")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -276,6 +282,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
+		case "version":
+			ctl.Spec.Version = ctl.Version
+		case "expose-service":
+			ctl.Spec.ExposeService = ctl.ExposeService
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
