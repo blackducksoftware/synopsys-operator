@@ -110,6 +110,12 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		//SubPath:     "string",
 		//ReadOnly:    "*bool",
 	})
+	synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
+		NameOrPrefix: "SEAL_KEY",
+		Type:         horizonapi.EnvFromSecret,
+		KeyOrVal:     "SEAL_KEY",
+		FromName:     "blackduck-secret",
+	})
 
 	synopsysOperatorContainerUI := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name: "synopsys-operator-ui",
@@ -158,12 +164,6 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		Type:         horizonapi.EnvVal,
 		KeyOrVal:     "development",
 		//FromName:     "string",
-	})
-	synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
-		NameOrPrefix: "SEAL_KEY",
-		Type:         horizonapi.EnvFromSecret,
-		KeyOrVal:     "SEAL_KEY",
-		FromName:     "blackduck-secret",
 	})
 
 	// Create config map volume
