@@ -170,6 +170,7 @@ func (c *CRDInstaller) CreateHandler() {
 	routeClient, err := routeclient.NewForConfig(c.kubeConfig)
 	if err != nil {
 		routeClient = nil
+		log.Debugf("Ignoring routes due to error getting route client")
 	} else {
 		_, err := util.GetOpenShiftRoutes(routeClient, "default", "docker-registry")
 		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {

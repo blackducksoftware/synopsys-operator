@@ -26,6 +26,7 @@ import (
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	log "github.com/sirupsen/logrus"
 )
 
 // SpecConfig will contain the specification of Alert
@@ -53,9 +54,16 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 
 	switch a.config.ExposeService {
 	case "NODEPORT":
+		log.Debugf("Adding NodePort Service to ComponentList for Alert")
 		components.Services = append(components.Services, a.getAlertServiceNodePort())
 	case "LOADBALANCER":
+		log.Debugf("Adding LoadBalancer Service to ComponentList for Alert")
 		components.Services = append(components.Services, a.getAlertServiceLoadBalancer())
+	default:
+		if a.config.ExposeService != "" {
+			return nil, fmt.Errorf("the ExposeService value '%s' is not valid", a.config.ExposeService)
+		}
+		log.Debugf("Not adding a Service to ComponentList for Alert")
 	}
 
 	sec, err := a.GetAlertSecret()

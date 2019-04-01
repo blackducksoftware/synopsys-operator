@@ -27,6 +27,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	log "github.com/sirupsen/logrus"
 )
 
 // getAlertDeployment returns a new deployment for an Alert
@@ -58,8 +59,10 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 	pod.AddContainer(a.getAlertContainer())
 
 	if a.config.PersistentStorage {
+		log.Debugf("Adding a PersistentVolumeClaim Volume to the Alert's Pod")
 		pod.AddVolume(a.getAlertPVCVolume())
 	} else {
+		log.Debugf("Adding an EmptyDir Volume to the Alert's Pod")
 		vol, err := a.getAlertEmptyDirVolume()
 		if err != nil {
 			return nil, fmt.Errorf("failed to Add Volume to Alert Pod: %s", err)

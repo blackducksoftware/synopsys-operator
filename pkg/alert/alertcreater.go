@@ -97,6 +97,7 @@ func (ac *Creater) CreateAlert(createAlert *alertapi.AlertSpec) error {
 
 	// Create Route if on Openshift
 	if ac.routeClient != nil {
+		log.Debugf("Creating an Openshift Route for Alert")
 		_, err := util.CreateOpenShiftRoutes(ac.routeClient, createAlert.Namespace, createAlert.Namespace, "Service", "alert")
 		if err != nil {
 			log.Errorf("unable to create the openshift route due to %+v", err)
