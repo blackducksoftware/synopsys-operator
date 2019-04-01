@@ -30,6 +30,8 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -98,6 +100,15 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
 	alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient)
+
+	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
+	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("alerts.synopsys.com", v1.GetOptions{})
+	if err != nil || crd.DeletionTimestamp != nil {
+		// We do not delete the Alert instance if the CRD doesn't exist or that it is in the process of being deleted
+		log.Warnf("Ignoring request to delete %s because the CRD doesn't exist or is being deleted", name)
+		return
+	}
+
 	alertCreator.DeleteAlert(name)
 }
 
