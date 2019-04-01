@@ -34,29 +34,29 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) error {
+func (hc *Creater) init(deployer *horizon.Deployer, bdspec *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) error {
 	// Create a namespaces
-	_, err := util.GetNamespace(hc.KubeClient, createHub.Namespace)
+	_, err := util.GetNamespace(hc.KubeClient, bdspec.Namespace)
 	if err != nil {
-		log.Debugf("unable to find the namespace %s", createHub.Namespace)
-		deployer.AddNamespace(components.NewNamespace(horizonapi.NamespaceConfig{Name: createHub.Namespace}))
+		log.Debugf("unable to find the namespace %s", bdspec.Namespace)
+		deployer.AddNamespace(components.NewNamespace(horizonapi.NamespaceConfig{Name: bdspec.Namespace}))
 	}
 
 	// Create a service account
-	deployer.AddServiceAccount(util.CreateServiceAccount(createHub.Namespace, createHub.Namespace))
+	deployer.AddServiceAccount(util.CreateServiceAccount(bdspec.Namespace, bdspec.Namespace))
 
 	// Create a cluster role binding and associated it to a service account
-	deployer.AddClusterRoleBinding(util.CreateClusterRoleBinding(createHub.Namespace, createHub.Namespace, createHub.Namespace, "", "ClusterRole", "synopsys-operator-admin"))
+	deployer.AddClusterRoleBinding(util.CreateClusterRoleBinding(bdspec.Namespace, bdspec.Namespace, bdspec.Namespace, "", "ClusterRole", "synopsys-operator-admin"))
 
 	// We only start the postgres container if the external DB configuration struct is empty
-	if createHub.PersistentStorage {
-		for _, claim := range createHub.PVC {
-			storageClass := createHub.PVCStorageClass
+	if bdspec.PersistentStorage {
+		for _, claim := range bdspec.PVC {
+			storageClass := bdspec.PVCStorageClass
 			if len(claim.StorageClass) > 0 {
 				storageClass = claim.StorageClass
 			}
 
-			if !hc.isBinaryAnalysisEnabled && (strings.Contains(claim.Name, "blackduck-rabbitmq") || strings.Contains(claim.Name, "blackduck-uploadcache")) {
+			if !hc.isBinaryAnalysisEnabled(bdspec) && (strings.Contains(claim.Name, "blackduck-rabbitmq") || strings.Contains(claim.Name, "blackduck-uploadcache")) {
 				continue
 			}
 
@@ -129,9 +129,9 @@ func (hc *Creater) init(deployer *horizon.Deployer, createHub *v1.BlackduckSpec,
 				size = claim.Size
 			}
 
-			pvc, err := util.CreatePersistentVolumeClaim(claim.Name, createHub.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
+			pvc, err := util.CreatePersistentVolumeClaim(claim.Name, bdspec.Namespace, size, storageClass, horizonapi.ReadWriteOnce)
 			if err != nil {
-				return fmt.Errorf("failed to create the postgres PVC %s in namespace %s because %+v", claim.Name, createHub.Namespace, err)
+				return fmt.Errorf("failed to create the postgres PVC %s in namespace %s because %+v", claim.Name, bdspec.Namespace, err)
 			}
 			deployer.AddPVC(pvc)
 

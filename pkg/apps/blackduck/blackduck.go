@@ -65,8 +65,8 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 	}
 
 	creaters := []Creater{
-		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient, false),
-		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient, false),
+		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
+		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
 	}
 
 	return &Blackduck{
@@ -108,7 +108,6 @@ func (b Blackduck) Versions() []string {
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (b Blackduck) Ensure(bd *v1.Blackduck) error {
-	// TODO - Collect PV name, IP,
 	creater, err := b.getCreater(bd.Spec.Version)
 	if err != nil {
 		return err

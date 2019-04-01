@@ -98,7 +98,7 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 	return volumesMounts
 }
 
-// GetUploadCacheService will return the uploadCache service - TODO fix label
+// GetUploadCacheService will return the uploadCache service
 func (c *Creater) GetUploadCacheService() *components.Service {
 	return util.CreateServiceWithMultiplePort("uploadcache", c.GetLabel("uploadcache"), c.hubSpec.Namespace, []string{uploadCachePort1, uploadCachePort2},
 		horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("uploadcache"))

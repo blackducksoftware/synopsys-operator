@@ -22,6 +22,8 @@ under the License.
 package crdupdater
 
 import (
+	"reflect"
+
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
@@ -127,5 +129,22 @@ func (c *ClusterRole) remove() error {
 
 // patch patches the cluster role
 func (c *ClusterRole) patch(cr interface{}, isPatched bool) (bool, error) {
+	clusterRole := cr.(*components.ClusterRole)
+	clusterRoleName := clusterRole.GetName()
+	oldclusterRole := c.oldClusterRoles[clusterRoleName]
+	newClusterRole := c.newClusterRoles[clusterRoleName]
+	if !reflect.DeepEqual(oldclusterRole.Rules, newClusterRole.Rules) && !c.config.dryRun {
+		log.Infof("updating the cluster role %s for %s namespace", clusterRoleName, c.config.namespace)
+		getCr, err := c.get(clusterRoleName)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to get the cluster role %s for namespace %s", clusterRoleName, c.config.namespace)
+		}
+		oldLatestClusterRole := getCr.(*rbacv1.ClusterRole)
+		oldLatestClusterRole.Rules = newClusterRole.Rules
+		_, err = util.UpdateClusterRole(c.config.kubeClient, oldLatestClusterRole)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to update the cluster role %s for namespace %s", clusterRoleName, c.config.namespace)
+		}
+	}
 	return false, nil
 }

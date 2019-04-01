@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -52,24 +53,24 @@ import (
 
 // Creater will store the configuration to create the Blackduck
 type Creater struct {
-	Config                  *protoform.Config
-	KubeConfig              *rest.Config
-	KubeClient              *kubernetes.Clientset
-	BlackduckClient         *blackduckclientset.Clientset
-	osSecurityClient        *securityclient.SecurityV1Client
-	routeClient             *routeclient.RouteV1Client
-	isBinaryAnalysisEnabled bool
+	Config           *protoform.Config
+	KubeConfig       *rest.Config
+	KubeClient       *kubernetes.Clientset
+	BlackduckClient  *blackduckclientset.Clientset
+	osSecurityClient *securityclient.SecurityV1Client
+	routeClient      *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
-	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, isBinaryAnalysisEnabled bool) *Creater {
+	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, BlackduckClient: hubClient, osSecurityClient: osSecurityClient,
-		routeClient: routeClient, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
+		routeClient: routeClient}
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
+	newBlackuck := blackduck.DeepCopy()
 	// Create namespace if it doesn't exist
 	_, err := util.GetNamespace(hc.KubeClient, blackduck.Spec.Namespace)
 	if err != nil {
@@ -158,8 +159,33 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 		return err
 	}
 
+	// TODO wait for webserver to be up before we register
 	if err := hc.registerIfNeeded(blackduck); err != nil {
 		return err
+	}
+
+	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
+		newBlackuck.Status.IP, err = hc.getLoadBalancerIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
+		newBlackuck.Status.IP, err = hc.getNodePortIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+	}
+
+	if blackduck.Spec.PersistentStorage {
+		pvcVolumeNames := map[string]string{}
+		for _, v := range blackduck.Spec.PVC {
+			pvName, err := hc.getPVCVolumeName(blackduck.Spec.Namespace, v.Name)
+			if err != nil {
+				continue
+			}
+			pvcVolumeNames[v.Name] = pvName
+		}
+		newBlackuck.Status.PVCVolumeName = pvcVolumeNames
+	}
+
+	if !reflect.DeepEqual(blackduck, newBlackuck) {
+		if _, err := hc.BlackduckClient.SynopsysV1().Blackducks(hc.Config.Namespace).Update(newBlackuck); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -289,22 +315,12 @@ func (hc *Creater) getPostgresComponents(bd *v1.Blackduck) (*api.ComponentList, 
 }
 
 func (hc *Creater) getPVCVolumeName(namespace string, name string) (string, error) {
-	for i := 0; i < 60; i++ {
-		time.Sleep(10 * time.Second)
-		pvc, err := util.GetPVC(hc.KubeClient, namespace, name)
-		if err != nil {
-			return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
-		}
-
-		log.Debugf("pvc: %v", pvc)
-
-		if strings.EqualFold(pvc.Spec.VolumeName, "") {
-			continue
-		} else {
-			return pvc.Spec.VolumeName, nil
-		}
+	pvc, err := util.GetPVC(hc.KubeClient, namespace, name)
+	if err != nil {
+		return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
 	}
-	return "", fmt.Errorf("timeout: unable to get pvc %s in %s namespace", namespace, namespace)
+
+	return pvc.Spec.VolumeName, nil
 }
 
 func (hc *Creater) registerIfNeeded(bd *v1.Blackduck) error {
@@ -379,4 +395,20 @@ func (hc *Creater) autoRegisterHub(bdspec *v1.BlackduckSpec) error {
 		}
 	}
 	return fmt.Errorf("unable to register the blackduck %s", bdspec.Namespace)
+}
+
+func (hc *Creater) isBinaryAnalysisEnabled(bdspec *v1.BlackduckSpec) bool {
+	for _, value := range bdspec.Environs {
+		if strings.Contains(value, "USE_BINARY_UPLOADS") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				mapValue := strings.Trim(values[1], " ")
+				if strings.EqualFold(mapValue, "1") {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
 }

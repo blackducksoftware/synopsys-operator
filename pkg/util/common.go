@@ -193,7 +193,7 @@ func CreatePod(name string, serviceAccount string, volumes []*components.Volume,
 			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.PreStopConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
 		err := pod.AddInitContainer(initContainer)
 		if err != nil {
-			log.Printf("failed to create the init container because %+v", err)
+			log.Printf("failed to create the init container for pod %s because %+v", name, err)
 		}
 	}
 
@@ -403,7 +403,7 @@ func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.Na
 
 // DeleteNamespace will delete the namespace
 func DeleteNamespace(clientset *kubernetes.Clientset, namespace string) error {
-	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
 }
 
 // GetPod will get the input pods corresponding to a namespace
@@ -428,7 +428,7 @@ func ListReplicationControllers(clientset *kubernetes.Clientset, namespace strin
 
 // DeleteReplicationController will delete the replication controller corresponding to a namespace and name
 func DeleteReplicationController(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // GetDeployment will get the deployment corresponding to a namespace and name
@@ -443,7 +443,7 @@ func ListDeployments(clientset *kubernetes.Clientset, namespace string, labelSel
 
 // DeleteDeployment will delete the deployment corresponding to a namespace and name
 func DeleteDeployment(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // CreatePersistentVolume will create the persistent volume
@@ -470,7 +470,7 @@ func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storag
 
 // DeletePersistentVolume will delete the persistent volume
 func DeletePersistentVolume(clientset *kubernetes.Clientset, name string) error {
-	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().PersistentVolumes().Delete(name, &metav1.DeleteOptions{})
 }
 
 // CreatePersistentVolumeClaim will create the persistent volume claim
@@ -641,9 +641,14 @@ func ListServices(clientset *kubernetes.Clientset, namespace string, labelSelect
 	return clientset.CoreV1().Services(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
+// UpdateService will update the service information for the input service name inside the input namespace
+func UpdateService(clientset *kubernetes.Clientset, namespace string, service *corev1.Service) (*corev1.Service, error) {
+	return clientset.CoreV1().Services(namespace).Update(service)
+}
+
 // DeleteService will delete the service information for the input service name inside the input namespace
 func DeleteService(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.CoreV1().Services(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().Services(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // GetServiceEndPoint will get the service endpoint information for the input service name inside the input namespace
@@ -791,6 +796,16 @@ func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[stri
 	return pvList, nil
 }
 
+// IntToPtr will convert int to pointer
+func IntToPtr(i int) *int {
+	return &i
+}
+
+// BoolToPtr will convert bool to pointer
+func BoolToPtr(b bool) *bool {
+	return &b
+}
+
 // Int32ToInt will convert from int32 to int
 func Int32ToInt(i *int32) int {
 	return int(*i)
@@ -848,9 +863,14 @@ func ListServiceAccounts(clientset *kubernetes.Clientset, namespace string, labe
 	return clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
+// UpdateServiceAccount updates a service account
+func UpdateServiceAccount(clientset *kubernetes.Clientset, namespace string, serviceAccount *corev1.ServiceAccount) (*corev1.ServiceAccount, error) {
+	return clientset.CoreV1().ServiceAccounts(namespace).Update(serviceAccount)
+}
+
 // DeleteServiceAccount delete a service account
 func DeleteServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.CoreV1().ServiceAccounts(namespace).Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.CoreV1().ServiceAccounts(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // CreateClusterRoleBinding creates a cluster role binding
@@ -891,7 +911,7 @@ func UpdateClusterRoleBinding(clientset *kubernetes.Clientset, clusterRoleBindin
 
 // DeleteClusterRoleBinding delete a cluster role binding
 func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{})
 }
 
 // IsClusterRoleBindingSubjectNamespaceExist checks whether the namespace is already exist in the subject of cluster role binding
@@ -924,9 +944,14 @@ func ListClusterRoles(clientset *kubernetes.Clientset, labelSelector string) (*r
 	return clientset.Rbac().ClusterRoles().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
+// UpdateClusterRole updates the cluster role
+func UpdateClusterRole(clientset *kubernetes.Clientset, clusterRole *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
+	return clientset.Rbac().ClusterRoles().Update(clusterRole)
+}
+
 // DeleteClusterRole delete a cluster role binding
 func DeleteClusterRole(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{GracePeriodSeconds: IntToInt64(0)})
+	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{})
 }
 
 // IsClusterRoleRuleExist checks whether the namespace is already exist in the rule of cluster role

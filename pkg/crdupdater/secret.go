@@ -154,6 +154,7 @@ func (s *Secret) patch(i interface{}, isPatched bool) (bool, error) {
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the secret %s in namespace %s", secretName, s.config.namespace)
 		}
+		return true, nil
 	}
 	return false, nil
 }

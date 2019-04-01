@@ -63,13 +63,6 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 
 	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor)
 
-	// TODO - Do we still need this?
-	// Service account
-	//componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
-
-	// Cluster role binding
-	//componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
-
 	// Configmap
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
 
@@ -124,8 +117,11 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetUploadCacheDeployment())
 	componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
 
-	// TODO fix this
-	if hc.isBinaryAnalysisEnabled {
+	// Service account - https://github.com/blackducksoftware/synopsys-operator/issues/95
+	//componentList.ServiceAccounts= append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
+	//componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
+
+	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetUploadCacheDeployment())
 		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
 

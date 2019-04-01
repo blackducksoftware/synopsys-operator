@@ -7,3 +7,4 @@ pkg/api/.DS_Store
 cmd/operator/operator
 .idea/
 build
+.vscode/*
