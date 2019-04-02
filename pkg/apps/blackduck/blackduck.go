@@ -23,6 +23,9 @@ under the License.
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
+	"github.com/sirupsen/logrus"
 	"strings"
 
 	"k8s.io/client-go/kubernetes"
@@ -113,7 +116,11 @@ func (b Blackduck) getCreater(version string) (Creater, error) {
 
 // Delete will be used to delete a blackduck instance
 func (b Blackduck) Delete(name string) {
-	// TODO  - We should not delete the namespace but instead search for the current version (annotation??) then delete the Blackduck instance.
+	logrus.Info(name)
+	err := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, false, name, &api.ComponentList{}, "app=blackduck").CRUDComponents()
+	if err != nil {
+		logrus.Error(err)
+	}
 }
 
 // Versions returns the versions that the operator supports
