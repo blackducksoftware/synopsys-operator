@@ -83,6 +83,22 @@ func NewDatabase(hostName string, databaseName string, user string, password str
 	return &Database{Connection: db}, nil
 }
 
+// WaitForDatabase will ping the database until it becomes accessible
+func (d *Database) WaitForDatabase(attempts int) bool {
+	for i := 0; i < attempts; i++ {
+		err := d.Connection.Ping()
+		if err == nil {
+			break
+		}
+
+		if i == attempts {
+			return false
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return true
+}
+
 // ExecuteStatements will list of statements
 func (d *Database) ExecuteStatements(statements []string) []error {
 	var errs []error
