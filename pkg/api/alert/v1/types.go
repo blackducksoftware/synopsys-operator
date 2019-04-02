@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -40,21 +40,29 @@ type Alert struct {
 
 // AlertSpec is the spec for a Alert resource
 type AlertSpec struct {
-	Namespace         string `json:"namespace,omitempty"`
-	Registry          string `json:"registry,omitempty"`
-	ImagePath         string `json:"imagePath,omitempty"`
-	AlertImageName    string `json:"alertImageName,omitempty"`
-	AlertImageVersion string `json:"alertImageVersion,omitempty"`
-	CfsslImageName    string `json:"cfsslImageName,omitempty"`
-	CfsslImageVersion string `json:"cfsslImageVersion,omitempty"`
-	BlackduckHost     string `json:"blackduckHost,omitempty"`
-	BlackduckUser     string `json:"blackduckUser,omitempty"`
-	BlackduckPort     *int   `json:"blackduckPort,omitempty"`
-	Port              *int   `json:"port"`
-	StandAlone        *bool  `json:"standAlone"`
-	AlertMemory       string `json:"alertMemory,omitempty"` // Should be passed like: e.g "1300Mi"
-	CfsslMemory       string `json:"cfsslMemory,omitempty"` // Should be passed like: e.g "1300Mi"
-	DesiredState      string `json:"desiredState,omitempty"`
+	Namespace            string   `json:"namespace,omitempty"`
+	Registry             string   `json:"registry,omitempty"`
+	ImagePath            string   `json:"imagePath,omitempty"`
+	AlertImageName       string   `json:"alertImageName,omitempty"`
+	AlertImageVersion    string   `json:"alertImageVersion,omitempty"`
+	CfsslImageName       string   `json:"cfsslImageName,omitempty"`
+	CfsslImageVersion    string   `json:"cfsslImageVersion,omitempty"`
+	ExposeService        string   `json:"exposeService"`
+	StandAlone           *bool    `json:"standAlone"`
+	Port                 *int     `json:"port"`
+	EncryptionPassword   string   `json:"EncryptionPassword"`
+	EncryptionGlobalSalt string   `json:"EncryptionGlobalSalt"`
+	Environs             []string `json:"environs,omitempty"`
+	PersistentStorage    bool     `json:"persistentStorage"`
+	PVCName              string   `json:"pvcName"`
+	PVCStorageClass      string   `json:"pvcStorageClass"`
+
+	// Should be passed like: e.g "1300Mi"
+	PVCSize     string `json:"pvcSize"`
+	AlertMemory string `json:"alertMemory,omitempty"`
+	CfsslMemory string `json:"cfsslMemory,omitempty"`
+
+	DesiredState string `json:"desiredState,omitempty"`
 }
 
 // AlertStatus is the status for a Alert resource
