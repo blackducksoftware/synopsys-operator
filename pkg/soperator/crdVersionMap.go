@@ -25,17 +25,17 @@ package soperator
 // to the resource versions it is compatible with
 var SOperatorCRDVersionMap = operatorCRDVersionMap{
 	versionMap: map[string]operatorVersions{
-		"master": operatorVersions{
+		"master": {
 			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
 			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
 			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
 		},
-		"2019.1.0": operatorVersions{
+		"2019.1.0": {
 			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
 			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
 			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
 		},
-		"2018.12.0": operatorVersions{
+		"2018.12.0": {
 			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
 			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
 			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
