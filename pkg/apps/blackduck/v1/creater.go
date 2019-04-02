@@ -310,6 +310,8 @@ func (hc *Creater) getPostgresComponents(bd *v1.Blackduck) (*api.ComponentList, 
 		PasswordSecretName:     "db-creds",
 		UserPasswordSecretKey:  "HUB_POSTGRES_USER_PASSWORD_FILE",
 		AdminPasswordSecretKey: "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+		MaxConnections:         300,
+		SharedBufferInMB:       1024,
 		EnvConfigMapRefs:       []string{"hub-db-config"},
 		Labels:                 containerCreater.GetVersionLabel("postgres"),
 	}
