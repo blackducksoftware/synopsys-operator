@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -24,7 +24,7 @@ package alert
 import (
 	"fmt"
 
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -34,41 +34,51 @@ import (
 // Ctl type provides functionality for an Alert
 // for the Synopsysctl tool
 type Ctl struct {
-	Spec              *alertv1.AlertSpec
-	Registry          string
-	ImagePath         string
-	AlertImageName    string
-	AlertImageVersion string
-	CfsslImageName    string
-	CfsslImageVersion string
-	BlackduckHost     string
-	BlackduckUser     string
-	BlackduckPort     int
-	Port              int
-	StandAlone        bool
-	AlertMemory       string
-	CfsslMemory       string
-	DesiredState      string
+	Spec                 *alertapi.AlertSpec
+	Registry             string
+	ImagePath            string
+	AlertImageName       string
+	AlertImageVersion    string
+	CfsslImageName       string
+	CfsslImageVersion    string
+	StandAlone           bool
+	ExposeService        string
+	Port                 int
+	EncryptionPassword   string
+	EncryptionGlobalSalt string
+	Environs             []string
+	PersistentStorage    bool
+	PVCName              string
+	PVCStorageClass      string
+	PVCSize              string
+	AlertMemory          string
+	CfsslMemory          string
+	DesiredState         string
 }
 
 // NewAlertCtl creates a new AlertCtl struct
 func NewAlertCtl() *Ctl {
 	return &Ctl{
-		Spec:              &alertv1.AlertSpec{},
-		Registry:          "",
-		ImagePath:         "",
-		AlertImageName:    "",
-		AlertImageVersion: "",
-		CfsslImageName:    "",
-		CfsslImageVersion: "",
-		BlackduckHost:     "",
-		BlackduckUser:     "",
-		BlackduckPort:     0,
-		Port:              0,
-		StandAlone:        false,
-		AlertMemory:       "",
-		CfsslMemory:       "",
-		DesiredState:      "",
+		Spec:                 &alertapi.AlertSpec{},
+		Registry:             "",
+		ImagePath:            "",
+		AlertImageName:       "",
+		AlertImageVersion:    "",
+		CfsslImageName:       "",
+		CfsslImageVersion:    "",
+		StandAlone:           false,
+		ExposeService:        "",
+		Port:                 0,
+		EncryptionPassword:   "",
+		EncryptionGlobalSalt: "",
+		Environs:             []string{},
+		PersistentStorage:    false,
+		PVCName:              "",
+		PVCStorageClass:      "",
+		PVCSize:              "",
+		AlertMemory:          "",
+		CfsslMemory:          "",
+		DesiredState:         "",
 	}
 }
 
@@ -79,7 +89,7 @@ func (ctl *Ctl) GetSpec() interface{} {
 
 // SetSpec sets the Spec for the resource
 func (ctl *Ctl) SetSpec(spec interface{}) error {
-	convertedSpec, ok := spec.(alertv1.AlertSpec)
+	convertedSpec, ok := spec.(alertapi.AlertSpec)
 	if !ok {
 		return fmt.Errorf("Error setting Alert Spec")
 	}
@@ -89,20 +99,26 @@ func (ctl *Ctl) SetSpec(spec interface{}) error {
 
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *Ctl) CheckSpecFlags() error {
+	encryptPassLength := len(ctl.EncryptionPassword)
+	if encryptPassLength > 0 && encryptPassLength < 16 {
+		return fmt.Errorf("flag EncryptionPassword is %d characters. Must be 16 or more characters", encryptPassLength)
+	}
+	globalSaltLength := len(ctl.EncryptionGlobalSalt)
+	if globalSaltLength > 0 && globalSaltLength < 16 {
+		return fmt.Errorf("flag EncryptionGlobalSalt is %d characters. Must be 16 or more characters", globalSaltLength)
+	}
 	return nil
 }
 
 // SwitchSpec switches the Alert's Spec to a different predefined spec
-func (ctl *Ctl) SwitchSpec(createAlertSpecType string) error {
-	switch createAlertSpecType {
+func (ctl *Ctl) SwitchSpec(specType string) error {
+	switch specType {
 	case "empty":
-		ctl.Spec = &alertv1.AlertSpec{}
-	case "spec1":
+		ctl.Spec = &alertapi.AlertSpec{}
+	case "default":
 		ctl.Spec = crddefaults.GetAlertDefaultValue()
-	case "spec2":
-		ctl.Spec = crddefaults.GetAlertDefaultValue2()
 	default:
-		return fmt.Errorf("Alert Spec Type %s does not match: empty, spec1, spec2", createAlertSpecType)
+		return fmt.Errorf("Alert Spec Type %s does not match: default or empty", specType)
 	}
 	return nil
 }
@@ -115,11 +131,16 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&ctl.AlertImageVersion, "alert-image-version", ctl.AlertImageVersion, "Version of the Alert Image")
 	cmd.Flags().StringVar(&ctl.CfsslImageName, "cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
 	cmd.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
-	cmd.Flags().StringVar(&ctl.BlackduckHost, "blackduck-host", ctl.BlackduckHost, "Host url of Blackduck")
-	cmd.Flags().StringVar(&ctl.BlackduckUser, "blackduck-user", ctl.BlackduckUser, "Username for Blackduck")
-	cmd.Flags().IntVar(&ctl.BlackduckPort, "blackduck-port", ctl.BlackduckPort, "Port for Blackduck")
-	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Type of Service to Expose")
+	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
+	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for the Alert")
+	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for the Alert")
+	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")
+	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
+	cmd.Flags().StringVar(&ctl.PVCName, "pvc-name", ctl.PVCName, "Name for the PVC")
+	cmd.Flags().StringVar(&ctl.PVCStorageClass, "pvc-storage-class", ctl.PVCStorageClass, "StorageClass for the PVC")
+	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation for the PVC")
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
 	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
@@ -148,21 +169,30 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.CfsslImageName = ctl.CfsslImageName
 		case "cfssl-image-version":
 			ctl.Spec.CfsslImageVersion = ctl.CfsslImageVersion
-		case "blackduck-host":
-			ctl.Spec.BlackduckHost = ctl.BlackduckHost
-		case "blackduck-user":
-			ctl.Spec.BlackduckUser = ctl.BlackduckUser
-		case "blackduck-port":
-			fmt.Printf("Shouldn't be here\n")
-			ctl.Spec.BlackduckPort = &ctl.BlackduckPort
-		case "port":
-			ctl.Spec.Port = &ctl.Port
 		case "stand-alone":
 			ctl.Spec.StandAlone = &ctl.StandAlone
+		case "expose-service":
+			ctl.Spec.ExposeService = ctl.ExposeService
+		case "port":
+			ctl.Spec.Port = &ctl.Port
+		case "encryption-password":
+			ctl.Spec.EncryptionPassword = ctl.EncryptionPassword
+		case "encryption-global-salt":
+			ctl.Spec.EncryptionGlobalSalt = ctl.EncryptionGlobalSalt
+		case "persistent-storage":
+			ctl.Spec.PersistentStorage = ctl.PersistentStorage
+		case "pvc-name":
+			ctl.Spec.PVCName = ctl.PVCName
+		case "storage-class":
+			ctl.Spec.PVCStorageClass = ctl.PVCStorageClass
+		case "pvc-size":
+			ctl.Spec.PVCSize = ctl.PVCSize
 		case "alert-memory":
 			ctl.Spec.AlertMemory = ctl.AlertMemory
 		case "cfssl-memory":
 			ctl.Spec.CfsslMemory = ctl.CfsslMemory
+		case "environs":
+			ctl.Spec.Environs = ctl.Environs
 		case "alert-desired-state":
 			ctl.Spec.DesiredState = ctl.DesiredState
 		default:

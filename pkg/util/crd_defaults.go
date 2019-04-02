@@ -292,40 +292,26 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 // GetAlertDefaultValue creates an Alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {
 	port := 8443
-	hubPort := 443
 	standAlone := true
 
 	return &alertv1.AlertSpec{
-		Port:           &port,
-		BlackduckPort:  &hubPort,
-		StandAlone:     &standAlone,
-		AlertMemory:    "512M",
-		CfsslMemory:    "640M",
-		AlertImageName: "blackduck-alert",
-		CfsslImageName: "hub-cfssl",
-	}
-}
-
-// GetAlertDefaultValue2 creates an Alert crd configuration object with defaults
-func GetAlertDefaultValue2() *alertv1.AlertSpec {
-	port := 8443
-	hubPort := 443
-	standAlone := true
-
-	return &alertv1.AlertSpec{
-		Namespace:         "alert-test",
-		Registry:          "docker.io",
-		ImagePath:         "blackducksoftware",
-		AlertImageName:    "blackduck-alert",
-		AlertImageVersion: "2.1.0",
-		CfsslImageName:    "hub-cfssl",
-		CfsslImageVersion: "4.8.1",
-		BlackduckHost:     "<<HUB_HOST>>",
-		BlackduckUser:     "sysadmin",
-		BlackduckPort:     &hubPort,
-		Port:              &port,
-		StandAlone:        &standAlone,
-		AlertMemory:       "512M",
-		CfsslMemory:       "640M",
+		Namespace:            "alert-test",
+		Registry:             "docker.io",
+		ImagePath:            "blackducksoftware",
+		AlertImageName:       "blackduck-alert",
+		AlertImageVersion:    "3.1.0",
+		CfsslImageName:       "blackduck-cfssl",
+		CfsslImageVersion:    "1.0.0",
+		ExposeService:        "NODEPORT",
+		Port:                 &port,
+		EncryptionPassword:   "",
+		EncryptionGlobalSalt: "",
+		PersistentStorage:    true,
+		PVCName:              "alert-pvc",
+		StandAlone:           &standAlone,
+		PVCSize:              "5G",
+		PVCStorageClass:      "",
+		AlertMemory:          "2560M",
+		CfsslMemory:          "640M",
 	}
 }
