@@ -165,8 +165,10 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	}
 
 	// TODO wait for webserver to be up before we register
-	if err := hc.registerIfNeeded(blackduck); err != nil {
-		return err
+	if len(blackduck.Spec.LicenseKey) > 0 {
+		if err := hc.registerIfNeeded(blackduck); err != nil {
+			log.Infof("couldn't register blackduck %s: %v", blackduck.Name, err)
+		}
 	}
 
 	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
