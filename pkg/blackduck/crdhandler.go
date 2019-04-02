@@ -127,15 +127,24 @@ func (h *Handler) ObjectDeleted(name string) {
 
 // ObjectUpdated will be called for update hub events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	bd, ok := objNew.(*blackduckv1.Blackduck)
+	obj, ok := objNew.(*blackduckv1.Blackduck)
 	if !ok {
 		log.Error("Unable to cast Blackduck object")
 		return
 	}
 
+	// We stop here if the object no longer exists
+	bd, err := h.blackduckClient.SynopsysV1().Blackducks(h.config.Namespace).Get(obj.Name, v1.GetOptions{})
+	if err != nil {
+		log.Warnf("blackduck %s no longer exist", obj.Name)
+		return
+	} else {
+		fmt.Printf("%+v\n", bd)
+	}
+
 	newSpec := bd.Spec
 	hubDefaultSpec := h.defaults
-	err := mergo.Merge(&newSpec, hubDefaultSpec)
+	err = mergo.Merge(&newSpec, hubDefaultSpec)
 	if err != nil {
 		log.Errorf("unable to merge the hub structs for %s due to %+v", bd.Name, err)
 		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
