@@ -177,6 +177,8 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "TODO")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose service type [Loadbalancer/Nodeport]")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
@@ -459,6 +461,26 @@ func TestSetFlag(t *testing.T) {
 				LicenseKey: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{LicenseKey: "changed"},
+		},
+		// case
+		{
+			flagName:   "version",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:    &blackduckv1.BlackduckSpec{},
+				Version: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Version: "changed"},
+		},
+		// case
+		{
+			flagName:   "expose-service",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:          &blackduckv1.BlackduckSpec{},
+				ExposeService: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{ExposeService: "changed"},
 		},
 		// case
 		{
