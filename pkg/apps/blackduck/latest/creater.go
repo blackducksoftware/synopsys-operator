@@ -172,9 +172,13 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	}
 
 	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
-		newBlackuck.Status.IP, err = hc.getNodePortIPAddress(blackduck.Spec.Namespace, "webserver-np")
+		newBlackuck.Status.IP = ""
+		ports, _ := util.GetNodePort(hc.KubeClient, blackduck.Spec.Namespace, "webserver-np")
+		for _, p := range ports {
+			newBlackuck.Status.IP = fmt.Sprintf("%s:%d ", newBlackuck.Status.IP, p)
+		}
 	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
-		newBlackuck.Status.IP, err = hc.getLoadBalancerIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+		newBlackuck.Status.IP, err = util.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-lb")
 	}
 
 	if blackduck.Spec.PersistentStorage {
@@ -335,42 +339,6 @@ func (hc *Creater) getPVCVolumeName(namespace string, name string) (string, erro
 	}
 
 	return pvc.Spec.VolumeName, nil
-}
-
-func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
-	for i := 0; i < 10; i++ {
-		time.Sleep(10 * time.Second)
-		service, err := util.GetService(hc.KubeClient, namespace, serviceName)
-		if err != nil {
-			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
-		}
-
-		log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
-
-		if len(service.Status.LoadBalancer.Ingress) > 0 {
-			ipAddress := service.Status.LoadBalancer.Ingress[0].IP
-			return ipAddress, nil
-		}
-	}
-	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
-}
-
-func (hc *Creater) getNodePortIPAddress(namespace string, serviceName string) (string, error) {
-	for i := 0; i < 10; i++ {
-		time.Sleep(10 * time.Second)
-		service, err := util.GetService(hc.KubeClient, namespace, serviceName)
-		if err != nil {
-			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
-		}
-
-		log.Debugf("[%s] service: %v", serviceName, service.Spec.ClusterIP)
-
-		if !strings.EqualFold(service.Spec.ClusterIP, "") {
-			ipAddress := service.Spec.ClusterIP
-			return ipAddress, nil
-		}
-	}
-	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
 }
 
 func (hc *Creater) registerIfNeeded(bd *v1.Blackduck) error {

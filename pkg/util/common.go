@@ -1057,3 +1057,33 @@ func UniqueValues(input []string) []string {
 
 	return u
 }
+
+// GetNodePort will return a service nodeports
+func GetNodePort(clientset *kubernetes.Clientset, namespace string, serviceName string) ([]int32, error) {
+	service, err := GetService(clientset, namespace, serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
+	}
+
+	var nodeports []int32
+	for _, v := range service.Spec.Ports {
+		if v.NodePort != 0 {
+			nodeports = append(nodeports, v.NodePort)
+		}
+	}
+	return nodeports, nil
+}
+
+// GetLoadBalancerIPAddress will return the ip address of a service of type loadbalancer
+func GetLoadBalancerIPAddress(clientset *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
+	service, err := GetService(clientset, namespace, serviceName)
+	if err != nil {
+		return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
+	}
+
+	if len(service.Status.LoadBalancer.Ingress) > 0 {
+		ipAddress := service.Status.LoadBalancer.Ingress[0].IP
+		return ipAddress, nil
+	}
+	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
+}

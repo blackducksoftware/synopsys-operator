@@ -138,8 +138,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	if err != nil {
 		log.Warnf("blackduck %s no longer exist", obj.Name)
 		return
-	} else {
-		fmt.Printf("%+v\n", bd)
 	}
 
 	newSpec := bd.Spec
