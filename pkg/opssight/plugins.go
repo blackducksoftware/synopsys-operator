@@ -197,7 +197,7 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 // getAllHubs get only the internal Black Duck instances from the cluster
 func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 	hosts := []*opssightapi.Host{}
-	hubsList, err := util.ListHubs(p.hubClient, p.config.Namespace)
+	hubsList, err := util.ListBlackducks(p.hubClient, p.config.Namespace)
 	if err != nil {
 		log.Errorf("unable to list blackducks due to %+v", err)
 	}

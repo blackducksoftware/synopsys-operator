@@ -138,7 +138,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	err := mergo.Merge(&newSpec, hubDefaultSpec)
 	if err != nil {
 		log.Errorf("unable to merge the hub structs for %s due to %+v", bd.Name, err)
-		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Error), err, bd)
+		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
 		if err != nil {
 			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
@@ -158,7 +158,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	err = app.Blackduck().Ensure(bd)
 	if err != nil {
 		log.Error(err)
-		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Error), err, bd)
+		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
 		if err != nil {
 			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
@@ -170,7 +170,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	h.verifyHub(hubURL, bd.Spec.Namespace)
 
 	if !strings.EqualFold(bd.Status.State, string(Running)) {
-		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Running), nil, bd)
+		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
 		if err != nil {
 			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
@@ -199,7 +199,7 @@ func (h *Handler) callHubFederator() {
 // HubNamespaces will list the hub namespaces
 func (h *Handler) getHubUrls() (*APISetHubsRequest, error) {
 	// 1. get Blackduck CDR list from default ns
-	hubList, err := util.ListHubs(h.blackduckClient, h.config.Namespace)
+	hubList, err := util.ListBlackducks(h.blackduckClient, h.config.Namespace)
 	if err != nil {
 		return &APISetHubsRequest{}, err
 	}
@@ -234,7 +234,7 @@ func (h *Handler) verifyHub(hubURL string, name string) bool {
 		if err != nil {
 			log.Debugf("unable to talk with the hub %s", hubURL)
 			time.Sleep(10 * time.Second)
-			_, err := util.GetHub(h.blackduckClient, h.config.Namespace, name)
+			_, err := util.GetBlackduck(h.blackduckClient, h.config.Namespace, name)
 			if err != nil {
 				return false
 			}

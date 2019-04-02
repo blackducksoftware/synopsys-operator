@@ -426,7 +426,10 @@ func ListReplicationControllers(clientset *kubernetes.Clientset, namespace strin
 
 // DeleteReplicationController will delete the replication controller corresponding to a namespace and name
 func DeleteReplicationController(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{})
+	propagationPolicy := metav1.DeletePropagationBackground
+	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{
+		PropagationPolicy: &propagationPolicy,
+	})
 }
 
 // GetDeployment will get the deployment corresponding to a namespace and name
@@ -441,7 +444,10 @@ func ListDeployments(clientset *kubernetes.Clientset, namespace string, labelSel
 
 // DeleteDeployment will delete the deployment corresponding to a namespace and name
 func DeleteDeployment(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{})
+	propagationPolicy := metav1.DeletePropagationBackground
+	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{
+		PropagationPolicy: &propagationPolicy,
+	})
 }
 
 // CreatePersistentVolume will create the persistent volume
@@ -679,41 +685,24 @@ func GetOpsSights(clientSet *opssightclientset.Clientset) (*opssightapi.OpsSight
 	return clientSet.SynopsysV1().OpsSights(metav1.NamespaceAll).List(metav1.ListOptions{})
 }
 
-// ListHubs will list all hubs in the cluster
-func ListHubs(hubClientset *hubclientset.Clientset, namespace string) (*blackduckapi.BlackduckList, error) {
+// ListBlackducks will list all hubs in the cluster
+func ListBlackducks(hubClientset *hubclientset.Clientset, namespace string) (*blackduckapi.BlackduckList, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).List(metav1.ListOptions{})
 }
 
-// WatchHubs will watch for hub events in the cluster
-func WatchHubs(hubClientset *hubclientset.Clientset, namespace string) (watch.Interface, error) {
+// WatchBlackducks will watch for hub events in the cluster
+func WatchBlackducks(hubClientset *hubclientset.Clientset, namespace string) (watch.Interface, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).Watch(metav1.ListOptions{})
 }
 
-// CreateHub will create hub in the cluster
-func CreateHub(hubClientset *hubclientset.Clientset, namespace string, createHub *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
+// CreateBlackduck will create hub in the cluster
+func CreateBlackduck(hubClientset *hubclientset.Clientset, namespace string, createHub *blackduckapi.Blackduck) (*blackduckapi.Blackduck, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).Create(createHub)
 }
 
-// GetHub will get hubs in the cluster
-func GetHub(hubClientset *hubclientset.Clientset, namespace string, name string) (*blackduckapi.Blackduck, error) {
+// GetBlackduck will get hubs in the cluster
+func GetBlackduck(hubClientset *hubclientset.Clientset, namespace string, name string) (*blackduckapi.Blackduck, error) {
 	return hubClientset.SynopsysV1().Blackducks(namespace).Get(name, metav1.GetOptions{})
-}
-
-// ListHubPV will list all the persistent volumes attached to each hub in the cluster
-func ListHubPV(hubClientset *hubclientset.Clientset, namespace string) (map[string]string, error) {
-	var pvList map[string]string
-	pvList = make(map[string]string)
-	hubs, err := ListHubs(hubClientset, namespace)
-	if err != nil {
-		log.Errorf("unable to list the hubs due to %+v", err)
-		return pvList, err
-	}
-	for _, hub := range hubs.Items {
-		if hub.Spec.PersistentStorage {
-			pvList[hub.Name] = fmt.Sprintf("%s (%s)", hub.Name, hub.Status.PVCVolumeName["blackduck-postgres"])
-		}
-	}
-	return pvList, nil
 }
 
 // IntToPtr will convert int to pointer

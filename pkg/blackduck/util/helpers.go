@@ -23,11 +23,12 @@ package util
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	hubClient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	blackduckClient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/batch/v1"
@@ -122,23 +123,19 @@ func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder stri
 	return adminPassword, userPassword, postgresPassword, err
 }
 
-func updateHubObject(h *hubClient.Clientset, namespace string, obj *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
+func updateBlackduckObject(h *blackduckClient.Clientset, namespace string, obj *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
 	return h.SynopsysV1().Blackducks(namespace).Update(obj)
 }
 
 // UpdateState will be used to update the hub object
-func UpdateState(h *hubClient.Clientset, namespace string, statusState string, err error, hub *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
-	hub.Status.State = statusState
-	if err != nil {
-		hub.Status.ErrorMessage = fmt.Sprintf("%+v", err)
-	} else {
-		hub.Status.ErrorMessage = ""
+func UpdateState(h *blackduckClient.Clientset, name string, namespace string, statusState string, error error) (*blackduckv1.Blackduck, error) {
+	errorMessage := ""
+	if error != nil {
+		errorMessage = fmt.Sprintf("%+v", error)
 	}
-	hub, err = updateHubObject(h, namespace, hub)
-	if err != nil {
-		log.Errorf("couldn't update the state of hub object: %s", err.Error())
-	}
-	return hub, err
+
+	patch := fmt.Sprintf("{\"status\":{\"state\":\"%s\",\"errorMessage\":\"%s\"}}", statusState, errorMessage)
+	return h.SynopsysV1().Blackducks(namespace).Patch(name, types.MergePatchType, []byte(patch))
 }
 
 // GetHubDBPassword will retrieve the blackduck and blackduck_user db password
