@@ -172,9 +172,9 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	}
 
 	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
-		newBlackuck.Status.IP, err = hc.getLoadBalancerIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+		newBlackuck.Status.IP, err = hc.getNodePortIPAddress(blackduck.Spec.Namespace, "webserver-np")
 	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
-		newBlackuck.Status.IP, err = hc.getNodePortIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+		newBlackuck.Status.IP, err = hc.getLoadBalancerIPAddress(blackduck.Spec.Namespace, "webserver-lb")
 	}
 
 	if blackduck.Spec.PersistentStorage {
