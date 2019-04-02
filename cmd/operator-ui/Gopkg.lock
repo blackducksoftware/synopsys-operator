@@ -49,7 +49,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f08c78d09850f866191415796317b0c36ef425ea23137563f3df8b480448ca4b"
+  digest = "1:776fddca1725685dedb43f84e23323387e27b18419adc981329964f7c0ba4fec"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
@@ -60,13 +60,23 @@
     "pkg/api/opssight",
     "pkg/api/opssight/v1",
     "pkg/apps",
+    "pkg/apps/blackduck",
+    "pkg/apps/blackduck/latest",
+    "pkg/apps/blackduck/latest/containers",
+    "pkg/apps/blackduck/v1",
+    "pkg/apps/blackduck/v1/containers",
+    "pkg/apps/database",
+    "pkg/apps/database/postgres",
     "pkg/blackduck",
     "pkg/blackduck/client/clientset/versioned",
     "pkg/blackduck/client/clientset/versioned/scheme",
     "pkg/blackduck/client/clientset/versioned/typed/blackduck/v1",
-    "pkg/blackduck/containers",
+    "pkg/blackduck/client/informers/externalversions/blackduck/v1",
+    "pkg/blackduck/client/informers/externalversions/internalinterfaces",
+    "pkg/blackduck/client/listers/blackduck/v1",
     "pkg/blackduck/util",
     "pkg/crds",
+    "pkg/crdupdater",
     "pkg/opssight/client/clientset/versioned",
     "pkg/opssight/client/clientset/versioned/scheme",
     "pkg/opssight/client/clientset/versioned/typed/opssight/v1",
@@ -74,7 +84,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "7ca4a374ce6085a3ca7287792a1a3965e5e7bc61"
+  revision = "adb2d379dfab0bae07e16d3bec80d87c4ec2f342"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -158,14 +168,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "5545eab6dad3bbbd6c5ae9186383c2a9d23c0dae"
-
-[[projects]]
-  branch = "master"
-  digest = "1:555fef7420c108d88754e41e02299fd10f67dc6602d643944611a4100132d3cf"
-  name = "github.com/gin-gonic/contrib"
-  packages = ["static"]
-  pruneopts = "UT"
-  revision = "54ff787f7c73aec36275e1384c705389b1772ba9"
 
 [[projects]]
   digest = "1:d5083934eb25e45d17f72ffa86cae3814f4a9d6c073c4f16b64147169b245606"

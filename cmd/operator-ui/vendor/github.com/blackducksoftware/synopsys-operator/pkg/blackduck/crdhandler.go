@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -26,6 +26,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
+	"github.com/imdario/mergo"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -36,7 +38,6 @@ import (
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -53,16 +54,26 @@ type HandlerInterface interface {
 	ObjectUpdated(objOld, objNew interface{})
 }
 
-// HubState contains the state of the Hub
-type HubState string
+// State contains the state of the OpsSight
+type State string
+
+// DesiredState contains the desired state of the OpsSight
+type DesiredState string
 
 const (
-	// Running is used when Hub is running
-	Running HubState = "Running"
-	// Stopped is used when Hub is Stopped
-	Stopped HubState = "Stopped"
-	// UnexpectedState is used there is an unexpected number of pod
-	UnexpectedState HubState = "UnexpectedState"
+	// Running is used when the instance is running
+	Running State = "Running"
+	// Stopped is used when the instance is about to stip
+	Stopped State = "Stopped"
+	// Updating is used when the instance is about to updating
+	Updating State = "Updating"
+	// Error is used when the instance deployment errored out
+	Error State = "Error"
+
+	// Start is used when the instance  to be created or updated
+	Start DesiredState = "Start"
+	// Stop is used when the instance  to be stopped
+	Stop DesiredState = "Stop"
 )
 
 // Handler will store the configuration that is required to initiantiate the informers callback
@@ -92,70 +103,13 @@ type APISetHubsRequest struct {
 
 // ObjectCreated will be called for create hub events
 func (h *Handler) ObjectCreated(obj interface{}) {
-	log.Debugf("ObjectCreated: %+v", obj)
-	hubv2, ok := obj.(*blackduckv1.Blackduck)
-	if !ok {
-		log.Error("Unable to cast Blackduck object")
-		return
-	}
-	if strings.EqualFold(hubv2.Spec.DesiredState, "") && strings.EqualFold(hubv2.Status.State, "") {
-		newSpec := hubv2.Spec
-		hubDefaultSpec := h.defaults
-		err := mergo.Merge(&newSpec, hubDefaultSpec)
-		log.Debugf("merged hub details %+v", newSpec)
-		if err != nil {
-			log.Errorf("unable to merge the hub structs for %s due to %+v", hubv2.Name, err)
-			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, hubv2)
-		} else {
-			hubv2.Spec = newSpec
-			// Update status
-			hubv2, err := hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "creating", nil, hubv2)
-
-			if err == nil {
-				hubVersion := hubutils.GetHubVersion(hubv2.Spec.Environs)
-				hubv2.View.Version = hubVersion
-
-				isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(hubv2.Spec.Environs)
-
-				hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
-				ip, pvc, updateError, err := hubCreator.CreateHub(hubv2)
-				if err != nil {
-					log.Errorf("unable to create hub for %s due to %+v", hubv2.Name, err)
-				}
-
-				hubv2.Status.IP = ip
-				if len(pvc) > 0 {
-					hubv2.Status.PVCVolumeName = pvc
-				}
-
-				if updateError {
-					hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, hubv2)
-				} else {
-					hubv2.Spec.DesiredState = "Running"
-					hubv2.Status.State = "Running"
-					_, err := h.blackduckClient.SynopsysV1().Blackducks(h.config.Namespace).Update(hubv2)
-					if err != nil {
-						log.Errorf("Failed to update blackduck [%s] due to %+v", hubv2.Name, err)
-					}
-					hubURL := fmt.Sprintf("webserver.%s.svc", hubv2.Spec.Namespace)
-					h.verifyHub(hubURL, hubv2.Spec.Namespace)
-					h.autoRegisterHub(&hubv2.Spec)
-					// h.callHubFederator()
-				}
-			}
-		}
-		log.Infof("Done w/ install, starting post-install nanny monitors...")
-	} else {
-		h.ObjectUpdated(nil, obj)
-	}
+	h.ObjectUpdated(nil, obj)
 
 }
 
 // ObjectDeleted will be called for delete hub events
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
-
-	hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, false)
 
 	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
 	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("blackducks.synopsys.com", v1.GetOptions{})
@@ -166,97 +120,61 @@ func (h *Handler) ObjectDeleted(name string) {
 	}
 
 	// Voluntary deletion. The CRD still exists but the Blackduck resource has been deleted
-	hubCreator.DeleteHub(name)
+	app := apps.NewApp(h.config, h.kubeConfig)
+	app.Blackduck().Delete(name)
 
-	// h.callHubFederator()
-
-	//Set spec/state  and status/state to started
-	// obj.Spec.DesiredState = "deleted"
-	// obj.Status.DesiredState = "deleted"
-	// obj, err = h.updateHubObject(obj)
-	// if err != nil {
-	// 	log.Errorf("Couldn't update Blackduck object: %s", err.Error())
-	// }
 }
 
 // ObjectUpdated will be called for update hub events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	blackduck, ok := objNew.(*blackduckv1.Blackduck)
+	bd, ok := objNew.(*blackduckv1.Blackduck)
 	if !ok {
-		log.Error("Unable to cast Hub object")
-		return
-	}
-	state, err := h.getCurrentState(blackduck.Spec)
-	if err != nil {
-		log.Errorf("Couldn't get the Hub state of %s: %v", blackduck.Name, err)
+		log.Error("Unable to cast Blackduck object")
 		return
 	}
 
-	if !strings.EqualFold(string(state), blackduck.Spec.DesiredState) {
-		isBinaryAnalysisEnabled := h.isBinaryAnalysisEnabled(blackduck.Spec.Environs)
-		hubCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.blackduckClient, h.osSecurityClient, h.routeClient, isBinaryAnalysisEnabled)
-		hubContainerFlavor, err := hubCreator.getContainersFlavor(blackduck)
+	newSpec := bd.Spec
+	hubDefaultSpec := h.defaults
+	err := mergo.Merge(&newSpec, hubDefaultSpec)
+	if err != nil {
+		log.Errorf("unable to merge the hub structs for %s due to %+v", bd.Name, err)
+		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Error), err, bd)
 		if err != nil {
-			hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
+			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
-		switch blackduck.Spec.DesiredState {
-		case "Running":
-			log.Infof("Starting Hub: %s", blackduck.Name)
-			if err := hubCreator.Start(blackduck, hubContainerFlavor); err != nil {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
-			} else {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
-			}
-
-		case "Stopped":
-			log.Infof("Stopping Hub: %s", blackduck.Name)
-			if err := hubCreator.Stop(&blackduck.Spec, hubContainerFlavor); err != nil {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, "error", err, blackduck)
-			} else {
-				hubutils.UpdateState(h.blackduckClient, h.config.Namespace, blackduck.Spec.DesiredState, err, blackduck)
-			}
-		}
+		return
 	}
-}
+	bd.Spec = newSpec
 
-func (h *Handler) autoRegisterHub(createHub *blackduckv1.BlackduckSpec) error {
-	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod, err := util.FilterPodByNamePrefixInNamespace(h.kubeClient, createHub.Namespace, "registration")
-	log.Debugf("registration pod: %+v", registrationPod)
+	// An error occurred. We wait for one minute before we try to ensure again
+	if strings.EqualFold(bd.Status.State, string(Error)) {
+		time.Sleep(time.Minute * 1)
+	}
+
+	log.Debugf("ObjectUpdated: %s", bd.Name)
+
+	// Ensure
+	app := apps.NewApp(h.config, h.kubeConfig)
+	err = app.Blackduck().Ensure(bd)
 	if err != nil {
-		log.Errorf("unable to filter the registration pod in %s because %+v", createHub.Namespace, err)
-		return err
+		log.Error(err)
+		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Error), err, bd)
+		if err != nil {
+			log.Errorf("Couldn't update the blackduck state: %v", err)
+		}
+		return
 	}
 
-	registrationKey := createHub.LicenseKey
+	// Verify that we can access the Hub
+	hubURL := fmt.Sprintf("webserver.%s.svc", bd.Spec.Namespace)
+	h.verifyHub(hubURL, bd.Spec.Namespace)
 
-	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
-		for i := 0; i < 20; i++ {
-			registrationPod, err := util.GetPod(h.kubeClient, createHub.Namespace, registrationPod.Name)
-			if err != nil {
-				log.Errorf("unable to find the registration pod in %s because %+v", createHub.Namespace, err)
-				return err
-			}
-
-			// Create the exec into kubernetes pod request
-			req := util.CreateExecContainerRequest(h.kubeClient, registrationPod)
-			// Exec into the kubernetes pod and execute the commands
-			if strings.HasPrefix(hubutils.GetHubVersion(createHub.Environs), "4.") {
-				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate"`, registrationKey)})
-			} else {
-				err = util.ExecContainer(h.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
-			}
-
-			if err == nil {
-				log.Infof("hub %s is created and auto registered. Exit!!!!", createHub.Namespace)
-				return nil
-			}
-			log.Infof("error in Stream: %v", err)
-			time.Sleep(10 * time.Second)
+	if !strings.EqualFold(bd.Status.State, string(Running)) {
+		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Running), nil, bd)
+		if err != nil {
+			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
 	}
-	log.Errorf("unable to register the hub for %s.... please manually auto register the hub", createHub.Namespace)
-	return fmt.Errorf("unable to register the hub for %s.... please manually auto register the hub", createHub.Namespace)
 }
 
 func (h *Handler) callHubFederator() {
@@ -356,24 +274,6 @@ func (h *Handler) addHubFederatorEvents(dest string, obj interface{}) error {
 		return fmt.Errorf("http POST request to %s failed with status code %d", dest, resp.StatusCode)
 	}
 	return nil
-}
-
-func (h *Handler) getCurrentState(blackduckSpec blackduckv1.BlackduckSpec) (HubState, error) {
-	rc, err := h.kubeClient.CoreV1().ReplicationControllers(blackduckSpec.Namespace).List(v1.ListOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	if len(rc.Items) == 0 {
-		return Stopped, nil
-	}
-
-	// 10 if ext-db  | 11 if using postgres container
-	if (len(rc.Items) < 10 && blackduckSpec.ExternalPostgres != nil) || (len(rc.Items) < 11 && blackduckSpec.ExternalPostgres == nil) {
-		return UnexpectedState, nil
-	}
-
-	return Running, nil
 }
 
 func (h *Handler) isBinaryAnalysisEnabled(envs []string) bool {
