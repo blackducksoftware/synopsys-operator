@@ -22,10 +22,13 @@ under the License.
 package alert
 
 import (
+	"fmt"
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
@@ -35,6 +38,7 @@ import (
 
 // Creater will store the configuration to create the Blackduck
 type Creater struct {
+	config      *protoform.Config
 	kubeConfig  *rest.Config
 	kubeClient  *kubernetes.Clientset
 	alertClient *alertclientset.Clientset
@@ -42,8 +46,8 @@ type Creater struct {
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient}
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient}
 }
 
 // DeleteAlert will delete the Black Duck Alert
@@ -103,5 +107,26 @@ func (ac *Creater) CreateAlert(createAlert *alertapi.AlertSpec) error {
 			log.Errorf("unable to create the openshift route due to %+v", err)
 		}
 	}
+	return nil
+}
+
+// UpdateAlert will update the Black Duck Alert
+func (ac *Creater) UpdateAlert(alert *alertapi.Alert) error {
+	alertSpec := &alert.Spec
+	newConfigMapConfig := NewAlert(alertSpec)
+
+	// get new components build from the latest updates
+	components, err := newConfigMapConfig.GetComponents()
+	if err != nil {
+		return fmt.Errorf("unable to get alert components for %s: %s", alertSpec.Namespace, err)
+	}
+
+	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, alertSpec.Namespace, components, "app=alert")
+	errors := commonConfig.CRUDComponents()
+
+	if len(errors) > 0 {
+		return fmt.Errorf("unable to update components due to %+v", errors)
+	}
+
 	return nil
 }

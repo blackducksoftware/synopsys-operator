@@ -81,7 +81,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 			alertv1, err := h.updateState("creating", "", alertv1)
 
 			if err == nil {
-				alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
+				alertCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
 
 				// create alert instance
 				err = alertCreator.CreateAlert(&alertv1.Spec)
@@ -99,13 +99,40 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete alert events
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
+	alertCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
 	alertCreator.DeleteAlert(name)
 }
 
 // ObjectUpdated will be called for update alert events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("objectUpdated: %+v", objNew)
+
+	alert, ok := objNew.(*alertapi.Alert)
+	if !ok {
+		log.Error("Unable to cast to Alert object")
+		return
+	}
+
+	alertCreator := NewCreater(h.config, h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
+
+	alert, err := h.updateState("Updating", "", alert)
+	if err != nil {
+		log.Errorf("Unable to update state of alert: %s", err)
+		return
+	}
+
+	err = alertCreator.UpdateAlert(alert)
+	if err != nil {
+		log.Errorf("Unable to update alert: %s", err)
+		return
+	}
+
+	_, err = h.updateState("Running", "", alert)
+	if err != nil {
+		log.Errorf("Unable to update state of alert: %s", err)
+		return
+	}
+
 }
 
 func (h *Handler) updateState(statusState string, errorMessage string, alert *alertapi.Alert) (*alertapi.Alert, error) {
