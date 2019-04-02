@@ -23,6 +23,7 @@ package postgres
 
 import (
 	"fmt"
+	"strconv"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -53,6 +54,8 @@ type Postgres struct {
 	PasswordSecretName            string
 	UserPasswordSecretKey         string
 	AdminPasswordSecretKey        string
+	MaxConnections                int
+	SharedBufferInMB              int
 	EnvConfigMapRefs              []string
 	TerminationGracePeriodSeconds int64
 	Labels                        map[string]string
@@ -130,6 +133,12 @@ func (p *Postgres) getPostgresVolumeMounts() []*horizonapi.VolumeMountConfig {
 // getPostgresEnvconfigs will return the postgres environment variable configurations
 func (p *Postgres) getPostgresEnvconfigs() []*horizonapi.EnvConfig {
 	postgresEnvs := []*horizonapi.EnvConfig{}
+	if p.MaxConnections > 0 {
+		postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_MAX_CONNECTIONS", KeyOrVal: strconv.Itoa(p.MaxConnections)})
+	}
+	if p.SharedBufferInMB > 0 {
+		postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_SHARED_BUFFERS", KeyOrVal: fmt.Sprintf("%dMB", p.SharedBufferInMB)})
+	}
 	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_DATABASE", KeyOrVal: p.Database})
 	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_USER", KeyOrVal: p.User})
 	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_PASSWORD", KeyOrVal: p.UserPasswordSecretKey, FromName: p.PasswordSecretName})

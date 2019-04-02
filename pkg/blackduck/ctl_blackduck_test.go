@@ -464,6 +464,26 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
+			flagName:   "version",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:    &blackduckv1.BlackduckSpec{},
+				Version: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Version: "changed"},
+		},
+		// case
+		{
+			flagName:   "expose-service",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:          &blackduckv1.BlackduckSpec{},
+				ExposeService: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{ExposeService: "changed"},
+		},
+		// case
+		{
 			flagName:   "",
 			initialCtl: NewBlackduckCtl(),
 			changedCtl: &Ctl{
