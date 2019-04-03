@@ -176,7 +176,7 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
+func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "TODO")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
