@@ -232,6 +232,7 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 	},
 }
 
+// updateOpsSightCmd lets the user update an OpsSight instance
 var updateOpsSightCmd = &cobra.Command{
 	Use:   "opssight NAMESPACE",
 	Short: "Update an instance of OpsSight",
