@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package synopsysctl
+package soperator
 
 import (
 	"fmt"
@@ -45,7 +45,6 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponent
 		//Affinity:                 "string",
 	})
 	prometheusService.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	prometheusService.AddLabels(map[string]string{"name": "prometheus"})
 	prometheusService.AddSelectors(map[string]string{"app": "prometheus"})
 	prometheusService.AddPort(horizonapi.ServicePortConfig{
 		Name:       "prometheus",
@@ -55,6 +54,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponent
 		Protocol: horizonapi.ProtocolTCP,
 	})
 
+	prometheusService.AddLabels(map[string]string{"name": "prometheus", "app": "prometheus"})
 	return prometheusService
 }
 
@@ -167,8 +167,10 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 	prometheusPod.AddContainer(prometheusContainer)
 	prometheusPod.AddVolume(prometheusEmptyDirVolume)
 	prometheusPod.AddVolume(prometheusConfigMapVolume)
+	prometheusPod.AddLabels(map[string]string{"app": "prometheus"})
 	prometheusDeployment.AddPod(prometheusPod)
 
+	prometheusDeployment.AddLabels(map[string]string{"app": "prometheus"})
 	return prometheusDeployment
 }
 
@@ -181,7 +183,12 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncompone
 		Name:      "prometheus",
 		Namespace: specConfig.Namespace,
 	})
-	prometheusConfigMap.AddData(map[string]string{"prometheus.yml": "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"})
 
+	cmData := map[string]string{}
+	cmData["prometheus.yml"] = "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"
+	cmData["image"] = specConfig.PrometheusImage
+	prometheusConfigMap.AddData(cmData)
+
+	prometheusConfigMap.AddLabels(map[string]string{"app": "prometheus"})
 	return prometheusConfigMap
 }

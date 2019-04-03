@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package synopsysctl
+package soperator
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"

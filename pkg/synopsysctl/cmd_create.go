@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -22,7 +22,6 @@ under the License.
 package synopsysctl
 
 import (
-	"encoding/json"
 	"fmt"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
@@ -31,6 +30,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,7 +72,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"create"}, args...)
-		out, err := RunKubeCmd(kubeCmdArgs...)
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
 		if err != nil {
 			return fmt.Errorf("Error Creating the Resource with KubeCmd: %s", err)
 		}
@@ -127,8 +127,7 @@ var createBlackduckCmd = &cobra.Command{
 			Spec: blackduckSpec,
 		}
 		if mockBlackduck {
-			prettyPrint, _ := json.MarshalIndent(blackduck, "", "    ")
-			fmt.Printf("%s\n", prettyPrint)
+			util.PrettyPrint(blackduck)
 		} else {
 			// Create namespace for the Blackduck
 			err := DeployCRDNamespace(restconfig, blackduckName)
@@ -192,8 +191,7 @@ var createOpsSightCmd = &cobra.Command{
 			Spec: opssightSpec,
 		}
 		if mockOpsSight {
-			prettyPrint, _ := json.MarshalIndent(opssight, "", "    ")
-			fmt.Printf("%s\n", prettyPrint)
+			util.PrettyPrint(opssight)
 		} else {
 			// Create namespace for the OpsSight
 			err := DeployCRDNamespace(restconfig, opsSightName)
@@ -256,8 +254,7 @@ var createAlertCmd = &cobra.Command{
 			Spec: alertSpec,
 		}
 		if mockAlert {
-			prettyPrint, _ := json.MarshalIndent(alert, "", "    ")
-			fmt.Printf("%s\n", prettyPrint)
+			util.PrettyPrint(alert)
 		} else {
 			// Create namespace for the Alert
 			err := DeployCRDNamespace(restconfig, alertName)
@@ -288,18 +285,18 @@ func init() {
 	// Add Blackduck Command
 	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createBlackduckCmd.Flags().BoolVar(&mockBlackduck, "mock", false, "Prints resource spec instead of creating")
-	createBlackduckCtl.AddSpecFlags(createBlackduckCmd)
+	createBlackduckCtl.AddSpecFlags(createBlackduckCmd, true)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command
 	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags")
 	createOpsSightCmd.Flags().BoolVar(&mockOpsSight, "mock", false, "Prints resource spec instead of creating")
-	createOpsSightCtl.AddSpecFlags(createOpsSightCmd)
+	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command
 	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags")
 	createAlertCmd.Flags().BoolVar(&mockAlert, "mock", false, "Prints resource spec instead of creating")
-	createAlertCtl.AddSpecFlags(createAlertCmd)
+	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	createCmd.AddCommand(createAlertCmd)
 }

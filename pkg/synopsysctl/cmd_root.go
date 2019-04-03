@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -25,7 +25,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mitchellh/go-homedir"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,26 +48,6 @@ var rootCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		flagset := cmd.Flags()
-
-		if flagset.Changed("cluster") {
-			log.Warnf("Flag %s is Not Implemented", "cluster")
-		}
-		if flagset.Changed("kubeconfig") {
-			log.Warnf("Flag %s is Not Implemented", "kubeconfig")
-		}
-		if flagset.Changed("context") {
-			log.Warnf("Flag %s is Not Implemented", "context")
-		}
-		if flagset.Changed("insecure-skip-tls-verify") {
-			log.Warnf("Flag %s is Not Implemented", "insecure-skip-tls-verify")
-		}
-		if flagset.Changed("log-level") {
-			log.Warnf("Flag %s is Not Implemented", "log-level")
-		}
-		return nil
-	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 1 && args[0] == "--help" {
 			return fmt.Errorf("Help Called")
@@ -75,7 +56,7 @@ var rootCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Running Non-Synopsysctl Command\n")
-		out, err := RunKubeCmd(args...)
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, args...)
 		if err != nil {
 			log.Errorf("Error with KubeCmd: %s", out)
 			return nil
