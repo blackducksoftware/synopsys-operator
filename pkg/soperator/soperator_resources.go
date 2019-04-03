@@ -22,11 +22,13 @@ under the License.
 package soperator
 
 import (
+	"crypto/x509/pkix"
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 )
@@ -100,10 +102,11 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 	})
 	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/etc/synopsys-operator",
-		//Propagation: "*MountPropagationType",
-		Name: "synopsys-operator",
-		//SubPath:     "string",
-		//ReadOnly:    "*bool",
+		Name:      "synopsys-operator",
+	})
+	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
+		MountPath: "/opt/synopsys-operator/tls",
+		Name:      "synopsys-operator-tls",
 	})
 	synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "SEAL_KEY",
@@ -173,6 +176,13 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainerUI)
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
 	synopsysOperatorPod.AddLabels(map[string]string{"name": "synopsys-operator", "app": "synopsys-operator"})
+
+	synopsysOperatorTlSVolume := horizoncomponents.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      "synopsys-operator-tls",
+		MapOrSecretName: "synopsys-operator-tls",
+		DefaultMode:     &synopsysOperatorVolumeDefaultMode,
+	})
+	synopsysOperatorPod.AddVolume(synopsysOperatorTlSVolume)
 	synopsysOperatorRC.AddPod(synopsysOperatorPod)
 
 	synopsysOperatorRC.AddLabels(map[string]string{"app": "synopsys-operator"})
@@ -215,6 +225,13 @@ func (specConfig *SpecConfig) GetOperatorService() *horizoncomponents.Service {
 		Name:       "synopsys-operator",
 		Port:       8080,
 		TargetPort: "8080",
+		//NodePort:   "int32",
+		Protocol: horizonapi.ProtocolTCP,
+	})
+	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
+		Name:       "synopsys-operator-tls",
+		Port:       443,
+		TargetPort: "443",
 		//NodePort:   "int32",
 		Protocol: horizonapi.ProtocolTCP,
 	})
@@ -362,6 +379,29 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 
 	synopsysOperatorClusterRole.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return synopsysOperatorClusterRole
+}
+
+// GetTLSCertificateSecret creates a TLS certificate in horizon format
+func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secret {
+	//Generate certificate and key secret
+	cert, key, err := util.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
+		CommonName: fmt.Sprintf("synopsys-operator.%s.svc", specConfig.Namespace),
+	})
+	if err != nil {
+		log.Error("couldn't generate certificate and key.")
+		return nil
+	}
+
+	tlsSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
+		Name:      "synopsys-operator-tls",
+		Namespace: specConfig.Namespace,
+		Type:      specConfig.SecretType,
+	})
+	tlsSecret.AddStringData(map[string]string{
+		"cert.crt": cert,
+		"cert.key": key,
+	})
+	return tlsSecret
 }
 
 // GetOperatorSecret creates a Secret Horizon component for the Synopsys-Operaotor

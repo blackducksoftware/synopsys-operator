@@ -23,6 +23,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
 	"os"
 	"time"
 
@@ -94,6 +95,13 @@ func runProtoform(configPath string) {
 	if err = deployer.Deploy(); err != nil {
 		logrus.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
 	}
+
+	go func() {
+		webhook.NewOperatorWebhook(deployer.KubeConfig).Start()
+	}()
+
+	// Start the prometheus endpoint
+	protoform.SetupHTTPServer()
 
 	if deployer.Config.OperatorTimeBombInSeconds > 0 {
 		go func() {

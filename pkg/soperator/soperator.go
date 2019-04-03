@@ -81,7 +81,7 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 			specConfig.GetOperatorClusterRole(),
 		},
 		Secrets: []*components.Secret{
-			specConfig.GetOperatorSecret(),
+			specConfig.GetOperatorSecret(), specConfig.GetTLSCertificateSecret(),
 		},
 	}
 	return components, nil
