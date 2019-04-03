@@ -104,21 +104,14 @@ func (specConfig *SOperatorSpecConfig) GetOperatorReplicationController() *horiz
 		NameOrPrefix: "REGISTRATION_KEY",
 		Type:         horizonapi.EnvVal,
 		KeyOrVal:     specConfig.BlackduckRegistrationKey,
-		//FromName:     "string",
 	})
 	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/etc/synopsys-operator",
-		//Propagation: "*MountPropagationType",
-		Name: "synopsys-operator",
-		//SubPath:     "string",
-		//ReadOnly:    "*bool",
+		Name:      "synopsys-operator",
 	})
 	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/opt/synopsys-operator/tls",
-		//Propagation: "*MountPropagationType",
-		Name: "synopsys-operator-tls",
-		//SubPath:     "string",
-		//ReadOnly:    "*bool",
+		Name:      "synopsys-operator-tls",
 	})
 
 	synopsysOperatorContainerUI := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
