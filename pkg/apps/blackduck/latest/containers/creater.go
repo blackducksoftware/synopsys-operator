@@ -58,7 +58,6 @@ func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string
 	for _, reg := range c.hubSpec.ImageRegistries {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
-			// log.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, c.hubSpec.ImageRegistries, reg, baseContainer)
 			_, err := hubutils.ParseImageString(reg)
 			if err != nil {
 				log.Error(err)
@@ -68,21 +67,6 @@ func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string
 		}
 	}
 
-	//ignoredContainers := []string{"postgres", "appcheck", "rabbitmq", "upload"}
-	//for _, ignoredContainer := range ignoredContainers {
-	//	if strings.EqualFold(baseContainer, ignoredContainer) {
-	//		return ""
-	//	}
-	//}
-	//
-	//if strings.EqualFold(baseContainer, "solr") && strings.HasPrefix(blackduckVersion, "20") {
-	//	return ""
-	//}
-	//
-	//img := fmt.Sprintf("docker.io/blackducksoftware/hub-%v:%v", baseContainer, blackduckVersion)
-	//log.Warnf("Couldn't get container name for : %v, set it manually in the deployment, returning a reasonable default instead %v.", baseContainer, img)
-	//log.Warn("In the future, you should provide fully qualified images for every single container when running the blackduck operator.")
-	//return img
 	return ""
 }
 

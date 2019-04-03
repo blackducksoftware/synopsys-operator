@@ -22,12 +22,9 @@ under the License.
 package blackduck
 
 import (
-	// log "github.com/sirupsen/logrus"
 	"testing"
 )
 
 func TestCertificate(t *testing.T) {
-	_, _ = CreateSelfSignedCert()
-	// log.Infof("Certificate: %s", certificate)
-	// log.Infof("Key: %s", key)
+	CreateSelfSignedCert()
 }
