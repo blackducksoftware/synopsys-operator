@@ -111,6 +111,7 @@ func TestSwitchSpec(t *testing.T) {
 func TestAddSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 
+	// test case: Only Non-Master Flags are added
 	ctl := NewAlertCtl()
 	actualCmd := &cobra.Command{}
 	ctl.AddSpecFlags(actualCmd, false)
@@ -144,7 +145,7 @@ func TestSetChangedFlags(t *testing.T) {
 
 	actualCtl := NewAlertCtl()
 	cmd := &cobra.Command{}
-	actualCtl.AddSpecFlags(cmd, false)
+	actualCtl.AddSpecFlags(cmd, true)
 	actualCtl.SetChangedFlags(cmd.Flags())
 
 	expCtl := NewAlertCtl()

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -42,10 +42,10 @@ var deployPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var deployTerminationGracePeriodSeconds int64 = 180
 var deployDockerConfigPath = ""
 var deploySecretType = "Opaque"
-var deploySecretAdminPassword = "YmxhY2tkdWNr"
-var deploySecretPostgresPassword = "YmxhY2tkdWNr"
-var deploySecretUserPassword = "YmxhY2tkdWNr"
-var deploySecretBlackduckPassword = "YmxhY2tkdWNr"
+var deploySecretAdminPassword = "blackduck"
+var deploySecretPostgresPassword = "blackduck"
+var deploySecretUserPassword = "blackduck"
+var deploySecretBlackduckPassword = "blackduck"
 
 // Deploy Global Variables
 var secretType horizonapi.SecretType

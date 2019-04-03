@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -67,11 +67,6 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		//RunAsGroup:             "*int64",
 		//ForceNonRoot:           "*bool",
 	})
-
-	synopsysOperatorPodLabels := map[string]string{
-		"name": "synopsys-operator",
-		"app":  "synopsys-operator",
-	}
 
 	synopsysOperatorContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator",
@@ -174,10 +169,10 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		DefaultMode:     &synopsysOperatorVolumeDefaultMode,
 	})
 
-	synopsysOperatorPod.AddLabels(synopsysOperatorPodLabels)
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainer)
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainerUI)
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
+	synopsysOperatorPod.AddLabels(map[string]string{"name": "synopsys-operator", "app": "synopsys-operator"})
 	synopsysOperatorRC.AddPod(synopsysOperatorPod)
 
 	synopsysOperatorRC.AddLabels(map[string]string{"app": "synopsys-operator"})

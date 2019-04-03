@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -29,7 +29,7 @@ import (
 
 // SpecConfig represents the SOperator component
 // Its methods include GetComponents() and any functions
-// that create Kubernetes Resources for the SOperator
+// that create Kubernetes Resources for the Synopsys-Operator
 type SpecConfig struct {
 	Namespace                     string
 	SynopsysOperatorImage         string
@@ -59,7 +59,7 @@ func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, se
 }
 
 // GetComponents will return a ComponentList representing all
-// Kubernetes Resources for the SOperator
+// Kubernetes Resources for the Synopsys-Operator
 func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{
 		ReplicationControllers: []*components.ReplicationController{

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -31,7 +31,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -55,7 +55,7 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Editing Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"edit"}, args...)
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
+		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
 		if err != nil {
 			log.Errorf("Error Editing the Resource with KubeCmd: %s", out)
 			return nil
@@ -84,7 +84,7 @@ var editBlackduckCmd = &cobra.Command{
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
 		if flagset.NFlag() != 0 {
-			bd, err := getBlackduckFromCluster(blackduckName)
+			bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -95,13 +95,13 @@ var editBlackduckCmd = &cobra.Command{
 			// Update Blackduck with Updates
 			blackduckSpec := editBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
 			bd.Spec = blackduckSpec
-			err = updateBlackduckInCluster(blackduckName, bd)
+			_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 		} else {
-			err := util.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
+			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
 			if err != nil {
 				log.Errorf("Error Editing the Blackduck: %s", err)
 				return nil
@@ -130,7 +130,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		blackduckName := args[0]
 		pvcName := args[1]
 		// Get Blackduck Spec
-		bd, err := getBlackduckFromCluster(blackduckName)
+		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -143,7 +143,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		}
 		bd.Spec.PVC = append(bd.Spec.PVC, newPVC)
 		// Update Blackduck with PVC
-		err = updateBlackduckInCluster(blackduckName, bd)
+		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -168,7 +168,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		blackduckName := args[0]
 		environ := args[1]
 		// Get Blackduck Spec
-		bd, err := getBlackduckFromCluster(blackduckName)
+		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -176,7 +176,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		// Add Environ to Spec
 		bd.Spec.Environs = append(bd.Spec.Environs, environ)
 		// Update Blackduck with Environ
-		err = updateBlackduckInCluster(blackduckName, bd)
+		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -201,7 +201,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		blackduckName := args[0]
 		registry := args[1]
 		// Get Blackduck Spec
-		bd, err := getBlackduckFromCluster(blackduckName)
+		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -209,7 +209,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		// Add Registry to Spec
 		bd.Spec.ImageRegistries = append(bd.Spec.ImageRegistries, registry)
 		// Update Blackduck with Environ
-		err = updateBlackduckInCluster(blackduckName, bd)
+		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -235,7 +235,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		uidKey := args[1]
 		uidVal := args[2]
 		// Get Blackduck Spec
-		bd, err := getBlackduckFromCluster(blackduckName)
+		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -250,7 +250,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		}
 		bd.Spec.ImageUIDMap[uidKey] = intUIDVal
 		// Update Blackduck with UID mapping
-		err = updateBlackduckInCluster(blackduckName, bd)
+		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -278,7 +278,7 @@ var editOpsSightCmd = &cobra.Command{
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
 		if flagset.NFlag() != 0 {
-			ops, err := getOpsSightFromCluster(opsSightName)
+			ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
@@ -289,13 +289,13 @@ var editOpsSightCmd = &cobra.Command{
 			// Update OpsSight with Updates
 			opsSightSpec := editOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
 			ops.Spec = opsSightSpec
-			err = updateOpsSightInCluster(opsSightName, ops)
+			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, ops)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 		} else {
-			err := util.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
+			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
 			if err != nil {
 				log.Errorf("Error Editing the OpsSight: %s", err)
 				return nil
@@ -322,7 +322,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		regUser := args[2]
 		regPass := args[3]
 		// Get OpsSight Spec
-		ops, err := getOpsSightFromCluster(opsSightName)
+		ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -335,7 +335,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		}
 		ops.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ops.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
 		// Update OpsSight with Internal Registry
-		err = updateOpsSightInCluster(opsSightName, ops)
+		_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, ops)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -356,11 +356,11 @@ var editOpsSightAddHostCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Adding Blackduck Host to OpsSight\n")
-		opssightName := args[0]
+		opsSightName := args[0]
 		domain := args[1]
 		port := args[2]
 		// Get OpsSight Spec
-		ops, err := getOpsSightFromCluster(opssightName)
+		ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -375,7 +375,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		host.Port = int(intPort)
 		ops.Spec.Blackduck.ExternalHosts = append(ops.Spec.Blackduck.ExternalHosts, &host)
 		// Update OpsSight with Host
-		err = updateOpsSightInCluster(opssightName, ops)
+		_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, ops)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -403,7 +403,7 @@ var editAlertCmd = &cobra.Command{
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
 		if flagset.NFlag() != 0 {
-			alt, err := getAlertFromCluster(alertName)
+			alt, err := operatorutil.GetAlert(alertClient, alertName, alertName)
 			if err != nil {
 				log.Errorf("Get Spec: %s", err)
 				return nil
@@ -414,13 +414,13 @@ var editAlertCmd = &cobra.Command{
 			// Update Alert with Updates
 			alertSpec := editAlertCtl.GetSpec().(alertv1.AlertSpec)
 			alt.Spec = alertSpec
-			err = updateAlertInCluster(alertName, alt)
+			_, err = operatorutil.UpdateAlert(alertClient, alertName, alt)
 			if err != nil {
 				log.Errorf("Update Spec: %s", err)
 				return nil
 			}
 		} else {
-			err := util.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
+			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
 			if err != nil {
 				log.Errorf("Error Editing the Alert: %s", err)
 				return nil

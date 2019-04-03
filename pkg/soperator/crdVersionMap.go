@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -21,7 +21,8 @@ under the License.
 
 package soperator
 
-// SOperatorCRDVersionMap is alookup table for crd versions that are compatible with the operator verions
+// SOperatorCRDVersionMap is a global lookup table in the package. It maps versions of the operator
+// to the resource versions it is compatible with
 var SOperatorCRDVersionMap = operatorCRDVersionMap{
 	versionMap: map[string]operatorVersions{
 		"master": {
@@ -42,22 +43,27 @@ var SOperatorCRDVersionMap = operatorCRDVersionMap{
 	},
 }
 
+// operatorCRDVersionMap stores the version map
 type operatorCRDVersionMap struct {
 	versionMap map[string]operatorVersions
 }
 
+// operatorVersions holds data for each resource
+// Pointers are used so that fields can be nil if the operator version
+// cannot handle a specific resource
 type operatorVersions struct {
 	Blackduck *crdVersionData
 	OpsSight  *crdVersionData
 	Alert     *crdVersionData
 }
 
+// crdVersionData holds the name of the crd and the version
 type crdVersionData struct {
 	CRDName    string
 	APIVersion string
 }
 
-// GetCRDVersions returns CRD Version Data for the Operator's Version. If the Operator's
+// GetCRDVersions returns CRDVersionData for an Operator's Version. If the Operator's
 // version doesn't exist then it assumes master
 func (m *operatorCRDVersionMap) GetCRDVersions(operatorVersion string) operatorVersions {
 	versions, ok := m.versionMap[operatorVersion]
@@ -71,7 +77,7 @@ func (m *operatorCRDVersionMap) GetCRDVersions(operatorVersion string) operatorV
 func (m *operatorCRDVersionMap) GetIterableCRDData(operatorVersion string) []crdVersionData {
 	data := m.GetCRDVersions(operatorVersion)
 	CrdDataList := []crdVersionData{}
-	if data.Blackduck != nil {
+	if data.Blackduck != nil { // skips resources the operator version cannot handle
 		CrdDataList = append(CrdDataList, *data.Blackduck)
 	}
 	if data.OpsSight != nil {
