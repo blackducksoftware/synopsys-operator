@@ -1588,9 +1588,10 @@
   version = "v2.2.2"
 
 [[projects]]
-  digest = "1:7c18d270ec96b82384b9580fd1919ef44118476848600658dbebcad632550b64"
+  digest = "1:34d2180a6401bd334a243f5eaea8a7730c8efcefe442dbe98b685ace0e46dcb7"
   name = "k8s.io/api"
   packages = [
+    "admission/v1beta1",
     "admissionregistration/v1alpha1",
     "admissionregistration/v1beta1",
     "apps/v1",
@@ -1825,6 +1826,8 @@
     "github.com/spf13/pflag",
     "github.com/spf13/viper",
     "github.com/unrolled/secure",
+    "k8s.io/api/admission/v1beta1",
+    "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/apps/v1beta1",
     "k8s.io/api/batch/v1",
