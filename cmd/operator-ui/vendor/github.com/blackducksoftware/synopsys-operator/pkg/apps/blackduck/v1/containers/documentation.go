@@ -52,12 +52,12 @@ func (c *Creater) GetDocumentationDeployment() *components.ReplicationController
 	c.PostEditContainer(documentationContainerConfig)
 
 	documentation := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "documentation", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{documentationContainerConfig}, []*components.Volume{documentationEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{})
+		[]*util.Container{documentationContainerConfig}, []*components.Volume{documentationEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("documentation"), c.GetLabel("documentation"))
 
 	return documentation
 }
 
 // GetDocumentationService will return the cfssl service
 func (c *Creater) GetDocumentationService() *components.Service {
-	return util.CreateService("documentation", "documentation", c.hubSpec.Namespace, documentationPort, documentationPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("documentation", c.GetLabel("documentation"), c.hubSpec.Namespace, documentationPort, documentationPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("documentation"))
 }

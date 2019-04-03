@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"testing"
 
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -36,34 +36,39 @@ func TestNewAlertCtl(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
 	assert.Equal(&Ctl{
-		Spec:              &alertv1.AlertSpec{},
-		Registry:          "",
-		ImagePath:         "",
-		AlertImageName:    "",
-		AlertImageVersion: "",
-		CfsslImageName:    "",
-		CfsslImageVersion: "",
-		BlackduckHost:     "",
-		BlackduckUser:     "",
-		BlackduckPort:     0,
-		Port:              0,
-		StandAlone:        false,
-		AlertMemory:       "",
-		CfsslMemory:       "",
-		DesiredState:      "",
+		Spec:                 &alertapi.AlertSpec{},
+		Registry:             "",
+		ImagePath:            "",
+		AlertImageName:       "",
+		AlertImageVersion:    "",
+		CfsslImageName:       "",
+		CfsslImageVersion:    "",
+		StandAlone:           false,
+		ExposeService:        "",
+		Port:                 0,
+		EncryptionPassword:   "",
+		EncryptionGlobalSalt: "",
+		Environs:             []string{},
+		PersistentStorage:    false,
+		PVCName:              "",
+		PVCStorageClass:      "",
+		PVCSize:              "",
+		AlertMemory:          "",
+		CfsslMemory:          "",
+		DesiredState:         "",
 	}, alertCtl)
 }
 
 func TestGetSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	assert.Equal(alertv1.AlertSpec{}, alertCtl.GetSpec())
+	assert.Equal(alertapi.AlertSpec{}, alertCtl.GetSpec())
 }
 
 func TestSetSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	specToSet := alertv1.AlertSpec{Namespace: "test", Registry: "test"}
+	specToSet := alertapi.AlertSpec{Namespace: "test", Registry: "test"}
 	alertCtl.SetSpec(specToSet)
 	assert.Equal(specToSet, alertCtl.GetSpec())
 
@@ -84,14 +89,13 @@ func TestSwitchSpec(t *testing.T) {
 
 	var tests = []struct {
 		input    string
-		expected alertv1.AlertSpec
+		expected alertapi.AlertSpec
 	}{
-		{input: "empty", expected: alertv1.AlertSpec{}},
-		{input: "spec1", expected: *crddefaults.GetAlertDefaultValue()},
-		{input: "spec2", expected: *crddefaults.GetAlertDefaultValue2()},
+		{input: "empty", expected: alertapi.AlertSpec{}},
+		{input: "default", expected: *crddefaults.GetAlertDefaultValue()},
 	}
 
-	// test cases: "empty", "spec1", "spec2"
+	// test cases: "default"
 	for _, test := range tests {
 		assert.Nil(alertCtl.SwitchSpec(test.input))
 		assert.Equal(test.expected, alertCtl.GetSpec())
@@ -100,7 +104,7 @@ func TestSwitchSpec(t *testing.T) {
 	// test cases: default
 	createAlertSpecType := ""
 	assert.EqualError(alertCtl.SwitchSpec(createAlertSpecType),
-		fmt.Sprintf("Alert Spec Type %s does not match: empty, spec1, spec2", createAlertSpecType))
+		fmt.Sprintf("Alert Spec Type %s does not match: default or empty", createAlertSpecType))
 
 }
 
@@ -111,23 +115,28 @@ func TestAddSpecFlags(t *testing.T) {
 	actualCmd := &cobra.Command{}
 	ctl.AddSpecFlags(actualCmd, false)
 
-	expectedCmd := &cobra.Command{}
-	expectedCmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
-	expectedCmd.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
-	expectedCmd.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
-	expectedCmd.Flags().StringVar(&ctl.AlertImageVersion, "alert-image-version", ctl.AlertImageVersion, "Version of the Alert Image")
-	expectedCmd.Flags().StringVar(&ctl.CfsslImageName, "cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
-	expectedCmd.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
-	expectedCmd.Flags().StringVar(&ctl.BlackduckHost, "blackduck-host", ctl.BlackduckHost, "Host url of Blackduck")
-	expectedCmd.Flags().StringVar(&ctl.BlackduckUser, "blackduck-user", ctl.BlackduckUser, "Username for Blackduck")
-	expectedCmd.Flags().IntVar(&ctl.BlackduckPort, "blackduck-port", ctl.BlackduckPort, "Port for Blackduck")
-	expectedCmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
-	expectedCmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
-	expectedCmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
-	expectedCmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
-	expectedCmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
+	cmd := &cobra.Command{}
+	cmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
+	cmd.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
+	cmd.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
+	cmd.Flags().StringVar(&ctl.AlertImageVersion, "alert-image-version", ctl.AlertImageVersion, "Version of the Alert Image")
+	cmd.Flags().StringVar(&ctl.CfsslImageName, "cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
+	cmd.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
+	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Type of Service to Expose")
+	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
+	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for the Alert")
+	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for the Alert")
+	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")
+	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
+	cmd.Flags().StringVar(&ctl.PVCName, "pvc-name", ctl.PVCName, "Name for the PVC")
+	cmd.Flags().StringVar(&ctl.PVCStorageClass, "pvc-storage-class", ctl.PVCStorageClass, "StorageClass for the PVC")
+	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation for the PVC")
+	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation for the Alert")
+	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation for the Cfssl")
+	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
 
-	assert.Equal(expectedCmd.Flags(), actualCmd.Flags())
+	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
 
 func TestSetChangedFlags(t *testing.T) {
@@ -145,308 +154,165 @@ func TestSetChangedFlags(t *testing.T) {
 }
 
 func TestSetFlag(t *testing.T) {
-
 	assert := assert.New(t)
 
 	var tests = []struct {
 		flagName    string
 		initialCtl  *Ctl
 		changedCtl  *Ctl
-		changedSpec *alertv1.AlertSpec
+		changedSpec *alertapi.AlertSpec
 	}{
 		// case
 		{flagName: "alert-registry",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "changedRegistry",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				Registry: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{Registry: "changedRegistry"},
+			changedSpec: &alertapi.AlertSpec{Registry: "changed"},
 		},
 		// case
 		{flagName: "image-path",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "changedImagePath",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				ImagePath: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{ImagePath: "changedImagePath"},
+			changedSpec: &alertapi.AlertSpec{ImagePath: "changed"},
 		},
 		// case
 		{flagName: "alert-image-name",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "changedAlertImageName",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				AlertImageName: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{AlertImageName: "changedAlertImageName"},
+			changedSpec: &alertapi.AlertSpec{AlertImageName: "changed"},
 		},
 		// case
 		{flagName: "alert-image-version",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "changedAlertImageVersion",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				AlertImageVersion: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{AlertImageVersion: "changedAlertImageVersion"},
+			changedSpec: &alertapi.AlertSpec{AlertImageVersion: "changed"},
 		},
 		// case
 		{flagName: "cfssl-image-name",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "changedCfsslImageName",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				CfsslImageName: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{CfsslImageName: "changedCfsslImageName"},
+			changedSpec: &alertapi.AlertSpec{CfsslImageName: "changed"},
 		},
 		// case
 		{flagName: "cfssl-image-version",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "changedCfsslImageVersion",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				CfsslImageVersion: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{CfsslImageVersion: "changedCfsslImageVersion"},
-		},
-		// case
-		{flagName: "blackduck-host",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "changedBlackduckHost",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
-			},
-			changedSpec: &alertv1.AlertSpec{BlackduckHost: "changedBlackduckHost"},
-		},
-		// case
-		{flagName: "blackduck-user",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "changedBlackduckUser",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
-			},
-			changedSpec: &alertv1.AlertSpec{BlackduckUser: "changedBlackduckUser"},
-		},
-		// case
-		{flagName: "blackduck-port",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     10,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
-			},
-			changedSpec: &alertv1.AlertSpec{BlackduckPort: crddefaults.IntToPtr(10)},
-		},
-		// case
-		{flagName: "port",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              10,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
-			},
-			changedSpec: &alertv1.AlertSpec{Port: crddefaults.IntToPtr(10)},
+			changedSpec: &alertapi.AlertSpec{CfsslImageVersion: "changed"},
 		},
 		// case
 		{flagName: "stand-alone",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        true,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				StandAlone: true,
 			},
-			changedSpec: &alertv1.AlertSpec{StandAlone: crddefaults.BoolToPtr(true)},
+			changedSpec: &alertapi.AlertSpec{StandAlone: crddefaults.BoolToPtr(true)},
+		},
+		// case
+		{flagName: "expose-service",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				ExposeService: "changed",
+			},
+			changedSpec: &alertapi.AlertSpec{ExposeService: "changed"},
+		},
+		// case
+		{flagName: "port",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				Port: 1234,
+			},
+			changedSpec: &alertapi.AlertSpec{Port: crddefaults.IntToPtr(1234)},
+		},
+		// case
+		{flagName: "encryption-password",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				EncryptionPassword: "changedEncryptionPassword",
+			},
+			changedSpec: &alertapi.AlertSpec{EncryptionPassword: "changedEncryptionPassword"},
+		},
+		// case
+		{flagName: "encryption-global-salt",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				EncryptionGlobalSalt: "changedEncryptionGlobalSalt",
+			},
+			changedSpec: &alertapi.AlertSpec{EncryptionGlobalSalt: "changedEncryptionGlobalSalt"},
+		},
+		// case
+		{flagName: "environs",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"},
+			},
+			changedSpec: &alertapi.AlertSpec{Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"}},
+		},
+		// case
+		{flagName: "persistent-storage",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				PersistentStorage: true,
+			},
+			changedSpec: &alertapi.AlertSpec{PersistentStorage: true},
+		},
+		// case
+		{flagName: "pvc-name",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				PVCName: "changedPVCName",
+			},
+			changedSpec: &alertapi.AlertSpec{PVCName: "changedPVCName"},
+		},
+		// case
+		{flagName: "storage-class",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				PVCStorageClass: "changedStorageClass",
+			},
+			changedSpec: &alertapi.AlertSpec{PVCStorageClass: "changedStorageClass"},
+		},
+		// case
+		{flagName: "pvc-size",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				PVCSize: "changedStorageSize",
+			},
+			changedSpec: &alertapi.AlertSpec{PVCSize: "changedStorageSize"},
 		},
 		// case
 		{flagName: "alert-memory",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "changedAlertMemory",
-				CfsslMemory:       "",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				AlertMemory: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{AlertMemory: "changedAlertMemory"},
+			changedSpec: &alertapi.AlertSpec{AlertMemory: "changed"},
 		},
 		// case
 		{flagName: "cfssl-memory",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "changedCfsslMemory",
-				DesiredState:      "",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				CfsslMemory: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{CfsslMemory: "changedCfsslMemory"},
+			changedSpec: &alertapi.AlertSpec{CfsslMemory: "changed"},
 		},
 		// case
 		{flagName: "alert-desired-state",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertv1.AlertSpec{},
-				Registry:          "",
-				ImagePath:         "",
-				AlertImageName:    "",
-				AlertImageVersion: "",
-				CfsslImageName:    "",
-				CfsslImageVersion: "",
-				BlackduckHost:     "",
-				BlackduckUser:     "",
-				BlackduckPort:     0,
-				Port:              0,
-				StandAlone:        false,
-				AlertMemory:       "",
-				CfsslMemory:       "",
-				DesiredState:      "changedState",
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				DesiredState: "changed",
 			},
-			changedSpec: &alertv1.AlertSpec{DesiredState: "changedState"},
+			changedSpec: &alertapi.AlertSpec{DesiredState: "changed"},
 		},
 	}
 

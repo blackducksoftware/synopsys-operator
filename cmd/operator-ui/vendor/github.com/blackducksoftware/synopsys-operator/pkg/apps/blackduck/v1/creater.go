@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -22,282 +22,197 @@ under the License.
 package blackduck
 
 import (
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
-	postgres2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
 	"math"
+	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
-	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
-	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+
+	"github.com/blackducksoftware/horizon/pkg/components"
+	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
+	postgres2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
 )
 
 // Creater will store the configuration to create the Blackduck
 type Creater struct {
-	Config                  *protoform.Config
-	KubeConfig              *rest.Config
-	KubeClient              *kubernetes.Clientset
-	BlackduckClient         *blackduckclientset.Clientset
-	osSecurityClient        *securityclient.SecurityV1Client
-	routeClient             *routeclient.RouteV1Client
-	isBinaryAnalysisEnabled bool
-}
-
-
-func (hc *Creater) Versions() []string {
-	return containers.GetVersions()
+	Config           *protoform.Config
+	KubeConfig       *rest.Config
+	KubeClient       *kubernetes.Clientset
+	BlackduckClient  *blackduckclientset.Clientset
+	osSecurityClient *securityclient.SecurityV1Client
+	routeClient      *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
-	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, isBinaryAnalysisEnabled bool) *Creater {
+	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, BlackduckClient: hubClient, osSecurityClient: osSecurityClient,
-		routeClient: routeClient, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
+		routeClient: routeClient}
 }
 
-// DeleteHub will delete the Black Duck Blackduck
-func (hc *Creater) Delete(namespace string) error {
-
-	log.Infof("Deleting hub: %s", namespace)
-
-	var err error
-	// Verify whether the namespace exist
-	_, err = util.GetNamespace(hc.KubeClient, namespace)
+// Ensure will ensure the instance is correctly deployed
+func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
+	newBlackuck := blackduck.DeepCopy()
+	// Create namespace if it doesn't exist
+	_, err := util.GetNamespace(hc.KubeClient, blackduck.Spec.Namespace)
 	if err != nil {
-		log.Errorf("unable to find the namespace %+v because %+v", namespace, err)
-	} else {
-		// Delete a namespace
-		err = util.DeleteNamespace(hc.KubeClient, namespace)
+		_, err = util.CreateNamespace(hc.KubeClient, blackduck.Spec.Namespace)
 		if err != nil {
-			log.Errorf("unable to delete the namespace %+v because %+v", namespace, err)
+			return err
 		}
+	}
 
-		for {
-			// Verify whether the namespace deleted
-			ns, err := util.GetNamespace(hc.KubeClient, namespace)
-			log.Infof("namespace: %v, status: %v", namespace, ns.Status)
-			time.Sleep(10 * time.Second)
+	// Get components
+	cpList, err := hc.GetComponents(blackduck)
+	if err != nil {
+		return err
+	}
+
+	// Create PVC if they don't exist
+	if blackduck.Spec.PersistentStorage {
+		var missingPVCs []*components.PersistentVolumeClaim
+		for _, v := range hc.GetPVC(blackduck) {
+			_, err := hc.KubeClient.CoreV1().PersistentVolumeClaims(blackduck.Spec.Namespace).Get(v.GetName(), metav1.GetOptions{})
 			if err != nil {
-				log.Infof("deleted the namespace %+v", namespace)
-				break
+				missingPVCs = append(missingPVCs, v)
 			}
 		}
-	}
 
-	// Delete a Cluster Role Binding
-	err = util.DeleteClusterRoleBinding(hc.KubeClient, namespace)
-	if err != nil {
-		log.Errorf("unable to delete the cluster role binding for %+v", namespace)
-	}
-	return nil
-}
+		if len(missingPVCs) > 0 {
+			deploy, err := horizon.NewDeployer(hc.KubeConfig)
+			if err != nil {
+				return err
+			}
 
-// CreateHub will create the Black Duck Blackduck
-func (hc *Creater) Create(blackduck *v1.Blackduck) error {
-	log.Debugf("create Hub details for %s: %+v", blackduck.Spec.Namespace, blackduck)
+			for _, v := range missingPVCs {
+				deploy.AddPVC(v)
+			}
 
-	// Create a horizon deployer for each hub
-	deployer, err := horizon.NewDeployer(hc.KubeConfig)
-	if err != nil {
-		return fmt.Errorf("unable to create the horizon deployer because %+v", err)
-	}
-
-	// Get Containers Flavor
-	hubContainerFlavor, err := hc.getContainersFlavor(blackduck)
-	if err != nil {
-		return fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", blackduck.Spec.Size)
-	}
-
-	log.Debugf("before init: %+v", &blackduck)
-
-	// Create namespace, service account, clusterrolebinding and pvc
-	err = hc.init(deployer, &blackduck.Spec, hubContainerFlavor)
-	if err != nil {
-		return err
-	}
-
-	// Deploy namespace, service account, clusterrolebinding and pvc
-	err = deployer.Run()
-	if err != nil && strings.Contains(err.Error(), "cannot create") {
-		log.Errorf("init deployments failed for %s because %+v", blackduck.Spec.Namespace, err)
-		return err
-	} else if err != nil {
-		log.Errorf("init deployments failed for %s because %+v", blackduck.Spec.Namespace, err)
-	}
-	// time.Sleep(20 * time.Second)
-
-	err = hc.Start(blackduck)
-	if err != nil {
-		return err
-	}
-
-	// Expose Hub
-	deployer, err = horizon.NewDeployer(hc.KubeConfig)
-	if err != nil {
-		return fmt.Errorf("unable to create the horizon deployer because %+v", err)
-	}
-
-	hc.AddExposeServices(deployer, &blackduck.Spec)
-
-	err = deployer.Run()
-	if err != nil {
-		return  err
-	}
-
-	// OpenShift routes
-	//ipAddress := ""
-	//if hc.routeClient != nil {
-	//	route, _ := util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver")
-	//	log.Debugf("openshift route host: %s", route.Spec.Host)
-	//	ipAddress = route.Spec.Host
-	//}
-
-	// Validate all pods are in running state
-	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, hc.Config.PodWaitTimeoutSeconds)
-	if err != nil {
-		return err
-	}
-
-	//// Retrieve the PVC volume name
-	//pvcVolumeNames := map[string]string{}
-	//if blackduck.Spec.PersistentStorage {
-	//	for _, v := range blackduck.Spec.PVC {
-	//		pvName, err := hc.getPVCVolumeName(blackduck.Spec.Namespace, v.Name)
-	//		if err != nil {
-	//			return "", nil, false, err
-	//		}
-	//		pvcVolumeNames[v.Name] = pvName
-	//	}
-	//}
-	//
-	//if strings.EqualFold(ipAddress, "") {
-	//	ipAddress, err = hubutils.GetIPAddress(hc.KubeClient, blackduck.Spec.Namespace, 10, 10)
-	//	if err != nil {
-	//		return "", pvcVolumeNames, false, err
-	//	}
-	//}
-	//log.Infof("hub Ip address: %s", ipAddress)
-
-	return nil
-}
-
-// getContainersFlavor will get the Containers flavor
-func (hc *Creater) getContainersFlavor(createHub *v1.Blackduck) (*containers.ContainerFlavor, error) {
-	// Get Containers Flavor
-	hubContainerFlavor := containers.GetContainersFlavor(createHub.Spec.Size)
-	log.Debugf("Hub Container Flavor: %+v", hubContainerFlavor)
-
-	if hubContainerFlavor == nil {
-		return nil, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", createHub.Spec.Size)
-	}
-	return hubContainerFlavor, nil
-}
-
-// Start the instance
-func (hc *Creater) Start(blackduck *v1.Blackduck) error {
-	// Get Containers Flavor
-	hubContainerFlavor, err := hc.getContainersFlavor(blackduck)
-	if err != nil {
-		return fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", blackduck.Spec.Size)
-	}
-
-
-	// Create CM, secrets
-	deployer, err := hc.getHubConfigDeployer(&blackduck.Spec, hubContainerFlavor)
-	if err != nil {
-		return err
-	}
-	err = deployer.Run()
-	if err != nil {
-		return err
-	}
-
-	// Start postgres if needed
-	if blackduck.Spec.ExternalPostgres == nil {
-		pg, err := hc.getPostgresDeployer(&blackduck.Spec, hubContainerFlavor)
-		if err != nil {
-			return err
-		}
-
-		// Start postgres
-		err = pg.Run()
-		if err != nil {
-			return err
-		}
-
-		// Initialize the DB if we don't use persistent storage or that it starts for the first time
-		if !blackduck.Spec.PersistentStorage || (blackduck.Spec.PersistentStorage && strings.EqualFold(blackduck.Status.State, "creating")) {
-			err = hc.initPostgres(&blackduck.Spec)
+			err = deploy.Run()
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	// Start Hub
-	deployer, err = hc.getHubDeployer(&blackduck.Spec, hubContainerFlavor)
-	if err != nil {
-		return err
-	}
-	return deployer.Run()
-}
-
-// Stop the instance
-func (hc *Creater) Stop(blackduck *v1.Blackduck) error {
-	// Get Containers Flavor
-	hubContainerFlavor, err := hc.getContainersFlavor(blackduck)
-	if err != nil {
-		return fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", blackduck.Spec.Size)
-	}
-
-	// Stop Hub
-	deployer, err := hc.getHubDeployer(&blackduck.Spec, hubContainerFlavor)
-	if err != nil {
-		return err
-	}
-
-	err = deployer.Undeploy()
-	if err != nil {
-		return err
-	}
-
-	// Stop postgres if we don't use an external db
+	// Check postgres and initialize if needed.
 	if blackduck.Spec.ExternalPostgres == nil {
-		pg, err := hc.getPostgresDeployer(&blackduck.Spec, hubContainerFlavor)
+		cpPostgresList, err := hc.getPostgresComponents(blackduck)
 		if err != nil {
 			return err
 		}
 
-		err = pg.Undeploy()
+		// CM
+		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace, &api.ComponentList{ConfigMaps: cpList.ConfigMaps}, "app=blackduck,component=configmap")
+		errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("unable to update components due to %+v", errors)
+		}
+
+		// Secret
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace, &api.ComponentList{Secrets: cpList.Secrets}, "app=blackduck,component=secret")
+		errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("unable to update components due to %+v", errors)
+		}
+
+		// Postgres
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace, cpPostgresList, "app=blackduck,component=postgres")
+		errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("unable to update components due to %+v", errors)
+		}
+
+		// TODO return whether we re-initialized or not
+		err = hc.initPostgres(&blackduck.Spec)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Delete the config
-	deployer, err = hc.getHubConfigDeployer(&blackduck.Spec, hubContainerFlavor)
-	if err != nil {
-		return err
+	// Ensure
+	commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace, cpList, "app=blackduck,component!=postgres")
+	errors := commonConfig.CRUDComponents()
+	if len(errors) > 0 {
+		return fmt.Errorf("unable to update components due to %+v", errors)
 	}
-	err = deployer.Undeploy()
-	if err != nil {
+
+	if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
 		return err
 	}
 
-	return err
+	// TODO wait for webserver to be up before we register
+	if err := hc.registerIfNeeded(blackduck); err != nil {
+		return err
+	}
+
+	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
+		newBlackuck.Status.IP, err = hc.getLoadBalancerIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
+		newBlackuck.Status.IP, err = hc.getNodePortIPAddress(blackduck.Spec.Namespace, "webserver-lb")
+	}
+
+	if blackduck.Spec.PersistentStorage {
+		pvcVolumeNames := map[string]string{}
+		for _, v := range blackduck.Spec.PVC {
+			pvName, err := hc.getPVCVolumeName(blackduck.Spec.Namespace, v.Name)
+			if err != nil {
+				continue
+			}
+			pvcVolumeNames[v.Name] = pvName
+		}
+		newBlackuck.Status.PVCVolumeName = pvcVolumeNames
+	}
+
+	if !reflect.DeepEqual(blackduck, newBlackuck) {
+		if _, err := hc.BlackduckClient.SynopsysV1().Blackducks(hc.Config.Namespace).Update(newBlackuck); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
+// Versions returns the supported version
+func (hc *Creater) Versions() []string {
+	return containers.GetVersions()
+}
+
+// getContainersFlavor will get the Containers flavor
+func (hc *Creater) getContainersFlavor(bd *v1.Blackduck) (*containers.ContainerFlavor, error) {
+	// Get Containers Flavor
+	hubContainerFlavor := containers.GetContainersFlavor(bd.Spec.Size)
+
+	if hubContainerFlavor == nil {
+		return nil, fmt.Errorf("invalid flavor type, Expected: Small, Medium, Large (or) X-Large, Actual: %s", bd.Spec.Size)
+	}
+	return hubContainerFlavor, nil
+}
+
+func (hc *Creater) initPostgres(bdspec *v1.BlackduckSpec) error {
 	var adminPassword, userPassword, postgresPassword string
 	var err error
 
@@ -307,60 +222,82 @@ func (hc *Creater) initPostgres(createHub *v1.BlackduckSpec) error {
 		if err == nil {
 			break
 		} else {
-			log.Infof("[%s] wasn't able to init database, sleeping 5 seconds.  try = %v", createHub.Namespace, dbInitTry)
+			log.Infof("[%s] wasn't able to init database, sleeping 5 seconds.  try = %v", bdspec.Namespace, dbInitTry)
 			time.Sleep(5 * time.Second)
 		}
 	}
 
 	// Validate postgres pod is cloned/backed up
-	err = util.WaitForServiceEndpointReady(hc.KubeClient, createHub.Namespace, "postgres")
+	err = util.WaitForServiceEndpointReady(hc.KubeClient, bdspec.Namespace, "postgres")
 	if err != nil {
 		return err
 	}
 
 	// Validate the postgres container is running
-	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, createHub.Namespace, hc.Config.PodWaitTimeoutSeconds)
+	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, bdspec.Namespace, hc.Config.PodWaitTimeoutSeconds)
 	if err != nil {
 		return err
 	}
 
-	if len(createHub.DbPrototype) == 0 {
-		err := InitDatabase(createHub, adminPassword, userPassword, postgresPassword)
-		if err != nil {
-			log.Errorf("%v: error: %+v", createHub.Namespace, err)
-			return fmt.Errorf("%v: error: %+v", createHub.Namespace, err)
-		}
-	} else {
-		_, fromPw, err := hubutils.GetHubDBPassword(hc.KubeClient, createHub.DbPrototype)
-		if err != nil {
-			return err
-		}
-		err = hubutils.CloneJob(hc.KubeClient, hc.Config.Namespace, createHub.DbPrototype, createHub.Namespace, fromPw)
-		if err != nil {
-			return err
+	// Check if initialization is required.
+	db, err := database.NewDatabase(fmt.Sprintf("postgres.%s.svc.cluster.local", bdspec.Namespace), "postgres", "postgres", postgresPassword, "postgres")
+	if err != nil {
+		return err
+	}
+	defer db.Connection.Close()
+
+	result, err := db.Connection.Exec("SELECT datname FROM pg_catalog.pg_database WHERE datname='bds_hub';")
+	if err != nil {
+		return err
+	}
+	nbRow, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// We initialize the DB if the bds_hub database doesn't exist
+	if nbRow == 0 {
+		log.Infof("postres instance %s requires to be re-initialized", bdspec.Namespace)
+		if len(bdspec.DbPrototype) == 0 {
+			err := InitDatabase(bdspec, adminPassword, userPassword, postgresPassword)
+			if err != nil {
+				log.Errorf("%v: error: %+v", bdspec.Namespace, err)
+				return fmt.Errorf("%v: error: %+v", bdspec.Namespace, err)
+			}
+		} else {
+			_, fromPw, err := hubutils.GetHubDBPassword(hc.KubeClient, bdspec.DbPrototype)
+			if err != nil {
+				return err
+			}
+			err = hubutils.CloneJob(hc.KubeClient, hc.Config.Namespace, bdspec.DbPrototype, bdspec.Namespace, fromPw)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) (*horizon.Deployer, error) {
-	// Create a horizon deployer for Postgres
-	deployer, err := horizon.NewDeployer(hc.KubeConfig)
+func (hc *Creater) getPostgresComponents(bd *v1.Blackduck) (*api.ComponentList, error) {
+	componentList := &api.ComponentList{}
+
+	// Get Containers Flavor
+	hubContainerFlavor, err := hc.getContainersFlavor(bd)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create the horizon deployer because %+v", err)
+		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor)
+	containerCreater := containers.NewCreater(hc.Config, &bd.Spec, hubContainerFlavor)
 	postgresImage := containerCreater.GetFullContainerNameFromImageRegistryConf("postgres")
 	if len(postgresImage) == 0 {
 		postgresImage = "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1"
 	}
 	var pvcName string
-	if createHub.PersistentStorage {
+	if bd.Spec.PersistentStorage {
 		pvcName = "blackduck-postgres"
 	}
 	postgres := postgres2.Postgres{
-		Namespace:              createHub.Namespace,
+		Namespace:              bd.Spec.Namespace,
 		PVCName:                pvcName,
 		Port:                   containers.PostgresPort,
 		Image:                  postgresImage,
@@ -373,82 +310,25 @@ func (hc *Creater) getPostgresDeployer(createHub *v1.BlackduckSpec, hubContainer
 		PasswordSecretName:     "db-creds",
 		UserPasswordSecretKey:  "HUB_POSTGRES_USER_PASSWORD_FILE",
 		AdminPasswordSecretKey: "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+		MaxConnections:         300,
+		SharedBufferInMB:       1024,
 		EnvConfigMapRefs:       []string{"hub-db-config"},
-	}
-	log.Debugf("postgres: %+v", postgres)
-
-	deployer.AddReplicationController(postgres.GetPostgresReplicationController())
-	deployer.AddService(postgres.GetPostgresService())
-
-	return deployer, nil
-}
-
-func (hc *Creater) getHubConfigDeployer(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) (*horizon.Deployer, error) {
-	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
-
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor)
-
-	// Create a horizon deployer for each hub
-	deployer, err := horizon.NewDeployer(hc.KubeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create the horizon deployer because %+v", err)
+		Labels:                 containerCreater.GetVersionLabel("postgres"),
 	}
 
-	adminPassword, userPassword, _, err := hubutils.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
-	// Create a secret
-	for _, secret := range containerCreater.GetSecrets(adminPassword, userPassword) {
-		deployer.AddSecret(secret)
-	}
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, postgres.GetPostgresReplicationController())
+	componentList.Services = append(componentList.Services, postgres.GetPostgresService())
 
-	// Create ConfigMaps
-	for _, configMap := range containerCreater.GetConfigmaps() {
-		deployer.AddConfigMap(configMap)
-	}
-
-	return deployer, nil
-}
-
-func (hc *Creater) getHubDeployer(createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) (*horizon.Deployer, error) {
-	log.Debugf("create Hub details for %s: %+v", createHub.Namespace, createHub)
-
-	// Create a horizon deployer for each hub
-	deployer, err := horizon.NewDeployer(hc.KubeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create the horizon deployer because %+v", err)
-	}
-
-
-	err = hc.addAnyUIDToServiceAccount(createHub)
-	if err != nil {
-		log.Error(err)
-	}
-
-	// Create all hub deployments
-	deployer, _ = horizon.NewDeployer(hc.KubeConfig)
-	hc.AddToDeployer(deployer, createHub, hubContainerFlavor)
-
-	log.Debugf("%+v", deployer)
-
-	return deployer, nil
+	return componentList, nil
 }
 
 func (hc *Creater) getPVCVolumeName(namespace string, name string) (string, error) {
-	for i := 0; i < 60; i++ {
-		time.Sleep(10 * time.Second)
-		pvc, err := util.GetPVC(hc.KubeClient, namespace, name)
-		if err != nil {
-			return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
-		}
-
-		log.Debugf("pvc: %v", pvc)
-
-		if strings.EqualFold(pvc.Spec.VolumeName, "") {
-			continue
-		} else {
-			return pvc.Spec.VolumeName, nil
-		}
+	pvc, err := util.GetPVC(hc.KubeClient, namespace, name)
+	if err != nil {
+		return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
 	}
-	return "", fmt.Errorf("timeout: unable to get pvc %s in %s namespace", namespace, namespace)
+
+	return pvc.Spec.VolumeName, nil
 }
 
 func (hc *Creater) getLoadBalancerIPAddress(namespace string, serviceName string) (string, error) {
@@ -487,3 +367,92 @@ func (hc *Creater) getNodePortIPAddress(namespace string, serviceName string) (s
 	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
 }
 
+func (hc *Creater) registerIfNeeded(bd *v1.Blackduck) error {
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+		Timeout: time.Second * 10,
+	}
+
+	resp, err := client.Get(fmt.Sprintf("https://webserver.%s.svc:443/api/v1/registrations?summary=true", bd.Spec.Namespace))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	dec := json.NewDecoder(resp.Body)
+	var objmap map[string]*json.RawMessage
+
+	err = dec.Decode(&objmap)
+	if err != nil {
+		return err
+	}
+
+	// Check whether the registration is valid
+	if val, ok := objmap["valid"]; ok {
+		var r bool
+		err := json.Unmarshal(*val, &r)
+		if err != nil {
+			return err
+		}
+
+		// We register if the registration is invalid
+		if !r {
+			if err := hc.autoRegisterHub(&bd.Spec); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (hc *Creater) autoRegisterHub(bdspec *v1.BlackduckSpec) error {
+	// Filter the registration pod to auto register the hub using the registration key from the environment variable
+	registrationPod, err := util.FilterPodByNamePrefixInNamespace(hc.KubeClient, bdspec.Namespace, "registration")
+	if err != nil {
+		return err
+	}
+
+	registrationKey := bdspec.LicenseKey
+
+	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
+		for i := 0; i < 20; i++ {
+			registrationPod, err := util.GetPod(hc.KubeClient, bdspec.Namespace, registrationPod.Name)
+			if err != nil {
+				return err
+			}
+
+			// Create the exec into kubernetes pod request
+			req := util.CreateExecContainerRequest(hc.KubeClient, registrationPod)
+			// Exec into the kubernetes pod and execute the commands
+			err = util.ExecContainer(hc.KubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
+
+			if err == nil {
+				log.Infof("blackduck %s has been registered", bdspec.Namespace)
+				return nil
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
+	return fmt.Errorf("unable to register the blackduck %s", bdspec.Namespace)
+}
+
+func (hc *Creater) isBinaryAnalysisEnabled(bdspec *v1.BlackduckSpec) bool {
+	for _, value := range bdspec.Environs {
+		if strings.Contains(value, "USE_BINARY_UPLOADS") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				mapValue := strings.Trim(values[1], " ")
+				if strings.EqualFold(mapValue, "1") {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
+}

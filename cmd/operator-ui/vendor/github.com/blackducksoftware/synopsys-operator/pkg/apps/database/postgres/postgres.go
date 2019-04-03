@@ -23,6 +23,7 @@ package postgres
 
 import (
 	"fmt"
+	"strconv"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -40,20 +41,24 @@ const (
 
 // Postgres will provide the postgres container configuration
 type Postgres struct {
-	Namespace              string
-	PVCName                string
-	Port                   string
-	Image                  string
-	MinCPU                 string
-	MaxCPU                 string
-	MinMemory              string
-	MaxMemory              string
-	Database               string
-	User                   string
-	PasswordSecretName     string
-	UserPasswordSecretKey  string
-	AdminPasswordSecretKey string
-	EnvConfigMapRefs       []string
+	Namespace                     string
+	PVCName                       string
+	Port                          string
+	Image                         string
+	MinCPU                        string
+	MaxCPU                        string
+	MinMemory                     string
+	MaxMemory                     string
+	Database                      string
+	User                          string
+	PasswordSecretName            string
+	UserPasswordSecretKey         string
+	AdminPasswordSecretKey        string
+	MaxConnections                int
+	SharedBufferInMB              int
+	EnvConfigMapRefs              []string
+	TerminationGracePeriodSeconds int64
+	Labels                        map[string]string
 }
 
 // GetPostgresReplicationController will return the postgres replication controller
@@ -66,15 +71,16 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 		ContainerConfig: &horizonapi.ContainerConfig{
 			Name:       postgresName,
 			Image:      p.Image,
-			PullPolicy: horizonapi.PullAlways,
+			PullPolicy: horizonapi.PullIfNotPresent,
 			MinMem:     p.MinMemory,
 			MaxMem:     p.MaxMemory,
 			MinCPU:     p.MinCPU,
 			MaxCPU:     p.MaxCPU,
 		},
-		EnvConfigs:   postgresEnvs,
-		VolumeMounts: postgresVolumeMounts,
-		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: p.Port, Protocol: horizonapi.ProtocolTCP}},
+		EnvConfigs:    postgresEnvs,
+		VolumeMounts:  postgresVolumeMounts,
+		PortConfig:    []*horizonapi.PortConfig{{ContainerPort: p.Port, Protocol: horizonapi.ProtocolTCP}},
+		PreStopConfig: &horizonapi.ActionConfig{Command: []string{"sh", "-c", "LD_LIBRARY_PATH=/opt/rh/rh-postgresql96/root/usr/lib64 /opt/rh/rh-postgresql96/root/usr/bin/pg_ctl -D /var/lib/pgsql/data/userdata -l logfile stop"}},
 	}
 	var initContainers []*util.Container
 	if len(p.PVCName) > 0 {
@@ -87,16 +93,20 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
 
-	postgres := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
-		Name: postgresName, Replicas: util.IntToInt32(1)}, "", []*util.Container{postgresExternalContainerConfig},
-		postgresVolumes, initContainers, []horizonapi.AffinityConfig{})
+	pod := util.CreatePod(postgresName, "", postgresVolumes, []*util.Container{postgresExternalContainerConfig}, initContainers, []horizonapi.AffinityConfig{}, p.Labels)
+
+	// increase TerminationGracePeriod to better handle pg shutdown
+	pod.GetObj().PodTemplate.TerminationGracePeriod = &p.TerminationGracePeriodSeconds
+
+	postgres := util.CreateReplicationController(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
+		Name: postgresName, Replicas: util.IntToInt32(1)}, pod, p.Labels, p.Labels)
 
 	return postgres
 }
 
 // GetPostgresService will return the postgres service
 func (p *Postgres) GetPostgresService() *components.Service {
-	return util.CreateService(postgresName, postgresName, p.Namespace, p.Port, p.Port, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService(postgresName, p.Labels, p.Namespace, p.Port, p.Port, horizonapi.ClusterIPServiceTypeDefault, p.Labels)
 }
 
 // getPostgresVolumes will return the postgres volumes
@@ -123,6 +133,12 @@ func (p *Postgres) getPostgresVolumeMounts() []*horizonapi.VolumeMountConfig {
 // getPostgresEnvconfigs will return the postgres environment variable configurations
 func (p *Postgres) getPostgresEnvconfigs() []*horizonapi.EnvConfig {
 	postgresEnvs := []*horizonapi.EnvConfig{}
+	if p.MaxConnections > 0 {
+		postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_MAX_CONNECTIONS", KeyOrVal: strconv.Itoa(p.MaxConnections)})
+	}
+	if p.SharedBufferInMB > 0 {
+		postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_SHARED_BUFFERS", KeyOrVal: fmt.Sprintf("%dMB", p.SharedBufferInMB)})
+	}
 	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_DATABASE", KeyOrVal: p.Database})
 	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRESQL_USER", KeyOrVal: p.User})
 	postgresEnvs = append(postgresEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "POSTGRESQL_PASSWORD", KeyOrVal: p.UserPasswordSecretKey, FromName: p.PasswordSecretName})

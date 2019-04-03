@@ -22,8 +22,6 @@ under the License.
 package containers
 
 import (
-	"strings"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -33,16 +31,11 @@ import (
 func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 	volumeMounts := c.getUploadCacheVolumeMounts()
 
-	image := c.getImageTag("blackduck-upload")
-	if strings.EqualFold(image, "") {
-		return nil
-	}
-
 	uploadCacheContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: c.getImageTag("blackduck-upload-cache"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.UploadCacheMemoryLimit, MaxMem: c.hubContainerFlavor.UploadCacheMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
-		EnvConfigs: []*horizonapi.EnvConfig{c.getHubConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: volumeMounts,
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: uploadCachePort1, Protocol: horizonapi.ProtocolTCP},
 			{ContainerPort: uploadCachePort2, Protocol: horizonapi.ProtocolTCP}},
@@ -71,7 +64,7 @@ func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 
 	uploadCache := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
 		Name: "uploadcache", Replicas: util.IntToInt32(1)}, "", []*util.Container{uploadCacheContainerConfig}, c.getUploadCacheVolumes(),
-		initContainers, []horizonapi.AffinityConfig{})
+		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("uploadcache"), c.GetLabel("uploadcache"))
 
 	return uploadCache
 }
@@ -100,6 +93,6 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetUploadCacheService will return the uploadCache service
 func (c *Creater) GetUploadCacheService() *components.Service {
-	return util.CreateServiceWithMultiplePort("uploadcache", "uploadcache", c.hubSpec.Namespace, []string{uploadCachePort1, uploadCachePort2},
-		horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateServiceWithMultiplePort("uploadcache", c.GetVersionLabel("uploadcache"), c.hubSpec.Namespace, []string{uploadCachePort1, uploadCachePort2},
+		horizonapi.ClusterIPServiceTypeDefault, c.GetLabel("uploadcache"))
 }

@@ -29,12 +29,12 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// CreateHubConfig will create the hub configMaps
-func (hc *Creater) GetConfigmaps() []*components.ConfigMap {
+// GetConfigmaps will create  hub configMaps
+func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 
 	var configMaps []*components.ConfigMap
 
-	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: hc.hubSpec.Namespace, Name: "hub-config"})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: "hub-config"})
 	hubData := map[string]string{
 		"PUBLIC_HUB_WEBSERVER_HOST": "localhost",
 		"PUBLIC_HUB_WEBSERVER_PORT": "443",
@@ -42,10 +42,10 @@ func (hc *Creater) GetConfigmaps() []*components.ConfigMap {
 		"IPV4_ONLY":                 "0",
 		"RUN_SECRETS_DIR":           "/tmp/secrets",
 		"HUB_PROXY_NON_PROXY_HOSTS": "solr",
-		"HUB_VERSION": hc.hubSpec.Version,
+		"HUB_VERSION":               c.hubSpec.Version,
 	}
 
-	for _, value := range hc.hubSpec.Environs {
+	for _, value := range c.hubSpec.Environs {
 		values := strings.SplitN(value, ":", 2)
 		if len(values) == 2 {
 			mapKey := strings.Trim(values[0], " ")
@@ -56,17 +56,17 @@ func (hc *Creater) GetConfigmaps() []*components.ConfigMap {
 		}
 	}
 	hubConfig.AddData(hubData)
+	hubConfig.AddLabels(c.GetVersionLabel("configmap"))
 	configMaps = append(configMaps, hubConfig)
 
-
 	// DB
-	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: hc.hubSpec.Namespace, Name: "hub-db-config"})
-	if hc.hubSpec.ExternalPostgres != nil {
+	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: "hub-db-config"})
+	if c.hubSpec.ExternalPostgres != nil {
 		hubDbConfig.AddData(map[string]string{
-			"HUB_POSTGRES_ADMIN": hc.hubSpec.ExternalPostgres.PostgresAdmin,
-			"HUB_POSTGRES_USER":  hc.hubSpec.ExternalPostgres.PostgresUser,
-			"HUB_POSTGRES_PORT":  strconv.Itoa(hc.hubSpec.ExternalPostgres.PostgresPort),
-			"HUB_POSTGRES_HOST":  hc.hubSpec.ExternalPostgres.PostgresHost,
+			"HUB_POSTGRES_ADMIN": c.hubSpec.ExternalPostgres.PostgresAdmin,
+			"HUB_POSTGRES_USER":  c.hubSpec.ExternalPostgres.PostgresUser,
+			"HUB_POSTGRES_PORT":  strconv.Itoa(c.hubSpec.ExternalPostgres.PostgresPort),
+			"HUB_POSTGRES_HOST":  c.hubSpec.ExternalPostgres.PostgresHost,
 		})
 	} else {
 		hubDbConfig.AddData(map[string]string{
@@ -77,48 +77,16 @@ func (hc *Creater) GetConfigmaps() []*components.ConfigMap {
 		})
 	}
 
-	if hc.hubSpec.ExternalPostgres != nil {
-		hubDbConfig.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": strconv.FormatBool(hc.hubSpec.ExternalPostgres.PostgresSsl)})
-		if hc.hubSpec.ExternalPostgres.PostgresSsl {
+	if c.hubSpec.ExternalPostgres != nil {
+		hubDbConfig.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": strconv.FormatBool(c.hubSpec.ExternalPostgres.PostgresSsl)})
+		if c.hubSpec.ExternalPostgres.PostgresSsl {
 			hubDbConfig.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL_CERT_AUTH": "false"})
 		}
 	} else {
 		hubDbConfig.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 	}
-
-	configMaps = append(configMaps,  hubDbConfig)
-
-
-	// Resources
-
-	//hubConfigResources := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-config-resources"})
-	//hubConfigResources.AddData(map[string]string{
-	//	"webapp-mem":    hubContainerFlavor.WebappHubMaxMemory,
-	//	"jobrunner-mem": hubContainerFlavor.JobRunnerHubMaxMemory,
-	//	"scan-mem":      hubContainerFlavor.ScanHubMaxMemory,
-	//})
-	//configMaps = append(configMaps,  hubConfigResources)
-
-	//
-	//if hc.isBinaryAnalysisEnabled {
-	//
-	//	binaryAnalysisConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "binary-analysis-config"})
-	//
-	//	binaryAnalysisData := map[string]string{}
-	//	for _, value := range createHub.Environs {
-	//		values := strings.SplitN(value, ":", 2)
-	//		if len(values) == 2 {
-	//			mapKey := strings.Trim(values[0], " ")
-	//			mapValue := strings.Trim(values[1], " ")
-	//			if len(mapKey) > 0 && len(mapValue) > 0 {
-	//				binaryAnalysisData[mapKey] = mapValue
-	//			}
-	//		}
-	//	}
-	//	binaryAnalysisConfig.AddData(binaryAnalysisData)
-	//
-	//	configMaps["binary-analysis-config"] = binaryAnalysisConfig
-	//}
+	hubDbConfig.AddLabels(c.GetVersionLabel("configmap"))
+	configMaps = append(configMaps, hubDbConfig)
 
 	return configMaps
 }

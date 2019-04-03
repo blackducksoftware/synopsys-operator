@@ -53,6 +53,7 @@ type BlackduckSpec struct {
 	Namespace         string                    `json:"namespace"`
 	Size              string                    `json:"size"`
 	Version           string                    `json:"version"`
+	ExposeService     string                    `json:"exposeService"`
 	DbPrototype       string                    `json:"dbPrototype,omitempty"`
 	ExternalPostgres  *PostgresExternalDBConfig `json:"externalPostgres,omitempty"`
 	PVCStorageClass   string                    `json:"pvcStorageClass,omitempty"`

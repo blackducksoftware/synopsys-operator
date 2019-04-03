@@ -35,7 +35,7 @@ func (c *Creater) GetRabbitmqDeployment() *components.ReplicationController {
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: c.getImageTag("rabbitmq"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RabbitmqMemoryLimit, MaxMem: c.hubContainerFlavor.RabbitmqMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
-		EnvConfigs: []*horizonapi.EnvConfig{c.getHubDBConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubDBConfigEnv()},
 		VolumeMounts: volumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: rabbitmqPort, Protocol: horizonapi.ProtocolTCP}},
 	}
@@ -53,7 +53,7 @@ func (c *Creater) GetRabbitmqDeployment() *components.ReplicationController {
 
 	rabbitmq := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
 		Name: "rabbitmq", Replicas: util.IntToInt32(1)}, "", []*util.Container{rabbitmqContainerConfig}, c.getRabbitmqVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{})
+		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("rabbitmq"), c.GetLabel("rabbitmq"))
 
 	return rabbitmq
 }
@@ -82,5 +82,5 @@ func (c *Creater) getRabbitmqVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetRabbitmqService will return the rabbitmq service
 func (c *Creater) GetRabbitmqService() *components.Service {
-	return util.CreateService("rabbitmq", "rabbitmq", c.hubSpec.Namespace, rabbitmqPort, rabbitmqPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("rabbitmq", c.GetVersionLabel("rabbitmq"), c.hubSpec.Namespace, rabbitmqPort, rabbitmqPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("rabbitmq"))
 }

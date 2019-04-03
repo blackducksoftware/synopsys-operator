@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -30,9 +30,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"math/big"
-	"os"
 	"time"
 )
 
@@ -47,27 +45,26 @@ func publicKey(priv interface{}) interface{} {
 	}
 }
 
-func pemBlockForKey(priv interface{}) *pem.Block {
+func pemBlockForKey(priv interface{}) (*pem.Block, error) {
 	switch k := priv.(type) {
 	case *rsa.PrivateKey:
-		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
+		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}, nil
 	case *ecdsa.PrivateKey:
 		b, err := x509.MarshalECPrivateKey(k)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to marshal ECDSA private key: %v", err)
-			os.Exit(2)
+			return nil, fmt.Errorf("unable to marshal ECDSA private key: %v", err)
 		}
-		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}
+		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}, nil
 	default:
-		return nil
+		return nil, nil
 	}
 }
 
 // CreateSelfSignedCert will create a random self signed certificate
-func CreateSelfSignedCert() (string, string) {
+func CreateSelfSignedCert() (string, string, error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		log.Fatal(err)
+		return "", "", err
 	}
 	//Max random value, a 130-bits integer, i.e 2^130 - 1
 	max := new(big.Int)
@@ -91,28 +88,19 @@ func CreateSelfSignedCert() (string, string) {
 		BasicConstraintsValid: true,
 	}
 
-	/*
-	   hosts := strings.Split(*host, ",")
-	   for _, h := range hosts {
-	   	if ip := net.ParseIP(h); ip != nil {
-	   		template.IPAddresses = append(template.IPAddresses, ip)
-	   	} else {
-	   		template.DNSNames = append(template.DNSNames, h)
-	   	}
-	   }
-	   if *isCA {
-	   	template.IsCA = true
-	   	template.KeyUsage |= x509.KeyUsageCertSign
-	   }
-	*/
-
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
-		log.Fatalf("Failed to create certificate: %s", err)
+		return "", "", err
 	}
 	certificate := &bytes.Buffer{}
 	key := &bytes.Buffer{}
 	pem.Encode(certificate, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	pem.Encode(key, pemBlockForKey(priv))
-	return certificate.String(), key.String()
+
+	pemBlock, err := pemBlockForKey(priv)
+	if err != nil {
+		return "", "", err
+	}
+
+	pem.Encode(key, pemBlock)
+	return certificate.String(), key.String(), nil
 }

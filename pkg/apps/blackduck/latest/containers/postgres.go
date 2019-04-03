@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -54,6 +54,8 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 		PasswordSecretName:     "db-creds",
 		UserPasswordSecretKey:  "HUB_POSTGRES_USER_PASSWORD_FILE",
 		AdminPasswordSecretKey: "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
+		MaxConnections:         300,
+		SharedBufferInMB:       1024,
 		EnvConfigMapRefs:       []string{"hub-db-config"},
 		Labels:                 c.GetVersionLabel("postgres"),
 	}

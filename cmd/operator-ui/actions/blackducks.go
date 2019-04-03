@@ -2,12 +2,13 @@ package actions
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
+	"sort"
 	"strings"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/gobuffalo/buffalo"
@@ -134,36 +135,15 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckv1.Blackduck)
 		}
 	}
 	bd.View.CertificateNames = certificateNames
-	env, images := blackduck.GetHubKnobs()
-	// env := map[string]string{}
-	// images := []string{}
-	environs := []string{}
-	for key, value := range env {
-		if !strings.EqualFold(value, "") {
-			environs = append(environs, fmt.Sprintf("%s:%s", key, value))
-		}
-	}
 
-	// environs := []string{"IPV4_ONLY:0", "HUB_PROXY_NON_PROXY_HOSTS:solr"}
-
-	if len(bd.Spec.Environs) > 0 {
-		bd.View.Environs = bd.Spec.Environs
-	} else {
-		bd.View.Environs = environs
-	}
-
-	if len(bd.Spec.ImageRegistries) > 0 {
-		bd.View.ContainerTags = bd.Spec.ImageRegistries
-	} else {
-		bd.View.ContainerTags = images
-	}
-
-	kubeConfig, err := rest.InClusterConfig()
+	kubeconfig, err := protoform.GetKubeConfig()
 	if err != nil {
-		log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
-		kubeConfig, err = newKubeClientFromOutsideCluster()
+		return nil
 	}
-	bd.View.SupportedVersions = apps.NewApp(nil, kubeConfig).Blackduck().Versions()
+
+	bd.View.SupportedVersions = apps.NewApp(nil, kubeconfig).Blackduck().Versions()
+	sort.Strings(bd.View.SupportedVersions)
+
 	return nil
 }
 

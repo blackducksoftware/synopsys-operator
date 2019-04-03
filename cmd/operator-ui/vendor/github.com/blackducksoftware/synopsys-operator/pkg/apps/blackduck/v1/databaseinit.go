@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
 distributed with this work for additional information
@@ -107,10 +107,10 @@ func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPasswor
 		"ALTER SYSTEM SET max_connections TO '300';",
 		"ALTER SYSTEM SET max_locks_per_transaction TO '256';",
 		"ALTER SYSTEM SET random_page_cost TO '4.0';",
-		"ALTER SYSTEM SET shared_buffers TO '1024MB';",
 		"ALTER SYSTEM SET standard_conforming_strings TO 'off';",
 		"ALTER SYSTEM SET temp_buffers TO '16MB';",
 		"ALTER SYSTEM SET work_mem TO '32MB';",
+		"SELECT pg_reload_conf();",
 	}, false)
 	if err != nil {
 		return err

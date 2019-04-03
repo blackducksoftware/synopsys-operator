@@ -73,7 +73,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 
 	hubAuth := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "authentication", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{hubAuthContainerConfig}, c.getAuthenticationVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{})
+		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("authentication"), c.GetLabel("authentication"))
 
 	return hubAuth
 }
@@ -92,7 +92,7 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 	volumes := []*components.Volume{hubAuthVolume, c.getDBSecretVolume(), hubAuthSecurityEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0  {
+	if len(c.hubSpec.ProxyCertificate) > 0 {
 		volumes = append(volumes, c.getProxyVolume())
 	}
 
@@ -114,7 +114,7 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 	}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0  {
+	if len(c.hubSpec.ProxyCertificate) > 0 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "blackduck-proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
@@ -135,5 +135,5 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 
 // GetAuthenticationService will return the authentication service
 func (c *Creater) GetAuthenticationService() *components.Service {
-	return util.CreateService("authentication", "authentication", c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("authentication", c.GetLabel("authentication"), c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("authentication"))
 }

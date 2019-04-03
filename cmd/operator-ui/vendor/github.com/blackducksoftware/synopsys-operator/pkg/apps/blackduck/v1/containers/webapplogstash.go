@@ -68,7 +68,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	logstashContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: c.getImageTag("blackduck-logstash"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.LogstashMemoryLimit, MaxMem: c.hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},
-		EnvConfigs: []*horizonapi.EnvConfig{c.getHubConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: logstashVolumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: logstashPort, Protocol: horizonapi.ProtocolTCP}},
 	}
@@ -88,14 +88,14 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-webapp") {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-webapp/ldap"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-webapp", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-webapp/ldap"}},
 			VolumeMounts:    webappVolumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
 	}
 	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-logstash") {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/logstash/data"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-logstash", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/logstash/data"}},
 			VolumeMounts:    logstashVolumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
@@ -103,7 +103,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 
 	webappLogstash := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webapp-logstash", Replicas: util.IntToInt32(1)},
 		"", []*util.Container{webappContainerConfig, logstashContainerConfig}, c.getWebappLogtashVolumes(),
-		initContainers, []horizonapi.AffinityConfig{})
+		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("webapp-logstash"), c.GetLabel("webapp-logstash"))
 	return webappLogstash
 }
 
@@ -126,7 +126,7 @@ func (c *Creater) getWebappLogtashVolumes() []*components.Volume {
 
 	volumes := []*components.Volume{webappSecurityEmptyDir, webappVolume, logstashVolume, c.getDBSecretVolume()}
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0  {
+	if len(c.hubSpec.ProxyCertificate) > 0 {
 		volumes = append(volumes, c.getProxyVolume())
 	}
 
@@ -152,7 +152,7 @@ func (c *Creater) getWebappVolumeMounts() []*horizonapi.VolumeMountConfig {
 	}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0  {
+	if len(c.hubSpec.ProxyCertificate) > 0 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "blackduck-proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
@@ -165,10 +165,10 @@ func (c *Creater) getWebappVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetWebAppService will return the webapp service
 func (c *Creater) GetWebAppService() *components.Service {
-	return util.CreateService("webapp", "webapp-logstash", c.hubSpec.Namespace, webappPort, webappPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("webapp", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, webappPort, webappPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("webapp-logstash"))
 }
 
 // GetLogStashService will return the logstash service
 func (c *Creater) GetLogStashService() *components.Service {
-	return util.CreateService("logstash", "webapp-logstash", c.hubSpec.Namespace, logstashPort, logstashPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("logstash", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, logstashPort, logstashPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("webapp-logstash"))
 }

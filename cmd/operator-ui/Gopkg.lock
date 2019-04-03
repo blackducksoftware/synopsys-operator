@@ -18,12 +18,12 @@
   version = "v0.3.1"
 
 [[projects]]
-  digest = "1:2aff5edb9bccd2974090fddb17ca7ab05a3f5c983db567c30c7f0b53404f5783"
+  digest = "1:f780d408067189c4c42b53f7bb24ebf8fd2a1e4510b813ed6e79dd6563e38cc5"
   name = "github.com/ajg/form"
   packages = ["."]
   pruneopts = "UT"
-  revision = "cc2954064ec9ea8d93917f0f87456e11d7b881ad"
-  version = "v1.5"
+  revision = "5c4e22684113ffc2a77577c178189940925f9aef"
+  version = "v1.5.1"
 
 [[projects]]
   branch = "master"
@@ -48,8 +48,8 @@
   revision = "7868040f1166f40a1ce6f9612def36661cde2b61"
 
 [[projects]]
-  branch = "jd-version2"
-  digest = "1:22cbf243bff61ba916fc8932dc84fd600bd4f63dce9fbda07567ecc4900516cb"
+  branch = "master"
+  digest = "1:bf24a654d5e0b85bc8c7eed6a0f29363dbbd1ecab2dcfa55e0bd016aec2bf7ff"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/api",
@@ -61,20 +61,18 @@
     "pkg/api/opssight/v1",
     "pkg/apps",
     "pkg/apps/blackduck",
+    "pkg/apps/blackduck/latest",
+    "pkg/apps/blackduck/latest/containers",
     "pkg/apps/blackduck/v1",
     "pkg/apps/blackduck/v1/containers",
     "pkg/apps/database",
     "pkg/apps/database/postgres",
-    "pkg/blackduck",
     "pkg/blackduck/client/clientset/versioned",
     "pkg/blackduck/client/clientset/versioned/scheme",
     "pkg/blackduck/client/clientset/versioned/typed/blackduck/v1",
-    "pkg/blackduck/client/informers/externalversions/blackduck/v1",
-    "pkg/blackduck/client/informers/externalversions/internalinterfaces",
-    "pkg/blackduck/client/listers/blackduck/v1",
-    "pkg/blackduck/plugins",
     "pkg/blackduck/util",
     "pkg/crds",
+    "pkg/crdupdater",
     "pkg/opssight/client/clientset/versioned",
     "pkg/opssight/client/clientset/versioned/scheme",
     "pkg/opssight/client/clientset/versioned/typed/opssight/v1",
@@ -82,7 +80,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "5eb31045d87d48567c689a3836a3fb8c0daeeed5"
+  revision = "92270227efd35885e97dfa772bb7b1f01a448be4"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -168,14 +166,6 @@
   revision = "5545eab6dad3bbbd6c5ae9186383c2a9d23c0dae"
 
 [[projects]]
-  branch = "master"
-  digest = "1:555fef7420c108d88754e41e02299fd10f67dc6602d643944611a4100132d3cf"
-  name = "github.com/gin-gonic/contrib"
-  packages = ["static"]
-  pruneopts = "UT"
-  revision = "54ff787f7c73aec36275e1384c705389b1772ba9"
-
-[[projects]]
   digest = "1:d5083934eb25e45d17f72ffa86cae3814f4a9d6c073c4f16b64147169b245606"
   name = "github.com/gin-gonic/gin"
   packages = [
@@ -211,15 +201,15 @@
   version = "v0.13.14"
 
 [[projects]]
-  digest = "1:0d91e7aaac0dd9a4112a5f8cc107330dd88b03c42e65d519645ae9873e6e8ffb"
+  digest = "1:c1c62b1df999f28c02d79ff8cd7a815a3500cd90056c3e95bc4d781d321cc6e9"
   name = "github.com/gobuffalo/buffalo-plugins"
   packages = [
     "plugins",
     "plugins/plugdeps",
   ]
   pruneopts = "UT"
-  revision = "69f3d62dac4196808a821b63b783789d30aadffc"
-  version = "v1.13.1"
+  revision = "41e624899b92de296c8b66081dd7570f4e976044"
+  version = "v1.14.0"
 
 [[projects]]
   digest = "1:5b33a8ff87888677489ba612c8aa1bf06500b087f1397a4732b7a0298f6d5f8a"
@@ -230,12 +220,12 @@
   version = "v1.6.15"
 
 [[projects]]
-  digest = "1:2637749e262a2b880b925752dc7416992c33baede48df061f3aaed5efe6d2974"
+  digest = "1:28834c74b3a6daa4f25cf393e66bbbb065ca2744520f7bc7e2b33dea163fa3f4"
   name = "github.com/gobuffalo/events"
   packages = ["."]
   pruneopts = "UT"
-  revision = "7405490b2bb796f2d6aaea94f4c8692e67aa7086"
-  version = "v1.2.0"
+  revision = "d3d6e420427efcaae648ddabc37618dba6a80f4f"
+  version = "v1.3.1"
 
 [[projects]]
   digest = "1:1f733b2de0743d89d36bd33c8ac981da0ccb50db7efdcc03d252454c0a13d9b8"
@@ -261,11 +251,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0b6c4bcc7464634056ccda797d1e9673c5c250d9d674046194443c8f229c758d"
+  digest = "1:9bf036b866baa309237460b581dfeb91ece84ec57e16444bcb48f6568c15af52"
   name = "github.com/gobuffalo/genny"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e16e52a93c79d5e8e75a2ee81da9195da2393b6c"
+  revision = "7be1b23270ebd994f6b6d7334aae204ae46ff2bb"
 
 [[projects]]
   digest = "1:114fbde5ab0239bddb4e8733d3174f8f4008ff84d7161c549e501a4339bdc75c"
@@ -315,20 +305,20 @@
   version = "v1.1.5"
 
 [[projects]]
-  digest = "1:4f8c1fa9aeaaf6c601fc0961ec6f63bf4c72f6092de72a76c8f9c719585aaf63"
+  digest = "1:a3259d2a6c245b62e40232800e3ebb4d7d5840940638de0e4754cb13cdd37790"
   name = "github.com/gobuffalo/mapi"
   packages = ["."]
   pruneopts = "UT"
-  revision = "09ac528b16b7e871fe0f14d4867a07820a30a14b"
-  version = "v1.0.1"
+  revision = "0bb5e840be332d4280e40f2e6c50777c615bbac5"
+  version = "v1.0.2"
 
 [[projects]]
   branch = "master"
-  digest = "1:4a678ae89930955068891bf0899c406660a51a47fa9a82178da903eb966d2709"
+  digest = "1:f4cd84dd1998e8204341c243dc158f537c5d6dcf1e3853afedaffc21fe7c365a"
   name = "github.com/gobuffalo/meta"
   packages = ["."]
   pruneopts = "UT"
-  revision = "50a99e08b8cf340b099048d2ad70bf525f2e16a7"
+  revision = "e161e8a93e3b94f8c89598420eb13b4f7d660450"
 
 [[projects]]
   branch = "master"
@@ -379,12 +369,12 @@
   revision = "a385830c7fc0495b810318788a043c7655da337d"
 
 [[projects]]
-  digest = "1:2e3bf43d70de1ae3a57916bede07caed1eb35146324d73a39adef066375ef6a5"
+  digest = "1:f7b65fe2f78c3ac8bd4ec8fe19c0bb183dc73b2c345db688e5a93ac4695faf81"
   name = "github.com/gobuffalo/packr"
   packages = ["."]
   pruneopts = "UT"
-  revision = "f2a347bdbc8f32540d5ceb3036a956d830465e23"
-  version = "v2.0.6"
+  revision = "36da986d61769bf3625368d62d94afd814ceeaa8"
+  version = "v2.0.9"
 
 [[projects]]
   digest = "1:5351c0e4a0c0f48f30a332b65962ac8873cd0a000068276609e35b54725efaab"
@@ -416,15 +406,15 @@
   version = "v4.10.0"
 
 [[projects]]
-  digest = "1:de29dc9e7c845c2538f5a3e7609e611bfca933119512058fc90d0c1b47031830"
+  digest = "1:d4771a4e851d32d15e35e1a146536aaef14343dbe11573c3d668b1eb82d4875f"
   name = "github.com/gobuffalo/suite"
   packages = [
     ".",
     "fix",
   ]
   pruneopts = "UT"
-  revision = "9b4d77a3bcf4ac5eb2442fd71b78a101faa6f06f"
-  version = "v2.6.0"
+  revision = "15021067defd9102658bfd9f7db5291d8d71293d"
+  version = "v2.6.1"
 
 [[projects]]
   branch = "master"
@@ -435,7 +425,7 @@
   revision = "33c29581e754bd354236e977dfe426e55331c45d"
 
 [[projects]]
-  digest = "1:dc696015082adab90eb8fceb3f2cd6d816a68f6ee081d66d2d9f1c23c8e08a04"
+  digest = "1:85ce8326d82b2801094127efec53847d4c7b8a4fc5e33adb1624038449a7fd93"
   name = "github.com/gobuffalo/tags"
   packages = [
     ".",
@@ -443,8 +433,8 @@
     "form/bootstrap",
   ]
   pruneopts = "UT"
-  revision = "5bface973eaf8938807a6d0c075c415911f45b48"
-  version = "v2.0.15"
+  revision = "d22139b19b196889c4ab59e476ccbcb84e86e041"
+  version = "v2.0.16"
 
 [[projects]]
   digest = "1:4b6a43ba3296f26ea01ae125e50951f141c215dd18b5b91e9f397117b2951eb1"
@@ -519,12 +509,12 @@
   version = "v1.3.1"
 
 [[projects]]
-  branch = "master"
   digest = "1:0bfbe13936953a98ae3cfe8ed6670d396ad81edf069a806d2f6515d7bb6950df"
   name = "github.com/google/btree"
   packages = ["."]
   pruneopts = "UT"
   revision = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -588,17 +578,6 @@
   ]
   pruneopts = "UT"
   revision = "3befbb6ad0cc97d4c25d851e9528915809e1a22f"
-
-[[projects]]
-  digest = "1:d15ee511aa0f56baacc1eb4c6b922fa1c03b38413b6be18166b996d82a0156ea"
-  name = "github.com/hashicorp/golang-lru"
-  packages = [
-    ".",
-    "simplelru",
-  ]
-  pruneopts = "UT"
-  revision = "7087cb70de9f7a8bc0a10c375cb0d2280a8edf9c"
-  version = "v0.5.1"
 
 [[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
@@ -970,12 +949,12 @@
   version = "v3.9.0"
 
 [[projects]]
-  digest = "1:95741de3af260a92cc5c7f3f3061e85273f5a81b5db20d4bd68da74bd521675e"
+  digest = "1:e0f50a07c0def90588d69f77178712c6fdc67eb6576365f551cce98b44b501bf"
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
-  version = "v1.2.0"
+  revision = "63909f0a90ab0f36909e8e044e46ace10cf13ba2"
+  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -1042,17 +1021,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0573a48c92e778ad732779bf1e5064a5085ab3fbd236ad71e53cab5753ef3e6e"
+  digest = "1:f806b417865e83457c3659232926203f5b0d39aa741b71d9e3e4c0c774e71a5c"
   name = "github.com/prometheus/procfs"
-  packages = [
-    ".",
-    "internal/util",
-    "iostats",
-    "nfs",
-    "xfs",
-  ]
+  packages = ["."]
   pruneopts = "UT"
-  revision = "e56f2e22fc761e82a34aca553f6725e2aff4fe6c"
+  revision = "af7bedc223fba51343f25a6fa7aba84355d0357a"
 
 [[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
@@ -1093,7 +1066,7 @@
     "reflectsource",
   ]
   pruneopts = "UT"
-  revision = "3fef8c783dec4cbce3bc3b1e877260f0d3c891b7"
+  revision = "6713ea532688481dc0af6ea056895d2cde810001"
 
 [[projects]]
   branch = "master"
@@ -1112,12 +1085,12 @@
   revision = "d48a9a75455f6af30244670bc0c9d0e38e7392b5"
 
 [[projects]]
-  digest = "1:e4c72127d910a96daf869a44f3dd563b86dbe6931a172863a0e99c5ff04b59e4"
+  digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "dae0fa8d5b0c810a8ab733fbd5510c7cae84eca4"
-  version = "v1.4.0"
+  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
+  version = "v1.4.1"
 
 [[projects]]
   branch = "master"
@@ -1136,15 +1109,15 @@
   revision = "bd320f5d308e1a3c4314c678d8227a0d72574ae7"
 
 [[projects]]
-  digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
+  digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
   name = "github.com/spf13/afero"
   packages = [
     ".",
     "mem",
   ]
   pruneopts = "UT"
-  revision = "f4711e4db9e9a1d3887343acb72b2bbfc2f686f5"
-  version = "v1.2.1"
+  revision = "588a75ec4f32903aa5e39a2619ba6a4631e28424"
+  version = "v1.2.2"
 
 [[projects]]
   digest = "1:08d65904057412fc0270fc4812a1c90c594186819243160dc779a402d4b6d0bc"
@@ -1216,7 +1189,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0c75a1e88c2b1e0361102c133f2690fd1fd5ab5da829f60a9c2dd20b9c224c71"
+  digest = "1:b7cda6bf367836ce3675325f6f7aec675af1ff2fde841524800f499a1acf0ee2"
   name = "golang.org/x/crypto"
   packages = [
     "bcrypt",
@@ -1224,11 +1197,11 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "a1f597ede03a7bef967a422b5b3a5bd08805a01e"
+  revision = "a5d413f7728c81fb97d96a2b722368945f651e78"
 
 [[projects]]
   branch = "master"
-  digest = "1:4969220767d2473bdbc1a2764728944b6958fdf2663e9d7f3c3ad97f8648fdb6"
+  digest = "1:4ebfd72ba817efd42cb4be720c20c200d5a2f3694e8a3bd243b95d558fc5f423"
   name = "golang.org/x/net"
   packages = [
     "html",
@@ -1239,7 +1212,7 @@
     "idna",
   ]
   pruneopts = "UT"
-  revision = "9f648a60d9775ef5c977e7669d1673a7a67bef33"
+  revision = "74de082e2cca95839e88aa0aeee5aadf6ce7710f"
 
 [[projects]]
   branch = "master"
@@ -1251,14 +1224,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ed708ad22c955df62e7eaba9ddd9edd3afc7818a4a72d9680bf797ac6c5ae3a8"
+  digest = "1:aa9254a749f8b6d34bfa7e422b9365f255d0e2457d4bb8d3de1e7b22d8b81410"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "a2f829d7f35f2ed1c3520c553a6226495455cae0"
+  revision = "baf5eb976a8cd65845293cd814ea151018552292"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -1296,8 +1269,8 @@
   name = "google.golang.org/appengine"
   packages = ["cloudsql"]
   pruneopts = "UT"
-  revision = "e9657d882bb81064595ca3b56cbe2546bbabf7b1"
-  version = "v1.4.0"
+  revision = "54a98f90d1c46b7731eb8fb305d2a321c30ef610"
+  version = "v1.5.0"
 
 [[projects]]
   digest = "1:cbc72c4c4886a918d6ab4b95e347ffe259846260f99ebdd8a198c2331cf2b2e9"
@@ -1374,13 +1347,12 @@
   revision = "e798125b68b9e62ce80c2b4f1157e96da7b3b1c7"
 
 [[projects]]
-  digest = "1:10fa3035a95911829e930671135d7a6dfa239a2bf5317362ecc94db3954dd52d"
+  digest = "1:26c5541559f3bc2e6ef9be6c1ab53d01d18d2c0a58ef68f4da2f01699ad010f2"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
-    "pkg/apis/meta/internalversion",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
     "pkg/apis/meta/v1beta1",
@@ -1398,9 +1370,7 @@
     "pkg/runtime/serializer/versioning",
     "pkg/selection",
     "pkg/types",
-    "pkg/util/cache",
     "pkg/util/clock",
-    "pkg/util/diff",
     "pkg/util/errors",
     "pkg/util/framer",
     "pkg/util/httpstream",
@@ -1427,7 +1397,7 @@
   revision = "94ebb086c69b9fec4ddbfb6a1433d28ecca9292b"
 
 [[projects]]
-  digest = "1:e34eb2e6db2f8e2ad6f72e981f687dba7aaa7a7f187027364cdcf29c9c7757d3"
+  digest = "1:90504ae53f5fca92c93afeadf4ddb58b3204674ef7436f3561eb992c539af8ad"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1470,26 +1440,21 @@
     "rest",
     "rest/watch",
     "tools/auth",
-    "tools/cache",
     "tools/clientcmd",
     "tools/clientcmd/api",
     "tools/clientcmd/api/latest",
     "tools/clientcmd/api/v1",
     "tools/metrics",
-    "tools/pager",
     "tools/reference",
     "tools/remotecommand",
     "transport",
     "transport/spdy",
-    "util/buffer",
     "util/cert",
     "util/connrotation",
     "util/exec",
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
-    "util/retry",
-    "util/workqueue",
   ]
   pruneopts = "UT"
   revision = "7d04d0e2a0a1a4d4a1cd6baa432a2301492e4e65"
@@ -1507,19 +1472,20 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:20ca56a1299fe3787b1cf86c3a0388fbc11d08604783b32a258eca7a947a7fdb"
+  digest = "1:22abb5d4204ab1a0dcc9cda64906a31c43965ff5159e8b9f766c9d2a162dbed5"
   name = "k8s.io/kube-openapi"
   packages = ["pkg/util/proto"]
   pruneopts = "UT"
-  revision = "15615b16d372105f0c69ff47dfe7402926a65aaa"
+  revision = "94e1e7b7574c44c4c0f2007de6fe617e259191f3"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1",
-    "github.com/blackducksoftware/synopsys-operator/pkg/blackduck",
+    "github.com/blackducksoftware/synopsys-operator/pkg/apps",
     "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned",
+    "github.com/blackducksoftware/synopsys-operator/pkg/protoform",
     "github.com/blackducksoftware/synopsys-operator/pkg/util",
     "github.com/gobuffalo/buffalo",
     "github.com/gobuffalo/buffalo/render",

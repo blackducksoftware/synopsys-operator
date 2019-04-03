@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -24,139 +24,177 @@ package blackduck
 import (
 	"fmt"
 	"strings"
-	"time"
 
-	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/blackducksoftware/horizon/pkg/components"
+	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+
+	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
 )
 
-func (hc *Creater) get(blackduck *v1.Blackduck, hubContainerFlavor *containers.ContainerFlavor) {
-	//hc
-	//containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, hubContainerFlavor)
-}
+// GetComponents returns the components
+func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, error) {
 
-// AddToDeployer will create an entire hub for you.  TODO add flavor parameters !
-// To create the returned hub, run 	CreateHub().Run().
-// TODO doc what 'allConfigEnv' actually is ???
-func (hc *Creater) AddToDeployer(deployer *horizon.Deployer, createHub *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) {
+	componentList := &api.ComponentList{}
 
-	//// Blackduck ConfigMap environment variables
-	//hubConfigEnv := []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"}}
-	//
-	//binaryAnalysisEnv := []*horizonapi.EnvConfig{{Type: horizonapi.EnvFromConfigMap, FromName: "binary-analysis-config"}}
-	//
-	//dbSecretVolume := components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-	//	VolumeName:      "db-passwords",
-	//	MapOrSecretName: "db-creds",
-	//	Items: map[string]horizonapi.KeyAndMode{
-	//		"HUB_POSTGRES_ADMIN_PASSWORD_FILE": {KeyOrPath: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", Mode: util.IntToInt32(420)},
-	//		"HUB_POSTGRES_USER_PASSWORD_FILE":  {KeyOrPath: "HUB_POSTGRES_USER_PASSWORD_FILE", Mode: util.IntToInt32(420)},
-	//	},
-	//	DefaultMode: util.IntToInt32(420),
-	//})
-	//
-	//// dbEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("cloudsql")
-	//
-	//var proxySecretVolume *components.Volume
-	//
-	//proxyCertSecret, err := util.GetSecret(hc.KubeClient, createHub.Namespace, "blackduck-proxy-certificate")
-	//if err == nil {
-	//	if _, err := hc.stringToCertificate(string(proxyCertSecret.Data["HUB_PROXY_CERT_FILE"])); err == nil {
-	//		proxySecretVolume = components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-	//			VolumeName:      "blackduck-proxy-certificate",
-	//			MapOrSecretName: "blackduck-proxy-certificate",
-	//			Items: map[string]horizonapi.KeyAndMode{
-	//				"HUB_PROXY_CERT_FILE": {KeyOrPath: "HUB_PROXY_CERT_FILE", Mode: util.IntToInt32(420)},
-	//			},
-	//			DefaultMode: util.IntToInt32(420),
-	//		})
-	//	}
-	//}
+	// Get the flavor
+	flavor, err := hc.getContainersFlavor(blackduck)
+	if err != nil {
+		return nil, err
+	}
 
-	containerCreater := containers.NewCreater(hc.Config, createHub, hubContainerFlavor)
+	// Get Db creds
+	var adminPassword, userPassword string
+	if blackduck.Spec.ExternalPostgres != nil {
+		adminPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
+		userPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
+	} else {
+		adminPassword, userPassword, _, err = bdutil.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor)
+
+	// Configmap
+	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
+
+	//Secrets
+	// nginx certificate
+	cert, key, err := hc.getTLSCertKeyOrCreate(blackduck)
+	if err != nil {
+		return nil, err
+	}
+
+	componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(adminPassword, userPassword, cert, key)...)
 
 	// cfssl
-	deployer.AddReplicationController(containerCreater.GetCfsslDeployment())
-	deployer.AddService(containerCreater.GetCfsslService())
-
-	// nginx certificate
-	for {
-		secret, err := util.GetSecret(hc.KubeClient, createHub.Namespace, "blackduck-certificate")
-		if err != nil {
-			log.Errorf("unable to get the secret in %s due to %+v", createHub.Namespace, err)
-			break
-		}
-		data := secret.Data
-		if len(data) > 0 {
-			break
-		}
-		time.Sleep(10 * time.Second)
-	}
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetCfsslDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetCfsslService())
 
 	// nginx
-	deployer.AddReplicationController(containerCreater.GetWebserverDeployment())
-	deployer.AddService(containerCreater.GetWebServerService())
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetWebserverDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetWebServerService())
 
 	// documentation
-	deployer.AddReplicationController(containerCreater.GetDocumentationDeployment())
-	deployer.AddService(containerCreater.GetDocumentationService())
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetDocumentationDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetDocumentationService())
 
 	// solr
-	// As part of Black Duck 2019.4.0, solr is decommissioned
-	solrRC := containerCreater.GetSolrDeployment()
-	if solrRC != nil {
-		deployer.AddReplicationController(solrRC)
-		deployer.AddService(containerCreater.GetSolrService())
-	}
+
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetSolrDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetSolrService())
 
 	// registration
-	deployer.AddReplicationController(containerCreater.GetRegistrationDeployment())
-	deployer.AddService(containerCreater.GetRegistrationService())
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetRegistrationDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetRegistrationService())
 
 	// zookeeper
-	deployer.AddReplicationController(containerCreater.GetZookeeperDeployment())
-	deployer.AddService(containerCreater.GetZookeeperService())
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetZookeeperDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetZookeeperService())
 
 	// jobRunner
-	deployer.AddReplicationController(containerCreater.GetJobRunnerDeployment())
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetJobRunnerDeployment())
 
 	// hub-scan
-	deployer.AddReplicationController(containerCreater.GetScanDeployment())
-	deployer.AddService(containerCreater.GetScanService())
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetScanDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetScanService())
 
 	// hub-authentication
-	deployer.AddReplicationController(containerCreater.GetAuthenticationDeployment())
-	deployer.AddService(containerCreater.GetAuthenticationService())
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetAuthenticationDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetAuthenticationService())
 
 	// webapp-logstash
-	deployer.AddReplicationController(containerCreater.GetWebappLogstashDeployment())
-	deployer.AddService(containerCreater.GetWebAppService())
-	deployer.AddService(containerCreater.GetLogStashService())
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetWebappLogstashDeployment())
+	componentList.Services = append(componentList.Services, containerCreater.GetWebAppService())
+	componentList.Services = append(componentList.Services, containerCreater.GetLogStashService())
 
+	// Service account - https://github.com/blackducksoftware/synopsys-operator/issues/95
+	//componentList.ServiceAccounts= append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
+	//componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
 
-	// TODO create new creater for 2019.4.0 and above
-	// Upload cache
-	// As part of Black Duck 2019.4.0, upload cache is part of Black Duck
-	//uploadCacheRC := containerCreater.GetUploadCacheDeployment()
-	//if uploadCacheRC != nil {
-	//	deployer.AddReplicationController(containerCreater.GetUploadCacheDeployment())
-	//	deployer.AddService(containerCreater.GetUploadCacheService())
-	//}
-
-	if hc.isBinaryAnalysisEnabled {
-		deployer.AddReplicationController(containerCreater.GetUploadCacheDeployment())
-		deployer.AddService(containerCreater.GetUploadCacheService())
+	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
+		// Upload cache
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetUploadCacheDeployment())
+		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
 
 		// Binary Scanner
-		deployer.AddReplicationController(containerCreater.GetBinaryScannerDeployment())
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetBinaryScannerDeployment())
 
 		// Rabbitmq
-		deployer.AddReplicationController(containerCreater.GetRabbitmqDeployment())
-		deployer.AddService(containerCreater.GetRabbitmqService())
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetRabbitmqDeployment())
+		componentList.Services = append(componentList.Services, containerCreater.GetRabbitmqService())
 	}
+
+	// Add Expose service
+	if svc := hc.getExposeService(blackduck); svc != nil {
+		componentList.Services = append(componentList.Services, svc)
+	}
+	return componentList, nil
+}
+
+func (hc *Creater) getExposeService(bd *v1.Blackduck) *components.Service {
+	containerCreater := containers.NewCreater(hc.Config, &bd.Spec, nil)
+	var svc *components.Service
+
+	switch strings.ToUpper(bd.Spec.ExposeService) {
+	case "NODEPORT":
+		svc = containerCreater.GetWebServerNodePortService()
+		break
+	case "LOADBALANCER":
+		svc = containerCreater.GetWebServerLoadBalancerService()
+		break
+	default:
+	}
+	return svc
+}
+
+// GetPVC returns the PVC
+func (hc *Creater) GetPVC(blackduck *v1.Blackduck) []*components.PersistentVolumeClaim {
+	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, nil)
+	return containerCreater.GetPVCs()
+}
+
+func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, string, error) {
+	if strings.EqualFold(blackduck.Spec.CertificateName, "manual") {
+		return blackduck.Spec.Certificate, blackduck.Spec.CertificateKey, nil
+	}
+
+	secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
+	if err == nil {
+		data := secret.Data
+		if len(data) >= 2 {
+			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
+			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
+			if !certok || !keyok {
+				util.DeleteSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
+			} else {
+				return string(cert), string(key), nil
+			}
+		}
+	}
+
+	// Cert copy
+	if !strings.EqualFold(blackduck.Spec.CertificateName, "default") {
+		secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.CertificateName, "blackduck-certificate")
+		if err == nil {
+			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
+			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
+			if certok && keyok {
+				return string(cert), string(key), nil
+			}
+		}
+	}
+
+	// Default
+	return CreateSelfSignedCert()
 }
 
 // addAnyUIDToServiceAccount adds the capability to run as 1000 for nginx or other special IDs.  For example, the binaryscanner

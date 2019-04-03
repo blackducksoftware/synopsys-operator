@@ -35,7 +35,7 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 	registrationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: c.getImageTag("blackduck-registration"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
-		EnvConfigs: []*horizonapi.EnvConfig{c.getHubConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: c.getRegistrationVolumeMounts(),
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP}},
 	}
@@ -71,7 +71,7 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 
 	registration := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{registrationContainerConfig}, c.getRegistrationVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{})
+		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("registration"), c.GetLabel("registration"))
 
 	return registration
 }
@@ -117,5 +117,5 @@ func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig 
 
 // GetRegistrationService will return the registration service
 func (c *Creater) GetRegistrationService() *components.Service {
-	return util.CreateService("registration", "registration", c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("registration", c.GetLabel("registration"), c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("registration"))
 }

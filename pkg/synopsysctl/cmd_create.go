@@ -44,7 +44,7 @@ var createAlertCtl ResourceCtl
 // Flags for the Base Spec (template)
 var baseBlackduckSpec = "persistentStorage"
 var baseOpsSightSpec = "disabledBlackduck"
-var baseAlertSpec = "spec1"
+var baseAlertSpec = "default"
 
 // Flags for using mock mode - don't deploy
 var mockBlackduck bool

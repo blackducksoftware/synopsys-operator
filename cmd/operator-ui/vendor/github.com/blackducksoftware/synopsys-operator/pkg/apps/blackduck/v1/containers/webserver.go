@@ -33,7 +33,7 @@ func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.getImageTag("blackduck-nginx"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit,
 			MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
-		EnvConfigs: []*horizonapi.EnvConfig{c.getHubConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: c.getWebserverVolumeMounts(),
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: webserverPort, Protocol: horizonapi.ProtocolTCP}},
 	}
@@ -52,7 +52,7 @@ func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
 
 	webserver := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{
 		Namespace: c.hubSpec.Namespace, Name: "webserver", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{webServerContainerConfig}, c.getWebserverVolumes(), []*util.Container{}, []horizonapi.AffinityConfig{})
+		[]*util.Container{webServerContainerConfig}, c.getWebserverVolumes(), []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("webserver"), c.GetLabel("webserver"))
 	// log.Infof("webserver : %v\n", webserver.GetObj())
 	return webserver
 }
@@ -93,15 +93,15 @@ func (c *Creater) getWebserverVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetWebServerService will return the webserver service
 func (c *Creater) GetWebServerService() *components.Service {
-	return util.CreateService("webserver", "webserver", c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("webserver", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("webserver"))
 }
 
 // GetWebServerNodePortService will return the webserver nodeport service
 func (c *Creater) GetWebServerNodePortService() *components.Service {
-	return util.CreateService("webserver-np", "webserver", c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeNodePort)
+	return util.CreateService("webserver-np", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeNodePort, c.GetLabel("webserver-np"))
 }
 
 // GetWebServerLoadBalancerService will return the webserver loadbalancer service
 func (c *Creater) GetWebServerLoadBalancerService() *components.Service {
-	return util.CreateService("webserver-lb", "webserver", c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeLoadBalancer)
+	return util.CreateService("webserver-lb", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeLoadBalancer, c.GetLabel("webserver-lb"))
 }

@@ -35,7 +35,7 @@ func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
 	zookeeperContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: c.getImageTag("blackduck-zookeeper"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: zookeeperMinCPUUsage, MaxCPU: ""},
-		EnvConfigs: []*horizonapi.EnvConfig{c.getHubConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: volumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: zookeeperPort, Protocol: horizonapi.ProtocolTCP}},
 	}
@@ -62,7 +62,7 @@ func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
 	c.PostEditContainer(zookeeperContainerConfig)
 
 	zookeeper := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{zookeeperContainerConfig}, c.getZookeeperVolumes(), initContainers, []horizonapi.AffinityConfig{})
+		[]*util.Container{zookeeperContainerConfig}, c.getZookeeperVolumes(), initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("zookeeper"), c.GetLabel("zookeeper"))
 
 	return zookeeper
 }
@@ -99,5 +99,5 @@ func (c *Creater) getZookeeperVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetZookeeperService will return the zookeeper service
 func (c *Creater) GetZookeeperService() *components.Service {
-	return util.CreateService("zookeeper", "zookeeper", c.hubSpec.Namespace, zookeeperPort, zookeeperPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("zookeeper", c.GetLabel("zookeeper"), c.hubSpec.Namespace, zookeeperPort, zookeeperPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("zookeeper"))
 }

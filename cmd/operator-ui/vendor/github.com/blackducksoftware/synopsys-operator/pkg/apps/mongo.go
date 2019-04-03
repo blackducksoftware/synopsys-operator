@@ -54,6 +54,7 @@ type Mongo struct {
 	UserPasswordSecretKey  string
 	AdminPasswordSecretKey string
 	EnvConfigMapRefs       []string
+	Labels                 map[string]string
 }
 
 // GetMongoReplicationController will return the Mongo replication controller
@@ -89,14 +90,14 @@ func (p *Mongo) GetMongoReplicationController() *components.ReplicationControlle
 
 	mongo := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
 		Name: mongoName, Replicas: util.IntToInt32(1)}, "", []*util.Container{mongoExternalContainerConfig},
-		mongoVolumes, initContainers, []horizonapi.AffinityConfig{})
+		mongoVolumes, initContainers, []horizonapi.AffinityConfig{}, p.Labels, p.Labels)
 
 	return mongo
 }
 
 // GetMongoService will return the Mongo service
 func (p *Mongo) GetMongoService() *components.Service {
-	return util.CreateService(mongoName, mongoName, p.Namespace, p.Port, p.Port, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService(mongoName, p.Labels, p.Namespace, p.Port, p.Port, horizonapi.ClusterIPServiceTypeDefault, p.Labels)
 }
 
 // getMongoVolumes will return the Mongo volumes

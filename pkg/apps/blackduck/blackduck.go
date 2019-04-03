@@ -1,23 +1,40 @@
+/*
+Copyright (C) 2019 Synopsys, Inc.
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
 package blackduck
 
 import (
 	"fmt"
 	"strings"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
-	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-
 	latestblackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	v1blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // Blackduck is used for the Blackduck deployment
@@ -49,7 +66,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 		osClient = nil
 	} else {
 		_, err := util.GetOpenShiftSecurityConstraint(osClient, "anyuid")
-		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
+		if err != nil {
 			osClient = nil
 		}
 	}
@@ -59,7 +76,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 		routeClient = nil
 	} else {
 		_, err := util.GetOpenShiftRoutes(routeClient, "default", "docker-registry")
-		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
+		if err != nil {
 			routeClient = nil
 		}
 	}

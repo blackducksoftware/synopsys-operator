@@ -76,7 +76,7 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 	hubScanVolumes := []*components.Volume{hubScanEmptyDir, c.getDBSecretVolume()}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0  {
+	if len(c.hubSpec.ProxyCertificate) > 0 {
 		hubScanContainerConfig.VolumeMounts = append(hubScanContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
 			Name:      "blackduck-proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
@@ -87,12 +87,12 @@ func (c *Creater) GetScanDeployment() *components.ReplicationController {
 	c.PostEditContainer(hubScanContainerConfig)
 
 	hubScan := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "scan", Replicas: c.hubContainerFlavor.ScanReplicas}, "",
-		[]*util.Container{hubScanContainerConfig}, hubScanVolumes, []*util.Container{}, []horizonapi.AffinityConfig{})
+		[]*util.Container{hubScanContainerConfig}, hubScanVolumes, []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("scan"), c.GetLabel("scan"))
 
 	return hubScan
 }
 
 // GetScanService will return the scan service
 func (c *Creater) GetScanService() *components.Service {
-	return util.CreateService("scan", "scan", c.hubSpec.Namespace, scannerPort, scannerPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("scan", c.GetLabel("scan"), c.hubSpec.Namespace, scannerPort, scannerPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("scan"))
 }

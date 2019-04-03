@@ -46,11 +46,12 @@ type Creater struct {
 	hubContainerFlavor *ContainerFlavor
 }
 
+// NewCreater will return a creater
 func NewCreater(config *protoform.Config, hubSpec *v1.BlackduckSpec, hubContainerFlavor *ContainerFlavor) *Creater {
 	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor}
 }
 
-// GetFullContainerName returns the tag that is specified for a container by trying to look in the custom tags provided,
+// GetFullContainerNameFromImageRegistryConf returns the tag that is specified for a container by trying to look in the custom tags provided,
 // if those arent filled, it uses the "HubVersion" as a default, which works for blackduck < 5.1.0.
 func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string) string {
 	//blackduckVersion := hubutils.GetHubVersion(c.hubSpec.Environs)

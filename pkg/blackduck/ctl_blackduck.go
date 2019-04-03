@@ -67,6 +67,8 @@ type Ctl struct {
 	ImageRegistries                       []string
 	ImageUIDMapJSONSlice                  []string
 	LicenseKey                            string
+	Version                               string
+	ExposeService                         string
 }
 
 // NewBlackduckCtl creates a new Ctl struct
@@ -97,6 +99,8 @@ func NewBlackduckCtl() *Ctl {
 		ImageRegistries:                       []string{},
 		ImageUIDMapJSONSlice:                  []string{},
 		LicenseKey:                            "",
+		Version:                               "",
+		ExposeService:                         "",
 	}
 }
 
@@ -115,9 +119,22 @@ func (ctl *Ctl) SetSpec(spec interface{}) error {
 	return nil
 }
 
+func isValidSize(size string) bool {
+	switch size {
+	case
+		"",
+		"small",
+		"medium",
+		"large",
+		"xlarge":
+		return true
+	}
+	return false
+}
+
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *Ctl) CheckSpecFlags() error {
-	if ctl.Size != "" && ctl.Size != "small" && ctl.Size != "medium" && ctl.Size != "large" && ctl.Size != "xlarge" {
+	if !isValidSize(ctl.Size) {
 		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'xlarge'")
 	}
 	for _, pvcJSON := range ctl.PVCJSONSlice {
@@ -184,6 +201,8 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "TODO")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose service type [Loadbalancer/Nodeport]")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -237,9 +256,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 			ctl.Spec.ExternalPostgres.PostgresUserPassword = ctl.ExternalPostgresPostgresUserPassword
 		case "pvc-storage-class":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
 			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
 			ctl.Spec.LivenessProbes = ctl.LivenessProbes
@@ -278,6 +294,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
+		case "version":
+			ctl.Spec.Version = ctl.Version
+		case "expose-service":
+			ctl.Spec.ExposeService = ctl.ExposeService
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}

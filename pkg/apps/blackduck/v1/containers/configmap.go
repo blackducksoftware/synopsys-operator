@@ -88,36 +88,5 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 	hubDbConfig.AddLabels(c.GetVersionLabel("configmap"))
 	configMaps = append(configMaps, hubDbConfig)
 
-	// Resources
-
-	//hubConfigResources := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "hub-config-resources"})
-	//hubConfigResources.AddData(map[string]string{
-	//	"webapp-mem":    hubContainerFlavor.WebappHubMaxMemory,
-	//	"jobrunner-mem": hubContainerFlavor.JobRunnerHubMaxMemory,
-	//	"scan-mem":      hubContainerFlavor.ScanHubMaxMemory,
-	//})
-	//configMaps = append(configMaps,  hubConfigResources)
-
-	//
-	//if hc.isBinaryAnalysisEnabled {
-	//
-	//	binaryAnalysisConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: createHub.Namespace, Name: "binary-analysis-config"})
-	//
-	//	binaryAnalysisData := map[string]string{}
-	//	for _, value := range createHub.Environs {
-	//		values := strings.SplitN(value, ":", 2)
-	//		if len(values) == 2 {
-	//			mapKey := strings.Trim(values[0], " ")
-	//			mapValue := strings.Trim(values[1], " ")
-	//			if len(mapKey) > 0 && len(mapValue) > 0 {
-	//				binaryAnalysisData[mapKey] = mapValue
-	//			}
-	//		}
-	//	}
-	//	binaryAnalysisConfig.AddData(binaryAnalysisData)
-	//
-	//	configMaps["binary-analysis-config"] = binaryAnalysisConfig
-	//}
-
 	return configMaps
 }

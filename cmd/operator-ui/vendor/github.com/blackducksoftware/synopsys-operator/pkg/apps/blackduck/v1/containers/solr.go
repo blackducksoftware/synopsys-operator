@@ -22,8 +22,6 @@ under the License.
 package containers
 
 import (
-	"strings"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -31,16 +29,11 @@ import (
 
 // GetSolrDeployment will return the solr deployment
 func (c *Creater) GetSolrDeployment() *components.ReplicationController {
-	image := c.getImageTag("blackduck-solr")
-	if strings.EqualFold(image, "") {
-		return nil
-	}
-
 	solrVolumeMount := c.getSolrVolumeMounts()
 	solrContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: image,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: c.getImageTag("blackduck-solr"),
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.SolrMemoryLimit, MaxMem: c.hubContainerFlavor.SolrMemoryLimit, MinCPU: "", MaxCPU: ""},
-		EnvConfigs: []*horizonapi.EnvConfig{c.getHubConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: solrVolumeMount,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: solrPort, Protocol: horizonapi.ProtocolTCP}},
 	}
@@ -68,7 +61,7 @@ func (c *Creater) GetSolrDeployment() *components.ReplicationController {
 
 	solr := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "solr", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{solrContainerConfig}, c.getSolrVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{})
+		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("solr"), c.GetLabel("solr"))
 
 	return solr
 }
@@ -96,5 +89,5 @@ func (c *Creater) getSolrVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetSolrService will return the solr service
 func (c *Creater) GetSolrService() *components.Service {
-	return util.CreateService("solr", "solr", c.hubSpec.Namespace, solrPort, solrPort, horizonapi.ClusterIPServiceTypeDefault)
+	return util.CreateService("solr", c.GetLabel("solr"), c.hubSpec.Namespace, solrPort, solrPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("solr"))
 }

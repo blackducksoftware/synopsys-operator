@@ -27,6 +27,7 @@ import (
 )
 
 var imageTagRegexp = regexp.MustCompile(`([0-9a-zA-Z-_:\\.]*)/([0-9a-zA-Z-_:\\.]*):([a-zA-Z0-9-\\._]+)$`)
+var imageVersionRegexp = regexp.MustCompile(`([0-9]+).([0-9]+).([0-9]+)$`)
 
 // ParseImageString will take a docker image string and return the repo and tag parts
 func ParseImageString(image string) (int, error) {
@@ -36,4 +37,14 @@ func ParseImageString(image string) (int, error) {
 	}
 
 	return 0, fmt.Errorf("unable to parse the input image %s for regex %+v", image, imageTagRegexp)
+}
+
+// ParseImageVersion will take a docker image version
+func ParseImageVersion(version string) ([]string, error) {
+	versionMatch := imageVersionRegexp.FindStringSubmatch(version)
+	if len(versionMatch) == 4 {
+		return versionMatch, nil
+	}
+
+	return []string{}, fmt.Errorf("unable to parse the version %s for regex %+v", version, imageVersionRegexp)
 }

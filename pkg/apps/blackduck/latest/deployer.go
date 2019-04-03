@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -88,7 +88,7 @@ func (hc *Creater) getComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 
 	//Secrets
 	// nginx certificatea
-	cert, key := hc.getTLSCertKeyOrCreate(blackduck)
+	cert, key, _ := hc.getTLSCertKeyOrCreate(blackduck)
 	secret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-secret")
 	if err != nil {
 		log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", hc.Config.Namespace, err)
@@ -184,9 +184,9 @@ func (hc *Creater) GetPVC(blackduck *v1.Blackduck) []*components.PersistentVolum
 	return containerCreater.GetPVCs()
 }
 
-func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, string) {
+func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, string, error) {
 	if strings.EqualFold(blackduck.Spec.CertificateName, "manual") {
-		return blackduck.Spec.Certificate, blackduck.Spec.CertificateKey
+		return blackduck.Spec.Certificate, blackduck.Spec.CertificateKey, nil
 	}
 
 	secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
@@ -198,7 +198,7 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, strin
 			if !certok || !keyok {
 				util.DeleteSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
 			} else {
-				return string(cert), string(key)
+				return string(cert), string(key), nil
 			}
 		}
 	}
@@ -210,7 +210,7 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, strin
 			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
 			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
 			if certok && keyok {
-				return string(cert), string(key)
+				return string(cert), string(key), nil
 			}
 		}
 	}

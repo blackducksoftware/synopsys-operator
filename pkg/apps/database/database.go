@@ -22,7 +22,6 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-
 	// This is required to access the Postgres database
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"

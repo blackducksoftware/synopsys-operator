@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -25,17 +25,14 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
 	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
-	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
+	log "github.com/sirupsen/logrus"
 )
 
 // GetComponents returns the components
@@ -68,7 +65,10 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 
 	//Secrets
 	// nginx certificate
-	cert, key := hc.getTLSCertKeyOrCreate(blackduck)
+	cert, key, err := hc.getTLSCertKeyOrCreate(blackduck)
+	if err != nil {
+		return nil, err
+	}
 
 	componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(adminPassword, userPassword, cert, key)...)
 
@@ -159,9 +159,9 @@ func (hc *Creater) GetPVC(blackduck *v1.Blackduck) []*components.PersistentVolum
 	return containerCreater.GetPVCs()
 }
 
-func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, string) {
+func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, string, error) {
 	if strings.EqualFold(blackduck.Spec.CertificateName, "manual") {
-		return blackduck.Spec.Certificate, blackduck.Spec.CertificateKey
+		return blackduck.Spec.Certificate, blackduck.Spec.CertificateKey, nil
 	}
 
 	secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
@@ -173,7 +173,7 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, strin
 			if !certok || !keyok {
 				util.DeleteSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
 			} else {
-				return string(cert), string(key)
+				return string(cert), string(key), nil
 			}
 		}
 	}
@@ -185,7 +185,7 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *v1.Blackduck) (string, strin
 			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
 			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
 			if certok && keyok {
-				return string(cert), string(key)
+				return string(cert), string(key), nil
 			}
 		}
 	}
