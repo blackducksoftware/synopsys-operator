@@ -49,10 +49,17 @@ func NewDeployment(config *CommonConfig, deployments []*components.Deployment) (
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+	newDeployments := append([]*components.Deployment{}, deployments...)
+	for i := 0; i < len(newDeployments); i++ {
+		if !isLabelsExist(config.expectedLabels, newDeployments[i].GetObj().Labels) {
+			newDeployments = append(newDeployments[:i], newDeployments[i+1:]...)
+			i--
+		}
+	}
 	return &Deployment{
 		config:         config,
 		deployer:       deployer,
-		deployments:    deployments,
+		deployments:    newDeployments,
 		oldDeployments: make(map[string]appsv1.Deployment, 0),
 		newDeployments: make(map[string]*appsv1beta2.Deployment, 0),
 	}, nil
@@ -70,12 +77,12 @@ func (d *Deployment) buildNewAndOldObject() error {
 	}
 
 	// build new deployment
-	for _, newRc := range d.deployments {
-		newDeploymentKube, err := newRc.ToKube()
+	for _, newDp := range d.deployments {
+		newDeploymentKube, err := newDp.ToKube()
 		if err != nil {
-			return errors.Annotatef(err, "unable to convert deployment %s to kube %s", newRc.GetName(), d.config.namespace)
+			return errors.Annotatef(err, "unable to convert deployment %s to kube %s", newDp.GetName(), d.config.namespace)
 		}
-		d.newDeployments[newRc.GetName()] = newDeploymentKube.(*appsv1beta2.Deployment)
+		d.newDeployments[newDp.GetName()] = newDeploymentKube.(*appsv1beta2.Deployment)
 	}
 
 	return nil

@@ -100,6 +100,11 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
+		sealKey, err := operatorutil.GetRandomString(32)
+		if err != nil {
+			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
+		}
+
 		// Deploy synopsys-operator
 		soperatorSpec := soperator.SpecConfig{
 			Namespace:                     deployNamespace,
@@ -110,6 +115,7 @@ var deployCmd = &cobra.Command{
 			SecretUserPassword:            deploySecretUserPassword,
 			SecretBlackduckPassword:       deploySecretBlackduckPassword,
 			TerminationGracePeriodSeconds: deployTerminationGracePeriodSeconds,
+			SealKey:                       sealKey,
 		}
 		err = soperator.UpdateSOperatorComponents(restconfig, kubeClient, deployNamespace, &soperatorSpec)
 		if err != nil {

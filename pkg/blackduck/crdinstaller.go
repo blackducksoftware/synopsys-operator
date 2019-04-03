@@ -64,7 +64,7 @@ type CRDInstaller struct {
 // NewCRDInstaller will create a CRD installer configuration
 func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
 	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
-	crdInstaller.resyncPeriod = 2 * time.Minute
+	crdInstaller.resyncPeriod = time.Duration(config.ResyncIntervalInSeconds) * time.Second
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
 }

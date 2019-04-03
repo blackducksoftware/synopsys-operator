@@ -58,8 +58,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 )
 
 // CreateContainer will create the container
@@ -260,7 +258,7 @@ func CreateService(name string, selectLabel map[string]string, namespace string,
 }
 
 // CreateServiceWithMultiplePort will create the service with multiple port
-func CreateServiceWithMultiplePort(name string, label map[string]string, namespace string, ports []string, serviceType horizonapi.ClusterIPServiceType, selectLabel map[string]string) *components.Service {
+func CreateServiceWithMultiplePort(name string, selectLabel map[string]string, namespace string, ports []string, serviceType horizonapi.ClusterIPServiceType, label map[string]string) *components.Service {
 	svcConfig := horizonapi.ServiceConfig{
 		Name:          name,
 		Namespace:     namespace,
@@ -606,24 +604,6 @@ func FilterPodByNamePrefix(pods *corev1.PodList, prefix string) *corev1.Pod {
 	return nil
 }
 
-// CreateExecContainerRequest will create the request to exec into kubernetes pod
-func CreateExecContainerRequest(clientset *kubernetes.Clientset, pod *corev1.Pod) *rest.Request {
-	return clientset.CoreV1().RESTClient().Post().
-		Resource("pods").
-		Name(pod.Name).
-		Namespace(pod.Namespace).
-		SubResource("exec").
-		Param("container", pod.Spec.Containers[0].Name).
-		VersionedParams(&corev1.PodExecOptions{
-			Container: pod.Spec.Containers[0].Name,
-			Command:   []string{"/bin/bash"},
-			Stdin:     true,
-			Stdout:    true,
-			Stderr:    true,
-			TTY:       false,
-		}, scheme.ParameterCodec)
-}
-
 // NewStringReader will convert string array to string reader object
 func NewStringReader(ss []string) io.Reader {
 	formattedString := strings.Join(ss, "\n")
@@ -664,6 +644,21 @@ func ListStorageClasses(clientset *kubernetes.Clientset) (*v1beta1.StorageClassL
 // GetPVC will get the PVC for the given name
 func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.PersistentVolumeClaim, error) {
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+}
+
+// ListPVCs will list the PVC for the given label selector
+func ListPVCs(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.PersistentVolumeClaimList, error) {
+	return clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// UpdatePVC will update the pvc information for the input pvc name inside the input namespace
+func UpdatePVC(clientset *kubernetes.Clientset, namespace string, pvc *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
+	return clientset.CoreV1().PersistentVolumeClaims(namespace).Update(pvc)
+}
+
+// DeletePVC will delete the PVC information for the input pvc name inside the input namespace
+func DeletePVC(clientset *kubernetes.Clientset, namespace string, name string) error {
+	return clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // CreateHub will create hub in the cluster

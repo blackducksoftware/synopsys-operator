@@ -33,26 +33,28 @@ import (
 
 // CommonConfig stores the common configuration for add, patch or remove the components for update events
 type CommonConfig struct {
-	kubeConfig    *rest.Config
-	kubeClient    *kubernetes.Clientset
-	dryRun        bool
-	namespace     string
-	components    *api.ComponentList
-	labelSelector string
-	controllers   map[string]horizonapi.DeployerControllerInterface
+	kubeConfig     *rest.Config
+	kubeClient     *kubernetes.Clientset
+	dryRun         bool
+	namespace      string
+	components     *api.ComponentList
+	labelSelector  string
+	expectedLabels map[string]label
+	controllers    map[string]horizonapi.DeployerControllerInterface
 }
 
 // NewCRUDComponents returns the common configuration which will be used to add, patch or remove the components
 func NewCRUDComponents(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, dryRun bool, namespace string,
 	components *api.ComponentList, labelSelector string) *CommonConfig {
 	return &CommonConfig{
-		kubeConfig:    kubeConfig,
-		kubeClient:    kubeClient,
-		dryRun:        dryRun,
-		namespace:     namespace,
-		components:    components,
-		labelSelector: labelSelector,
-		controllers:   make(map[string]horizonapi.DeployerControllerInterface, 0),
+		kubeConfig:     kubeConfig,
+		kubeClient:     kubeClient,
+		dryRun:         dryRun,
+		namespace:      namespace,
+		components:     components,
+		labelSelector:  labelSelector,
+		expectedLabels: getLabelsMap(labelSelector),
+		controllers:    make(map[string]horizonapi.DeployerControllerInterface, 0),
 	}
 }
 
@@ -63,6 +65,7 @@ func (c *CommonConfig) AddController(name string, controller horizonapi.Deployer
 
 // CRUDComponents will add, update or delete components
 func (c *CommonConfig) CRUDComponents() []error {
+	// log.Debugf("expected labels: %+v", c.expectedLabels)
 	var errors []error
 	updater := NewUpdater(c.dryRun)
 
@@ -107,6 +110,13 @@ func (c *CommonConfig) CRUDComponents() []error {
 		errors = append(errors, fmt.Errorf("unable to create new secret updater due to %+v", err))
 	}
 	updater.AddUpdater(secrets)
+
+	// persistent volume claim
+	pvcs, err := NewPersistentVolumeClaim(c, c.components.PersistentVolumeClaims)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("unable to create new persistent volume claim updater due to %+v", err))
+	}
+	updater.AddUpdater(pvcs)
 
 	// service
 	services, err := NewService(c, c.components.Services)

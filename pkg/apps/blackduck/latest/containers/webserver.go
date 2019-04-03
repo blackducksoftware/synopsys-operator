@@ -98,10 +98,10 @@ func (c *Creater) GetWebServerService() *components.Service {
 
 // GetWebServerNodePortService will return the webserver nodeport service
 func (c *Creater) GetWebServerNodePortService() *components.Service {
-	return util.CreateService("webserver-np", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeNodePort, c.GetLabel("webserver-np"))
+	return util.CreateService("webserver-exposed", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeNodePort, c.GetLabel("webserver-exposed"))
 }
 
 // GetWebServerLoadBalancerService will return the webserver loadbalancer service
 func (c *Creater) GetWebServerLoadBalancerService() *components.Service {
-	return util.CreateService("webserver-lb", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeLoadBalancer, c.GetLabel("webserver-lb"))
+	return util.CreateService("webserver-exposed", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeLoadBalancer, c.GetLabel("webserver-exposed"))
 }
