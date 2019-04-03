@@ -35,17 +35,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GetComponents returns the components
-func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, error) {
-
+// getPostgresComponents returns the blackduck postgres component list
+func (hc *Creater) getPostgresComponents(blackduck *v1.Blackduck) (*api.ComponentList, error) {
 	componentList := &api.ComponentList{}
 
-	// Get the flavor
-	flavor, err := hc.getContainersFlavor(blackduck)
+	// Get Containers Flavor
+	hubContainerFlavor, err := hc.getContainersFlavor(blackduck)
 	if err != nil {
 		return nil, err
 	}
 
+	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, hubContainerFlavor)
 	// Get Db creds
 	var adminPassword, userPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
@@ -57,6 +57,31 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 			return nil, err
 		}
 	}
+
+	postgres := containerCreater.GetPostgres()
+	if blackduck.Spec.ExternalPostgres == nil {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, postgres.GetPostgresReplicationController())
+		componentList.Services = append(componentList.Services, postgres.GetPostgresService())
+	}
+	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetPostgresConfigmap())
+	componentList.Secrets = append(componentList.Secrets, containerCreater.GetPostgresSecret(adminPassword, userPassword))
+
+	return componentList, nil
+}
+
+// getComponents returns the components
+func (hc *Creater) getComponents(blackduck *v1.Blackduck) (*api.ComponentList, error) {
+
+	componentList := &api.ComponentList{}
+
+	// Get the flavor
+	flavor, err := hc.getContainersFlavor(blackduck)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persistent Volume Claim
+	componentList.PersistentVolumeClaims = append(componentList.PersistentVolumeClaims, hc.GetPVC(blackduck)...)
 
 	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor)
 
@@ -70,7 +95,7 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 		return nil, err
 	}
 
-	componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(adminPassword, userPassword, cert, key)...)
+	componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(cert, key)...)
 
 	// cfssl
 	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetCfsslDeployment())

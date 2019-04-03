@@ -35,7 +35,7 @@ import (
 	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
+	bdutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -126,9 +126,9 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	}
 
 	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
-		newBlackuck.Status.IP, err = hubutils.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed", 10, 10)
+		newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed", 10, 10)
 	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
-		newBlackuck.Status.IP, err = hubutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
+		newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
 	}
 
 	if blackduck.Spec.PersistentStorage {
@@ -174,7 +174,7 @@ func (hc *Creater) initPostgres(bdspec *v1.BlackduckSpec) error {
 
 	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
 		// get the secret from the default operator namespace, then copy it into the hub namespace.
-		adminPassword, userPassword, postgresPassword, err = hubutils.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
+		adminPassword, userPassword, postgresPassword, err = bdutils.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
 		if err == nil {
 			break
 		} else {
@@ -220,11 +220,11 @@ func (hc *Creater) initPostgres(bdspec *v1.BlackduckSpec) error {
 				return fmt.Errorf("%v: error: %+v", bdspec.Namespace, err)
 			}
 		} else {
-			_, fromPw, err := hubutils.GetHubDBPassword(hc.KubeClient, bdspec.DbPrototype)
+			_, fromPw, err := bdutils.GetHubDBPassword(hc.KubeClient, bdspec.DbPrototype)
 			if err != nil {
 				return err
 			}
-			err = hubutils.CloneJob(hc.KubeClient, hc.Config.Namespace, bdspec.DbPrototype, bdspec.Namespace, fromPw)
+			err = bdutils.CloneJob(hc.KubeClient, hc.Config.Namespace, bdspec.DbPrototype, bdspec.Namespace, fromPw)
 			if err != nil {
 				return err
 			}
@@ -266,7 +266,7 @@ func (hc *Creater) registerIfNeeded(bd *v1.Blackduck) error {
 		return err
 	}
 
-	// // Check whether the registration is valid
+	// Check whether the registration is valid
 	if val, ok := objmap["valid"]; ok {
 		var r bool
 		err := json.Unmarshal(*val, &r)
