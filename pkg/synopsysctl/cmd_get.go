@@ -22,7 +22,10 @@ under the License.
 package synopsysctl
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -80,17 +83,18 @@ var getBlackduckCmd = &cobra.Command{
 
 // getBlackduckRootKeyCmd get the Black Duck root key for source code upload in the cluster
 var getBlackduckRootKeyCmd = &cobra.Command{
-	Use:   "rootKey BLACK_DUCK_NAME",
+	Use:   "rootKey BLACK_DUCK_NAME FILE_PATH",
 	Short: "Get the root key of Black Duck for source code upload",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("Black Duck name is missing")
+		if len(args) != 2 {
+			return fmt.Errorf("Black Duck name or file path to store the master key is missing")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting Blackduck Root Key\n")
 		namespace := args[0]
+		filePath := args[1]
 		_, err := util.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
 		if err != nil {
 			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
@@ -108,17 +112,24 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 		}
 		sealKey := string(secret.Data["SEAL_KEY"])
 		// Filter the upload cache pod to get the root key using the seal key
-		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, "upload-cache")
+		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, "uploadcache")
 		if err != nil {
 			log.Errorf("unable to filter the upload cache pod of %s due to %+v", namespace, err)
 			return nil
 		}
 
 		// Create the exec into kubernetes pod request
-		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod)
-		err = util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key--cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt > %s.key`, sealKey, namespace)})
+		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
+		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
 		if err != nil {
 			log.Errorf("unable to exec into upload cache pod in %s because %+v", namespace, err)
+			return nil
+		}
+
+		fileName := filepath.Join(filePath, fmt.Sprintf("%s.key", namespace))
+		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
+		if err != nil {
+			log.Errorf("error writing to %s because %+v", fileName, err)
 			return nil
 		}
 		return nil

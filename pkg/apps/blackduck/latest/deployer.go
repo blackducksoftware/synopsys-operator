@@ -25,21 +25,50 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
 	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
+	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
 )
 
+// getPostgresComponents returns the blackduck postgres component list
+func (hc *Creater) getPostgresComponents(blackduck *v1.Blackduck) (*api.ComponentList, error) {
+	componentList := &api.ComponentList{}
+
+	// Get Containers Flavor
+	hubContainerFlavor, err := hc.getContainersFlavor(blackduck)
+	if err != nil {
+		return nil, err
+	}
+
+	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, hubContainerFlavor)
+	// Get Db creds
+	var adminPassword, userPassword string
+	if blackduck.Spec.ExternalPostgres != nil {
+		adminPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
+		userPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
+	} else {
+		adminPassword, userPassword, _, err = hubutils.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	postgres := containerCreater.GetPostgres()
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, postgres.GetPostgresReplicationController())
+	componentList.Services = append(componentList.Services, postgres.GetPostgresService())
+	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetPostgresConfigmap())
+	componentList.Secrets = append(componentList.Secrets, containerCreater.GetPostgresSecret(adminPassword, userPassword))
+
+	return componentList, nil
+}
+
 // GetComponents returns the blackduck components
-func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, error) {
+func (hc *Creater) getComponents(blackduck *v1.Blackduck) (*api.ComponentList, error) {
 
 	componentList := &api.ComponentList{}
 
@@ -49,19 +78,10 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 		return nil, err
 	}
 
-	// Get Db creds
-	var adminPassword, userPassword string
-	if blackduck.Spec.ExternalPostgres != nil {
-		adminPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
-		userPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
-	} else {
-		adminPassword, userPassword, _, err = bdutil.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor)
+
+	// Persistent Volume Claim
+	componentList.PersistentVolumeClaims = append(componentList.PersistentVolumeClaims, hc.GetPVC(blackduck)...)
 
 	// Configmap
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
@@ -69,8 +89,13 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 	//Secrets
 	// nginx certificatea
 	cert, key := hc.getTLSCertKeyOrCreate(blackduck)
+	secret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-secret")
+	if err != nil {
+		log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", hc.Config.Namespace, err)
+		return nil, err
+	}
 
-	componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(adminPassword, userPassword, cert, key)...)
+	componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(cert, key, secret.Data["SEAL_KEY"])...)
 
 	// cfssl
 	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetCfsslDeployment())
@@ -122,9 +147,6 @@ func (hc *Creater) GetComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 	//componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
 
 	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetUploadCacheDeployment())
-		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
-
 		// Binary Scanner
 		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetBinaryScannerDeployment())
 

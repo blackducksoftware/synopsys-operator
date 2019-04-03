@@ -58,7 +58,7 @@ func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string
 	for _, reg := range c.hubSpec.ImageRegistries {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
-			log.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, c.hubSpec.ImageRegistries, reg, baseContainer)
+			// log.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, c.hubSpec.ImageRegistries, reg, baseContainer)
 			_, err := hubutils.ParseImageString(reg)
 			if err != nil {
 				log.Error(err)

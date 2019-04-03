@@ -384,9 +384,9 @@ func (hc *Creater) autoRegisterHub(bdspec *v1.BlackduckSpec) error {
 			}
 
 			// Create the exec into kubernetes pod request
-			req := util.CreateExecContainerRequest(hc.KubeClient, registrationPod)
+			req := util.CreateExecContainerRequest(hc.KubeClient, registrationPod, "/bin/bash")
 			// Exec into the kubernetes pod and execute the commands
-			err = util.ExecContainer(hc.KubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
+			_, err = util.ExecContainer(hc.KubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
 
 			if err == nil {
 				log.Infof("blackduck %s has been registered", bdspec.Namespace)

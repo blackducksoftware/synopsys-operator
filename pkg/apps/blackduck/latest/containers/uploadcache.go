@@ -75,6 +75,7 @@ func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 // getUploadCacheVolumes will return the uploadCache volumes
 func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
+	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", "upload-cache", 0777)
 	var uploadCacheDataDir *components.Volume
 	var uploadCacheDataKey *components.Volume
 	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-uploadcache-data") {
@@ -84,7 +85,7 @@ func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 		uploadCacheDataDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
 		uploadCacheDataKey, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-key")
 	}
-	volumes := []*components.Volume{uploadCacheSecurityEmptyDir, uploadCacheDataDir, uploadCacheDataKey}
+	volumes := []*components.Volume{uploadCacheSecurityEmptyDir, uploadCacheDataDir, uploadCacheDataKey, sealKeySecretVol}
 	return volumes
 }
 
@@ -94,6 +95,7 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 		{Name: "dir-uploadcache-security", MountPath: "/opt/blackduck/hub/blackduck-upload-cache/security"},
 		{Name: "dir-uploadcache-data", MountPath: "/opt/blackduck/hub/blackduck-upload-cache/uploads"},
 		{Name: "dir-uploadcache-key", MountPath: "/opt/blackduck/hub/blackduck-upload-cache/keys"},
+		{Name: "dir-seal-key", MountPath: "/tmp/secrets"},
 	}
 	return volumesMounts
 }
