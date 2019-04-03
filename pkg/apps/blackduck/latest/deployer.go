@@ -30,7 +30,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
-	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
+	bdutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -52,15 +52,17 @@ func (hc *Creater) getPostgresComponents(blackduck *v1.Blackduck) (*api.Componen
 		adminPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
 		userPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
 	} else {
-		adminPassword, userPassword, _, err = hubutils.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
+		adminPassword, userPassword, _, err = bdutils.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	postgres := containerCreater.GetPostgres()
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, postgres.GetPostgresReplicationController())
-	componentList.Services = append(componentList.Services, postgres.GetPostgresService())
+	if blackduck.Spec.ExternalPostgres == nil {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, postgres.GetPostgresReplicationController())
+		componentList.Services = append(componentList.Services, postgres.GetPostgresService())
+	}
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetPostgresConfigmap())
 	componentList.Secrets = append(componentList.Secrets, containerCreater.GetPostgresSecret(adminPassword, userPassword))
 

@@ -67,23 +67,23 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	newBlackuck := blackduck.DeepCopy()
 
+	// Get postgres components
+	cpPostgresList, err := hc.getPostgresComponents(blackduck)
+	if err != nil {
+		return err
+	}
+
+	// install postgres
+	commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
+		cpPostgresList, "app=blackduck,component=postgres")
+	errors := commonConfig.CRUDComponents()
+	if len(errors) > 0 {
+		return fmt.Errorf("unable to update postgres components due to %+v", errors)
+	}
+	// log.Debugf("created/updated postgres component for %s", blackduck.Spec.Namespace)
+
 	// Check postgres and initialize if needed.
 	if blackduck.Spec.ExternalPostgres == nil {
-		// Get postgres components
-		cpPostgresList, err := hc.getPostgresComponents(blackduck)
-		if err != nil {
-			return err
-		}
-
-		// install postgres
-		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
-			cpPostgresList, "app=blackduck,component=postgres")
-		errors := commonConfig.CRUDComponents()
-		if len(errors) > 0 {
-			return fmt.Errorf("unable to update postgres components due to %+v", errors)
-		}
-		// log.Debugf("created/updated postgres component for %s", blackduck.Spec.Namespace)
-
 		// TODO return whether we re-initialized or not
 		err = hc.initPostgres(&blackduck.Spec)
 		if err != nil {
@@ -98,9 +98,9 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	}
 
 	// deploy non postgres and uploadcache component
-	commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
+	commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
 		cpList, "app=blackduck,component notin (postgres,uploadcache)")
-	errors := commonConfig.CRUDComponents()
+	errors = commonConfig.CRUDComponents()
 	if len(errors) > 0 {
 		return fmt.Errorf("unable to update non postgres and uploadcache components due to %+v", errors)
 	}

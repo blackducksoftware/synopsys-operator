@@ -92,12 +92,13 @@ func (r *PersistentVolumeClaim) add(isPatched bool) (bool, error) {
 		if _, ok := r.oldPersistentVolumeClaims[persistentVolumeClaim.GetName()]; !ok {
 			r.deployer.Deployer.AddPVC(persistentVolumeClaim)
 			isAdded = true
-		} else {
-			_, err := r.patch(persistentVolumeClaim, isPatched)
-			if err != nil {
-				return false, errors.Annotatef(err, "patch persistent volume claim:")
-			}
 		}
+		// else {
+		// 	_, err := r.patch(persistentVolumeClaim, isPatched)
+		// 	if err != nil {
+		// 		return false, errors.Annotatef(err, "patch persistent volume claim:")
+		// 	}
+		// }
 	}
 	if isAdded && !r.config.dryRun {
 		err := r.deployer.Deployer.Run()
@@ -127,14 +128,14 @@ func (r *PersistentVolumeClaim) delete(name string) error {
 // remove removes the persistent volume claim
 func (r *PersistentVolumeClaim) remove() error {
 	// compare the old and new persistent volume claim and delete if needed
-	for _, oldPersistentVolumeClaim := range r.oldPersistentVolumeClaims {
-		if _, ok := r.newPersistentVolumeClaims[oldPersistentVolumeClaim.GetName()]; !ok {
-			err := r.delete(oldPersistentVolumeClaim.GetName())
-			if err != nil {
-				return errors.Annotatef(err, "unable to delete persistent volume claim %s in namespace %s", oldPersistentVolumeClaim.GetName(), r.config.namespace)
-			}
-		}
-	}
+	// for _, oldPersistentVolumeClaim := range r.oldPersistentVolumeClaims {
+	// 	if _, ok := r.newPersistentVolumeClaims[oldPersistentVolumeClaim.GetName()]; !ok {
+	// 		err := r.delete(oldPersistentVolumeClaim.GetName())
+	// 		if err != nil {
+	// 			return errors.Annotatef(err, "unable to delete persistent volume claim %s in namespace %s", oldPersistentVolumeClaim.GetName(), r.config.namespace)
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 
