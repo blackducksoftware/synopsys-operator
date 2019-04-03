@@ -182,7 +182,6 @@ func (c *CRDInstaller) Deploy() error {
 
 // PostDeploy will call after deploying the CRD
 func (c *CRDInstaller) PostDeploy() {
-	protoform.SetupHTTPServer(c.kubeClient, c.hubClient, c.config.Namespace)
 }
 
 // CreateInformer will create a informer for the CRD

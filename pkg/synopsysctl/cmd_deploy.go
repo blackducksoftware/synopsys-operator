@@ -22,7 +22,9 @@ under the License.
 package synopsysctl
 
 import (
+	"crypto/x509/pkix"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
@@ -103,6 +105,26 @@ var deployCmd = &cobra.Command{
 			Namespace: deployNamespace,
 		})
 		environmentDeployer.AddNamespace(ns)
+
+		//Generate certificate and key secret
+		cert, key, err := util.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
+			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", deployNamespace),
+		})
+		if err != nil {
+			log.Error("couldn't generate certificate and key.")
+			return nil
+		}
+
+		tlsSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
+			Name:      "synopsys-operator-tls",
+			Namespace: deployNamespace,
+			Type:      secretType,
+		})
+		tlsSecret.AddStringData(map[string]string{
+			"cert.crt": cert,
+			"cert.key": key,
+		})
+		environmentDeployer.AddSecret(tlsSecret)
 
 		// create a secret
 		secret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
