@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
-Copyright (C) 2018 Synopsys, Inc.
-=======
 Copyright (C) 2019 Synopsys, Inc.
->>>>>>> master
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file

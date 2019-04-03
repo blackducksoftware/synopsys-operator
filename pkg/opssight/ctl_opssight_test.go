@@ -169,7 +169,7 @@ func TestAddSpecFlags(t *testing.T) {
 
 	ctl := NewOpsSightCtl()
 	actualCmd := &cobra.Command{}
-	ctl.AddSpecFlags(actualCmd, false)
+	ctl.AddSpecFlags(actualCmd)
 
 	cmd := &cobra.Command{}
 	cmd.Flags().StringVar(&ctl.PerceptorName, "perceptor-name", ctl.PerceptorName, "Name of the Perceptor")
@@ -239,7 +239,7 @@ func TestSetChangedFlags(t *testing.T) {
 
 	actualCtl := NewOpsSightCtl()
 	cmd := &cobra.Command{}
-	actualCtl.AddSpecFlags(cmd, false)
+	actualCtl.AddSpecFlags(cmd)
 	actualCtl.SetChangedFlags(cmd.Flags())
 
 	expCtl := NewOpsSightCtl()

@@ -150,7 +150,7 @@ func TestAddSpecFlags(t *testing.T) {
 
 	ctl := NewBlackduckCtl()
 	actualCmd := &cobra.Command{}
-	ctl.AddSpecFlags(actualCmd, false)
+	ctl.AddSpecFlags(actualCmd)
 
 	cmd := &cobra.Command{}
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large")
@@ -188,7 +188,7 @@ func TestSetChangedFlags(t *testing.T) {
 
 	actualCtl := NewBlackduckCtl()
 	cmd := &cobra.Command{}
-	actualCtl.AddSpecFlags(cmd, false)
+	actualCtl.AddSpecFlags(cmd)
 	actualCtl.SetChangedFlags(cmd.Flags())
 
 	expCtl := NewBlackduckCtl()
