@@ -23,6 +23,9 @@ package blackduck
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
+	"github.com/sirupsen/logrus"
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -109,7 +112,11 @@ func (b Blackduck) getCreater(version string) (Creater, error) {
 
 // Delete will be used to delete a blackduck instance
 func (b Blackduck) Delete(name string) {
-	// TODO  - We should not delete the namespace but instead search for the current version (annotation??) then delete the Blackduck instance.
+	logrus.Infof("deleting %s", name)
+	err := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, false, name, &api.ComponentList{}, "app=blackduck").CRUDComponents()
+	if err != nil {
+		logrus.Error(err)
+	}
 }
 
 // Versions returns the versions that the operator supports
