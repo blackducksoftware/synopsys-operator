@@ -23,6 +23,9 @@ package synopsysctl
 
 import (
 	"fmt"
+	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -42,14 +45,17 @@ var createOpsSightCtl ResourceCtl
 var createAlertCtl ResourceCtl
 
 // Flags for the Base Spec (template)
-var baseBlackduckSpec = "persistentStorage"
-var baseOpsSightSpec = "disabledBlackduck"
+var baseBlackduckSpec = "persistent-storage"
+var baseOpsSightSpec = "disabled-black-duck"
 var baseAlertSpec = "default"
 
 // Flags for using mock mode - don't deploy
 var mockBlackduck bool
 var mockOpsSight bool
 var mockAlert bool
+
+// File to save yaml of resource being created
+var saveYamlFile string
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -138,6 +144,19 @@ var createBlackduckCmd = &cobra.Command{
 				return nil
 			}
 		}
+		// Save resource to a file
+		if saveYamlFile != "" {
+			blackDuckYaml, err := yaml.Marshal(blackduck)
+			if err != nil {
+				log.Errorf("Error converting Black Duck to Yaml file: %s", err)
+				return nil
+			}
+			err = ioutil.WriteFile(saveYamlFile, blackDuckYaml, 0644)
+			if err != nil {
+				log.Errorf("Failed to write Black Duck to yaml file: %s", err)
+				return nil
+			}
+		}
 		return nil
 	},
 }
@@ -195,6 +214,19 @@ var createOpsSightCmd = &cobra.Command{
 			_, err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
 			if err != nil {
 				log.Errorf("Error creating the OpsSight : %s", err)
+				return nil
+			}
+		}
+		// Save resource to a file
+		if saveYamlFile != "" {
+			opsSightYaml, err := yaml.Marshal(opssight)
+			if err != nil {
+				log.Errorf("Error converting OpsSight to Yaml file: %s", err)
+				return nil
+			}
+			err = ioutil.WriteFile(saveYamlFile, opsSightYaml, 0644)
+			if err != nil {
+				log.Errorf("Failed to write OpsSight to yaml file: %s", err)
 				return nil
 			}
 		}
@@ -257,6 +289,19 @@ var createAlertCmd = &cobra.Command{
 				return nil
 			}
 		}
+		// Save resource to a file
+		if saveYamlFile != "" {
+			alertYaml, err := yaml.Marshal(alert)
+			if err != nil {
+				log.Errorf("Error converting Alert to Yaml file: %s", err)
+				return nil
+			}
+			err = ioutil.WriteFile(saveYamlFile, alertYaml, 0644)
+			if err != nil {
+				log.Errorf("Failed to write Alert to yaml file: %s", err)
+				return nil
+			}
+		}
 		return nil
 	},
 }
@@ -268,6 +313,7 @@ func init() {
 	createAlertCtl = alert.NewAlertCtl()
 
 	createCmd.DisableFlagParsing = true // lets createCmd pass flags to kube/oc
+	createCmd.Flags().StringVar(&saveYamlFile, "save-path", "", "File path to save the resource's yaml config")
 	rootCmd.AddCommand(createCmd)
 
 	// Add Blackduck Command
