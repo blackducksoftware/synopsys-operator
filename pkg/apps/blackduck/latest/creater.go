@@ -202,6 +202,11 @@ func (hc *Creater) initPostgres(bdspec *v1.BlackduckSpec) error {
 	}
 	defer db.Connection.Close()
 
+	// Wait for the DB to be up
+	if !db.WaitForDatabase(10) {
+		return fmt.Errorf("database %s is not accessible", bdspec.Namespace)
+	}
+
 	result, err := db.Connection.Exec("SELECT datname FROM pg_catalog.pg_database WHERE datname='bds_hub';")
 	if err != nil {
 		return err

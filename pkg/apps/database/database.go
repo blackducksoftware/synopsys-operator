@@ -94,6 +94,22 @@ func (d *Database) ExecuteStatements(statements []string) []error {
 	return errs
 }
 
+// WaitForDatabase will ping the database until it becomes accessible
+func (d *Database) WaitForDatabase(attempts int) bool {
+	for i := 0; i < attempts; i++ {
+		err := d.Connection.Ping()
+		if err == nil {
+			break
+		}
+
+		if i == attempts {
+			return false
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return true
+}
+
 // CloseDatabaseConnection will close the database connection
 func (d *Database) CloseDatabaseConnection() error {
 	return d.Connection.Close()
