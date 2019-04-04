@@ -54,7 +54,7 @@ func GetHubVersion(environs []string) string {
 
 // GetIPAddress will provide the IP address of LoadBalancer or NodePort service
 func GetIPAddress(kubeClient *kubernetes.Clientset, namespace string, retryCount int, waitInSeconds int) (string, error) {
-	ipAddress, err := GetLoadBalancerIPAddress(kubeClient, namespace, "webserver-lb", retryCount, waitInSeconds)
+	ipAddress, err := GetLoadBalancerIPAddress(kubeClient, namespace, "webserver-lb")
 	if err != nil {
 		ipAddress, err = GetNodePortIPAddress(kubeClient, namespace, "webserver-np")
 		if err != nil {
@@ -65,22 +65,20 @@ func GetIPAddress(kubeClient *kubernetes.Clientset, namespace string, retryCount
 }
 
 // GetLoadBalancerIPAddress will return the load balance service ip address
-func GetLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string, retryCount int, waitInSeconds int) (string, error) {
-	for i := 0; i < retryCount; i++ {
-		time.Sleep(time.Duration(waitInSeconds) * time.Second)
-		service, err := util.GetService(kubeClient, namespace, serviceName)
-		if err != nil {
-			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
-		}
-
-		log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
-
-		if len(service.Status.LoadBalancer.Ingress) > 0 {
-			ipAddress := service.Status.LoadBalancer.Ingress[0].IP
-			return ipAddress, nil
-		}
+func GetLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
+	service, err := util.GetService(kubeClient, namespace, serviceName)
+	if err != nil {
+		return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
 	}
-	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
+
+	log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
+
+	if len(service.Status.LoadBalancer.Ingress) > 0 {
+		ipAddress := service.Status.LoadBalancer.Ingress[0].IP
+		return ipAddress, nil
+	}
+
+	return "", fmt.Errorf("unable to get ip address for the service %s in %s namespace", serviceName, namespace)
 }
 
 // GetNodePortIPAddress will return the node port service ip address
