@@ -142,7 +142,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckv1.Blackduck)
 	}
 
 	bd.View.SupportedVersions = apps.NewApp(nil, kubeconfig).Blackduck().Versions()
-	sort.Strings(bd.View.SupportedVersions)
+	sort.Sort(sort.Reverse(sort.StringSlice(bd.View.SupportedVersions)))
 
 	return nil
 }
