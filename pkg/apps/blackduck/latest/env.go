@@ -48,7 +48,7 @@ SCANNER_CONCURRENCY=1
 USE_ALERT=0
 USE_BINARY_UPLOADS=0
 ENABLE_SOURCE_UPLOADS=false
-DATA_RETENTION_IN_DAYS=180 days
+DATA_RETENTION_IN_DAYS=180
 MAX_TOTAL_SOURCE_SIZE_MB=4000
 image: blackducksoftware/appcheck-worker:1.0.1
 image: blackducksoftware/blackduck-upload-cache:1.0.3
