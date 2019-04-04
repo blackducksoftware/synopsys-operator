@@ -426,7 +426,10 @@ func ListReplicationControllers(clientset *kubernetes.Clientset, namespace strin
 
 // DeleteReplicationController will delete the replication controller corresponding to a namespace and name
 func DeleteReplicationController(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{})
+	propagationPolicy := metav1.DeletePropagationBackground
+	return clientset.CoreV1().ReplicationControllers(namespace).Delete(name, &metav1.DeleteOptions{
+		PropagationPolicy: &propagationPolicy,
+	})
 }
 
 // GetDeployment will get the deployment corresponding to a namespace and name
@@ -441,7 +444,10 @@ func ListDeployments(clientset *kubernetes.Clientset, namespace string, labelSel
 
 // DeleteDeployment will delete the deployment corresponding to a namespace and name
 func DeleteDeployment(clientset *kubernetes.Clientset, namespace string, name string) error {
-	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{})
+	propagationPolicy := metav1.DeletePropagationBackground
+	return clientset.AppsV1().Deployments(namespace).Delete(name, &metav1.DeleteOptions{
+		PropagationPolicy: &propagationPolicy,
+	})
 }
 
 // CreatePersistentVolume will create the persistent volume
