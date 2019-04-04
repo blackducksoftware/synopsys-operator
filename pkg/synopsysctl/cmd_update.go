@@ -177,27 +177,21 @@ var updateBlackduckCmd = &cobra.Command{
 
 // updateBlackduckRootKeyCmd create new Black Duck root key for source code upload in the cluster
 var updateBlackduckRootKeyCmd = &cobra.Command{
-	Use:   "rootKey BLACK_DUCK_NAME MASTER_KEY_FILE_PATH",
+	Use:   "rootKey BLACK_DUCK_NAME NEW_SEAL_KEY MASTER_KEY_FILE_PATH",
 	Short: "Update the root key of Black Duck for source code upload",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return fmt.Errorf("Black Duck name or the file path to send the master key is missing")
+		if len(args) != 3 {
+			return fmt.Errorf("Black Duck name, new seal key or file path to retrieve the master key is missing")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Updating Blackduck Root Key\n")
 		namespace := args[0]
-		filePath := args[1]
+		newSealKey := args[1]
+		filePath := args[2]
 
-		fileName := filepath.Join(filePath, fmt.Sprintf("%s.key", namespace))
-		masterKey, err := ioutil.ReadFile(fileName)
-		if err != nil {
-			log.Errorf("error reading the master key from %s because %+v", fileName, err)
-			return nil
-		}
-
-		_, err = operatorutil.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
+		_, err := operatorutil.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
 		if err != nil {
 			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
 			return nil
@@ -207,12 +201,14 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
 			return nil
 		}
-		secret, err := operatorutil.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
+
+		fileName := filepath.Join(filePath, fmt.Sprintf("%s.key", namespace))
+		masterKey, err := ioutil.ReadFile(fileName)
 		if err != nil {
-			log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
+			log.Errorf("error reading the master key from %s because %+v", fileName, err)
 			return nil
 		}
-		sealKey := string(secret.Data["SEAL_KEY"])
+
 		// Filter the upload cache pod to get the root key using the seal key
 		uploadCachePod, err := operatorutil.FilterPodByNamePrefixInNamespace(kubeClient, namespace, "uploadcache")
 		if err != nil {
@@ -222,9 +218,22 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 
 		// Create the exec into kubernetes pod request
 		req := operatorutil.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
-		_, err = operatorutil.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://uploadcache:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)), masterKey)})
+		_, err = operatorutil.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://uploadcache:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(newSealKey)), masterKey)})
 		if err != nil {
 			log.Errorf("unable to exec into upload cache pod in %s because %+v", namespace, err)
+			return nil
+		}
+
+		secret, err := operatorutil.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
+		if err != nil {
+			log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
+			return nil
+		}
+		secret.Data["SEAL_KEY"] = []byte(newSealKey)
+
+		err = operatorutil.UpdateSecret(kubeClient, operatorNamespace, secret)
+		if err != nil {
+			log.Errorf("unable to update the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
 			return nil
 		}
 
