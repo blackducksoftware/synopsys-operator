@@ -138,7 +138,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	err := mergo.Merge(&newSpec, hubDefaultSpec)
 	if err != nil {
 		log.Errorf("unable to merge the hub structs for %s due to %+v", bd.Name, err)
-		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Error), err, bd)
+		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
 		if err != nil {
 			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
@@ -158,7 +158,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	err = app.Blackduck().Ensure(bd)
 	if err != nil {
 		log.Error(err)
-		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Error), err, bd)
+		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
 		if err != nil {
 			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
@@ -170,7 +170,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	h.verifyHub(hubURL, bd.Spec.Namespace)
 
 	if !strings.EqualFold(bd.Status.State, string(Running)) {
-		bd, err = hubutils.UpdateState(h.blackduckClient, h.config.Namespace, string(Running), nil, bd)
+		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
 		if err != nil {
 			log.Errorf("Couldn't update the blackduck state: %v", err)
 		}
