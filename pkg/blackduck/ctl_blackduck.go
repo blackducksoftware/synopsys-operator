@@ -164,12 +164,22 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
 	case "empty":
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
-	case "persistentStorage":
-		ctl.Spec = crddefaults.GetHubDefaultPersistentStorage()
-	case "default":
-		ctl.Spec = crddefaults.GetHubDefaultValue()
+	case "template":
+		ctl.Spec = crddefaults.GetBlackDuckTemplate()
+	case "bdba":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultBDBA()
+	case "ephemeral":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeral()
+	case "ephemeral-custom-auth-ca":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()
+	case "external-db":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalDB()
+	case "ipv6-disabled":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultIPV6Disabled()
+	case "persistent-storage":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorage()
 	default:
-		return fmt.Errorf("Blackduck Spec Type %s does not match: empty, persistentStorage, default", createBlackduckSpecType)
+		return fmt.Errorf("Blackduck Spec Type %s does not match: empty, template, bdba, ephemeral, ephemeral-custom-auth-ca, external-db, ipv6-disabled, persistent-storage", createBlackduckSpecType)
 	}
 	return nil
 }

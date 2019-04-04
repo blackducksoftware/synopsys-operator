@@ -196,12 +196,14 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
 	case "empty":
 		ctl.Spec = &opssightv1.OpsSightSpec{}
-	case "disabledBlackduck":
-		ctl.Spec = crddefaults.GetOpsSightDefaultValueWithDisabledHub()
+	case "template":
+		ctl.Spec = crddefaults.GetOpsSightTemplate()
 	case "default":
-		ctl.Spec = crddefaults.GetOpsSightDefaultValue()
+		ctl.Spec = crddefaults.GetOpsSightDefault()
+	case "disabled-black-duck":
+		ctl.Spec = crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()
 	default:
-		return fmt.Errorf("OpsSight Spec Type %s does not match: empty, disabledBlackduck, default", createOpsSightSpecType)
+		return fmt.Errorf("OpsSight Spec Type %s does not match: empty, template, default, disabled-black-duck", createOpsSightSpecType)
 	}
 	return nil
 }
