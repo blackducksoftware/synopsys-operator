@@ -51,16 +51,16 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		flagset := cmd.Flags()
 
-		if flagset.Changed("cluster") {
+		if flagset.Changed("cluster") { // changes the cluster that is being pointed to (delete this comment)
 			log.Warnf("Flag %s is Not Implemented", "cluster")
 		}
-		if flagset.Changed("kubeconfig") {
+		if flagset.Changed("kubeconfig") { // changes path to different kubeconfig file (delete this comment)
 			log.Warnf("Flag %s is Not Implemented", "kubeconfig")
 		}
-		if flagset.Changed("context") {
+		if flagset.Changed("context") { // sets the context (delete this comment)
 			log.Warnf("Flag %s is Not Implemented", "context")
 		}
-		if flagset.Changed("insecure-skip-tls-verify") {
+		if flagset.Changed("insecure-skip-tls-verify") { // sets value in kubeconfig file that says insecure (delete this comment)
 			log.Warnf("Flag %s is Not Implemented", "insecure-skip-tls-verify")
 		}
 		if flagset.Changed("log-level") {
