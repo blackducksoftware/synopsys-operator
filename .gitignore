@@ -8,3 +8,4 @@ cmd/operator/operator
 .idea/
 build
 .vscode/*
+cmd/synopsysctl/*.key
