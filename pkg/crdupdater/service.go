@@ -22,6 +22,8 @@ under the License.
 package crdupdater
 
 import (
+	"reflect"
+
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
@@ -44,10 +46,17 @@ func NewService(config *CommonConfig, services []*components.Service) (*Service,
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+	newServices := append([]*components.Service{}, services...)
+	for i := 0; i < len(newServices); i++ {
+		if !isLabelsExist(config.expectedLabels, newServices[i].GetObj().Labels) {
+			newServices = append(newServices[:i], newServices[i+1:]...)
+			i--
+		}
+	}
 	return &Service{
 		config:      config,
 		deployer:    deployer,
-		services:    services,
+		services:    newServices,
 		oldServices: make(map[string]corev1.Service, 0),
 		newServices: make(map[string]*corev1.Service, 0),
 	}, nil
@@ -126,5 +135,26 @@ func (s *Service) remove() error {
 
 // patch patches the service
 func (s *Service) patch(svc interface{}, isPatched bool) (bool, error) {
+	service := svc.(*components.Service)
+	serviceName := service.GetName()
+	oldService := s.oldServices[serviceName]
+	newService := s.newServices[serviceName]
+	if (!reflect.DeepEqual(newService.Spec.Ports, oldService.Spec.Ports) ||
+		!reflect.DeepEqual(newService.Spec.Selector, oldService.Spec.Selector) ||
+		!reflect.DeepEqual(newService.Spec.Type, oldService.Spec.Type)) && !s.config.dryRun {
+		log.Infof("updating the service %s in %s namespace", serviceName, s.config.namespace)
+		getSvc, err := s.get(serviceName)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to get the service %s in namespace %s", serviceName, s.config.namespace)
+		}
+		oldLatestService := getSvc.(*corev1.Service)
+		oldLatestService.Spec.Ports = newService.Spec.Ports
+		oldLatestService.Spec.Selector = newService.Spec.Selector
+		oldLatestService.Spec.Type = newService.Spec.Type
+		_, err = util.UpdateService(s.config.kubeClient, s.config.namespace, oldLatestService)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to update the service %s in namespace %s", serviceName, s.config.namespace)
+		}
+	}
 	return false, nil
 }

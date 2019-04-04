@@ -44,10 +44,17 @@ func NewServiceAccount(config *CommonConfig, serviceAccounts []*components.Servi
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+	newServiceAccounts := append([]*components.ServiceAccount{}, serviceAccounts...)
+	for i := 0; i < len(newServiceAccounts); i++ {
+		if !isLabelsExist(config.expectedLabels, newServiceAccounts[i].GetObj().Labels) {
+			newServiceAccounts = append(newServiceAccounts[:i], newServiceAccounts[i+1:]...)
+			i--
+		}
+	}
 	return &ServiceAccount{
 		config:             config,
 		deployer:           deployer,
-		serviceAccounts:    serviceAccounts,
+		serviceAccounts:    newServiceAccounts,
 		oldServiceAccounts: make(map[string]corev1.ServiceAccount, 0),
 		newServiceAccounts: make(map[string]*corev1.ServiceAccount, 0),
 	}, nil
@@ -65,12 +72,12 @@ func (s *ServiceAccount) buildNewAndOldObject() error {
 	}
 
 	// build new service account
-	for _, newCr := range s.serviceAccounts {
-		newServiceAccountKube, err := newCr.ToKube()
+	for _, newSa := range s.serviceAccounts {
+		newServiceAccountKube, err := newSa.ToKube()
 		if err != nil {
-			return errors.Annotatef(err, "unable to convert service account %s to kube %s", newCr.GetName(), s.config.namespace)
+			return errors.Annotatef(err, "unable to convert service account %s to kube %s", newSa.GetName(), s.config.namespace)
 		}
-		s.newServiceAccounts[newCr.GetName()] = newServiceAccountKube.(*corev1.ServiceAccount)
+		s.newServiceAccounts[newSa.GetName()] = newServiceAccountKube.(*corev1.ServiceAccount)
 	}
 
 	return nil
@@ -126,5 +133,22 @@ func (s *ServiceAccount) remove() error {
 
 // patch patches the service account
 func (s *ServiceAccount) patch(sa interface{}, isPatched bool) (bool, error) {
+	// serviceAccount := sa.(*components.ServiceAccount)
+	// serviceAccountName := serviceAccount.GetName()
+	// oldserviceAccount := s.oldServiceAccounts[serviceAccountName]
+	// newServiceAccount := s.newServiceAccounts[serviceAccountName]
+	// if !reflect.DeepEqual(oldserviceAccount.ImagePullSecrets, newServiceAccount.ImagePullSecrets) && !s.config.dryRun {
+	// 	log.Infof("updating the service account %s for %s namespace", serviceAccountName, s.config.namespace)
+	// 	getSa, err := s.get(serviceAccountName)
+	// 	if err != nil {
+	// 		return false, errors.Annotatef(err, "unable to get the service account %s for namespace %s", serviceAccountName, s.config.namespace)
+	// 	}
+	// 	oldLatestServiceAccount := getSa.(*corev1.ServiceAccount)
+	// 	oldLatestServiceAccount.ImagePullSecrets = newServiceAccount.ImagePullSecrets
+	// 	_, err = util.UpdateServiceAccount(s.config.kubeClient, s.config.namespace, oldLatestServiceAccount)
+	// 	if err != nil {
+	// 		return false, errors.Annotatef(err, "unable to update the service account %s for namespace %s", serviceAccountName, s.config.namespace)
+	// 	}
+	// }
 	return false, nil
 }

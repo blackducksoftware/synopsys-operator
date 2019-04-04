@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -36,8 +36,7 @@ import (
 //	}
 //}
 
-// GetHubDefaultValue creates a hub crd configuration object
-// with defaults
+// GetHubDefaultValue creates a hub crd configuration object with defaults
 func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Size:            "Small",
@@ -96,46 +95,9 @@ func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
 		},
 		CertificateName: "default",
 		Type:            "Artifacts",
-		Environs: []string{
-			"BLACKDUCK_REPORT_IGNORED_COMPONENTS:false",
-			"BROKER_URL:amqps://rabbitmq/protecodesc",
-			"HTTPS_VERIFY_CERTS:yes",
-			"HUB_POSTGRES_ADMIN:blackduck",
-			"HUB_POSTGRES_ENABLE_SSL:false",
-			"HUB_WEBSERVER_PORT:8443",
-			"IPV4_ONLY:0",
-			"USE_ALERT:0",
-			"CFSSL:cfssl:8888",
-			"PUBLIC_HUB_WEBSERVER_PORT:443",
-			"RABBITMQ_DEFAULT_VHOST:protecodesc",
-			"RABBIT_MQ_HOST:rabbitmq",
-			"RABBIT_MQ_PORT:5671",
-			"CLIENT_CERT_CN:binaryscanner",
-			"SCANNER_CONCURRENCY:1",
-			"DISABLE_HUB_DASHBOARD:#hub-webserver.env",
-			"PUBLIC_HUB_WEBSERVER_HOST:localhost",
-			"BROKER_USE_SSL:yes",
-			"HUB_PROXY_NON_PROXY_HOSTS:solr",
-			"USE_BINARY_UPLOADS:0",
-			"HUB_LOGSTASH_HOST:logstash",
-			"HUB_POSTGRES_USER:blackduck_user",
-			"HUB_VERSION:2018.12.2",
-			"RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT:false",
-		},
-		ImageRegistries: []string{
-			"docker.io/blackducksoftware/blackduck-authentication:2018.12.2",
-			"docker.io/blackducksoftware/blackduck-documentation:2018.12.2",
-			"docker.io/blackducksoftware/blackduck-jobrunner:2018.12.2",
-			"docker.io/blackducksoftware/blackduck-registration:2018.12.2",
-			"docker.io/blackducksoftware/blackduck-scan:2018.12.2",
-			"docker.io/blackducksoftware/blackduck-webapp:2018.12.2",
-			"docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
-			"docker.io/blackducksoftware/blackduck-logstash:1.0.2",
-			"docker.io/blackducksoftware/blackduck-nginx:1.0.0",
-			"docker.io/blackducksoftware/blackduck-solr:1.0.0",
-			"docker.io/blackducksoftware/blackduck-zookeeper:1.0.0",
-		},
-		LicenseKey: "LICENSE_KEY",
+		Environs:        []string{},
+		ImageRegistries: []string{},
+		LicenseKey:      "",
 	}
 }
 
@@ -216,6 +178,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
 		ConfigMapName: "opssight",
+		DesiredState:  "START",
 	}
 }
 
@@ -323,46 +286,33 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 		DefaultMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
+		DesiredState:  "START",
 	}
 }
 
 // GetAlertDefaultValue creates an Alert crd configuration object with defaults
 func GetAlertDefaultValue() *alertv1.AlertSpec {
 	port := 8443
-	hubPort := 443
 	standAlone := true
 
 	return &alertv1.AlertSpec{
-		Port:           &port,
-		BlackduckPort:  &hubPort,
-		StandAlone:     &standAlone,
-		AlertMemory:    "512M",
-		CfsslMemory:    "640M",
-		AlertImageName: "blackduck-alert",
-		CfsslImageName: "hub-cfssl",
-	}
-}
-
-// GetAlertDefaultValue2 creates an Alert crd configuration object with defaults
-func GetAlertDefaultValue2() *alertv1.AlertSpec {
-	port := 8443
-	hubPort := 443
-	standAlone := true
-
-	return &alertv1.AlertSpec{
-		Namespace:         "alert-test",
-		Registry:          "docker.io",
-		ImagePath:         "blackducksoftware",
-		AlertImageName:    "blackduck-alert",
-		AlertImageVersion: "2.1.0",
-		CfsslImageName:    "hub-cfssl",
-		CfsslImageVersion: "4.8.1",
-		BlackduckHost:     "<<HUB_HOST>>",
-		BlackduckUser:     "sysadmin",
-		BlackduckPort:     &hubPort,
-		Port:              &port,
-		StandAlone:        &standAlone,
-		AlertMemory:       "512M",
-		CfsslMemory:       "640M",
+		Namespace:            "alert-test",
+		Registry:             "docker.io",
+		ImagePath:            "blackducksoftware",
+		AlertImageName:       "blackduck-alert",
+		AlertImageVersion:    "3.1.0",
+		CfsslImageName:       "blackduck-cfssl",
+		CfsslImageVersion:    "1.0.0",
+		ExposeService:        "NODEPORT",
+		Port:                 &port,
+		EncryptionPassword:   "",
+		EncryptionGlobalSalt: "",
+		PersistentStorage:    true,
+		PVCName:              "alert-pvc",
+		StandAlone:           &standAlone,
+		PVCSize:              "5G",
+		PVCStorageClass:      "",
+		AlertMemory:          "2560M",
+		CfsslMemory:          "640M",
 	}
 }

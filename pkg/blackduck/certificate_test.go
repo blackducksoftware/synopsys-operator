@@ -26,7 +26,5 @@ import (
 )
 
 func TestCertificate(t *testing.T) {
-	_, _ = CreateSelfSignedCert()
-	// t.Errorf("Certificate: %s", certificate)
-	// t.Errorf("Key: %s", key)
+	CreateSelfSignedCert()
 }

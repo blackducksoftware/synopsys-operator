@@ -26,10 +26,13 @@ import (
 	"strings"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	alert_v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/imdario/mergo"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -47,18 +50,19 @@ type Handler struct {
 	kubeConfig  *rest.Config
 	kubeClient  *kubernetes.Clientset
 	alertClient *alertclientset.Clientset
-	defaults    *alert_v1.AlertSpec
+	defaults    *alertapi.AlertSpec
+	routeClient *routeclient.RouteV1Client
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, defaults *alert_v1.AlertSpec) *Handler {
-	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, defaults: defaults}
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client, defaults *alertapi.AlertSpec) *Handler {
+	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient, defaults: defaults}
 }
 
 // ObjectCreated will be called for create alert events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("objectCreated: %+v", obj)
-	alertv1, ok := obj.(*alert_v1.Alert)
+	alertv1, ok := obj.(*alertapi.Alert)
 	if !ok {
 		log.Error("Unable to cast to Alert object")
 		return
@@ -79,7 +83,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 			alertv1, err := h.updateState("creating", "", alertv1)
 
 			if err == nil {
-				alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient)
+				alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
 
 				// create alert instance
 				err = alertCreator.CreateAlert(&alertv1.Spec)
@@ -97,7 +101,16 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete alert events
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient)
+	alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
+
+	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
+	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("alerts.synopsys.com", v1.GetOptions{})
+	if err != nil || crd.DeletionTimestamp != nil {
+		// We do not delete the Alert instance if the CRD doesn't exist or that it is in the process of being deleted
+		log.Warnf("Ignoring request to delete %s because the CRD doesn't exist or is being deleted", name)
+		return
+	}
+
 	alertCreator.DeleteAlert(name)
 }
 
@@ -106,7 +119,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("objectUpdated: %+v", objNew)
 }
 
-func (h *Handler) updateState(statusState string, errorMessage string, alert *alert_v1.Alert) (*alert_v1.Alert, error) {
+func (h *Handler) updateState(statusState string, errorMessage string, alert *alertapi.Alert) (*alertapi.Alert, error) {
 	alert.Status.State = statusState
 	alert.Status.ErrorMessage = errorMessage
 	alert, err := h.updateAlertObject(alert)
@@ -116,6 +129,6 @@ func (h *Handler) updateState(statusState string, errorMessage string, alert *al
 	return alert, err
 }
 
-func (h *Handler) updateAlertObject(obj *alert_v1.Alert) (*alert_v1.Alert, error) {
+func (h *Handler) updateAlertObject(obj *alertapi.Alert) (*alertapi.Alert, error) {
 	return h.alertClient.SynopsysV1().Alerts(h.config.Namespace).Update(obj)
 }

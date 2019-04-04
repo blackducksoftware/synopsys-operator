@@ -5,3 +5,7 @@ pkg/.DS_Store
 pkg/api/.DS_Store
 .DS_Store
 cmd/operator/operator
+.idea/
+build
+.vscode/*
+cmd/synopsysctl/*.key

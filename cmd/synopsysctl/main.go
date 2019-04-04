@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -21,7 +21,9 @@ under the License.
 
 package main
 
-import "github.com/blackducksoftware/synopsys-operator/pkg/synopsysctl"
+import (
+	"github.com/blackducksoftware/synopsys-operator/pkg/synopsysctl"
+)
 
 func main() {
 	synopsysctl.Execute()

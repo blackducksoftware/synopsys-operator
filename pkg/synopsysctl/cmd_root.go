@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -84,7 +85,7 @@ var rootCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Running Non-Synopsysctl Command\n")
-		out, err := RunKubeCmd(args...)
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, args...)
 		if err != nil {
 			log.Errorf("Error with KubeCmd: %s", out)
 			return nil

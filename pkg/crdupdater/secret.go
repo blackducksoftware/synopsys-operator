@@ -48,10 +48,17 @@ func NewSecret(config *CommonConfig, secrets []*components.Secret) (*Secret, err
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+	newSecrets := append([]*components.Secret{}, secrets...)
+	for i := 0; i < len(newSecrets); i++ {
+		if !isLabelsExist(config.expectedLabels, newSecrets[i].GetObj().Labels) {
+			newSecrets = append(newSecrets[:i], newSecrets[i+1:]...)
+			i--
+		}
+	}
 	return &Secret{
 		config:     config,
 		deployer:   deployer,
-		secrets:    secrets,
+		secrets:    newSecrets,
 		oldSecrets: make(map[string]corev1.Secret, 0),
 		newSecrets: make(map[string]*corev1.Secret, 0),
 	}, nil
@@ -69,12 +76,12 @@ func (s *Secret) buildNewAndOldObject() error {
 	}
 
 	// build new secret
-	for _, newSecret := range s.secrets {
-		newSecretKube, err := newSecret.ToKube()
+	for _, newSrt := range s.secrets {
+		newSecretKube, err := newSrt.ToKube()
 		if err != nil {
-			return errors.Annotatef(err, "unable to convert secret %s to kube %s", newSecret.GetName(), s.config.namespace)
+			return errors.Annotatef(err, "unable to convert secret %s to kube %s", newSrt.GetName(), s.config.namespace)
 		}
-		s.newSecrets[newSecret.GetName()] = newSecretKube.(*corev1.Secret)
+		s.newSecrets[newSrt.GetName()] = newSecretKube.(*corev1.Secret)
 	}
 
 	return nil
@@ -154,6 +161,7 @@ func (s *Secret) patch(i interface{}, isPatched bool) (bool, error) {
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the secret %s in namespace %s", secretName, s.config.namespace)
 		}
+		return true, nil
 	}
 	return false, nil
 }

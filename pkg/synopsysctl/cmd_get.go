@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -22,10 +22,16 @@ under the License.
 package synopsysctl
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 
+	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // getCmd lists resources in the cluster
@@ -42,7 +48,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting a Non-Synopsys Resource\n")
 		kubeCmdArgs := append([]string{"get"}, args...)
-		out, err := RunKubeCmd(kubeCmdArgs...)
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
 		if err != nil {
 			log.Errorf("Error Getting the Resource: %s", out)
 			return nil
@@ -65,12 +71,67 @@ var getBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting Blackducks\n")
-		out, err := RunKubeCmd("get", "blackducks")
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
 		if err != nil {
 			log.Errorf("Error getting Blackducks: %s", out)
 			return nil
 		}
 		fmt.Printf("%+v", out)
+		return nil
+	},
+}
+
+// getBlackduckRootKeyCmd get the Black Duck root key for source code upload in the cluster
+var getBlackduckRootKeyCmd = &cobra.Command{
+	Use:   "rootKey BLACK_DUCK_NAME FILE_PATH",
+	Short: "Get the root key of Black Duck for source code upload",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 2 {
+			return fmt.Errorf("Black Duck name or file path to store the master key is missing")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Debugf("Getting Blackduck Root Key\n")
+		namespace := args[0]
+		filePath := args[1]
+		_, err := util.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
+		if err != nil {
+			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
+			return nil
+		}
+		operatorNamespace, err := soperator.GetOperatorNamespace(restconfig)
+		if err != nil {
+			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
+			return nil
+		}
+		secret, err := util.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
+		if err != nil {
+			log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
+			return nil
+		}
+		sealKey := string(secret.Data["SEAL_KEY"])
+		// Filter the upload cache pod to get the root key using the seal key
+		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, "uploadcache")
+		if err != nil {
+			log.Errorf("unable to filter the upload cache pod of %s due to %+v", namespace, err)
+			return nil
+		}
+
+		// Create the exec into kubernetes pod request
+		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
+		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
+		if err != nil {
+			log.Errorf("unable to exec into upload cache pod in %s because %+v", namespace, err)
+			return nil
+		}
+
+		fileName := filepath.Join(filePath, fmt.Sprintf("%s.key", namespace))
+		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
+		if err != nil {
+			log.Errorf("error writing to %s because %+v", fileName, err)
+			return nil
+		}
 		return nil
 	},
 }
@@ -88,7 +149,7 @@ var getOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting OpsSights\n")
-		out, err := RunKubeCmd("get", "opssights")
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "opssights")
 		if err != nil {
 			log.Errorf("Error getting OpsSights: %s", out)
 			return nil
@@ -111,7 +172,7 @@ var getAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Getting Alerts\n")
-		out, err := RunKubeCmd("get", "alerts")
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "alerts")
 		if err != nil {
 			log.Errorf("Error getting Alerts with KubeCmd: %s", out)
 			return nil
@@ -127,6 +188,8 @@ func init() {
 
 	// Add Commands
 	getCmd.AddCommand(getBlackduckCmd)
+	getBlackduckCmd.AddCommand(getBlackduckRootKeyCmd)
+
 	getCmd.AddCommand(getOpsSightCmd)
 	getCmd.AddCommand(getAlertCmd)
 }

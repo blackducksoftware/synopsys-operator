@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -66,6 +67,8 @@ type Ctl struct {
 	ImageRegistries                       []string
 	ImageUIDMapJSONSlice                  []string
 	LicenseKey                            string
+	Version                               string
+	ExposeService                         string
 }
 
 // NewBlackduckCtl creates a new Ctl struct
@@ -96,6 +99,8 @@ func NewBlackduckCtl() *Ctl {
 		ImageRegistries:                       []string{},
 		ImageUIDMapJSONSlice:                  []string{},
 		LicenseKey:                            "",
+		Version:                               "",
+		ExposeService:                         "",
 	}
 }
 
@@ -114,9 +119,22 @@ func (ctl *Ctl) SetSpec(spec interface{}) error {
 	return nil
 }
 
+func isValidSize(size string) bool {
+	switch size {
+	case
+		"",
+		"small",
+		"medium",
+		"large",
+		"xlarge":
+		return true
+	}
+	return false
+}
+
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *Ctl) CheckSpecFlags() error {
-	if ctl.Size != "" && ctl.Size != "small" && ctl.Size != "medium" && ctl.Size != "large" && ctl.Size != "xlarge" {
+	if !isValidSize(ctl.Size) {
 		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'xlarge'")
 	}
 	for _, pvcJSON := range ctl.PVCJSONSlice {
@@ -157,7 +175,8 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 }
 
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
+// master - if false, doesn't add flags that all Users shouldn't use
+func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "TODO")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
@@ -182,6 +201,8 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "TODO")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose service type [Loadbalancer/Nodeport]")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -235,9 +256,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 			ctl.Spec.ExternalPostgres.PostgresUserPassword = ctl.ExternalPostgresPostgresUserPassword
 		case "pvc-storage-class":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
-			}
 			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
 			ctl.Spec.LivenessProbes = ctl.LivenessProbes
@@ -276,10 +294,28 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
+		case "version":
+			ctl.Spec.Version = ctl.Version
+		case "expose-service":
+			ctl.Spec.ExposeService = ctl.ExposeService
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
 	} else {
 		log.Debugf("Flag %s: UNCHANGED\n", f.Name)
 	}
+}
+
+// SpecIsValid verifies the spec has necessary fields to deploy
+func (ctl *Ctl) SpecIsValid() (bool, error) {
+	return true, nil
+}
+
+// CanUpdate checks if a user has permission to modify based on the spec
+func (ctl *Ctl) CanUpdate() (bool, error) {
+	version := util.GetHubVersion(ctl.Spec.Environs)
+	if version == "" || version == "2019.2.2" {
+		return false, fmt.Errorf("Cannot Updated due to Blackduck Version '%s'", version)
+	}
+	return true, nil
 }
