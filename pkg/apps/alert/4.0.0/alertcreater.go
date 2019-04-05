@@ -26,6 +26,7 @@ import (
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
@@ -44,6 +45,16 @@ type Creater struct {
 // NewCreater will instantiate the Creater
 func NewCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client) *Creater {
 	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient}
+}
+
+// Ensure will make sure the instance is correctly deployed or deploy it if needed
+func (ac *Creater) Ensure(blackduck *v1.Blackduck) error {
+	return nil
+}
+
+// Versions will return the versions supported
+func (ac *Creater) Versions() []string {
+	return []string{"master"}
 }
 
 // DeleteAlert will delete the Black Duck Alert
