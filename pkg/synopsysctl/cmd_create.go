@@ -87,8 +87,8 @@ var createBlackduckCmd = &cobra.Command{
 	Short: "Create an instance of a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
-		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument")
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		// Check the Arguments
 		err := createBlackduckCtl.CheckSpecFlags()
@@ -105,24 +105,20 @@ var createBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating a Blackduck\n")
-		// Read Commandline Parameters
-		blackduckName := "blackduck"
-		if len(args) == 1 {
-			blackduckName = args[0]
-		}
+		blackduckNamespace := args[0]
 
 		// Update Spec with user's flags
 		createBlackduckCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
 		blackduckSpec, _ := createBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
-		blackduckSpec.Namespace = blackduckName
+		blackduckSpec.Namespace = blackduckNamespace
 
 		// Create and Deploy Blackduck CRD
 		blackduck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      blackduckName,
-				Namespace: blackduckName,
+				Name:      blackduckNamespace,
+				Namespace: blackduckNamespace,
 			},
 			Spec: blackduckSpec,
 		}
@@ -130,13 +126,13 @@ var createBlackduckCmd = &cobra.Command{
 			util.PrettyPrint(blackduck)
 		} else {
 			// Create namespace for the Blackduck
-			err := DeployCRDNamespace(restconfig, blackduckName)
+			err := DeployCRDNamespace(restconfig, blackduckNamespace)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 			// Create Blackduck with Client
-			_, err = blackduckClient.SynopsysV1().Blackducks(blackduckName).Create(blackduck)
+			_, err = blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Create(blackduck)
 			if err != nil {
 				log.Errorf("Error creating the Blackduck : %s", err)
 				return nil
@@ -152,8 +148,8 @@ var createOpsSightCmd = &cobra.Command{
 	Short: "Create an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
-		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument")
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		// Check the Arguments
 		err := createOpsSightCtl.CheckSpecFlags()
@@ -169,24 +165,20 @@ var createOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating an OpsSight\n")
-		// Read Commandline Parameters
-		opsSightName := "opssight"
-		if len(args) == 1 {
-			opsSightName = args[0]
-		}
+		opsSightNamespace := args[0]
 
 		// Update Spec with user's flags
 		createOpsSightCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
 		opssightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
-		opssightSpec.Namespace = opsSightName
+		opssightSpec.Namespace = opsSightNamespace
 
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      opsSightName,
-				Namespace: opsSightName,
+				Name:      opsSightNamespace,
+				Namespace: opsSightNamespace,
 			},
 			Spec: opssightSpec,
 		}
@@ -194,13 +186,13 @@ var createOpsSightCmd = &cobra.Command{
 			util.PrettyPrint(opssight)
 		} else {
 			// Create namespace for the OpsSight
-			err := DeployCRDNamespace(restconfig, opsSightName)
+			err := DeployCRDNamespace(restconfig, opsSightNamespace)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 			// Create OpsSight with Client
-			_, err = opssightClient.SynopsysV1().OpsSights(opsSightName).Create(opssight)
+			_, err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
 			if err != nil {
 				log.Errorf("Error creating the OpsSight : %s", err)
 				return nil
@@ -216,8 +208,8 @@ var createAlertCmd = &cobra.Command{
 	Short: "Create an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
-		if len(args) > 1 {
-			return fmt.Errorf("This command only accepts up to 1 argument")
+		if len(args) != 1 {
+			return fmt.Errorf("This command only accepts 1 argument")
 		}
 		err := createAlertCtl.CheckSpecFlags()
 		if err != nil {
@@ -232,24 +224,20 @@ var createAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Creating an Alert\n")
-		// Read Commandline Parameters
-		alertName := "alert"
-		if len(args) == 1 {
-			alertName = args[0]
-		}
+		alertNamespace := args[0]
 
 		// Update Spec with user's flags
 		createAlertCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
 		alertSpec, _ := createAlertCtl.GetSpec().(alertv1.AlertSpec)
-		alertSpec.Namespace = alertName
+		alertSpec.Namespace = alertNamespace
 
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      alertName,
-				Namespace: alertName,
+				Name:      alertNamespace,
+				Namespace: alertNamespace,
 			},
 			Spec: alertSpec,
 		}
@@ -257,13 +245,13 @@ var createAlertCmd = &cobra.Command{
 			util.PrettyPrint(alert)
 		} else {
 			// Create namespace for the Alert
-			err := DeployCRDNamespace(restconfig, alertName)
+			err := DeployCRDNamespace(restconfig, alertNamespace)
 			if err != nil {
 				log.Errorf("%s", err)
 				return nil
 			}
 			// Create the Alert with Client
-			_, err = alertClient.SynopsysV1().Alerts(alertName).Create(alert)
+			_, err = alertClient.SynopsysV1().Alerts(alertNamespace).Create(alert)
 			if err != nil {
 				log.Errorf("Error creating the Alert : %s", err)
 				return nil
