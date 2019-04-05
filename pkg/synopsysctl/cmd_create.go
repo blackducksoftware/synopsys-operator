@@ -26,8 +26,6 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"gopkg.in/yaml.v2"
-
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -149,7 +147,7 @@ var createBlackduckCmd = &cobra.Command{
 		}
 		// Save resource to a file
 		if cmd.Flag("save-path").Changed {
-			blackDuckJSON, err := yaml.Marshal(blackduck)
+			blackDuckJSON, err := json.Marshal(blackduck)
 			if err != nil {
 				log.Errorf("Error converting Black Duck to Json file: %s", err)
 				return nil
