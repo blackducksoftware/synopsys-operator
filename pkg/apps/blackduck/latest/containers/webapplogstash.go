@@ -36,8 +36,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 
 	webappContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.getImageTag("blackduck-webapp"),
-			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit,
-			MaxCPU: c.hubContainerFlavor.WebappCPULimit},
+			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs:   webappEnvs,
 		VolumeMounts: webappVolumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: webappPort, Protocol: horizonapi.ProtocolTCP}},
