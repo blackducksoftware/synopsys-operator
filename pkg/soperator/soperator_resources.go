@@ -401,6 +401,8 @@ func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secre
 		"cert.crt": cert,
 		"cert.key": key,
 	})
+
+	tlsSecret.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return tlsSecret
 }
 
