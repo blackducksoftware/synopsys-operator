@@ -314,5 +314,10 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		PVCStorageClass:      "",
 		AlertMemory:          "2560M",
 		CfsslMemory:          "640M",
+		Environs: []string{
+			"ALERT_SERVER_PORT:8443",
+			"PUBLIC_HUB_WEBSERVER_HOST:localhost",
+			"PUBLIC_HUB_WEBSERVER_PORT:443",
+		},
 	}
 }
