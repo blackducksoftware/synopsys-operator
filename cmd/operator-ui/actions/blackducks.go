@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	"sort"
 	"strings"
 
@@ -135,6 +136,21 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckv1.Blackduck)
 		}
 	}
 	bd.View.CertificateNames = certificateNames
+
+	env, _ := blackduck.GetHubKnobs()
+
+	environs := []string{}
+	for key, value := range env {
+		if !strings.EqualFold(value, "") {
+			environs = append(environs, fmt.Sprintf("%s:%s", key, value))
+		}
+	}
+
+	if len(bd.Spec.Environs) > 0 {
+		bd.View.Environs = bd.Spec.Environs
+	} else {
+		bd.View.Environs = environs
+	}
 
 	kubeconfig, err := protoform.GetKubeConfig()
 	if err != nil {
