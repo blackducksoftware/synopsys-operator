@@ -29,7 +29,6 @@ import (
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -356,8 +355,8 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	if err != nil {
 		log.Errorf("Error getting Kube Rest Config: %s", err)
 	}
-	routeClient, err := routeclient.NewForConfig(restConfig) // kube doesn't have a routeclient
-	if routeClient != nil && err == nil {                    // openshift: have a routeClient and no error
+	routeClient := util.GetRouteClient(restConfig) // kube doesn't have a routeclient
+	if routeClient != nil {                        // openshift: has a routeClient
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 			Verbs:           []string{"get", "update", "patch"},
 			APIGroups:       []string{"security.openshift.io"},

@@ -26,7 +26,6 @@ import (
 	"os"
 	"os/exec"
 
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/rest"
@@ -52,11 +51,9 @@ func DetermineClusterClients(restConfig *rest.Config) (kube, openshift bool) {
 
 	// Add Openshift rules
 	openshiftTest := false
-	routeClient, err := routeclient.NewForConfig(restConfig) // kube doesn't have a routeclient
-	if routeClient != nil && err == nil {                    // openshift: have a routeClient and no error
+	routeClient := GetRouteClient(restConfig) // kube doesn't have a route client but openshift does
+	if routeClient != nil {
 		openshiftTest = true
-	} else if err != nil { // Kube or Error
-		openshiftTest = false
 	}
 
 	if ocPath && openshiftTest { // if oc exists and the cluster is openshift
