@@ -26,7 +26,6 @@ import (
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
@@ -48,7 +47,7 @@ func NewCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alert
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
-func (ac *Creater) Ensure(blackduck *v1.Blackduck) error {
+func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	return nil
 }
 

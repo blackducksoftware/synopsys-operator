@@ -31,7 +31,6 @@ import (
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	fourzerozeroalert "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/4.0.0"
 	latestalert "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -74,7 +73,6 @@ func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
 	}
 
 	creaters := []Creater{
-		fourzerozeroalert.NewCreater(kubeConfig, kubeclient, alertClient, routeClient),
 		latestalert.NewCreater(kubeConfig, kubeclient, alertClient, routeClient),
 	}
 
@@ -121,7 +119,7 @@ func (a Alert) Versions() []string {
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (a Alert) Ensure(alt *v1.Alert) error {
-	creater, err := a.getCreater(alt.Spec.Version)
+	creater, err := a.getCreater(alt.Spec.AlertImageVersion)
 	if err != nil {
 		return err
 	}
