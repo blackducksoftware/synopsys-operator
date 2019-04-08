@@ -25,8 +25,10 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
 
-// Creater interface
+// Creater interface for Alert
+// An Alert can have multiple Creaters where each Creater supports
+// different versions of Alert
 type Creater interface {
-	Ensure(alert *alertapi.Alert) error
 	Versions() []string
+	Ensure(alert *alertapi.Alert) error
 }

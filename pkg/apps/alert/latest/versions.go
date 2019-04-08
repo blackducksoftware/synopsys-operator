@@ -23,6 +23,7 @@ package alert
 
 import "fmt"
 
+// imageTags is a map of the Alert versions to it's images and tags
 var imageTags = map[string]map[string]string{
 	"3.1.0": {
 		"blackduck-alert": "3.1.0",
@@ -34,11 +35,12 @@ var imageTags = map[string]map[string]string{
 	},
 }
 
+// getImageTag returns the url for an image
 func (c *Creater) getImageTag(version, name string) string {
 	return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[version][name])
 }
 
-// GetVersions returns the supported versions
+// GetVersions returns the supported versions for this Creater
 func GetVersions() []string {
 	var versions []string
 	for k := range imageTags {

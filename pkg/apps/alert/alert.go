@@ -24,10 +24,7 @@ package alert
 import (
 	"fmt"
 	"strings"
-
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
-	"github.com/sirupsen/logrus"
+	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -35,11 +32,12 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-// Alert is used for the Alert deployment
+// Alert is used to handle Alerts in the cluster
 type Alert struct {
 	config      *protoform.Config
 	kubeConfig  *rest.Config
@@ -49,19 +47,19 @@ type Alert struct {
 	creaters    []Creater
 }
 
-// NewAlert will return a Alert
+// NewAlert will return an Alert type
 func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
-	// Initialiase the clienset using kubeConfig
+	// Initialiase the clienset
 	kubeclient, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil
 	}
-
+	// Initialize the Alert client
 	alertClient, err := alertclientset.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil
 	}
-
+	// Initialize the Route Client for Openshift routes
 	routeClient, err := routeclient.NewForConfig(kubeConfig)
 	if err != nil {
 		routeClient = nil
@@ -71,7 +69,7 @@ func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
 			routeClient = nil
 		}
 	}
-
+	// Initialize creaters for different versions of Alert (each Creater can support differernt versions)
 	creaters := []Creater{
 		latestalert.NewCreater(config, kubeConfig, kubeclient, alertClient, routeClient),
 	}
@@ -86,6 +84,8 @@ func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
 	}
 }
 
+// getCreater loops through each Creater and returns the one
+// that supports the specified version
 func (a Alert) getCreater(version string) (Creater, error) {
 	for _, c := range a.creaters {
 		for _, v := range c.Versions() {
@@ -97,22 +97,10 @@ func (a Alert) getCreater(version string) (Creater, error) {
 	return nil, fmt.Errorf("version %s is not supported", version)
 }
 
-// Delete will be used to delete an Alert instance
-func (a Alert) Delete(name string) {
-	logrus.Infof("deleting %s", name)
-	errs := crdupdater.NewCRUDComponents(a.kubeConfig, a.kubeClient, false, name, &api.ComponentList{}, "app=alert").CRUDComponents()
-	if errs != nil {
-		logrus.Error(errs)
-	}
-	err := util.DeleteNamespace(a.kubeClient, name)
-	if err != nil {
-		logrus.Error(err)
-	}
-}
-
 // Versions returns the versions that the operator supports for Alert
 func (a Alert) Versions() []string {
 	var versions []string
+	// Get versions that each Creater supports
 	for _, c := range a.creaters {
 		for _, v := range c.Versions() {
 			versions = append(versions, v)
@@ -121,11 +109,44 @@ func (a Alert) Versions() []string {
 	return versions
 }
 
-// Ensure will make sure the instance is correctly deployed or deploy it if needed
+// Ensure will get the necessary Creater and make sure the instance
+// is correctly deployed or deploy it if needed
 func (a Alert) Ensure(alt *v1.Alert) error {
-	creater, err := a.getCreater(alt.Spec.AlertImageVersion)
+	creater, err := a.getCreater(alt.Spec.AlertImageVersion) // get Creater for the Alert Version
 	if err != nil {
 		return err
 	}
-	return creater.Ensure(alt)
+	return creater.Ensure(alt) // Ensure the Alert
+}
+
+// Delete will delete the Alert from the cluster (all Alerts are deleted the same way)
+func (a *Alert) Delete(namespace string) error {
+	log.Debugf("Delete Alert details for %s", namespace)
+	var err error
+	// Verify whether the namespace exist
+	_, err = util.GetNamespace(a.kubeClient, namespace)
+	if err != nil {
+		return fmt.Errorf("unable to find the namespace %+v due to %+v", namespace, err)
+	}
+	// Delete the namespace
+	err = util.DeleteNamespace(a.kubeClient, namespace)
+	if err != nil {
+		return fmt.Errorf("unable to delete the namespace %+v due to %+v", namespace, err)
+	}
+	// Verify whether the namespace deleted
+	var attempts = 30.0
+	var retryWait time.Duration = 10
+	for i := 0.0; i <= attempts; i++ {
+		ns, err := util.GetNamespace(a.kubeClient, namespace)
+		log.Debugf("Namespace: %v, status: %v", namespace, ns.Status)
+		time.Sleep(retryWait * time.Second)
+		if err != nil {
+			log.Infof("Deleted the namespace %+v", namespace)
+			break
+		}
+		if i >= 10.0 {
+			return fmt.Errorf("unable to delete the namespace %+v after %f minutes", namespace, attempts*retryWait.Seconds()/60)
+		}
+	}
+	return nil
 }

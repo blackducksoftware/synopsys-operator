@@ -29,13 +29,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// SpecConfig will contain the specification of Alert
+// SpecConfig will contain the specification to create the
+// components of an Alert
 type SpecConfig struct {
 	config *alertapi.AlertSpec
 }
 
-// NewAlert will create the Alert object
-func NewAlert(config *alertapi.AlertSpec) *SpecConfig {
+// NewSpecConfig will create the Alert SpecConfig
+func NewSpecConfig(config *alertapi.AlertSpec) *SpecConfig {
 	return &SpecConfig{config: config}
 }
 
