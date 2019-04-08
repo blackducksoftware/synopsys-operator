@@ -29,13 +29,12 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	hubinformerv2 "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/informers/externalversions/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -250,16 +249,7 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	routeClient, err := routeclient.NewForConfig(c.kubeConfig)
-	if err != nil {
-		routeClient = nil
-	} else {
-		_, err := util.GetOpenShiftRoutes(routeClient, "default", "docker-registry")
-		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("Ignoring routes for kubernetes cluster")
-			routeClient = nil
-		}
-	}
+	routeClient := util.GetRouteClient(c.kubeConfig)
 
 	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), fmt.Sprint("http://federator:3016"), make(chan bool, 1), osClient, routeClient)
 }
