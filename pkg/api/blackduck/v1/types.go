@@ -50,28 +50,29 @@ type BlackduckView struct {
 
 // BlackduckSpec will be CRD Blackduck definition's Spec
 type BlackduckSpec struct {
-	Namespace         string                    `json:"namespace"`
-	Size              string                    `json:"size"`
-	Version           string                    `json:"version"`
-	ExposeService     string                    `json:"exposeService"`
-	DbPrototype       string                    `json:"dbPrototype,omitempty"`
-	ExternalPostgres  *PostgresExternalDBConfig `json:"externalPostgres,omitempty"`
-	PVCStorageClass   string                    `json:"pvcStorageClass,omitempty"`
-	LivenessProbes    bool                      `json:"livenessProbes"`
-	ScanType          string                    `json:"scanType,omitempty"`
-	PersistentStorage bool                      `json:"persistentStorage"`
-	PVC               []PVC                     `json:"pvc,omitempty"`
-	CertificateName   string                    `json:"certificateName"`
-	Certificate       string                    `json:"certificate,omitempty"`
-	CertificateKey    string                    `json:"certificateKey,omitempty"`
-	ProxyCertificate  string                    `json:"proxyCertificate,omitempty"`
-	AuthCustomCA      string                    `json:"authCustomCa"`
-	Type              string                    `json:"type,omitempty"`
-	DesiredState      string                    `json:"desiredState"`
-	Environs          []string                  `json:"environs,omitempty"`
-	ImageRegistries   []string                  `json:"imageRegistries,omitempty"`
-	ImageUIDMap       map[string]int64          `json:"imageUidMap,omitempty"`
-	LicenseKey        string                    `json:"licenseKey,omitempty"`
+	Namespace             string                    `json:"namespace"`
+	Size                  string                    `json:"size"`
+	Version               string                    `json:"version"`
+	ExposeService         string                    `json:"exposeService"`
+	DbPrototype           string                    `json:"dbPrototype,omitempty"`
+	ExternalPostgres      *PostgresExternalDBConfig `json:"externalPostgres,omitempty"`
+	PVCStorageClass       string                    `json:"pvcStorageClass,omitempty"`
+	LivenessProbes        bool                      `json:"livenessProbes"`
+	ScanType              string                    `json:"scanType,omitempty"`
+	PersistentStorage     bool                      `json:"persistentStorage"`
+	PVC                   []PVC                     `json:"pvc,omitempty"`
+	CertificateName       string                    `json:"certificateName"`
+	Certificate           string                    `json:"certificate,omitempty"`
+	CertificateKey        string                    `json:"certificateKey,omitempty"`
+	ProxyCertificate      string                    `json:"proxyCertificate,omitempty"`
+	AuthCustomCA          string                    `json:"authCustomCa"`
+	Type                  string                    `json:"type,omitempty"`
+	DesiredState          string                    `json:"desiredState"`
+	Environs              []string                  `json:"environs,omitempty"`
+	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
+	ImageUIDMap           map[string]int64          `json:"imageUidMap,omitempty"`
+	LicenseKey            string                    `json:"licenseKey,omitempty"`
+	RegistryConfiguration RegistryConfiguration     `json:"registryConfiguration,omitempty"`
 }
 
 // Environs will hold the list of Environment variables
@@ -115,4 +116,11 @@ type BlackduckList struct {
 	meta_v1.ListMeta `json:"metadata"`
 
 	Items []Blackduck `json:"items"`
+}
+
+// RegistryConfiguration contains the registry configuration
+type RegistryConfiguration struct {
+	Registry    string   `json:"registry"`
+	Namespace   string   `json:"namespace"`
+	PullSecrets []string `json:"pullSecrets"`
 }

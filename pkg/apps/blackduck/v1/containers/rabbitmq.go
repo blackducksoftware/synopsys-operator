@@ -53,7 +53,7 @@ func (c *Creater) GetRabbitmqDeployment() *components.ReplicationController {
 
 	rabbitmq := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
 		Name: "rabbitmq", Replicas: util.IntToInt32(1)}, "", []*util.Container{rabbitmqContainerConfig}, c.getRabbitmqVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("rabbitmq"), c.GetLabel("rabbitmq"))
+		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("rabbitmq"), c.GetLabel("rabbitmq"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
 	return rabbitmq
 }
