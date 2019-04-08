@@ -21,12 +21,28 @@ under the License.
 
 package alert
 
-import (
-	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-)
+import "fmt"
 
-// Creater interface
-type Creater interface {
-	Ensure(alert *alertapi.Alert) error
-	Versions() []string
+var imageTags = map[string]map[string]string{
+	"3.1.0": {
+		"blackduck-alert": "3.1.0",
+		"blackduck-cfssl": "1.0.0",
+	},
+	"4.0.0": {
+		"blackduck-alert": "4.0.0",
+		"blackduck-cfssl": "1.0.0",
+	},
+}
+
+func (c *Creater) getImageTag(version, name string) string {
+	return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[version][name])
+}
+
+// GetVersions returns the supported versions
+func GetVersions() []string {
+	var versions []string
+	for k := range imageTags {
+		versions = append(versions, k)
+	}
+	return versions
 }

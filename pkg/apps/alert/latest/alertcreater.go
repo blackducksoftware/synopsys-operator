@@ -22,10 +22,13 @@ under the License.
 package alert
 
 import (
+	"fmt"
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
@@ -35,25 +38,43 @@ import (
 
 // Creater will store the configuration to create the Blackduck
 type Creater struct {
-	kubeConfig  *rest.Config
-	kubeClient  *kubernetes.Clientset
-	alertClient *alertclientset.Clientset
-	routeClient *routeclient.RouteV1Client
+	Config      *protoform.Config
+	KubeConfig  *rest.Config
+	KubeClient  *kubernetes.Clientset
+	AlertClient *alertclientset.Clientset
+	RouteClient *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient}
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client) *Creater {
+	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, AlertClient: alertClient, RouteClient: routeClient}
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (ac *Creater) Ensure(alert *alertapi.Alert) error {
+	// Get Components
+	specConfig := NewAlert(&alert.Spec)
+	cpList, err := specConfig.GetComponents()
+	if err != nil {
+		return err
+	}
+	// Update components in cluster
+	commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, alert.Spec.Namespace,
+		cpList, "app=alert")
+	errors := commonConfig.CRUDComponents()
+	if len(errors) > 0 {
+		return fmt.Errorf("unable to update Alert components due to %+v", errors)
+	}
+	// Check Pods are running
+	if err := util.ValidatePodsAreRunningInNamespace(ac.KubeClient, alert.Spec.Namespace, 600); err != nil {
+		return err
+	}
 	return nil
 }
 
 // Versions will return the versions supported
 func (ac *Creater) Versions() []string {
-	return []string{"master"}
+	return GetVersions()
 }
 
 // DeleteAlert will delete the Black Duck Alert
@@ -61,19 +82,19 @@ func (ac *Creater) DeleteAlert(namespace string) {
 	log.Debugf("Delete Alert details for %s", namespace)
 	var err error
 	// Verify whether the namespace exist
-	_, err = util.GetNamespace(ac.kubeClient, namespace)
+	_, err = util.GetNamespace(ac.KubeClient, namespace)
 	if err != nil {
 		log.Errorf("Unable to find the namespace %+v due to %+v", namespace, err)
 	} else {
 		// Delete a namespace
-		err = util.DeleteNamespace(ac.kubeClient, namespace)
+		err = util.DeleteNamespace(ac.KubeClient, namespace)
 		if err != nil {
 			log.Errorf("Unable to delete the namespace %+v due to %+v", namespace, err)
 		}
 
 		for {
 			// Verify whether the namespace deleted
-			ns, err := util.GetNamespace(ac.kubeClient, namespace)
+			ns, err := util.GetNamespace(ac.KubeClient, namespace)
 			log.Infof("Namespace: %v, status: %v", namespace, ns.Status)
 			time.Sleep(10 * time.Second)
 			if err != nil {
@@ -93,7 +114,7 @@ func (ac *Creater) CreateAlert(createAlert *alertapi.AlertSpec) error {
 		log.Errorf("unable to get alert components for %s due to %+v", createAlert.Namespace, err)
 		return err
 	}
-	deployer, err := util.NewDeployer(ac.kubeConfig)
+	deployer, err := util.NewDeployer(ac.KubeConfig)
 	if err != nil {
 		log.Errorf("unable to get deployer object for %s due to %+v", createAlert.Namespace, err)
 		return err
@@ -106,9 +127,9 @@ func (ac *Creater) CreateAlert(createAlert *alertapi.AlertSpec) error {
 	deployer.StartControllers()
 
 	// Create Route if on Openshift
-	if ac.routeClient != nil {
+	if ac.RouteClient != nil {
 		log.Debugf("Creating an Openshift Route for Alert")
-		_, err := util.CreateOpenShiftRoutes(ac.routeClient, createAlert.Namespace, createAlert.Namespace, "Service", "alert")
+		_, err := util.CreateOpenShiftRoutes(ac.RouteClient, createAlert.Namespace, createAlert.Namespace, "Service", "alert")
 		if err != nil {
 			log.Errorf("unable to create the openshift route due to %+v", err)
 		}

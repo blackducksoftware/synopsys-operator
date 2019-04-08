@@ -73,7 +73,7 @@ func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
 	}
 
 	creaters := []Creater{
-		latestalert.NewCreater(kubeConfig, kubeclient, alertClient, routeClient),
+		latestalert.NewCreater(config, kubeConfig, kubeclient, alertClient, routeClient),
 	}
 
 	return &Alert{
@@ -100,7 +100,11 @@ func (a Alert) getCreater(version string) (Creater, error) {
 // Delete will be used to delete an Alert instance
 func (a Alert) Delete(name string) {
 	logrus.Infof("deleting %s", name)
-	err := crdupdater.NewCRUDComponents(a.kubeConfig, a.kubeClient, false, name, &api.ComponentList{}, "app=alert").CRUDComponents()
+	errs := crdupdater.NewCRUDComponents(a.kubeConfig, a.kubeClient, false, name, &api.ComponentList{}, "app=alert").CRUDComponents()
+	if errs != nil {
+		logrus.Error(errs)
+	}
+	err := util.DeleteNamespace(a.kubeClient, name)
 	if err != nil {
 		logrus.Error(err)
 	}
