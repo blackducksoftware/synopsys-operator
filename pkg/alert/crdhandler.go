@@ -24,9 +24,11 @@ package alert
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -43,6 +45,20 @@ type HandlerInterface interface {
 	ObjectDeleted(obj string)
 	ObjectUpdated(objOld, objNew interface{})
 }
+
+// State contains the state of the OpsSight
+type State string
+
+const (
+	// Running is used when the instance is running
+	Running State = "Running"
+	// Stopped is used when the instance is about to stip
+	Stopped State = "Stopped"
+	// Updating is used when the instance is about to updating
+	Updating State = "Updating"
+	// Error is used when the instance deployment errored out
+	Error State = "Error"
+)
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
@@ -62,46 +78,12 @@ func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 // ObjectCreated will be called for create alert events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	log.Debugf("objectCreated: %+v", obj)
-	alertv1, ok := obj.(*alertapi.Alert)
-	if !ok {
-		log.Error("Unable to cast to Alert object")
-		return
-	}
-	if strings.EqualFold(alertv1.Status.State, "") {
-		// merge with default values
-		newSpec := alertv1.Spec
-		alertDefaultSpec := h.defaults
-		err := mergo.Merge(&newSpec, alertDefaultSpec)
-		log.Debugf("merged alert details %+v", newSpec)
-		if err != nil {
-			log.Errorf("unable to merge the alert structs for %s due to %+v", alertv1.Name, err)
-			//Set spec/state  and status/state to started
-			h.updateState("error", fmt.Sprintf("unable to merge the alert structs for %s due to %+v", alertv1.Name, err), alertv1)
-		} else {
-			alertv1.Spec = newSpec
-			// update status
-			alertv1, err := h.updateState("creating", "", alertv1)
-
-			if err == nil {
-				alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
-
-				// create alert instance
-				err = alertCreator.CreateAlert(&alertv1.Spec)
-
-				if err != nil {
-					h.updateState("error", fmt.Sprintf("%+v", err), alertv1)
-				} else {
-					h.updateState("running", "", alertv1)
-				}
-			}
-		}
-	}
+	h.ObjectUpdated(nil, obj)
 }
 
 // ObjectDeleted will be called for delete alert events
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	alertCreator := NewCreater(h.kubeConfig, h.kubeClient, h.alertClient, h.routeClient)
 
 	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
 	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("alerts.synopsys.com", v1.GetOptions{})
@@ -111,16 +93,59 @@ func (h *Handler) ObjectDeleted(name string) {
 		return
 	}
 
-	alertCreator.DeleteAlert(name)
+	app := apps.NewApp(h.config, h.kubeConfig)
+	app.Alert().Delete(name)
 }
 
 // ObjectUpdated will be called for update alert events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	log.Debugf("objectUpdated: %+v", objNew)
+	log.Debugf("objectUpdated: %+v", objOld)
+	// Verify the object is an Alert
+	alert, ok := objNew.(*alertapi.Alert)
+	if !ok {
+		log.Error("Unable to cast to Alert object")
+		return
+	}
+
+	// Get Default fields for Alert
+	newSpec := alert.Spec
+	alertDefaultSpec := h.defaults
+	err := mergo.Merge(&newSpec, alertDefaultSpec)
+	if err != nil {
+		log.Errorf("unable to merge the Alert structs for %s due to %+v", alert.Name, err)
+		alert, err = h.updateState(Error, fmt.Sprintf("unable to merge the Alert structs for %s due to %+v", alert.Name, err), alert)
+		if err != nil {
+			log.Errorf("couldn't update Alert state: %v", err)
+		}
+		return
+	}
+	alert.Spec = newSpec
+
+	// An error occurred. We wait for one minute before we try to ensure again
+	if strings.EqualFold(alert.Status.State, string(Error)) {
+		time.Sleep(time.Minute * 1)
+	}
+
+	// Update the Alert
+	alert, err = h.updateState(Updating, "", alert)
+	if err != nil {
+		log.Errorf("couldn't update Alert state: %v", err)
+	}
+	app := apps.NewApp(h.config, h.kubeConfig)
+	err = app.Alert().Ensure(alert)
+	if err != nil {
+		log.Errorf("unable to ensure the Alert %s due to %+v", alert.Name, err)
+		alert, err = h.updateState(Error, fmt.Sprintf("%+v", err), alert)
+		if err != nil {
+			log.Errorf("couldn't update Alert state: %v", err)
+		}
+		return
+	}
+	h.updateState(Running, "", alert)
 }
 
-func (h *Handler) updateState(statusState string, errorMessage string, alert *alertapi.Alert) (*alertapi.Alert, error) {
-	alert.Status.State = statusState
+func (h *Handler) updateState(statusState State, errorMessage string, alert *alertapi.Alert) (*alertapi.Alert, error) {
+	alert.Status.State = string(statusState)
 	alert.Status.ErrorMessage = errorMessage
 	alert, err := h.updateAlertObject(alert)
 	if err != nil {
