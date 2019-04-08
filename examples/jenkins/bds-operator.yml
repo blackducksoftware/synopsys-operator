@@ -14,6 +14,7 @@ objects:
     persistentStorage: false
     type: master
     size: ${HUB_TYPE}
+    version: ${ACTUAL_HUB_VERSION}
     environs:
     - HTTPS_VERIFY_CERTS:yes
     - HUB_POSTGRES_ENABLE_SSL:"false"
