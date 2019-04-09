@@ -3,6 +3,10 @@ ifdef IMAGE_TAG
 TAG="$(IMAGE_TAG)"
 endif
 
+SHA_SUM_CMD="/usr/bin/shasum"
+ifdef SHA_SUM
+SHA_SUM_CMD="$(SHA_SUM)"
+endif
 
 ifneq (, $(findstring gcr.io,$(REGISTRY)))
 PREFIX_CMD="gcloud"
@@ -28,17 +32,11 @@ binary: clean ${OUTDIR}
 		fi; \
 		cd ${OUTDIR}; \
 		if [[ $(p) = ${LINUX} ]]; then \
-			tar -zcvf synopsysctl-$(p)-amd64.tar.gz synopsysctl; \
-			shasum -a 256 synopsysctl-$(p)-amd64.tar.gz >> CHECKSUM; \
-			rm -f synopsysctl; \
+			tar -zcvf synopsysctl-$(p)-amd64.tar.gz synopsysctl && $(SHA_SUM_CMD) -a 256 synopsysctl-$(p)-amd64.tar.gz >> CHECKSUM && rm -f synopsysctl; \
 		elif [[ $(p) = ${WINDOWS} ]]; then \
-			zip synopsysctl-$(p)-amd64.zip synopsysctl.exe; \
-			shasum -a 256 synopsysctl-$(p)-amd64.zip >> CHECKSUM; \
-			rm -f synopsysctl.exe; \
+			zip synopsysctl-$(p)-amd64.zip synopsysctl.exe && $(SHA_SUM_CMD) -a 256 synopsysctl-$(p)-amd64.zip >> CHECKSUM && rm -f synopsysctl.exe; \
 		else \
-			zip synopsysctl-$(p)-amd64.zip synopsysctl; \
-			shasum -a 256 synopsysctl-$(p)-amd64.zip >> CHECKSUM; \
-			rm -f synopsysctl; \
+			zip synopsysctl-$(p)-amd64.zip synopsysctl && $(SHA_SUM_CMD) -a 256 synopsysctl-$(p)-amd64.zip >> CHECKSUM && rm -f synopsysctl; \
 		fi; \
 		echo "completed synopsysctl binary for $(p) platform"; \
 		cd ..; \
