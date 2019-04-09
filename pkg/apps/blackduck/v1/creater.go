@@ -126,17 +126,6 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	}
 	// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
 
-	if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
-		return err
-	}
-
-	// TODO wait for webserver to be up before we register
-	if len(blackduck.Spec.LicenseKey) > 0 {
-		if err := hc.registerIfNeeded(blackduck); err != nil {
-			log.Infof("couldn't register blackduck %s: %v", blackduck.Name, err)
-		}
-	}
-
 	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
 		newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
 	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
@@ -154,6 +143,17 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 		}
 		if route != nil {
 			newBlackuck.Status.IP = route.Spec.Host
+		}
+	}
+
+	if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
+		return err
+	}
+
+	// TODO wait for webserver to be up before we register
+	if len(blackduck.Spec.LicenseKey) > 0 {
+		if err := hc.registerIfNeeded(blackduck); err != nil {
+			log.Infof("couldn't register blackduck %s: %v", blackduck.Name, err)
 		}
 	}
 
