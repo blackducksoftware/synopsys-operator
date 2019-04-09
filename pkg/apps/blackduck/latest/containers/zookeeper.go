@@ -51,7 +51,7 @@ func (c *Creater) GetZookeeperDeployment(imageName string) *components.Replicati
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && (c.hasPVC("blackduck-zookeeper-data") || c.hasPVC("blackduck-zookeeper-datalog")) {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/zookeeper/data && chmod -cR 777 /opt/blackduck/zookeeper/datalog"}},
 			VolumeMounts:    volumeMounts,
@@ -72,13 +72,13 @@ func (c *Creater) getZookeeperVolumes() []*components.Volume {
 	var zookeeperDataVolume *components.Volume
 	var zookeeperDatalogVolume *components.Volume
 
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-zookeeper-data") {
+	if c.hubSpec.PersistentStorage {
 		zookeeperDataVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-data", "blackduck-zookeeper-data")
 	} else {
 		zookeeperDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-data")
 	}
 
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-zookeeper-datalog") {
+	if c.hubSpec.PersistentStorage {
 		zookeeperDatalogVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", "blackduck-zookeeper-datalog")
 	} else {
 		zookeeperDatalogVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")

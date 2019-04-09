@@ -61,7 +61,7 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) *components.Repl
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-authentication") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-authentication/ldap"}},
 			VolumeMounts:    volumeMounts,
@@ -83,7 +83,7 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 	hubAuthSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication-security")
 
 	var hubAuthVolume *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-authentication") {
+	if c.hubSpec.PersistentStorage {
 		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", "blackduck-authentication")
 	} else {
 		hubAuthVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")

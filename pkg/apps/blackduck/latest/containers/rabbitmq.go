@@ -41,7 +41,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) *components.Replicatio
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-rabbitmq") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/rabbitmq"}},
 			VolumeMounts:    volumeMounts,
@@ -62,7 +62,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) *components.Replicatio
 func (c *Creater) getRabbitmqVolumes() []*components.Volume {
 	rabbitmqSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-security")
 	var rabbitmqDataEmptyDir *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-rabbitmq") {
+	if c.hubSpec.PersistentStorage {
 		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", "blackduck-rabbitmq")
 	} else {
 		rabbitmqDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-data")
