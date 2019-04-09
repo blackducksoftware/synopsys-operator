@@ -28,12 +28,12 @@ import (
 )
 
 // GetZookeeperDeployment will return the zookeeper deployment
-func (c *Creater) GetZookeeperDeployment() *components.ReplicationController {
+func (c *Creater) GetZookeeperDeployment(imageName string) *components.ReplicationController {
 
 	volumeMounts := c.getZookeeperVolumeMounts()
 
 	zookeeperContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: c.getImageTag("blackduck-zookeeper"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MaxMem: c.hubContainerFlavor.ZookeeperMemoryLimit, MinCPU: zookeeperMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: volumeMounts,

@@ -28,11 +28,11 @@ import (
 )
 
 // GetRabbitmqDeployment will return the rabbitmq deployment
-func (c *Creater) GetRabbitmqDeployment() *components.ReplicationController {
+func (c *Creater) GetRabbitmqDeployment(imageName string) *components.ReplicationController {
 	volumeMounts := c.getRabbitmqVolumeMounts()
 
 	rabbitmqContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: c.getImageTag("rabbitmq"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RabbitmqMemoryLimit, MaxMem: c.hubContainerFlavor.RabbitmqMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubDBConfigEnv()},

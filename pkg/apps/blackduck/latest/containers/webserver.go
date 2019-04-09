@@ -28,9 +28,9 @@ import (
 )
 
 // GetWebserverDeployment will return the webserver deployment
-func (c *Creater) GetWebserverDeployment() *components.ReplicationController {
+func (c *Creater) GetWebserverDeployment(imageName string) *components.ReplicationController {
 	webServerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: c.getImageTag("blackduck-nginx"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit,
 			MaxMem: c.hubContainerFlavor.WebserverMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},

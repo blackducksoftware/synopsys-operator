@@ -95,45 +95,74 @@ func (hc *Creater) getComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 	componentList.Secrets = append(componentList.Secrets, containerCreater.GetSecrets(cert, key)...)
 
 	// cfssl
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetCfsslDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetCfsslService())
+	imageName := containerCreater.GetImageTag("blackduck-cfssl")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetCfsslDeployment(imageName))
+		componentList.Services = append(componentList.Services, containerCreater.GetCfsslService())
+	}
 
 	// nginx
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetWebserverDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetWebServerService())
+	imageName = containerCreater.GetImageTag("blackduck-nginx")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetWebserverDeployment(imageName))
+		componentList.Services = append(componentList.Services, containerCreater.GetWebServerService())
+	}
 
 	// documentation
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetDocumentationDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetDocumentationService())
+	imageName = containerCreater.GetImageTag("blackduck-documentation")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetDocumentationDeployment(imageName))
+		componentList.Services = append(componentList.Services, containerCreater.GetDocumentationService())
+	}
 
 	// solr
-
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetSolrDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetSolrService())
+	imageName = containerCreater.GetImageTag("blackduck-solr")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetSolrDeployment(imageName))
+		componentList.Services = append(componentList.Services, containerCreater.GetSolrService())
+	}
 
 	// registration
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetRegistrationDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetRegistrationService())
+	imageName = containerCreater.GetImageTag("blackduck-registration")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetRegistrationDeployment(imageName))
+		componentList.Services = append(componentList.Services, containerCreater.GetRegistrationService())
+	}
 
 	// zookeeper
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetZookeeperDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetZookeeperService())
+	imageName = containerCreater.GetImageTag("blackduck-zookeeper")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetZookeeperDeployment(imageName))
+		componentList.Services = append(componentList.Services, containerCreater.GetZookeeperService())
+	}
 
 	// jobRunner
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetJobRunnerDeployment())
+	imageName = containerCreater.GetImageTag("blackduck-jobrunner")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetJobRunnerDeployment(imageName))
+	}
 
 	// hub-scan
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetScanDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetScanService())
+	imageName = containerCreater.GetImageTag("blackduck-scan")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetScanDeployment(imageName))
+		componentList.Services = append(componentList.Services, containerCreater.GetScanService())
+	}
 
 	// hub-authentication
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetAuthenticationDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetAuthenticationService())
+	imageName = containerCreater.GetImageTag("blackduck-authentication")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetAuthenticationDeployment(imageName))
+		componentList.Services = append(componentList.Services, containerCreater.GetAuthenticationService())
+	}
 
 	// webapp-logstash
-	componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetWebappLogstashDeployment())
-	componentList.Services = append(componentList.Services, containerCreater.GetWebAppService())
-	componentList.Services = append(componentList.Services, containerCreater.GetLogStashService())
+	imageName = containerCreater.GetImageTag("blackduck-webapp")
+	if len(imageName) > 0 {
+		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetWebappLogstashDeployment(imageName, containerCreater.GetImageTag("blackduck-logstash")))
+		componentList.Services = append(componentList.Services, containerCreater.GetWebAppService())
+		componentList.Services = append(componentList.Services, containerCreater.GetLogStashService())
+	}
 
 	//Service account
 	componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
@@ -141,15 +170,24 @@ func (hc *Creater) getComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 
 	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Upload cache
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetUploadCacheDeployment())
-		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
+		imageName := containerCreater.GetImageTag("blackduck-upload-cache")
+		if len(imageName) > 0 {
+			componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetUploadCacheDeployment(imageName))
+			componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
+		}
 
 		// Binary Scanner
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetBinaryScannerDeployment())
+		imageName = containerCreater.GetImageTag("appcheck-worker")
+		if len(imageName) > 0 {
+			componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetBinaryScannerDeployment(imageName))
+		}
 
 		// Rabbitmq
-		componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetRabbitmqDeployment())
-		componentList.Services = append(componentList.Services, containerCreater.GetRabbitmqService())
+		imageName = containerCreater.GetImageTag("rabbitmq")
+		if len(imageName) > 0 {
+			componentList.ReplicationControllers = append(componentList.ReplicationControllers, containerCreater.GetRabbitmqDeployment(imageName))
+			componentList.Services = append(componentList.Services, containerCreater.GetRabbitmqService())
+		}
 	}
 
 	// Add Expose service
