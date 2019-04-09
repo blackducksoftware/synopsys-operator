@@ -12,6 +12,7 @@ objects:
     certificateName: default
     livenessProbes: false
     persistentStorage: false
+    exposeService: OPENSHIFT
     type: master
     size: ${HUB_TYPE}
     version: ${ACTUAL_HUB_VERSION}
