@@ -522,7 +522,7 @@ func init() {
 	updateCmd.AddCommand(updateOperatorCmd)
 
 	// Add Bladuck Commands
-	updateAlertCtl.AddSpecFlags(updateBlackduckCmd, false)
+	updateBlackduckCtl.AddSpecFlags(updateBlackduckCmd, false)
 	updateCmd.AddCommand(updateBlackduckCmd)
 	updateBlackduckCmd.AddCommand(updateBlackduckRootKeyCmd)
 
