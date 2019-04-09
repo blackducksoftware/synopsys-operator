@@ -85,14 +85,14 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	c.PostEditContainer(logstashContainerConfig)
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-webapp") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-webapp", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-webapp/ldap"}},
 			VolumeMounts:    webappVolumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
 	}
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-logstash") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-logstash", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/logstash/data"}},
 			VolumeMounts:    logstashVolumeMounts,
@@ -110,14 +110,14 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 func (c *Creater) getWebappLogtashVolumes() []*components.Volume {
 	webappSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp-security")
 	var webappVolume *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-webapp") {
+	if c.hubSpec.PersistentStorage {
 		webappVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-webapp", "blackduck-webapp")
 	} else {
 		webappVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
 	}
 
 	var logstashVolume *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-logstash") {
+	if c.hubSpec.PersistentStorage {
 		logstashVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-logstash", "blackduck-logstash")
 	} else {
 		logstashVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")

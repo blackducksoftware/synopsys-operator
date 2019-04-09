@@ -49,7 +49,7 @@ func (c *Creater) GetCfsslDeployment() *components.ReplicationController {
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-cfssl") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /etc/cfssl"}},
 			VolumeMounts:    cfsslVolumeMounts,
@@ -69,7 +69,7 @@ func (c *Creater) GetCfsslDeployment() *components.ReplicationController {
 // getCfsslVolumes will return the cfssl volumes
 func (c *Creater) getCfsslVolumes() []*components.Volume {
 	var cfsslVolume *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-cfssl") {
+	if c.hubSpec.PersistentStorage {
 		cfsslVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-cfssl", "blackduck-cfssl")
 	} else {
 		cfsslVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-cfssl")
