@@ -52,9 +52,9 @@ type State string
 const (
 	// Running is used when the instance is running
 	Running State = "Running"
-	// Stopped is used when the instance is about to stip
+	// Stopped is used when the instance is about to stop
 	Stopped State = "Stopped"
-	// Updating is used when the instance is about to updating
+	// Updating is used when the instance is about to update
 	Updating State = "Updating"
 	// Error is used when the instance deployment errored out
 	Error State = "Error"
