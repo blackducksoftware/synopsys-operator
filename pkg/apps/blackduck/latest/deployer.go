@@ -82,9 +82,6 @@ func (hc *Creater) getComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 
 	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor)
 
-	// Persistent Volume Claim
-	componentList.PersistentVolumeClaims = append(componentList.PersistentVolumeClaims, hc.GetPVC(blackduck)...)
-
 	// Configmap
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
 
