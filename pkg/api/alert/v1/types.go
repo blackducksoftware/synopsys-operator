@@ -41,6 +41,7 @@ type Alert struct {
 // AlertSpec is the spec for a Alert resource
 type AlertSpec struct {
 	Namespace            string   `json:"namespace,omitempty"`
+	Version              string   `json:"version,omitempty"`
 	Registry             string   `json:"registry,omitempty"`
 	ImagePath            string   `json:"imagePath,omitempty"`
 	AlertImageName       string   `json:"alertImageName,omitempty"`

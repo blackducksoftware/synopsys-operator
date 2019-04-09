@@ -35,6 +35,7 @@ import (
 // for the Synopsysctl tool
 type Ctl struct {
 	Spec                 *alertapi.AlertSpec
+	Version              string
 	Registry             string
 	ImagePath            string
 	AlertImageName       string
@@ -60,6 +61,7 @@ type Ctl struct {
 func NewAlertCtl() *Ctl {
 	return &Ctl{
 		Spec:                 &alertapi.AlertSpec{},
+		Version:              "",
 		Registry:             "",
 		ImagePath:            "",
 		AlertImageName:       "",
@@ -126,6 +128,7 @@ func (ctl *Ctl) SwitchSpec(specType string) error {
 // AddSpecFlags adds flags for the Alert's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of the Alert")
 	cmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
 	cmd.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
 	cmd.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
@@ -158,6 +161,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED\n", f.Name)
 		switch f.Name {
+		case "version":
+			ctl.Spec.Version = ctl.Version
 		case "alert-registry":
 			ctl.Spec.Registry = ctl.Registry
 		case "image-path":

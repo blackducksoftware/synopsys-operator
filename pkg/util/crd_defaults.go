@@ -297,6 +297,7 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 
 	return &alertv1.AlertSpec{
 		Namespace:            "alert-test",
+		Version:              "3.1.0",
 		Registry:             "docker.io",
 		ImagePath:            "blackducksoftware",
 		AlertImageName:       "blackduck-alert",

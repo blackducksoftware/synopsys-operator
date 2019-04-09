@@ -37,6 +37,7 @@ func TestNewAlertCtl(t *testing.T) {
 	alertCtl := NewAlertCtl()
 	assert.Equal(&Ctl{
 		Spec:                 &alertapi.AlertSpec{},
+		Version:              "",
 		Registry:             "",
 		ImagePath:            "",
 		AlertImageName:       "",
@@ -117,6 +118,7 @@ func TestAddSpecFlags(t *testing.T) {
 	ctl.AddSpecFlags(actualCmd, false)
 
 	cmd := &cobra.Command{}
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of the Alert")
 	cmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
 	cmd.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
 	cmd.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
@@ -163,6 +165,14 @@ func TestSetFlag(t *testing.T) {
 		changedCtl  *Ctl
 		changedSpec *alertapi.AlertSpec
 	}{
+		// case
+		{flagName: "version",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				Version: "changed",
+			},
+			changedSpec: &alertapi.AlertSpec{Version: "changed"},
+		},
 		// case
 		{flagName: "alert-registry",
 			initialCtl: NewAlertCtl(),

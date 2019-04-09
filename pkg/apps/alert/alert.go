@@ -112,7 +112,7 @@ func (a Alert) Versions() []string {
 // Ensure will get the necessary Creater and make sure the instance
 // is correctly deployed or deploy it if needed
 func (a Alert) Ensure(alt *v1.Alert) error {
-	creater, err := a.getCreater(alt.Spec.AlertImageVersion) // get Creater for the Alert Version
+	creater, err := a.getCreater(alt.Spec.Version) // get Creater for the Alert Version
 	if err != nil {
 		return err
 	}
