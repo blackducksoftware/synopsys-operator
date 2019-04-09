@@ -28,10 +28,10 @@ import (
 )
 
 // GetSolrDeployment will return the solr deployment
-func (c *Creater) GetSolrDeployment() *components.ReplicationController {
+func (c *Creater) GetSolrDeployment(imageName string) *components.ReplicationController {
 	solrVolumeMount := c.getSolrVolumeMounts()
 	solrContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: c.getImageTag("blackduck-solr"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.SolrMemoryLimit, MaxMem: c.hubContainerFlavor.SolrMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: solrVolumeMount,

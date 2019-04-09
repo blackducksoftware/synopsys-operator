@@ -28,7 +28,7 @@ import (
 )
 
 // GetAuthenticationDeployment will return the authentication deployment
-func (c *Creater) GetAuthenticationDeployment() *components.ReplicationController {
+func (c *Creater) GetAuthenticationDeployment(imageName string) *components.ReplicationController {
 	volumeMounts := c.getAuthenticationVolumeMounts()
 	var authEnvs []*horizonapi.EnvConfig
 	authEnvs = append(authEnvs, c.getHubDBConfigEnv())
@@ -36,7 +36,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.AuthenticationHubMaxMemory})
 
 	hubAuthContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: c.getImageTag("blackduck-authentication"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   authEnvs,
 		VolumeMounts: volumeMounts,

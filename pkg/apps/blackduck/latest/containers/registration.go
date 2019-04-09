@@ -28,12 +28,12 @@ import (
 )
 
 // GetRegistrationDeployment will return the registration deployment
-func (c *Creater) GetRegistrationDeployment() *components.ReplicationController {
+func (c *Creater) GetRegistrationDeployment(imageName string) *components.ReplicationController {
 
 	volumeMounts := c.getRegistrationVolumeMounts()
 
 	registrationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: c.getImageTag("blackduck-registration"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: c.getRegistrationVolumeMounts(),

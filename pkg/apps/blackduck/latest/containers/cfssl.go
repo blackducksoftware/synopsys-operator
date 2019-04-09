@@ -28,10 +28,10 @@ import (
 )
 
 // GetCfsslDeployment will return the cfssl deployment
-func (c *Creater) GetCfsslDeployment() *components.ReplicationController {
+func (c *Creater) GetCfsslDeployment(imageName string) *components.ReplicationController {
 	cfsslVolumeMounts := c.getCfsslolumeMounts()
 	cfsslContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: c.getImageTag("blackduck-cfssl"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.CfsslMemoryLimit, MaxMem: c.hubContainerFlavor.CfsslMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: cfsslVolumeMounts,
