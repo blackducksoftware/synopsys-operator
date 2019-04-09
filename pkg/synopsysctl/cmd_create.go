@@ -22,9 +22,7 @@ under the License.
 package synopsysctl
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -52,9 +50,6 @@ var baseAlertSpec = "default"
 var mockBlackduck bool
 var mockOpsSight bool
 var mockAlert bool
-
-// File to save yaml of resource being created
-var saveJSONPath string
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -145,21 +140,6 @@ var createBlackduckCmd = &cobra.Command{
 				return nil
 			}
 		}
-		// Save resource to a file
-		if cmd.Flag("save-path").Changed {
-			blackDuckJSON, err := json.Marshal(blackduck)
-			if err != nil {
-				log.Errorf("Error converting Black Duck to Json file: %s", err)
-				return nil
-			}
-			filePath := fmt.Sprintf("%s/%s.json", saveJSONPath, blackduckNamespace)
-			log.Debugf("Saving File: %s\n", filePath)
-			err = ioutil.WriteFile(filePath, blackDuckJSON, 0644)
-			if err != nil {
-				log.Errorf("Failed to write Black Duck to Json file: %s", err)
-				return nil
-			}
-		}
 		return nil
 	},
 }
@@ -219,21 +199,6 @@ var createOpsSightCmd = &cobra.Command{
 			_, err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
 			if err != nil {
 				log.Errorf("Error creating the OpsSight : %s", err)
-				return nil
-			}
-		}
-		// Save resource to a file
-		if cmd.Flag("save-path").Changed {
-			opsSightJSON, err := json.Marshal(opssight)
-			if err != nil {
-				log.Errorf("Error converting OpsSight to Json file: %s", err)
-				return nil
-			}
-			filePath := fmt.Sprintf("%s/%s.json", saveJSONPath, opsSightNamespace)
-			log.Debugf("Saving File: %s\n", filePath)
-			err = ioutil.WriteFile(filePath, opsSightJSON, 0644)
-			if err != nil {
-				log.Errorf("Failed to write OpsSight to Json file: %s", err)
 				return nil
 			}
 		}
@@ -298,21 +263,6 @@ var createAlertCmd = &cobra.Command{
 				return nil
 			}
 		}
-		// Save resource to a file
-		if cmd.Flag("save-path").Changed {
-			alertJSON, err := json.Marshal(alert)
-			if err != nil {
-				log.Errorf("Error converting Alert to Json file: %s", err)
-				return nil
-			}
-			filePath := fmt.Sprintf("%s/%s.json", saveJSONPath, alertNamespace)
-			log.Debugf("Saving File: %s\n", filePath)
-			err = ioutil.WriteFile(filePath, alertJSON, 0644)
-			if err != nil {
-				log.Errorf("Failed to write Alert to Json file: %s", err)
-				return nil
-			}
-		}
 		return nil
 	},
 }
@@ -329,21 +279,18 @@ func init() {
 	// Add Blackduck Command
 	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
 	createBlackduckCmd.Flags().BoolVar(&mockBlackduck, "mock", false, "Prints resource spec instead of creating")
-	createBlackduckCmd.Flags().StringVar(&saveJSONPath, "save-path", "", "File path to save the resource as a json config")
 	createBlackduckCtl.AddSpecFlags(createBlackduckCmd, true)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command
 	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags")
 	createOpsSightCmd.Flags().BoolVar(&mockOpsSight, "mock", false, "Prints resource spec instead of creating")
-	createOpsSightCmd.Flags().StringVar(&saveJSONPath, "save-path", "", "File path to save the resource's yaml config")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command
 	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags")
 	createAlertCmd.Flags().BoolVar(&mockAlert, "mock", false, "Prints resource spec instead of creating")
-	createAlertCmd.Flags().StringVar(&saveJSONPath, "save-path", "", "File path to save the resource's yaml config")
 	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	createCmd.AddCommand(createAlertCmd)
 }
