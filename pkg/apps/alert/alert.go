@@ -134,19 +134,18 @@ func (a *Alert) Delete(namespace string) error {
 		return fmt.Errorf("unable to delete the namespace %+v due to %+v", namespace, err)
 	}
 	// Verify whether the namespace deleted
-	var attempts = 30.0
+	var attempts = 30
 	var retryWait time.Duration = 10
-	for i := 0.0; i <= attempts; i++ {
-		ns, err := util.GetNamespace(a.kubeClient, namespace)
-		log.Debugf("Namespace: %v, status: %v", namespace, ns.Status)
-		time.Sleep(retryWait * time.Second)
+	for i := 0; i <= attempts; i++ {
+		_, err := util.GetNamespace(a.kubeClient, namespace)
 		if err != nil {
 			log.Infof("Deleted the namespace %+v", namespace)
 			break
 		}
-		if i >= 10.0 {
-			return fmt.Errorf("unable to delete the namespace %+v after %f minutes", namespace, attempts*retryWait.Seconds()/60)
+		if i >= 10 {
+			return fmt.Errorf("unable to delete the namespace %+v after %f minutes", namespace, float64(attempts)*retryWait.Seconds()/60)
 		}
+		time.Sleep(retryWait * time.Second)
 	}
 	return nil
 }
