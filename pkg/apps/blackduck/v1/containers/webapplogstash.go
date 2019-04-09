@@ -28,14 +28,14 @@ import (
 )
 
 // GetWebappLogstashDeployment will return the webapp and logstash deployment
-func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationController {
+func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashImageName string) *components.ReplicationController {
 	webappEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.WebappHubMaxMemory})
 
 	webappVolumeMounts := c.getWebappVolumeMounts()
 
 	webappContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.getImageTag("blackduck-webapp"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: webappImageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs:   webappEnvs,
 		VolumeMounts: webappVolumeMounts,
@@ -65,7 +65,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	logstashVolumeMounts := c.getLogstashVolumeMounts()
 
 	logstashContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: c.getImageTag("blackduck-logstash"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: logstashImageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.LogstashMemoryLimit, MaxMem: c.hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: logstashVolumeMounts,
