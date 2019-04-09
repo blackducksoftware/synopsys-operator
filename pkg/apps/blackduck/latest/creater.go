@@ -133,6 +133,20 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 		newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
 	}
 
+	// Create Route on Openshift
+	if strings.ToUpper(blackduck.Spec.ExposeService) == "OPENSHIFT" && hc.routeClient != nil {
+		route, err := util.GetOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
+		if err != nil {
+			route, err = util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver")
+			if err != nil {
+				log.Errorf("unable to create the openshift route due to %+v", err)
+			}
+		}
+		if route != nil {
+			newBlackuck.Status.IP = route.Spec.Host
+		}
+	}
+
 	if blackduck.Spec.PersistentStorage {
 		pvcVolumeNames := map[string]string{}
 		for _, v := range blackduck.Spec.PVC {
