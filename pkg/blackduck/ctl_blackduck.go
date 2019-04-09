@@ -159,27 +159,39 @@ func (ctl *Ctl) CheckSpecFlags() error {
 	return nil
 }
 
+// Constants for Default Specs
+const (
+	EmptySpec                 string = "empty"
+	TemplateSpec              string = "template"
+	BdbaSpec                  string = "bdba"
+	EphemeralSpec             string = "ephemeral"
+	EphemeralCustomAuthCASpec string = "ephemeral-custom-auth-ca"
+	ExternalSpec              string = "external-db"
+	Ipv6DisabledSpec          string = "ipv6-disabled"
+	PersistentStorageSpec     string = "persistent-storage"
+)
+
 // SwitchSpec switches the Blackduck's Spec to a different predefined spec
 func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
-	case "empty":
+	case EmptySpec:
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
-	case "template":
+	case TemplateSpec:
 		ctl.Spec = crddefaults.GetBlackDuckTemplate()
-	case "bdba":
+	case BdbaSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultBDBA()
-	case "ephemeral":
+	case EphemeralSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeral()
-	case "ephemeral-custom-auth-ca":
+	case EphemeralCustomAuthCASpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()
-	case "external-db":
+	case ExternalSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalDB()
-	case "ipv6-disabled":
+	case Ipv6DisabledSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultIPV6Disabled()
-	case "persistent-storage":
+	case PersistentStorageSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorage()
 	default:
-		return fmt.Errorf("Blackduck Spec Type %s does not match: empty, template, bdba, ephemeral, ephemeral-custom-auth-ca, external-db, ipv6-disabled, persistent-storage", createBlackduckSpecType)
+		return fmt.Errorf("Blackduck Spec Type %s is not valid", createBlackduckSpecType)
 	}
 	return nil
 }
