@@ -46,7 +46,7 @@ func GetBlackDuckTemplate() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetBlackDuckDefaultBDBA
+// GetBlackDuckDefaultBDBA returns a BlackDuck with BDBA
 func GetBlackDuckDefaultBDBA() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:       "blackduck-bdba",
@@ -100,7 +100,7 @@ func GetBlackDuckDefaultBDBA() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetBlackDuckDefaultEphemeral
+// GetBlackDuckDefaultEphemeral returns a BlackDuck with ephemeral storage
 func GetBlackDuckDefaultEphemeral() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:       "blackduck-ephemeral",
@@ -152,7 +152,8 @@ func GetBlackDuckDefaultEphemeral() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetBlackDuckDefaultEphemeralCustomAuthCA
+// GetBlackDuckDefaultEphemeralCustomAuthCA returns a BlackDuck with ephemeral storage
+// using custom auth CA
 func GetBlackDuckDefaultEphemeralCustomAuthCA() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:       "blackduck-auth-ca",
@@ -204,7 +205,7 @@ func GetBlackDuckDefaultEphemeralCustomAuthCA() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetBlackDuckDefaultExternalDB
+// GetBlackDuckDefaultExternalDB returns a BlackDuck with an external Data Base
 func GetBlackDuckDefaultExternalDB() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "blackduck-externaldb",
@@ -242,7 +243,7 @@ func GetBlackDuckDefaultExternalDB() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetBlackDuckDefaultIPV6Disabled
+// GetBlackDuckDefaultIPV6Disabled returns a BlackDuck with IPV6 Disabled
 func GetBlackDuckDefaultIPV6Disabled() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:       "blackduck-ipv6disabled",
@@ -548,7 +549,8 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 	}
 }
 
-// GetOpsSightDefaultWithIPV6DisabledBlackDuck
+// GetOpsSightDefaultWithIPV6DisabledBlackDuck retuns an OpsSight with a BlackDuck and
+// IPV6 disabled
 func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Namespace: "opssight-test",

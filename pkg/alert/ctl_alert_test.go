@@ -91,8 +91,9 @@ func TestSwitchSpec(t *testing.T) {
 		input    string
 		expected alertapi.AlertSpec
 	}{
-		{input: "empty", expected: alertapi.AlertSpec{}},
-		{input: "default", expected: *crddefaults.GetAlertDefaultValue()},
+		{input: EmptySpec, expected: alertapi.AlertSpec{}},
+		{input: TemplateSpec, expected: *crddefaults.GetAlertTemplate()},
+		{input: DefaultSpec, expected: *crddefaults.GetAlertDefault()},
 	}
 
 	// test cases: "default"
@@ -103,8 +104,7 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: default
 	createAlertSpecType := ""
-	assert.EqualError(alertCtl.SwitchSpec(createAlertSpecType),
-		fmt.Sprintf("Alert Spec Type %s does not match: default or empty", createAlertSpecType))
+	assert.EqualError(alertCtl.SwitchSpec(createAlertSpecType), fmt.Sprintf("Alert Spec Type %s is not valid", createAlertSpecType))
 
 }
 

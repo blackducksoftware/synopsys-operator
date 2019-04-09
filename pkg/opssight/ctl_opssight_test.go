@@ -146,9 +146,10 @@ func TestSwitchSpec(t *testing.T) {
 		input    string
 		expected *opssightv1.OpsSightSpec
 	}{
-		{input: "empty", expected: &opssightv1.OpsSightSpec{}},
-		{input: "default", expected: crddefaults.GetOpsSightDefaultValue()},
-		{input: "disabledBlackduck", expected: crddefaults.GetOpsSightDefaultValueWithDisabledHub()},
+		{input: EmptySpec, expected: &opssightv1.OpsSightSpec{}},
+		{input: TemplateSpec, expected: crddefaults.GetOpsSightTemplate()},
+		{input: DefaultSpec, expected: crddefaults.GetOpsSightDefault()},
+		{input: DisabledBlackDuckSpec, expected: crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()},
 	}
 
 	// test cases: "empty", "default", "disabledBlackduck"
@@ -159,8 +160,7 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: default
 	createOpsSightSpecType := ""
-	assert.EqualError(opsSightCtl.SwitchSpec(createOpsSightSpecType),
-		fmt.Sprintf("OpsSight Spec Type %s does not match: empty, disabledBlackduck, default", createOpsSightSpecType))
+	assert.EqualError(opsSightCtl.SwitchSpec(createOpsSightSpecType), fmt.Sprintf("OpsSight Spec Type %s is not valid", createOpsSightSpecType))
 
 }
 

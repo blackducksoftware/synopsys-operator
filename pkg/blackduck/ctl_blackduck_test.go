@@ -119,7 +119,6 @@ func TestCheckSpecFlags(t *testing.T) {
 		assert.EqualError(test.input.CheckSpecFlags(), test.expected)
 	}
 }
-
 func TestSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	blackduckCtl := NewBlackduckCtl()
@@ -128,9 +127,14 @@ func TestSwitchSpec(t *testing.T) {
 		input    string
 		expected *blackduckv1.BlackduckSpec
 	}{
-		{input: "empty", expected: &blackduckv1.BlackduckSpec{}},
-		{input: "persistentStorage", expected: crddefaults.GetHubDefaultPersistentStorage()},
-		{input: "default", expected: crddefaults.GetHubDefaultValue()},
+		{input: EmptySpec, expected: &blackduckv1.BlackduckSpec{}},
+		{input: TemplateSpec, expected: crddefaults.GetBlackDuckTemplate()},
+		{input: BdbaSpec, expected: crddefaults.GetBlackDuckDefaultBDBA()},
+		{input: EphemeralSpec, expected: crddefaults.GetBlackDuckDefaultEphemeral()},
+		{input: EphemeralCustomAuthCASpec, expected: crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()},
+		{input: ExternalSpec, expected: crddefaults.GetBlackDuckDefaultExternalDB()},
+		{input: Ipv6DisabledSpec, expected: crddefaults.GetBlackDuckDefaultIPV6Disabled()},
+		{input: PersistentStorageSpec, expected: crddefaults.GetBlackDuckDefaultPersistentStorage()},
 	}
 
 	// test cases: "empty", "persistentStorage", "default"
@@ -141,7 +145,7 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: ""
 	createBlackduckSpecType := ""
-	assert.EqualError(blackduckCtl.SwitchSpec(createBlackduckSpecType), fmt.Sprintf("Blackduck Spec Type %s does not match: empty, persistentStorage, default", createBlackduckSpecType))
+	assert.EqualError(blackduckCtl.SwitchSpec(createBlackduckSpecType), fmt.Sprintf("Blackduck Spec Type %s is not valid", createBlackduckSpecType))
 
 }
 
