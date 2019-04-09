@@ -23,6 +23,7 @@ package blackduck
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -134,9 +135,17 @@ func (b Blackduck) Versions() []string {
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (b Blackduck) Ensure(bd *v1.Blackduck) error {
+	// If the version is not specified then we set it to be the latest.
+	if len(bd.Spec.Version) == 0 {
+		versions := b.Versions()
+		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+		bd.Spec.Version = versions[0]
+	}
+
 	creater, err := b.getCreater(bd.Spec.Version)
 	if err != nil {
 		return err
 	}
+
 	return creater.Ensure(bd)
 }
