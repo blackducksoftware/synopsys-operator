@@ -67,6 +67,20 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	newBlackuck := blackduck.DeepCopy()
 
+	// Create Route on Openshift
+	if strings.ToUpper(blackduck.Spec.ExposeService) == "OPENSHIFT" && hc.routeClient != nil {
+		route, err := util.GetOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
+		if err != nil {
+			route, err = util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver")
+			if err != nil {
+				log.Errorf("unable to create the openshift route due to %+v", err)
+			}
+		}
+		if route != nil {
+			newBlackuck.Status.IP = route.Spec.Host
+		}
+	}
+
 	// Get postgres components
 	cpPostgresList, err := hc.getPostgresComponents(blackduck)
 	if err != nil {
@@ -131,20 +145,6 @@ func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 		newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
 	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
 		newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
-	}
-
-	// Create Route on Openshift
-	if strings.ToUpper(blackduck.Spec.ExposeService) == "OPENSHIFT" && hc.routeClient != nil {
-		route, err := util.GetOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
-		if err != nil {
-			route, err = util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver")
-			if err != nil {
-				log.Errorf("unable to create the openshift route due to %+v", err)
-			}
-		}
-		if route != nil {
-			newBlackuck.Status.IP = route.Spec.Host
-		}
 	}
 
 	if blackduck.Spec.PersistentStorage {
