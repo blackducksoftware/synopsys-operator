@@ -69,9 +69,13 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 
 // getCfsslContainer returns a new Container for a Cffsl
 func (a *SpecConfig) getCfsslContainer() *components.Container {
+	image := a.config.CfsslImage
+	if image == "" {
+		image = GetImageTag(a.config.Version, "blackduck-cfssl")
+	}
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:   "hub-cfssl",
-		Image:  fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.CfsslImageName, a.config.CfsslImageVersion),
+		Image:  image,
 		MinMem: a.config.CfsslMemory,
 		MaxMem: a.config.CfsslMemory,
 	})

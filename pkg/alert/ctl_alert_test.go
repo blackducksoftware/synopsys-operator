@@ -38,12 +38,8 @@ func TestNewAlertCtl(t *testing.T) {
 	assert.Equal(&Ctl{
 		Spec:                 &alertapi.AlertSpec{},
 		Version:              "",
-		Registry:             "",
-		ImagePath:            "",
-		AlertImageName:       "",
-		AlertImageVersion:    "",
-		CfsslImageName:       "",
-		CfsslImageVersion:    "",
+		AlertImage:           "",
+		CfsslImage:           "",
 		StandAlone:           false,
 		ExposeService:        "",
 		Port:                 0,
@@ -69,7 +65,7 @@ func TestGetSpec(t *testing.T) {
 func TestSetSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	specToSet := alertapi.AlertSpec{Namespace: "test", Registry: "test"}
+	specToSet := alertapi.AlertSpec{Namespace: "test", Version: "test"}
 	alertCtl.SetSpec(specToSet)
 	assert.Equal(specToSet, alertCtl.GetSpec())
 
@@ -119,12 +115,8 @@ func TestAddSpecFlags(t *testing.T) {
 
 	cmd := &cobra.Command{}
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of the Alert")
-	cmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
-	cmd.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
-	cmd.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
-	cmd.Flags().StringVar(&ctl.AlertImageVersion, "alert-image-version", ctl.AlertImageVersion, "Version of the Alert Image")
-	cmd.Flags().StringVar(&ctl.CfsslImageName, "cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
-	cmd.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
+	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "Url of the Alert Image")
+	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "Url of Cfssl Image")
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Type of Service to Expose")
 	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
@@ -174,52 +166,20 @@ func TestSetFlag(t *testing.T) {
 			changedSpec: &alertapi.AlertSpec{Version: "changed"},
 		},
 		// case
-		{flagName: "alert-registry",
+		{flagName: "alert-image",
 			initialCtl: NewAlertCtl(),
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
-				Registry: "changed",
+				AlertImage: "changed",
 			},
-			changedSpec: &alertapi.AlertSpec{Registry: "changed"},
+			changedSpec: &alertapi.AlertSpec{AlertImage: "changed"},
 		},
 		// case
-		{flagName: "image-path",
+		{flagName: "cfssl-image",
 			initialCtl: NewAlertCtl(),
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
-				ImagePath: "changed",
+				CfsslImage: "changed",
 			},
-			changedSpec: &alertapi.AlertSpec{ImagePath: "changed"},
-		},
-		// case
-		{flagName: "alert-image-name",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
-				AlertImageName: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{AlertImageName: "changed"},
-		},
-		// case
-		{flagName: "alert-image-version",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
-				AlertImageVersion: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{AlertImageVersion: "changed"},
-		},
-		// case
-		{flagName: "cfssl-image-name",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
-				CfsslImageName: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{CfsslImageName: "changed"},
-		},
-		// case
-		{flagName: "cfssl-image-version",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
-				CfsslImageVersion: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{CfsslImageVersion: "changed"},
+			changedSpec: &alertapi.AlertSpec{CfsslImage: "changed"},
 		},
 		// case
 		{flagName: "stand-alone",

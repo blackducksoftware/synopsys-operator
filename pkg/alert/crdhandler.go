@@ -99,7 +99,7 @@ func (h *Handler) ObjectDeleted(name string) {
 
 // ObjectUpdated will be called for update alert events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	log.Debugf("objectUpdated: %+v", objOld)
+	log.Debugf("Updating Object")
 	// Verify the object is an Alert
 	alert, ok := objNew.(*alertapi.Alert)
 	if !ok {
@@ -131,7 +131,9 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	if err != nil {
 		log.Errorf("couldn't update Alert state: %v", err)
 	}
+	log.Infof("Getting Alert App...")
 	app := apps.NewApp(h.config, h.kubeConfig)
+	log.Infof("Esuring the Alert App with alert %+v...", alert)
 	err = app.Alert().Ensure(alert)
 	if err != nil {
 		log.Errorf("unable to ensure the Alert %s due to %+v", alert.Name, err)
@@ -141,7 +143,10 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		}
 		return
 	}
-	h.updateState(Running, "", alert)
+	_, err = h.updateState(Running, "", alert)
+	if err != nil {
+		log.Errorf("couldn't update Alert state: %v", err)
+	}
 }
 
 func (h *Handler) updateState(statusState State, errorMessage string, alert *alertapi.Alert) (*alertapi.Alert, error) {

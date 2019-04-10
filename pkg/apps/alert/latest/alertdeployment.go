@@ -76,9 +76,14 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 
 // getAlertContainer returns a new Container for an Alert
 func (a *SpecConfig) getAlertContainer() *components.Container {
+	image := a.config.AlertImage
+	if image == "" {
+		image = GetImageTag(a.config.Version, "blackduck-alert")
+	}
+	log.Infof("Adding Image to Alert Container: %s", image)
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "alert",
-		Image:      fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.AlertImageName, a.config.AlertImageVersion),
+		Image:      image,
 		PullPolicy: horizonapi.PullAlways,
 		MinMem:     a.config.AlertMemory,
 		MaxMem:     a.config.AlertMemory,

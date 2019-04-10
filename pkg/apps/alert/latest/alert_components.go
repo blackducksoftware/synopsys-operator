@@ -42,6 +42,7 @@ func NewSpecConfig(config *alertapi.AlertSpec) *SpecConfig {
 
 // GetComponents will return the list of components for alert
 func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
+	log.Infof("Getting Alert Components\n")
 	components := &api.ComponentList{}
 
 	// Add alert components

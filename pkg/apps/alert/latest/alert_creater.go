@@ -26,7 +26,6 @@ import (
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	alertcomponents "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -58,20 +57,18 @@ func (ac *Creater) Versions() []string {
 // Ensure is an Interface function that will make sure the instance is correctly deployed or deploy it if needed
 func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	// Get Kubernetes Components for the Alert
-	specConfig := alertcomponents.NewSpecConfig(&alert.Spec)
+	log.Infof("Creating SpecConfig for Alert...")
+	specConfig := NewSpecConfig(&alert.Spec)
 	cpList, err := specConfig.GetComponents()
 	if err != nil {
 		return err
 	}
+	log.Infof("Updating Alert with CRUD Updater...")
 	// Update components in cluster
 	commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, alert.Spec.Namespace, cpList, "app=alert")
 	errors := commonConfig.CRUDComponents()
 	if len(errors) > 0 {
 		return fmt.Errorf("unable to update Alert components due to %+v", errors)
-	}
-	// Check Pods are running
-	if err := util.ValidatePodsAreRunningInNamespace(ac.KubeClient, alert.Spec.Namespace, 600); err != nil {
-		return err
 	}
 
 	// Create Route if on Openshift
@@ -82,5 +79,6 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 			log.Errorf("unable to create the openshift route due to %+v", err)
 		}
 	}
+	log.Infof("Finished Ensuring the Alert...")
 	return nil
 }

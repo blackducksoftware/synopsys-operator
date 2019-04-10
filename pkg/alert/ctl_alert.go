@@ -36,12 +36,8 @@ import (
 type Ctl struct {
 	Spec                 *alertapi.AlertSpec
 	Version              string
-	Registry             string
-	ImagePath            string
-	AlertImageName       string
-	AlertImageVersion    string
-	CfsslImageName       string
-	CfsslImageVersion    string
+	AlertImage           string
+	CfsslImage           string
 	StandAlone           bool
 	ExposeService        string
 	Port                 int
@@ -62,12 +58,8 @@ func NewAlertCtl() *Ctl {
 	return &Ctl{
 		Spec:                 &alertapi.AlertSpec{},
 		Version:              "",
-		Registry:             "",
-		ImagePath:            "",
-		AlertImageName:       "",
-		AlertImageVersion:    "",
-		CfsslImageName:       "",
-		CfsslImageVersion:    "",
+		AlertImage:           "",
+		CfsslImage:           "",
 		StandAlone:           false,
 		ExposeService:        "",
 		Port:                 0,
@@ -129,12 +121,8 @@ func (ctl *Ctl) SwitchSpec(specType string) error {
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of the Alert")
-	cmd.Flags().StringVar(&ctl.Registry, "alert-registry", ctl.Registry, "Registry with the Alert Image")
-	cmd.Flags().StringVar(&ctl.ImagePath, "image-path", ctl.ImagePath, "Path to the Alert Image")
-	cmd.Flags().StringVar(&ctl.AlertImageName, "alert-image-name", ctl.AlertImageName, "Name of the Alert Image")
-	cmd.Flags().StringVar(&ctl.AlertImageVersion, "alert-image-version", ctl.AlertImageVersion, "Version of the Alert Image")
-	cmd.Flags().StringVar(&ctl.CfsslImageName, "cfssl-image-name", ctl.CfsslImageName, "Name of Cfssl Image")
-	cmd.Flags().StringVar(&ctl.CfsslImageVersion, "cfssl-image-version", ctl.CfsslImageVersion, "Version of Cffsl Image")
+	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "Url of the Alert Image")
+	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "Url of Cfssl Image")
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Type of Service to Expose")
 	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
@@ -163,18 +151,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		switch f.Name {
 		case "version":
 			ctl.Spec.Version = ctl.Version
-		case "alert-registry":
-			ctl.Spec.Registry = ctl.Registry
-		case "image-path":
-			ctl.Spec.ImagePath = ctl.ImagePath
-		case "alert-image-name":
-			ctl.Spec.AlertImageName = ctl.AlertImageName
-		case "alert-image-version":
-			ctl.Spec.AlertImageVersion = ctl.AlertImageVersion
-		case "cfssl-image-name":
-			ctl.Spec.CfsslImageName = ctl.CfsslImageName
-		case "cfssl-image-version":
-			ctl.Spec.CfsslImageVersion = ctl.CfsslImageVersion
+		case "alert-image":
+			ctl.Spec.AlertImage = ctl.AlertImage
+		case "cfssl-image":
+			ctl.Spec.CfsslImage = ctl.CfsslImage
 		case "stand-alone":
 			ctl.Spec.StandAlone = &ctl.StandAlone
 		case "expose-service":
