@@ -28,12 +28,12 @@ import (
 )
 
 // GetRegistrationDeployment will return the registration deployment
-func (c *Creater) GetRegistrationDeployment() *components.ReplicationController {
+func (c *Creater) GetRegistrationDeployment(imageName string) *components.ReplicationController {
 
 	volumeMounts := c.getRegistrationVolumeMounts()
 
 	registrationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: c.getImageTag("blackduck-registration"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: c.getRegistrationVolumeMounts(),
@@ -59,7 +59,7 @@ func (c *Creater) GetRegistrationDeployment() *components.ReplicationController 
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-registration") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-registration/config"}},
 			VolumeMounts:    volumeMounts,
@@ -81,7 +81,7 @@ func (c *Creater) getRegistrationVolumes() []*components.Volume {
 	var registrationVolume *components.Volume
 	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
 
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-registration") {
+	if c.hubSpec.PersistentStorage {
 		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", "blackduck-registration")
 	} else {
 		registrationVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")

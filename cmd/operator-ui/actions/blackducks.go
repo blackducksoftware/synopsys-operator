@@ -2,12 +2,12 @@ package actions
 
 import (
 	"fmt"
-	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	"sort"
 	"strings"
 
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
+	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -80,12 +80,12 @@ func (v BlackducksResource) Show(c buffalo.Context) error {
 // This function is mapped to the path GET /blackducks/new
 func (v BlackducksResource) New(c buffalo.Context) error {
 	blackduckSpec := bdutil.GetHubDefaultValue()
-	blackduck := &blackduckv1.Blackduck{}
+	blackduck := &blackduckapi.Blackduck{}
 	blackduck.Spec = *blackduckSpec
 	blackduck.Spec.PersistentStorage = true
 	blackduck.Spec.PVCStorageClass = ""
 	blackduck.Spec.ScanType = "Artifacts"
-	blackduck.Spec.PVC = []blackduckv1.PVC{
+	blackduck.Spec.PVC = []blackduckapi.PVC{
 		{
 			Name: "blackduck-postgres",
 			Size: "150Gi",
@@ -93,7 +93,7 @@ func (v BlackducksResource) New(c buffalo.Context) error {
 	}
 
 	// Required so that the UI can update the fields
-	blackduck.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+	blackduck.Spec.ExternalPostgres = &blackduckapi.PostgresExternalDBConfig{}
 	err := v.common(c, blackduck)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (v BlackducksResource) New(c buffalo.Context) error {
 	return c.Render(200, r.HTML("blackducks/new.html", "old_application.html"))
 }
 
-func (v BlackducksResource) common(c buffalo.Context, bd *blackduckv1.Blackduck) error {
+func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck) error {
 	var storageList map[string]string
 	storageList = make(map[string]string)
 	storageClasses, err := util.ListStorageClasses(v.kubeClient)
@@ -163,7 +163,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckv1.Blackduck)
 	return nil
 }
 
-func (v BlackducksResource) redirect(c buffalo.Context, blackduck *blackduckv1.Blackduck, err error) error {
+func (v BlackducksResource) redirect(c buffalo.Context, blackduck *blackduckapi.Blackduck, err error) error {
 	if err != nil {
 		c.Flash().Add("warning", err.Error())
 		// Make blackduck available inside the html template
@@ -191,7 +191,7 @@ func (v BlackducksResource) redirect(c buffalo.Context, blackduck *blackduckv1.B
 // path POST /blackducks
 func (v BlackducksResource) Create(c buffalo.Context) error {
 	// Allocate an empty Blackduck
-	blackduck := &blackduckv1.Blackduck{}
+	blackduck := &blackduckapi.Blackduck{}
 
 	// Bind blackduck to the html form elements
 	if err := c.Bind(blackduck); err != nil {
@@ -223,25 +223,25 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 		blackduck.Spec.PVC = nil
 	} else {
 		// Remove postgres volume if we use an external db
-		if *blackduck.Spec.ExternalPostgres != (blackduckv1.PostgresExternalDBConfig{}) {
+		if *blackduck.Spec.ExternalPostgres != (blackduckapi.PostgresExternalDBConfig{}) {
 			blackduck.Spec.PVC = nil
 		}
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-authentication"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-cfssl"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-registration"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-solr"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-webapp"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-logstash"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-zookeeper-data"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckv1.PVC{Name: "blackduck-zookeeper-datalog"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-authentication"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-cfssl"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-registration"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-solr"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-webapp"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-logstash"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-zookeeper-data"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-zookeeper-datalog"})
 	}
 
 	// Change back to nil if the configuration is empty
-	if *blackduck.Spec.ExternalPostgres == (blackduckv1.PostgresExternalDBConfig{}) {
+	if *blackduck.Spec.ExternalPostgres == (blackduckapi.PostgresExternalDBConfig{}) {
 		log.Info("External Database configuration is empty")
 		blackduck.Spec.ExternalPostgres = nil
 	}
-	_, err = util.CreateHub(v.blackduckClient, blackduck.Spec.Namespace, &blackduckv1.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackduck.Spec.Namespace}, Spec: blackduck.Spec})
+	_, err = util.CreateHub(v.blackduckClient, blackduck.Spec.Namespace, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackduck.Spec.Namespace}, Spec: blackduck.Spec})
 
 	if err != nil {
 		return v.redirect(c, blackduck, err)
@@ -258,53 +258,79 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 // Edit renders a edit form for a Blackduck. This function is
 // mapped to the path GET /blackducks/{blackduck_id}/edit
 func (v BlackducksResource) Edit(c buffalo.Context) error {
-	// Get the DB connection from the context
-	// tx, ok := c.Value("tx").(*pop.Connection)
-	// if !ok {
-	// 	return errors.WithStack(errors.New("no transaction found"))
-	// }
-
-	// // Allocate an empty Blackduck
-	// blackduck := &v1.Blackduck{}
-
-	// if err := tx.Find(blackduck, c.Param("blackduck_id")); err != nil {
-	// 	return c.Error(404, err)
-	// }
-
-	// return c.Render(200, r.Auto(c, blackduck))
-	return c.Error(404, errors.New("resource not implemented"))
-
+	blackduck, err := util.GetHub(v.blackduckClient, c.Param("blackduck_id"), c.Param("blackduck_id"))
+	if err != nil {
+		return c.Error(404, err)
+	}
+	if blackduck.Spec.ExternalPostgres == nil {
+		blackduck.Spec.ExternalPostgres = &blackduckapi.PostgresExternalDBConfig{}
+	}
+	blackduck.Spec.PVC = []blackduckapi.PVC{
+		{
+			Name: "blackduck-postgres",
+			Size: "150Gi",
+		},
+	}
+	err = v.common(c, blackduck)
+	if err != nil {
+		return c.Error(500, err)
+	}
+	return c.Render(200, r.Auto(c, blackduck))
 }
 
 // Update changes a Blackduck in the DB. This function is mapped to
 // the path PUT /blackducks/{blackduck_id}
 func (v BlackducksResource) Update(c buffalo.Context) error {
-	// Get the DB connection from the context
-	// tx, ok := c.Value("tx").(*pop.Connection)
-	// if !ok {
-	// 	return errors.WithStack(errors.New("no transaction found"))
-	// }
+	// Allocate an empty Blackduck
+	blackduck := &blackduckapi.Blackduck{}
 
-	// // Allocate an empty Blackduck
-	// blackduck := &v1.Blackduck{}
+	// Bind blackduck to the html form elements
+	if err := c.Bind(blackduck); err != nil {
+		log.Errorf("unable to bind blackduck %+v because %+v", c, err)
+		return errors.WithStack(err)
+	}
 
-	// if err := tx.Find(blackduck, c.Param("blackduck_id")); err != nil {
-	// 	return c.Error(404, err)
-	// }
+	if !blackduck.Spec.PersistentStorage {
+		blackduck.Spec.PVC = nil
+	} else {
+		// Remove postgres volume if we use an external db
+		if *blackduck.Spec.ExternalPostgres != (blackduckapi.PostgresExternalDBConfig{}) {
+			blackduck.Spec.PVC = nil
+		}
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-authentication"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-cfssl"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-registration"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-solr"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-webapp"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-logstash"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-zookeeper-data"})
+		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-zookeeper-datalog"})
+	}
 
-	// // Bind Blackduck to the html form elements
-	// if err := c.Bind(blackduck); err != nil {
-	// 	return errors.WithStack(err)
-	// }
+	// Change back to nil if the configuration is empty
+	if *blackduck.Spec.ExternalPostgres == (blackduckapi.PostgresExternalDBConfig{}) {
+		log.Info("External Database configuration is empty")
+		blackduck.Spec.ExternalPostgres = nil
+	}
 
-	// verrs, err := tx.ValidateAndUpdate(blackduck)
-	// if err != nil {
-	// 	return errors.WithStack(err)
-	// }
+	latestBlackduck, err := util.GetHub(v.blackduckClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
+	if err != nil {
+		return v.redirect(c, blackduck, err)
+	}
 
-	// if verrs.HasAny() {
-	// 	// Make the errors available inside the html template
-	// 	c.Set("errors", verrs)
+	latestBlackduck.Spec = blackduck.Spec
+	_, err = util.UpdateBlackduck(v.blackduckClient, blackduck.Spec.Namespace, latestBlackduck)
+
+	if err != nil {
+		return v.redirect(c, blackduck, err)
+	}
+	// If there are no errors set a success message
+	c.Flash().Add("success", "Black Duck was updated successfully")
+
+	blackducks, _ := util.ListHubs(v.blackduckClient, "")
+	c.Set("blackducks", blackducks.Items)
+	// and redirect to the blackducks index page
+	return c.Redirect(302, "/blackducks/%s", blackduck.Spec.Namespace)
 
 	// 	// Render again the edit.html template that the user can
 	// 	// correct the input.
@@ -315,7 +341,6 @@ func (v BlackducksResource) Update(c buffalo.Context) error {
 	// c.Flash().Add("success", "Blackduck was updated successfully")
 
 	// and redirect to the blackducks index page
-	return c.Error(404, errors.New("resource not implemented"))
 }
 
 // Destroy deletes a Blackduck from the DB. This function is mapped

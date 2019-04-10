@@ -46,7 +46,7 @@
         <td><h6>:</h6></td>
         <td>&nbsp;</td>
         <td>
-          <h6><%= blackduck.View.Version %></h6>
+          <h6><%= blackduck.Spec.Version %></h6>
         </td>
       </tr>
       <tr>
@@ -190,6 +190,7 @@
   <br/>
   <ul class="list-unstyled list-inline">
     <li class="list-inline-item"><a href="<%= blackducksPath() %>" class="btn btn-info">Close</a></li>
+    <li class="list-inline-item"><a href="<%= editBlackduckPath({ blackduck_id: blackduck.Spec.Namespace })%>" class="btn btn-warning">Edit</a></li>
     <li class="list-inline-item"><a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace })%>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
   </ul>
 </div>

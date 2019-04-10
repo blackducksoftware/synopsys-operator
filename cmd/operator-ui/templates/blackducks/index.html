@@ -46,12 +46,8 @@
             <td><%= blackduck.Status.State %></td>
             <td><a href="https://<%= blackduck.Status.IP %>" target="_blank"><%= blackduck.Status.IP %></a></td>
             <td colspan="3"><%= blackduck.Status.ErrorMessage %></td>
-            <td>
-              <a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" class="btn btn-info">View</a>
-            </td>
-            <td>
-              <a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
-            </td>
+            <td><a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" class="btn btn-info">View</a></td>
+            <td><a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a></td>
           </tr>
         <% } %>
       <% } else { %>

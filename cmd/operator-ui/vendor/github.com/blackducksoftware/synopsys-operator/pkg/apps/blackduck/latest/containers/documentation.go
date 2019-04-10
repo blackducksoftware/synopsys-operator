@@ -28,10 +28,10 @@ import (
 )
 
 // GetDocumentationDeployment will return the documentation deployment
-func (c *Creater) GetDocumentationDeployment() *components.ReplicationController {
+func (c *Creater) GetDocumentationDeployment(imageName string) *components.ReplicationController {
 	documentationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-documentation")
 	documentationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: c.getImageTag("blackduck-documentation"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.DocumentationMemoryLimit, MaxMem: c.hubContainerFlavor.DocumentationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
