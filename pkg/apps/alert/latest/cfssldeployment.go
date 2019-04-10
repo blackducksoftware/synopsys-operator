@@ -36,7 +36,7 @@ func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 		Name:      "cfssl",
 		Namespace: a.config.Namespace,
 	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": "cfssl", "tier": "cfssl"})
+	deployment.AddMatchLabelsSelectors(map[string]string{"component": "cfssl", "app": "alert"})
 
 	pod, err := a.getCfsslPod()
 	if err != nil {
@@ -44,7 +44,7 @@ func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 	}
 	deployment.AddPod(pod)
 
-	deployment.AddLabels(map[string]string{"app": "cfssl"})
+	deployment.AddLabels(map[string]string{"component": "cfssl", "app": "alert"})
 	return deployment, nil
 }
 
@@ -53,7 +53,7 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "cfssl",
 	})
-	pod.AddLabels(map[string]string{"app": "cfssl", "tier": "cfssl"})
+	pod.AddLabels(map[string]string{"component": "cfssl", "app": "alert"})
 
 	pod.AddContainer(a.getCfsslContainer())
 
@@ -63,7 +63,6 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	}
 	pod.AddVolume(vol)
 
-	pod.AddLabels(map[string]string{"app": "cfssl"})
 	return pod, nil
 }
 

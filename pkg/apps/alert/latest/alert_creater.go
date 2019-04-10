@@ -57,13 +57,11 @@ func (ac *Creater) Versions() []string {
 // Ensure is an Interface function that will make sure the instance is correctly deployed or deploy it if needed
 func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	// Get Kubernetes Components for the Alert
-	log.Infof("Creating SpecConfig for Alert...")
 	specConfig := NewSpecConfig(&alert.Spec)
 	cpList, err := specConfig.GetComponents()
 	if err != nil {
 		return err
 	}
-	log.Infof("Updating Alert with CRUD Updater...")
 	// Update components in cluster
 	commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, alert.Spec.Namespace, cpList, "app=alert")
 	errors := commonConfig.CRUDComponents()
@@ -79,6 +77,5 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 			log.Errorf("unable to create the openshift route due to %+v", err)
 		}
 	}
-	log.Infof("Finished Ensuring the Alert...")
 	return nil
 }

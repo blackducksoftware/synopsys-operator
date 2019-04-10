@@ -38,7 +38,7 @@ func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
 		Name:      "alert",
 		Namespace: a.config.Namespace,
 	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": "alert", "tier": "alert"})
+	deployment.AddMatchLabelsSelectors(map[string]string{"app": "alert", "component": "alert"})
 
 	pod, err := a.getAlertPod()
 	if err != nil {
@@ -46,6 +46,7 @@ func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
 	}
 
 	deployment.AddPod(pod)
+	deployment.AddLabels(map[string]string{"app": "alert", "component": "alert"})
 	return deployment, nil
 }
 
@@ -54,7 +55,7 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "alert",
 	})
-	pod.AddLabels(map[string]string{"app": "alert", "tier": "alert"})
+	pod.AddLabels(map[string]string{"app": "alert", "component": "alert"})
 
 	pod.AddContainer(a.getAlertContainer())
 
@@ -70,7 +71,7 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 		pod.AddVolume(vol)
 	}
 
-	pod.AddLabels(map[string]string{"app": "alert"})
+	pod.AddLabels(map[string]string{"app": "alert", "component": "alert"})
 	return pod, nil
 }
 
@@ -80,7 +81,6 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 	if image == "" {
 		image = GetImageTag(a.config.Version, "blackduck-alert")
 	}
-	log.Infof("Adding Image to Alert Container: %s", image)
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "alert",
 		Image:      image,

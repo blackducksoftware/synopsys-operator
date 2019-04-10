@@ -53,5 +53,7 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 	// Add data to the ConfigMap
 	configMap.AddData(configMapData)
 
+	configMap.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+
 	return configMap
 }

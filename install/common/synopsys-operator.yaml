@@ -20,7 +20,7 @@ items:
       spec:
         containers:
         - name: synopsys-operator
-          image: "docker.io/mikephammer/synopsys-operator:controller"
+          image: ${IMAGE}
           imagePullPolicy: Always
           ports:
           - containerPort: 8080
