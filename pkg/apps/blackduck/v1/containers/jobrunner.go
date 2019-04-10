@@ -28,12 +28,12 @@ import (
 )
 
 // GetJobRunnerDeployment will return the job runner deployment
-func (c *Creater) GetJobRunnerDeployment() *components.ReplicationController {
+func (c *Creater) GetJobRunnerDeployment(imageName string) *components.ReplicationController {
 	jobRunnerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-jobrunner")
 	jobRunnerEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	jobRunnerEnvs = append(jobRunnerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.JobRunnerHubMaxMemory})
 	jobRunnerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "jobrunner", Image: c.getImageTag("blackduck-jobrunner"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "jobrunner", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.JobRunnerMemoryLimit, MaxMem: c.hubContainerFlavor.JobRunnerMemoryLimit, MinCPU: jobRunnerMinCPUUsage, MaxCPU: jobRunnerMaxCPUUsage},
 		EnvConfigs: jobRunnerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{

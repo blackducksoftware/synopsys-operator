@@ -170,12 +170,16 @@ var imageTags = map[string]map[string]string{
 	},
 }
 
-func (c *Creater) getImageTag(name string) string {
+// GetImageTag returns the image tag of the given container
+func (c *Creater) GetImageTag(name string) string {
 	confImageTag := c.GetFullContainerNameFromImageRegistryConf(name)
 	if len(confImageTag) > 0 {
 		return confImageTag
 	}
-	return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[c.hubSpec.Version][name])
+	if _, ok := imageTags[c.hubSpec.Version][name]; ok {
+		return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[c.hubSpec.Version][name])
+	}
+	return ""
 }
 
 // GetVersions will return the supported versions

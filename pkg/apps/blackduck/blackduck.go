@@ -23,10 +23,9 @@ package blackduck
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/sirupsen/logrus"
 
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -106,9 +105,20 @@ func (b Blackduck) getCreater(version string) (Creater, error) {
 // Delete will be used to delete a blackduck instance
 func (b Blackduck) Delete(name string) {
 	logrus.Infof("deleting %s", name)
-	err := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, false, name, &api.ComponentList{}, "app=blackduck").CRUDComponents()
+	//err := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, false, name, &api.ComponentList{}, "app=blackduck").CRUDComponents()
+	//if err != nil {
+	//	logrus.Error(err)
+	//}
+
+	// Verify whether the namespace exist
+	_, err := util.GetNamespace(b.kubeClient, name)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("unable to find the namespace %+v due to %+v", name, err)
+	}
+	// Delete the namespace
+	err = util.DeleteNamespace(b.kubeClient, name)
+	if err != nil {
+		logrus.Errorf("unable to delete the namespace %+v due to %+v", name, err)
 	}
 }
 
@@ -125,9 +135,17 @@ func (b Blackduck) Versions() []string {
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (b Blackduck) Ensure(bd *v1.Blackduck) error {
+	// If the version is not specified then we set it to be the latest.
+	if len(bd.Spec.Version) == 0 {
+		versions := b.Versions()
+		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+		bd.Spec.Version = versions[0]
+	}
+
 	creater, err := b.getCreater(bd.Spec.Version)
 	if err != nil {
 		return err
 	}
+
 	return creater.Ensure(bd)
 }
