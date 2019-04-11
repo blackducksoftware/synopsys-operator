@@ -36,7 +36,7 @@ func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 		Name:      "cfssl",
 		Namespace: a.config.Namespace,
 	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": "cfssl", "tier": "cfssl"})
+	deployment.AddMatchLabelsSelectors(map[string]string{"component": "cfssl", "app": "alert"})
 
 	pod, err := a.getCfsslPod()
 	if err != nil {
@@ -44,7 +44,7 @@ func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
 	}
 	deployment.AddPod(pod)
 
-	deployment.AddLabels(map[string]string{"app": "cfssl"})
+	deployment.AddLabels(map[string]string{"component": "cfssl", "app": "alert"})
 	return deployment, nil
 }
 
@@ -53,7 +53,7 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "cfssl",
 	})
-	pod.AddLabels(map[string]string{"app": "cfssl", "tier": "cfssl"})
+	pod.AddLabels(map[string]string{"component": "cfssl", "app": "alert"})
 
 	pod.AddContainer(a.getCfsslContainer())
 
@@ -63,15 +63,18 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	}
 	pod.AddVolume(vol)
 
-	pod.AddLabels(map[string]string{"app": "cfssl"})
 	return pod, nil
 }
 
 // getCfsslContainer returns a new Container for a Cffsl
 func (a *SpecConfig) getCfsslContainer() *components.Container {
+	image := a.config.CfsslImage
+	if image == "" {
+		image = GetImageTag(a.config.Version, "blackduck-cfssl")
+	}
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:   "hub-cfssl",
-		Image:  fmt.Sprintf("%s/%s/%s:%s", a.config.Registry, a.config.ImagePath, a.config.CfsslImageName, a.config.CfsslImageVersion),
+		Image:  image,
 		MinMem: a.config.CfsslMemory,
 		MaxMem: a.config.CfsslMemory,
 	})

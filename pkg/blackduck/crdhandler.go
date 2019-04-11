@@ -26,12 +26,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	"github.com/imdario/mergo"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
+	"github.com/imdario/mergo"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -42,7 +43,7 @@ import (
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -63,9 +64,9 @@ type DesiredState string
 const (
 	// Running is used when the instance is running
 	Running State = "Running"
-	// Stopped is used when the instance is about to stip
+	// Stopped is used when the instance is about to stop
 	Stopped State = "Stopped"
-	// Updating is used when the instance is about to updating
+	// Updating is used when the instance is about to update
 	Updating State = "Updating"
 	// Error is used when the instance deployment errored out
 	Error State = "Error"
