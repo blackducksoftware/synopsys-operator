@@ -247,7 +247,7 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 		return v.redirect(c, blackduck, err)
 	}
 	// If there are no errors set a success message
-	c.Flash().Add("success", "Blackduck was created successfully")
+	c.Flash().Add("success", "Black Duck was created successfully")
 
 	blackducks, _ := util.ListHubs(v.blackduckClient, "")
 	c.Set("blackducks", blackducks.Items)
@@ -315,6 +315,7 @@ func (v BlackducksResource) Update(c buffalo.Context) error {
 
 	latestBlackduck, err := util.GetHub(v.blackduckClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
 	if err != nil {
+		log.Errorf("unable to get %s blackduck instance because %+v", blackduck.Spec.Namespace, err)
 		return v.redirect(c, blackduck, err)
 	}
 
@@ -322,6 +323,7 @@ func (v BlackducksResource) Update(c buffalo.Context) error {
 	_, err = util.UpdateBlackduck(v.blackduckClient, blackduck.Spec.Namespace, latestBlackduck)
 
 	if err != nil {
+		log.Errorf("unable to update %s blackduck instance because %+v", blackduck.Spec.Namespace, err)
 		return v.redirect(c, blackduck, err)
 	}
 	// If there are no errors set a success message

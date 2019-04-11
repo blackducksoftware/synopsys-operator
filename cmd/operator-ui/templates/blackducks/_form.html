@@ -100,13 +100,29 @@
 <script>
   // check during form load
   function formLoad() {
+    editableFalse();
     checkNginxCertificate();
-    checkPVC();
+    loadPVC();
     document.getElementById("externalDbId").style.display= 'none';
     document.getElementById("customAuthCAId").style.display= 'none';
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
     //   document.getElementById("blackduck-Status.ErrorMessage").hidden = false;
     // }
+  }
+
+  function editableFalse() {
+    if (document.getElementById("blackduck-Spec.Namespace") != null && document.getElementById("blackduck-Spec.Namespace").value != "") {
+      document.getElementById("blackduck-Spec.Namespace").setAttribute("readonly", "readonly")
+      if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
+        document.getElementById("blackduck-Spec.PersistentStorage").setAttribute("readonly", "readonly")
+        document.getElementById("blackduck-Spec.PVCStorageClass").setAttribute("readonly", "readonly")
+        document.getElementById("blackduck-Spec.ScanType").setAttribute("readonly", "readonly")
+        document.getElementById("blackduck-Spec.DbPrototype").setAttribute("readonly", "readonly")
+        if (document.getElementById("blackduck-postgres") != null) {
+          document.getElementById("blackduck-postgres").setAttribute("readonly", "readonly")
+        }
+      }
+    }
   }
 
   // set empty certificate values if the certificate is not manual
@@ -144,13 +160,23 @@
     document.getElementById("blackduck-Spec.ScanType").value = "";
   }
 
+  // load the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
+  function loadPVC() {
+    pvcId=document.getElementById("pvcId")
+    if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
+      pvcId.style.display = '';
+    } else {
+      pvcId.style.display = 'none';
+      pvcEmptyValue();
+    }
+  }
+
   // check the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
   function checkPVC() {
     pvcId=document.getElementById("pvcId")
     if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
       pvcId.style.display = '';
       pvcDefaultValue();
-      checkScanType();
     } else {
       pvcId.style.display = 'none';
       pvcEmptyValue();
