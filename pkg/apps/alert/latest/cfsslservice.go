@@ -22,36 +22,26 @@ under the License.
 package alert
 
 import (
-	"strings"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	log "github.com/sirupsen/logrus"
 )
 
-// getAlertConfigMap returns a new ConfigMap for an Alert
-func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
-	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      "blackduck-alert-config",
-		Namespace: a.config.Namespace,
+// getCfsslService returns a new Service for a Cffsl
+func (a *SpecConfig) getCfsslService() *components.Service {
+	service := components.NewService(horizonapi.ServiceConfig{
+		Name:          "cfssl",
+		Namespace:     a.config.Namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
 	})
 
-	// Add Environs
-	configMapData := map[string]string{}
-	for _, environ := range a.config.Environs {
-		vals := strings.Split(environ, ":")
-		if len(vals) != 2 {
-			log.Errorf("Could not split environ '%s' on ':'", environ)
-			continue
-		}
-		environKey := strings.TrimSpace(vals[0])
-		environVal := strings.TrimSpace(vals[1])
-		log.Debugf("Adding Environ %s", environKey)
-		configMapData[environKey] = environVal
-	}
+	service.AddPort(horizonapi.ServicePortConfig{
+		Port:       8888,
+		TargetPort: "8888",
+		Protocol:   horizonapi.ProtocolTCP,
+		Name:       "8888-tcp",
+	})
 
-	// Add data to the ConfigMap
-	configMap.AddData(configMapData)
-
-	return configMap
+	service.AddSelectors(map[string]string{"app": "alert", "component": "cfssl"})
+	service.AddLabels(map[string]string{"app": "alert", "component": "cfssl"})
+	return service
 }

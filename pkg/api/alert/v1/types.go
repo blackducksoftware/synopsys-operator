@@ -41,12 +41,9 @@ type Alert struct {
 // AlertSpec is the spec for a Alert resource
 type AlertSpec struct {
 	Namespace            string   `json:"namespace,omitempty"`
-	Registry             string   `json:"registry,omitempty"`
-	ImagePath            string   `json:"imagePath,omitempty"`
-	AlertImageName       string   `json:"alertImageName,omitempty"`
-	AlertImageVersion    string   `json:"alertImageVersion,omitempty"`
-	CfsslImageName       string   `json:"cfsslImageName,omitempty"`
-	CfsslImageVersion    string   `json:"cfsslImageVersion,omitempty"`
+	Version              string   `json:"version,omitempty"`
+	AlertImage           string   `json:"alertImage,omitempty"`
+	CfsslImage           string   `json:"cfsslImage,omitempty"`
 	ExposeService        string   `json:"exposeService"`
 	StandAlone           *bool    `json:"standAlone"`
 	Port                 *int     `json:"port"`

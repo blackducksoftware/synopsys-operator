@@ -22,21 +22,38 @@ under the License.
 package alert
 
 import (
-	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
 )
 
-// getAlertPersistentVolumeClaim returns a new PVC for an Alert
-func (a *SpecConfig) getAlertPersistentVolumeClaim() (*components.PersistentVolumeClaim, error) {
-	name := a.config.PVCName
-	pvc, err := operatorutil.CreatePersistentVolumeClaim(name, a.config.Namespace, a.config.PVCSize, a.config.PVCStorageClass, horizonapi.ReadWriteOnce)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the PVC %s in namespace %s because %+v", name, a.config.Namespace, err)
+// getAlertConfigMap returns a new ConfigMap for an Alert
+func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
+	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
+		Name:      "blackduck-alert-config",
+		Namespace: a.config.Namespace,
+	})
+
+	// Add Environs
+	configMapData := map[string]string{}
+	for _, environ := range a.config.Environs {
+		vals := strings.Split(environ, ":")
+		if len(vals) != 2 {
+			log.Errorf("Could not split environ '%s' on ':'", environ)
+			continue
+		}
+		environKey := strings.TrimSpace(vals[0])
+		environVal := strings.TrimSpace(vals[1])
+		log.Debugf("Adding Environ %s", environKey)
+		configMapData[environKey] = environVal
 	}
 
-	pvc.AddLabels(map[string]string{"app": "alert"})
-	return pvc, nil
+	// Add data to the ConfigMap
+	configMap.AddData(configMapData)
+
+	configMap.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+
+	return configMap
 }

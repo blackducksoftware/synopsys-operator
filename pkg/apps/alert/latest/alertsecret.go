@@ -53,7 +53,7 @@ func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
 		"ALERT_ENCRYPTION_GLOBAL_SALT": []byte(a.config.EncryptionGlobalSalt),
 	})
 
-	alertSecret.AddLabels(map[string]string{"app": "alert"})
+	alertSecret.AddLabels(map[string]string{"app": "alert", "component": "alert"})
 	return alertSecret, nil
 
 }

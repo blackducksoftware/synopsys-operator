@@ -4,7 +4,7 @@ Copyright (C) 2019 Synopsys, Inc.
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
 distributed with this work for additional information
-regarding copyright ownershia. The ASF licenses this file
+regarding copyright ownership. The ASF licenses this file
 to you under the Apache License, Version 2.0 (the
 "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
@@ -22,26 +22,13 @@ under the License.
 package alert
 
 import (
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/horizon/pkg/components"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
 
-// getCfsslService returns a new Service for a Cffsl
-func (a *SpecConfig) getCfsslService() *components.Service {
-	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "cfssl",
-		Namespace:     a.config.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
-	})
-
-	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       8888,
-		TargetPort: "8888",
-		Protocol:   horizonapi.ProtocolTCP,
-		Name:       "8888-tcp",
-	})
-
-	service.AddSelectors(map[string]string{"app": "cfssl"})
-	service.AddLabels(map[string]string{"app": "cfssl"})
-	return service
+// Creater interface for Alert
+// An Alert can have multiple Creaters where each Creater supports
+// different versions of Alert
+type Creater interface {
+	Versions() []string
+	Ensure(alert *alertapi.Alert) error
 }

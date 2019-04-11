@@ -19,32 +19,32 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package apps
+package alert
 
-import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"k8s.io/client-go/rest"
-)
+import "fmt"
 
-// App struct
-type App struct {
-	config     *protoform.Config
-	kubeConfig *rest.Config
+// imageTags is a map of the Alert versions to it's images and tags
+var imageTags = map[string]map[string]string{
+	"3.1.0": {
+		"blackduck-alert": "3.1.0",
+		"blackduck-cfssl": "1.0.0",
+	},
+	"4.0.0": {
+		"blackduck-alert": "4.0.0",
+		"blackduck-cfssl": "1.0.0",
+	},
 }
 
-// NewApp will return an App
-func NewApp(config *protoform.Config, kubeConfig *rest.Config) *App {
-	return &App{config: config, kubeConfig: kubeConfig}
+// GetImageTag returns the url for an image
+func GetImageTag(version, name string) string {
+	return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[version][name])
 }
 
-// Blackduck will return a Blackduck
-func (a *App) Blackduck() *blackduck.Blackduck {
-	return blackduck.NewBlackduck(a.config, a.kubeConfig)
-}
-
-// Alert will return an Alert
-func (a *App) Alert() *alert.Alert {
-	return alert.NewAlert(a.config, a.kubeConfig)
+// GetVersions returns the supported versions for this Creater
+func GetVersions() []string {
+	var versions []string
+	for k := range imageTags {
+		versions = append(versions, k)
+	}
+	return versions
 }

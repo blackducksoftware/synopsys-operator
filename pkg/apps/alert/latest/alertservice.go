@@ -43,8 +43,8 @@ func (a *SpecConfig) getAlertService() *components.Service {
 		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
 
-	service.AddSelectors(map[string]string{"app": "alert"})
-	service.AddLabels(map[string]string{"app": "alert"})
+	service.AddSelectors(map[string]string{"app": "alert", "component": "alert"})
+	service.AddLabels(map[string]string{"app": "alert", "component": "alert"})
 	return service
 }
 
@@ -63,8 +63,8 @@ func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
 
-	service.AddSelectors(map[string]string{"app": "alert"})
-	service.AddLabels(map[string]string{"app": "alert"})
+	service.AddSelectors(map[string]string{"app": "alert", "component": "alert"})
+	service.AddLabels(map[string]string{"app": "alert", "component": "alert"})
 	return service
 }
 
@@ -83,7 +83,7 @@ func (a *SpecConfig) getAlertServiceLoadBalancer() *components.Service {
 		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
 
-	service.AddSelectors(map[string]string{"app": "alert"})
-	service.AddLabels(map[string]string{"app": "alert"})
+	service.AddSelectors(map[string]string{"app": "alert", "component": "alert"})
+	service.AddLabels(map[string]string{"app": "alert", "component": "alert"})
 	return service
 }
