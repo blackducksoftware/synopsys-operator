@@ -41,6 +41,7 @@
   <%= f.TextAreaTag("Spec.ProxyCertificate", {value: blackduck.Spec.ProxyCertificate, label: "Proxy Root Certificate"}) %>
   <label>Container Image Tags</label>
   <ul id="containerTags" name="containerTags" contenteditable="true">
+      <li value=""></li>
     <%= for (containerTag) in  blackduck.View.ContainerTags { %>
     <li value="<%= containerTag %>"><%= containerTag %></li>
     <% } %>
@@ -66,14 +67,15 @@
 <style>
   ul {
     position: relative;
-    outline: 0;
+    /* outline: 0; */
+    border:1px solid #ced4da;
   }
 
   ul li {
     position: relative;
-    padding: 20px 10px 20px 40px;
+    padding: 10px 5px 5px 30px;
     background: transparent;
-    box-shadow: 0 1px #EEE;
+    box-shadow: 0 0px #EEE;
   }
 
   ul li:before {
