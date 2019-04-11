@@ -246,7 +246,7 @@ func TestSetFlag(t *testing.T) {
 			changedSpec: &alertapi.AlertSpec{PVCName: "changedPVCName"},
 		},
 		// case
-		{flagName: "storage-class",
+		{flagName: "pvc-storage-class",
 			initialCtl: NewAlertCtl(),
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				PVCStorageClass: "changedStorageClass",
