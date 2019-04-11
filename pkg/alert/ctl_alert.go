@@ -169,7 +169,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.PersistentStorage = ctl.PersistentStorage
 		case "pvc-name":
 			ctl.Spec.PVCName = ctl.PVCName
-		case "storage-class":
+		case "pvc-storage-class":
 			ctl.Spec.PVCStorageClass = ctl.PVCStorageClass
 		case "pvc-size":
 			ctl.Spec.PVCSize = ctl.PVCSize
