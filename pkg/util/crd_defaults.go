@@ -297,12 +297,9 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 
 	return &alertv1.AlertSpec{
 		Namespace:            "alert-test",
-		Registry:             "docker.io",
-		ImagePath:            "blackducksoftware",
-		AlertImageName:       "blackduck-alert",
-		AlertImageVersion:    "3.1.0",
-		CfsslImageName:       "blackduck-cfssl",
-		CfsslImageVersion:    "1.0.0",
+		Version:              "3.1.0",
+		AlertImage:           "docker.io/blackducksoftware/blackduck-alert:3.1.0",
+		CfsslImage:           "docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
 		ExposeService:        "NODEPORT",
 		Port:                 &port,
 		EncryptionPassword:   "",
