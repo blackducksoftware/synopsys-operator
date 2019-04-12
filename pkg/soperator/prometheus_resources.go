@@ -104,7 +104,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 		Name: "prometheus",
 		Args: []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/"},
 		//Command:                  "[]string",
-		Image: specConfig.PrometheusImage,
+		Image: specConfig.Image,
 		//PullPolicy:               "PullPolicyType",
 		//MinCPU:                   "string",
 		//MaxCPU:                   "string",
@@ -186,7 +186,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncompone
 
 	cmData := map[string]string{}
 	cmData["prometheus.yml"] = "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"
-	cmData["image"] = specConfig.PrometheusImage
+	cmData["image"] = specConfig.Image
 	prometheusConfigMap.AddData(cmData)
 
 	prometheusConfigMap.AddLabels(map[string]string{"app": "prometheus"})

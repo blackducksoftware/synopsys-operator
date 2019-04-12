@@ -20,9 +20,9 @@ package blackduck
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 )
 
 // InitDatabase will init the database

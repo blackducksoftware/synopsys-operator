@@ -48,10 +48,17 @@ func NewConfigMap(config *CommonConfig, configMaps []*components.ConfigMap) (*Co
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+	newConfigMaps := append([]*components.ConfigMap{}, configMaps...)
+	for i := 0; i < len(newConfigMaps); i++ {
+		if !isLabelsExist(config.expectedLabels, newConfigMaps[i].GetObj().Labels) {
+			newConfigMaps = append(newConfigMaps[:i], newConfigMaps[i+1:]...)
+			i--
+		}
+	}
 	return &ConfigMap{
 		config:        config,
 		deployer:      deployer,
-		configMaps:    configMaps,
+		configMaps:    newConfigMaps,
 		oldConfigMaps: make(map[string]corev1.ConfigMap, 0),
 		newConfigMaps: make(map[string]*corev1.ConfigMap, 0),
 	}, nil
@@ -70,12 +77,12 @@ func (c *ConfigMap) buildNewAndOldObject() error {
 	}
 
 	// build new config map
-	for _, newConfigMap := range c.configMaps {
-		newConfigMapKube, err := newConfigMap.ToKube()
+	for _, newCm := range c.configMaps {
+		newConfigMapKube, err := newCm.ToKube()
 		if err != nil {
-			return errors.Annotatef(err, "unable to convert config map %s to kube %s", newConfigMap.GetName(), c.config.namespace)
+			return errors.Annotatef(err, "unable to convert config map %s to kube %s", newCm.GetName(), c.config.namespace)
 		}
-		c.newConfigMaps[newConfigMap.GetName()] = newConfigMapKube.(*corev1.ConfigMap)
+		c.newConfigMaps[newCm.GetName()] = newConfigMapKube.(*corev1.ConfigMap)
 	}
 
 	return nil

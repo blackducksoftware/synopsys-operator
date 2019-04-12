@@ -28,10 +28,10 @@ import (
 )
 
 // GetSolrDeployment will return the solr deployment
-func (c *Creater) GetSolrDeployment() *components.ReplicationController {
+func (c *Creater) GetSolrDeployment(imageName string) *components.ReplicationController {
 	solrVolumeMount := c.getSolrVolumeMounts()
 	solrContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: c.getImageTag("blackduck-solr"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.SolrMemoryLimit, MaxMem: c.hubContainerFlavor.SolrMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: solrVolumeMount,
@@ -49,7 +49,7 @@ func (c *Creater) GetSolrDeployment() *components.ReplicationController {
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-solr") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/solr/cores.data"}},
 			VolumeMounts:    solrVolumeMount,
@@ -69,7 +69,7 @@ func (c *Creater) GetSolrDeployment() *components.ReplicationController {
 // getSolrVolumes will return the solr volumes
 func (c *Creater) getSolrVolumes() []*components.Volume {
 	var solrVolume *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-solr") {
+	if c.hubSpec.PersistentStorage {
 		solrVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-solr", "blackduck-solr")
 	} else {
 		solrVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-solr")

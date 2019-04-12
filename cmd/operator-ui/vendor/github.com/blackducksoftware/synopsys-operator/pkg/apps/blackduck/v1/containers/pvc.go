@@ -25,6 +25,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"strings"
 )
 
 // GetPVCs will return the PVCs
@@ -47,20 +48,28 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 	}
 
 	if c.hubSpec.PersistentStorage {
-		for _, claim := range c.hubSpec.PVC {
-			var defaultsize string
-			// Set default value if size isn't specified
-			if v, ok := defaultPVC[claim.Name]; ok {
-				defaultsize = v
+		for k, v := range defaultPVC {
+			size := v
+			storageClass := ""
+			for _, claim := range c.hubSpec.PVC {
+				if strings.EqualFold(claim.Name, k) {
+					if len(claim.StorageClass) > 0 {
+						storageClass = claim.StorageClass
+					}
+					if len(claim.Size) > 0 {
+						size = claim.StorageClass
+					}
+				}
+				break
 			}
-			pvcs = append(pvcs, c.createPVC(claim.Name, claim.Size, defaultsize, claim.StorageClass, horizonapi.ReadWriteOnce))
+			pvcs = append(pvcs, c.createPVC(k, size, v, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
 		}
 	}
 
 	return pvcs
 }
 
-func (c *Creater) createPVC(name string, requestedSize string, defaultSize string, storageclass string, accessMode horizonapi.PVCAccessModeType) *components.PersistentVolumeClaim {
+func (c *Creater) createPVC(name string, requestedSize string, defaultSize string, storageclass string, accessMode horizonapi.PVCAccessModeType, label map[string]string) *components.PersistentVolumeClaim {
 	// Workaround so that storageClass does not get set to "", which prevent Kube from using the default storageClass
 	var class *string
 	if len(storageclass) > 0 {
@@ -87,6 +96,7 @@ func (c *Creater) createPVC(name string, requestedSize string, defaultSize strin
 	})
 
 	pvc.AddAccessMode(accessMode)
+	pvc.AddLabels(label)
 
 	return pvc
 }
