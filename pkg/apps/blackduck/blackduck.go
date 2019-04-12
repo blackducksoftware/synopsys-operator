@@ -26,16 +26,19 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	latestblackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	v1blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	blackduckutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -146,6 +149,19 @@ func (b Blackduck) Ensure(bd *v1.Blackduck) error {
 	if err != nil {
 		return err
 	}
+
+	hubDefaultSpec := creater.GetDefault(&bd.Spec)
+	newSpec := bd.Spec
+	err = mergo.Merge(&newSpec, hubDefaultSpec)
+	if err != nil {
+		log.Errorf("unable to merge the hub structs for %s due to %+v", bd.Name, err)
+		bd, err = blackduckutils.UpdateState(b.blackduckClient, bd.Spec.Namespace, b.config.Namespace, "Error", err)
+		if err != nil {
+			log.Errorf("Couldn't update the blackduck state: %v", err)
+		}
+		return err
+	}
+	bd.Spec = newSpec
 
 	return creater.Ensure(bd)
 }

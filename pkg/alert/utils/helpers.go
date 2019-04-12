@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2019 Synopsys, Inc.
+Copyright (C) 2018 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -19,17 +19,24 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package alert
+package utils
 
 import (
+	"fmt"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	alertclient "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
 
-// Creater interface for Alert
-// An Alert can have multiple Creaters where each Creater supports
-// different versions of Alert
-type Creater interface {
-	Versions() []string
-	Ensure(alert *alertapi.Alert) error
-	GetDefault(*alertapi.AlertSpec) *alertapi.AlertSpec
+// UpdateState will be used to update the Alert object
+func UpdateState(h *alertclient.Clientset, name string, namespace string, statusState string, error error) (*alertapi.Alert, error) {
+	errorMessage := ""
+	if error != nil {
+		errorMessage = fmt.Sprintf("%+v", error)
+	}
+
+	patch := fmt.Sprintf("{\"status\":{\"state\":\"%s\",\"errorMessage\":\"%s\"}}", statusState, errorMessage)
+	return h.SynopsysV1().Alerts(namespace).Patch(name, types.MergePatchType, []byte(patch))
 }

@@ -23,12 +23,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
 	"os"
 	"time"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -75,7 +77,7 @@ func runProtoform(configPath string) {
 	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, &alertapi.AlertSpec{}, stopCh)
 	deployer.AddController(alertController)
 
-	hubController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetHubDefaultValue(), stopCh)
+	hubController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, &blackduckapi.BlackDuckSpec{}, stopCh)
 	deployer.AddController(hubController)
 
 	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
