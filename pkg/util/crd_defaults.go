@@ -175,7 +175,7 @@ func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.Blackduck
 func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
-		Version:           "2019.2.3",
+		Version:           "2019.2.2",
 		Size:              "small",
 		PVCStorageClass:   "",
 		LivenessProbes:    false,
@@ -231,7 +231,7 @@ func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultExternalPersistentStorageV1() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
-		Version:           "2019.2.3",
+		Version:           "2019.2.2",
 		Size:              "small",
 		PVCStorageClass:   "",
 		LivenessProbes:    false,
