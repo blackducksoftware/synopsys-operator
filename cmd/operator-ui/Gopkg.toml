@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/blackducksoftware/synopsys-operator"
-  branch = "edit-blackduck"
+  branch = "master"
 
 [[override]]
   name = "k8s.io/api"

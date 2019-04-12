@@ -56,8 +56,8 @@
   revision = "370ac9fd2f493ce9aa8fdc57ad6a67dcb4458e62"
 
 [[projects]]
-  branch = "edit-blackduck"
-  digest = "1:ef831ac270cdb26fd3c4b301518faa8f961c0f22c4145a5635f058df05920c33"
+  branch = "master"
+  digest = "1:d7ef262bbfbcfa447b9a28e2c66f547d82e13d502dd6b963d20db04bbe470961"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/alert/client/clientset/versioned",
@@ -71,6 +71,8 @@
     "pkg/api/opssight",
     "pkg/api/opssight/v1",
     "pkg/apps",
+    "pkg/apps/alert",
+    "pkg/apps/alert/latest",
     "pkg/apps/blackduck",
     "pkg/apps/blackduck/latest",
     "pkg/apps/blackduck/latest/containers",
@@ -91,7 +93,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "b6947cb368de5e3bf9d8a4fff30e3fb48d47d5b2"
+  revision = "aa2c777e844bb56220c07aa5eb929c48138e0273"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -1032,11 +1034,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f806b417865e83457c3659232926203f5b0d39aa741b71d9e3e4c0c774e71a5c"
+  digest = "1:5e412e2a03bd0cfdb102db97212be2e625df74fa8b2d4a8a51f107b1456e256b"
   name = "github.com/prometheus/procfs"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ea9eea63887261e4d8ed8315f4078e88d540c725"
+  revision = "e22ddced71425e65e388b17b7d0289c5ea77d06e"
 
 [[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
@@ -1208,7 +1210,7 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "38d8ce5564a5b71b2e3a00553993f1b9a7ae852f"
+  revision = "88737f569e3a9c7ab309cdc09a07fe7fc87233c3"
 
 [[projects]]
   branch = "master"
@@ -1251,14 +1253,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:740c2dd3093cec9b88652f0232b4773bb2c269c70c71408bbaa49ea6bfcf3fac"
+  digest = "1:ae913c44e70b411817f8d4d352dc10e595d6b970ba23f2f1e668c95901f8a46a"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "cc4d4f50624c67f0af3a3fa307f4be9ab9030144"
+  revision = "b44545bcd369ef9ff9bebcfebf5f3370ef9b1932"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -1538,7 +1540,6 @@
     "github.com/gobuffalo/mw-i18n",
     "github.com/gobuffalo/mw-paramlogger",
     "github.com/gobuffalo/packr",
-    "github.com/gobuffalo/pop",
     "github.com/gobuffalo/suite",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",

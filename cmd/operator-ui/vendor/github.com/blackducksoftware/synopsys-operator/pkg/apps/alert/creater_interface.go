@@ -19,32 +19,16 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package apps
+package alert
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"k8s.io/client-go/rest"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
 
-// App struct
-type App struct {
-	config     *protoform.Config
-	kubeConfig *rest.Config
-}
-
-// NewApp will return an App
-func NewApp(config *protoform.Config, kubeConfig *rest.Config) *App {
-	return &App{config: config, kubeConfig: kubeConfig}
-}
-
-// Blackduck will return a Blackduck
-func (a *App) Blackduck() *blackduck.Blackduck {
-	return blackduck.NewBlackduck(a.config, a.kubeConfig)
-}
-
-// Alert will return an Alert
-func (a *App) Alert() *alert.Alert {
-	return alert.NewAlert(a.config, a.kubeConfig)
+// Creater interface for Alert
+// An Alert can have multiple Creaters where each Creater supports
+// different versions of Alert
+type Creater interface {
+	Versions() []string
+	Ensure(alert *alertapi.Alert) error
 }
