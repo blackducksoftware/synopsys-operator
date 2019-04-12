@@ -290,14 +290,6 @@ func (v BlackducksResource) postSubmit(c buffalo.Context, blackduck *blackduckap
 		if *blackduck.Spec.ExternalPostgres != (blackduckapi.PostgresExternalDBConfig{}) {
 			blackduck.Spec.PVC = nil
 		}
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-authentication"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-cfssl"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-registration"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-solr"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-webapp"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-logstash"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-zookeeper-data"})
-		blackduck.Spec.PVC = append(blackduck.Spec.PVC, blackduckapi.PVC{Name: "blackduck-zookeeper-datalog"})
 	}
 
 	// Change back to nil if the configuration is empty
