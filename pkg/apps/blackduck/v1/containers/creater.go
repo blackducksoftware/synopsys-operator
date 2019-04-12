@@ -24,7 +24,7 @@ package containers
 import (
 	"strings"
 
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -42,13 +42,13 @@ func (c *Creater) PostEditContainer(cc *util.Container) {
 // Creater will store the configuration to create the hub containers
 type Creater struct {
 	config                  *protoform.Config
-	hubSpec                 *v1.BlackduckSpec
+	hubSpec                 *blackduckapi.BlackduckSpec
 	hubContainerFlavor      *ContainerFlavor
 	isBinaryAnalysisEnabled bool
 }
 
 // NewCreater will return a creater
-func NewCreater(config *protoform.Config, hubSpec *v1.BlackduckSpec, hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
+func NewCreater(config *protoform.Config, hubSpec *blackduckapi.BlackduckSpec, hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
 	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
 }
 
