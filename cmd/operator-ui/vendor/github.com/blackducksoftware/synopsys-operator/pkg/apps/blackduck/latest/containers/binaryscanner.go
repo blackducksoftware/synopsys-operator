@@ -28,9 +28,9 @@ import (
 )
 
 // GetBinaryScannerDeployment will return the binary scanner deployment
-func (c *Creater) GetBinaryScannerDeployment() *components.ReplicationController {
+func (c *Creater) GetBinaryScannerDeployment(imageName string) *components.ReplicationController {
 	binaryScannerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "binaryscanner", Image: c.getImageTag("appcheck-worker"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "binaryscanner", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.BinaryScannerMemoryLimit,
 			MaxMem: c.hubContainerFlavor.BinaryScannerMemoryLimit, MinCPU: binaryScannerMinCPUUsage, MaxCPU: binaryScannerMaxCPUUsage,
 			Command: []string{"/docker-entrypoint.sh"}},

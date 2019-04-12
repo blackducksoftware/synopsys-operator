@@ -23,10 +23,9 @@ package synopsysctl
 
 import (
 	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/horizon/pkg/deployer"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -35,17 +34,24 @@ import (
 )
 
 //  Deploy Command Defaults
-var exposeUI = false
+var exposeUI = ""
 var deployNamespace = "synopsys-operator"
-var deploySynopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.2.0-RC"
-var deployPrometheusImage = "docker.io/prom/prometheus:v2.1.0"
-var deployTerminationGracePeriodSeconds int64 = 180
-var deployDockerConfigPath = ""
+var synopsysOperatorImage = "gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:master"
+var prometheusImage = "docker.io/prom/prometheus:v2.1.0"
+var terminationGracePeriodSeconds int64 = 180
+var operatorTimeBombInSeconds int64 = 315576000
+var dryRun = false
+var logLevel = "debug"
+var threadiness = 5
+var postgresRestartInMins int64 = 10
+var podWaitTimeoutSeconds int64 = 600
+var resyncIntervalInSeconds int64 = 120
+var dockerConfigPath = ""
 var deploySecretType = "Opaque"
-var deploySecretAdminPassword = "blackduck"
-var deploySecretPostgresPassword = "blackduck"
-var deploySecretUserPassword = "blackduck"
-var deploySecretBlackduckPassword = "blackduck"
+var adminPassword = "blackduck"
+var postgresPassword = "blackduck"
+var userPassword = "blackduck"
+var blackduckPassword = "blackduck"
 
 // Deploy Global Variables
 var secretType horizonapi.SecretType
@@ -63,13 +69,13 @@ var deployCmd = &cobra.Command{
 		var err error
 		secretType, err = operatorutil.SecretTypeNameToHorizon(deploySecretType)
 		if err != nil {
-			log.Errorf("Failed to Convert Secret Type: %s", err)
+			log.Errorf("failed to convert secret type: %s", err)
 			return nil
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Deploying the Synopsys-Operator: %s\n", deployNamespace)
+		log.Debugf("deploying the synopsys operator in %s namespace", deployNamespace)
 		// Read Commandline Parameters
 		if len(args) == 1 {
 			deployNamespace = args[0]
@@ -77,26 +83,7 @@ var deployCmd = &cobra.Command{
 		// check if operator is already installed
 		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 		if err == nil {
-			log.Errorf("Synopsys-Operator is already installed in namespace %s.", out)
-			return nil
-		}
-
-		// Create a Horizon Deployer to set up the environment for the Synopsys Operator
-		environmentDeployer, err := deployer.NewDeployer(restconfig)
-
-		// create a new namespace
-		ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
-			// APIVersion:  "string",
-			// ClusterName: "string",
-			Name:      deployNamespace,
-			Namespace: deployNamespace,
-		})
-		environmentDeployer.AddNamespace(ns)
-
-		// Deploy Resources for the Synopsys Operator
-		err = environmentDeployer.Run()
-		if err != nil {
-			log.Errorf("Error deploying Environment with Horizon : %s", err)
+			log.Errorf("synopsys operator is already installed in %s namespace", out)
 			return nil
 		}
 
@@ -106,71 +93,74 @@ var deployCmd = &cobra.Command{
 		}
 
 		// Deploy synopsys-operator
-		soperatorSpec := soperator.SpecConfig{
-			Namespace:                     deployNamespace,
-			SynopsysOperatorImage:         deploySynopsysOperatorImage,
-			SecretType:                    secretType,
-			SecretAdminPassword:           deploySecretAdminPassword,
-			SecretPostgresPassword:        deploySecretPostgresPassword,
-			SecretUserPassword:            deploySecretUserPassword,
-			SecretBlackduckPassword:       deploySecretBlackduckPassword,
-			TerminationGracePeriodSeconds: deployTerminationGracePeriodSeconds,
-			SealKey:                       sealKey,
-		}
-		err = soperator.UpdateSOperatorComponents(restconfig, kubeClient, deployNamespace, &soperatorSpec)
+		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, adminPassword, postgresPassword,
+			userPassword, blackduckPassword, secretType, operatorTimeBombInSeconds, dryRun, logLevel, threadiness,
+			postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey)
+
+		err = soperatorSpec.UpdateSOperatorComponents(restconfig, kubeClient, deployNamespace)
 		if err != nil {
-			log.Errorf("Error deploying Synopsys Operator: %s", err)
+			log.Errorf("error in deploying the synopsys operator due to %+v", err)
 			return nil
 		}
 
 		// Deploy prometheus
-		promtheusSpec := soperator.PrometheusSpecConfig{
-			Namespace:       deployNamespace,
-			PrometheusImage: deployPrometheusImage,
-		}
-		err = soperator.UpdatePrometheus(restconfig, kubeClient, deployNamespace, &promtheusSpec)
+		promtheusSpec := soperator.NewPrometheus(deployNamespace, prometheusImage)
+		err = promtheusSpec.UpdatePrometheus(restconfig, kubeClient, deployNamespace)
 		if err != nil {
-			log.Errorf("Error deploying Prometheus: %s", err)
+			log.Errorf("error deploying Prometheus: %s", err)
 			return nil
 		}
 
 		// create secrets (TDDO I think this only works on OpenShift)
-		util.RunKubeCmd(restconfig, kube, openshift, "create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", deployDockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
-		util.RunKubeCmd(restconfig, kube, openshift, "secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
-		util.RunKubeCmd(restconfig, kube, openshift, "secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
-		util.RunKubeCmd(restconfig, kube, openshift, "scale", "replicationcontroller", "synopsys-operator", "--replicas=0")
-		util.RunKubeCmd(restconfig, kube, openshift, "scale", "replicationcontroller", "synopsys-operator", "--replicas=1")
+		if openshift && len(dockerConfigPath) > 0 {
+			util.RunKubeCmd(restconfig, kube, openshift, "create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", dockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
+			util.RunKubeCmd(restconfig, kube, openshift, "secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
+			util.RunKubeCmd(restconfig, kube, openshift, "secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
+			util.RunKubeCmd(restconfig, kube, openshift, "scale", "replicationcontroller", "synopsys-operator", "--replicas=0")
+			util.RunKubeCmd(restconfig, kube, openshift, "scale", "replicationcontroller", "synopsys-operator", "--replicas=1")
+		}
 
 		// expose the routes
-		if exposeUI {
-			out, err = util.RunKubeCmd(restconfig, kube, openshift, "expose", "replicationcontroller", "synopsys-operator", "--port=80", "--target-port=3000", "--name=synopsys-operator-tcp", "--type=LoadBalancer", fmt.Sprintf("--namespace=%s", deployNamespace))
+		if strings.EqualFold(exposeUI, "OPENSHIFT") {
+			out, err = util.RunKubeCmd(restconfig, kube, openshift, "create", "route", "edge", "--service=synopsys-operator", "-n", deployNamespace)
 			if err != nil {
-				log.Warnf("Error exposing the Synopsys-Operator's Replication Controller: %s", out)
+				log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
 			}
-			out, err = util.RunKubeCmd(restconfig, kube, openshift, "create", "route", "edge", "--service=synopsys-operator-tcp", "-n", deployNamespace)
-			if err != nil {
-				log.Warnf("Could not create route (Possible Reason: Kubernetes doesn't support Routes): %s", out)
-			}
-		} else {
-			log.Warnf("Synopsys-Operator UI is not exposed ( --expose-ui=true to expose )")
 		}
+
 		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deployCmd)
-	deployCmd.Flags().BoolVar(&exposeUI, "expose-ui", exposeUI, "Expose the Synopsys-Operator's User Interface")
-	deployCmd.Flags().StringVarP(&deploySynopsysOperatorImage, "synopsys-operator-image", "i", deploySynopsysOperatorImage, "synopsys operator image URL")
-	deployCmd.Flags().StringVarP(&deployPrometheusImage, "prometheus-image", "p", deployPrometheusImage, "prometheus image URL")
-	deployCmd.Flags().StringVarP(&deployDockerConfigPath, "docker-config", "d", deployDockerConfigPath, "path to docker config (image pull secrets etc)")
-	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret for postgres and blackduck")
-	deployCmd.Flags().StringVar(&deploySecretAdminPassword, "admin-password", deploySecretAdminPassword, "postgres admin password")
-	deployCmd.Flags().StringVar(&deploySecretPostgresPassword, "postgres-password", deploySecretPostgresPassword, "postgres password")
-	deployCmd.Flags().StringVar(&deploySecretUserPassword, "user-password", deploySecretUserPassword, "postgres user password")
-	deployCmd.Flags().StringVar(&deploySecretBlackduckPassword, "blackduck-password", deploySecretBlackduckPassword, "blackduck password for 'sysadmin' account")
-	deployCmd.Flags().Int64VarP(&deployTerminationGracePeriodSeconds, "postgres-termination-grace-period", "t", deployTerminationGracePeriodSeconds, "termination grace period in seconds for shutting down postgres")
+	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "expose the synopsys operator's user interface. possible values are NODEPORT, LOADBALANCER, OPENSHIFT (to create routes)")
+	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "synopsys operator image URL")
+	deployCmd.Flags().StringVarP(&prometheusImage, "prometheus-image", "k", prometheusImage, "prometheus image URL")
+	deployCmd.Flags().StringVarP(&dockerConfigPath, "docker-config", "d", dockerConfigPath, "path to docker config (image pull secrets etc)")
+	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret to store the postgres and blackduck credentials")
+	deployCmd.Flags().StringVarP(&adminPassword, "admin-password", "a", adminPassword, "postgres admin password")
+	deployCmd.Flags().StringVarP(&postgresPassword, "postgres-password", "p", postgresPassword, "postgres password")
+	deployCmd.Flags().StringVarP(&userPassword, "user-password", "u", userPassword, "postgres user password")
+	deployCmd.Flags().StringVarP(&blackduckPassword, "blackduck-password", "b", blackduckPassword, "blackduck password for 'sysadmin' account")
+	deployCmd.Flags().Int64VarP(&operatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", operatorTimeBombInSeconds, "termination grace period in seconds for shutting down crds")
+	deployCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "n", postgresRestartInMins, "check for postgres restart in minutes")
+	deployCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "wait for pod to be running in seconds")
+	deployCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "custom resources resync time period in seconds")
+	deployCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "termination grace period in seconds for shutting down postgres")
+	deployCmd.Flags().BoolVar(&dryRun, "dryRun", dryRun, "dry run to run the test cases")
+	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "log level of synopsys operator")
+	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "number of threads to process the custom resources")
 
 	// Set Log Level
-	log.SetLevel(log.DebugLevel)
+	level, err := getLogLevel(logLevel)
+	if err != nil {
+		log.Errorf("invalid log level, error: %+v", err)
+	}
+	log.SetLevel(level)
+}
+
+// getLogLevel returns the log level
+func getLogLevel(logLevel string) (log.Level, error) {
+	return log.ParseLevel(logLevel)
 }

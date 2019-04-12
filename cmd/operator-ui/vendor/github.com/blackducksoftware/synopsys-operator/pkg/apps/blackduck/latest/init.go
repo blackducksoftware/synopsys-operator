@@ -25,16 +25,13 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
 	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
 )
 
 func (hc *Creater) init(deployer *horizon.Deployer, bdspec *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) error {

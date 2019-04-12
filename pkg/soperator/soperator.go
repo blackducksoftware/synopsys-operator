@@ -32,27 +32,44 @@ import (
 // that create Kubernetes Resources for the Synopsys-Operator
 type SpecConfig struct {
 	Namespace                     string
-	SynopsysOperatorImage         string
+	Image                         string
+	Expose                        string
 	SecretType                    horizonapi.SecretType
-	SecretAdminPassword           string
-	SecretPostgresPassword        string
-	SecretUserPassword            string
-	SecretBlackduckPassword       string
+	AdminPassword                 string
+	PostgresPassword              string
+	UserPassword                  string
+	BlackduckPassword             string
+	OperatorTimeBombInSeconds     int64
+	DryRun                        bool
+	LogLevel                      string
+	Threadiness                   int
+	PostgresRestartInMins         int64
+	PodWaitTimeoutSeconds         int64
+	ResyncIntervalInSeconds       int64
 	TerminationGracePeriodSeconds int64
 	SealKey                       string
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, secretName, adminPassword, postrgresPassword, userPassword,
-	blackduckpassword string, secretType horizonapi.SecretType, terminationGracePeriodSeconds int64, sealKey string) *SpecConfig {
+func NewSOperator(namespace, synopsysOperatorImage, expose, adminPassword, postgresPassword, userPassword, blackduckpassword string,
+	secretType horizonapi.SecretType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int,
+	postgresRestartInMins int64, podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
-		SynopsysOperatorImage:         synopsysOperatorImage,
+		Image:                         synopsysOperatorImage,
+		Expose:                        expose,
 		SecretType:                    secretType,
-		SecretAdminPassword:           adminPassword,
-		SecretPostgresPassword:        postrgresPassword,
-		SecretUserPassword:            userPassword,
-		SecretBlackduckPassword:       blackduckpassword,
+		AdminPassword:                 adminPassword,
+		PostgresPassword:              postgresPassword,
+		UserPassword:                  userPassword,
+		BlackduckPassword:             blackduckpassword,
+		OperatorTimeBombInSeconds:     operatorTimeBombInSeconds,
+		DryRun:                        dryRun,
+		LogLevel:                      logLevel,
+		Threadiness:                   threadiness,
+		PostgresRestartInMins:         postgresRestartInMins,
+		PodWaitTimeoutSeconds:         podWaitTimeoutSeconds,
+		ResyncIntervalInSeconds:       resyncIntervalInSeconds,
 		TerminationGracePeriodSeconds: terminationGracePeriodSeconds,
 		SealKey:                       sealKey,
 	}
@@ -61,16 +78,16 @@ func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, se
 // GetComponents will return a ComponentList representing all
 // Kubernetes Resources for the Synopsys-Operator
 func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
+	configMap, err := specConfig.GetOperatorConfigMap()
+	if err != nil {
+		return nil, err
+	}
 	components := &api.ComponentList{
 		ReplicationControllers: []*components.ReplicationController{
 			specConfig.GetOperatorReplicationController(),
 		},
-		Services: []*components.Service{
-			specConfig.GetOperatorService(),
-		},
-		ConfigMaps: []*components.ConfigMap{
-			specConfig.GetOperatorConfigMap(),
-		},
+		Services:   specConfig.GetOperatorService(),
+		ConfigMaps: []*components.ConfigMap{configMap},
 		ServiceAccounts: []*components.ServiceAccount{
 			specConfig.GetOperatorServiceAccount(),
 		},

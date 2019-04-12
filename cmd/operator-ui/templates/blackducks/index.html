@@ -27,6 +27,7 @@
       <th colspan="3">Error Message</th>
       <th>&nbsp;</th>
       <th>&nbsp;</th>
+      <th>&nbsp;</th>
     </thead>
     <tbody>
       <%= if (len(blackducks) > 0) { %>
@@ -34,7 +35,7 @@
           <tr>
             <td><%= blackduck.Spec.Namespace %></td>
             <td><%= blackduck.Spec.Size %></td>
-            <td><%= blackduck.View.Version %></td>
+            <td><%= blackduck.Spec.Version %></td>
             <td><%= blackduck.Spec.Type %></td>
             <td><%= blackduck.Spec.DbPrototype %></td>
             <%= if (blackduck.Spec.PersistentStorage) { %>
@@ -46,17 +47,14 @@
             <td><%= blackduck.Status.State %></td>
             <td><a href="https://<%= blackduck.Status.IP %>" target="_blank"><%= blackduck.Status.IP %></a></td>
             <td colspan="3"><%= blackduck.Status.ErrorMessage %></td>
-            <td>
-              <a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" class="btn btn-info">View</a>
-            </td>
-            <td>
-              <a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
-            </td>
+            <td><a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" class="btn btn-info">View</a></td>
+            <td><a href="<%= editBlackduckPath({ blackduck_id: blackduck.Spec.Namespace })%>" class="btn btn-warning">Edit</a></td>
+            <td><a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace }) %>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a></td>
           </tr>
         <% } %>
       <% } else { %>
         <tr>
-          <td colspan="15"><center><h5>No Black Duck instances found</h5></center></td>
+          <td colspan="16"><center><h5>No Black Duck instances found</h5></center></td>
         </tr>
       <% } %>
     </tbody>
