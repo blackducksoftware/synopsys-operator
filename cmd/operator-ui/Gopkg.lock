@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:4d6f036ea3fe636bcb2e89850bcdc62a771354e157cd51b8b22a2de8562bf663"
+  name = "cloud.google.com/go"
+  packages = ["compute/metadata"]
+  pruneopts = "UT"
+  revision = "fcb9a2d5f791d07be64506ab54434de65989d370"
+  version = "v0.37.4"
+
+[[projects]]
   branch = "master"
   digest = "1:0305ffe96cbc8d0630fefa813bf9579d70edc9ef5f82110980f44a6755b5d8f0"
   name = "dmitri.shuralyov.com/text/kebabcase"
@@ -35,7 +43,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:31d6904394a9786cefde3e479b063ffb288f72bc007b85e9f865d48400190311"
+  digest = "1:aa55f25019101848d22833de915f45e36cc4f9cba23b8c5ecabcf9376170b23a"
   name = "github.com/blackducksoftware/horizon"
   packages = [
     "pkg/api",
@@ -45,13 +53,16 @@
     "pkg/util/error",
   ]
   pruneopts = "UT"
-  revision = "7868040f1166f40a1ce6f9612def36661cde2b61"
+  revision = "370ac9fd2f493ce9aa8fdc57ad6a67dcb4458e62"
 
 [[projects]]
-  branch = "master"
-  digest = "1:bf24a654d5e0b85bc8c7eed6a0f29363dbbd1ecab2dcfa55e0bd016aec2bf7ff"
+  branch = "edit-blackduck"
+  digest = "1:ef831ac270cdb26fd3c4b301518faa8f961c0f22c4145a5635f058df05920c33"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
+    "pkg/alert/client/clientset/versioned",
+    "pkg/alert/client/clientset/versioned/scheme",
+    "pkg/alert/client/clientset/versioned/typed/alert/v1",
     "pkg/api",
     "pkg/api/alert",
     "pkg/api/alert/v1",
@@ -80,7 +91,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "92270227efd35885e97dfa772bb7b1f01a448be4"
+  revision = "b6947cb368de5e3bf9d8a4fff30e3fb48d47d5b2"
 
 [[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
@@ -251,11 +262,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9bf036b866baa309237460b581dfeb91ece84ec57e16444bcb48f6568c15af52"
+  digest = "1:5cc0801073158de62986111e35292e498e5d762a45da812bac744986fbe11daa"
   name = "github.com/gobuffalo/genny"
   packages = ["."]
   pruneopts = "UT"
-  revision = "7be1b23270ebd994f6b6d7334aae204ae46ff2bb"
+  revision = "3ca520ef0d9ea4981534aae98bf9a003d9b18678"
 
 [[projects]]
   digest = "1:114fbde5ab0239bddb4e8733d3174f8f4008ff84d7161c549e501a4339bdc75c"
@@ -281,12 +292,12 @@
   revision = "8f38393713f59beb43221f903c07f58f0377a063"
 
 [[projects]]
-  digest = "1:61fca0440c5723116c169bcc1543e413d640d04ba1f6bbee566e1908ad9e688c"
+  digest = "1:2c4739e3cc12df405efe42de157588d845aaba2fc87491eeb2ac20e35b894a09"
   name = "github.com/gobuffalo/httptest"
   packages = ["."]
   pruneopts = "UT"
-  revision = "294cbc067e1fc9940322f300d7124c03216df581"
-  version = "v1.1.0"
+  revision = "fd6a70b1a849375c2e7d3b69e507ebe447a60973"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -369,15 +380,15 @@
   revision = "a385830c7fc0495b810318788a043c7655da337d"
 
 [[projects]]
-  digest = "1:f7b65fe2f78c3ac8bd4ec8fe19c0bb183dc73b2c345db688e5a93ac4695faf81"
+  digest = "1:3b7665270f828e8305a8d184e9c58a104124b4469437a5415ad9fcceb53b1485"
   name = "github.com/gobuffalo/packr"
   packages = ["."]
   pruneopts = "UT"
-  revision = "36da986d61769bf3625368d62d94afd814ceeaa8"
-  version = "v2.0.9"
+  revision = "cef464b1513d9b6cf3d4ad6d6983a716e048e89d"
+  version = "v2.1.0"
 
 [[projects]]
-  digest = "1:5351c0e4a0c0f48f30a332b65962ac8873cd0a000068276609e35b54725efaab"
+  digest = "1:1cd64747f3990fdaff4c9df111c66ddffc8f1d09f0752b31965b9c87d783c9dd"
   name = "github.com/gobuffalo/plush"
   packages = [
     ".",
@@ -387,8 +398,8 @@
     "token",
   ]
   pruneopts = "UT"
-  revision = "f69cf36b7832a533698bcb7a9dc7954ed1588671"
-  version = "v3.7.33"
+  revision = "6c16d88a90a97cf7d3185327b6c717acb2c5724c"
+  version = "v3.7.34"
 
 [[projects]]
   digest = "1:b4e7540d0045ea3c7dfe8bd2bf4c054774226910bcd9117b8af54784793759d1"
@@ -406,15 +417,15 @@
   version = "v4.10.0"
 
 [[projects]]
-  digest = "1:d4771a4e851d32d15e35e1a146536aaef14343dbe11573c3d668b1eb82d4875f"
+  digest = "1:4a8161a3b203365b3a01a1a46d0ac7c7c3a4de68ed4482acbf381a8e724d3aa2"
   name = "github.com/gobuffalo/suite"
   packages = [
     ".",
     "fix",
   ]
   pruneopts = "UT"
-  revision = "15021067defd9102658bfd9f7db5291d8d71293d"
-  version = "v2.6.1"
+  revision = "917e29a4226b0b4d66176c8db37947b73eb22623"
+  version = "v2.6.2"
 
 [[projects]]
   branch = "master"
@@ -517,12 +528,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:3ee90c0d94da31b442dde97c99635aaafec68d0b8a3c12ee2075c6bdabeec6bb"
+  digest = "1:a6181aca1fd5e27103f9a920876f29ac72854df7345a39f3b01e61c8c94cc8af"
   name = "github.com/google/gofuzz"
   packages = ["."]
   pruneopts = "UT"
-  revision = "24818f796faf91cd76ec7bddd72458fbced7a6c1"
+  revision = "f140a6486e521aad38f5917de355cbf147cc0496"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:65c4414eeb350c47b8de71110150d0ea8a281835b1f386eacaa3ad7325929c21"
@@ -545,12 +556,12 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:ca59b1175189b3f0e9f1793d2c350114be36eaabbe5b9f554b35edee1de50aea"
+  digest = "1:d5f97fc268267ec1b61c3453058c738246fc3e746f14b1ae25161513b7367b0c"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a7962380ca08b5a188038c69871b8d3fbdf31e89"
-  version = "v1.7.0"
+  revision = "c5c6c98bc25355028a63748a498942a6398ccd22"
+  version = "v1.7.1"
 
 [[projects]]
   digest = "1:e72d1ebb8d395cf9f346fd9cbc652e5ae222dd85e0ac842dc57f175abed6d195"
@@ -1016,8 +1027,8 @@
     "model",
   ]
   pruneopts = "UT"
-  revision = "cfeb6f9992ffa54aaa4f2170ade4067ee478b250"
-  version = "v0.2.0"
+  revision = "a82f4c12f983cc2649298185f296632953e50d3e"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "master"
@@ -1025,7 +1036,7 @@
   name = "github.com/prometheus/procfs"
   packages = ["."]
   pruneopts = "UT"
-  revision = "af7bedc223fba51343f25a6fa7aba84355d0357a"
+  revision = "ea9eea63887261e4d8ed8315f4078e88d540c725"
 
 [[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
@@ -1036,8 +1047,8 @@
     "semver",
   ]
   pruneopts = "UT"
-  revision = "1cf9852c553c5b7da2d5a4a091129a7822fed0c9"
-  version = "v1.2.2"
+  revision = "438578804ca6f31be148c27683afc419ce47c06e"
+  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -1172,12 +1183,12 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:4887e9e89c80299aa520d718239809fdd2a47a9aa394909b169959bfbc424ddf"
+  digest = "1:d0072748c62defde1ad99dde77f6ffce492a0e5aea9204077e497c7edfb86653"
   name = "github.com/ugorji/go"
   packages = ["codec"]
   pruneopts = "UT"
-  revision = "8fd0f8d918c8f0b52d0af210a812ba882cc31a1e"
-  version = "v1.1.2"
+  revision = "2adff0894ba3bc2eeb9f9aea45fefd49802e1a13"
+  version = "v1.1.4"
 
 [[projects]]
   digest = "1:9d79e011219ebcc4a7a6e89cd6126c35c6e7c9e1e9faece1b69bf521286b5a35"
@@ -1197,13 +1208,15 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "a5d413f7728c81fb97d96a2b722368945f651e78"
+  revision = "38d8ce5564a5b71b2e3a00553993f1b9a7ae852f"
 
 [[projects]]
   branch = "master"
-  digest = "1:4ebfd72ba817efd42cb4be720c20c200d5a2f3694e8a3bd243b95d558fc5f423"
+  digest = "1:e4062746bd939735841b06731116013365b394bd1a792f5e347b0e5130dd3631"
   name = "golang.org/x/net"
   packages = [
+    "context",
+    "context/ctxhttp",
     "html",
     "html/atom",
     "http/httpguts",
@@ -1212,7 +1225,21 @@
     "idna",
   ]
   pruneopts = "UT"
-  revision = "74de082e2cca95839e88aa0aeee5aadf6ce7710f"
+  revision = "eb5bcb51f2a31c7d5141d810b70815c05d9c9146"
+
+[[projects]]
+  branch = "master"
+  digest = "1:645cb780e4f3177111b40588f0a7f5950efcfb473e7ff41d8d81b2ba5eaa6ed5"
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt",
+  ]
+  pruneopts = "UT"
+  revision = "9f3314589c9a9136388751d9adae6b0ed400978a"
 
 [[projects]]
   branch = "master"
@@ -1224,14 +1251,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:aa9254a749f8b6d34bfa7e422b9365f255d0e2457d4bb8d3de1e7b22d8b81410"
+  digest = "1:740c2dd3093cec9b88652f0232b4773bb2c269c70c71408bbaa49ea6bfcf3fac"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "baf5eb976a8cd65845293cd814ea151018552292"
+  revision = "cc4d4f50624c67f0af3a3fa307f4be9ab9030144"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -1265,9 +1292,21 @@
   revision = "9d24e82272b4f38b78bc8cff74fa936d31ccd8ef"
 
 [[projects]]
-  digest = "1:c25289f43ac4a68d88b02245742347c94f1e108c534dda442188015ff80669b3"
+  digest = "1:b08971e2f39ffd6a0b627e7ef1918f178bfcf1ca00d70fc35fb8f4812682afb6"
   name = "google.golang.org/appengine"
-  packages = ["cloudsql"]
+  packages = [
+    ".",
+    "cloudsql",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch",
+  ]
   pruneopts = "UT"
   revision = "54a98f90d1c46b7731eb8fb305d2a321c30ef610"
   version = "v1.5.0"
@@ -1397,7 +1436,7 @@
   revision = "94ebb086c69b9fec4ddbfb6a1433d28ecca9292b"
 
 [[projects]]
-  digest = "1:90504ae53f5fca92c93afeadf4ddb58b3204674ef7436f3561eb992c539af8ad"
+  digest = "1:24a43df1d169c71503a77694f46080a623a324fae8179c1f78ffd98154286af9"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1437,8 +1476,10 @@
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth/exec",
+    "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
+    "third_party/forked/golang/template",
     "tools/auth",
     "tools/clientcmd",
     "tools/clientcmd/api",
@@ -1455,6 +1496,7 @@
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
+    "util/jsonpath",
   ]
   pruneopts = "UT"
   revision = "7d04d0e2a0a1a4d4a1cd6baa432a2301492e4e65"
@@ -1484,6 +1526,7 @@
   input-imports = [
     "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1",
     "github.com/blackducksoftware/synopsys-operator/pkg/apps",
+    "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest",
     "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned",
     "github.com/blackducksoftware/synopsys-operator/pkg/protoform",
     "github.com/blackducksoftware/synopsys-operator/pkg/util",
@@ -1495,6 +1538,7 @@
     "github.com/gobuffalo/mw-i18n",
     "github.com/gobuffalo/mw-paramlogger",
     "github.com/gobuffalo/packr",
+    "github.com/gobuffalo/pop",
     "github.com/gobuffalo/suite",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
