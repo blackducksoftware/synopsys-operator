@@ -51,8 +51,8 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 	if c.hubSpec.ExternalPostgres != nil {
 		delete(defaultPVC, "blackduck-postgres")
 	}
-	if c.isBinaryAnalysisEnabled {
-		defaultPVC["blackduck-rabbitmq"] = "5Gi"
+	if !c.isBinaryAnalysisEnabled {
+		delete(defaultPVC, "blackduck-rabbitmq")
 	}
 
 	if c.hubSpec.PersistentStorage {
