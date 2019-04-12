@@ -11,7 +11,11 @@
   <%= f.SelectTag("Spec.DbPrototype", {options: blackduck.View.Clones, value: blackduck.Spec.DbPrototype, label: "Clone DB"}) %>
   <div id="pvcId">
     <%= f.SelectTag("Spec.PVCStorageClass", {value: blackduck.Spec.PVCStorageClass, label: "PVC Storage Class", options: blackduck.View.StorageClasses}) %>
-    <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
+    <%= if (blackduck.Spec.Namespace!="" && blackduck.Spec.PersistentStorage==true) { %>
+      <%= f.SelectTag("Spec.ScanType", {options: [blackduck.Spec.ScanType], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
+    <% } else { %>
+      <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
+    <% } %>
     <%= for (index, claim) in  blackduck.Spec.PVC { %>
       <%= if (claim.Name=="blackduck-postgres") { %>
         <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
