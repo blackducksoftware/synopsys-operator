@@ -57,7 +57,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) *components.Replica
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-upload-cache/uploads"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/blackduck-upload-cache/security /opt/blackduck/hub/blackduck-upload-cache/keys /opt/blackduck/hub/blackduck-upload-cache/uploads"}},
 			VolumeMounts:    volumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
