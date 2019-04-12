@@ -28,7 +28,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
 	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -45,7 +45,7 @@ func (hc *Creater) getPostgresComponents(blackduck *v1.Blackduck) (*api.Componen
 		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, hubContainerFlavor)
+	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, hubContainerFlavor, false)
 	// Get Db creds
 	var adminPassword, userPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
@@ -80,7 +80,7 @@ func (hc *Creater) getComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor)
+	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor, false)
 
 	// Configmap
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
@@ -201,7 +201,7 @@ func (hc *Creater) getComponents(blackduck *v1.Blackduck) (*api.ComponentList, e
 }
 
 func (hc *Creater) getExposeService(bd *v1.Blackduck) *components.Service {
-	containerCreater := containers.NewCreater(hc.Config, &bd.Spec, nil)
+	containerCreater := containers.NewCreater(hc.Config, &bd.Spec, nil, false)
 	var svc *components.Service
 
 	switch strings.ToUpper(bd.Spec.ExposeService) {
@@ -218,7 +218,7 @@ func (hc *Creater) getExposeService(bd *v1.Blackduck) *components.Service {
 
 // GetPVC returns the PVCs
 func (hc *Creater) GetPVC(blackduck *v1.Blackduck) []*components.PersistentVolumeClaim {
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, nil)
+	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, nil, hc.isBinaryAnalysisEnabled(&blackduck.Spec))
 	return containerCreater.GetPVCs()
 }
 
@@ -292,7 +292,7 @@ func (hc *Creater) addAnyUIDToServiceAccount(createHub *v1.BlackduckSpec) error 
 
 // AddExposeServices add the nodeport / LB services
 func (hc *Creater) AddExposeServices(deployer *horizon.Deployer, createHub *v1.BlackduckSpec) {
-	containerCreater := containers.NewCreater(hc.Config, createHub, nil)
+	containerCreater := containers.NewCreater(hc.Config, createHub, nil, false)
 	deployer.AddService(containerCreater.GetWebServerNodePortService())
 	deployer.AddService(containerCreater.GetWebServerLoadBalancerService())
 }

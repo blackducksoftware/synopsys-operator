@@ -27,5 +27,4 @@ import blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blac
 type Creater interface {
 	Ensure(blackduck *blackduckapi.Blackduck) error
 	Versions() []string
-	GetDefault(*blackduckapi.BlackduckSpec) *blackduckapi.BlackduckSpec
 }

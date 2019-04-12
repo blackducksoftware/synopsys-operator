@@ -164,8 +164,14 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
 	case "empty":
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
-	case "persistentStorage":
-		ctl.Spec = crddefaults.GetHubDefaultPersistentStorage()
+	case "persistentStorageLatest":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageLatest()
+	case "persistentStorageV1":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageV1()
+	case "externalPersistentStorageLatest":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()
+	case "externalPersistentStorageV1":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()
 	case "default":
 		ctl.Spec = crddefaults.GetHubDefaultValue()
 	default:

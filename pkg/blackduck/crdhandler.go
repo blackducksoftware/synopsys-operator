@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
+	"github.com/imdario/mergo"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -132,6 +133,19 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		log.Error("Unable to cast Blackduck object")
 		return
 	}
+
+	newSpec := bd.Spec
+	hubDefaultSpec := h.defaults
+	err := mergo.Merge(&newSpec, hubDefaultSpec)
+	if err != nil {
+		log.Errorf("unable to merge the hub structs for %s due to %+v", bd.Name, err)
+		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
+		if err != nil {
+			log.Errorf("Couldn't update the blackduck state: %v", err)
+		}
+		return
+	}
+	bd.Spec = newSpec
 
 	// An error occurred. We wait for one minute before we try to ensure again
 	if strings.EqualFold(bd.Status.State, string(Error)) {

@@ -31,5 +31,4 @@ import (
 type Creater interface {
 	Versions() []string
 	Ensure(alert *alertapi.Alert) error
-	GetDefault(*alertapi.AlertSpec) *alertapi.AlertSpec
 }

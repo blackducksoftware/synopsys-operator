@@ -22,14 +22,15 @@ under the License.
 package alert
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	alertutil "github.com/blackducksoftware/synopsys-operator/pkg/alert/utils"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -98,6 +99,7 @@ func (h *Handler) ObjectDeleted(name string) {
 
 // ObjectUpdated will be called for update alert events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
+	log.Debugf("Updating Object to %+v", objNew)
 	// Verify the object is an Alert
 	alert, ok := objNew.(*alertapi.Alert)
 	if !ok {
@@ -105,28 +107,54 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
+	// Get Default fields for Alert
+	newSpec := alert.Spec
+	alertDefaultSpec := h.defaults
+	err := mergo.Merge(&newSpec, alertDefaultSpec)
+	if err != nil {
+		log.Errorf("unable to merge the Alert structs for %s due to %+v", alert.Name, err)
+		alert, err = h.updateState(Error, fmt.Sprintf("unable to merge the Alert structs for %s due to %+v", alert.Name, err), alert)
+		if err != nil {
+			log.Errorf("couldn't update Alert state: %v", err)
+		}
+		return
+	}
+	alert.Spec = newSpec
+
 	// An error occurred. We wait for one minute before we try to ensure again
 	if strings.EqualFold(alert.Status.State, string(Error)) {
 		time.Sleep(time.Minute * 1)
 	}
-
-	log.Debugf("Updating Object to %+v", objNew)
 
 	// Update the Alert
 	app := apps.NewApp(h.config, h.kubeConfig)
 	err = app.Alert().Ensure(alert)
 	if err != nil {
 		log.Errorf("unable to ensure the Alert %s due to %+v", alert.Name, err)
-		alert, err = alertutil.UpdateState(h.alertClient, alert.Name, h.confi.Namespace, string(Error), err)
+		alert, err = h.updateState(Error, fmt.Sprintf("%+v", err), alert)
 		if err != nil {
 			log.Errorf("couldn't update Alert state: %v", err)
 		}
 		return
 	}
 	if !strings.EqualFold(alert.Status.State, string(Running)) {
-		alert, err = alertutil.UpdateState(h.alertClient, alert.Name, h.confi.Namespace, string(Running), nil)
+		_, err = h.updateState(Running, "", alert)
 		if err != nil {
 			log.Errorf("couldn't update Alert state: %v", err)
 		}
 	}
+}
+
+func (h *Handler) updateState(statusState State, errorMessage string, alert *alertapi.Alert) (*alertapi.Alert, error) {
+	alert.Status.State = string(statusState)
+	alert.Status.ErrorMessage = errorMessage
+	alert, err := h.updateAlertObject(alert)
+	if err != nil {
+		log.Errorf("couldn't update the state of alert object: %s", err.Error())
+	}
+	return alert, err
+}
+
+func (h *Handler) updateAlertObject(obj *alertapi.Alert) (*alertapi.Alert, error) {
+	return h.alertClient.SynopsysV1().Alerts(h.config.Namespace).Update(obj)
 }

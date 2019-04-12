@@ -25,14 +25,15 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"math"
 	"net/http"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -68,6 +69,7 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
 	newBlackuck := blackduck.DeepCopy()
 
+	// Sets PVC sizes
 	pvcs := hc.GetPVC(blackduck)
 
 	commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
