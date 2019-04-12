@@ -41,7 +41,7 @@ func (c *Creater) GetServiceAccount() *components.ServiceAccount {
 // GetClusterRoleBinding will return the cluster role binding
 func (c *Creater) GetClusterRoleBinding() *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
-		Name:       c.hubSpec.Namespace,
+		Name:       "blackduck",
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 
