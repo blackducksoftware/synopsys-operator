@@ -48,10 +48,18 @@ func NewReplicationController(config *CommonConfig, replicationControllers []*co
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+	newReplicationControllers := append([]*components.ReplicationController{}, replicationControllers...)
+	for i := 0; i < len(newReplicationControllers); i++ {
+		if !isLabelsExist(config.expectedLabels, newReplicationControllers[i].GetObj().Labels) {
+			// log.Debugf("removing::expected Labels: %+v, actual Labels: %+v", config.expectedLabels, newReplicationControllers[i].GetObj().Labels)
+			newReplicationControllers = append(newReplicationControllers[:i], newReplicationControllers[i+1:]...)
+			i--
+		}
+	}
 	return &ReplicationController{
 		config:                    config,
 		deployer:                  deployer,
-		replicationControllers:    replicationControllers,
+		replicationControllers:    newReplicationControllers,
 		oldReplicationControllers: make(map[string]corev1.ReplicationController, 0),
 		newReplicationControllers: make(map[string]*corev1.ReplicationController, 0),
 	}, nil

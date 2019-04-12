@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -36,8 +36,7 @@ import (
 //	}
 //}
 
-// GetHubDefaultValue creates a hub crd configuration object
-// with defaults
+// GetHubDefaultValue creates a hub crd configuration object with defaults
 func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Size:            "Small",
@@ -179,6 +178,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
 		ConfigMapName: "opssight",
+		DesiredState:  "START",
 	}
 }
 
@@ -286,6 +286,7 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 		DefaultMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
+		DesiredState:  "START",
 	}
 }
 
@@ -313,5 +314,10 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		PVCStorageClass:      "",
 		AlertMemory:          "2560M",
 		CfsslMemory:          "640M",
+		Environs: []string{
+			"ALERT_SERVER_PORT:8443",
+			"PUBLIC_HUB_WEBSERVER_HOST:localhost",
+			"PUBLIC_HUB_WEBSERVER_PORT:443",
+		},
 	}
 }
