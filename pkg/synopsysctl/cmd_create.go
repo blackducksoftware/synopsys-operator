@@ -42,7 +42,7 @@ var createOpsSightCtl ResourceCtl
 var createAlertCtl ResourceCtl
 
 // Flags for the Base Spec (template)
-var baseBlackduckSpec = "persistentStorage"
+var baseBlackduckSpec = "persistentStorageLatest"
 var baseOpsSightSpec = "disabledBlackduck"
 var baseAlertSpec = "default"
 

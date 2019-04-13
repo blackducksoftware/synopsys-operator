@@ -184,6 +184,11 @@ func (in *BlackduckView) DeepCopyInto(out *BlackduckView) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.SupportedVersions != nil {
+		in, out := &in.SupportedVersions, &out.SupportedVersions
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

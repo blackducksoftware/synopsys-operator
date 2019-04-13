@@ -152,14 +152,34 @@ var imageTags = map[string]map[string]string{
 		"appcheck-worker":          "1.0.1",
 		"rabbitmq":                 "1.0.0",
 	},
+	"2019.2.3": {
+		"blackduck-authentication": "2019.2.3",
+		"blackduck-documentation":  "2019.2.3",
+		"blackduck-jobrunner":      "2019.2.3",
+		"blackduck-registration":   "2019.2.3",
+		"blackduck-scan":           "2019.2.3",
+		"blackduck-webapp":         "2019.2.3",
+		"blackduck-cfssl":          "1.0.0",
+		"blackduck-logstash":       "1.0.2",
+		"blackduck-nginx":          "1.0.2",
+		"blackduck-solr":           "1.0.0",
+		"blackduck-zookeeper":      "1.0.0",
+		"blackduck-upload-cache":   "1.0.3",
+		"appcheck-worker":          "1.0.1",
+		"rabbitmq":                 "1.0.0",
+	},
 }
 
-func (c *Creater) getImageTag(name string) string {
+// GetImageTag returns the image tag of the given container
+func (c *Creater) GetImageTag(name string) string {
 	confImageTag := c.GetFullContainerNameFromImageRegistryConf(name)
 	if len(confImageTag) > 0 {
 		return confImageTag
 	}
-	return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[c.hubSpec.Version][name])
+	if _, ok := imageTags[c.hubSpec.Version][name]; ok {
+		return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[c.hubSpec.Version][name])
+	}
+	return ""
 }
 
 // GetVersions will return the supported versions

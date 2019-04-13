@@ -46,10 +46,17 @@ func NewService(config *CommonConfig, services []*components.Service) (*Service,
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+	newServices := append([]*components.Service{}, services...)
+	for i := 0; i < len(newServices); i++ {
+		if !isLabelsExist(config.expectedLabels, newServices[i].GetObj().Labels) {
+			newServices = append(newServices[:i], newServices[i+1:]...)
+			i--
+		}
+	}
 	return &Service{
 		config:      config,
 		deployer:    deployer,
-		services:    services,
+		services:    newServices,
 		oldServices: make(map[string]corev1.Service, 0),
 		newServices: make(map[string]*corev1.Service, 0),
 	}, nil

@@ -23,9 +23,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
 	"os"
 	"time"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"

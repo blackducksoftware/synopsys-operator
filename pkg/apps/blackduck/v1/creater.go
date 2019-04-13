@@ -25,14 +25,15 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"math"
 	"net/http"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -65,9 +66,10 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 }
 
 // Ensure will ensure the instance is correctly deployed
-func (hc *Creater) Ensure(blackduck *v1.Blackduck) error {
+func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	newBlackuck := blackduck.DeepCopy()
 
+	// Sets PVC sizes
 	pvcs := hc.GetPVC(blackduck)
 
 	commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
@@ -184,7 +186,7 @@ func (hc *Creater) Versions() []string {
 }
 
 // getContainersFlavor will get the Containers flavor
-func (hc *Creater) getContainersFlavor(bd *v1.Blackduck) (*containers.ContainerFlavor, error) {
+func (hc *Creater) getContainersFlavor(bd *blackduckapi.Blackduck) (*containers.ContainerFlavor, error) {
 	// Get Containers Flavor
 	hubContainerFlavor := containers.GetContainersFlavor(bd.Spec.Size)
 
@@ -194,7 +196,7 @@ func (hc *Creater) getContainersFlavor(bd *v1.Blackduck) (*containers.ContainerF
 	return hubContainerFlavor, nil
 }
 
-func (hc *Creater) initPostgres(bdspec *v1.BlackduckSpec) error {
+func (hc *Creater) initPostgres(bdspec *blackduckapi.BlackduckSpec) error {
 	var adminPassword, userPassword, postgresPassword string
 	var err error
 
@@ -274,7 +276,7 @@ func (hc *Creater) getPVCVolumeName(namespace string, name string) (string, erro
 	return pvc.Spec.VolumeName, nil
 }
 
-func (hc *Creater) registerIfNeeded(bd *v1.Blackduck) error {
+func (hc *Creater) registerIfNeeded(bd *blackduckapi.Blackduck) error {
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -317,7 +319,7 @@ func (hc *Creater) registerIfNeeded(bd *v1.Blackduck) error {
 	return nil
 }
 
-func (hc *Creater) autoRegisterHub(bdspec *v1.BlackduckSpec) error {
+func (hc *Creater) autoRegisterHub(bdspec *blackduckapi.BlackduckSpec) error {
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
 	registrationPod, err := util.FilterPodByNamePrefixInNamespace(hc.KubeClient, bdspec.Namespace, "registration")
 	if err != nil {
@@ -348,7 +350,7 @@ func (hc *Creater) autoRegisterHub(bdspec *v1.BlackduckSpec) error {
 	return fmt.Errorf("unable to register the blackduck %s", bdspec.Namespace)
 }
 
-func (hc *Creater) isBinaryAnalysisEnabled(bdspec *v1.BlackduckSpec) bool {
+func (hc *Creater) isBinaryAnalysisEnabled(bdspec *blackduckapi.BlackduckSpec) bool {
 	for _, value := range bdspec.Environs {
 		if strings.Contains(value, "USE_BINARY_UPLOADS") {
 			values := strings.SplitN(value, ":", 2)

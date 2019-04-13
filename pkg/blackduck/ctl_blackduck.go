@@ -140,7 +140,7 @@ func (ctl *Ctl) CheckSpecFlags() error {
 		pvc := &blackduckv1.PVC{}
 		err := json.Unmarshal([]byte(pvcJSON), pvc)
 		if err != nil {
-			return fmt.Errorf("Invalid format for PVC")
+			return fmt.Errorf("Invalid format for PVC: %+v", err)
 		}
 	}
 	for _, environ := range ctl.Environs {
@@ -163,8 +163,14 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
 	case "empty":
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
-	case "persistentStorage":
-		ctl.Spec = crddefaults.GetHubDefaultPersistentStorage()
+	case "persistentStorageLatest":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageLatest()
+	case "persistentStorageV1":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageV1()
+	case "externalPersistentStorageLatest":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()
+	case "externalPersistentStorageV1":
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()
 	case "default":
 		ctl.Spec = crddefaults.GetHubDefaultValue()
 	default:
