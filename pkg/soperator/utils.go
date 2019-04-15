@@ -23,6 +23,7 @@ package soperator
 
 import (
 	"fmt"
+	"strings"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -33,6 +34,7 @@ import (
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // GetBlackduckVersionsToRemove finds all Blackducks with a different version, returns their specs with the new version
@@ -91,17 +93,13 @@ func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion 
 
 // GetOperatorNamespace returns the namespace of the Synopsys-Operator by
 // looking at its cluster role binding
-func GetOperatorNamespace(kubeClient *kubernetes.Clientset) (string, error) {
-	crb, err := operatorutil.GetClusterRoleBinding(kubeClient, "synopsys-operator-admin")
+func GetOperatorNamespace(restConfig *rest.Config) (string, error) {
+	kube, openshift := operatorutil.DetermineClusterClients(restConfig)
+	namespace, err := operatorutil.RunKubeCmd(restConfig, kube, openshift, "get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
 	if err != nil {
-		return "", fmt.Errorf("could not get ClusterRoleBinding for Synopsys-Operator: %s", err)
+		return "", fmt.Errorf("failed to get Synopsys-Operator Namespace: %s", err)
 	}
-	for _, s := range crb.Subjects {
-		if s.Kind == "ServiceAccount" && s.Name == "synopsys-operator" {
-			return s.Namespace, nil
-		}
-	}
-	return "", fmt.Errorf("could not find namespace in Synopsys-Operator's ClusterRoleBinding")
+	return strings.Trim(namespace, "'"), nil
 }
 
 // GetOperatorImage returns the image for the synopsys-operator from

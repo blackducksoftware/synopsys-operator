@@ -72,7 +72,7 @@ var updateOperatorCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		namespace, err := soperator.GetOperatorNamespace(kubeClient)
+		namespace, err := soperator.GetOperatorNamespace(restconfig)
 		if err != nil {
 			log.Errorf("Error finding Synopsys-Operator: %s", err)
 			return nil
@@ -196,7 +196,7 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
 			return nil
 		}
-		operatorNamespace, err := soperator.GetOperatorNamespace(kubeClient)
+		operatorNamespace, err := soperator.GetOperatorNamespace(restconfig)
 		if err != nil {
 			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
 			return nil

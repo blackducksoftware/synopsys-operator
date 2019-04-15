@@ -47,7 +47,7 @@ var destroyCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get the namespace of the Synopsys-Operator
-		destroyNamespace, err := soperator.GetOperatorNamespace(kubeClient)
+		destroyNamespace, err := soperator.GetOperatorNamespace(restconfig)
 		if err != nil {
 			log.Warnf("Error finding Synopsys-Operator: %s", err)
 		}
