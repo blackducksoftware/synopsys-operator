@@ -37,7 +37,7 @@ import (
 )
 
 // GetKubeConfig  will return the kube config
-func GetKubeConfig() (*rest.Config, error) {
+func GetKubeConfig(kubeconfigpath string) (*rest.Config, error) {
 	log.Debugf("Getting Kube Rest Config\n")
 	var err error
 	var kubeConfig *rest.Config
@@ -46,8 +46,7 @@ func GetKubeConfig() (*rest.Config, error) {
 	if err != nil {
 		log.Warnf("error getting in cluster config. Fallback to native config. Error message: %+v", err)
 		// Determine Config Paths
-		var kubeconfigpath = ""
-		if home := homeDir(); home != "" {
+		if home := homeDir(); len(kubeconfigpath) == 0 && home != "" {
 			kubeconfigpath = filepath.Join(home, ".kube", "config")
 		}
 

@@ -39,12 +39,35 @@ var cluster string
 var kubeconfig string
 var context string
 var insecureSkipTLSVerify = false
+var logLevelCtl = "warn"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "synopsysctl",
 	Short: "Command Line Tool for managing Synopsys Resources",
 	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		flagset := cmd.Flags()
+
+		if flagset.Changed("cluster") { // changes the cluster that is being pointed to (delete this comment)
+			log.Warnf("Flag %s is Not Implemented", "cluster")
+		}
+		if flagset.Changed("context") { // sets the context (delete this comment)
+			log.Warnf("Flag %s is Not Implemented", "context")
+		}
+		if flagset.Changed("insecure-skip-tls-verify") { // sets value in kubeconfig file that says insecure (delete this comment)
+			log.Warnf("Flag %s is Not Implemented", "insecure-skip-tls-verify")
+		}
+		// Set the Log Level
+		lvl, err := log.ParseLevel(logLevelCtl)
+		if err != nil {
+			log.Errorf("ctl-log-Level %s is not a valid level: %s", logLevelCtl, err)
+		}
+		log.SetLevel(lvl)
+		// Sets kubeconfig and initializes resource client libraries
+		setResourceClients()
 		return nil
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -75,13 +98,13 @@ func Execute() {
 }
 
 func init() {
-	setResourceClients()              // sets kubeconfig and initializes resource client libraries
 	rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cluster, "cluster", cluster, "name of the kubeconfig cluster to use")
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "path to the kubeconfig file to use for CLI requests")
 	rootCmd.PersistentFlags().StringVar(&context, "context", context, "name of the kubeconfig context to use")
 	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "server's certificate won't be validated. HTTPS will be less secure")
+	rootCmd.PersistentFlags().StringVar(&logLevelCtl, "ctl-log-level", logLevelCtl, "Log Level for the Synopsysctl")
 }
 
 // initConfig reads in config file and ENV variables if set.
