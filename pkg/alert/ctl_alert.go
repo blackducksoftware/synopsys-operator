@@ -104,15 +104,24 @@ func (ctl *Ctl) CheckSpecFlags() error {
 	return nil
 }
 
+// Constants for Default Specs
+const (
+	EmptySpec    string = "empty"
+	TemplateSpec string = "template"
+	DefaultSpec  string = "default"
+)
+
 // SwitchSpec switches the Alert's Spec to a different predefined spec
 func (ctl *Ctl) SwitchSpec(specType string) error {
 	switch specType {
-	case "empty":
+	case EmptySpec:
 		ctl.Spec = &alertapi.AlertSpec{}
-	case "default":
-		ctl.Spec = crddefaults.GetAlertDefaultValue()
+	case TemplateSpec:
+		ctl.Spec = crddefaults.GetAlertTemplate()
+	case DefaultSpec:
+		ctl.Spec = crddefaults.GetAlertDefault()
 	default:
-		return fmt.Errorf("Alert Spec Type %s does not match: default or empty", specType)
+		return fmt.Errorf("Alert Spec Type %s is not valid", specType)
 	}
 	return nil
 }

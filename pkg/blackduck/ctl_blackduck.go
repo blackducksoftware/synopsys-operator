@@ -158,23 +158,48 @@ func (ctl *Ctl) CheckSpecFlags() error {
 	return nil
 }
 
+// Constants for Default Specs
+const (
+	EmptySpec                           string = "empty"
+	TemplateSpec                        string = "template"
+	PersistentStorageLatestSpec         string = "persistentStorageLatest"
+	PersistentStorageV1Spec             string = "persistentStorageV1"
+	ExternalPersistentStorageLatestSpec string = "externalPersistentStorageLatest"
+	ExternalPersistentStorageV1Spec     string = "externalPersistentStorageV1"
+	BDBASpec                            string = "bdba"
+	EphemeralSpec                       string = "ephemeral"
+	EphemeralCustomAuthCASpec           string = "ephemeralCustomAuthCA"
+	ExternalDBSpec                      string = "externalDB"
+	IPV6DisabledSpec                    string = "IPV6Disabled"
+)
+
 // SwitchSpec switches the Blackduck's Spec to a different predefined spec
 func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
-	case "empty":
+	case EmptySpec:
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
-	case "persistentStorageLatest":
+	case TemplateSpec:
+		ctl.Spec = crddefaults.GetBlackDuckTemplate()
+	case PersistentStorageLatestSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageLatest()
-	case "persistentStorageV1":
+	case PersistentStorageV1Spec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageV1()
-	case "externalPersistentStorageLatest":
+	case ExternalPersistentStorageLatestSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()
-	case "externalPersistentStorageV1":
+	case ExternalPersistentStorageV1Spec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()
-	case "default":
-		ctl.Spec = crddefaults.GetHubDefaultValue()
+	case BDBASpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultBDBA()
+	case EphemeralSpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeral()
+	case EphemeralCustomAuthCASpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()
+	case ExternalDBSpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalDB()
+	case IPV6DisabledSpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultIPV6Disabled()
 	default:
-		return fmt.Errorf("Blackduck Spec Type %s does not match: empty, persistentStorage, default", createBlackduckSpecType)
+		return fmt.Errorf("Blackduck Spec Type %s is not valid", createBlackduckSpecType)
 	}
 	return nil
 }
