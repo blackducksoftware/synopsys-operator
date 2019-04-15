@@ -68,7 +68,7 @@ func (p *SpecConfig) perceiverReplicationController(name string, replicas int32)
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	rc.AddLabelSelectors(map[string]string{"name": name, "app": "opssight"})
-
+	rc.AddLabels(map[string]string{"name": name, "app": "opssight"})
 	return rc
 }
 
@@ -154,7 +154,7 @@ func (p *SpecConfig) perceiverService(name string) *components.Service {
 	})
 
 	service.AddLabels(map[string]string{"name": name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": name})
+	service.AddSelectors(map[string]string{"name": name, "app": "opssight"})
 
 	return service
 }
