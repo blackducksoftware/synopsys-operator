@@ -4,11 +4,11 @@
     <section class="Icon-wrap-header">
       <img src="<%= rootPath() %>assets/images/bars.svg" alt="" />
     </section>
-    <h4>Edit a Blackduck instance</h4>
+    <h4>Edit a Black Duck instance</h4>
   </section>
 </header>
 <br/>
 
-<%= form_for(blackduck, {action: blackduckPath({ blackduck_id: blackduck.Spec.Namespace }), method: "POST"}) { %>
+<%= form_for(blackduck, {action: blackduckPath({ blackduck_id: blackduck.Spec.Namespace }), method: "PUT"}) { %>
   <%= partial("blackducks/form.html") %>
 <% } %>

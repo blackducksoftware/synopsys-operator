@@ -22,7 +22,6 @@ under the License.
 package opssight
 
 import (
-	"fmt"
 	"testing"
 
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -113,7 +112,7 @@ func TestSetSpec(t *testing.T) {
 	assert.Equal(specToSet, opsSightCtl.GetSpec())
 
 	// check for error
-	assert.EqualError(opsSightCtl.SetSpec(""), "Error setting OpsSight Spec")
+	assert.Error(opsSightCtl.SetSpec(""))
 }
 
 func TestCheckSpecFlags(t *testing.T) {
@@ -123,17 +122,16 @@ func TestCheckSpecFlags(t *testing.T) {
 	assert.Nil(opsSightCtl.CheckSpecFlags())
 
 	var tests = []struct {
-		input    *Ctl
-		expected string
+		input *Ctl
 	}{ // case
 		{input: &Ctl{
 			Spec: &opssightv1.OpsSightSpec{},
 			ScannerPodImageFacadeInternalRegistriesJSONSlice: []string{"notValid"},
-		}, expected: "Invalid Registry Format"},
+		}},
 	}
 
 	for _, test := range tests {
-		assert.EqualError(test.input.CheckSpecFlags(), test.expected)
+		assert.Error(test.input.CheckSpecFlags())
 	}
 
 }
@@ -160,7 +158,7 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: default
 	createOpsSightSpecType := ""
-	assert.EqualError(opsSightCtl.SwitchSpec(createOpsSightSpecType), fmt.Sprintf("OpsSight Spec Type %s is not valid", createOpsSightSpecType))
+	assert.Error(opsSightCtl.SwitchSpec(createOpsSightSpecType))
 
 }
 

@@ -22,7 +22,6 @@ under the License.
 package blackduck
 
 import (
-	"fmt"
 	"testing"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -78,7 +77,7 @@ func TestSetSpec(t *testing.T) {
 	assert.Equal(specToSet, blackduckCtl.GetSpec())
 
 	// check for error
-	assert.EqualError(blackduckCtl.SetSpec(""), "Error setting Blackduck Spec")
+	assert.Error(blackduckCtl.SetSpec(""))
 }
 
 func TestCheckSpecFlags(t *testing.T) {
@@ -89,34 +88,33 @@ func TestCheckSpecFlags(t *testing.T) {
 	assert.Nil(blackduckCtl.CheckSpecFlags())
 
 	var tests = []struct {
-		input    *Ctl
-		expected string
+		input *Ctl
 	}{
 		// case
 		{input: &Ctl{
 			Spec: &blackduckv1.BlackduckSpec{},
 			Size: "notValid",
-		}, expected: "Size must be 'small', 'medium', 'large', or 'xlarge'"},
+		}},
 		// case
 		{input: &Ctl{
 			Spec:         &blackduckv1.BlackduckSpec{},
 			PVCJSONSlice: []string{"invalid:"},
-		}, expected: "Invalid format for PVC"},
+		}},
 		// case
 		{input: &Ctl{
 			Spec:     &blackduckv1.BlackduckSpec{},
 			Environs: []string{"invalid"},
-		}, expected: "Invalid Environ Format - NAME:VALUE"},
+		}},
 		// case
 		{input: &Ctl{
 			Spec:                 &blackduckv1.BlackduckSpec{},
 			ImageUIDMapJSONSlice: []string{"invalid:"},
 			LicenseKey:           "",
-		}, expected: "Invalid format for Image UID"},
+		}},
 	}
 
 	for _, test := range tests {
-		assert.EqualError(test.input.CheckSpecFlags(), test.expected)
+		assert.Error(test.input.CheckSpecFlags())
 	}
 }
 func TestSwitchSpec(t *testing.T) {
@@ -129,12 +127,15 @@ func TestSwitchSpec(t *testing.T) {
 	}{
 		{input: EmptySpec, expected: &blackduckv1.BlackduckSpec{}},
 		{input: TemplateSpec, expected: crddefaults.GetBlackDuckTemplate()},
-		{input: BdbaSpec, expected: crddefaults.GetBlackDuckDefaultBDBA()},
+		{input: PersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageLatest()},
+		{input: PersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageV1()},
+		{input: ExternalPersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()},
+		{input: ExternalPersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()},
+		{input: BDBASpec, expected: crddefaults.GetBlackDuckDefaultBDBA()},
 		{input: EphemeralSpec, expected: crddefaults.GetBlackDuckDefaultEphemeral()},
 		{input: EphemeralCustomAuthCASpec, expected: crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()},
-		{input: ExternalSpec, expected: crddefaults.GetBlackDuckDefaultExternalDB()},
-		{input: Ipv6DisabledSpec, expected: crddefaults.GetBlackDuckDefaultIPV6Disabled()},
-		{input: PersistentStorageSpec, expected: crddefaults.GetBlackDuckDefaultPersistentStorage()},
+		{input: ExternalDBSpec, expected: crddefaults.GetBlackDuckDefaultExternalDB()},
+		{input: IPV6DisabledSpec, expected: crddefaults.GetBlackDuckDefaultIPV6Disabled()},
 	}
 
 	// test cases: "empty", "persistentStorage", "default"
@@ -145,8 +146,7 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: ""
 	createBlackduckSpecType := ""
-	assert.EqualError(blackduckCtl.SwitchSpec(createBlackduckSpecType), fmt.Sprintf("Blackduck Spec Type %s is not valid", createBlackduckSpecType))
-
+	assert.Error(blackduckCtl.SwitchSpec(createBlackduckSpecType))
 }
 
 func TestAddSpecFlags(t *testing.T) {
