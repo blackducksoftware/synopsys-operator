@@ -39,7 +39,7 @@ var cluster string
 var kubeconfig string
 var context string
 var insecureSkipTLSVerify = false
-var logLevelCtl string
+var logLevelCtl = "warn"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -60,19 +60,14 @@ var rootCmd = &cobra.Command{
 		if flagset.Changed("insecure-skip-tls-verify") { // sets value in kubeconfig file that says insecure (delete this comment)
 			log.Warnf("Flag %s is Not Implemented", "insecure-skip-tls-verify")
 		}
-		if flagset.Changed("ctl-log-level") {
-			val, err := flagset.GetString("ctl-log-level")
-			if err != nil {
-				log.Errorf("Failed to get value for ctl-log-level")
-			}
-			log.Debugf("Setting ctl-log-level to %s", val)
-			lvl, err := log.ParseLevel(val)
-			if err != nil {
-				log.Errorf("ctl-log-Level %s is not a valid level", val)
-			}
-			log.SetLevel(lvl)
+		// Set the Log Level
+		lvl, err := log.ParseLevel(logLevelCtl)
+		if err != nil {
+			log.Errorf("ctl-log-Level %s is not a valid level: %s", logLevelCtl, err)
 		}
-		setResourceClients() // sets kubeconfig and initializes resource client libraries
+		log.SetLevel(lvl)
+		// Sets kubeconfig and initializes resource client libraries
+		setResourceClients()
 		return nil
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
