@@ -24,7 +24,7 @@ package containers
 import (
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -41,14 +41,15 @@ func (c *Creater) PostEditContainer(cc *util.Container) {
 
 // Creater will store the configuration to create the hub containers
 type Creater struct {
-	config             *protoform.Config
-	hubSpec            *v1.BlackduckSpec
-	hubContainerFlavor *ContainerFlavor
+	config                  *protoform.Config
+	hubSpec                 *blackduckapi.BlackduckSpec
+	hubContainerFlavor      *ContainerFlavor
+	isBinaryAnalysisEnabled bool
 }
 
 // NewCreater will return a creater
-func NewCreater(config *protoform.Config, hubSpec *v1.BlackduckSpec, hubContainerFlavor *ContainerFlavor) *Creater {
-	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor}
+func NewCreater(config *protoform.Config, hubSpec *blackduckapi.BlackduckSpec, hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
+	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
 }
 
 // GetFullContainerNameFromImageRegistryConf returns the tag that is specified for a container by trying to look in the custom tags provided,

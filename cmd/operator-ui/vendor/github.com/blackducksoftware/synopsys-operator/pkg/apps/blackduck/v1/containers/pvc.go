@@ -22,10 +22,11 @@ under the License.
 package containers
 
 import (
+	"strings"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"strings"
 )
 
 // GetPVCs will return the PVCs
@@ -45,6 +46,15 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 		"blackduck-rabbitmq":          "5Gi",
 		"blackduck-uploadcache-data":  "100Gi",
 		"blackduck-uploadcache-key":   "2Gi",
+	}
+
+	if c.hubSpec.ExternalPostgres != nil {
+		delete(defaultPVC, "blackduck-postgres")
+	}
+	if !c.isBinaryAnalysisEnabled {
+		delete(defaultPVC, "blackduck-rabbitmq")
+		delete(defaultPVC, "blackduck-uploadcache-data")
+		delete(defaultPVC, "blackduck-uploadcache-key")
 	}
 
 	if c.hubSpec.PersistentStorage {

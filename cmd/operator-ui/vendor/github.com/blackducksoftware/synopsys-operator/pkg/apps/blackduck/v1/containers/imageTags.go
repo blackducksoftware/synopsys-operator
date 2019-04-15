@@ -152,22 +152,6 @@ var imageTags = map[string]map[string]string{
 		"appcheck-worker":          "1.0.1",
 		"rabbitmq":                 "1.0.0",
 	},
-	"2019.2.3": {
-		"blackduck-authentication": "2019.2.3",
-		"blackduck-documentation":  "2019.2.3",
-		"blackduck-jobrunner":      "2019.2.3",
-		"blackduck-registration":   "2019.2.3",
-		"blackduck-scan":           "2019.2.3",
-		"blackduck-webapp":         "2019.2.3",
-		"blackduck-cfssl":          "1.0.0",
-		"blackduck-logstash":       "1.0.2",
-		"blackduck-nginx":          "1.0.2",
-		"blackduck-solr":           "1.0.0",
-		"blackduck-zookeeper":      "1.0.0",
-		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
-		"rabbitmq":                 "1.0.0",
-	},
 }
 
 // GetImageTag returns the image tag of the given container
