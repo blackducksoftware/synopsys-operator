@@ -27,7 +27,7 @@ import (
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	latestalert "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -111,11 +111,12 @@ func (a Alert) Versions() []string {
 
 // Ensure will get the necessary Creater and make sure the instance
 // is correctly deployed or deploy it if needed
-func (a Alert) Ensure(alt *v1.Alert) error {
+func (a Alert) Ensure(alt *alertapi.Alert) error {
 	creater, err := a.getCreater(alt.Spec.Version) // get Creater for the Alert Version
 	if err != nil {
 		return err
 	}
+
 	return creater.Ensure(alt) // Ensure the Alert
 }
 

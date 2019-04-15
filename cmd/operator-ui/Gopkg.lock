@@ -34,12 +34,12 @@
   version = "v1.5.1"
 
 [[projects]]
-  branch = "master"
   digest = "1:d6afaeed1502aa28e80a4ed0981d570ad91b2579193404256ce672ed0a609e0d"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
   pruneopts = "UT"
-  revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
+  revision = "4b2b341e8d7715fae06375aa633dbb6e91b3fb46"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -56,8 +56,8 @@
   revision = "370ac9fd2f493ce9aa8fdc57ad6a67dcb4458e62"
 
 [[projects]]
-  branch = "master"
-  digest = "1:d7ef262bbfbcfa447b9a28e2c66f547d82e13d502dd6b963d20db04bbe470961"
+  branch = "release-2019.4.x"
+  digest = "1:4d6cd67df058272becee38568648fc1751bdc8a87e4896a5981d790198e35ee2"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/alert/client/clientset/versioned",
@@ -93,15 +93,15 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "aa2c777e844bb56220c07aa5eb929c48138e0273"
+  revision = "0faba98704a48187b62a16544029e0393078ad0c"
 
 [[projects]]
-  digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
+  digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
   name = "github.com/blang/semver"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
-  version = "v3.5.1"
+  revision = "ba2c2ddd89069b46a7011d4106f6868f17ee1705"
+  version = "v3.6.1"
 
 [[projects]]
   branch = "master"
@@ -214,15 +214,15 @@
   version = "v0.13.14"
 
 [[projects]]
-  digest = "1:c1c62b1df999f28c02d79ff8cd7a815a3500cd90056c3e95bc4d781d321cc6e9"
+  digest = "1:1361a8a611894603975d5e15f1cd50694558a80c33a806d307f3d91ea396bf50"
   name = "github.com/gobuffalo/buffalo-plugins"
   packages = [
     "plugins",
     "plugins/plugdeps",
   ]
   pruneopts = "UT"
-  revision = "41e624899b92de296c8b66081dd7570f4e976044"
-  version = "v1.14.0"
+  revision = "10587cf8a24c71d14abbd3e6488487b1c9310a6c"
+  version = "v1.14.1"
 
 [[projects]]
   digest = "1:5b33a8ff87888677489ba612c8aa1bf06500b087f1397a4732b7a0298f6d5f8a"
@@ -241,15 +241,15 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:1f733b2de0743d89d36bd33c8ac981da0ccb50db7efdcc03d252454c0a13d9b8"
+  digest = "1:1dfae58830557d8d2d142d66135cab9a9d1d9bb3c21061be63d4be86f8ae3c72"
   name = "github.com/gobuffalo/fizz"
   packages = [
     ".",
     "translators",
   ]
   pruneopts = "UT"
-  revision = "b1746c6483063f540a59943dd91eca99c280c8fb"
-  version = "v1.6.1"
+  revision = "42b348701407480cf52ee83c6f329a7392c3c57a"
+  version = "v1.7.0"
 
 [[projects]]
   digest = "1:cc0dcc71ad7b263cd3f68535fcc636409ea2298e7281115747c5d9d2a41e309c"
@@ -1227,7 +1227,7 @@
     "idna",
   ]
   pruneopts = "UT"
-  revision = "eb5bcb51f2a31c7d5141d810b70815c05d9c9146"
+  revision = "4a65cf94b67935be46fbc55ddaea48ae3f7a1471"
 
 [[projects]]
   branch = "master"
@@ -1249,18 +1249,18 @@
   name = "golang.org/x/sync"
   packages = ["errgroup"]
   pruneopts = "UT"
-  revision = "e225da77a7e68af35c70ccbf71af2b83e6acac3c"
+  revision = "56d357773e8497dfd526f0727e187720d1093757"
 
 [[projects]]
   branch = "master"
-  digest = "1:ae913c44e70b411817f8d4d352dc10e595d6b970ba23f2f1e668c95901f8a46a"
+  digest = "1:788df6ab16e3b77c72cc916185de590254d2498027337005e0ed3e2c1f10ff7b"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "b44545bcd369ef9ff9bebcfebf5f3370ef9b1932"
+  revision = "3fd5a3612ccd7907f26270fa92579a0f2f76f734"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
