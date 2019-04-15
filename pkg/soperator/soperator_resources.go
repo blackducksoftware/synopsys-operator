@@ -29,7 +29,6 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
@@ -412,12 +411,8 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	// Add Openshift rules
-	restConfig, err := protoform.GetKubeConfig()
-	if err != nil {
-		log.Errorf("Error getting Kube Rest Config: %s", err)
-	}
-	routeClient := util.GetRouteClient(restConfig) // kube doesn't have a routeclient
-	if routeClient != nil {                        // openshift: has a routeClient
+	routeClient := util.GetRouteClient(specConfig.RestConfig) // kube doesn't have a routeclient
+	if routeClient != nil {                                   // openshift: has a routeClient
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 			Verbs:           []string{"get", "update", "patch"},
 			APIGroups:       []string{"security.openshift.io"},
@@ -441,8 +436,8 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 			ResourceNames:   []string{},
 			NonResourceURLs: []string{},
 		})
-	} else if err != nil { // Kube or Error
-		log.Warnf("Skipping Openshift Cluster Role Rules: %s", err)
+	} else { // Kube or Error
+		log.Debug("Skipping Openshift Cluster Role Rules")
 	}
 
 	synopsysOperatorClusterRole.AddLabels(map[string]string{"app": "synopsys-operator"})

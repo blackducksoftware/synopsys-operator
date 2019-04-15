@@ -96,7 +96,7 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 
 	// Update the Synopsys-Operator's Components
 	log.Debugf("Updating Synopsys-Operator's Components")
-	err = specConfig.UpdateSOperatorComponents(restconfig, kubeClient, namespace)
+	err = specConfig.UpdateSOperatorComponents(namespace)
 	if err != nil {
 		return fmt.Errorf("failed to update Synopsys-Operator components: %s", err)
 	}
@@ -137,12 +137,12 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 }
 
 // UpdateSOperatorComponents updates kubernetes resources for the Synopsys-Operator
-func (specConfig *SpecConfig) UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) error {
+func (specConfig *SpecConfig) UpdateSOperatorComponents(namespace string) error {
 	sOperatorComponents, err := specConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("failed to get Synopsys-Operator components: %s", err)
 	}
-	sOperatorCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, sOperatorComponents, "app=synopsys-operator")
+	sOperatorCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, namespace, sOperatorComponents, "app=synopsys-operator")
 	errs := sOperatorCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Synopsys-Operator components: %+v", errs)

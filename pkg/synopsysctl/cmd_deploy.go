@@ -95,9 +95,9 @@ var deployCmd = &cobra.Command{
 		// Deploy synopsys-operator
 		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, adminPassword, postgresPassword,
 			userPassword, blackduckPassword, secretType, operatorTimeBombInSeconds, dryRun, logLevel, threadiness,
-			postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey)
+			postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient)
 
-		err = soperatorSpec.UpdateSOperatorComponents(restconfig, kubeClient, deployNamespace)
+		err = soperatorSpec.UpdateSOperatorComponents(deployNamespace)
 		if err != nil {
 			log.Errorf("error in deploying the synopsys operator due to %+v", err)
 			return nil
@@ -149,18 +149,5 @@ func init() {
 	deployCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "custom resources resync time period in seconds")
 	deployCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "termination grace period in seconds for shutting down postgres")
 	deployCmd.Flags().BoolVar(&dryRun, "dryRun", dryRun, "dry run to run the test cases")
-	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "log level of synopsys operator")
 	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "number of threads to process the custom resources")
-
-	// Set Log Level
-	level, err := getLogLevel(logLevel)
-	if err != nil {
-		log.Errorf("invalid log level, error: %+v", err)
-	}
-	log.SetLevel(level)
-}
-
-// getLogLevel returns the log level
-func getLogLevel(logLevel string) (log.Level, error) {
-	return log.ParseLevel(logLevel)
 }
