@@ -29,7 +29,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -73,17 +72,17 @@ func runProtoform(configPath string) {
 	//sampleController := sample.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetSampleDefaultValue(), stopCh)
 	//deployer.AddController(sampleController)
 
-	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, &alertapi.AlertSpec{}, stopCh)
+	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetAlertTemplate(), stopCh)
 	deployer.AddController(alertController)
 
-	hubController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetHubDefaultValue(), stopCh)
+	hubController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetBlackDuckTemplate(), stopCh)
 	deployer.AddController(hubController)
 
 	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
 		Config:        deployer.Config,
 		KubeConfig:    deployer.KubeConfig,
 		KubeClientSet: deployer.KubeClientSet,
-		Defaults:      bdutil.GetOpsSightDefaultValue(),
+		Defaults:      bdutil.GetOpsSightTemplate(),
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
