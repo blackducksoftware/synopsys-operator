@@ -29,6 +29,8 @@ import (
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	routev1 "github.com/openshift/api/route/v1"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +38,7 @@ import (
 //  Deploy Command Defaults
 var exposeUI = ""
 var deployNamespace = "synopsys-operator"
-var synopsysOperatorImage = "gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:master"
+var synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.4.0-RC"
 var prometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var terminationGracePeriodSeconds int64 = 180
 var operatorTimeBombInSeconds int64 = 315576000
@@ -63,7 +65,7 @@ var deployCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) > 1 {
-			return fmt.Errorf("this command only accepts up to 1 argument")
+			return fmt.Errorf("namespace to deploy the synopsys operator is missing")
 		}
 		// Check the Secret Type
 		var err error
@@ -81,9 +83,9 @@ var deployCmd = &cobra.Command{
 			deployNamespace = args[0]
 		}
 		// check if operator is already installed
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
+		crb, err := util.GetClusterRoleBinding(kubeClient, "synopsys-operator-admin")
 		if err == nil {
-			log.Errorf("synopsys operator is already installed in %s namespace", out)
+			log.Errorf("synopsys operator is already installed in %s namespace", crb.Subjects[0].Namespace)
 			return nil
 		}
 
@@ -94,18 +96,18 @@ var deployCmd = &cobra.Command{
 
 		// Deploy synopsys-operator
 		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, adminPassword, postgresPassword,
-			userPassword, blackduckPassword, secretType, operatorTimeBombInSeconds, dryRun, logLevel, threadiness,
-			postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient)
+			userPassword, blackduckPassword, secretType, operatorTimeBombInSeconds, dryRun, logLevel, threadiness, postgresRestartInMins,
+			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient)
 
-		err = soperatorSpec.UpdateSOperatorComponents(deployNamespace)
+		err = soperatorSpec.UpdateSOperatorComponents()
 		if err != nil {
 			log.Errorf("error in deploying the synopsys operator due to %+v", err)
 			return nil
 		}
 
 		// Deploy prometheus
-		promtheusSpec := soperator.NewPrometheus(deployNamespace, prometheusImage)
-		err = promtheusSpec.UpdatePrometheus(restconfig, kubeClient, deployNamespace)
+		promtheusSpec := soperator.NewPrometheus(deployNamespace, prometheusImage, restconfig, kubeClient)
+		err = promtheusSpec.UpdatePrometheus()
 		if err != nil {
 			log.Errorf("error deploying Prometheus: %s", err)
 			return nil
@@ -122,7 +124,12 @@ var deployCmd = &cobra.Command{
 
 		// expose the routes
 		if strings.EqualFold(exposeUI, "OPENSHIFT") {
-			out, err = util.RunKubeCmd(restconfig, kube, openshift, "create", "route", "edge", "--service=synopsys-operator", "-n", deployNamespace)
+			routeClient, err := routeclient.NewForConfig(restconfig)
+			if err != nil {
+				log.Errorf("unable to create the route client due to %+v", err)
+				return nil
+			}
+			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator", "Service", "synopsys-operator", routev1.TLSTerminationEdge)
 			if err != nil {
 				log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
 			}
@@ -149,5 +156,18 @@ func init() {
 	deployCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "custom resources resync time period in seconds")
 	deployCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "termination grace period in seconds for shutting down postgres")
 	deployCmd.Flags().BoolVar(&dryRun, "dryRun", dryRun, "dry run to run the test cases")
+	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "log level of synopsys operator")
 	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "number of threads to process the custom resources")
+
+	// Set Log Level
+	level, err := getLogLevel(logLevel)
+	if err != nil {
+		log.Errorf("invalid log level, error: %+v", err)
+	}
+	log.SetLevel(level)
+}
+
+// getLogLevel returns the log level
+func getLogLevel(logLevel string) (log.Level, error) {
+	return log.ParseLevel(logLevel)
 }
