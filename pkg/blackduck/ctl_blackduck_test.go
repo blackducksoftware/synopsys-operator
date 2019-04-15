@@ -117,7 +117,6 @@ func TestCheckSpecFlags(t *testing.T) {
 		assert.Error(test.input.CheckSpecFlags())
 	}
 }
-
 func TestSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	blackduckCtl := NewBlackduckCtl()
@@ -126,12 +125,17 @@ func TestSwitchSpec(t *testing.T) {
 		input    string
 		expected *blackduckv1.BlackduckSpec
 	}{
-		{input: "empty", expected: &blackduckv1.BlackduckSpec{}},
-		{input: "persistentStorageLatest", expected: crddefaults.GetBlackDuckDefaultPersistentStorageLatest()},
-		{input: "persistentStorageV1", expected: crddefaults.GetBlackDuckDefaultPersistentStorageV1()},
-		{input: "externalPersistentStorageLatest", expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()},
-		{input: "externalPersistentStorageV1", expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()},
-		{input: "default", expected: crddefaults.GetHubDefaultValue()},
+		{input: EmptySpec, expected: &blackduckv1.BlackduckSpec{}},
+		{input: TemplateSpec, expected: crddefaults.GetBlackDuckTemplate()},
+		{input: PersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageLatest()},
+		{input: PersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageV1()},
+		{input: ExternalPersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()},
+		{input: ExternalPersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()},
+		{input: BDBASpec, expected: crddefaults.GetBlackDuckDefaultBDBA()},
+		{input: EphemeralSpec, expected: crddefaults.GetBlackDuckDefaultEphemeral()},
+		{input: EphemeralCustomAuthCASpec, expected: crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()},
+		{input: ExternalDBSpec, expected: crddefaults.GetBlackDuckDefaultExternalDB()},
+		{input: IPV6DisabledSpec, expected: crddefaults.GetBlackDuckDefaultIPV6Disabled()},
 	}
 
 	// test cases: "empty", "persistentStorage", "default"
