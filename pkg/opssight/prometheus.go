@@ -129,7 +129,7 @@ func (p *SpecConfig) PerceptorMetricsService() *components.Service {
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
 	service.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
-	service.AddSelectors(map[string]string{"app": "opssight"})
+	service.AddSelectors(map[string]string{"name": "prometheus", "app": "opssight"})
 
 	return service
 }

@@ -28,7 +28,7 @@ import (
 )
 
 // GetAuthenticationDeployment will return the authentication deployment
-func (c *Creater) GetAuthenticationDeployment() *components.ReplicationController {
+func (c *Creater) GetAuthenticationDeployment(imageName string) *components.ReplicationController {
 	volumeMounts := c.getAuthenticationVolumeMounts()
 	var authEnvs []*horizonapi.EnvConfig
 	authEnvs = append(authEnvs, c.getHubDBConfigEnv())
@@ -36,7 +36,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.AuthenticationHubMaxMemory})
 
 	hubAuthContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: c.getImageTag("blackduck-authentication"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   authEnvs,
 		VolumeMounts: volumeMounts,
@@ -61,7 +61,7 @@ func (c *Creater) GetAuthenticationDeployment() *components.ReplicationControlle
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-authentication") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-authentication/ldap"}},
 			VolumeMounts:    volumeMounts,
@@ -83,7 +83,7 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 	hubAuthSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication-security")
 
 	var hubAuthVolume *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-authentication") {
+	if c.hubSpec.PersistentStorage {
 		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", "blackduck-authentication")
 	} else {
 		hubAuthVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")

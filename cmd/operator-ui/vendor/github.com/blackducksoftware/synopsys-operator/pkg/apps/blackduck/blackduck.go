@@ -1,5 +1,3 @@
-package blackduck
-
 /*
 Copyright (C) 2019 Synopsys, Inc.
 
@@ -21,24 +19,25 @@ specific language governing permissions and limitations
 under the License.
 */
 
+package blackduck
+
 import (
 	"fmt"
+	"sort"
 	"strings"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"github.com/sirupsen/logrus"
 
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
-
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
-	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	latestblackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	v1blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // Blackduck is used for the Blackduck deployment
@@ -75,15 +74,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 		}
 	}
 
-	routeClient, err := routeclient.NewForConfig(kubeConfig)
-	if err != nil {
-		routeClient = nil
-	} else {
-		_, err := util.GetOpenShiftRoutes(routeClient, "default", "docker-registry")
-		if err != nil {
-			routeClient = nil
-		}
-	}
+	routeClient := util.GetRouteClient(kubeConfig)
 
 	creaters := []Creater{
 		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
@@ -113,7 +104,22 @@ func (b Blackduck) getCreater(version string) (Creater, error) {
 
 // Delete will be used to delete a blackduck instance
 func (b Blackduck) Delete(name string) {
-	// TODO  - We should not delete the namespace but instead search for the current version (annotation??) then delete the Blackduck instance.
+	logrus.Infof("deleting %s", name)
+	//err := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, false, name, &api.ComponentList{}, "app=blackduck").CRUDComponents()
+	//if err != nil {
+	//	logrus.Error(err)
+	//}
+
+	// Verify whether the namespace exist
+	_, err := util.GetNamespace(b.kubeClient, name)
+	if err != nil {
+		logrus.Errorf("unable to find the namespace %+v due to %+v", name, err)
+	}
+	// Delete the namespace
+	err = util.DeleteNamespace(b.kubeClient, name)
+	if err != nil {
+		logrus.Errorf("unable to delete the namespace %+v due to %+v", name, err)
+	}
 }
 
 // Versions returns the versions that the operator supports
@@ -129,9 +135,17 @@ func (b Blackduck) Versions() []string {
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (b Blackduck) Ensure(bd *v1.Blackduck) error {
+	// If the version is not specified then we set it to be the latest.
+	if len(bd.Spec.Version) == 0 {
+		versions := b.Versions()
+		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+		bd.Spec.Version = versions[0]
+	}
+
 	creater, err := b.getCreater(bd.Spec.Version)
 	if err != nil {
 		return err
 	}
+
 	return creater.Ensure(bd)
 }

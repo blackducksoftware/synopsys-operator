@@ -191,17 +191,27 @@ func (ctl *Ctl) CheckSpecFlags() error {
 	return nil
 }
 
+// Constants for Default Specs
+const (
+	EmptySpec             string = "empty"
+	TemplateSpec          string = "template"
+	DefaultSpec           string = "default"
+	DisabledBlackDuckSpec string = "disabled-black-duck"
+)
+
 // SwitchSpec switches the OpsSight's Spec to a different predefined spec
 func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
-	case "empty":
+	case EmptySpec:
 		ctl.Spec = &opssightv1.OpsSightSpec{}
-	case "disabledBlackduck":
-		ctl.Spec = crddefaults.GetOpsSightDefaultValueWithDisabledHub()
-	case "default":
-		ctl.Spec = crddefaults.GetOpsSightDefaultValue()
+	case TemplateSpec:
+		ctl.Spec = crddefaults.GetOpsSightTemplate()
+	case DefaultSpec:
+		ctl.Spec = crddefaults.GetOpsSightDefault()
+	case DisabledBlackDuckSpec:
+		ctl.Spec = crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()
 	default:
-		return fmt.Errorf("OpsSight Spec Type %s does not match: empty, disabledBlackduck, default", createOpsSightSpecType)
+		return fmt.Errorf("OpsSight Spec Type %s is not valid", createOpsSightSpecType)
 	}
 	return nil
 }

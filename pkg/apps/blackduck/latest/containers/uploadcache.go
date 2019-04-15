@@ -28,11 +28,11 @@ import (
 )
 
 // GetUploadCacheDeployment will return the uploadCache deployment
-func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
+func (c *Creater) GetUploadCacheDeployment(imageName string) *components.ReplicationController {
 	volumeMounts := c.getUploadCacheVolumeMounts()
 
 	uploadCacheContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: c.getImageTag("blackduck-upload-cache"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.UploadCacheMemoryLimit, MaxMem: c.hubContainerFlavor.UploadCacheMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
 		EnvConfigs: []*horizonapi.EnvConfig{
@@ -55,9 +55,9 @@ func (c *Creater) GetUploadCacheDeployment() *components.ReplicationController {
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-uploadcache") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-upload-cache/uploads"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/blackduck-upload-cache/security /opt/blackduck/hub/blackduck-upload-cache/keys /opt/blackduck/hub/blackduck-upload-cache/uploads"}},
 			VolumeMounts:    volumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
@@ -78,7 +78,7 @@ func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", "upload-cache", 0777)
 	var uploadCacheDataDir *components.Volume
 	var uploadCacheDataKey *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-uploadcache-data") {
+	if c.hubSpec.PersistentStorage {
 		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", "blackduck-uploadcache-data")
 		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", "blackduck-uploadcache-key")
 	} else {

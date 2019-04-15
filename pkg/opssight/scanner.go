@@ -40,7 +40,7 @@ func (p *SpecConfig) ScannerReplicationController() (*components.ReplicationCont
 	})
 
 	rc.AddLabelSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
-
+	rc.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 	pod, err := p.scannerPod()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create scanner pod")
@@ -224,7 +224,7 @@ func (p *SpecConfig) ScannerService() *components.Service {
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name})
+	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 
 	service.AddPort(horizonapi.ServicePortConfig{
 		Port:       int32(p.opssight.Spec.ScannerPod.Scanner.Port),

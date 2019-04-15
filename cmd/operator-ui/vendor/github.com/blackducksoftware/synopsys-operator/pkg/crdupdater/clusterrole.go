@@ -46,10 +46,17 @@ func NewClusterRole(config *CommonConfig, clusterRoles []*components.ClusterRole
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+	newClusterRoles := append([]*components.ClusterRole{}, clusterRoles...)
+	for i := 0; i < len(newClusterRoles); i++ {
+		if !isLabelsExist(config.expectedLabels, newClusterRoles[i].GetObj().Labels) {
+			newClusterRoles = append(newClusterRoles[:i], newClusterRoles[i+1:]...)
+			i--
+		}
+	}
 	return &ClusterRole{
 		config:          config,
 		deployer:        deployer,
-		clusterRoles:    clusterRoles,
+		clusterRoles:    newClusterRoles,
 		oldClusterRoles: make(map[string]rbacv1.ClusterRole, 0),
 		newClusterRoles: make(map[string]*rbacv1.ClusterRole, 0),
 	}, nil

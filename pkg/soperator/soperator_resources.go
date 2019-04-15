@@ -23,12 +23,14 @@ package soperator
 
 import (
 	"crypto/x509/pkix"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -73,7 +75,7 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		Name:       "synopsys-operator",
 		Args:       []string{"/etc/synopsys-operator/config.json"},
 		Command:    []string{"./operator"},
-		Image:      specConfig.SynopsysOperatorImage,
+		Image:      specConfig.Image,
 		PullPolicy: horizonapi.PullAlways,
 		//MinCPU:                   "string",
 		//MaxCPU:                   "string",
@@ -118,7 +120,7 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		Name: "synopsys-operator-ui",
 		//Args:                     "[]string",
 		Command:    []string{"./app"},
-		Image:      specConfig.SynopsysOperatorImage,
+		Image:      specConfig.Image,
 		PullPolicy: horizonapi.PullAlways,
 		//MinCPU:                   "string",
 		//MaxCPU:                   "string",
@@ -189,20 +191,14 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 }
 
 // GetOperatorService creates a Service Horizon component for the Synopsys-Operaotor
-func (specConfig *SpecConfig) GetOperatorService() *horizoncomponents.Service {
+func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service {
 
+	services := []*horizoncomponents.Service{}
 	// Add the Service to the Deployer
 	synopsysOperatorService := horizoncomponents.NewService(horizonapi.ServiceConfig{
 		APIVersion: "v1",
-		//ClusterName:              "string",
-		Name:      "synopsys-operator",
-		Namespace: specConfig.Namespace,
-		//ExternalName:             "string",
-		//IPServiceType:            "ClusterIPServiceType",
-		//ClusterIP:                "string",
-		//PublishNotReadyAddresses: "bool",
-		//TrafficPolicy:            "TrafficPolicyType",
-		//Affinity:                 "string",
+		Name:       "synopsys-operator",
+		Namespace:  specConfig.Namespace,
 	})
 
 	synopsysOperatorService.AddSelectors(map[string]string{"name": "synopsys-operator"})
@@ -210,37 +206,62 @@ func (specConfig *SpecConfig) GetOperatorService() *horizoncomponents.Service {
 		Name:       "synopsys-operator-ui",
 		Port:       3000,
 		TargetPort: "3000",
-		//NodePort:   "int32",
-		Protocol: horizonapi.ProtocolTCP,
+		Protocol:   horizonapi.ProtocolTCP,
 	})
 	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
 		Name:       "synopsys-operator-ui-standard-port",
 		Port:       80,
 		TargetPort: "3000",
-		//NodePort:   "int32",
-		Protocol: horizonapi.ProtocolTCP,
+		Protocol:   horizonapi.ProtocolTCP,
 	})
 	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
 		Name:       "synopsys-operator",
 		Port:       8080,
 		TargetPort: "8080",
-		//NodePort:   "int32",
-		Protocol: horizonapi.ProtocolTCP,
+		Protocol:   horizonapi.ProtocolTCP,
 	})
 	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
 		Name:       "synopsys-operator-tls",
 		Port:       443,
 		TargetPort: "443",
-		//NodePort:   "int32",
-		Protocol: horizonapi.ProtocolTCP,
+		Protocol:   horizonapi.ProtocolTCP,
 	})
 
 	synopsysOperatorService.AddLabels(map[string]string{"app": "synopsys-operator"})
-	return synopsysOperatorService
+	services = append(services, synopsysOperatorService)
+
+	if strings.EqualFold(specConfig.Expose, "NODEPORT") || strings.EqualFold(specConfig.Expose, "LOADBALANCER") {
+
+		var exposedServiceType horizonapi.ClusterIPServiceType
+		if strings.EqualFold(specConfig.Expose, "NODEPORT") {
+			exposedServiceType = horizonapi.ClusterIPServiceTypeNodePort
+		} else {
+			exposedServiceType = horizonapi.ClusterIPServiceTypeLoadBalancer
+		}
+
+		// Synopsys operator UI exposed service
+		synopsysOperatorExposedService := horizoncomponents.NewService(horizonapi.ServiceConfig{
+			APIVersion:    "v1",
+			Name:          "synopsys-operator-exposed",
+			Namespace:     specConfig.Namespace,
+			IPServiceType: exposedServiceType,
+		})
+		synopsysOperatorExposedService.AddSelectors(map[string]string{"name": "synopsys-operator"})
+		synopsysOperatorExposedService.AddPort(horizonapi.ServicePortConfig{
+			Name:       "synopsys-operator-ui",
+			Port:       80,
+			TargetPort: "3000",
+			Protocol:   horizonapi.ProtocolTCP,
+		})
+		synopsysOperatorExposedService.AddLabels(map[string]string{"app": "synopsys-operator"})
+		services = append(services, synopsysOperatorExposedService)
+	}
+
+	return services
 }
 
 // GetOperatorConfigMap creates a ConfigMap Horizon component for the Synopsys-Operaotor
-func (specConfig *SpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMap {
+func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigMap, error) {
 	// Config Map
 	synopsysOperatorConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
 		APIVersion: "v1",
@@ -249,12 +270,28 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() *horizoncomponents.ConfigMa
 	})
 
 	cmData := map[string]string{}
-	cmData["config.json"] = fmt.Sprintf("{\"OperatorTimeBombInSeconds\":\"315576000\", \"DryRun\": false, \"LogLevel\": \"debug\", \"Namespace\": \"%s\", \"Threadiness\": 5, \"PostgresRestartInMins\": 10, \"PodWaitTimeoutSeconds\" : \"600\", \"ResyncIntervalInSeconds\" : \"30\", \"TerminationGracePeriodSeconds\" : \"%d\"}", specConfig.Namespace, specConfig.TerminationGracePeriodSeconds)
-	cmData["image"] = specConfig.SynopsysOperatorImage
+	configData := map[string]interface{}{
+		"OperatorTimeBombInSeconds":     specConfig.OperatorTimeBombInSeconds,
+		"DryRun":                        specConfig.DryRun,
+		"LogLevel":                      specConfig.LogLevel,
+		"Namespace":                     specConfig.Namespace,
+		"Threadiness":                   specConfig.Threadiness,
+		"PostgresRestartInMins":         specConfig.PostgresRestartInMins,
+		"PodWaitTimeoutSeconds":         specConfig.PodWaitTimeoutSeconds,
+		"ResyncIntervalInSeconds":       specConfig.ResyncIntervalInSeconds,
+		"TerminationGracePeriodSeconds": specConfig.TerminationGracePeriodSeconds,
+	}
+	bytes, err := json.Marshal(configData)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	cmData["config.json"] = string(bytes)
+	cmData["image"] = specConfig.Image
 	synopsysOperatorConfigMap.AddData(cmData)
 
 	synopsysOperatorConfigMap.AddLabels(map[string]string{"app": "synopsys-operator"})
-	return synopsysOperatorConfigMap
+	return synopsysOperatorConfigMap, nil
 }
 
 // GetOperatorServiceAccount creates a ServiceAccount Horizon component for the Synopsys-Operaotor
@@ -297,13 +334,12 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.ClusterRole {
 	synopsysOperatorClusterRole := horizoncomponents.NewClusterRole(horizonapi.ClusterRoleConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
-		//ClusterName : "string,"
-		Name:      "synopsys-operator-admin",
-		Namespace: specConfig.Namespace,
+		Name:       "synopsys-operator-admin",
+		Namespace:  specConfig.Namespace,
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups:       []string{"apiextensions.k8s.io"},
 		Resources:       []string{"customresourcedefinitions"},
 		ResourceNames:   []string{},
@@ -311,7 +347,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups:       []string{"rbac.authorization.k8s.io"},
 		Resources:       []string{"clusterrolebindings", "clusterroles"},
 		ResourceNames:   []string{},
@@ -319,17 +355,33 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
-		APIGroups:       []string{""},
-		Resources:       []string{"namespaces", "pods", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "deployments", "statefulsets", "serviceaccounts"},
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups:       []string{"batch", "extensions"},
+		Resources:       []string{"jobs", "cronjobs"},
 		ResourceNames:   []string{},
 		NonResourceURLs: []string{},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch"},
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups:       []string{"extensions", "apps"},
+		Resources:       []string{"deployments", "deployments/scale", "deployments/rollback", "statefulsets", "statefulsets/scale", "replicasets", "replicasets/scale", "daemonsets"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups:       []string{""},
-		Resources:       []string{"pods/log", "endpoints"},
+		Resources:       []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch", "update"},
+		APIGroups:       []string{""},
+		Resources:       []string{"pods", "pods/log", "endpoints"},
 		ResourceNames:   []string{},
 		NonResourceURLs: []string{},
 	})
@@ -343,16 +395,24 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
 		APIGroups:       []string{"synopsys.com"},
 		Resources:       []string{"*"},
 		ResourceNames:   []string{},
 		NonResourceURLs: []string{},
 	})
 
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:           []string{"get", "list", "watch"},
+		APIGroups:       []string{"storage.k8s.io"},
+		Resources:       []string{"storageclasses", "volumeattachments"},
+		ResourceNames:   []string{},
+		NonResourceURLs: []string{},
+	})
+
 	// Add Openshift rules
-	routeClient, err := routeclient.NewForConfig(specConfig.RestConfig) // kube doesn't have a routeclient
-	if routeClient != nil && err == nil {                               // openshift: have a routeClient and no error
+	routeClient := util.GetRouteClient(specConfig.RestConfig) // kube doesn't have a routeclient
+	if routeClient != nil {                                   // openshift: has a routeClient
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 			Verbs:           []string{"get", "update", "patch"},
 			APIGroups:       []string{"security.openshift.io"},
@@ -362,14 +422,22 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 		})
 
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+			Verbs:           []string{"get", "create"},
 			APIGroups:       []string{"route.openshift.io"},
 			Resources:       []string{"routes"},
 			ResourceNames:   []string{},
 			NonResourceURLs: []string{},
 		})
-	} else if err != nil { // Kube or Error
-		log.Warnf("Skipping Openshift Cluster Role Rules: %s", err)
+
+		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+			Verbs:           []string{"get", "list", "watch"},
+			APIGroups:       []string{"image.openshift.io"},
+			Resources:       []string{"images"},
+			ResourceNames:   []string{},
+			NonResourceURLs: []string{},
+		})
+	} else { // Kube or Error
+		log.Debug("Skipping Openshift Cluster Role Rules")
 	}
 
 	synopsysOperatorClusterRole.AddLabels(map[string]string{"app": "synopsys-operator"})
@@ -396,6 +464,8 @@ func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secre
 		"cert.crt": cert,
 		"cert.key": key,
 	})
+
+	tlsSecret.AddLabels(map[string]string{"app": "synopsys-operator"})
 	return tlsSecret
 }
 
@@ -409,10 +479,10 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 		Type:       specConfig.SecretType,
 	})
 	synopsysOperatorSecret.AddData(map[string][]byte{
-		"ADMIN_PASSWORD":    []byte(specConfig.SecretAdminPassword),
-		"POSTGRES_PASSWORD": []byte(specConfig.SecretPostgresPassword),
-		"USER_PASSWORD":     []byte(specConfig.SecretUserPassword),
-		"HUB_PASSWORD":      []byte(specConfig.SecretBlackduckPassword),
+		"ADMIN_PASSWORD":    []byte(specConfig.AdminPassword),
+		"POSTGRES_PASSWORD": []byte(specConfig.PostgresPassword),
+		"USER_PASSWORD":     []byte(specConfig.UserPassword),
+		"HUB_PASSWORD":      []byte(specConfig.BlackduckPassword),
 		"SEAL_KEY":          []byte(specConfig.SealKey),
 	})
 

@@ -24,7 +24,7 @@ package containers
 import (
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -41,14 +41,15 @@ func (c *Creater) PostEditContainer(cc *util.Container) {
 
 // Creater will store the configuration to create the hub containers
 type Creater struct {
-	config             *protoform.Config
-	hubSpec            *v1.BlackduckSpec
-	hubContainerFlavor *ContainerFlavor
+	config                  *protoform.Config
+	hubSpec                 *blackduckapi.BlackduckSpec
+	hubContainerFlavor      *ContainerFlavor
+	isBinaryAnalysisEnabled bool
 }
 
 // NewCreater will return a creater
-func NewCreater(config *protoform.Config, hubSpec *v1.BlackduckSpec, hubContainerFlavor *ContainerFlavor) *Creater {
-	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor}
+func NewCreater(config *protoform.Config, hubSpec *blackduckapi.BlackduckSpec, hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
+	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
 }
 
 // GetFullContainerNameFromImageRegistryConf returns the tag that is specified for a container by trying to look in the custom tags provided,
@@ -58,7 +59,6 @@ func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string
 	for _, reg := range c.hubSpec.ImageRegistries {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
-			log.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, c.hubSpec.ImageRegistries, reg, baseContainer)
 			_, err := hubutils.ParseImageString(reg)
 			if err != nil {
 				log.Error(err)
@@ -68,21 +68,6 @@ func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string
 		}
 	}
 
-	//ignoredContainers := []string{"postgres", "appcheck", "rabbitmq", "upload"}
-	//for _, ignoredContainer := range ignoredContainers {
-	//	if strings.EqualFold(baseContainer, ignoredContainer) {
-	//		return ""
-	//	}
-	//}
-	//
-	//if strings.EqualFold(baseContainer, "solr") && strings.HasPrefix(blackduckVersion, "20") {
-	//	return ""
-	//}
-	//
-	//img := fmt.Sprintf("docker.io/blackducksoftware/hub-%v:%v", baseContainer, blackduckVersion)
-	//log.Warnf("Couldn't get container name for : %v, set it manually in the deployment, returning a reasonable default instead %v.", baseContainer, img)
-	//log.Warn("In the future, you should provide fully qualified images for every single container when running the blackduck operator.")
-	//return img
 	return ""
 }
 
@@ -93,14 +78,4 @@ func (c *Creater) getUID(baseContainer string) *int64 {
 		return &tag
 	}
 	return nil
-}
-
-// hasPVC will return true if the PVC is configured in Spec.PVC
-func (c *Creater) hasPVC(name string) bool {
-	for _, v := range c.hubSpec.PVC {
-		if strings.Compare(v.Name, name) == 0 {
-			return true
-		}
-	}
-	return false
 }

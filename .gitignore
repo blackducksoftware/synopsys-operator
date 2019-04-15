@@ -9,3 +9,4 @@ cmd/operator/operator
 build
 .vscode/*
 cmd/synopsysctl/*.key
+_output/*

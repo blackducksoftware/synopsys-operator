@@ -35,7 +35,6 @@ import (
 	opssightinformer "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/cache"
@@ -193,16 +192,7 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	routeClient, err := routeclient.NewForConfig(c.config.KubeConfig)
-	if err != nil {
-		routeClient = nil
-	} else {
-		_, err := util.GetOpenShiftRoutes(routeClient, "default", "docker-registry")
-		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("Ignoring routes for kubernetes cluster")
-			routeClient = nil
-		}
-	}
+	routeClient := util.GetRouteClient(c.config.KubeConfig)
 
 	hubClient, err := hubclient.NewForConfig(c.config.KubeConfig)
 	if err != nil {

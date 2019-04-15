@@ -30,15 +30,15 @@ import (
 // Its methods include GetComponents() and any functions
 // that create Kubernetes Resources for Prometheus
 type PrometheusSpecConfig struct {
-	Namespace       string
-	PrometheusImage string
+	Namespace string
+	Image     string
 }
 
 // NewPrometheus will create a PromtheusSpecConfig type
-func NewPrometheus(namespace, prometheusImage string) *PrometheusSpecConfig {
+func NewPrometheus(namespace, image string) *PrometheusSpecConfig {
 	return &PrometheusSpecConfig{
-		Namespace:       namespace,
-		PrometheusImage: prometheusImage,
+		Namespace: namespace,
+		Image:     image,
 	}
 }
 

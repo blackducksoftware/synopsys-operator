@@ -21,12 +21,10 @@ under the License.
 
 package blackduck
 
-import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-)
+import blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 
 // Creater interface
 type Creater interface {
-	Ensure(blackduck *v1.Blackduck) error
+	Ensure(blackduck *blackduckapi.Blackduck) error
 	Versions() []string
 }

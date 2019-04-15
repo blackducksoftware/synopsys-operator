@@ -24,18 +24,17 @@ package synopsysctl
 import (
 	"fmt"
 
-	"github.com/blackducksoftware/horizon/pkg/deployer"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // These vars set by setResourceClients() in root command's init()
@@ -61,21 +60,18 @@ func setResourceClients() {
 	if err != nil {
 		log.Errorf("error getting Kube Client: %s", err)
 	}
-	bClient, err := blackduckclientset.NewForConfig(restconfig)
+	blackduckClient, err = blackduckclientset.NewForConfig(restconfig)
 	if err != nil {
 		log.Errorf("error creating the Blackduck Clientset: %s", err)
 	}
-	blackduckClient = bClient
-	oClient, err := opssightclientset.NewForConfig(restconfig)
+	opssightClient, err = opssightclientset.NewForConfig(restconfig)
 	if err != nil {
 		log.Errorf("error creating the OpsSight Clientset: %s", err)
 	}
-	opssightClient = oClient
-	aClient, err := alertclientset.NewForConfig(restconfig)
+	alertClient, err = alertclientset.NewForConfig(restconfig)
 	if err != nil {
 		log.Errorf("error creating the Alert Clientset: %s", err)
 	}
-	alertClient = aClient
 	kube, openshift = operatorutil.DetermineClusterClients(restconfig)
 }
 
@@ -98,7 +94,7 @@ func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
 	namespaceDeployer.AddNamespace(ns)
 	err = namespaceDeployer.Run()
 	if err != nil {
-		return fmt.Errorf("error deploying namespace with Horizon : %s", err)
+		return fmt.Errorf("error in creating the namespace due to %+v", err)
 	}
 	return nil
 }

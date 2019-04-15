@@ -28,16 +28,15 @@ import (
 )
 
 // GetWebappLogstashDeployment will return the webapp and logstash deployment
-func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationController {
+func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashImageName string) *components.ReplicationController {
 	webappEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.WebappHubMaxMemory})
 
 	webappVolumeMounts := c.getWebappVolumeMounts()
 
 	webappContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: c.getImageTag("blackduck-webapp"),
-			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit,
-			MaxCPU: c.hubContainerFlavor.WebappCPULimit},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: webAppImageName,
+			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebappMemoryLimit, MaxMem: c.hubContainerFlavor.WebappMemoryLimit, MinCPU: c.hubContainerFlavor.WebappCPULimit},
 		EnvConfigs:   webappEnvs,
 		VolumeMounts: webappVolumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: webappPort, Protocol: horizonapi.ProtocolTCP}},
@@ -66,7 +65,7 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	logstashVolumeMounts := c.getLogstashVolumeMounts()
 
 	logstashContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: c.getImageTag("blackduck-logstash"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: logstashImageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.LogstashMemoryLimit, MaxMem: c.hubContainerFlavor.LogstashMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: logstashVolumeMounts,
@@ -86,14 +85,14 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 	c.PostEditContainer(logstashContainerConfig)
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-webapp") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-webapp", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-webapp/ldap"}},
 			VolumeMounts:    webappVolumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
 	}
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-logstash") {
+	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-logstash", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/logstash/data"}},
 			VolumeMounts:    logstashVolumeMounts,
@@ -111,14 +110,14 @@ func (c *Creater) GetWebappLogstashDeployment() *components.ReplicationControlle
 func (c *Creater) getWebappLogtashVolumes() []*components.Volume {
 	webappSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp-security")
 	var webappVolume *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-webapp") {
+	if c.hubSpec.PersistentStorage {
 		webappVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-webapp", "blackduck-webapp")
 	} else {
 		webappVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
 	}
 
 	var logstashVolume *components.Volume
-	if c.hubSpec.PersistentStorage && c.hasPVC("blackduck-logstash") {
+	if c.hubSpec.PersistentStorage {
 		logstashVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-logstash", "blackduck-logstash")
 	} else {
 		logstashVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")

@@ -1,17 +1,21 @@
 <body onload="formLoad()" onsubmit="return validateAndGetValues()">
 <div class="new-container">
   <%= f.InputTag("Spec.Namespace", {value: blackduck.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
-  <%= f.SelectTag("Spec.Version", {options: blackduck.View.SupportedVersions, value: blackduck.Spec.Version, label: "Blackduck Version"}) %>
+  <%= f.SelectTag("Spec.Version", {options: blackduck.View.SupportedVersions, value: blackduck.Spec.Version, label: "Black Duck Version"}) %>
   <%= f.InputTag("Spec.LicenseKey", {value: blackduck.Spec.LicenseKey, label: "License Key"}) %>
   <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: blackduck.Spec.Size, label: "Size"}) %>
-  <%= f.SelectTag("Spec.ExposeService", {options: ["","Loadbalancer", "Nodeport"], value: blackduck.Spec.ExposeService, label: "Expose Service"}) %>
+  <%= f.SelectTag("Spec.ExposeService", {options: {"": "","Load Balancer": "LoadBalancer", "Node Port": "NodePort", "Routes for OpenShift": "OpenShift"}, value: blackduck.Spec.ExposeService, label: "Expose Service"}) %>
   <%= f.InputTag("Spec.Type", {value: blackduck.Spec.Type, label: "Blackduck Type (OpsSight specific)"}) %>
   <%= f.CheckboxTag("Spec.LivenessProbes", {value: blackduck.Spec.LivenessProbes, label: "Liveness Probes"}) %>
   <%= f.CheckboxTag("Spec.PersistentStorage", {value: blackduck.Spec.PersistentStorage, label: "Persistent Storage", onchange: "checkPVC()"}) %>
   <%= f.SelectTag("Spec.DbPrototype", {options: blackduck.View.Clones, value: blackduck.Spec.DbPrototype, label: "Clone DB"}) %>
   <div id="pvcId">
     <%= f.SelectTag("Spec.PVCStorageClass", {value: blackduck.Spec.PVCStorageClass, label: "PVC Storage Class", options: blackduck.View.StorageClasses}) %>
-    <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
+    <%= if (blackduck.Spec.Namespace!="" && blackduck.Spec.PersistentStorage==true) { %>
+      <%= f.SelectTag("Spec.ScanType", {options: [blackduck.Spec.ScanType], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
+    <% } else { %>
+      <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
+    <% } %>
     <%= for (index, claim) in  blackduck.Spec.PVC { %>
       <%= if (claim.Name=="blackduck-postgres") { %>
         <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
@@ -41,6 +45,7 @@
   <%= f.TextAreaTag("Spec.ProxyCertificate", {value: blackduck.Spec.ProxyCertificate, label: "Proxy Root Certificate"}) %>
   <label>Container Image Tags</label>
   <ul id="containerTags" name="containerTags" contenteditable="true">
+      <li value=""></li>
     <%= for (containerTag) in  blackduck.View.ContainerTags { %>
     <li value="<%= containerTag %>"><%= containerTag %></li>
     <% } %>
@@ -55,7 +60,7 @@
   <select id="blackduck-Spec.ImageRegistries" name="Spec.ImageRegistries" multiple="multiple" hidden></select>
   <center>
     <a href="<%= blackducksPath() %>" class="btn btn-info">Cancel</a>
-    <button class="btn btn-success" role="submit">Create</button>
+    <button class="btn btn-success" role="submit">Submit</button>
     <a href="" class="btn btn-warning" data-confirm="Are you sure?">Clear</a>
   </center>
   <br/>
@@ -66,14 +71,15 @@
 <style>
   ul {
     position: relative;
-    outline: 0;
+    /* outline: 0; */
+    border:1px solid #ced4da;
   }
 
   ul li {
     position: relative;
-    padding: 20px 10px 20px 40px;
+    padding: 10px 5px 5px 30px;
     background: transparent;
-    box-shadow: 0 1px #EEE;
+    box-shadow: 0 0px #EEE;
   }
 
   ul li:before {
@@ -98,13 +104,29 @@
 <script>
   // check during form load
   function formLoad() {
+    editableFalse();
     checkNginxCertificate();
-    checkScanType();
+    loadPVC();
     document.getElementById("externalDbId").style.display= 'none';
     document.getElementById("customAuthCAId").style.display= 'none';
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
     //   document.getElementById("blackduck-Status.ErrorMessage").hidden = false;
     // }
+  }
+
+  function editableFalse() {
+    if (document.getElementById("blackduck-Spec.Namespace") != null && document.getElementById("blackduck-Spec.Namespace").value != "") {
+      document.getElementById("blackduck-Spec.Namespace").setAttribute("readonly", "readonly")
+      document.getElementById("blackduck-Spec.DbPrototype").setAttribute("readonly", "readonly")
+      if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
+        document.getElementById("blackduck-Spec.PersistentStorage").setAttribute("readonly", "readonly")
+        document.getElementById("blackduck-Spec.PVCStorageClass").setAttribute("readonly", "readonly")
+        document.getElementById("blackduck-Spec.ScanType").setAttribute("readonly", "readonly")
+        if (document.getElementById("blackduck-postgres") != null) {
+          document.getElementById("blackduck-postgres").setAttribute("readonly", "readonly")
+        }
+      }
+    }
   }
 
   // set empty certificate values if the certificate is not manual
@@ -140,6 +162,16 @@
   function pvcEmptyValue() {
     document.getElementById("blackduck-Spec.PVCStorageClass").value = "";
     document.getElementById("blackduck-Spec.ScanType").value = "";
+  }
+
+  // load the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
+  function loadPVC() {
+    pvcId=document.getElementById("pvcId")
+    if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
+      pvcId.style.display = '';
+    } else {
+      pvcId.style.display = 'none';
+    }
   }
 
   // check the clone DB and backup support, if both are not required, then ignore the PVC storage parameters

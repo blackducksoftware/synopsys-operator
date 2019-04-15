@@ -1,24 +1,3 @@
-/*
-Copyright (C) 2019 Synopsys, Inc.
-
-Licensed to the Apache Software Foundation (ASF) under one
-or more contributor license agreements. See the NOTICE file
-distributed with this work for additional information
-regarding copyright ownership. The ASF licenses this file
-to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance
-with the License. You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, either express or implied. See the License for the
-specific language governing permissions and limitations
-under the License.
-*/
-
 package blackduck
 
 import (
@@ -56,7 +35,6 @@ HUB_PROXY_PORT=
 HUB_PROXY_SCHEME=
 HUB_PROXY_USER=
 HUB_PROXY_WORKSTATION=
-HUB_VERSION=2018.12.2
 HUB_WEBSERVER_PORT=8443
 IPV4_ONLY=0
 PUBLIC_HUB_WEBSERVER_HOST=localhost
@@ -68,20 +46,9 @@ RABBIT_MQ_PORT=5671
 SCANNER_CONCURRENCY=1
 USE_ALERT=0
 USE_BINARY_UPLOADS=0
-image: blackducksoftware/appcheck-worker:1.0.1
-image: blackducksoftware/blackduck-upload-cache:1.0.3
-image: blackducksoftware/blackduck-authentication:2018.12.2
-image: blackducksoftware/blackduck-cfssl:1.0.0
-image: blackducksoftware/blackduck-documentation:2018.12.2
-image: blackducksoftware/blackduck-jobrunner:2018.12.2
-image: blackducksoftware/blackduck-logstash:1.0.2
-image: blackducksoftware/blackduck-nginx:1.0.0
-image: blackducksoftware/blackduck-registration:2018.12.2
-image: blackducksoftware/blackduck-scan:2018.12.2
-image: blackducksoftware/blackduck-solr:1.0.0
-image: blackducksoftware/blackduck-webapp:2018.12.2
-image: blackducksoftware/blackduck-zookeeper:1.0.0
-image: blackducksoftware/rabbitmq:1.0.0`
+ENABLE_SOURCE_UPLOADS=false
+DATA_RETENTION_IN_DAYS=180
+MAX_TOTAL_SOURCE_SIZE_MB=4000`
 
 // GetHubKnobs ...
 func GetHubKnobs() (env map[string]string, images []string) {

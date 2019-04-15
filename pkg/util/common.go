@@ -58,6 +58,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // CreateContainer will create the container
@@ -963,6 +964,23 @@ func IsClusterRoleRuleExist(oldRules []rbacv1.PolicyRule, newRule rbacv1.PolicyR
 		}
 	}
 	return false
+}
+
+// GetRouteClient attempts to get a Route Client. It returns nil if it
+// fails due to an error or due to being on kubernetes (doesn't support routes)
+func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
+	routeClient, err := routeclient.NewForConfig(restConfig)
+	if err != nil {
+		routeClient = nil
+		log.Debugf("Error getting route client")
+	} else {
+		_, err := GetOpenShiftRoutes(routeClient, "default", "docker-registry")
+		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
+			log.Debugf("Ignoring routes for kubernetes cluster")
+			routeClient = nil
+		}
+	}
+	return routeClient
 }
 
 // GetOpenShiftRoutes get a OpenShift routes

@@ -23,11 +23,12 @@ package util
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	hubClient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/batch/v1"
@@ -53,9 +54,9 @@ func GetHubVersion(environs []string) string {
 
 // GetIPAddress will provide the IP address of LoadBalancer or NodePort service
 func GetIPAddress(kubeClient *kubernetes.Clientset, namespace string, retryCount int, waitInSeconds int) (string, error) {
-	ipAddress, err := getLoadBalancerIPAddress(kubeClient, namespace, "webserver-lb", retryCount, waitInSeconds)
+	ipAddress, err := GetLoadBalancerIPAddress(kubeClient, namespace, "webserver-lb")
 	if err != nil {
-		ipAddress, err = getNodePortIPAddress(kubeClient, namespace, "webserver-np")
+		ipAddress, err = GetNodePortIPAddress(kubeClient, namespace, "webserver-np")
 		if err != nil {
 			return "", err
 		}
@@ -63,25 +64,25 @@ func GetIPAddress(kubeClient *kubernetes.Clientset, namespace string, retryCount
 	return ipAddress, nil
 }
 
-func getLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string, retryCount int, waitInSeconds int) (string, error) {
-	for i := 0; i < retryCount; i++ {
-		time.Sleep(time.Duration(waitInSeconds) * time.Second)
-		service, err := util.GetService(kubeClient, namespace, serviceName)
-		if err != nil {
-			return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
-		}
-
-		log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
-
-		if len(service.Status.LoadBalancer.Ingress) > 0 {
-			ipAddress := service.Status.LoadBalancer.Ingress[0].IP
-			return ipAddress, nil
-		}
+// GetLoadBalancerIPAddress will return the load balance service ip address
+func GetLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
+	service, err := util.GetService(kubeClient, namespace, serviceName)
+	if err != nil {
+		return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
 	}
-	return "", fmt.Errorf("timeout: unable to get ip address for the service %s in %s namespace", serviceName, namespace)
+
+	log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
+
+	if len(service.Status.LoadBalancer.Ingress) > 0 {
+		ipAddress := service.Status.LoadBalancer.Ingress[0].IP
+		return ipAddress, nil
+	}
+
+	return "", fmt.Errorf("unable to get ip address for the service %s in %s namespace", serviceName, namespace)
 }
 
-func getNodePortIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
+// GetNodePortIPAddress will return the node port service ip address
+func GetNodePortIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
 	// Get the node port service
 	service, err := util.GetService(kubeClient, namespace, serviceName)
 	if err != nil {
@@ -122,23 +123,19 @@ func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder stri
 	return adminPassword, userPassword, postgresPassword, err
 }
 
-func updateHubObject(h *hubClient.Clientset, namespace string, obj *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
+func updateHubObject(h *blackduckclient.Clientset, namespace string, obj *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
 	return h.SynopsysV1().Blackducks(namespace).Update(obj)
 }
 
 // UpdateState will be used to update the hub object
-func UpdateState(h *hubClient.Clientset, namespace string, statusState string, err error, hub *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
-	hub.Status.State = statusState
-	if err != nil {
-		hub.Status.ErrorMessage = fmt.Sprintf("%+v", err)
-	} else {
-		hub.Status.ErrorMessage = ""
+func UpdateState(h *blackduckclient.Clientset, name string, namespace string, statusState string, error error) (*blackduckv1.Blackduck, error) {
+	errorMessage := ""
+	if error != nil {
+		errorMessage = fmt.Sprintf("%+v", error)
 	}
-	hub, err = updateHubObject(h, namespace, hub)
-	if err != nil {
-		log.Errorf("couldn't update the state of hub object: %s", err.Error())
-	}
-	return hub, err
+
+	patch := fmt.Sprintf("{\"status\":{\"state\":\"%s\",\"errorMessage\":\"%s\"}}", statusState, errorMessage)
+	return h.SynopsysV1().Blackducks(namespace).Patch(name, types.MergePatchType, []byte(patch))
 }
 
 // GetHubDBPassword will retrieve the blackduck and blackduck_user db password
