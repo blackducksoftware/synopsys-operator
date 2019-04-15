@@ -100,7 +100,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
 			return nil
 		}
-		operatorNamespace, err := soperator.GetOperatorNamespace(restconfig)
+		operatorNamespace, err := soperator.GetOperatorNamespace(kubeClient)
 		if err != nil {
 			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
 			return nil
