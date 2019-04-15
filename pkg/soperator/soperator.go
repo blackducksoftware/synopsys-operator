@@ -25,6 +25,8 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // SpecConfig represents the SOperator component
@@ -40,11 +42,13 @@ type SpecConfig struct {
 	SecretBlackduckPassword       string
 	TerminationGracePeriodSeconds int64
 	SealKey                       string
+	RestConfig                    *rest.Config
+	KubeClient                    *kubernetes.Clientset
 }
 
 // NewSOperator will create a SOperator type
 func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, secretName, adminPassword, postrgresPassword, userPassword,
-	blackduckpassword string, secretType horizonapi.SecretType, terminationGracePeriodSeconds int64, sealKey string) *SpecConfig {
+	blackduckpassword string, secretType horizonapi.SecretType, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config, kubeClient *kubernetes.Clientset) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		SynopsysOperatorImage:         synopsysOperatorImage,
@@ -55,6 +59,8 @@ func NewSOperator(namespace, synopsysOperatorImage, blackduckRegistrationKey, se
 		SecretBlackduckPassword:       blackduckpassword,
 		TerminationGracePeriodSeconds: terminationGracePeriodSeconds,
 		SealKey:                       sealKey,
+		RestConfig:                    restConfig,
+		KubeClient:                    kubeClient,
 	}
 }
 

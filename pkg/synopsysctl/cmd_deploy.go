@@ -116,8 +116,10 @@ var deployCmd = &cobra.Command{
 			SecretBlackduckPassword:       deploySecretBlackduckPassword,
 			TerminationGracePeriodSeconds: deployTerminationGracePeriodSeconds,
 			SealKey:                       sealKey,
+			RestConfig:                    restconfig,
+			KubeClient:                    kubeClient,
 		}
-		err = soperator.UpdateSOperatorComponents(restconfig, kubeClient, deployNamespace, &soperatorSpec)
+		err = soperator.UpdateSOperatorComponents(deployNamespace, &soperatorSpec)
 		if err != nil {
 			log.Errorf("Error deploying Synopsys Operator: %s", err)
 			return nil

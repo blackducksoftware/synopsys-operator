@@ -54,9 +54,6 @@ var rootCmd = &cobra.Command{
 		if flagset.Changed("cluster") { // changes the cluster that is being pointed to (delete this comment)
 			log.Warnf("Flag %s is Not Implemented", "cluster")
 		}
-		if flagset.Changed("kubeconfig") { // changes path to different kubeconfig file (delete this comment)
-			log.Warnf("Flag %s is Not Implemented", "kubeconfig")
-		}
 		if flagset.Changed("context") { // sets the context (delete this comment)
 			log.Warnf("Flag %s is Not Implemented", "context")
 		}
@@ -75,6 +72,7 @@ var rootCmd = &cobra.Command{
 			}
 			log.SetLevel(lvl)
 		}
+		setResourceClients() // sets kubeconfig and initializes resource client libraries
 		return nil
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -105,7 +103,6 @@ func Execute() {
 }
 
 func init() {
-	setResourceClients()              // sets kubeconfig and initializes resource client libraries
 	rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cluster, "cluster", cluster, "The name of the kubeconfig cluster to use")
