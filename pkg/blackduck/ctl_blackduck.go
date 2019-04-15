@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -319,9 +318,5 @@ func (ctl *Ctl) SpecIsValid() (bool, error) {
 
 // CanUpdate checks if a user has permission to modify based on the spec
 func (ctl *Ctl) CanUpdate() (bool, error) {
-	version := util.GetHubVersion(ctl.Spec.Environs)
-	if version == "" || version == "2019.2.2" {
-		return false, fmt.Errorf("Cannot Updated due to Blackduck Version '%s'", version)
-	}
 	return true, nil
 }
