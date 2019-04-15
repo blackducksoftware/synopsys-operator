@@ -113,7 +113,7 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 }
 
 // GetSpecConfigForCurrentComponents returns a spec that respesents the current Synopsys-Operator in the cluster
-func GetSpecConfigForCurrentComponents(kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
+func GetSpecConfigForCurrentComponents(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
 	log.Debugf("creating new synopsys operator spec")
 	sOperatorSpec := SpecConfig{}
 	// Set the Namespace
@@ -150,6 +150,8 @@ func GetSpecConfigForCurrentComponents(kubeClient *kubernetes.Clientset, namespa
 		}
 	}
 	sOperatorSpec.SealKey = sealKey
+	sOperatorSpec.RestConfig = restConfig
+	sOperatorSpec.KubeClient = kubeClient
 
 	log.Debugf("got current synopsys operator secret data from Cluster")
 
@@ -157,7 +159,7 @@ func GetSpecConfigForCurrentComponents(kubeClient *kubernetes.Clientset, namespa
 }
 
 // GetSpecConfigForCurrentPrometheusComponents returns a spec that respesents the current prometheus in the cluster
-func GetSpecConfigForCurrentPrometheusComponents(kubeClient *kubernetes.Clientset, namespace string) (*PrometheusSpecConfig, error) {
+func GetSpecConfigForCurrentPrometheusComponents(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*PrometheusSpecConfig, error) {
 	log.Debugf("creating New Prometheus SpecConfig")
 	prometheusSpec := PrometheusSpecConfig{}
 	// Set Namespace
@@ -168,6 +170,8 @@ func GetSpecConfigForCurrentPrometheusComponents(kubeClient *kubernetes.Clientse
 		return nil, fmt.Errorf("Failed to get Prometheus ConfigMap: %s", err)
 	}
 	prometheusSpec.Image = currCM.Data["image"]
+	prometheusSpec.RestConfig = restConfig
+	prometheusSpec.KubeClient = kubeClient
 	log.Debugf("added image %s to Prometheus SpecConfig", prometheusSpec.Image)
 
 	return &prometheusSpec, nil

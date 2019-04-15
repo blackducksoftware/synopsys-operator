@@ -56,8 +56,8 @@ type SpecConfig struct {
 
 // NewSOperator will create a SOperator type
 func NewSOperator(namespace, synopsysOperatorImage, expose, adminPassword, postgresPassword, userPassword, blackduckpassword string,
-	secretType horizonapi.SecretType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int,
-	postgresRestartInMins int64, podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config, kubeClient *kubernetes.Clientset) *SpecConfig {
+	secretType horizonapi.SecretType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
+	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config, kubeClient *kubernetes.Clientset) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,

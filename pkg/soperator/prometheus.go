@@ -24,21 +24,27 @@ package soperator
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // PrometheusSpecConfig represents the Promtheus component
 // Its methods include GetComponents() and any functions
 // that create Kubernetes Resources for Prometheus
 type PrometheusSpecConfig struct {
-	Namespace string
-	Image     string
+	Namespace  string
+	Image      string
+	RestConfig *rest.Config
+	KubeClient *kubernetes.Clientset
 }
 
 // NewPrometheus will create a PromtheusSpecConfig type
-func NewPrometheus(namespace, image string) *PrometheusSpecConfig {
+func NewPrometheus(namespace, image string, restConfig *rest.Config, kubeClient *kubernetes.Clientset) *PrometheusSpecConfig {
 	return &PrometheusSpecConfig{
-		Namespace: namespace,
-		Image:     image,
+		Namespace:  namespace,
+		Image:      image,
+		RestConfig: restConfig,
+		KubeClient: kubeClient,
 	}
 }
 

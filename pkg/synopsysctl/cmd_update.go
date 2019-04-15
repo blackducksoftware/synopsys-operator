@@ -80,7 +80,7 @@ var updateOperatorCmd = &cobra.Command{
 
 		log.Debugf("Updating the Synopsys-Operator in namespace %s", namespace)
 		// Create new Synopsys-Operator SpecConfig
-		sOperatorSpecConfig, err := soperator.GetSpecConfigForCurrentComponents(kubeClient, namespace)
+		sOperatorSpecConfig, err := soperator.GetSpecConfigForCurrentComponents(restconfig, kubeClient, namespace)
 		if err != nil {
 			log.Errorf("Error Updating Operator: %s", err)
 			return nil
@@ -113,7 +113,7 @@ var updateOperatorCmd = &cobra.Command{
 
 		log.Debugf("Updating Prometheus in namespace %s", namespace)
 		// Create new Prometheus SpecConfig
-		prometheusSpecConfig, err := soperator.GetSpecConfigForCurrentPrometheusComponents(kubeClient, namespace)
+		prometheusSpecConfig, err := soperator.GetSpecConfigForCurrentPrometheusComponents(restconfig, kubeClient, namespace)
 		if err != nil {
 			log.Errorf("Error Updating the Operator: %s", err)
 		}
@@ -121,7 +121,7 @@ var updateOperatorCmd = &cobra.Command{
 			log.Debugf("Updating PrometheusImage to %s", updatePrometheusImage)
 			prometheusSpecConfig.Image = updatePrometheusImage
 		}
-		err = prometheusSpecConfig.UpdatePrometheus(restconfig, kubeClient, namespace)
+		err = prometheusSpecConfig.UpdatePrometheus()
 		if err != nil {
 			log.Errorf("Failed to update Prometheus: %s", err)
 		}
