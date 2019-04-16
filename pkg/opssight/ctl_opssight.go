@@ -257,11 +257,10 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "perceiver-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
 	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "perceiver-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes the perceiver waits between creating dumps of data/metrics")
 	cmd.Flags().IntVar(&ctl.PerceiverPort, "perceiver-port", ctl.PerceiverPort, "Port for the Perceiver")
-	cmd.Flags().StringVar(&ctl.ConfigMapName, "configmapname", ctl.ConfigMapName, "Name of the CongifMap Resource")
-	cmd.Flags().StringVar(&ctl.DefaultCPU, "defaultcpu", ctl.DefaultCPU, "CPU size for the OpsSight")
-	cmd.Flags().StringVar(&ctl.DefaultMem, "defaultmem", ctl.DefaultMem, "Memory size for the OpsSight")
-	cmd.Flags().StringVar(&ctl.ScannerCPU, "scannercpu", ctl.ScannerCPU, "CPU size for the OpsSight's Scanner")
-	cmd.Flags().StringVar(&ctl.ScannerMem, "scannermem", ctl.ScannerMem, "Memory size for the OpsSight's Scanner")
+	cmd.Flags().StringVar(&ctl.DefaultCPU, "default-cpu", ctl.DefaultCPU, "CPU size for the OpsSight")
+	cmd.Flags().StringVar(&ctl.DefaultMem, "default-memory", ctl.DefaultMem, "Memory size for the OpsSight")
+	cmd.Flags().StringVar(&ctl.ScannerCPU, "scanner-cpu", ctl.ScannerCPU, "CPU size for the OpsSight's Scanner")
+	cmd.Flags().StringVar(&ctl.ScannerMem, "scanner-memory", ctl.ScannerMem, "Memory size for the OpsSight's Scanner")
 	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "Log-level for OpsSight's logs")
 	cmd.Flags().BoolVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "Enable recording of Prometheus Metrics")
 	cmd.Flags().StringVar(&ctl.PrometheusImage, "prometheus-image", ctl.PrometheusImage, "Image for Prometheus")
@@ -500,17 +499,17 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
 			}
 			ctl.Spec.Perceiver.Port = ctl.PerceiverPort
-		case "configmapname":
+		case "config-map-name":
 			ctl.Spec.ConfigMapName = ctl.ConfigMapName
 		case "secret-name":
 			ctl.Spec.SecretName = ctl.SecretName
-		case "defaultcpu":
+		case "default-cpu":
 			ctl.Spec.DefaultCPU = ctl.DefaultCPU
-		case "defaultmem":
+		case "default-memory":
 			ctl.Spec.DefaultMem = ctl.DefaultMem
-		case "scannercpu":
+		case "scanner-cpu":
 			ctl.Spec.ScannerCPU = ctl.ScannerCPU
-		case "scannermem":
+		case "scanner-memory":
 			ctl.Spec.ScannerMem = ctl.ScannerMem
 		case "log-level":
 			ctl.Spec.LogLevel = ctl.LogLevel
