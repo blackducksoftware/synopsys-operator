@@ -198,7 +198,7 @@ const (
 	EmptySpec             string = "empty"
 	TemplateSpec          string = "template"
 	DefaultSpec           string = "default"
-	DisabledBlackDuckSpec string = "disabled-black-duck"
+	DisabledBlackDuckSpec string = "disabledBlackDuck"
 )
 
 // SwitchSpec switches the OpsSight's Spec to a different predefined spec
