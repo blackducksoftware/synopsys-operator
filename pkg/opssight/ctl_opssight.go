@@ -80,7 +80,7 @@ type Ctl struct {
 	PrometheusName                                   string
 	PrometheusImage                                  string
 	PrometheusPort                                   int
-	PrometheusExport                                 string
+	PrometheusExpose                                 string
 	EnableSkyfire                                    bool
 	SkyfireName                                      string
 	SkyfireImage                                     string
@@ -146,7 +146,7 @@ func NewOpsSightCtl() *Ctl {
 		EnableMetrics:                                    false,
 		PrometheusName:                                   "",
 		PrometheusImage:                                  "",
-		PrometheusExport:                                 "",
+		PrometheusExpose:                                 "",
 		PrometheusPort:                                   0,
 		EnableSkyfire:                                    false,
 		SkyfireName:                                      "",
@@ -232,23 +232,24 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 		cmd.Flags().StringVar(&ctl.PrometheusName, "prometheus-name", ctl.PrometheusName, "Name of Prometheus")
 		cmd.Flags().StringVar(&ctl.SkyfireName, "skyfire-name", ctl.SkyfireName, "Name of Skyfire")
 		cmd.Flags().StringVar(&ctl.SkyfireServiceAccount, "skyfire-service-account", ctl.SkyfireServiceAccount, "Service Account for Skyfire")
-		cmd.Flags().StringVar(&ctl.BlackduckConnectionsEnvironmentVaraiableName, "blackduck-connections-environment-variable-name", ctl.BlackduckConnectionsEnvironmentVaraiableName, "Environment Variable name to store the BlackDuck connections")
+		cmd.Flags().StringVar(&ctl.BlackduckConnectionsEnvironmentVaraiableName, "blackduck-connections-environment-variable-name", ctl.BlackduckConnectionsEnvironmentVaraiableName, "Environment Variable name to store the Black Duck connections")
 		cmd.Flags().StringVar(&ctl.ConfigMapName, "config-map-name", ctl.ConfigMapName, "Name of the config map for OpsSight")
 		cmd.Flags().StringVar(&ctl.SecretName, "secret-name", ctl.SecretName, "Name of the Secret for OpsSight")
 	}
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "perceptor-image", ctl.PerceptorImage, "Image of the Perceptor")
 	cmd.Flags().IntVar(&ctl.PerceptorPort, "perceptor-port", ctl.PerceptorPort, "Port for the Perceptor")
+	cmd.Flags().StringVar(&ctl.PerceptorExpose, "perceptor-expose", ctl.PerceptorExpose, "Expose the Perceptor model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
 	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "perceptor-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours the Percpetor waits between checking for scans")
 	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "perceptor-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until Perceptor stops checking for scans")
-	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "perceptor-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "TODO")
-	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "perceptor-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "TODO")
-	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "perceptor-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "TODO")
+	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "perceptor-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "Perceptor metrics pause in seconds")
+	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "perceptor-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "Perceptor unknown image pause in milliseconds")
+	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "perceptor-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "Perceptor timeout for Black Duck Scan Client in seconds")
 	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scannerpod-scanner-image", ctl.ScannerPodScannerImage, "Scanner Container's image")
 	cmd.Flags().IntVar(&ctl.ScannerPodScannerPort, "scannerpod-scanner-port", ctl.ScannerPodScannerPort, "Scanner Container's port")
-	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scannerpod-scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Time Out for BlackDuck Scan Client in seconds")
+	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scannerpod-scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Scanner timeout for Black Duck Scan Client in seconds")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "scannerpod-imagefacade-image", ctl.ScannerPodImageFacadeImage, "ImageFacade Container's image")
 	cmd.Flags().IntVar(&ctl.ScannerPodImageFacadePort, "scannerpod-imagefacade-port", ctl.ScannerPodImageFacadePort, "ImageFacade Container's port")
-	cmd.Flags().StringSliceVar(&ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice, "scannerpod-imagefacade-internal-registries", ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice, "TODO")
+	cmd.Flags().StringSliceVar(&ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice, "scannerpod-imagefacade-internal-registries", ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice, "Secure Docker registries credentials to pull the images for scan")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "scannerpod-imagefacade-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of ImageFacade's Image Puller - docker, skopeo")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "scannerpod-imagefacade-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account for the ImageFacade")
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Scan Containers")
@@ -269,18 +270,19 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "Enable recording of Prometheus Metrics")
 	cmd.Flags().StringVar(&ctl.PrometheusImage, "prometheus-image", ctl.PrometheusImage, "Image for Prometheus")
 	cmd.Flags().IntVar(&ctl.PrometheusPort, "prometheus-port", ctl.PrometheusPort, "Port for Prometheus")
+	cmd.Flags().StringVar(&ctl.PrometheusExpose, "prometheus-expose", ctl.PrometheusExpose, "Expose the Prometheus metrics. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
 	cmd.Flags().BoolVar(&ctl.EnableSkyfire, "enable-skyfire", ctl.EnableSkyfire, "Enables Skyfire Pod if true")
 	cmd.Flags().StringVar(&ctl.SkyfireImage, "skyfire-image", ctl.SkyfireImage, "Image of Skyfire")
 	cmd.Flags().IntVar(&ctl.SkyfirePort, "skyfire-port", ctl.SkyfirePort, "Port of Skyfire")
 	cmd.Flags().IntVar(&ctl.SkyfirePrometheusPort, "skyfire-prometheus-port", ctl.SkyfirePrometheusPort, "Skyfire's Prometheus port")
-	cmd.Flags().IntVar(&ctl.SkyfireHubClientTimeoutSeconds, "skyfire-hub-client-timeout-seconds", ctl.SkyfireHubClientTimeoutSeconds, "Seconds Skyfire waits to receive response from the BlackDuck client")
-	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying BlackDucks")
+	cmd.Flags().IntVar(&ctl.SkyfireHubClientTimeoutSeconds, "skyfire-hub-client-timeout-seconds", ctl.SkyfireHubClientTimeoutSeconds, "Seconds Skyfire waits to receive response from the Black Duck client")
+	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying Black Ducks")
 	cmd.Flags().IntVar(&ctl.SkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", ctl.SkyfireKubeDumpIntervalSeconds, "Seconds Skyfire waits between querying the KubeAPI")
 	cmd.Flags().IntVar(&ctl.SkyfirePerceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", ctl.SkyfirePerceptorDumpIntervalSeconds, "Seconds Skyfire waits between querying the Perceptor Model")
-	cmd.Flags().StringSliceVar(&ctl.BlackduckExternalHostsJSON, "blackduck-external-hosts", ctl.BlackduckExternalHostsJSON, "List of BlackDuck External Hosts")
-	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Name of TLS Verification for BlackDuck")
-	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of BlackDucks to create")
-	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of BlackDucks that can be created")
+	cmd.Flags().StringSliceVar(&ctl.BlackduckExternalHostsJSON, "blackduck-external-hosts", ctl.BlackduckExternalHostsJSON, "List of Black Duck External Hosts")
+	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Perform TLS Verification for Black Duck")
+	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
+	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -309,6 +311,11 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
 			}
 			ctl.Spec.Perceptor.Port = ctl.PerceptorPort
+		case "perceptor-expose":
+			if ctl.Spec.Perceptor == nil {
+				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
+			}
+			ctl.Spec.Perceptor.Expose = ctl.PerceptorExpose
 		case "perceptor-check-scan-hours":
 			if ctl.Spec.Perceptor == nil {
 				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
@@ -534,6 +541,11 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Prometheus = &opssightv1.Prometheus{}
 			}
 			ctl.Spec.Prometheus.Port = ctl.PrometheusPort
+		case "prometheus-expose":
+			if ctl.Spec.Prometheus == nil {
+				ctl.Spec.Prometheus = &opssightv1.Prometheus{}
+			}
+			ctl.Spec.Prometheus.Expose = ctl.PrometheusExpose
 		case "enable-skyfire":
 			ctl.Spec.EnableSkyfire = ctl.EnableSkyfire
 		case "skyfire-name":
