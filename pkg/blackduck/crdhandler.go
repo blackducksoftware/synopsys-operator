@@ -31,14 +31,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	"github.com/imdario/mergo"
-
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -66,8 +65,6 @@ const (
 	Running State = "Running"
 	// Stopped is used when the instance is about to stop
 	Stopped State = "Stopped"
-	// Updating is used when the instance is about to update
-	Updating State = "Updating"
 	// Error is used when the instance deployment errored out
 	Error State = "Error"
 

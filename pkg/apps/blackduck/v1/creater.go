@@ -76,7 +76,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck,component=pvc")
 	errors := commonConfig.CRUDComponents()
 	if len(errors) > 0 {
-		return fmt.Errorf("unable to update postgres components due to %+v", errors)
+		return fmt.Errorf("update pvc: %+v", errors)
 	}
 
 	// Get postgres components
@@ -90,7 +90,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		cpPostgresList, "app=blackduck,component=postgres")
 	errors = commonConfig.CRUDComponents()
 	if len(errors) > 0 {
-		return fmt.Errorf("unable to update postgres components due to %+v", errors)
+		return fmt.Errorf("update postgres components: %+v", errors)
 	}
 	// log.Debugf("created/updated postgres component for %s", blackduck.Spec.Namespace)
 
@@ -114,7 +114,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		cpList, "app=blackduck,component notin (postgres,uploadcache)")
 	errors = commonConfig.CRUDComponents()
 	if len(errors) > 0 {
-		return fmt.Errorf("unable to update non postgres and uploadcache components due to %+v", errors)
+		return fmt.Errorf("update non postgres and uploadcache components: %+v", errors)
 	}
 
 	// log.Debugf("created/updated non postgres and upload cache component for %s", blackduck.Spec.Namespace)
@@ -124,7 +124,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		cpList, "app=blackduck,component=uploadcache")
 	errors = commonConfig.CRUDComponents()
 	if len(errors) > 0 {
-		return fmt.Errorf("unable to update upload cache components due to %+v", errors)
+		return fmt.Errorf("update upload cache components: %+v", errors)
 	}
 	// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
 
