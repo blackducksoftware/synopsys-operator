@@ -95,7 +95,6 @@ func TestNewOpsSightCtl(t *testing.T) {
 		BlackduckTLSVerification:                         false,
 		BlackduckInitialCount:                            0,
 		BlackduckMaxCount:                                0,
-		BlackduckDeleteBlackduckThresholdPercentage:      0,
 	}, opsSightCtl)
 }
 
@@ -232,7 +231,6 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "TODO")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Blackducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Blackducks that can be created")
-	cmd.Flags().IntVar(&ctl.BlackduckDeleteBlackduckThresholdPercentage, "blackduck-delete-blackduck-threshold-percentage", ctl.BlackduckDeleteBlackduckThresholdPercentage, "TODO")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 
@@ -830,16 +828,6 @@ func TestSetFlag(t *testing.T) {
 				BlackduckMaxCount: 10,
 			},
 			changedSpec: &opssightv1.OpsSightSpec{Blackduck: &opssightv1.Blackduck{MaxCount: 10}},
-		},
-		// case
-		{
-			flagName:   "blackduck-delete-blackduck-threshold-percentage",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec: &opssightv1.OpsSightSpec{},
-				BlackduckDeleteBlackduckThresholdPercentage: 10,
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Blackduck: &opssightv1.Blackduck{DeleteBlackduckThresholdPercentage: 10}},
 		},
 		// case
 		{

@@ -597,11 +597,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
 			}
 			ctl.Spec.Blackduck.MaxCount = ctl.BlackduckMaxCount
-		case "blackduck-delete-blackduck-threshold-percentage":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
-			}
-			ctl.Spec.Blackduck.DeleteBlackduckThresholdPercentage = ctl.BlackduckDeleteBlackduckThresholdPercentage
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
