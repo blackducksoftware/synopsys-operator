@@ -56,7 +56,6 @@ ${OUTDIR}:
 	$(foreach p,${PLATFORM}, \
 		mkdir -p ${OUTDIR}/$(p); \
 	)
-	touch ${OUTDIR}/CHECKSUM
 
 init:
 	brew install clang
