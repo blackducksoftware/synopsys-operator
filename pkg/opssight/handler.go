@@ -82,7 +82,7 @@ type Handler struct {
 // ObjectCreated will be called for create opssight events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	if err := h.handleObjectCreated(obj); err != nil {
-		log.Errorf("handle object created: %s", err.Error())
+		log.Errorf("handle opssight: %s", err.Error())
 	}
 }
 
@@ -180,12 +180,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Errorf("handle object stop: %s", err.Error())
 			return
 		}
-		// opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)
-		// if err != nil {
-		// 	recordError("unable to get opssight")
-		// 	log.Error(errors.Annotate(err, "unable to get opssight"))
-		// 	return
-		// }
+
 		_, err = h.updateState(Stopped, "", opssight)
 		if err != nil {
 			recordError("unable to update state")
@@ -201,12 +196,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Errorf("handle object update: %s", err.Error())
 			return
 		}
-		// opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)
-		// if err != nil {
-		// 	recordError("unable to get opssight")
-		// 	log.Error(errors.Annotate(err, "unable to get opssight"))
-		// 	return
-		// }
 
 		if !strings.EqualFold(opssight.Status.State, string(Running)) {
 			_, err = h.updateState(Running, "", opssight)

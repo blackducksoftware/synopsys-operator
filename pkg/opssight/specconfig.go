@@ -274,7 +274,7 @@ func (p *SpecConfig) addSecretData(secret *components.Secret) error {
 	// adding Internal Black Duck credentials
 	secretEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient)
 	allHubs := secretEditor.getAllHubs(p.opssight.Spec.Blackduck.BlackduckSpec.Type)
-	blackduckPasswords := secretEditor.appendBlackDuckSecrets(blackduckHosts, allHubs)
+	blackduckPasswords := secretEditor.appendBlackDuckSecrets(blackduckHosts, p.opssight.Status.InternalHosts, allHubs)
 
 	// marshal the blackduck credentials to bytes
 	bytes, err := json.Marshal(blackduckPasswords)
