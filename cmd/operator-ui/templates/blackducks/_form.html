@@ -3,6 +3,9 @@
   <%= f.InputTag("Spec.Namespace", {value: blackduck.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
   <%= f.SelectTag("Spec.Version", {options: blackduck.View.SupportedVersions, value: blackduck.Spec.Version, label: "Black Duck Version"}) %>
   <%= f.InputTag("Spec.LicenseKey", {value: blackduck.Spec.LicenseKey, label: "License Key"}) %>
+  <%= if (blackduck.Spec.Namespace!="") { %>
+    <%= f.SelectTag("Spec.DesiredState", {options: ["Start", "Stop"], value: blackduck.Spec.DesiredState, label: "Desired State"}) %>
+  <% } %>
   <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: blackduck.Spec.Size, label: "Size"}) %>
   <%= f.SelectTag("Spec.ExposeService", {options: {"": "","Load Balancer": "LoadBalancer", "Node Port": "NodePort", "Routes for OpenShift": "OpenShift"}, value: blackduck.Spec.ExposeService, label: "Expose Service"}) %>
   <%= f.InputTag("Spec.Type", {value: blackduck.Spec.Type, label: "Blackduck Type (OpsSight specific)"}) %>
