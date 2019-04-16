@@ -29,9 +29,9 @@ import (
 	"strconv"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
@@ -78,9 +78,9 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Debugf("Updating the Synopsys-Operator in namespace %s\n", namespace)
+		log.Debugf("Updating the Synopsys-Operator in namespace %s", namespace)
 		// Create new Synopsys-Operator SpecConfig
-		sOperatorSpecConfig, err := soperator.GetSpecConfigForCurrentComponents(kubeClient, namespace)
+		sOperatorSpecConfig, err := soperator.GetSpecConfigForCurrentComponents(restconfig, kubeClient, namespace)
 		if err != nil {
 			log.Errorf("Error Updating Operator: %s", err)
 			return nil
@@ -88,40 +88,40 @@ var updateOperatorCmd = &cobra.Command{
 		// Update Spec with changed values
 		if cmd.Flag("synopsys-operator-image").Changed {
 			log.Debugf("Updating SynopsysOperatorImage to %s", updateSynopsysOperatorImage)
-			sOperatorSpecConfig.SynopsysOperatorImage = updateSynopsysOperatorImage
+			sOperatorSpecConfig.Image = updateSynopsysOperatorImage
 		}
 		if cmd.Flag("admin-password").Changed {
 			log.Debugf("Updating SecretAdminPassword")
-			sOperatorSpecConfig.SecretAdminPassword = updateSecretAdminPassword
+			sOperatorSpecConfig.AdminPassword = updateSecretAdminPassword
 		}
 		if cmd.Flag("postgres-password").Changed {
 			log.Debugf("Updating SecretPostgresPassword")
-			sOperatorSpecConfig.SecretPostgresPassword = updateSecretPostgresPassword
+			sOperatorSpecConfig.PostgresPassword = updateSecretPostgresPassword
 		}
 		if cmd.Flag("user-password").Changed {
 			log.Debugf("Updating SecretUserPassword")
-			sOperatorSpecConfig.SecretUserPassword = updateSecretUserPassword
+			sOperatorSpecConfig.UserPassword = updateSecretUserPassword
 		}
 		if cmd.Flag("blackduck-password").Changed {
 			log.Debugf("Updating SecretBlackduckPassword")
-			sOperatorSpecConfig.SecretBlackduckPassword = updateSecretBlackduckPassword
+			sOperatorSpecConfig.BlackduckPassword = updateSecretBlackduckPassword
 		}
-		err = soperator.UpdateSynopsysOperator(restconfig, kubeClient, namespace, sOperatorSpecConfig, blackduckClient, opssightClient, alertClient)
+		err = sOperatorSpecConfig.UpdateSynopsysOperator(restconfig, kubeClient, namespace, blackduckClient, opssightClient, alertClient)
 		if err != nil {
 			log.Errorf("Failed to update the Synopsys-Operator: %s", err)
 		}
 
-		log.Debugf("Updating Prometheus in namespace %s\n", namespace)
+		log.Debugf("Updating Prometheus in namespace %s", namespace)
 		// Create new Prometheus SpecConfig
-		prometheusSpecConfig, err := soperator.GetSpecConfigForCurrentPrometheusComponents(kubeClient, namespace)
+		prometheusSpecConfig, err := soperator.GetSpecConfigForCurrentPrometheusComponents(restconfig, kubeClient, namespace)
 		if err != nil {
 			log.Errorf("Error Updating the Operator: %s", err)
 		}
 		if cmd.Flag("prometheus-image").Changed {
 			log.Debugf("Updating PrometheusImage to %s", updatePrometheusImage)
-			prometheusSpecConfig.PrometheusImage = updatePrometheusImage
+			prometheusSpecConfig.Image = updatePrometheusImage
 		}
-		err = soperator.UpdatePrometheus(restconfig, kubeClient, namespace, prometheusSpecConfig)
+		err = prometheusSpecConfig.UpdatePrometheus()
 		if err != nil {
 			log.Errorf("Failed to update Prometheus: %s", err)
 		}
@@ -160,7 +160,7 @@ var updateBlackduckCmd = &cobra.Command{
 			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateBlackduckCtl.SetChangedFlags(flagset)
-			newSpec := updateBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
+			newSpec := updateBlackduckCtl.GetSpec().(blackduckapi.BlackduckSpec)
 			// Create new Blackduck CRD
 			newBlackduck := *currBlackduck //make copy
 			newBlackduck.Spec = newSpec
@@ -272,7 +272,7 @@ var updateOpsSightCmd = &cobra.Command{
 			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateOpsSightCtl.SetChangedFlags(flagset)
-			newSpec := updateOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
+			newSpec := updateOpsSightCtl.GetSpec().(opssightapi.OpsSightSpec)
 			// Create new OpsSight CRD
 			newOpsSight := *currOpsSight //make copy
 			newOpsSight.Spec = newSpec
@@ -388,7 +388,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		}
 		if canUpdate {
 			// Add External Host to Spec
-			newHost := opssightv1.Host{
+			newHost := opssightapi.Host{
 				Scheme:              hostScheme,
 				Domain:              hostDomain,
 				Port:                int(hostPort),
@@ -440,7 +440,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		}
 		if canUpdate {
 			// Add Internal Registry to Spec
-			newReg := opssightv1.RegistryAuth{
+			newReg := opssightapi.RegistryAuth{
 				URL:      regURL,
 				User:     regUser,
 				Password: regPass,
@@ -489,7 +489,7 @@ var updateAlertCmd = &cobra.Command{
 			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateAlertCtl.SetChangedFlags(flagset)
-			newSpec := updateAlertCtl.GetSpec().(alertv1.AlertSpec)
+			newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
 			// Create new Alert CRD
 			newAlert := *currAlert //make copy
 			newAlert.Spec = newSpec

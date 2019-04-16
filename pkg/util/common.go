@@ -976,7 +976,7 @@ func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	} else {
 		_, err := GetOpenShiftRoutes(routeClient, "default", "docker-registry")
 		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("Ignoring routes for kubernetes cluster")
+			// log.Debugf("Ignoring routes for kubernetes cluster")
 			routeClient = nil
 		}
 	}
@@ -989,14 +989,14 @@ func GetOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string
 }
 
 // CreateOpenShiftRoutes creates a OpenShift routes
-func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string) (*routev1.Route, error) {
+func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string, tlsTerminationType routev1.TLSTerminationType) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Create(&routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: routev1.RouteSpec{
-			TLS: &routev1.TLSConfig{Termination: routev1.TLSTerminationPassthrough},
+			TLS: &routev1.TLSConfig{Termination: tlsTerminationType},
 			To: routev1.RouteTargetReference{
 				Kind: routeKind,
 				Name: serviceName,

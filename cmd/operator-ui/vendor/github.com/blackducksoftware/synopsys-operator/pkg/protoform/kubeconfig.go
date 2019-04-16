@@ -29,6 +29,7 @@ import (
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" //for auths
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"

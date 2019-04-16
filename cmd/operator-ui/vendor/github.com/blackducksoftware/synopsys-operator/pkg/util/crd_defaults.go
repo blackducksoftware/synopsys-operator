@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -36,8 +36,7 @@ import (
 //	}
 //}
 
-// GetHubDefaultValue creates a hub crd configuration object
-// with defaults
+// GetHubDefaultValue creates a hub crd configuration object with defaults
 func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Size:            "Small",
@@ -47,11 +46,12 @@ func GetHubDefaultValue() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetHubDefaultPersistentStorage creates a hub crd configuration object
-// with defaults and persistent storage
-func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
+// GetBlackDuckDefaultPersistentStorageLatest creates a BlackDuck crd configuration object
+// with defaults and persistent storage for a latest BlackDuck
+func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
+		Version:           "2019.4.0",
 		Size:              "small",
 		PVCStorageClass:   "",
 		LivenessProbes:    false,
@@ -59,8 +59,184 @@ func GetHubDefaultPersistentStorage() *blackduckv1.BlackduckSpec {
 		PVC: []blackduckv1.PVC{
 			{
 				Name: "blackduck-postgres",
-				Size: "200Gi",
+				Size: "150Gi",
 			},
+			{
+				Name: "blackduck-authentication",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-cfssl",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-registration",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-solr",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-webapp",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-logstash",
+				Size: "20Gi",
+			},
+			{
+				Name: "blackduck-zookeeper-data",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-zookeeper-datalog",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-uploadcache-data",
+				Size: "100Gi",
+			},
+			{
+				Name: "blackduck-uploadcache-key",
+				Size: "2Gi",
+			},
+		},
+		CertificateName: "default",
+		Type:            "Artifacts",
+		Environs:        []string{},
+		ImageRegistries: []string{},
+		LicenseKey:      "",
+	}
+}
+
+// GetBlackDuckDefaultExternalPersistentStorageLatest creates a BlackDuck crd configuration object
+// with defaults and external persistent storage for latest BlackDuck
+func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.BlackduckSpec {
+	return &blackduckv1.BlackduckSpec{
+		Namespace:         "synopsys-operator",
+		Version:           "2019.4.0",
+		Size:              "small",
+		PVCStorageClass:   "",
+		LivenessProbes:    false,
+		PersistentStorage: true,
+		PVC: []blackduckv1.PVC{
+			{
+				Name: "blackduck-authentication",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-cfssl",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-registration",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-solr",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-webapp",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-logstash",
+				Size: "20Gi",
+			},
+			{
+				Name: "blackduck-zookeeper-data",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-zookeeper-datalog",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-uploadcache-data",
+				Size: "100Gi",
+			},
+			{
+				Name: "blackduck-uploadcache-key",
+				Size: "2Gi",
+			},
+		},
+		CertificateName: "default",
+		Type:            "Artifacts",
+		Environs:        []string{},
+		ImageRegistries: []string{},
+		LicenseKey:      "",
+	}
+}
+
+// GetBlackDuckDefaultPersistentStorageV1 creates a BlackDuck crd configuration object
+// with defaults and persistent storage for V1 BlackDuck
+func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
+	return &blackduckv1.BlackduckSpec{
+		Namespace:         "synopsys-operator",
+		Version:           "2019.2.2",
+		Size:              "small",
+		PVCStorageClass:   "",
+		LivenessProbes:    false,
+		PersistentStorage: true,
+		PVC: []blackduckv1.PVC{
+			{
+				Name: "blackduck-postgres",
+				Size: "150Gi",
+			},
+			{
+				Name: "blackduck-authentication",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-cfssl",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-registration",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-solr",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-webapp",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-logstash",
+				Size: "20Gi",
+			},
+			{
+				Name: "blackduck-zookeeper-data",
+				Size: "2Gi",
+			},
+			{
+				Name: "blackduck-zookeeper-datalog",
+				Size: "2Gi",
+			},
+		},
+		CertificateName: "default",
+		Type:            "Artifacts",
+		Environs:        []string{},
+		ImageRegistries: []string{},
+		LicenseKey:      "",
+	}
+}
+
+// GetBlackDuckDefaultExternalPersistentStorageV1 creates a BlackDuck crd configuration object
+// with defaults and external persistent storage for V1 BlackDuck
+func GetBlackDuckDefaultExternalPersistentStorageV1() *blackduckv1.BlackduckSpec {
+	return &blackduckv1.BlackduckSpec{
+		Namespace:         "synopsys-operator",
+		Version:           "2019.2.2",
+		Size:              "small",
+		PVCStorageClass:   "",
+		LivenessProbes:    false,
+		PersistentStorage: true,
+		PVC: []blackduckv1.PVC{
 			{
 				Name: "blackduck-authentication",
 				Size: "2Gi",
@@ -179,6 +355,7 @@ func GetOpsSightDefaultValue() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
 		ConfigMapName: "opssight",
+		DesiredState:  "START",
 	}
 }
 
@@ -286,6 +463,7 @@ func GetOpsSightDefaultValueWithDisabledHub() *opssightv1.OpsSightSpec {
 		DefaultMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
+		DesiredState:  "START",
 	}
 }
 
@@ -296,12 +474,9 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 
 	return &alertv1.AlertSpec{
 		Namespace:            "alert-test",
-		Registry:             "docker.io",
-		ImagePath:            "blackducksoftware",
-		AlertImageName:       "blackduck-alert",
-		AlertImageVersion:    "3.1.0",
-		CfsslImageName:       "blackduck-cfssl",
-		CfsslImageVersion:    "1.0.0",
+		Version:              "3.1.0",
+		AlertImage:           "docker.io/blackducksoftware/blackduck-alert:3.1.0",
+		CfsslImage:           "docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
 		ExposeService:        "NODEPORT",
 		Port:                 &port,
 		EncryptionPassword:   "",
@@ -313,5 +488,10 @@ func GetAlertDefaultValue() *alertv1.AlertSpec {
 		PVCStorageClass:      "",
 		AlertMemory:          "2560M",
 		CfsslMemory:          "640M",
+		Environs: []string{
+			"ALERT_SERVER_PORT:8443",
+			"PUBLIC_HUB_WEBSERVER_HOST:localhost",
+			"PUBLIC_HUB_WEBSERVER_PORT:443",
+		},
 	}
 }

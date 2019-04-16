@@ -22,7 +22,6 @@ under the License.
 package alert
 
 import (
-	"fmt"
 	"testing"
 
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -70,7 +69,7 @@ func TestSetSpec(t *testing.T) {
 	assert.Equal(specToSet, alertCtl.GetSpec())
 
 	// check for error
-	assert.EqualError(alertCtl.SetSpec(""), "Error setting Alert Spec")
+	assert.Error(alertCtl.SetSpec(""))
 }
 
 func TestCheckSpecFlags(t *testing.T) {
@@ -88,8 +87,9 @@ func TestSwitchSpec(t *testing.T) {
 		input    string
 		expected alertapi.AlertSpec
 	}{
-		{input: "empty", expected: alertapi.AlertSpec{}},
-		{input: "default", expected: *crddefaults.GetAlertDefaultValue()},
+		{input: EmptySpec, expected: alertapi.AlertSpec{}},
+		{input: TemplateSpec, expected: *crddefaults.GetAlertTemplate()},
+		{input: DefaultSpec, expected: *crddefaults.GetAlertDefault()},
 	}
 
 	// test cases: "default"
@@ -100,8 +100,7 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: default
 	createAlertSpecType := ""
-	assert.EqualError(alertCtl.SwitchSpec(createAlertSpecType),
-		fmt.Sprintf("Alert Spec Type %s does not match: default or empty", createAlertSpecType))
+	assert.Error(alertCtl.SwitchSpec(createAlertSpecType))
 
 }
 

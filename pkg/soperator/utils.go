@@ -112,10 +112,9 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 	return currCM.Data["image"], nil
 }
 
-// GetSpecConfigForCurrentComponents returns a spec that respesents the current Synopsys-Operator in
-// the cluster
-func GetSpecConfigForCurrentComponents(kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
-	log.Debugf("Creating New Synopsys-Operator SpecConfig")
+// GetSpecConfigForCurrentComponents returns a spec that respesents the current Synopsys-Operator in the cluster
+func GetSpecConfigForCurrentComponents(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
+	log.Debugf("creating new synopsys operator spec")
 	sOperatorSpec := SpecConfig{}
 	// Set the Namespace
 	sOperatorSpec.Namespace = namespace
@@ -124,25 +123,25 @@ func GetSpecConfigForCurrentComponents(kubeClient *kubernetes.Clientset, namespa
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Synopsys-Operator ConfigMap: %s", err)
 	}
-	sOperatorSpec.SynopsysOperatorImage = currCM.Data["image"]
-	log.Debugf("Got current Synopsys-Operator Image from Cluster: %s", sOperatorSpec.SynopsysOperatorImage)
+	sOperatorSpec.Image = currCM.Data["image"]
+	log.Debugf("got current synopsys operator image from cluster: %s", sOperatorSpec.Image)
 
 	// Set the secretType and secret data
 	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Synopsys-Operator secret: %s", err)
+		return nil, fmt.Errorf("failed to get synopsys operator secret: %s", err)
 	}
 	currKubeSecret := currSecret.Type
 	currHorizonSecretType, err := operatorutil.KubeSecretTypeToHorizon(currKubeSecret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Current Synopsys-Operator Spec: %s", err)
+		return nil, fmt.Errorf("failed to create synopsys operator spec: %s", err)
 	}
 	sOperatorSpec.SecretType = currHorizonSecretType
 	currKubeSecretData := currSecret.Data
-	sOperatorSpec.SecretAdminPassword = string(currKubeSecretData["ADMIN_PASSWORD"])
-	sOperatorSpec.SecretPostgresPassword = string(currKubeSecretData["POSTGRES_PASSWORD"])
-	sOperatorSpec.SecretUserPassword = string(currKubeSecretData["USER_PASSWORD"])
-	sOperatorSpec.SecretBlackduckPassword = string(currKubeSecretData["HUB_PASSWORD"])
+	sOperatorSpec.AdminPassword = string(currKubeSecretData["ADMIN_PASSWORD"])
+	sOperatorSpec.PostgresPassword = string(currKubeSecretData["POSTGRES_PASSWORD"])
+	sOperatorSpec.UserPassword = string(currKubeSecretData["USER_PASSWORD"])
+	sOperatorSpec.BlackduckPassword = string(currKubeSecretData["HUB_PASSWORD"])
 	sealKey := string(currKubeSecretData["SEAL_KEY"])
 	if len(sealKey) == 0 {
 		sealKey, err = operatorutil.GetRandomString(32)
@@ -151,16 +150,17 @@ func GetSpecConfigForCurrentComponents(kubeClient *kubernetes.Clientset, namespa
 		}
 	}
 	sOperatorSpec.SealKey = sealKey
+	sOperatorSpec.RestConfig = restConfig
+	sOperatorSpec.KubeClient = kubeClient
 
-	log.Debugf("Got current Synopsys-Operator Secret Data from Cluster")
+	log.Debugf("got current synopsys operator secret data from Cluster")
 
 	return &sOperatorSpec, nil
 }
 
-// GetSpecConfigForCurrentPrometheusComponents returns a spec that respesents the current prometheus in
-// the cluster
-func GetSpecConfigForCurrentPrometheusComponents(kubeClient *kubernetes.Clientset, namespace string) (*PrometheusSpecConfig, error) {
-	log.Debugf("Creating New Prometheus SpecConfig")
+// GetSpecConfigForCurrentPrometheusComponents returns a spec that respesents the current prometheus in the cluster
+func GetSpecConfigForCurrentPrometheusComponents(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*PrometheusSpecConfig, error) {
+	log.Debugf("creating New Prometheus SpecConfig")
 	prometheusSpec := PrometheusSpecConfig{}
 	// Set Namespace
 	prometheusSpec.Namespace = namespace
@@ -169,8 +169,10 @@ func GetSpecConfigForCurrentPrometheusComponents(kubeClient *kubernetes.Clientse
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get Prometheus ConfigMap: %s", err)
 	}
-	prometheusSpec.PrometheusImage = currCM.Data["image"]
-	log.Debugf("Added image %s to Prometheus SpecConfig", prometheusSpec.PrometheusImage)
+	prometheusSpec.Image = currCM.Data["image"]
+	prometheusSpec.RestConfig = restConfig
+	prometheusSpec.KubeClient = kubeClient
+	log.Debugf("added image %s to Prometheus SpecConfig", prometheusSpec.Image)
 
 	return &prometheusSpec, nil
 

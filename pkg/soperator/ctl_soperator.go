@@ -26,23 +26,22 @@ import (
 	"strings"
 	"time"
 
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // UpdateSynopsysOperator updates the Synopsys-Operator's kubernetes componenets and changes
 // all CRDs to versions that the Operator can use
-func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpec *SpecConfig, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset) error {
+func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset) error {
 	currImage, err := GetOperatorImage(kubeClient, namespace)
 	if err != nil {
 		log.Errorf("Failed to Update the Synopsys Operator: %s", err)
@@ -50,7 +49,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 	}
 
 	// Get CRD Version Data
-	newOperatorVersion := strings.Split(newSOperatorSpec.SynopsysOperatorImage, ":")[1]
+	newOperatorVersion := strings.Split(specConfig.Image, ":")[1]
 	currOperatorVersion := strings.Split(currImage, ":")[1]
 	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
 	currCrdData := SOperatorCRDVersionMap.GetCRDVersions(currOperatorVersion)
@@ -97,7 +96,7 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 
 	// Update the Synopsys-Operator's Components
 	log.Debugf("Updating Synopsys-Operator's Components")
-	err = UpdateSOperatorComponents(restconfig, kubeClient, namespace, newSOperatorSpec)
+	err = specConfig.UpdateSOperatorComponents()
 	if err != nil {
 		return fmt.Errorf("failed to update Synopsys-Operator components: %s", err)
 	}
@@ -138,12 +137,12 @@ func UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clie
 }
 
 // UpdateSOperatorComponents updates kubernetes resources for the Synopsys-Operator
-func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newSOperatorSpecConfig *SpecConfig) error {
-	sOperatorComponents, err := newSOperatorSpecConfig.GetComponents()
+func (specConfig *SpecConfig) UpdateSOperatorComponents() error {
+	sOperatorComponents, err := specConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("failed to get Synopsys-Operator components: %s", err)
 	}
-	sOperatorCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, sOperatorComponents, "app=synopsys-operator")
+	sOperatorCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, specConfig.Namespace, sOperatorComponents, "app=synopsys-operator")
 	errs := sOperatorCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Synopsys-Operator components: %+v", errs)
@@ -153,12 +152,12 @@ func UpdateSOperatorComponents(restconfig *rest.Config, kubeClient *kubernetes.C
 }
 
 // UpdatePrometheus updates kubernetes resources for Prometheus
-func UpdatePrometheus(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string, newPrometheusSpecConfig *PrometheusSpecConfig) error {
-	prometheusComponents, err := newPrometheusSpecConfig.GetComponents()
+func (specConfig *PrometheusSpecConfig) UpdatePrometheus() error {
+	prometheusComponents, err := specConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("failed to get Prometheus components: %s", err)
 	}
-	prometheusCommonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, namespace, prometheusComponents, "app=prometheus")
+	prometheusCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, specConfig.Namespace, prometheusComponents, "app=prometheus")
 	errs := prometheusCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Prometheus components: %+v", errs)

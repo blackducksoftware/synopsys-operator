@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -141,7 +140,7 @@ func (ctl *Ctl) CheckSpecFlags() error {
 		pvc := &blackduckv1.PVC{}
 		err := json.Unmarshal([]byte(pvcJSON), pvc)
 		if err != nil {
-			return fmt.Errorf("Invalid format for PVC")
+			return fmt.Errorf("Invalid format for PVC: %+v", err)
 		}
 	}
 	for _, environ := range ctl.Environs {
@@ -159,17 +158,48 @@ func (ctl *Ctl) CheckSpecFlags() error {
 	return nil
 }
 
+// Constants for Default Specs
+const (
+	EmptySpec                           string = "empty"
+	TemplateSpec                        string = "template"
+	PersistentStorageLatestSpec         string = "persistentStorageLatest"
+	PersistentStorageV1Spec             string = "persistentStorageV1"
+	ExternalPersistentStorageLatestSpec string = "externalPersistentStorageLatest"
+	ExternalPersistentStorageV1Spec     string = "externalPersistentStorageV1"
+	BDBASpec                            string = "bdba"
+	EphemeralSpec                       string = "ephemeral"
+	EphemeralCustomAuthCASpec           string = "ephemeralCustomAuthCA"
+	ExternalDBSpec                      string = "externalDB"
+	IPV6DisabledSpec                    string = "IPV6Disabled"
+)
+
 // SwitchSpec switches the Blackduck's Spec to a different predefined spec
 func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
-	case "empty":
+	case EmptySpec:
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
-	case "persistentStorage":
-		ctl.Spec = crddefaults.GetHubDefaultPersistentStorage()
-	case "default":
-		ctl.Spec = crddefaults.GetHubDefaultValue()
+	case TemplateSpec:
+		ctl.Spec = crddefaults.GetBlackDuckTemplate()
+	case PersistentStorageLatestSpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageLatest()
+	case PersistentStorageV1Spec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageV1()
+	case ExternalPersistentStorageLatestSpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()
+	case ExternalPersistentStorageV1Spec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()
+	case BDBASpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultBDBA()
+	case EphemeralSpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeral()
+	case EphemeralCustomAuthCASpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()
+	case ExternalDBSpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalDB()
+	case IPV6DisabledSpec:
+		ctl.Spec = crddefaults.GetBlackDuckDefaultIPV6Disabled()
 	default:
-		return fmt.Errorf("Blackduck Spec Type %s does not match: empty, persistentStorage, default", createBlackduckSpecType)
+		return fmt.Errorf("Blackduck Spec Type %s is not valid", createBlackduckSpecType)
 	}
 	return nil
 }
@@ -313,9 +343,5 @@ func (ctl *Ctl) SpecIsValid() (bool, error) {
 
 // CanUpdate checks if a user has permission to modify based on the spec
 func (ctl *Ctl) CanUpdate() (bool, error) {
-	version := util.GetHubVersion(ctl.Spec.Environs)
-	if version == "" || version == "2019.2.2" {
-		return false, fmt.Errorf("Cannot Updated due to Blackduck Version '%s'", version)
-	}
 	return true, nil
 }

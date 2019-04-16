@@ -28,12 +28,12 @@ import (
 )
 
 // GetScanDeployment will return the scan deployment
-func (c *Creater) GetScanDeployment() *components.ReplicationController {
+func (c *Creater) GetScanDeployment(imageName string) *components.ReplicationController {
 	scannerEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.ScanHubMaxMemory})
 	hubScanEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-scan")
 	hubScanContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "scan", Image: c.getImageTag("blackduck-scan"),
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "scan", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.ScanMemoryLimit, MaxMem: c.hubContainerFlavor.ScanMemoryLimit, MinCPU: "", MaxCPU: ""},
 		EnvConfigs: scannerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{

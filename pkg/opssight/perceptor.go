@@ -46,6 +46,7 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 		return nil, errors.Trace(err)
 	}
 	rc.AddLabelSelectors(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
+	rc.AddLabels(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
 	return rc, nil
 }
 
@@ -119,7 +120,55 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	}
 
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": p.opssight.Spec.Perceptor.Name})
+	service.AddSelectors(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
+
+	return service, nil
+}
+
+// PerceptorNodePortService creates a nodeport service for perceptor
+func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
+	name := fmt.Sprintf("%s-exposed", p.opssight.Spec.Perceptor.Name)
+	service := components.NewService(horizonapi.ServiceConfig{
+		Name:          name,
+		Namespace:     p.opssight.Spec.Namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
+	})
+
+	err := service.AddPort(horizonapi.ServicePortConfig{
+		Port:       int32(p.opssight.Spec.Perceptor.Port),
+		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Perceptor.Port),
+		Protocol:   horizonapi.ProtocolTCP,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	service.AddLabels(map[string]string{"name": name, "app": "opssight"})
+	service.AddSelectors(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
+
+	return service, nil
+}
+
+// PerceptorLoadBalancerService creates a loadbalancer service for perceptor
+func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error) {
+	name := fmt.Sprintf("%s-exposed", p.opssight.Spec.Perceptor.Name)
+	service := components.NewService(horizonapi.ServiceConfig{
+		Name:          name,
+		Namespace:     p.opssight.Spec.Namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeLoadBalancer,
+	})
+
+	err := service.AddPort(horizonapi.ServicePortConfig{
+		Port:       int32(p.opssight.Spec.Perceptor.Port),
+		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Perceptor.Port),
+		Protocol:   horizonapi.ProtocolTCP,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	service.AddLabels(map[string]string{"name": name, "app": "opssight"})
+	service.AddSelectors(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
 
 	return service, nil
 }

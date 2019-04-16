@@ -42,8 +42,8 @@ var createOpsSightCtl ResourceCtl
 var createAlertCtl ResourceCtl
 
 // Flags for the Base Spec (template)
-var baseBlackduckSpec = "persistentStorage"
-var baseOpsSightSpec = "disabledBlackduck"
+var baseBlackduckSpec = "persistentStorageLatest"
+var baseOpsSightSpec = "disabled-black-duck"
 var baseAlertSpec = "default"
 
 // Flags for using mock mode - don't deploy
@@ -122,6 +122,8 @@ var createBlackduckCmd = &cobra.Command{
 			},
 			Spec: blackduckSpec,
 		}
+		blackduck.Kind = "Blackduck"
+		blackduck.APIVersion = "synopsys.com/v1"
 		if mockBlackduck {
 			util.PrettyPrint(blackduck)
 		} else {
@@ -182,6 +184,8 @@ var createOpsSightCmd = &cobra.Command{
 			},
 			Spec: opssightSpec,
 		}
+		opssight.Kind = "OpsSight"
+		opssight.APIVersion = "synopsys.com/v1"
 		if mockOpsSight {
 			util.PrettyPrint(opssight)
 		} else {
@@ -241,6 +245,8 @@ var createAlertCmd = &cobra.Command{
 			},
 			Spec: alertSpec,
 		}
+		alert.Kind = "Alert"
+		alert.APIVersion = "synopsys.com/v1"
 		if mockAlert {
 			util.PrettyPrint(alert)
 		} else {

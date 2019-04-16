@@ -101,12 +101,12 @@ func (p *Updater) Run(ch <-chan struct{}) {
 			// TODO kinda dumb, we just do a complete re-list of all hubs,
 			// every time an event happens... But thats all we need to do, so its good enough.
 			DeleteFunc: func(obj interface{}) {
-				logger.Debugf("configmap updater hub deleted event ! %v ", obj)
+				logger.Debugf("secret updater blackduck deleted event ! %v ", obj)
 				syncFunc()
 			},
 
 			AddFunc: func(obj interface{}) {
-				logger.Debugf("configmap updater hub added event! %v ", obj)
+				logger.Debugf("secret updater blackduck added event! %v ", obj)
 				running := p.isBlackDuckRunning(obj)
 				if !running {
 					syncFunc()
@@ -166,19 +166,21 @@ func (p *Updater) updateOpsSight(obj interface{}) error {
 		return errors.Errorf("unable to cast object")
 	}
 	var err error
-	for j := 0; j < 20; j++ {
-		if strings.EqualFold(opssight.Status.State, "running") {
-			break
-		}
-		logger.Debugf("waiting for opssight %s to be up.....", opssight.Name)
-		time.Sleep(10 * time.Second)
+	if !strings.EqualFold(opssight.Status.State, "stopped") && !strings.EqualFold(opssight.Status.State, "error") {
+		for j := 0; j < 20; j++ {
+			if strings.EqualFold(opssight.Status.State, "running") {
+				break
+			}
+			logger.Debugf("waiting for opssight %s to be up.....", opssight.Name)
+			time.Sleep(10 * time.Second)
 
-		opssight, err = util.GetOpsSight(p.opssightClient, p.config.Namespace, opssight.Name)
-		if err != nil {
-			return fmt.Errorf("unable to get opssight %s due to %+v", opssight.Name, err)
+			opssight, err = util.GetOpsSight(p.opssightClient, p.config.Namespace, opssight.Name)
+			if err != nil {
+				return fmt.Errorf("unable to get opssight %s due to %+v", opssight.Name, err)
+			}
 		}
+		err = p.update(opssight)
 	}
-	err = p.update(opssight)
 	return err
 }
 
@@ -258,60 +260,54 @@ func (p *Updater) updateOpsSightCRD(opsSightSpec *opssightapi.OpsSightSpec, hubs
 	return nil
 }
 
-// appendBlackDuckHosts will append the hosts of external and internal Black Duck
-func (p *Updater) appendBlackDuckHosts(existingBlackDucks []*opssightapi.Host, internalBlackDucks []*opssightapi.Host) []*opssightapi.Host {
+// appendBlackDuckHosts will append the old and new internal Black Duck hosts
+func (p *Updater) appendBlackDuckHosts(oldBlackDucks []*opssightapi.Host, newBlackDucks []*opssightapi.Host) []*opssightapi.Host {
+	existingBlackDucks := make(map[string]*opssightapi.Host)
+	for _, oldBlackDuck := range oldBlackDucks {
+		existingBlackDucks[oldBlackDuck.Domain] = oldBlackDuck
+	}
+
 	finalBlackDucks := []*opssightapi.Host{}
-	// remove the deleted Black Duck from the final Black Duck list
-	for _, existingBlackDuck := range existingBlackDucks {
-		isExist := false
-		for _, internalBlackDuck := range internalBlackDucks {
-			if strings.EqualFold(internalBlackDuck.Domain, existingBlackDuck.Domain) {
-				isExist = true
-				break
-			}
-		}
-		if isExist {
-			finalBlackDucks = append(finalBlackDucks, existingBlackDuck)
+	for _, newBlackDuck := range newBlackDucks {
+		if existingBlackduck, ok := existingBlackDucks[newBlackDuck.Domain]; ok {
+			// add the existing internal Black Duck from the final Black Duck list
+			finalBlackDucks = append(finalBlackDucks, existingBlackduck)
+		} else {
+			// add the new internal Black Duck to the final Black Duck list
+			finalBlackDucks = append(finalBlackDucks, newBlackDuck)
 		}
 	}
 
-	// add the new Black Duck to the final Black Duck list
-	for _, internalBlackDuck := range internalBlackDucks {
-		isExist := false
-		for _, finalBlackDuck := range finalBlackDucks {
-			if strings.EqualFold(internalBlackDuck.Domain, finalBlackDuck.Domain) {
-				isExist = true
-				break
-			}
-		}
-		if !isExist {
-			finalBlackDucks = append(finalBlackDucks, internalBlackDuck)
-		}
-	}
 	return finalBlackDucks
 }
 
 // appendBlackDuckSecrets will append the secrets of external and internal Black Duck
-func (p *Updater) appendBlackDuckSecrets(existingBlackDucks map[string]*opssightapi.Host, internalBlackDucks []*opssightapi.Host) map[string]*opssightapi.Host {
-	// remove the deleted Black Duck from the Black Duck secret
-	for _, existingBlackDuck := range existingBlackDucks {
-		isExist := false
-		for _, internalBlackDuck := range internalBlackDucks {
-			if strings.EqualFold(internalBlackDuck.Domain, existingBlackDuck.Domain) {
-				isExist = true
-				break
+func (p *Updater) appendBlackDuckSecrets(existingExternalBlackDucks map[string]*opssightapi.Host, oldInternalBlackDucks []*opssightapi.Host, newInternalBlackDucks []*opssightapi.Host) map[string]*opssightapi.Host {
+	existingInternalBlackducks := make(map[string]*opssightapi.Host)
+	for _, oldInternalBlackDuck := range oldInternalBlackDucks {
+		existingInternalBlackducks[oldInternalBlackDuck.Domain] = oldInternalBlackDuck
+	}
+
+	currentInternalBlackducks := make(map[string]*opssightapi.Host)
+	for _, newInternalBlackDuck := range newInternalBlackDucks {
+		currentInternalBlackducks[newInternalBlackDuck.Domain] = newInternalBlackDuck
+	}
+
+	for _, currentInternalBlackduck := range currentInternalBlackducks {
+		// check if external host contains the internal host
+		if _, ok := existingExternalBlackDucks[currentInternalBlackduck.Domain]; ok {
+			// if internal host contains an external host, then check whether it is already part of status,
+			// if yes replace it with existing internal host else with new internal host
+			if existingInternalBlackduck, ok1 := existingInternalBlackducks[currentInternalBlackduck.Domain]; ok1 {
+				existingExternalBlackDucks[currentInternalBlackduck.Domain] = existingInternalBlackduck
+			} else {
+				existingExternalBlackDucks[currentInternalBlackduck.Domain] = currentInternalBlackduck
 			}
-		}
-		if !isExist {
-			delete(existingBlackDucks, existingBlackDuck.Domain)
+		} else {
+			// add new internal Black Duck
+			existingExternalBlackDucks[currentInternalBlackduck.Domain] = currentInternalBlackduck
 		}
 	}
 
-	// add the new Black Duck to the Black Duck secret
-	for _, internalBlackDuck := range internalBlackDucks {
-		if _, ok := existingBlackDucks[internalBlackDuck.Domain]; !ok {
-			existingBlackDucks[internalBlackDuck.Domain] = internalBlackDuck
-		}
-	}
-	return existingBlackDucks
+	return existingExternalBlackDucks
 }
