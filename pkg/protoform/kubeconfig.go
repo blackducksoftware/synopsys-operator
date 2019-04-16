@@ -37,8 +37,8 @@ import (
 )
 
 // GetKubeConfig  will return the kube config
-func GetKubeConfig(kubeconfigpath string) (*rest.Config, error) {
-	log.Debugf("Getting Kube Rest Config\n")
+func GetKubeConfig(kubeconfigpath string, insecureSkipTLSVerify bool) (*rest.Config, error) {
+	log.Debugf("Getting Kube Rest Config")
 	var err error
 	var kubeConfig *rest.Config
 	// creates the in-cluster config
@@ -56,7 +56,8 @@ func GetKubeConfig(kubeconfigpath string) (*rest.Config, error) {
 			},
 			&clientcmd.ConfigOverrides{
 				ClusterInfo: clientcmdapi.Cluster{
-					Server: "",
+					Server:                "",
+					InsecureSkipTLSVerify: insecureSkipTLSVerify,
 				},
 			}).ClientConfig()
 		if err != nil {

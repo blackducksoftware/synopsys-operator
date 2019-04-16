@@ -52,7 +52,7 @@ var kube bool
 // and the resource clients
 func setResourceClients() {
 	var err error
-	restconfig, err = protoform.GetKubeConfig(kubeconfig)
+	restconfig, err = protoform.GetKubeConfig(kubeconfig, insecureSkipTLSVerify)
 	if err != nil {
 		log.Errorf("error getting Kube Rest Config: %s", err)
 	}
