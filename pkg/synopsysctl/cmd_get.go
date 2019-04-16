@@ -38,23 +38,24 @@ import (
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "List Synopsys Resources in your cluster",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		// Display synopsysctl's Help instead of sending to oc/kubectl
-		if len(args) == 1 && args[0] == "--help" {
-			return fmt.Errorf("Help Called")
-		}
-		return nil
-	},
+	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
+	//(PassCmd) 	// Display synopsysctl's Help instead of sending to oc/kubectl
+	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
+	//(PassCmd) 		return fmt.Errorf("Help Called")
+	//(PassCmd) 	}
+	//(PassCmd) 	return nil
+	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting a Non-Synopsys Resource\n")
-		kubeCmdArgs := append([]string{"get"}, args...)
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		if err != nil {
-			log.Errorf("Error Getting the Resource: %s", out)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
+		//(PassCmd) log.Debugf("Getting a Non-Synopsys Resource\n")
+		//(PassCmd) kubeCmdArgs := append([]string{"get"}, args...)
+		//(PassCmd) out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
+		//(PassCmd) if err != nil {
+		//(PassCmd) 	log.Errorf("Error Getting the Resource: %s", out)
+		//(PassCmd) 	return nil
+		//(PassCmd) }
+		//(PassCmd) fmt.Printf("%+v", out)
+		//(PassCmd) return nil
+		return fmt.Errorf("Not a Valid Command")
 	},
 }
 
@@ -183,7 +184,7 @@ var getAlertCmd = &cobra.Command{
 }
 
 func init() {
-	getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
+	//(PassCmd) getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
 	rootCmd.AddCommand(getCmd)
 
 	// Add Commands
