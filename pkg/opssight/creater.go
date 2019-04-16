@@ -174,14 +174,15 @@ func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSight) error {
 		return errors.Annotatef(err, "unable to get opssight components for %s", opssight.Spec.Namespace)
 	}
 
-	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssightSpec.Namespace, components, "app=opssight")
-	errs := commonConfig.CRUDComponents()
-
-	if len(errs) > 0 {
-		return fmt.Errorf("update components errors: %+v", errs)
-	}
-
 	if !ac.config.DryRun {
+		// call the CRUD updater to create or update opssight
+		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssightSpec.Namespace, components, "app=opssight")
+		errs := commonConfig.CRUDComponents()
+
+		if len(errs) > 0 {
+			return fmt.Errorf("update components errors: %+v", errs)
+		}
+
 		// if OpenShift, add a privileged role to scanner account
 		err = ac.postDeploy(spec, opssightSpec.Namespace)
 		if err != nil {

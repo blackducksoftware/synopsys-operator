@@ -101,12 +101,12 @@ func (p *Updater) Run(ch <-chan struct{}) {
 			// TODO kinda dumb, we just do a complete re-list of all hubs,
 			// every time an event happens... But thats all we need to do, so its good enough.
 			DeleteFunc: func(obj interface{}) {
-				logger.Debugf("configmap updater blackduck deleted event ! %v ", obj)
+				logger.Debugf("secret updater blackduck deleted event ! %v ", obj)
 				syncFunc()
 			},
 
 			AddFunc: func(obj interface{}) {
-				logger.Debugf("configmap updater blackduck added event! %v ", obj)
+				logger.Debugf("secret updater blackduck added event! %v ", obj)
 				running := p.isBlackDuckRunning(obj)
 				if !running {
 					syncFunc()
