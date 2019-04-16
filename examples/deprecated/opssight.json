@@ -87,7 +87,7 @@
         "persistentStorage": false,
         "certificateName": "default",
         "size": "small",
-        "type": "senthil",
+        "type": "opssight",
         "version": "2019.4.0"
       }
     }
