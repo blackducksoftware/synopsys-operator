@@ -24,6 +24,7 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -133,6 +134,13 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, errors.Trace(err)
 	}
 	components.Services = append(components.Services, service)
+	perceptorSvc, err := p.getPerceptorExposeService()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create perceptor service")
+	}
+	if perceptorSvc != nil {
+		components.Services = append(components.Services, perceptorSvc)
+	}
 	secret := p.PerceptorSecret()
 	if !p.dryRun {
 		p.addSecretData(secret)
@@ -194,12 +202,28 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 
 	// Add Metrics
 	if p.opssight.Spec.EnableMetrics {
+		// deployments
 		dep, err := p.PerceptorMetricsDeployment()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create metrics")
 		}
 		components.Deployments = append(components.Deployments, dep)
-		components.Services = append(components.Services, p.PerceptorMetricsService())
+
+		// services
+		prometheusService, err := p.PerceptorMetricsService()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create prometheus metrics service")
+		}
+		components.Services = append(components.Services, prometheusService)
+		prometheusSvc, err := p.getPerceptorMetricsExposeService()
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to create prometheus metrics exposed service")
+		}
+		if prometheusSvc != nil {
+			components.Services = append(components.Services, prometheusSvc)
+		}
+
+		// config map
 		perceptorCm, err := p.PerceptorMetricsConfigMap()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create perceptor config map")
@@ -208,6 +232,36 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	return components, nil
+}
+
+func (p *SpecConfig) getPerceptorExposeService() (*components.Service, error) {
+	var svc *components.Service
+	var err error
+	switch strings.ToUpper(p.opssight.Spec.Perceptor.Expose) {
+	case "NODEPORT":
+		svc, err = p.PerceptorNodePortService()
+		break
+	case "LOADBALANCER":
+		svc, err = p.PerceptorLoadBalancerService()
+		break
+	default:
+	}
+	return svc, err
+}
+
+func (p *SpecConfig) getPerceptorMetricsExposeService() (*components.Service, error) {
+	var svc *components.Service
+	var err error
+	switch strings.ToUpper(p.opssight.Spec.Prometheus.Expose) {
+	case "NODEPORT":
+		svc, err = p.PerceptorMetricsNodePortService()
+		break
+	case "LOADBALANCER":
+		svc, err = p.PerceptorMetricsLoadBalancerService()
+		break
+	default:
+	}
+	return svc, err
 }
 
 func (p *SpecConfig) addSecretData(secret *components.Secret) error {
