@@ -976,7 +976,7 @@ func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	} else {
 		_, err := GetOpenShiftRoutes(routeClient, "default", "docker-registry")
 		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("Ignoring routes for kubernetes cluster")
+			// log.Debugf("Ignoring routes for kubernetes cluster")
 			routeClient = nil
 		}
 	}

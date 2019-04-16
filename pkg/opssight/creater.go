@@ -35,6 +35,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	routev1 "github.com/openshift/api/route/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -159,7 +160,7 @@ func removeSubjects(subjects []rbacv1.Subject, namespace string) []rbacv1.Subjec
 
 // CreateOpsSight will create the Black Duck OpsSight
 func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSight) error {
-	log.Debugf("create OpsSight details for %s: %+v", opssight.Namespace, opssight)
+	// log.Debugf("create OpsSight details for %s: %+v", opssight.Namespace, opssight)
 	opssightSpec := &opssight.Spec
 	// get the registry auth credentials for default OpenShift internal docker registries
 	if !ac.config.DryRun {
@@ -207,28 +208,22 @@ func (ac *Creater) StopOpsSight(opssight *opssightapi.OpsSightSpec) error {
 			}
 		}
 	}
+
+	dpl, err := util.ListDeployments(ac.kubeClient, opssight.Namespace, "app=opssight")
+	for _, dp := range dpl.Items {
+		if util.Int32ToInt(dp.Spec.Replicas) > 0 {
+			_, err := util.PatchDeploymentForReplicas(ac.kubeClient, &dp, util.IntToInt32(0))
+			if err != nil {
+				return fmt.Errorf("unable to patch %s deployment with replicas %d in %s namespace because %+v", dp.Name, 0, opssight.Namespace, err)
+			}
+		}
+	}
 	return err
 }
 
 // UpdateOpsSight will update the Black Duck OpsSight
 func (ac *Creater) UpdateOpsSight(opssight *opssightapi.OpsSight) error {
-	newConfigMapConfig := NewSpecConfig(ac.config, ac.kubeClient, ac.opssightClient, ac.hubClient, opssight, ac.config.DryRun)
-
-	opssightSpec := &opssight.Spec
-	// get new components build from the latest updates
-	components, err := newConfigMapConfig.GetComponents()
-	if err != nil {
-		return errors.Annotatef(err, "unable to get opssight components for %s", opssightSpec.Namespace)
-	}
-
-	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, opssightSpec.Namespace, components, "app=opssight")
-	errors := commonConfig.CRUDComponents()
-
-	if len(errors) > 0 {
-		return fmt.Errorf("unable to update components due to %+v", errors)
-	}
-
-	return nil
+	return ac.CreateOpsSight(opssight)
 }
 
 // GetDefaultPasswords returns admin,user,postgres passwords for db maintainance tasks.  Should only be used during
@@ -296,6 +291,32 @@ func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
 		}
 		return util.UpdateOpenShiftSecurityConstraint(ac.osSecurityClient, serviceAccounts, "privileged")
 	}
+
+	// Create Perceptor model Route on Openshift
+	if strings.ToUpper(spec.opssight.Spec.Perceptor.Expose) == "OPENSHIFT" && ac.routeClient != nil {
+		namespace := spec.opssight.Spec.Namespace
+		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Perceptor.Name, namespace)
+		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
+		if err != nil {
+			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", name, routev1.TLSTerminationEdge)
+			if err != nil {
+				log.Errorf("unable to create the perceptor openshift route due to %+v", err)
+			}
+		}
+	}
+
+	// Create Perceptor metrics Route on Openshift
+	if strings.ToUpper(spec.opssight.Spec.Prometheus.Expose) == "OPENSHIFT" && ac.routeClient != nil {
+		namespace := spec.opssight.Spec.Namespace
+		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Prometheus.Name, namespace)
+		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
+		if err != nil {
+			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", name, routev1.TLSTerminationEdge)
+			if err != nil {
+				log.Errorf("unable to create the perceptor metrics openshift route due to %+v", err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -307,6 +328,11 @@ func (ac *Creater) deployHub(createOpsSight *opssightapi.OpsSightSpec) error {
 	hubErrs := map[string]error{}
 	for i := 0; i < createOpsSight.Blackduck.InitialCount; i++ {
 		name := fmt.Sprintf("%s-%v", createOpsSight.Namespace, i)
+
+		_, err := util.GetNamespace(ac.kubeClient, name)
+		if err == nil {
+			continue
+		}
 
 		ns, err := util.CreateNamespace(ac.kubeClient, name)
 		log.Debugf("created namespace: %+v", ns)

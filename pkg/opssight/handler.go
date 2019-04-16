@@ -22,7 +22,6 @@ under the License.
 package opssight
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -30,7 +29,6 @@ import (
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
@@ -55,16 +53,10 @@ type State string
 type DesiredState string
 
 const (
-	// Creating is used when OpsSight is installing or deploying
-	Creating State = "Creating"
 	// Running is used when OpsSight is running
 	Running State = "Running"
-	// Stopping is used when OpsSight is about to stip
-	Stopping State = "Stopping"
 	// Stopped is used when OpsSight to be stopped
 	Stopped State = "Stopped"
-	// Updating is used when OpsSight is about to updating
-	Updating State = "Updating"
 	// Error is used when OpsSight deployment errored out
 	Error State = "Error"
 
@@ -97,45 +89,45 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 func (h *Handler) handleObjectCreated(obj interface{}) error {
 	recordEvent("objectCreated")
 	// log.Debugf("objectCreated: %+v", obj)
-	opssight, ok := obj.(*opssightapi.OpsSight)
-	if !ok {
-		recordError("unable to cast opssight object")
-		return errors.Errorf("unable to cast opssight object")
-	}
+	// opssight, ok := obj.(*opssightapi.OpsSight)
+	// if !ok {
+	// 	recordError("unable to cast opssight object")
+	// 	return errors.Errorf("unable to cast opssight object")
+	// }
 
-	if strings.EqualFold(opssight.Spec.DesiredState, string(Start)) && strings.EqualFold(opssight.Status.State, "") {
-		log.Debugf("inside creation event of opssight %s", opssight.Spec.Namespace)
-		newSpec := opssight.Spec
-		defaultSpec := h.Defaults
-		err := mergo.Merge(&newSpec, defaultSpec)
-		if err != nil {
-			recordError("unable to merge default and new objects")
-			h.updateState(Error, err.Error(), opssight)
-			return errors.Annotate(err, "unable to merge default and new objects")
-		}
+	// if strings.EqualFold(opssight.Spec.DesiredState, string(Start)) && strings.EqualFold(opssight.Status.State, "") {
+	// 	log.Debugf("inside creation event of opssight %s", opssight.Spec.Namespace)
+	// 	newSpec := opssight.Spec
+	// 	defaultSpec := h.Defaults
+	// 	err := mergo.Merge(&newSpec, defaultSpec)
+	// 	if err != nil {
+	// 		recordError("unable to merge default and new objects")
+	// 		h.updateState(Error, err.Error(), opssight)
+	// 		return errors.Annotate(err, "unable to merge default and new objects")
+	// 	}
 
-		bytes, err := json.Marshal(newSpec)
-		log.Debugf("merged opssight details: %+v", newSpec)
-		log.Debugf("opssight json (%+v): %s", err, string(bytes))
+	// 	bytes, err := json.Marshal(newSpec)
+	// 	log.Debugf("merged opssight details: %+v", newSpec)
+	// 	log.Debugf("opssight json (%+v): %s", err, string(bytes))
 
-		opssight.Spec = newSpec
-		opssight, err = h.updateState(Creating, "", opssight)
-		if err != nil {
-			recordError("unable to update state")
-			return errors.Annotate(err, "unable to update state")
-		}
+	// 	opssight.Spec = newSpec
+	// 	// opssight, err = h.updateState(Creating, "", opssight)
+	// 	// if err != nil {
+	// 	// 	recordError("unable to update state")
+	// 	// 	return errors.Annotate(err, "unable to update state")
+	// 	// }
 
-		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
-		err = opssightCreator.CreateOpsSight(opssight)
-		if err != nil {
-			recordError("unable to create opssight")
-			h.updateState(Error, err.Error(), opssight)
-			return errors.Annotatef(err, "create opssight %s", opssight.Name)
-		}
-		h.updateState(Running, "", opssight)
-	} else {
-		h.ObjectUpdated(nil, obj)
-	}
+	// 	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
+	// 	err = opssightCreator.CreateOpsSight(opssight)
+	// 	if err != nil {
+	// 		recordError("unable to create opssight")
+	// 		h.updateState(Error, err.Error(), opssight)
+	// 		return errors.Annotatef(err, "create opssight %s", opssight.Name)
+	// 	}
+	// 	h.updateState(Running, "", opssight)
+	// } else {
+	h.ObjectUpdated(nil, obj)
+	// }
 	return nil
 }
 
@@ -162,15 +154,25 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
+	newSpec := opssight.Spec
+	defaultSpec := h.Defaults
+	err := mergo.Merge(&newSpec, defaultSpec)
+	if err != nil {
+		recordError("unable to merge default and new objects")
+		h.updateState(Error, err.Error(), opssight)
+		log.Errorf("unable to merge default and new objects due to %+v", err)
+		return
+	}
+
+	// bytes, err := json.Marshal(newSpec)
+	// log.Debugf("merged opssight details: %+v", newSpec)
+	// log.Debugf("opssight json (%+v): %s", err, string(bytes))
+
+	opssight.Spec = newSpec
+
 	switch strings.ToUpper(opssight.Spec.DesiredState) {
 	case "STOP":
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
-		opssight, err := h.updateState(Stopping, "", opssight)
-		if err != nil {
-			recordError("unable to update state")
-			log.Error(errors.Annotate(err, "unable to update stopping state"))
-			return
-		}
 		err = opssightCreator.StopOpsSight(&opssight.Spec)
 		if err != nil {
 			recordError("unable to stop opssight")
@@ -178,12 +180,12 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Errorf("handle object stop: %s", err.Error())
 			return
 		}
-		opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)
-		if err != nil {
-			recordError("unable to get opssight")
-			log.Error(errors.Annotate(err, "unable to get opssight"))
-			return
-		}
+		// opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)
+		// if err != nil {
+		// 	recordError("unable to get opssight")
+		// 	log.Error(errors.Annotate(err, "unable to get opssight"))
+		// 	return
+		// }
 		_, err = h.updateState(Stopped, "", opssight)
 		if err != nil {
 			recordError("unable to update state")
@@ -192,12 +194,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		}
 	case "START":
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
-		opssight, err := h.updateState(Updating, "", opssight)
-		if err != nil {
-			recordError("unable to update state")
-			log.Error(errors.Annotate(err, "unable to update updating state"))
-			return
-		}
 		err = opssightCreator.UpdateOpsSight(opssight)
 		if err != nil {
 			recordError("unable to update opssight")
@@ -205,12 +201,12 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Errorf("handle object update: %s", err.Error())
 			return
 		}
-		opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)
-		if err != nil {
-			recordError("unable to get opssight")
-			log.Error(errors.Annotate(err, "unable to get opssight"))
-			return
-		}
+		// opssight, err = util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Spec.Namespace)
+		// if err != nil {
+		// 	recordError("unable to get opssight")
+		// 	log.Error(errors.Annotate(err, "unable to get opssight"))
+		// 	return
+		// }
 		_, err = h.updateState(Running, "", opssight)
 		if err != nil {
 			recordError("unable to update state")

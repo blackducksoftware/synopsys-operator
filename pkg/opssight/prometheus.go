@@ -114,14 +114,13 @@ func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 }
 
 // PerceptorMetricsService creates a service for perceptor metrics
-func (p *SpecConfig) PerceptorMetricsService() *components.Service {
+func (p *SpecConfig) PerceptorMetricsService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "prometheus",
-		Namespace:     p.opssight.Spec.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
+		Name:      "prometheus",
+		Namespace: p.opssight.Spec.Namespace,
 	})
 
-	service.AddPort(horizonapi.ServicePortConfig{
+	err := service.AddPort(horizonapi.ServicePortConfig{
 		Port:       9090,
 		TargetPort: "9090",
 		Protocol:   horizonapi.ProtocolTCP,
@@ -131,7 +130,49 @@ func (p *SpecConfig) PerceptorMetricsService() *components.Service {
 	service.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": "prometheus", "app": "opssight"})
 
-	return service
+	return service, err
+}
+
+// PerceptorMetricsNodePortService creates a nodeport service for perceptor metrics
+func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, error) {
+	service := components.NewService(horizonapi.ServiceConfig{
+		Name:          "prometheus-exposed",
+		Namespace:     p.opssight.Spec.Namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
+	})
+
+	err := service.AddPort(horizonapi.ServicePortConfig{
+		Port:       9090,
+		TargetPort: "9090",
+		Protocol:   horizonapi.ProtocolTCP,
+	})
+
+	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
+	service.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
+	service.AddSelectors(map[string]string{"name": "prometheus", "app": "opssight"})
+
+	return service, err
+}
+
+// PerceptorMetricsLoadBalancerService creates a loadbalancer service for perceptor metrics
+func (p *SpecConfig) PerceptorMetricsLoadBalancerService() (*components.Service, error) {
+	service := components.NewService(horizonapi.ServiceConfig{
+		Name:          "prometheus-exposed",
+		Namespace:     p.opssight.Spec.Namespace,
+		IPServiceType: horizonapi.ClusterIPServiceTypeLoadBalancer,
+	})
+
+	err := service.AddPort(horizonapi.ServicePortConfig{
+		Port:       9090,
+		TargetPort: "9090",
+		Protocol:   horizonapi.ProtocolTCP,
+	})
+
+	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
+	service.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
+	service.AddSelectors(map[string]string{"name": "prometheus", "app": "opssight"})
+
+	return service, err
 }
 
 // PerceptorMetricsConfigMap creates a config map for perceptor metrics

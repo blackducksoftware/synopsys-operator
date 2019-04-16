@@ -101,12 +101,12 @@ func (p *Updater) Run(ch <-chan struct{}) {
 			// TODO kinda dumb, we just do a complete re-list of all hubs,
 			// every time an event happens... But thats all we need to do, so its good enough.
 			DeleteFunc: func(obj interface{}) {
-				logger.Debugf("configmap updater hub deleted event ! %v ", obj)
+				logger.Debugf("configmap updater blackduck deleted event ! %v ", obj)
 				syncFunc()
 			},
 
 			AddFunc: func(obj interface{}) {
-				logger.Debugf("configmap updater hub added event! %v ", obj)
+				logger.Debugf("configmap updater blackduck added event! %v ", obj)
 				running := p.isBlackDuckRunning(obj)
 				if !running {
 					syncFunc()
@@ -166,19 +166,21 @@ func (p *Updater) updateOpsSight(obj interface{}) error {
 		return errors.Errorf("unable to cast object")
 	}
 	var err error
-	for j := 0; j < 20; j++ {
-		if strings.EqualFold(opssight.Status.State, "running") {
-			break
-		}
-		logger.Debugf("waiting for opssight %s to be up.....", opssight.Name)
-		time.Sleep(10 * time.Second)
+	if !strings.EqualFold(opssight.Status.State, "stopped") && !strings.EqualFold(opssight.Status.State, "error") {
+		for j := 0; j < 20; j++ {
+			if strings.EqualFold(opssight.Status.State, "running") {
+				break
+			}
+			logger.Debugf("waiting for opssight %s to be up.....", opssight.Name)
+			time.Sleep(10 * time.Second)
 
-		opssight, err = util.GetOpsSight(p.opssightClient, p.config.Namespace, opssight.Name)
-		if err != nil {
-			return fmt.Errorf("unable to get opssight %s due to %+v", opssight.Name, err)
+			opssight, err = util.GetOpsSight(p.opssightClient, p.config.Namespace, opssight.Name)
+			if err != nil {
+				return fmt.Errorf("unable to get opssight %s due to %+v", opssight.Name, err)
+			}
 		}
+		err = p.update(opssight)
 	}
-	err = p.update(opssight)
 	return err
 }
 
