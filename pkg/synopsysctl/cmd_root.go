@@ -56,9 +56,6 @@ var rootCmd = &cobra.Command{
 		if flagset.Changed("context") { // sets the context (delete this comment)
 			log.Warnf("Flag %s is Not Implemented", "context")
 		}
-		if flagset.Changed("insecure-skip-tls-verify") { // sets value in kubeconfig file that says insecure (delete this comment)
-			log.Warnf("Flag %s is Not Implemented", "insecure-skip-tls-verify")
-		}
 		// Set the Log Level
 		lvl, err := log.ParseLevel(logLevelCtl)
 		if err != nil {
