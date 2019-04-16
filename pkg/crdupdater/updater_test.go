@@ -28,7 +28,7 @@ import (
 
 // TestUpdater will test the updater
 func TestUpdater(t *testing.T) {
-	// kubeConfig, err := protoform.GetKubeConfig("")
+	// kubeConfig, err := protoform.GetKubeConfig("", false)
 	// if err != nil {
 	// 	t.Errorf("unable to get the kube config due to %+v", err)
 	// }

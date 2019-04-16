@@ -45,7 +45,7 @@ func NewController(configPath string) (*Deployer, error) {
 
 	log.Debugf("config: %+v", config)
 
-	kubeConfig, err := GetKubeConfig("")
+	kubeConfig, err := GetKubeConfig("", false)
 	if err != nil {
 		return nil, errors.Annotate(err, "unable to create config for both in-cluster and external to cluster")
 	}
