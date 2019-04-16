@@ -163,14 +163,23 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
-	// Verify that we can access the Hub
-	hubURL := fmt.Sprintf("webserver.%s.svc", bd.Spec.Namespace)
-	h.verifyHub(hubURL, bd.Spec.Namespace)
+	if strings.EqualFold(bd.Spec.DesiredState, string(Stop)) {
+		if !strings.EqualFold(bd.Status.State, string(Stopped)) {
+			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Stopped), nil)
+			if err != nil {
+				log.Errorf("Couldn't update the blackduck state: %v", err)
+			}
+		}
+	} else {
+		if !strings.EqualFold(bd.Status.State, string(Running)) {
+			// Verify that we can access the Hub
+			hubURL := fmt.Sprintf("webserver.%s.svc", bd.Spec.Namespace)
+			h.verifyHub(hubURL, bd.Spec.Namespace)
 
-	if !strings.EqualFold(bd.Status.State, string(Running)) {
-		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
-		if err != nil {
-			log.Errorf("Couldn't update the blackduck state: %v", err)
+			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
+			if err != nil {
+				log.Errorf("Couldn't update the blackduck state: %v", err)
+			}
 		}
 	}
 }
