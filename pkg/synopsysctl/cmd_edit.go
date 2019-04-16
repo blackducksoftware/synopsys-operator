@@ -45,23 +45,24 @@ var editAlertCtl ResourceCtl
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		// Display synopsysctl's Help instead of sending to oc/kubectl
-		if len(args) == 1 && args[0] == "--help" {
-			return fmt.Errorf("Help Called")
-		}
-		return nil
-	},
+	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
+	//(PassCmd) 	// Display synopsysctl's Help instead of sending to oc/kubectl
+	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
+	//(PassCmd) 		return fmt.Errorf("Help Called")
+	//(PassCmd) 	}
+	//(PassCmd) 	return nil
+	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing Non-Synopsys Resource\n")
-		kubeCmdArgs := append([]string{"edit"}, args...)
-		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		if err != nil {
-			log.Errorf("Error Editing the Resource with KubeCmd: %s", out)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
+		//(PassCmd) log.Debugf("Editing Non-Synopsys Resource\n")
+		//(PassCmd) kubeCmdArgs := append([]string{"edit"}, args...)
+		//(PassCmd) out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
+		//(PassCmd) if err != nil {
+		//(PassCmd) 	log.Errorf("Error Editing the Resource with KubeCmd: %s", out)
+		//(PassCmd) 	return nil
+		//(PassCmd) }
+		//(PassCmd) fmt.Printf("%+v", out)
+		//(PassCmd) return nil
+		return fmt.Errorf("Not a Valid Command")
 	},
 }
 
@@ -436,7 +437,7 @@ func init() {
 	editOpsSightCtl = opssight.NewOpsSightCtl()
 	editAlertCtl = alert.NewAlertCtl()
 
-	editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
+	//(PassCmd) editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
 	rootCmd.AddCommand(editCmd)
 
 	// Add Blackduck Edit Commands

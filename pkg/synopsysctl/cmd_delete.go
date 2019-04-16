@@ -24,7 +24,6 @@ package synopsysctl
 import (
 	"fmt"
 
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,23 +33,24 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Remove a Synopsys Resource from your cluster",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		// Display synopsysctl's Help instead of sending to oc/kubectl
-		if len(args) == 1 && args[0] == "--help" {
-			return fmt.Errorf("Help Called")
-		}
-		return nil
-	},
+	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
+	//(PassCmd) 	// Display synopsysctl's Help instead of sending to oc/kubectl
+	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
+	//(PassCmd) 		return fmt.Errorf("Help Called")
+	//(PassCmd) 	}
+	//(PassCmd) 	return nil
+	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Deleting a Non-Synopsys Resource")
-		kubeCmdArgs := append([]string{"delete"}, args...)
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		if err != nil {
-			log.Errorf("Error Deleting the Resource: %s", out)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
+		//(PassCmd) log.Debugf("Deleting a Non-Synopsys Resource")
+		//(PassCmd) kubeCmdArgs := append([]string{"delete"}, args...)
+		//(PassCmd) out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
+		//(PassCmd) if err != nil {
+		//(PassCmd) 	log.Errorf("Error Deleting the Resource: %s", out)
+		//(PassCmd) 	return nil
+		//(PassCmd) }
+		//(PassCmd) fmt.Printf("%+v", out)
+		//(PassCmd) return nil
+		return fmt.Errorf("Not a Valid Command")
 	},
 }
 
@@ -130,7 +130,7 @@ var deleteAlertCmd = &cobra.Command{
 }
 
 func init() {
-	deleteCmd.DisableFlagParsing = true // lets deleteCmd pass flags to kube/oc
+	//(PassCmd) deleteCmd.DisableFlagParsing = true // lets deleteCmd pass flags to kube/oc
 	rootCmd.AddCommand(deleteCmd)
 
 	// Add Delete Commands
