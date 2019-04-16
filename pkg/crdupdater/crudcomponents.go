@@ -69,13 +69,6 @@ func (c *CommonConfig) CRUDComponents() []error {
 	var errors []error
 	updater := NewUpdater(c.dryRun)
 
-	// namespace
-	namespaces, err := NewNamespace(c)
-	if err != nil {
-		errors = append(errors, fmt.Errorf("unable to create new namespace updater due to %+v", err))
-	}
-	updater.AddUpdater(namespaces)
-
 	// service account
 	serviceAccounts, err := NewServiceAccount(c, c.components.ServiceAccounts)
 	if err != nil {
@@ -96,6 +89,13 @@ func (c *CommonConfig) CRUDComponents() []error {
 		errors = append(errors, fmt.Errorf("unable to create new cluster role binding updater due to %+v", err))
 	}
 	updater.AddUpdater(clusterRoleBindings)
+
+	// namespace
+	namespaces, err := NewNamespace(c)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("unable to create new namespace updater due to %+v", err))
+	}
+	updater.AddUpdater(namespaces)
 
 	// config map
 	configMaps, err := NewConfigMap(c, c.components.ConfigMaps)
