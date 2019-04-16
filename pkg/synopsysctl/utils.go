@@ -98,3 +98,14 @@ func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
 	}
 	return nil
 }
+
+// GetOperatorNamespace returns the namespace of the Synopsys-Operator by
+// looking at its cluster role binding
+func GetOperatorNamespace() (string, error) {
+	// check if operator is already installed
+	crb, err := operatorutil.GetClusterRoleBinding(kubeClient, "synopsys-operator-admin")
+	if err != nil || len(crb.Subjects) == 0 {
+		return "", fmt.Errorf("failed to get synopsys operator namespace due to %+v", err)
+	}
+	return crb.Subjects[0].Namespace, nil
+}

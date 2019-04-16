@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -47,7 +46,7 @@ var destroyCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get the namespace of the Synopsys-Operator
-		destroyNamespace, err := soperator.GetOperatorNamespace(restconfig)
+		destroyNamespace, err := GetOperatorNamespace()
 		if err != nil {
 			log.Warnf("Error finding Synopsys-Operator: %s", err)
 		}

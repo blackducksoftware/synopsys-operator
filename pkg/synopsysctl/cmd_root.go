@@ -66,21 +66,7 @@ var rootCmd = &cobra.Command{
 		setResourceClients()
 		return nil
 	},
-	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
-	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
-	//(PassCmd) 		return fmt.Errorf("Help Called")
-	//(PassCmd) 	}
-	//(PassCmd) 	return nil
-	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//(PassCmd) log.Debugf("Running Non-Synopsysctl Command\n")
-		//(PassCmd) out, err := util.RunKubeCmd(restconfig, kube, openshift, args...)
-		//(PassCmd) if err != nil {
-		//(PassCmd) 	log.Errorf("Error with KubeCmd: %s", out)
-		//(PassCmd) 	return nil
-		//(PassCmd) }
-		//(PassCmd) fmt.Printf("%+v", out)
-		//(PassCmd) return nil
 		return fmt.Errorf("Not a Valid Command")
 	},
 }

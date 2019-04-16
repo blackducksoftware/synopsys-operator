@@ -27,7 +27,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -38,23 +37,7 @@ import (
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "List Synopsys Resources in your cluster",
-	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
-	//(PassCmd) 	// Display synopsysctl's Help instead of sending to oc/kubectl
-	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
-	//(PassCmd) 		return fmt.Errorf("Help Called")
-	//(PassCmd) 	}
-	//(PassCmd) 	return nil
-	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//(PassCmd) log.Debugf("Getting a Non-Synopsys Resource\n")
-		//(PassCmd) kubeCmdArgs := append([]string{"get"}, args...)
-		//(PassCmd) out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		//(PassCmd) if err != nil {
-		//(PassCmd) 	log.Errorf("Error Getting the Resource: %s", out)
-		//(PassCmd) 	return nil
-		//(PassCmd) }
-		//(PassCmd) fmt.Printf("%+v", out)
-		//(PassCmd) return nil
 		return fmt.Errorf("Not a Valid Command")
 	},
 }
@@ -71,13 +54,14 @@ var getBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Blackducks\n")
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
+		log.Debugf("Getting Blackducks")
+		blackducks, err := util.ListHubs(blackduckClient, "")
+		// util.RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
 		if err != nil {
-			log.Errorf("Error getting Blackducks: %s", out)
+			log.Errorf("error getting Black Ducks due to %+v", err)
 			return nil
 		}
-		fmt.Printf("%+v", out)
+		fmt.Printf("%+v", blackducks)
 		return nil
 	},
 }
@@ -93,7 +77,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Blackduck Root Key\n")
+		log.Debugf("Getting Blackduck Root Key")
 		namespace := args[0]
 		filePath := args[1]
 		_, err := util.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
@@ -101,7 +85,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
 			return nil
 		}
-		operatorNamespace, err := soperator.GetOperatorNamespace(restconfig)
+		operatorNamespace, err := GetOperatorNamespace()
 		if err != nil {
 			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
 			return nil
@@ -149,7 +133,7 @@ var getOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting OpsSights\n")
+		log.Debugf("Getting OpsSights")
 		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "opssights")
 		if err != nil {
 			log.Errorf("Error getting OpsSights: %s", out)
@@ -172,7 +156,7 @@ var getAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Alerts\n")
+		log.Debugf("Getting Alerts")
 		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "alerts")
 		if err != nil {
 			log.Errorf("Error getting Alerts with KubeCmd: %s", out)
