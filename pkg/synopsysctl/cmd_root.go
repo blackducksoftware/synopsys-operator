@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"os"
 
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -70,21 +69,22 @@ var rootCmd = &cobra.Command{
 		setResourceClients()
 		return nil
 	},
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 1 && args[0] == "--help" {
-			return fmt.Errorf("Help Called")
-		}
-		return nil
-	},
+	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
+	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
+	//(PassCmd) 		return fmt.Errorf("Help Called")
+	//(PassCmd) 	}
+	//(PassCmd) 	return nil
+	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Running Non-Synopsysctl Command\n")
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, args...)
-		if err != nil {
-			log.Errorf("Error with KubeCmd: %s", out)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
+		//(PassCmd) log.Debugf("Running Non-Synopsysctl Command\n")
+		//(PassCmd) out, err := util.RunKubeCmd(restconfig, kube, openshift, args...)
+		//(PassCmd) if err != nil {
+		//(PassCmd) 	log.Errorf("Error with KubeCmd: %s", out)
+		//(PassCmd) 	return nil
+		//(PassCmd) }
+		//(PassCmd) fmt.Printf("%+v", out)
+		//(PassCmd) return nil
+		return fmt.Errorf("Not a Valid Command")
 	},
 }
 
@@ -98,7 +98,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
+	//(PassCmd) rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cluster, "cluster", cluster, "name of the kubeconfig cluster to use")
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "path to the kubeconfig file to use for CLI requests")

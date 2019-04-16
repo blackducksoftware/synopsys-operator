@@ -43,6 +43,8 @@ type uid struct {
 type Ctl struct {
 	Spec                                  *blackduckv1.BlackduckSpec
 	Size                                  string
+	Version                               string
+	ExposeService                         string
 	DbPrototype                           string
 	ExternalPostgresPostgresHost          string
 	ExternalPostgresPostgresPort          int
@@ -60,14 +62,13 @@ type Ctl struct {
 	Certificate                           string
 	CertificateKey                        string
 	ProxyCertificate                      string
+	AuthCustomCA                          string
 	Type                                  string
 	DesiredState                          string
 	Environs                              []string
 	ImageRegistries                       []string
 	ImageUIDMapJSONSlice                  []string
 	LicenseKey                            string
-	Version                               string
-	ExposeService                         string
 }
 
 // NewBlackduckCtl creates a new Ctl struct
@@ -75,6 +76,8 @@ func NewBlackduckCtl() *Ctl {
 	return &Ctl{
 		Spec:                                  &blackduckv1.BlackduckSpec{},
 		Size:                                  "",
+		Version:                               "",
+		ExposeService:                         "",
 		DbPrototype:                           "",
 		ExternalPostgresPostgresHost:          "",
 		ExternalPostgresPostgresPort:          0,
@@ -92,14 +95,13 @@ func NewBlackduckCtl() *Ctl {
 		Certificate:                           "",
 		CertificateKey:                        "",
 		ProxyCertificate:                      "",
+		AuthCustomCA:                          "",
 		Type:                                  "",
 		DesiredState:                          "",
 		Environs:                              []string{},
 		ImageRegistries:                       []string{},
 		ImageUIDMapJSONSlice:                  []string{},
 		LicenseKey:                            "",
-		Version:                               "",
-		ExposeService:                         "",
 	}
 }
 
@@ -208,6 +210,8 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large, xlarge")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose webserver service [LOADBALANCER/NODEPORT/OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "Port for Postgres")
@@ -225,14 +229,13 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Certificate, "certificate", ctl.Certificate, "Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key", ctl.CertificateKey, "Black Duck nginx certificate key")
 	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate", ctl.ProxyCertificate, "Black Duck proxy certificate")
+	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca", ctl.AuthCustomCA, "Custom Auth CA for BlackDuck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "Map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose webserver service [LOADBALANCER/NODEPORT/OPENSHIFT]")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -248,6 +251,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		switch f.Name {
 		case "size":
 			ctl.Spec.Size = ctl.Size
+		case "version":
+			ctl.Spec.Version = ctl.Version
+		case "expose-service":
+			ctl.Spec.ExposeService = ctl.ExposeService
 		case "db-prototype":
 			ctl.Spec.DbPrototype = ctl.DbPrototype
 		case "external-postgres-host":
@@ -307,6 +314,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.CertificateKey = ctl.CertificateKey
 		case "proxy-certificate":
 			ctl.Spec.ProxyCertificate = ctl.ProxyCertificate
+		case "auth-custom-ca":
+			ctl.Spec.AuthCustomCA = ctl.AuthCustomCA
 		case "type":
 			ctl.Spec.Type = ctl.Type
 		case "desired-state":
@@ -324,10 +333,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
-		case "version":
-			ctl.Spec.Version = ctl.Version
-		case "expose-service":
-			ctl.Spec.ExposeService = ctl.ExposeService
 		default:
 			log.Debugf("Flag %s: Not Found\n", f.Name)
 		}
