@@ -272,9 +272,9 @@ func (p *SpecConfig) addSecretData(secret *components.Secret) error {
 	}
 
 	// adding Internal Black Duck credentials
-	configMapEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient)
-	allHubs := configMapEditor.getAllHubs(p.opssight.Spec.Blackduck.BlackduckSpec.Type)
-	blackduckPasswords := configMapEditor.appendBlackDuckSecrets(blackduckHosts, allHubs)
+	secretEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient)
+	allHubs := secretEditor.getAllHubs(p.opssight.Spec.Blackduck.BlackduckSpec.Type)
+	blackduckPasswords := secretEditor.appendBlackDuckSecrets(blackduckHosts, allHubs)
 
 	// marshal the blackduck credentials to bytes
 	bytes, err := json.Marshal(blackduckPasswords)
@@ -296,6 +296,6 @@ func (p *SpecConfig) addSecretData(secret *components.Secret) error {
 	secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
 
 	// add internal hosts to status
-	p.opssight.Status.InternalHosts = configMapEditor.appendBlackDuckHosts(p.opssight.Status.InternalHosts, allHubs)
+	p.opssight.Status.InternalHosts = secretEditor.appendBlackDuckHosts(p.opssight.Status.InternalHosts, allHubs)
 	return nil
 }

@@ -207,11 +207,14 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		// 	log.Error(errors.Annotate(err, "unable to get opssight"))
 		// 	return
 		// }
-		_, err = h.updateState(Running, "", opssight)
-		if err != nil {
-			recordError("unable to update state")
-			log.Error(errors.Annotate(err, "unable to update running state"))
-			return
+
+		if !strings.EqualFold(opssight.Status.State, string(Running)) {
+			_, err = h.updateState(Running, "", opssight)
+			if err != nil {
+				recordError("unable to update state")
+				log.Error(errors.Annotate(err, "unable to update running state"))
+				return
+			}
 		}
 	default:
 		recordError("unable to find the desired state value")
