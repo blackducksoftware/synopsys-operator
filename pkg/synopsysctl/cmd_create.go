@@ -43,7 +43,7 @@ var createAlertCtl ResourceCtl
 
 // Flags for the Base Spec (template)
 var baseBlackduckSpec = "persistentStorageLatest"
-var baseOpsSightSpec = "disabled-black-duck"
+var baseOpsSightSpec = "disabledBlackDuck"
 var baseAlertSpec = "default"
 
 // Flags for using mock mode - don't deploy
@@ -278,19 +278,19 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 
 	// Add Blackduck Command
-	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags")
+	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags [empty/template/persistentStorageLatest/persistentStorageV1/externalPersistentStorageLatest/externalPersistentStorageV1/bdba/ephemeral/ephemeralCustomAuthCA/externalDB/IPV6Disabled]")
 	createBlackduckCmd.Flags().BoolVar(&mockBlackduck, "mock", false, "Prints resource spec instead of creating")
 	createBlackduckCtl.AddSpecFlags(createBlackduckCmd, true)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command
-	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags")
+	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags [empty/template/default/disabledBlackDuck]")
 	createOpsSightCmd.Flags().BoolVar(&mockOpsSight, "mock", false, "Prints resource spec instead of creating")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command
-	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags")
+	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags [empty/template/default]")
 	createAlertCmd.Flags().BoolVar(&mockAlert, "mock", false, "Prints resource spec instead of creating")
 	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	createCmd.AddCommand(createAlertCmd)
