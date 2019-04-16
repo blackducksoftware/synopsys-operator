@@ -39,6 +39,7 @@ type Ctl struct {
 	PerceptorName                                    string
 	PerceptorImage                                   string
 	PerceptorPort                                    int
+	PerceptorExpose                                  string
 	PerceptorCheckForStalledScansPauseHours          int
 	PerceptorStalledScanClientTimeoutHours           int
 	PerceptorModelMetricsPauseSeconds                int
@@ -79,6 +80,7 @@ type Ctl struct {
 	PrometheusName                                   string
 	PrometheusImage                                  string
 	PrometheusPort                                   int
+	PrometheusExport                                 string
 	EnableSkyfire                                    bool
 	SkyfireName                                      string
 	SkyfireImage                                     string
@@ -103,6 +105,7 @@ func NewOpsSightCtl() *Ctl {
 		Spec:                                             &opssightv1.OpsSightSpec{},
 		PerceptorName:                                    "",
 		PerceptorImage:                                   "",
+		PerceptorExpose:                                  "",
 		PerceptorPort:                                    0,
 		PerceptorCheckForStalledScansPauseHours:          0,
 		PerceptorStalledScanClientTimeoutHours:           0,
@@ -143,6 +146,7 @@ func NewOpsSightCtl() *Ctl {
 		EnableMetrics:                                    false,
 		PrometheusName:                                   "",
 		PrometheusImage:                                  "",
+		PrometheusExport:                                 "",
 		PrometheusPort:                                   0,
 		EnableSkyfire:                                    false,
 		SkyfireName:                                      "",
