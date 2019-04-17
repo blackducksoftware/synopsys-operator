@@ -67,7 +67,7 @@ var editBlackduckCmd = &cobra.Command{
 		blackduckName := args[0]
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.Flags()
+		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 			if err != nil {
@@ -86,7 +86,7 @@ var editBlackduckCmd = &cobra.Command{
 				return nil
 			}
 		} else {
-			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
+			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
 			if err != nil {
 				log.Errorf("Error Editing the Blackduck: %s", err)
 				return nil
@@ -261,7 +261,7 @@ var editOpsSightCmd = &cobra.Command{
 		opsSightName := args[0]
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.Flags()
+		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 			if err != nil {
@@ -280,7 +280,7 @@ var editOpsSightCmd = &cobra.Command{
 				return nil
 			}
 		} else {
-			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
+			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
 			if err != nil {
 				log.Errorf("Error Editing the OpsSight: %s", err)
 				return nil
@@ -386,7 +386,8 @@ var editAlertCmd = &cobra.Command{
 		alertName := args[0]
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.Flags()
+
+		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			alt, err := operatorutil.GetAlert(alertClient, alertName, alertName)
 			if err != nil {
@@ -405,7 +406,7 @@ var editAlertCmd = &cobra.Command{
 				return nil
 			}
 		} else {
-			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
+			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
 			if err != nil {
 				log.Errorf("Error Editing the Alert: %s", err)
 				return nil

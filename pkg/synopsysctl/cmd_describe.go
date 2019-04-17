@@ -24,7 +24,6 @@ package synopsysctl
 import (
 	"fmt"
 
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -33,23 +32,7 @@ import (
 var describeCmd = &cobra.Command{
 	Use:   "describe",
 	Short: "Print a detailed description of the selected resource",
-	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
-	//(PassCmd) 	// Display synopsysctl's Help instead of sending to oc/kubectl
-	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
-	//(PassCmd) 		return fmt.Errorf("Help Called")
-	//(PassCmd) 	}
-	//(PassCmd) 	return nil
-	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//(PassCmd) log.Debugf("Describing a Non-Synopsys Resource\n")
-		//(PassCmd) kubeCmdArgs := append([]string{"describe"}, args...)
-		//(PassCmd) out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		//(PassCmd) if err != nil {
-		//(PassCmd) 	log.Errorf("Error Describing the Resource: %s", out)
-		//(PassCmd) 	return nil
-		//(PassCmd) }
-		//(PassCmd) fmt.Printf("%+v", out)
-		//(PassCmd) return nil
 		return fmt.Errorf("Not a Valid Command")
 	},
 }
@@ -69,7 +52,7 @@ var describeBlackduckCmd = &cobra.Command{
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
+		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
 		if err != nil {
 			log.Errorf("Error Describing the Blackduck: %s", out)
 			return nil
@@ -94,7 +77,7 @@ var describeOpsSightCmd = &cobra.Command{
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
+		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
 		if err != nil {
 			log.Errorf("Error Describing the OpsSight: %s", out)
 			return nil
@@ -119,7 +102,7 @@ var describeAlertCmd = &cobra.Command{
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace)
+		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
 			log.Errorf("Error Describing the Alert: %s\n", out)
 			return nil
