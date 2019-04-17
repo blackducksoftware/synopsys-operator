@@ -48,7 +48,7 @@ var describeBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Describing a Blackduck\n")
+		log.Debugf("Describing a Blackduck")
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
@@ -73,7 +73,7 @@ var describeOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Describing an OpsSight\n")
+		log.Debugf("Describing an OpsSight")
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
@@ -98,13 +98,13 @@ var describeAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Describing an Alert\n")
+		log.Debugf("Describing an Alert")
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
 		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
-			log.Errorf("Error Describing the Alert: '%s'\n", out)
+			log.Errorf("Error Describing the Alert: '%s'", out)
 			return nil
 		}
 		fmt.Printf("%+v", out)

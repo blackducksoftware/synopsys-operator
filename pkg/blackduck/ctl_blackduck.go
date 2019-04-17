@@ -247,7 +247,7 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 // SetFlag sets a Blackduck's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED", f.Name)
 		switch f.Name {
 		case "size":
 			ctl.Spec.Size = ctl.Size
@@ -334,10 +334,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
 		default:
-			log.Debugf("Flag %s: Not Found\n", f.Name)
+			log.Debugf("Flag %s: Not Found", f.Name)
 		}
 	} else {
-		log.Debugf("Flag %s: UNCHANGED\n", f.Name)
+		log.Debugf("Flag %s: UNCHANGED", f.Name)
 	}
 }
 
