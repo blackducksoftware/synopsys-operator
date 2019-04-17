@@ -31,6 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -143,12 +144,16 @@ func (d *Deployment) remove() error {
 
 // deploymentComparator used to compare deployment attributes
 type deploymentComparator struct {
-	Image    string
-	Replicas *int32
-	MinCPU   *resource.Quantity
-	MaxCPU   *resource.Quantity
-	MinMem   *resource.Quantity
-	MaxMem   *resource.Quantity
+	Image        string
+	Replicas     *int32
+	MinCPU       *resource.Quantity
+	MaxCPU       *resource.Quantity
+	MinMem       *resource.Quantity
+	MaxMem       *resource.Quantity
+	Env          []corev1.EnvVar
+	EnvFrom      []corev1.EnvFromSource
+	VolumeMounts []corev1.VolumeMount
+	Volumes      []corev1.Volume
 }
 
 // patch patches the deployment
@@ -172,20 +177,28 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 			if strings.EqualFold(oldContainer.Name, newContainer.Name) && !d.config.dryRun &&
 				!reflect.DeepEqual(
 					deploymentComparator{
-						Image:    oldContainer.Image,
-						Replicas: d.oldDeployments[deployment.GetName()].Spec.Replicas,
-						MinCPU:   oldContainer.Resources.Requests.Cpu(),
-						MaxCPU:   oldContainer.Resources.Limits.Cpu(),
-						MinMem:   oldContainer.Resources.Requests.Memory(),
-						MaxMem:   oldContainer.Resources.Limits.Memory(),
+						Image:        oldContainer.Image,
+						Replicas:     d.oldDeployments[deployment.GetName()].Spec.Replicas,
+						MinCPU:       oldContainer.Resources.Requests.Cpu(),
+						MaxCPU:       oldContainer.Resources.Limits.Cpu(),
+						MinMem:       oldContainer.Resources.Requests.Memory(),
+						MaxMem:       oldContainer.Resources.Limits.Memory(),
+						Env:          oldContainer.Env,
+						EnvFrom:      oldContainer.EnvFrom,
+						VolumeMounts: oldContainer.VolumeMounts,
+						Volumes:      d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Volumes,
 					},
 					deploymentComparator{
-						Image:    newContainer.Image,
-						Replicas: d.newDeployments[deployment.GetName()].Spec.Replicas,
-						MinCPU:   newContainer.Resources.Requests.Cpu(),
-						MaxCPU:   newContainer.Resources.Limits.Cpu(),
-						MinMem:   newContainer.Resources.Requests.Memory(),
-						MaxMem:   newContainer.Resources.Limits.Memory(),
+						Image:        newContainer.Image,
+						Replicas:     d.newDeployments[deployment.GetName()].Spec.Replicas,
+						MinCPU:       newContainer.Resources.Requests.Cpu(),
+						MaxCPU:       newContainer.Resources.Limits.Cpu(),
+						MinMem:       newContainer.Resources.Requests.Memory(),
+						MaxMem:       newContainer.Resources.Limits.Memory(),
+						Env:          newContainer.Env,
+						EnvFrom:      newContainer.EnvFrom,
+						VolumeMounts: newContainer.VolumeMounts,
+						Volumes:      d.newDeployments[deployment.GetName()].Spec.Template.Spec.Volumes,
 					}) {
 				isChanged = true
 			}

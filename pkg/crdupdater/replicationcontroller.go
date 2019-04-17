@@ -143,12 +143,16 @@ func (r *ReplicationController) remove() error {
 
 // replicationControllerComparator used to compare Replication controller attributes
 type replicationControllerComparator struct {
-	Image    string
-	Replicas *int32
-	MinCPU   *resource.Quantity
-	MaxCPU   *resource.Quantity
-	MinMem   *resource.Quantity
-	MaxMem   *resource.Quantity
+	Image        string
+	Replicas     *int32
+	MinCPU       *resource.Quantity
+	MaxCPU       *resource.Quantity
+	MinMem       *resource.Quantity
+	MaxMem       *resource.Quantity
+	Env          []corev1.EnvVar
+	EnvFrom      []corev1.EnvFromSource
+	VolumeMounts []corev1.VolumeMount
+	Volumes      []corev1.Volume
 }
 
 // patch patches the replication controller
@@ -172,20 +176,28 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 			if strings.EqualFold(oldContainer.Name, newContainer.Name) && !r.config.dryRun &&
 				!reflect.DeepEqual(
 					replicationControllerComparator{
-						Image:    oldContainer.Image,
-						Replicas: r.oldReplicationControllers[replicationController.GetName()].Spec.Replicas,
-						MinCPU:   oldContainer.Resources.Requests.Cpu(),
-						MaxCPU:   oldContainer.Resources.Limits.Cpu(),
-						MinMem:   oldContainer.Resources.Requests.Memory(),
-						MaxMem:   oldContainer.Resources.Limits.Memory(),
+						Image:        oldContainer.Image,
+						Replicas:     r.oldReplicationControllers[replicationController.GetName()].Spec.Replicas,
+						MinCPU:       oldContainer.Resources.Requests.Cpu(),
+						MaxCPU:       oldContainer.Resources.Limits.Cpu(),
+						MinMem:       oldContainer.Resources.Requests.Memory(),
+						MaxMem:       oldContainer.Resources.Limits.Memory(),
+						Env:          oldContainer.Env,
+						EnvFrom:      oldContainer.EnvFrom,
+						VolumeMounts: oldContainer.VolumeMounts,
+						Volumes:      r.oldReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes,
 					},
 					replicationControllerComparator{
-						Image:    newContainer.Image,
-						Replicas: r.newReplicationControllers[replicationController.GetName()].Spec.Replicas,
-						MinCPU:   newContainer.Resources.Requests.Cpu(),
-						MaxCPU:   newContainer.Resources.Limits.Cpu(),
-						MinMem:   newContainer.Resources.Requests.Memory(),
-						MaxMem:   newContainer.Resources.Limits.Memory(),
+						Image:        newContainer.Image,
+						Replicas:     r.newReplicationControllers[replicationController.GetName()].Spec.Replicas,
+						MinCPU:       newContainer.Resources.Requests.Cpu(),
+						MaxCPU:       newContainer.Resources.Limits.Cpu(),
+						MinMem:       newContainer.Resources.Requests.Memory(),
+						MaxMem:       newContainer.Resources.Limits.Memory(),
+						Env:          newContainer.Env,
+						EnvFrom:      newContainer.EnvFrom,
+						VolumeMounts: newContainer.VolumeMounts,
+						Volumes:      r.newReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes,
 					}) {
 				isChanged = true
 			}
