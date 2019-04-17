@@ -38,7 +38,7 @@ var cluster string
 var kubeconfig = ""
 var context string
 var insecureSkipTLSVerify = false
-var logLevelCtl = "warn"
+var logLevelCtl = "info"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -59,7 +59,7 @@ var rootCmd = &cobra.Command{
 		// Set the Log Level
 		lvl, err := log.ParseLevel(logLevelCtl)
 		if err != nil {
-			log.Errorf("ctl-log-Level %s is not a valid level: %s", logLevelCtl, err)
+			log.Errorf("ctl-log-Level '%s' is not a valid level: %s", logLevelCtl, err)
 		}
 		log.SetLevel(lvl)
 		// Sets kubeconfig and initializes resource client libraries
@@ -75,7 +75,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Errorf("%s", err)
 		os.Exit(1)
 	}
 }
@@ -87,7 +87,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "path to the kubeconfig file to use for CLI requests")
 	rootCmd.PersistentFlags().StringVar(&context, "context", context, "name of the kubeconfig context to use")
 	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "server's certificate won't be validated. HTTPS will be less secure")
-	rootCmd.PersistentFlags().StringVar(&logLevelCtl, "ctl-log-level", logLevelCtl, "Log Level for the Synopsysctl")
+	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "log level for the Synopsysctl [trace/debug/info/warn/error/fatal/panic]")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -99,7 +99,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
+			log.Errorf("%s", err)
 			os.Exit(1)
 		}
 
@@ -112,6 +112,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		log.Infof("Using config file: %s", viper.ConfigFileUsed())
 	}
 }
