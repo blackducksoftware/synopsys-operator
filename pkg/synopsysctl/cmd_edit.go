@@ -62,9 +62,8 @@ var editBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing Blackduck")
-		// Read Commandline Parameters
 		blackduckName := args[0]
+		log.Debugf("Editing BlackDuck %s...", blackduckName)
 
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.LocalFlags()
@@ -92,6 +91,7 @@ var editBlackduckCmd = &cobra.Command{
 				return nil
 			}
 		}
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -110,10 +110,11 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding PVC to Blackduck")
-		// Read Commandline Parameters
 		blackduckName := args[0]
 		pvcName := args[1]
+
+		log.Debugf("Adding PVC to BlackDuck %s...", blackduckName)
+
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
@@ -133,6 +134,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -148,10 +150,11 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Environ to Blackduck")
-		// Read Commandline Parameters
 		blackduckName := args[0]
 		environ := args[1]
+
+		log.Debugf("Adding Environ to BlackDuck %s...", blackduckName)
+
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
@@ -166,6 +169,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -181,10 +185,11 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding an Image Registry to Blackduck")
-		// Read Commandline Parameters
 		blackduckName := args[0]
 		registry := args[1]
+
+		log.Debugf("Adding an Image Registry to Blackduck %s...", blackduckName)
+
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
@@ -199,6 +204,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -214,11 +220,12 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding an Image UID to Blackduck")
-		// Read Commandline Parameters
 		blackduckName := args[0]
 		uidKey := args[1]
 		uidVal := args[2]
+
+		log.Debugf("Adding an Image UID to BlackDuck %s...", blackduckName)
+
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
@@ -228,7 +235,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		// Add UID Mapping to Spec
 		intUIDVal, err := strconv.ParseInt(uidVal, 0, 64)
 		if err != nil {
-			fmt.Printf("Couldn't convert UID_VAL to int: %s", err)
+			log.Errorf("Couldn't convert UID_VAL to int: %s", err)
 		}
 		if bd.Spec.ImageUIDMap == nil {
 			bd.Spec.ImageUIDMap = make(map[string]int64)
@@ -240,6 +247,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -256,9 +264,8 @@ var editOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing an OpsSight")
-		// Read Commandline Parameters
 		opsSightName := args[0]
+		log.Debugf("Editing OpsSight %s...", opsSightName)
 
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.LocalFlags()
@@ -286,6 +293,7 @@ var editOpsSightCmd = &cobra.Command{
 				return nil
 			}
 		}
+		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -301,11 +309,13 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Internal Registry to OpsSight")
 		opsSightName := args[0]
 		regURL := args[1]
 		regUser := args[2]
 		regPass := args[3]
+
+		log.Debugf("Adding Internal Registry to OpsSight %s...", opsSightName)
+
 		// Get OpsSight Spec
 		ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
@@ -325,6 +335,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
+		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -340,10 +351,12 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Blackduck Host to OpsSight")
 		opsSightName := args[0]
 		domain := args[1]
 		port := args[2]
+
+		log.Debugf("Adding BlackDuck Host to OpsSight %s...", opsSightName)
+
 		// Get OpsSight Spec
 		ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
@@ -365,6 +378,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
+		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -381,12 +395,10 @@ var editAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing an Alert")
-		// Read Commandline Parameters
 		alertName := args[0]
+		log.Debugf("Editing Alert %s...", alertName)
 
 		// Update spec with flags or pipe to KubeCmd
-
 		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			alt, err := operatorutil.GetAlert(alertClient, alertName, alertName)
@@ -412,6 +424,7 @@ var editAlertCmd = &cobra.Command{
 				return nil
 			}
 		}
+		log.Infof("Successfully edited Alert: '%s'", alertName)
 		return nil
 	},
 }
