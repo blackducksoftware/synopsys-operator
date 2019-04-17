@@ -35,7 +35,7 @@ var cfgFile string
 
 // Options flags for all commands
 var cluster string
-var kubeconfig string
+var kubeconfig = ""
 var context string
 var insecureSkipTLSVerify = false
 var logLevelCtl = "warn"

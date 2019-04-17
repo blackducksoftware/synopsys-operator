@@ -115,11 +115,11 @@ var deployCmd = &cobra.Command{
 
 		// create secrets (TDDO I think this only works on OpenShift)
 		if openshift && len(dockerConfigPath) > 0 {
-			util.RunKubeCmd(restconfig, kube, openshift, "create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", dockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
-			util.RunKubeCmd(restconfig, kube, openshift, "secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
-			util.RunKubeCmd(restconfig, kube, openshift, "secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
-			util.RunKubeCmd(restconfig, kube, openshift, "scale", "replicationcontroller", "synopsys-operator", "--replicas=0")
-			util.RunKubeCmd(restconfig, kube, openshift, "scale", "replicationcontroller", "synopsys-operator", "--replicas=1")
+			RunKubeCmd(restconfig, kube, openshift, "create", "secret", "generic", "custom-registry-pull-secret", fmt.Sprintf("--from-file=.dockerconfigjson=%s", dockerConfigPath), "--type=kubernetes.io/dockerconfigjson")
+			RunKubeCmd(restconfig, kube, openshift, "secrets", "link", "default", "custom-registry-pull-secret", "--for=pull")
+			RunKubeCmd(restconfig, kube, openshift, "secrets", "link", "synopsys-operator", "custom-registry-pull-secret", "--for=pull")
+			RunKubeCmd(restconfig, kube, openshift, "scale", "replicationcontroller", "synopsys-operator", "--replicas=0")
+			RunKubeCmd(restconfig, kube, openshift, "scale", "replicationcontroller", "synopsys-operator", "--replicas=1")
 		}
 
 		// expose the routes
