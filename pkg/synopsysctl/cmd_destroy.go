@@ -28,7 +28,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Destroy Command Defaults
@@ -68,7 +67,7 @@ var destroyCmd = &cobra.Command{
 		crds := []string{"alerts.synopsys.com", "blackducks.synopsys.com", "hubs.synopsys.com", "opssights.synopsys.com"}
 
 		for _, crd := range crds {
-			err = apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crd, &metav1.DeleteOptions{})
+			err = util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
 			if err != nil {
 				log.Warnf("unable to delete the %s crd because %+v", crd, err)
 			}
