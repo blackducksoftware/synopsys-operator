@@ -33,23 +33,7 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Remove a Synopsys Resource from your cluster",
-	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
-	//(PassCmd) 	// Display synopsysctl's Help instead of sending to oc/kubectl
-	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
-	//(PassCmd) 		return fmt.Errorf("Help Called")
-	//(PassCmd) 	}
-	//(PassCmd) 	return nil
-	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//(PassCmd) log.Debugf("Deleting a Non-Synopsys Resource")
-		//(PassCmd) kubeCmdArgs := append([]string{"delete"}, args...)
-		//(PassCmd) out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		//(PassCmd) if err != nil {
-		//(PassCmd) 	log.Errorf("Error Deleting the Resource: %s", out)
-		//(PassCmd) 	return nil
-		//(PassCmd) }
-		//(PassCmd) fmt.Printf("%+v", out)
-		//(PassCmd) return nil
 		return fmt.Errorf("Not a Valid Command")
 	},
 }

@@ -83,9 +83,9 @@ var deployCmd = &cobra.Command{
 			deployNamespace = args[0]
 		}
 		// check if operator is already installed
-		crb, err := util.GetClusterRoleBinding(kubeClient, "synopsys-operator-admin")
+		ns, err := GetOperatorNamespace()
 		if err == nil {
-			log.Errorf("synopsys operator is already installed in %s namespace", crb.Subjects[0].Namespace)
+			log.Errorf("synopsys operator is already installed in %s namespace", ns)
 			return nil
 		}
 

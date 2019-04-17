@@ -55,29 +55,7 @@ var mockAlert bool
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Synopsys Resource in your cluster",
-	//(PassCmd)Args: func(cmd *cobra.Command, args []string) error {
-	//(PassCmd)	numArgs := 1
-	//(PassCmd)	if len(args) < numArgs {
-	//(PassCmd)		return fmt.Errorf("Not enough arguments")
-	//(PassCmd)	}
-	//(PassCmd)	return nil
-	//(PassCmd)},
-	//(PassCmd) PreRunE: func(cmd *cobra.Command, args []string) error {
-	//(PassCmd) 	// Display synopsysctl's Help instead of sending to oc/kubectl
-	//(PassCmd) 	if len(args) == 1 && args[0] == "--help" {
-	//(PassCmd) 		return fmt.Errorf("Help Called")
-	//(PassCmd) 	}
-	//(PassCmd) 	return nil
-	//(PassCmd) },
 	RunE: func(cmd *cobra.Command, args []string) error {
-		//(PassCmd) log.Debugf("Creating a Non-Synopsys Resource\n")
-		//(PassCmd) kubeCmdArgs := append([]string{"create"}, args...)
-		//(PassCmd) out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		//(PassCmd) if err != nil {
-		//(PassCmd) 	return fmt.Errorf("Error Creating the Resource with KubeCmd: %s", err)
-		//(PassCmd) }
-		//(PassCmd) fmt.Printf("%+v", out)
-		//(PassCmd) return nil
 		return fmt.Errorf("Not a Valid Command")
 	},
 }

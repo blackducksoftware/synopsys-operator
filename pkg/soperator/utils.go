@@ -23,7 +23,6 @@ package soperator
 
 import (
 	"fmt"
-	"strings"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -89,17 +88,6 @@ func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion 
 		}
 	}
 	return newAlerts, nil
-}
-
-// GetOperatorNamespace returns the namespace of the Synopsys-Operator by
-// looking at its cluster role binding
-func GetOperatorNamespace(restConfig *rest.Config) (string, error) {
-	kube, openshift := operatorutil.DetermineClusterClients(restConfig)
-	namespace, err := operatorutil.RunKubeCmd(restConfig, kube, openshift, "get", "clusterrolebindings", "synopsys-operator-admin", "-o", "go-template='{{range .subjects}}{{.namespace}}{{end}}'")
-	if err != nil {
-		return "", fmt.Errorf("failed to get Synopsys-Operator Namespace: %s", err)
-	}
-	return strings.Trim(namespace, "'"), nil
 }
 
 // GetOperatorImage returns the image for the synopsys-operator from
