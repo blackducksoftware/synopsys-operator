@@ -83,7 +83,7 @@ var createBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Creating a Blackduck\n")
+		log.Debugf("Creating a Blackduck")
 		blackduckNamespace := args[0]
 
 		// Update Spec with user's flags
@@ -145,7 +145,7 @@ var createOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Creating an OpsSight\n")
+		log.Debugf("Creating an OpsSight")
 		opsSightNamespace := args[0]
 
 		// Update Spec with user's flags
@@ -206,7 +206,7 @@ var createAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Creating an Alert\n")
+		log.Debugf("Creating an Alert")
 		alertNamespace := args[0]
 
 		// Update Spec with user's flags

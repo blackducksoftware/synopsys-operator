@@ -156,7 +156,7 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 // SetFlag sets an Alert's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED", f.Name)
 		switch f.Name {
 		case "version":
 			ctl.Spec.Version = ctl.Version
@@ -191,10 +191,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "alert-desired-state":
 			ctl.Spec.DesiredState = ctl.DesiredState
 		default:
-			log.Debugf("Flag %s: Not Found\n", f.Name)
+			log.Debugf("Flag %s: Not Found", f.Name)
 		}
 	} else {
-		log.Debugf("Flag %s: UNCHANGED\n", f.Name)
+		log.Debugf("Flag %s: UNCHANGED", f.Name)
 	}
 }
 
