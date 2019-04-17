@@ -23,12 +23,12 @@ package synopsysctl
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Destroy Command Defaults
@@ -47,28 +47,43 @@ var destroyCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get the namespace of the Synopsys-Operator
-		destroyNamespace, err := soperator.GetOperatorNamespace(restconfig)
+		destroyNamespace, err := GetOperatorNamespace()
 		if err != nil {
-			log.Warnf("Error finding Synopsys-Operator: %s", err)
+			log.Warnf("error finding synopsys operator due to %+v", err)
 		}
-		log.Debugf("Destroying the Synopsys-Operator: %s\n", destroyNamespace)
-		// Delete the namespace
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "delete", "ns", destroyNamespace)
+		log.Debugf("destroying the synopsys operator: %s", destroyNamespace)
+
+		// delete  namespace
+		err = util.DeleteNamespace(kubeClient, destroyNamespace)
 		if err != nil {
-			log.Warnf("Could not delete %s - %s", destroyNamespace, out)
-		}
-		cleanCommands := [...]string{
-			"delete crd alerts.synopsys.com",
-			"delete crd blackducks.synopsys.com",
-			"delete crd hubs.synopsys.com",
-			"delete crd opssights.synopsys.com",
-			"delete clusterrolebinding synopsys-operator-admin",
-			"delete clusterrole synopsys-operator-admin",
+			log.Warnf("unable to delete the %s namespace because %+v", destroyNamespace, err)
 		}
 
-		for cmd := range cleanCommands {
-			out, _ = util.RunKubeCmd(restconfig, kube, openshift, strings.Split(cleanCommands[cmd], " ")...)
-			log.Debugf(" > %s", out)
+		// delete crds
+		apiExtensionClient, err := apiextensionsclient.NewForConfig(restconfig)
+		if err != nil {
+			log.Errorf("error creating the api extension client due to %+v", err)
+		}
+
+		crds := []string{"alerts.synopsys.com", "blackducks.synopsys.com", "hubs.synopsys.com", "opssights.synopsys.com"}
+
+		for _, crd := range crds {
+			err = apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crd, &metav1.DeleteOptions{})
+			if err != nil {
+				log.Warnf("unable to delete the %s crd because %+v", crd, err)
+			}
+		}
+
+		// delete cluster role bindings
+		err = util.DeleteClusterRoleBinding(kubeClient, "synopsys-operator-admin")
+		if err != nil {
+			log.Warnf("unable to delete the synopsys-operator-admin cluster role binding because %+v", err)
+		}
+
+		// delete cluster roles
+		err = util.DeleteClusterRole(kubeClient, "synopsys-operator-admin")
+		if err != nil {
+			log.Warnf("unable to delete the synopsys-operator-admin cluster role because %+v", err)
 		}
 		return nil
 	},

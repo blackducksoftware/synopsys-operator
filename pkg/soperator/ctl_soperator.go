@@ -35,6 +35,8 @@ import (
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -57,15 +59,20 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 	// Get CRDs that need to be updated (specs have new version set)
 	log.Debugf("Getting CRDs that need new versions")
 	var oldBlackducks = []blackduckv1.Blackduck{}
-	kube, openshift := operatorutil.DetermineClusterClients(restconfig)
+
+	apiExtensionClient, err := apiextensionsclient.NewForConfig(restconfig)
+	if err != nil {
+		return fmt.Errorf("error creating the api extension client due to %+v", err)
+	}
+
 	if newCrdData.Blackduck.APIVersion != currCrdData.Blackduck.APIVersion {
 		oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion)
 		if err != nil {
 			return fmt.Errorf("failed to get Blackduck's to update: %s", err)
 		}
-		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.Blackduck.CRDName)
+		err = apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(currCrdData.Blackduck.CRDName, &metav1.DeleteOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to delete the crd %s: %s", currCrdData.Blackduck.CRDName, out)
+			return fmt.Errorf("unable to delete the %s crd because %s", currCrdData.Blackduck.CRDName, err)
 		}
 		log.Debugf("Updating %d Black Ducks", len(oldBlackducks))
 	}
@@ -75,9 +82,9 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		if err != nil {
 			return fmt.Errorf("failed to get OpsSights to update: %s", err)
 		}
-		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.OpsSight.CRDName)
+		err = apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(currCrdData.OpsSight.CRDName, &metav1.DeleteOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to delete the crd %s: %s", currCrdData.OpsSight.CRDName, out)
+			return fmt.Errorf("unable to delete the %s crd because %s", currCrdData.OpsSight.CRDName, err)
 		}
 		log.Debugf("Updating %d OpsSights", len(oldOpsSights))
 	}
@@ -87,9 +94,9 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		if err != nil {
 			return fmt.Errorf("failed to get Alerts to update%s", err)
 		}
-		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, "delete", "crd", currCrdData.Alert.CRDName)
+		err = apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(currCrdData.Alert.CRDName, &metav1.DeleteOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to delete the crd %s: %s", currCrdData.Alert.CRDName, out)
+			return fmt.Errorf("unable to delete the %s crd because %s", currCrdData.Alert.CRDName, err)
 		}
 		log.Debugf("Updating %d Alerts", len(oldAlerts))
 	}
