@@ -50,7 +50,7 @@ var deleteBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackduckNamespace := args[0]
-		fmt.Printf("Deleting BlackDuck %s...\n", blackduckNamespace)
+		log.Infof("Deleting BlackDuck %s...", blackduckNamespace)
 
 		// Delete Blackduck with Client
 		err := blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
@@ -58,7 +58,7 @@ var deleteBlackduckCmd = &cobra.Command{
 			log.Errorf("Error deleting the Blackduck: '%s'", err)
 			return nil
 		}
-		fmt.Printf("Successfully deleted BlackDuck %s\n", blackduckNamespace)
+		log.Infof("Successfully deleted BlackDuck: %s", blackduckNamespace)
 		return nil
 	},
 }
@@ -75,7 +75,7 @@ var deleteOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opsSightNamespace := args[0]
-		fmt.Printf("Deleting OpsSight %s...\n", opsSightNamespace)
+		log.Infof("Deleting OpsSight %s...", opsSightNamespace)
 
 		// Delete OpsSight with Client
 		err := opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
@@ -83,7 +83,7 @@ var deleteOpsSightCmd = &cobra.Command{
 			log.Errorf("Error deleting the OpsSight: '%s'", err)
 			return nil
 		}
-		fmt.Printf("Successfully deleted OpsSight %s\n", opsSightNamespace)
+		log.Infof("Successfully deleted OpsSight: %s", opsSightNamespace)
 		return nil
 	},
 }
@@ -100,7 +100,7 @@ var deleteAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertNamespace := args[0]
-		fmt.Printf("Deleting Alert %s...\n", alertNamespace)
+		log.Infof("Deleting Alert %s...", alertNamespace)
 
 		// Delete Alert with Client
 		err := alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
@@ -108,7 +108,7 @@ var deleteAlertCmd = &cobra.Command{
 			log.Errorf("Error deleting the Alert: %s", err)
 			return nil
 		}
-		fmt.Printf("Successfully deleted Alert %s\n", alertNamespace)
+		log.Infof("Successfully deleted Alert: %s", alertNamespace)
 		return nil
 	},
 }

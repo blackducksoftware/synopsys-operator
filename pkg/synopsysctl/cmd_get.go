@@ -120,7 +120,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 			log.Errorf("Error writing to %s because %+v", fileName, err)
 			return nil
 		}
-		fmt.Printf("Successfully wrote Root Key to %s\n", fileName)
+		log.Infof("Successfully wrote Root Key to %s", fileName)
 		return nil
 	},
 }

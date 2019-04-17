@@ -50,7 +50,7 @@ var destroyCmd = &cobra.Command{
 		if err != nil {
 			log.Warnf("Error finding synopsys operator due to %+v", err)
 		}
-		fmt.Printf("Destroying the Synopsys-Operator '%s'...\n", destroyNamespace)
+		log.Infof("Destroying the Synopsys-Operator '%s'...", destroyNamespace)
 
 		// delete  namespace
 		log.Debugf("Deleting namespace %s", destroyNamespace)
@@ -89,7 +89,7 @@ var destroyCmd = &cobra.Command{
 			log.Warnf("Unable to delete the synopsys-operator-admin cluster role because %+v", err)
 		}
 
-		fmt.Printf("Finished destroying synopsys-operator: '%s'\n", destroyNamespace)
+		log.Infof("Finished destroying synopsys-operator: '%s'", destroyNamespace)
 		return nil
 	},
 }

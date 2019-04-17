@@ -78,7 +78,7 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 
-		fmt.Printf("Updating the Synopsys-Operator in namespace %s...\n", namespace)
+		log.Infof("Updating the Synopsys-Operator in namespace %s...", namespace)
 
 		// Create new Synopsys-Operator SpecConfig
 		sOperatorSpecConfig, err := soperator.GetSpecConfigForCurrentComponents(restconfig, kubeClient, namespace)
@@ -126,7 +126,7 @@ var updateOperatorCmd = &cobra.Command{
 		if err != nil {
 			log.Errorf("Failed to update Prometheus: %s", err)
 		}
-		fmt.Printf("Successfully updated the Synopsys-Operator: '%s'\n", namespace)
+		log.Infof("Successfully updated the Synopsys-Operator: '%s'", namespace)
 		return nil
 	},
 }
@@ -143,7 +143,7 @@ var updateBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackduckNamespace := args[0]
-		fmt.Printf("Updating BlackDuck %s...\n", blackduckNamespace)
+		log.Infof("Updating BlackDuck %s...", blackduckNamespace)
 
 		// Get the Blackuck
 		currBlackduck, err := operatorutil.GetHub(blackduckClient, blackduckNamespace, blackduckNamespace)
@@ -172,7 +172,7 @@ var updateBlackduckCmd = &cobra.Command{
 				log.Errorf("Error updating the BlackDuck: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully updated BlackDuck: '%s'\n", blackduckNamespace)
+			log.Infof("Successfully updated BlackDuck: '%s'", blackduckNamespace)
 		}
 		return nil
 	},
@@ -193,7 +193,7 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 		newSealKey := args[1]
 		filePath := args[2]
 
-		fmt.Printf("Updating BlackDuck %s Root Key...\n", namespace)
+		log.Infof("Updating BlackDuck %s Root Key...", namespace)
 
 		_, err := operatorutil.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
 		if err != nil {
@@ -240,7 +240,7 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 			log.Errorf("unable to update the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
 			return nil
 		}
-		fmt.Printf("Successfully updated BlackDuck %s's Root Key\n", namespace)
+		log.Infof("Successfully updated BlackDuck %s's Root Key", namespace)
 		return nil
 	},
 }
@@ -257,7 +257,7 @@ var updateOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opsSightNamespace := args[0]
-		fmt.Printf("Updating OpsSight %s...\n", opsSightNamespace)
+		log.Infof("Updating OpsSight %s...", opsSightNamespace)
 
 		// Get the current OpsSight
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightNamespace, opsSightNamespace)
@@ -286,7 +286,7 @@ var updateOpsSightCmd = &cobra.Command{
 				log.Errorf("Error updating the OpsSight: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully updated OpsSight: '%s'\n", opsSightNamespace)
+			log.Infof("Successfully updated OpsSight: '%s'", opsSightNamespace)
 		}
 		return nil
 	},
@@ -307,7 +307,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 		componentName := args[1]
 		componentImage := args[2]
 
-		fmt.Printf("Updating OpsSight %s's Image...\n", opsSightName)
+		log.Infof("Updating OpsSight %s's Image...", opsSightName)
 
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
@@ -350,7 +350,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 				log.Errorf("Error updating the OpsSight: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully updated OpsSight %s's Image\n", opsSightName)
+			log.Infof("Successfully updated OpsSight %s's Image", opsSightName)
 		}
 		return nil
 	},
@@ -381,7 +381,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 			log.Errorf("Invalid Concurrent Scan Limit: %s", err)
 		}
 
-		fmt.Printf("Adding External Host to OpsSight %s...\n", opsSightName)
+		log.Infof("Adding External Host to OpsSight %s...", opsSightName)
 
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
@@ -413,7 +413,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 				log.Errorf("Error updating the OpsSight: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully updated OpsSight %s's External Host\n", opsSightName)
+			log.Infof("Successfully updated OpsSight %s's External Host", opsSightName)
 		}
 		return nil
 	},
@@ -436,7 +436,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		regUser := args[2]
 		regPass := args[3]
 
-		fmt.Printf("Adding Internal Registry to OpsSight %s...\n", opsSightName)
+		log.Infof("Adding Internal Registry to OpsSight %s...", opsSightName)
 
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
@@ -465,7 +465,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 				log.Errorf("Error adding Internal Registry with updating OpsSight: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully updated OpsSight %s's Registry\n", opsSightName)
+			log.Infof("Successfully updated OpsSight %s's Registry", opsSightName)
 		}
 		return nil
 	},
@@ -484,7 +484,7 @@ var updateAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertNamespace := args[0]
 
-		fmt.Printf("Updating Alert %s...\n", alertNamespace)
+		log.Infof("Updating Alert %s...\n", alertNamespace)
 
 		// Get the Alert
 		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
@@ -514,7 +514,7 @@ var updateAlertCmd = &cobra.Command{
 				log.Errorf("Error Updating the Alert: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully updated Alert: '%s'\n", alertNamespace)
+			log.Infof("Successfully updated Alert: '%s'", alertNamespace)
 		}
 		return nil
 	},

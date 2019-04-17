@@ -85,7 +85,7 @@ var createBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackduckNamespace := args[0]
-		fmt.Printf("Creating BlackDuck %s...\n", blackduckNamespace)
+		log.Infof("Creating BlackDuck %s...", blackduckNamespace)
 
 		// Update Spec with user's flags
 		log.Debugf("Updating Spec with User's Flags")
@@ -121,7 +121,7 @@ var createBlackduckCmd = &cobra.Command{
 				log.Errorf("Error creating the Blackduck: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully created BlackDuck: '%s'\n", blackduckNamespace)
+			log.Infof("Successfully created BlackDuck: '%s'", blackduckNamespace)
 		}
 		return nil
 	},
@@ -151,7 +151,7 @@ var createOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opsSightNamespace := args[0]
-		fmt.Printf("Creating OpsSight %s...\n", opsSightNamespace)
+		log.Infof("Creating OpsSight %s...", opsSightNamespace)
 
 		// Update Spec with user's flags
 		log.Debugf("Updating Spec with User's Flags")
@@ -187,7 +187,7 @@ var createOpsSightCmd = &cobra.Command{
 				log.Errorf("Error creating the OpsSight: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully created OpsSight: '%s'\n", opsSightNamespace)
+			log.Infof("Successfully created OpsSight: '%s'", opsSightNamespace)
 		}
 		return nil
 	},
@@ -216,7 +216,7 @@ var createAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertNamespace := args[0]
-		fmt.Printf("Creating Alert %s...\n", alertNamespace)
+		log.Infof("Creating Alert %s...", alertNamespace)
 
 		// Update Spec with user's flags
 		log.Debugf("Updating Spec with User's Flags")
@@ -252,7 +252,7 @@ var createAlertCmd = &cobra.Command{
 				log.Errorf("Error creating the Alert: %s", err)
 				return nil
 			}
-			fmt.Printf("Successfully created Alert: '%s'\n", alertNamespace)
+			log.Infof("Successfully created Alert: '%s'", alertNamespace)
 		}
 		return nil
 	},

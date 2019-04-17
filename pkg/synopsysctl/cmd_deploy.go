@@ -88,7 +88,7 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		fmt.Printf("Deploying the Synopsys-Operator in namespace %s...\n", deployNamespace)
+		log.Infof("Deploying the Synopsys-Operator in namespace %s...", deployNamespace)
 
 		log.Debugf("Getting Seal Key")
 		sealKey, err := operatorutil.GetRandomString(32)
@@ -131,7 +131,7 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Printf("Successfully deployed the Synopsys-Operator\n")
+		log.Infof("Successfully deployed the Synopsys-Operator")
 		return nil
 	},
 }

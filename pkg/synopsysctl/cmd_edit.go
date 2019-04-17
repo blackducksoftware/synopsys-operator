@@ -91,7 +91,7 @@ var editBlackduckCmd = &cobra.Command{
 				return nil
 			}
 		}
-		fmt.Printf("Successfully edited BlackDuck: '%s'\n", blackduckName)
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -134,7 +134,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		fmt.Printf("Successfully edited BlackDuck: '%s'\n", blackduckName)
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -169,7 +169,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		fmt.Printf("Successfully edited BlackDuck: '%s'\n", blackduckName)
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -204,7 +204,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		fmt.Printf("Successfully edited BlackDuck: '%s'\n", blackduckName)
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -235,7 +235,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		// Add UID Mapping to Spec
 		intUIDVal, err := strconv.ParseInt(uidVal, 0, 64)
 		if err != nil {
-			fmt.Printf("Couldn't convert UID_VAL to int: %s", err)
+			log.Errorf("Couldn't convert UID_VAL to int: %s", err)
 		}
 		if bd.Spec.ImageUIDMap == nil {
 			bd.Spec.ImageUIDMap = make(map[string]int64)
@@ -247,7 +247,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		fmt.Printf("Successfully edited BlackDuck: '%s'\n", blackduckName)
+		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -293,7 +293,7 @@ var editOpsSightCmd = &cobra.Command{
 				return nil
 			}
 		}
-		fmt.Printf("Successfully edited OpsSight: '%s'\n", opsSightName)
+		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -335,7 +335,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		fmt.Printf("Successfully edited OpsSight: '%s'\n", opsSightName)
+		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -378,7 +378,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		fmt.Printf("Successfully edited OpsSight: '%s'\n", opsSightName)
+		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -424,7 +424,7 @@ var editAlertCmd = &cobra.Command{
 				return nil
 			}
 		}
-		fmt.Printf("Successfully edited Alert: '%s'\n", alertName)
+		log.Infof("Successfully edited Alert: '%s'", alertName)
 		return nil
 	},
 }
