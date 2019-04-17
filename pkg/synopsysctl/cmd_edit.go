@@ -295,7 +295,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 	Use:   "addRegistry NAMESPACE URL USER PASSWORD",
 	Short: "Add an Internal Registry to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
+		if len(args) != 4 {
 			return fmt.Errorf("This command takes 4 arguments")
 		}
 		return nil
