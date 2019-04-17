@@ -135,7 +135,7 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		if i >= 10 {
 			return fmt.Errorf("failed to update Alerts: %s", err)
 		}
-		log.Debugf("Attempt %d to update Alerts\n", i)
+		log.Debugf("Attempt %d to update Alerts", i)
 		time.Sleep(1 * time.Second)
 	}
 

@@ -62,7 +62,7 @@ var editBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing Blackduck\n")
+		log.Debugf("Editing Blackduck")
 		// Read Commandline Parameters
 		blackduckName := args[0]
 
@@ -110,7 +110,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding PVC to Blackduck\n")
+		log.Debugf("Adding PVC to Blackduck")
 		// Read Commandline Parameters
 		blackduckName := args[0]
 		pvcName := args[1]
@@ -148,7 +148,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Environ to Blackduck\n")
+		log.Debugf("Adding Environ to Blackduck")
 		// Read Commandline Parameters
 		blackduckName := args[0]
 		environ := args[1]
@@ -181,7 +181,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding an Image Registry to Blackduck\n")
+		log.Debugf("Adding an Image Registry to Blackduck")
 		// Read Commandline Parameters
 		blackduckName := args[0]
 		registry := args[1]
@@ -214,7 +214,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding an Image UID to Blackduck\n")
+		log.Debugf("Adding an Image UID to Blackduck")
 		// Read Commandline Parameters
 		blackduckName := args[0]
 		uidKey := args[1]
@@ -228,7 +228,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		// Add UID Mapping to Spec
 		intUIDVal, err := strconv.ParseInt(uidVal, 0, 64)
 		if err != nil {
-			fmt.Printf("Couldn't convert UID_VAL to int: %s\n", err)
+			fmt.Printf("Couldn't convert UID_VAL to int: %s", err)
 		}
 		if bd.Spec.ImageUIDMap == nil {
 			bd.Spec.ImageUIDMap = make(map[string]int64)
@@ -256,7 +256,7 @@ var editOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing an OpsSight\n")
+		log.Debugf("Editing an OpsSight")
 		// Read Commandline Parameters
 		opsSightName := args[0]
 
@@ -301,7 +301,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Internal Registry to OpsSight\n")
+		log.Debugf("Adding Internal Registry to OpsSight")
 		opsSightName := args[0]
 		regURL := args[1]
 		regUser := args[2]
@@ -340,7 +340,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Blackduck Host to OpsSight\n")
+		log.Debugf("Adding Blackduck Host to OpsSight")
 		opsSightName := args[0]
 		domain := args[1]
 		port := args[2]
@@ -381,7 +381,7 @@ var editAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing an Alert\n")
+		log.Debugf("Editing an Alert")
 		// Read Commandline Parameters
 		alertName := args[0]
 

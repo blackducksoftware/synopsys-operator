@@ -49,7 +49,7 @@ var deleteBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Deleting a Blackduck\n")
+		log.Debugf("Deleting a Blackduck")
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
@@ -74,7 +74,7 @@ var deleteOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Deleting an OpsSight\n")
+		log.Debugf("Deleting an OpsSight")
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
@@ -99,7 +99,7 @@ var deleteAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Deleting an Alert\n")
+		log.Debugf("Deleting an Alert")
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
