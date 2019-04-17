@@ -36,7 +36,6 @@ import (
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -70,7 +69,7 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		if err != nil {
 			return fmt.Errorf("failed to get Blackduck's to update: %s", err)
 		}
-		err = apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(currCrdData.Blackduck.CRDName, &metav1.DeleteOptions{})
+		err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, currCrdData.Blackduck.CRDName)
 		if err != nil {
 			return fmt.Errorf("unable to delete the %s crd because %s", currCrdData.Blackduck.CRDName, err)
 		}
@@ -82,7 +81,7 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		if err != nil {
 			return fmt.Errorf("failed to get OpsSights to update: %s", err)
 		}
-		err = apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(currCrdData.OpsSight.CRDName, &metav1.DeleteOptions{})
+		err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, currCrdData.OpsSight.CRDName)
 		if err != nil {
 			return fmt.Errorf("unable to delete the %s crd because %s", currCrdData.OpsSight.CRDName, err)
 		}
@@ -94,7 +93,7 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		if err != nil {
 			return fmt.Errorf("failed to get Alerts to update%s", err)
 		}
-		err = apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(currCrdData.Alert.CRDName, &metav1.DeleteOptions{})
+		err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, currCrdData.Alert.CRDName)
 		if err != nil {
 			return fmt.Errorf("unable to delete the %s crd because %s", currCrdData.Alert.CRDName, err)
 		}
