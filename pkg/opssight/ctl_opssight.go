@@ -294,7 +294,7 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 // SetFlag sets an OpsSights's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED", f.Name)
 		switch f.Name {
 		case "perceptor-name":
 			if ctl.Spec.Perceptor == nil {
@@ -623,10 +623,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 			ctl.Spec.Blackduck.MaxCount = ctl.BlackduckMaxCount
 		default:
-			log.Debugf("Flag %s: Not Found\n", f.Name)
+			log.Debugf("Flag %s: Not Found", f.Name)
 		}
 	} else {
-		log.Debugf("Flag %s: UNCHANGED\n", f.Name)
+		log.Debugf("Flag %s: UNCHANGED", f.Name)
 	}
 }
 

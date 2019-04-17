@@ -140,7 +140,7 @@ var updateBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating a Blackduck\n")
+		log.Debugf("Updating a Blackduck")
 		blackduckNamespace := args[0]
 
 		// Get the Blackuck
@@ -153,7 +153,7 @@ var updateBlackduckCmd = &cobra.Command{
 		updateBlackduckCtl.SetSpec(currBlackduck.Spec)
 		canUpdate, err := updateBlackduckCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update: %s\n", err)
+			log.Errorf("Cannot Update: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -186,7 +186,7 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating Blackduck Root Key\n")
+		log.Debugf("Updating Blackduck Root Key")
 		namespace := args[0]
 		newSealKey := args[1]
 		filePath := args[2]
@@ -252,7 +252,7 @@ var updateOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating an OpsSight\n")
+		log.Debugf("Updating an OpsSight")
 		opsSightNamespace := args[0]
 
 		// Get the current OpsSight
@@ -265,7 +265,7 @@ var updateOpsSightCmd = &cobra.Command{
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update: %s\n", err)
+			log.Errorf("Cannot Update: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -298,7 +298,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating an Image of OpsSight\n")
+		log.Debugf("Updating an Image of OpsSight")
 		opsSightName := args[0]
 		componentName := args[1]
 		componentImage := args[2]
@@ -312,7 +312,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s\n", err)
+			log.Errorf("Cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -333,8 +333,8 @@ var updateOpsSightImageCmd = &cobra.Command{
 			case "Prometheus":
 				currOpsSight.Spec.Prometheus.Image = componentImage
 			default:
-				log.Errorf("%s is not a valid COMPONENT\n", componentName)
-				log.Errorf("Valid Components: Perceptor, Scanner, ImageFacade, ImagePerceiver, PodPerceiver, Skyfire, Prometheus\n")
+				log.Errorf("%s is not a valid COMPONENT", componentName)
+				log.Errorf("Valid Components: Perceptor, Scanner, ImageFacade, ImagePerceiver, PodPerceiver, Skyfire, Prometheus")
 				return fmt.Errorf("Invalid Component Name")
 			}
 			// Update OpsSight with New Image
@@ -359,7 +359,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding External Host to OpsSight\n")
+		log.Debugf("Adding External Host to OpsSight")
 		opsSightName := args[0]
 		hostScheme := args[1]
 		hostDomain := args[2]
@@ -383,7 +383,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s\n", err)
+			log.Errorf("Cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -420,7 +420,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Internal Registry to OpsSight\n")
+		log.Debugf("Adding Internal Registry to OpsSight")
 		opsSightName := args[0]
 		regURL := args[1]
 		regUser := args[2]
@@ -428,14 +428,14 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
-			log.Errorf("Error adding Internal Registry while getting OpsSight: %s\n", err)
+			log.Errorf("Error adding Internal Registry while getting OpsSight: %s", err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s\n", err)
+			log.Errorf("Cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -449,7 +449,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 			// Update OpsSight with Internal Registry
 			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, currOpsSight)
 			if err != nil {
-				log.Errorf("Error adding Internal Registry with updating OpsSight: %s\n", err)
+				log.Errorf("Error adding Internal Registry with updating OpsSight: %s", err)
 				return nil
 			}
 		}
@@ -468,7 +468,7 @@ var updateAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating an Alert\n")
+		log.Debugf("Updating an Alert")
 		alertNamespace := args[0]
 
 		// Get the Alert
@@ -482,7 +482,7 @@ var updateAlertCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateAlertCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update Alert: %s\n", err)
+			log.Errorf("Cannot Update Alert: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -496,7 +496,7 @@ var updateAlertCmd = &cobra.Command{
 			// Update Alert
 			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
 			if err != nil {
-				log.Errorf("Error Updating the Alert: %s\n", err)
+				log.Errorf("Error Updating the Alert: %s", err)
 				return nil
 			}
 		}
