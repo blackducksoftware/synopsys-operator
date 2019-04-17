@@ -56,13 +56,13 @@ var destroyCmd = &cobra.Command{
 		// delete  namespace
 		err = util.DeleteNamespace(kubeClient, destroyNamespace)
 		if err != nil {
-			log.Warnf("could not delete the %s namespace because %+v", destroyNamespace, err)
+			log.Warnf("unable to delete the %s namespace because %+v", destroyNamespace, err)
 		}
 
 		// delete crds
 		apiExtensionClient, err := apiextensionsclient.NewForConfig(restconfig)
 		if err != nil {
-			log.Errorf("error creating the Blackduck Clientset: %s", err)
+			log.Errorf("error creating the api extension client due to %+v", err)
 		}
 
 		crds := []string{"alerts.synopsys.com", "blackducks.synopsys.com", "hubs.synopsys.com", "opssights.synopsys.com"}
