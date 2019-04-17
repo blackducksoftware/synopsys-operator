@@ -78,7 +78,8 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Debugf("Updating the Synopsys-Operator in namespace %s", namespace)
+		fmt.Printf("Updating the Synopsys-Operator in namespace %s...\n", namespace)
+
 		// Create new Synopsys-Operator SpecConfig
 		sOperatorSpecConfig, err := soperator.GetSpecConfigForCurrentComponents(restconfig, kubeClient, namespace)
 		if err != nil {
@@ -125,6 +126,7 @@ var updateOperatorCmd = &cobra.Command{
 		if err != nil {
 			log.Errorf("Failed to update Prometheus: %s", err)
 		}
+		fmt.Printf("Successfully updated the Synopsys-Operator: '%s'\n", namespace)
 		return nil
 	},
 }
@@ -140,8 +142,8 @@ var updateBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating a Blackduck\n")
 		blackduckNamespace := args[0]
+		fmt.Printf("Updating BlackDuck %s...\n", blackduckNamespace)
 
 		// Get the Blackuck
 		currBlackduck, err := operatorutil.GetHub(blackduckClient, blackduckNamespace, blackduckNamespace)
@@ -153,7 +155,7 @@ var updateBlackduckCmd = &cobra.Command{
 		updateBlackduckCtl.SetSpec(currBlackduck.Spec)
 		canUpdate, err := updateBlackduckCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update: %s\n", err)
+			log.Errorf("Cannot Update: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -170,6 +172,7 @@ var updateBlackduckCmd = &cobra.Command{
 				log.Errorf("Error updating the BlackDuck: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully updated BlackDuck: '%s'\n", blackduckNamespace)
 		}
 		return nil
 	},
@@ -186,10 +189,11 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating Blackduck Root Key\n")
 		namespace := args[0]
 		newSealKey := args[1]
 		filePath := args[2]
+
+		fmt.Printf("Updating BlackDuck %s Root Key...\n", namespace)
 
 		_, err := operatorutil.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
 		if err != nil {
@@ -236,7 +240,7 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 			log.Errorf("unable to update the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
 			return nil
 		}
-
+		fmt.Printf("Successfully updated BlackDuck %s's Root Key\n", namespace)
 		return nil
 	},
 }
@@ -252,8 +256,8 @@ var updateOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating an OpsSight\n")
 		opsSightNamespace := args[0]
+		fmt.Printf("Updating OpsSight %s...\n", opsSightNamespace)
 
 		// Get the current OpsSight
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightNamespace, opsSightNamespace)
@@ -265,7 +269,7 @@ var updateOpsSightCmd = &cobra.Command{
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update: %s\n", err)
+			log.Errorf("Cannot Update: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -282,6 +286,7 @@ var updateOpsSightCmd = &cobra.Command{
 				log.Errorf("Error updating the OpsSight: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully updated OpsSight: '%s'\n", opsSightNamespace)
 		}
 		return nil
 	},
@@ -298,10 +303,12 @@ var updateOpsSightImageCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating an Image of OpsSight\n")
 		opsSightName := args[0]
 		componentName := args[1]
 		componentImage := args[2]
+
+		fmt.Printf("Updating OpsSight %s's Image...\n", opsSightName)
+
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
@@ -312,7 +319,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s\n", err)
+			log.Errorf("Cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -333,8 +340,8 @@ var updateOpsSightImageCmd = &cobra.Command{
 			case "Prometheus":
 				currOpsSight.Spec.Prometheus.Image = componentImage
 			default:
-				log.Errorf("%s is not a valid COMPONENT\n", componentName)
-				log.Errorf("Valid Components: Perceptor, Scanner, ImageFacade, ImagePerceiver, PodPerceiver, Skyfire, Prometheus\n")
+				log.Errorf("%s is not a valid COMPONENT", componentName)
+				log.Errorf("Valid Components: Perceptor, Scanner, ImageFacade, ImagePerceiver, PodPerceiver, Skyfire, Prometheus")
 				return fmt.Errorf("Invalid Component Name")
 			}
 			// Update OpsSight with New Image
@@ -343,6 +350,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 				log.Errorf("Error updating the OpsSight: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully updated OpsSight %s's Image\n", opsSightName)
 		}
 		return nil
 	},
@@ -359,13 +367,12 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding External Host to OpsSight\n")
 		opsSightName := args[0]
 		hostScheme := args[1]
 		hostDomain := args[2]
 		hostPort, err := strconv.ParseInt(args[3], 0, 64)
 		if err != nil {
-			log.Errorf("Invalid Port Number: %s", err)
+			log.Errorf("Invalid Port Number: '%s'", err)
 		}
 		hostUser := args[4]
 		hostPassword := args[5]
@@ -373,6 +380,9 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		if err != nil {
 			log.Errorf("Invalid Concurrent Scan Limit: %s", err)
 		}
+
+		fmt.Printf("Adding External Host to OpsSight %s...\n", opsSightName)
+
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
@@ -383,7 +393,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s\n", err)
+			log.Errorf("Cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -403,6 +413,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 				log.Errorf("Error updating the OpsSight: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully updated OpsSight %s's External Host\n", opsSightName)
 		}
 		return nil
 	},
@@ -420,22 +431,24 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Internal Registry to OpsSight\n")
 		opsSightName := args[0]
 		regURL := args[1]
 		regUser := args[2]
 		regPass := args[3]
+
+		fmt.Printf("Adding Internal Registry to OpsSight %s...\n", opsSightName)
+
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
-			log.Errorf("Error adding Internal Registry while getting OpsSight: %s\n", err)
+			log.Errorf("Error adding Internal Registry while getting OpsSight: %s", err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s\n", err)
+			log.Errorf("Cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -449,9 +462,10 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 			// Update OpsSight with Internal Registry
 			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, currOpsSight)
 			if err != nil {
-				log.Errorf("Error adding Internal Registry with updating OpsSight: %s\n", err)
+				log.Errorf("Error adding Internal Registry with updating OpsSight: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully updated OpsSight %s's Registry\n", opsSightName)
 		}
 		return nil
 	},
@@ -468,8 +482,9 @@ var updateAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Updating an Alert\n")
 		alertNamespace := args[0]
+
+		fmt.Printf("Updating Alert %s...\n", alertNamespace)
 
 		// Get the Alert
 		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
@@ -482,7 +497,7 @@ var updateAlertCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateAlertCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update Alert: %s\n", err)
+			log.Errorf("Cannot Update Alert: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -496,9 +511,10 @@ var updateAlertCmd = &cobra.Command{
 			// Update Alert
 			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
 			if err != nil {
-				log.Errorf("Error Updating the Alert: %s\n", err)
+				log.Errorf("Error Updating the Alert: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully updated Alert: '%s'\n", alertNamespace)
 		}
 		return nil
 	},

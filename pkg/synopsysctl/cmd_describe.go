@@ -104,7 +104,7 @@ var describeAlertCmd = &cobra.Command{
 
 		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
-			log.Errorf("Error Describing the Alert: %s\n", out)
+			log.Errorf("Error Describing the Alert: '%s'\n", out)
 			return nil
 		}
 		fmt.Printf("%+v", out)

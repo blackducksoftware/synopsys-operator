@@ -48,20 +48,22 @@ var destroyCmd = &cobra.Command{
 		// Get the namespace of the Synopsys-Operator
 		destroyNamespace, err := GetOperatorNamespace()
 		if err != nil {
-			log.Warnf("error finding synopsys operator due to %+v", err)
+			log.Warnf("Error finding synopsys operator due to %+v", err)
 		}
-		log.Debugf("destroying the synopsys operator: %s", destroyNamespace)
+		fmt.Printf("Destroying the Synopsys-Operator '%s'...\n", destroyNamespace)
 
 		// delete  namespace
+		log.Debugf("Deleting namespace %s", destroyNamespace)
 		err = util.DeleteNamespace(kubeClient, destroyNamespace)
 		if err != nil {
-			log.Warnf("unable to delete the %s namespace because %+v", destroyNamespace, err)
+			log.Warnf("Unable to delete the %s namespace because %+v", destroyNamespace, err)
 		}
 
 		// delete crds
+		log.Debugf("Deleting CRDs")
 		apiExtensionClient, err := apiextensionsclient.NewForConfig(restconfig)
 		if err != nil {
-			log.Errorf("error creating the api extension client due to %+v", err)
+			log.Errorf("Error creating the api extension client due to %+v", err)
 		}
 
 		crds := []string{"alerts.synopsys.com", "blackducks.synopsys.com", "hubs.synopsys.com", "opssights.synopsys.com"}
@@ -69,21 +71,25 @@ var destroyCmd = &cobra.Command{
 		for _, crd := range crds {
 			err = util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
 			if err != nil {
-				log.Warnf("unable to delete the %s crd because %+v", crd, err)
+				log.Warnf("Unable to delete the %s crd because %+v", crd, err)
 			}
 		}
 
 		// delete cluster role bindings
+		log.Debugf("Deleting ClusterRoleBinding")
 		err = util.DeleteClusterRoleBinding(kubeClient, "synopsys-operator-admin")
 		if err != nil {
-			log.Warnf("unable to delete the synopsys-operator-admin cluster role binding because %+v", err)
+			log.Warnf("Unable to delete the synopsys-operator-admin cluster role binding because %+v", err)
 		}
 
 		// delete cluster roles
+		log.Debugf("Deleting ClusterRoles")
 		err = util.DeleteClusterRole(kubeClient, "synopsys-operator-admin")
 		if err != nil {
-			log.Warnf("unable to delete the synopsys-operator-admin cluster role because %+v", err)
+			log.Warnf("Unable to delete the synopsys-operator-admin cluster role because %+v", err)
 		}
+
+		fmt.Printf("Finished destroying synopsys-operator: '%s'\n", destroyNamespace)
 		return nil
 	},
 }

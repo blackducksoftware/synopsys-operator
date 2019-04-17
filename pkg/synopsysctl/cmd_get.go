@@ -54,7 +54,7 @@ var getBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting Black Ducks")
+		log.Debugf("Getting Black Ducks...")
 		out, err := RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
 		if err != nil {
 			log.Errorf("error getting Blackducks due to %+v", out)
@@ -76,29 +76,33 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting Black Duck root Key")
 		namespace := args[0]
 		filePath := args[1]
+
+		log.Debugf("Getting BlackDuck %s Root Key...", namespace)
+
 		_, err := util.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
 		if err != nil {
 			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
 			return nil
 		}
+
+		log.Debugf("Getting Synopsys-Operator's Secret")
 		operatorNamespace, err := GetOperatorNamespace()
 		if err != nil {
-			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
+			log.Errorf("Unable to find the Synopsys Operator instance due to %+v", err)
 			return nil
 		}
 		secret, err := util.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
 		if err != nil {
-			log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
+			log.Errorf("Unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
 			return nil
 		}
 		sealKey := string(secret.Data["SEAL_KEY"])
 		// Filter the upload cache pod to get the root key using the seal key
 		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, "uploadcache")
 		if err != nil {
-			log.Errorf("unable to filter the upload cache pod of %s due to %+v", namespace, err)
+			log.Errorf("Unable to filter the upload cache pod of %s due to %+v", namespace, err)
 			return nil
 		}
 
@@ -106,16 +110,17 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
 		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
 		if err != nil {
-			log.Errorf("unable to exec into upload cache pod in %s because %+v", namespace, err)
+			log.Errorf("Unable to exec into upload cache pod in %s because %+v", namespace, err)
 			return nil
 		}
 
 		fileName := filepath.Join(filePath, fmt.Sprintf("%s.key", namespace))
 		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
 		if err != nil {
-			log.Errorf("error writing to %s because %+v", fileName, err)
+			log.Errorf("Error writing to %s because %+v", fileName, err)
 			return nil
 		}
+		fmt.Printf("Successfully wrote Root Key to %s\n", fileName)
 		return nil
 	},
 }
@@ -132,10 +137,10 @@ var getOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting OpsSights")
+		log.Debugf("Getting OpsSights...")
 		out, err := RunKubeCmd(restconfig, kube, openshift, "get", "opssights")
 		if err != nil {
-			log.Errorf("error getting OpsSights due to %+v", out)
+			log.Errorf("Error getting OpsSights due to %+v", out)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -155,10 +160,10 @@ var getAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting Alerts")
+		log.Debugf("Getting Alerts...")
 		out, err := RunKubeCmd(restconfig, kube, openshift, "get", "alerts")
 		if err != nil {
-			log.Errorf("error getting Alerts due to %+v", out)
+			log.Errorf("Error getting Alerts due to %+v", out)
 			return nil
 		}
 		fmt.Printf("%+v", out)

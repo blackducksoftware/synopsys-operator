@@ -49,16 +49,16 @@ var deleteBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Deleting a Blackduck\n")
-		// Read Commandline Parameters
 		blackduckNamespace := args[0]
+		fmt.Printf("Deleting BlackDuck %s...\n", blackduckNamespace)
 
 		// Delete Blackduck with Client
 		err := blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
 		if err != nil {
-			log.Errorf("Error deleting the Blackduck: %s", err)
+			log.Errorf("Error deleting the Blackduck: '%s'", err)
 			return nil
 		}
+		fmt.Printf("Successfully deleted BlackDuck %s\n", blackduckNamespace)
 		return nil
 	},
 }
@@ -74,16 +74,16 @@ var deleteOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Deleting an OpsSight\n")
-		// Read Commandline Parameters
 		opsSightNamespace := args[0]
+		fmt.Printf("Deleting OpsSight %s...\n", opsSightNamespace)
 
 		// Delete OpsSight with Client
 		err := opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
 		if err != nil {
-			log.Errorf("Error deleting the OpsSight: %s", err)
+			log.Errorf("Error deleting the OpsSight: '%s'", err)
 			return nil
 		}
+		fmt.Printf("Successfully deleted OpsSight %s\n", opsSightNamespace)
 		return nil
 	},
 }
@@ -99,9 +99,8 @@ var deleteAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Deleting an Alert\n")
-		// Read Commandline Parameters
 		alertNamespace := args[0]
+		fmt.Printf("Deleting Alert %s...\n", alertNamespace)
 
 		// Delete Alert with Client
 		err := alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
@@ -109,6 +108,7 @@ var deleteAlertCmd = &cobra.Command{
 			log.Errorf("Error deleting the Alert: %s", err)
 			return nil
 		}
+		fmt.Printf("Successfully deleted Alert %s\n", alertNamespace)
 		return nil
 	},
 }

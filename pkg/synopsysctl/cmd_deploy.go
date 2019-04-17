@@ -71,13 +71,12 @@ var deployCmd = &cobra.Command{
 		var err error
 		secretType, err = operatorutil.SecretTypeNameToHorizon(deploySecretType)
 		if err != nil {
-			log.Errorf("failed to convert secret type: %s", err)
+			log.Errorf("Failed to convert secret type: %s", err)
 			return nil
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("deploying the synopsys operator in %s namespace", deployNamespace)
 		// Read Commandline Parameters
 		if len(args) == 1 {
 			deployNamespace = args[0]
@@ -85,31 +84,36 @@ var deployCmd = &cobra.Command{
 		// check if operator is already installed
 		ns, err := GetOperatorNamespace()
 		if err == nil {
-			log.Errorf("synopsys operator is already installed in %s namespace", ns)
+			log.Errorf("Synopsys-Operator is already installed in '%s' namespace", ns)
 			return nil
 		}
 
+		fmt.Printf("Deploying the Synopsys-Operator in namespace %s...\n", deployNamespace)
+
+		log.Debugf("Getting Seal Key")
 		sealKey, err := operatorutil.GetRandomString(32)
 		if err != nil {
 			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
 		}
 
 		// Deploy synopsys-operator
+		log.Debugf("Creating Synopsys-Operator components")
 		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, adminPassword, postgresPassword,
 			userPassword, blackduckPassword, secretType, operatorTimeBombInSeconds, dryRun, logLevel, threadiness, postgresRestartInMins,
 			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient)
 
 		err = soperatorSpec.UpdateSOperatorComponents()
 		if err != nil {
-			log.Errorf("error in deploying the synopsys operator due to %+v", err)
+			log.Errorf("Error in deploying the synopsys operator due to %+v", err)
 			return nil
 		}
 
 		// Deploy prometheus
+		log.Debugf("Creating Prometheus components")
 		promtheusSpec := soperator.NewPrometheus(deployNamespace, prometheusImage, restconfig, kubeClient)
 		err = promtheusSpec.UpdatePrometheus()
 		if err != nil {
-			log.Errorf("error deploying Prometheus: %s", err)
+			log.Errorf("Error deploying Prometheus: %s", err)
 			return nil
 		}
 
@@ -124,17 +128,19 @@ var deployCmd = &cobra.Command{
 
 		// expose the routes
 		if strings.EqualFold(exposeUI, "OPENSHIFT") {
+			log.Debugf("Creating Openshift Route for the Synopsys-Operator")
 			routeClient, err := routeclient.NewForConfig(restconfig)
 			if err != nil {
-				log.Errorf("unable to create the route client due to %+v", err)
+				log.Errorf("Unable to create the route client due to %+v", err)
 				return nil
 			}
 			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator", "Service", "synopsys-operator", routev1.TLSTerminationEdge)
 			if err != nil {
-				log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
+				log.Warnf("Could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
 			}
 		}
 
+		fmt.Printf("Successfully deployed the Synopsys-Operator\n")
 		return nil
 	},
 }
@@ -158,16 +164,4 @@ func init() {
 	deployCmd.Flags().BoolVar(&dryRun, "dryRun", dryRun, "dry run to run the test cases")
 	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "log level of synopsys operator")
 	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "number of threads to process the custom resources")
-
-	// Set Log Level
-	level, err := getLogLevel(logLevel)
-	if err != nil {
-		log.Errorf("invalid log level, error: %+v", err)
-	}
-	log.SetLevel(level)
-}
-
-// getLogLevel returns the log level
-func getLogLevel(logLevel string) (log.Level, error) {
-	return log.ParseLevel(logLevel)
 }

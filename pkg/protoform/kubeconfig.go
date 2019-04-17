@@ -44,7 +44,7 @@ func GetKubeConfig(kubeconfigpath string, insecureSkipTLSVerify bool) (*rest.Con
 	// creates the in-cluster config
 	kubeConfig, err = rest.InClusterConfig()
 	if err != nil {
-		log.Warnf("error getting in cluster config. Fallback to native config. Error message: %+v", err)
+		log.Debugf("using native config due to %+v", err)
 		// Determine Config Paths
 		if home := homeDir(); len(kubeconfigpath) == 0 && home != "" {
 			kubeconfigpath = filepath.Join(home, ".kube", "config")

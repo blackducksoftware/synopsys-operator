@@ -75,6 +75,7 @@ var createBlackduckCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Set the Spec Type
+		log.Debugf("Setting template spec %s", baseBlackduckSpec)
 		err = createBlackduckCtl.SwitchSpec(baseBlackduckSpec)
 		if err != nil {
 			log.Errorf("%s", err)
@@ -83,10 +84,11 @@ var createBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Creating a Blackduck\n")
 		blackduckNamespace := args[0]
+		fmt.Printf("Creating BlackDuck %s...\n", blackduckNamespace)
 
 		// Update Spec with user's flags
+		log.Debugf("Updating Spec with User's Flags")
 		createBlackduckCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
@@ -113,11 +115,13 @@ var createBlackduckCmd = &cobra.Command{
 				return nil
 			}
 			// Create Blackduck with Client
+			log.Debugf("Deploying BlackDuck in namespace %s", blackduckNamespace)
 			_, err = blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Create(blackduck)
 			if err != nil {
-				log.Errorf("Error creating the Blackduck : %s", err)
+				log.Errorf("Error creating the Blackduck: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully created BlackDuck: '%s'\n", blackduckNamespace)
 		}
 		return nil
 	},
@@ -138,6 +142,7 @@ var createOpsSightCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Set the Spec Type
+		log.Debugf("Setting OpsSight template spec %s", baseOpsSightSpec)
 		err = createOpsSightCtl.SwitchSpec(baseOpsSightSpec)
 		if err != nil {
 			return err
@@ -145,10 +150,11 @@ var createOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Creating an OpsSight\n")
 		opsSightNamespace := args[0]
+		fmt.Printf("Creating OpsSight %s...\n", opsSightNamespace)
 
 		// Update Spec with user's flags
+		log.Debugf("Updating Spec with User's Flags")
 		createOpsSightCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
@@ -175,11 +181,13 @@ var createOpsSightCmd = &cobra.Command{
 				return nil
 			}
 			// Create OpsSight with Client
+			log.Debugf("Deploying OpsSight in namespace %s", opsSightNamespace)
 			_, err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
 			if err != nil {
-				log.Errorf("Error creating the OpsSight : %s", err)
+				log.Errorf("Error creating the OpsSight: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully created OpsSight: '%s'\n", opsSightNamespace)
 		}
 		return nil
 	},
@@ -199,6 +207,7 @@ var createAlertCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Check/Set the Spec Type
+		log.Debugf("Setting Alert template spec %s", baseAlertSpec)
 		err = createAlertCtl.SwitchSpec(baseAlertSpec)
 		if err != nil {
 			return err
@@ -206,10 +215,11 @@ var createAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Creating an Alert\n")
 		alertNamespace := args[0]
+		fmt.Printf("Creating Alert %s...\n", alertNamespace)
 
 		// Update Spec with user's flags
+		log.Debugf("Updating Spec with User's Flags")
 		createAlertCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
@@ -236,11 +246,13 @@ var createAlertCmd = &cobra.Command{
 				return nil
 			}
 			// Create the Alert with Client
+			log.Debugf("Deploying Alert in namespace %s", alertNamespace)
 			_, err = alertClient.SynopsysV1().Alerts(alertNamespace).Create(alert)
 			if err != nil {
-				log.Errorf("Error creating the Alert : %s", err)
+				log.Errorf("Error creating the Alert: %s", err)
 				return nil
 			}
+			fmt.Printf("Successfully created Alert: '%s'\n", alertNamespace)
 		}
 		return nil
 	},
