@@ -54,14 +54,13 @@ var getBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Blackducks")
-		blackducks, err := util.ListHubs(blackduckClient, "")
-		// util.RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
+		log.Debugf("getting Black Ducks")
+		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
 		if err != nil {
-			log.Errorf("error getting Black Ducks due to %+v", err)
+			log.Errorf("error getting Blackducks due to %+v", err)
 			return nil
 		}
-		fmt.Printf("%+v", blackducks)
+		fmt.Printf("%+v", out)
 		return nil
 	},
 }
@@ -77,7 +76,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Blackduck Root Key")
+		log.Debugf("getting Black Duck root Key")
 		namespace := args[0]
 		filePath := args[1]
 		_, err := util.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
@@ -133,10 +132,10 @@ var getOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting OpsSights")
+		log.Debugf("getting OpsSights")
 		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "opssights")
 		if err != nil {
-			log.Errorf("Error getting OpsSights: %s", out)
+			log.Errorf("error getting OpsSights due to %+v", err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -156,10 +155,10 @@ var getAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Alerts")
+		log.Debugf("getting Alerts")
 		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "alerts")
 		if err != nil {
-			log.Errorf("Error getting Alerts with KubeCmd: %s", out)
+			log.Errorf("error getting Alerts due to %+v", err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
