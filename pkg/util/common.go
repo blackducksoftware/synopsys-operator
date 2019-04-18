@@ -991,7 +991,7 @@ func GetOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string
 }
 
 // CreateOpenShiftRoutes creates a OpenShift routes
-func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string, tlsTerminationType routev1.TLSTerminationType) (*routev1.Route, error) {
+func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string, portName string, tlsTerminationType routev1.TLSTerminationType) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Create(&routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -1003,7 +1003,7 @@ func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace str
 				Kind: routeKind,
 				Name: serviceName,
 			},
-			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: fmt.Sprintf("port-%s", serviceName)}},
+			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: portName}},
 		},
 	})
 }

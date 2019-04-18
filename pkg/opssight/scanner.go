@@ -230,6 +230,7 @@ func (p *SpecConfig) ScannerService() *components.Service {
 		Port:       int32(p.opssight.Spec.ScannerPod.Scanner.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.ScannerPod.Scanner.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", p.opssight.Spec.ScannerPod.Scanner.Name),
 	})
 
 	return service
@@ -243,12 +244,13 @@ func (p *SpecConfig) ImageFacadeService() *components.Service {
 	})
 	// TODO verify that this hits the *perceptor-scanner pod* !!!
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name})
+	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 
 	service.AddPort(horizonapi.ServicePortConfig{
 		Port:       int32(p.opssight.Spec.ScannerPod.ImageFacade.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.ScannerPod.ImageFacade.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", p.opssight.Spec.ScannerPod.ImageFacade.Name),
 	})
 
 	return service

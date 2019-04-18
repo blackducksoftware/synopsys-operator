@@ -124,6 +124,7 @@ func (p *SpecConfig) PerceptorMetricsService() (*components.Service, error) {
 		Port:       9090,
 		TargetPort: "9090",
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", "prometheus"),
 	})
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
@@ -145,6 +146,7 @@ func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, err
 		Port:       9090,
 		TargetPort: "9090",
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", "prometheus-exposed"),
 	})
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
@@ -166,6 +168,7 @@ func (p *SpecConfig) PerceptorMetricsLoadBalancerService() (*components.Service,
 		Port:       9090,
 		TargetPort: "9090",
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", "prometheus-exposed"),
 	})
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})

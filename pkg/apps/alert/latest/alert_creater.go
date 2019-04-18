@@ -73,7 +73,7 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	// Create Route if on Openshift
 	if ac.RouteClient != nil && alert.Spec.ExposeService == "OPENSHIFT" {
 		log.Debugf("creating an Openshift Route for Alert")
-		_, err := util.CreateOpenShiftRoutes(ac.RouteClient, alert.Spec.Namespace, alert.Spec.Namespace, "Service", "alert", routev1.TLSTerminationPassthrough)
+		_, err := util.CreateOpenShiftRoutes(ac.RouteClient, alert.Spec.Namespace, alert.Spec.Namespace, "Service", "alert", fmt.Sprintf("%d-tcp", *specConfig.config.Port), routev1.TLSTerminationPassthrough)
 		if err != nil {
 			log.Errorf("unable to create the openshift route due to %+v", err)
 		}

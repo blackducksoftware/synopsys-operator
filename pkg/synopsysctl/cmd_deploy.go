@@ -134,7 +134,7 @@ var deployCmd = &cobra.Command{
 				log.Errorf("Unable to create the route client due to %+v", err)
 				return nil
 			}
-			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator", "Service", "synopsys-operator", routev1.TLSTerminationEdge)
+			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator", "Service", "synopsys-operator", "synopsys-operator-ui", routev1.TLSTerminationEdge)
 			if err != nil {
 				log.Warnf("Could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
 			}
