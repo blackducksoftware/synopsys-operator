@@ -128,7 +128,11 @@ func (p *SpecConfig) scannerContainer() (*components.Container, error) {
 }
 
 func (p *SpecConfig) imageFacadeContainer() (*components.Container, error) {
-	priv := true
+	priv := false
+	if !strings.EqualFold(p.opssight.Spec.ScannerPod.ImageFacade.ImagePullerType, "skopeo") {
+		priv = true
+	}
+
 	name := p.opssight.Spec.ScannerPod.ImageFacade.Name
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       name,
