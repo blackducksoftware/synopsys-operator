@@ -49,7 +49,7 @@ var getBlackduckCmd = &cobra.Command{
 	Short:   "Get a list of Blackducks in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
+			return fmt.Errorf("this command takes 0 arguments")
 		}
 		return nil
 	},
@@ -71,7 +71,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 	Short: "Get the root key of Black Duck for source code upload",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("Black Duck name or file path to store the master key is missing")
+			return fmt.Errorf("this command takes 2 arguments")
 		}
 		return nil
 	},
@@ -132,7 +132,7 @@ var getOpsSightCmd = &cobra.Command{
 	Short:   "Get a list of OpsSights in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
+			return fmt.Errorf("this command takes 0 arguments")
 		}
 		return nil
 	},
@@ -155,7 +155,7 @@ var getAlertCmd = &cobra.Command{
 	Short:   "Get a list of Alerts in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
+			return fmt.Errorf("this command takes 0 arguments")
 		}
 		return nil
 	},

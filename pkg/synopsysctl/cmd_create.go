@@ -67,7 +67,7 @@ var createBlackduckCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		// Check the Arguments
 		err := createBlackduckCtl.CheckSpecFlags()
@@ -134,7 +134,7 @@ var createOpsSightCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		// Check the Arguments
 		err := createOpsSightCtl.CheckSpecFlags()
@@ -200,7 +200,7 @@ var createAlertCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		err := createAlertCtl.CheckSpecFlags()
 		if err != nil {

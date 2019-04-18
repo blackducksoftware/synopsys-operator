@@ -44,7 +44,7 @@ var deleteBlackduckCmd = &cobra.Command{
 	Short: "Delete a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
@@ -69,7 +69,7 @@ var deleteOpsSightCmd = &cobra.Command{
 	Short: "Delete an OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
@@ -94,7 +94,7 @@ var deleteAlertCmd = &cobra.Command{
 	Short: "Delete an Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},

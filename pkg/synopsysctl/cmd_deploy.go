@@ -61,12 +61,12 @@ var secretType horizonapi.SecretType
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use:   "deploy [NAMESPACE]",
+	Use:   "deploy NAMESPACE",
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) > 1 {
-			return fmt.Errorf("namespace to deploy the synopsys operator is missing")
+			return fmt.Errorf("this command takes up to 1 argument")
 		}
 		// Check the Secret Type
 		var err error
@@ -90,6 +90,13 @@ var deployCmd = &cobra.Command{
 		}
 
 		log.Infof("deploying the Synopsys-Operator in namespace %s...", deployNamespace)
+
+		// if image has no tag then add "latest"
+		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
+		if !imageHasTag {
+			synopsysOperatorImage = fmt.Sprintf("%s:latest", synopsysOperatorImage)
+			log.Debugf("adding tag 'latest' to Synopsys-Operator's image: %s", synopsysOperatorImage)
+		}
 
 		log.Debugf("getting Seal Key")
 		sealKey, err := operatorutil.GetRandomString(32)
