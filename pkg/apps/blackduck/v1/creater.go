@@ -145,7 +145,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		if strings.ToUpper(blackduck.Spec.ExposeService) == "OPENSHIFT" && hc.routeClient != nil {
 			route, err := util.GetOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
 			if err != nil {
-				route, err = util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver", routev1.TLSTerminationPassthrough)
+				route, err = util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver", "port-webserver", routev1.TLSTerminationPassthrough)
 				if err != nil {
 					log.Errorf("unable to create the openshift route due to %+v", err)
 				}

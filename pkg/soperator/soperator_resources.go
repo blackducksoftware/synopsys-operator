@@ -22,9 +22,7 @@ under the License.
 package soperator
 
 import (
-	"crypto/x509/pkix"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -280,6 +278,8 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 		"PodWaitTimeoutSeconds":         specConfig.PodWaitTimeoutSeconds,
 		"ResyncIntervalInSeconds":       specConfig.ResyncIntervalInSeconds,
 		"TerminationGracePeriodSeconds": specConfig.TerminationGracePeriodSeconds,
+		"Image":                         specConfig.Image,
+		"Expose":                        specConfig.Expose,
 	}
 	bytes, err := json.Marshal(configData)
 	if err != nil {
@@ -287,7 +287,6 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 	}
 
 	cmData["config.json"] = string(bytes)
-	cmData["image"] = specConfig.Image
 	synopsysOperatorConfigMap.AddData(cmData)
 
 	synopsysOperatorConfigMap.AddLabels(map[string]string{"app": "synopsys-operator"})
@@ -446,23 +445,14 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 
 // GetTLSCertificateSecret creates a TLS certificate in horizon format
 func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secret {
-	//Generate certificate and key secret
-	cert, key, err := util.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
-		CommonName: fmt.Sprintf("synopsys-operator.%s.svc", specConfig.Namespace),
-	})
-	if err != nil {
-		log.Error("couldn't generate certificate and key.")
-		return nil
-	}
-
 	tlsSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 		Name:      "synopsys-operator-tls",
 		Namespace: specConfig.Namespace,
 		Type:      specConfig.SecretType,
 	})
-	tlsSecret.AddStringData(map[string]string{
-		"cert.crt": cert,
-		"cert.key": key,
+	tlsSecret.AddData(map[string][]byte{
+		"cert.crt": []byte(specConfig.Certificate),
+		"cert.key": []byte(specConfig.CertificateKey),
 	})
 
 	tlsSecret.AddLabels(map[string]string{"app": "synopsys-operator"})

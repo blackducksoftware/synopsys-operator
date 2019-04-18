@@ -26,6 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetPrometheusService creates a Horizon Service component for Prometheus
@@ -159,9 +160,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 	prometheusConfigMapVolume := horizoncomponents.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "config-volume",
 		MapOrSecretName: "prometheus",
-		//Items:           "map[string]KeyAndMode",
-		//DefaultMode:     "*int32",
-		//Required:        "*bool",
+		DefaultMode:     util.IntToInt32(420),
 	})
 
 	prometheusPod.AddContainer(prometheusContainer)
@@ -186,7 +185,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncompone
 
 	cmData := map[string]string{}
 	cmData["prometheus.yml"] = "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"
-	cmData["image"] = specConfig.Image
+	cmData["Image"] = specConfig.Image
 	prometheusConfigMap.AddData(cmData)
 
 	prometheusConfigMap.AddLabels(map[string]string{"app": "prometheus"})

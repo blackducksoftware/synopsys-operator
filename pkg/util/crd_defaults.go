@@ -42,7 +42,7 @@ func GetBlackDuckTemplate() *blackduckv1.BlackduckSpec {
 		Size:              "Small",
 		DbPrototype:       "",
 		CertificateName:   "default",
-		Type:              "worker",
+		Type:              "",
 		Version:           "2019.4.0",
 		LicenseKey:        "",
 		PersistentStorage: false,

@@ -22,6 +22,8 @@ under the License.
 package soperator
 
 import (
+	"crypto/x509/pkix"
+	"encoding/json"
 	"fmt"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
@@ -100,19 +102,23 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 	return currCM.Data["image"], nil
 }
 
-// GetSpecConfigForCurrentComponents returns a spec that respesents the current Synopsys-Operator in the cluster
-func GetSpecConfigForCurrentComponents(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
+// GetOldOperatorSpec returns a spec that respesents the current Synopsys-Operator in the cluster
+func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
 	log.Debugf("creating new synopsys operator spec")
-	sOperatorSpec := SpecConfig{}
-	// Set the Namespace
-	sOperatorSpec.Namespace = namespace
-	// Set the image
 	currCM, err := operatorutil.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Synopsys-Operator ConfigMap: %s", err)
 	}
-	sOperatorSpec.Image = currCM.Data["image"]
-	log.Debugf("got current synopsys operator image from cluster: %s", sOperatorSpec.Image)
+
+	sOperatorSpec := SpecConfig{}
+	sOperatorSpec.Namespace = namespace
+	sOperatorSpec.RestConfig = restConfig
+	sOperatorSpec.KubeClient = kubeClient
+
+	err = json.Unmarshal([]byte(currCM.Data["config.json"]), &sOperatorSpec)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal synopsys operator configMap data due to %+v", err)
+	}
 
 	// Set the secretType and secret data
 	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
@@ -138,16 +144,31 @@ func GetSpecConfigForCurrentComponents(restConfig *rest.Config, kubeClient *kube
 		}
 	}
 	sOperatorSpec.SealKey = sealKey
-	sOperatorSpec.RestConfig = restConfig
-	sOperatorSpec.KubeClient = kubeClient
 
+	// Set the secretType and secret data
+	tlsSecret, err := operatorutil.GetSecret(kubeClient, namespace, "synopsys-operator-tls")
+	if err != nil {
+		return nil, fmt.Errorf("unable to get synopsys operator tls secret due to %+v", err)
+	}
+	certificate := string(tlsSecret.Data["cert.crt"])
+	certificateKey := string(tlsSecret.Data["cert.key"])
+	if len(certificate) == 0 || len(certificateKey) == 0 {
+		certificate, certificateKey, err = operatorutil.GeneratePemSelfSignedCertificateAndKey(
+			pkix.Name{CommonName: fmt.Sprintf("synopsys-operator.%s.svc", namespace)},
+		)
+		if err != nil {
+			log.Panicf("unable to generate tls certificate and key due to %+v", err)
+		}
+	}
+	sOperatorSpec.Certificate = certificate
+	sOperatorSpec.CertificateKey = certificateKey
 	log.Debugf("got current synopsys operator secret data from Cluster")
 
 	return &sOperatorSpec, nil
 }
 
-// GetSpecConfigForCurrentPrometheusComponents returns a spec that respesents the current prometheus in the cluster
-func GetSpecConfigForCurrentPrometheusComponents(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*PrometheusSpecConfig, error) {
+// GetOldPrometheusSpec returns a spec that respesents the current prometheus in the cluster
+func GetOldPrometheusSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*PrometheusSpecConfig, error) {
 	log.Debugf("creating New Prometheus SpecConfig")
 	prometheusSpec := PrometheusSpecConfig{}
 	// Set Namespace
@@ -157,7 +178,7 @@ func GetSpecConfigForCurrentPrometheusComponents(restConfig *rest.Config, kubeCl
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get Prometheus ConfigMap: %s", err)
 	}
-	prometheusSpec.Image = currCM.Data["image"]
+	prometheusSpec.Image = currCM.Data["Image"]
 	prometheusSpec.RestConfig = restConfig
 	prometheusSpec.KubeClient = kubeClient
 	log.Debugf("added image %s to Prometheus SpecConfig", prometheusSpec.Image)

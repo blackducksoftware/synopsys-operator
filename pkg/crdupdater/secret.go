@@ -102,6 +102,7 @@ func (s *Secret) add(isPatched bool) (bool, error) {
 				return false, errors.Annotatef(err, "patch secret:")
 			}
 		}
+		isPatched = isAdded || isUpdated || isPatched
 	}
 	if isAdded && !s.config.dryRun {
 		err := s.deployer.Deployer.Run()
@@ -109,7 +110,7 @@ func (s *Secret) add(isPatched bool) (bool, error) {
 			return false, errors.Annotatef(err, "unable to deploy secret in %s", s.config.namespace)
 		}
 	}
-	return isAdded || isUpdated, nil
+	return isPatched, nil
 }
 
 // get gets the secret

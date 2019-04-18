@@ -142,19 +142,19 @@ func (ctl *Ctl) CheckSpecFlags() error {
 		pvc := &blackduckv1.PVC{}
 		err := json.Unmarshal([]byte(pvcJSON), pvc)
 		if err != nil {
-			return fmt.Errorf("Invalid format for PVC: %+v", err)
+			return fmt.Errorf("invalid format for PVC: %+v", err)
 		}
 	}
 	for _, environ := range ctl.Environs {
 		if !strings.Contains(environ, ":") {
-			return fmt.Errorf("Invalid Environ Format - NAME:VALUE")
+			return fmt.Errorf("invalid Environ Format - NAME:VALUE")
 		}
 	}
 	for _, uidJSON := range ctl.ImageUIDMapJSONSlice {
 		uidStruct := &uid{}
 		err := json.Unmarshal([]byte(uidJSON), uidStruct)
 		if err != nil {
-			return fmt.Errorf("Invalid format for Image UID")
+			return fmt.Errorf("invalid format for Image UID")
 		}
 	}
 	return nil

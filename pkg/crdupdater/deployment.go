@@ -31,6 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -149,6 +150,7 @@ type deploymentComparator struct {
 	MaxCPU   *resource.Quantity
 	MinMem   *resource.Quantity
 	MaxMem   *resource.Quantity
+	EnvFrom  []corev1.EnvFromSource
 }
 
 // patch patches the deployment
@@ -178,6 +180,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 						MaxCPU:   oldContainer.Resources.Limits.Cpu(),
 						MinMem:   oldContainer.Resources.Requests.Memory(),
 						MaxMem:   oldContainer.Resources.Limits.Memory(),
+						EnvFrom:  oldContainer.EnvFrom,
 					},
 					deploymentComparator{
 						Image:    newContainer.Image,
@@ -186,9 +189,17 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 						MaxCPU:   newContainer.Resources.Limits.Cpu(),
 						MinMem:   newContainer.Resources.Requests.Memory(),
 						MaxMem:   newContainer.Resources.Limits.Memory(),
-					}) {
+						EnvFrom:  newContainer.EnvFrom,
+					}) &&
+				!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) &&
+				!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) &&
+				!reflect.DeepEqual(sortVolumes(d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Volumes), sortVolumes(d.newDeployments[deployment.GetName()].Spec.Template.Spec.Volumes)) {
 				isChanged = true
+				break
 			}
+		}
+		if isChanged {
+			break
 		}
 	}
 

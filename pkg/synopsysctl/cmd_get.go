@@ -117,10 +117,10 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 		fileName := filepath.Join(filePath, fmt.Sprintf("%s.key", namespace))
 		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
 		if err != nil {
-			log.Errorf("Error writing to %s because %+v", fileName, err)
+			log.Errorf("error writing to %s because %+v", fileName, err)
 			return nil
 		}
-		log.Infof("Successfully wrote Root Key to %s", fileName)
+		log.Infof("successfully wrote Root Key to %s", fileName)
 		return nil
 	},
 }
@@ -140,7 +140,7 @@ var getOpsSightCmd = &cobra.Command{
 		log.Debugf("Getting OpsSights...")
 		out, err := RunKubeCmd(restconfig, kube, openshift, "get", "opssights")
 		if err != nil {
-			log.Errorf("Error getting OpsSights due to %+v", out)
+			log.Errorf("error getting OpsSights due to %+v", out)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -163,7 +163,7 @@ var getAlertCmd = &cobra.Command{
 		log.Debugf("Getting Alerts...")
 		out, err := RunKubeCmd(restconfig, kube, openshift, "get", "alerts")
 		if err != nil {
-			log.Errorf("Error getting Alerts due to %+v", out)
+			log.Errorf("error getting Alerts due to %+v", out)
 			return nil
 		}
 		fmt.Printf("%+v", out)

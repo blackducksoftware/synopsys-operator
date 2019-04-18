@@ -114,6 +114,7 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 		Port:       int32(p.opssight.Spec.Perceptor.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Perceptor.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", p.opssight.Spec.Perceptor.Name),
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -138,6 +139,7 @@ func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
 		Port:       int32(p.opssight.Spec.Perceptor.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Perceptor.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", name),
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -162,6 +164,7 @@ func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error)
 		Port:       int32(p.opssight.Spec.Perceptor.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Perceptor.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", name),
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
