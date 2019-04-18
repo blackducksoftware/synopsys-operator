@@ -188,7 +188,11 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 						MaxMem:   newContainer.Resources.Limits.Memory(),
 					}) {
 				isChanged = true
+				break
 			}
+		}
+		if isChanged {
+			break
 		}
 	}
 

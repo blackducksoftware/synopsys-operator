@@ -48,7 +48,7 @@ var destroyCmd = &cobra.Command{
 		// Get the namespace of the Synopsys-Operator
 		destroyNamespace, err := GetOperatorNamespace()
 		if err != nil {
-			log.Warnf("Error finding synopsys operator due to %+v", err)
+			log.Warnf("error finding synopsys operator due to %+v", err)
 		}
 		log.Infof("Destroying the Synopsys-Operator '%s'...", destroyNamespace)
 
@@ -63,7 +63,7 @@ var destroyCmd = &cobra.Command{
 		log.Debugf("Deleting CRDs")
 		apiExtensionClient, err := apiextensionsclient.NewForConfig(restconfig)
 		if err != nil {
-			log.Errorf("Error creating the api extension client due to %+v", err)
+			log.Errorf("error creating the api extension client due to %+v", err)
 		}
 
 		crds := []string{"alerts.synopsys.com", "blackducks.synopsys.com", "hubs.synopsys.com", "opssights.synopsys.com"}

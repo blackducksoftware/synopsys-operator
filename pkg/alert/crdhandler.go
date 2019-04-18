@@ -99,11 +99,11 @@ func (h *Handler) ObjectDeleted(name string) {
 
 // ObjectUpdated will be called for update alert events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	log.Debugf("Updating Object to %+v", objNew)
+	log.Debugf("updating Object to %+v", objNew)
 	// Verify the object is an Alert
 	alert, ok := objNew.(*alertapi.Alert)
 	if !ok {
-		log.Error("Unable to cast to Alert object")
+		log.Error("unable to cast to Alert object")
 		return
 	}
 

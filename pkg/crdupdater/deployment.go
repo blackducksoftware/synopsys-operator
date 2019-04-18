@@ -188,7 +188,11 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 						MaxMem:   newContainer.Resources.Limits.Memory(),
 					}) {
 				isChanged = true
+				break
 			}
+		}
+		if isChanged {
+			break
 		}
 	}
 

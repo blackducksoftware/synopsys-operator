@@ -36,6 +36,7 @@ import (
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,6 +54,14 @@ var updateSecretAdminPassword = ""
 var updateSecretPostgresPassword = ""
 var updateSecretUserPassword = ""
 var updateSecretBlackduckPassword = ""
+var updateExposeUI = ""
+var updateTerminationGracePeriodSeconds int64
+var updateOperatorTimeBombInSeconds int64
+var updateLogLevel = ""
+var updateThreadiness int
+var updatePostgresRestartInMins int64
+var updatePodWaitTimeoutSeconds int64
+var updateResyncIntervalInSeconds int64
 
 // updateCmd provides functionality to update/upgrade features of
 // Synopsys resources
@@ -74,59 +83,116 @@ var updateOperatorCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		namespace, err := GetOperatorNamespace()
 		if err != nil {
-			log.Errorf("Error finding Synopsys-Operator: %s", err)
+			log.Errorf("unable to find synopsys operator in the cluster because %+v", err)
 			return nil
 		}
 
-		log.Infof("Updating the Synopsys-Operator in namespace %s...", namespace)
+		log.Infof("updating the synopsys operator in namespace %s...", namespace)
 
 		// Create new Synopsys-Operator SpecConfig
-		sOperatorSpecConfig, err := soperator.GetSpecConfigForCurrentComponents(restconfig, kubeClient, namespace)
+		oldOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespace)
 		if err != nil {
-			log.Errorf("Error Updating Operator: %s", err)
+			log.Errorf("unable to update the synopsys operator because %+v", err)
 			return nil
 		}
+		newOperatorSpec := soperator.SpecConfig{}
 		// Update Spec with changed values
 		if cmd.Flag("synopsys-operator-image").Changed {
-			log.Debugf("Updating SynopsysOperatorImage to %s", updateSynopsysOperatorImage)
-			sOperatorSpecConfig.Image = updateSynopsysOperatorImage
+			log.Debugf("updating Synopsys Operator Image to %s", updateSynopsysOperatorImage)
+			newOperatorSpec.Image = updateSynopsysOperatorImage
 		}
 		if cmd.Flag("admin-password").Changed {
-			log.Debugf("Updating SecretAdminPassword")
-			sOperatorSpecConfig.AdminPassword = updateSecretAdminPassword
+			log.Debugf("updating admin password")
+			newOperatorSpec.AdminPassword = updateSecretAdminPassword
 		}
 		if cmd.Flag("postgres-password").Changed {
-			log.Debugf("Updating SecretPostgresPassword")
-			sOperatorSpecConfig.PostgresPassword = updateSecretPostgresPassword
+			log.Debugf("updating postgres password")
+			newOperatorSpec.PostgresPassword = updateSecretPostgresPassword
 		}
 		if cmd.Flag("user-password").Changed {
-			log.Debugf("Updating SecretUserPassword")
-			sOperatorSpecConfig.UserPassword = updateSecretUserPassword
+			log.Debugf("updating user password")
+			newOperatorSpec.UserPassword = updateSecretUserPassword
 		}
 		if cmd.Flag("blackduck-password").Changed {
-			log.Debugf("Updating SecretBlackduckPassword")
-			sOperatorSpecConfig.BlackduckPassword = updateSecretBlackduckPassword
+			log.Debugf("updating blackduck password")
+			newOperatorSpec.BlackduckPassword = updateSecretBlackduckPassword
 		}
-		err = sOperatorSpecConfig.UpdateSynopsysOperator(restconfig, kubeClient, namespace, blackduckClient, opssightClient, alertClient)
-		if err != nil {
-			log.Errorf("Failed to update the Synopsys-Operator: %s", err)
+		if cmd.Flag("expose-ui").Changed {
+			log.Debugf("updating expose ui")
+			newOperatorSpec.Expose = updateExposeUI
+		}
+		if cmd.Flag("operator-time-bomb-in-seconds").Changed {
+			log.Debugf("updating operator time bomb in seconds")
+			newOperatorSpec.OperatorTimeBombInSeconds = updateOperatorTimeBombInSeconds
+		}
+		if cmd.Flag("postgres-restart-in-minutes").Changed {
+			log.Debugf("updating postgres restart in minutes")
+			newOperatorSpec.PostgresRestartInMins = updatePostgresRestartInMins
+		}
+		if cmd.Flag("pod-wait-timeout-in-seconds").Changed {
+			log.Debugf("updating pod wait timeout in seconds")
+			newOperatorSpec.PodWaitTimeoutSeconds = updatePodWaitTimeoutSeconds
+		}
+		if cmd.Flag("resync-interval-in-seconds").Changed {
+			log.Debugf("updating resync interval in seconds")
+			newOperatorSpec.ResyncIntervalInSeconds = updateResyncIntervalInSeconds
+		}
+		if cmd.Flag("postgres-termination-grace-period").Changed {
+			log.Debugf("updating postgres termination grace period")
+			newOperatorSpec.TerminationGracePeriodSeconds = updateTerminationGracePeriodSeconds
+		}
+		if cmd.Flag("log-level").Changed {
+			log.Debugf("updating log level")
+			newOperatorSpec.LogLevel = updateLogLevel
+		}
+		if cmd.Flag("no-of-threads").Changed {
+			log.Debugf("updating no of threads")
+			newOperatorSpec.Threadiness = updateThreadiness
 		}
 
-		log.Debugf("Updating Prometheus in namespace %s", namespace)
+		// merge old and new data
+		err = mergo.Merge(&newOperatorSpec, oldOperatorSpec)
+		if err != nil {
+			log.Errorf("unable to merge old and new synopsys operator info because %+v", err)
+			return nil
+		}
+
+		// update synopsys operator
+		err = newOperatorSpec.UpdateSynopsysOperator(restconfig, kubeClient, namespace, blackduckClient, opssightClient, alertClient, oldOperatorSpec)
+		if err != nil {
+			log.Errorf("unable to update the synopsys operator because %+v", err)
+			return nil
+		}
+
+		log.Debugf("updating Prometheus in namespace %s", namespace)
 		// Create new Prometheus SpecConfig
-		prometheusSpecConfig, err := soperator.GetSpecConfigForCurrentPrometheusComponents(restconfig, kubeClient, namespace)
+		oldPrometheusSpec, err := soperator.GetOldPrometheusSpec(restconfig, kubeClient, namespace)
 		if err != nil {
-			log.Errorf("Error Updating the Operator: %s", err)
+			log.Errorf("error in updating the prometheus because %+v", err)
+			return nil
 		}
+
+		// check for changes
+		newPrometheusSpec := soperator.PrometheusSpecConfig{}
 		if cmd.Flag("prometheus-image").Changed {
-			log.Debugf("Updating PrometheusImage to %s", updatePrometheusImage)
-			prometheusSpecConfig.Image = updatePrometheusImage
+			log.Debugf("updating PrometheusImage to %s", updatePrometheusImage)
+			newPrometheusSpec.Image = updatePrometheusImage
 		}
-		err = prometheusSpecConfig.UpdatePrometheus()
+
+		// merge old and new data
+		err = mergo.Merge(&newPrometheusSpec, oldPrometheusSpec)
 		if err != nil {
-			log.Errorf("Failed to update Prometheus: %s", err)
+			log.Errorf("unable to merge old and new prometheus info because %+v", err)
+			return nil
 		}
-		log.Infof("Successfully updated the Synopsys-Operator: '%s'", namespace)
+
+		// update prometheus
+		err = newPrometheusSpec.UpdatePrometheus()
+		if err != nil {
+			log.Errorf("unable to update Prometheus because %+v", err)
+			return nil
+		}
+		log.Infof("successfully updated the synopsys operator in '%s' namespace", namespace)
 		return nil
 	},
 }
@@ -143,19 +209,19 @@ var updateBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackduckNamespace := args[0]
-		log.Infof("Updating BlackDuck %s...", blackduckNamespace)
+		log.Infof("updating BlackDuck %s...", blackduckNamespace)
 
 		// Get the Blackuck
 		currBlackduck, err := operatorutil.GetHub(blackduckClient, blackduckNamespace, blackduckNamespace)
 		if err != nil {
-			log.Errorf("Error getting Blackduck: %s", err)
+			log.Errorf("error getting Blackduck: %s", err)
 			return nil
 		}
 		// Check if it can be updated
 		updateBlackduckCtl.SetSpec(currBlackduck.Spec)
 		canUpdate, err := updateBlackduckCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update: %s", err)
+			log.Errorf("cannot Update: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -169,10 +235,10 @@ var updateBlackduckCmd = &cobra.Command{
 			// Update Blackduck
 			_, err = operatorutil.UpdateBlackduck(blackduckClient, newBlackduck.Spec.Namespace, &newBlackduck)
 			if err != nil {
-				log.Errorf("Error updating the BlackDuck: %s", err)
+				log.Errorf("error updating the BlackDuck: %s", err)
 				return nil
 			}
-			log.Infof("Successfully updated BlackDuck: '%s'", blackduckNamespace)
+			log.Infof("successfully updated BlackDuck: '%s'", blackduckNamespace)
 		}
 		return nil
 	},
@@ -193,16 +259,16 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 		newSealKey := args[1]
 		filePath := args[2]
 
-		log.Infof("Updating BlackDuck %s Root Key...", namespace)
+		log.Infof("updating BlackDuck %s Root Key...", namespace)
 
 		_, err := operatorutil.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
 		if err != nil {
-			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
+			log.Errorf("unable to find Black Duck %s instance because %+v", namespace, err)
 			return nil
 		}
 		operatorNamespace, err := GetOperatorNamespace()
 		if err != nil {
-			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
+			log.Errorf("unable to find the Synopsys Operator instance because %+v", err)
 			return nil
 		}
 
@@ -216,7 +282,7 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 		// Filter the upload cache pod to get the root key using the seal key
 		uploadCachePod, err := operatorutil.FilterPodByNamePrefixInNamespace(kubeClient, namespace, "uploadcache")
 		if err != nil {
-			log.Errorf("unable to filter the upload cache pod of %s due to %+v", namespace, err)
+			log.Errorf("unable to filter the upload cache pod of %s because %+v", namespace, err)
 			return nil
 		}
 
@@ -230,17 +296,17 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 
 		secret, err := operatorutil.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
 		if err != nil {
-			log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
+			log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace because %+v", operatorNamespace, err)
 			return nil
 		}
 		secret.Data["SEAL_KEY"] = []byte(newSealKey)
 
 		err = operatorutil.UpdateSecret(kubeClient, operatorNamespace, secret)
 		if err != nil {
-			log.Errorf("unable to update the Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
+			log.Errorf("unable to update the Synopsys Operator blackduck-secret in %s namespace because %+v", operatorNamespace, err)
 			return nil
 		}
-		log.Infof("Successfully updated BlackDuck %s's Root Key", namespace)
+		log.Infof("successfully updated BlackDuck %s's Root Key", namespace)
 		return nil
 	},
 }
@@ -257,19 +323,19 @@ var updateOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opsSightNamespace := args[0]
-		log.Infof("Updating OpsSight %s...", opsSightNamespace)
+		log.Infof("updating OpsSight %s...", opsSightNamespace)
 
 		// Get the current OpsSight
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightNamespace, opsSightNamespace)
 		if err != nil {
-			log.Errorf("Error getting OpsSight: %s", err)
+			log.Errorf("error getting OpsSight: %s", err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update: %s", err)
+			log.Errorf("cannot Update: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -286,7 +352,7 @@ var updateOpsSightCmd = &cobra.Command{
 				log.Errorf("Error updating the OpsSight: %s", err)
 				return nil
 			}
-			log.Infof("Successfully updated OpsSight: '%s'", opsSightNamespace)
+			log.Infof("successfully updated OpsSight: '%s'", opsSightNamespace)
 		}
 		return nil
 	},
@@ -307,7 +373,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 		componentName := args[1]
 		componentImage := args[2]
 
-		log.Infof("Updating OpsSight %s's Image...", opsSightName)
+		log.Infof("updating OpsSight %s's Image...", opsSightName)
 
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
@@ -319,7 +385,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s", err)
+			log.Errorf("cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -342,7 +408,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 			default:
 				log.Errorf("%s is not a valid COMPONENT", componentName)
 				log.Errorf("Valid Components: Perceptor, Scanner, ImageFacade, ImagePerceiver, PodPerceiver, Skyfire, Prometheus")
-				return fmt.Errorf("Invalid Component Name")
+				return fmt.Errorf("invalid Component Name")
 			}
 			// Update OpsSight with New Image
 			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, currOpsSight)
@@ -350,7 +416,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 				log.Errorf("Error updating the OpsSight: %s", err)
 				return nil
 			}
-			log.Infof("Successfully updated OpsSight %s's Image", opsSightName)
+			log.Infof("successfully updated OpsSight %s's Image", opsSightName)
 		}
 		return nil
 	},
@@ -372,28 +438,28 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		hostDomain := args[2]
 		hostPort, err := strconv.ParseInt(args[3], 0, 64)
 		if err != nil {
-			log.Errorf("Invalid Port Number: '%s'", err)
+			log.Errorf("invalid Port Number: '%s'", err)
 		}
 		hostUser := args[4]
 		hostPassword := args[5]
 		hostScanLimit, err := strconv.ParseInt(args[6], 0, 64)
 		if err != nil {
-			log.Errorf("Invalid Concurrent Scan Limit: %s", err)
+			log.Errorf("invalid Concurrent Scan Limit: %s", err)
 		}
 
-		log.Infof("Adding External Host to OpsSight %s...", opsSightName)
+		log.Infof("adding External Host to OpsSight %s...", opsSightName)
 
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
-			log.Errorf("Error getting the OpsSight: %s", err)
+			log.Errorf("error getting the OpsSight: %s", err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s", err)
+			log.Errorf("cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -410,10 +476,10 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 			// Update OpsSight with External Host
 			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, currOpsSight)
 			if err != nil {
-				log.Errorf("Error updating the OpsSight: %s", err)
+				log.Errorf("error updating the OpsSight: %s", err)
 				return nil
 			}
-			log.Infof("Successfully updated OpsSight %s's External Host", opsSightName)
+			log.Infof("successfully updated OpsSight %s's External Host", opsSightName)
 		}
 		return nil
 	},
@@ -436,19 +502,19 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		regUser := args[2]
 		regPass := args[3]
 
-		log.Infof("Adding Internal Registry to OpsSight %s...", opsSightName)
+		log.Infof("adding Internal Registry to OpsSight %s...", opsSightName)
 
 		// Get OpsSight Spec
 		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
-			log.Errorf("Error adding Internal Registry while getting OpsSight: %s", err)
+			log.Errorf("error adding Internal Registry while getting OpsSight: %s", err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update OpsSight: %s", err)
+			log.Errorf("cannot Update OpsSight: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -462,10 +528,10 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 			// Update OpsSight with Internal Registry
 			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, currOpsSight)
 			if err != nil {
-				log.Errorf("Error adding Internal Registry with updating OpsSight: %s", err)
+				log.Errorf("error adding Internal Registry with updating OpsSight: %s", err)
 				return nil
 			}
-			log.Infof("Successfully updated OpsSight %s's Registry", opsSightName)
+			log.Infof("successfully updated OpsSight %s's Registry", opsSightName)
 		}
 		return nil
 	},
@@ -484,12 +550,12 @@ var updateAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertNamespace := args[0]
 
-		log.Infof("Updating Alert %s...\n", alertNamespace)
+		log.Infof("updating Alert %s...", alertNamespace)
 
 		// Get the Alert
 		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
 		if err != nil {
-			log.Errorf("Error Updaing Alert while getting the Alert: %s", err)
+			log.Errorf("error Updaing Alert while getting the Alert: %s", err)
 			return nil
 		}
 		updateAlertCtl.SetSpec(currAlert.Spec)
@@ -497,7 +563,7 @@ var updateAlertCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateAlertCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("Cannot Update Alert: %s", err)
+			log.Errorf("cannot Update Alert: %s", err)
 			return nil
 		}
 		if canUpdate {
@@ -511,10 +577,10 @@ var updateAlertCmd = &cobra.Command{
 			// Update Alert
 			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
 			if err != nil {
-				log.Errorf("Error Updating the Alert: %s", err)
+				log.Errorf("error in updating the alert due to %+v", err)
 				return nil
 			}
-			log.Infof("Successfully updated Alert: '%s'", alertNamespace)
+			log.Infof("successfully updated Alert: '%s'", alertNamespace)
 		}
 		return nil
 	},
@@ -530,11 +596,19 @@ func init() {
 
 	// Add Operator Commands
 	updateOperatorCmd.Flags().StringVarP(&updateSynopsysOperatorImage, "synopsys-operator-image", "i", updateSynopsysOperatorImage, "synopsys operator image URL")
-	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "prometheus-image", "p", updatePrometheusImage, "prometheus image URL")
-	updateOperatorCmd.Flags().StringVar(&updateSecretAdminPassword, "admin-password", updateSecretAdminPassword, "postgres admin password")
-	updateOperatorCmd.Flags().StringVar(&updateSecretPostgresPassword, "postgres-password", updateSecretPostgresPassword, "postgres password")
-	updateOperatorCmd.Flags().StringVar(&updateSecretUserPassword, "user-password", updateSecretUserPassword, "postgres user password")
-	updateOperatorCmd.Flags().StringVar(&updateSecretBlackduckPassword, "blackduck-password", updateSecretBlackduckPassword, "blackduck password for 'sysadmin' account")
+	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "prometheus-image", "k", updatePrometheusImage, "prometheus image URL")
+	updateOperatorCmd.Flags().StringVarP(&updateSecretAdminPassword, "admin-password", "a", updateSecretAdminPassword, "postgres admin password")
+	updateOperatorCmd.Flags().StringVarP(&updateSecretPostgresPassword, "postgres-password", "p", updateSecretPostgresPassword, "postgres password")
+	updateOperatorCmd.Flags().StringVarP(&updateSecretUserPassword, "user-password", "u", updateSecretUserPassword, "postgres user password")
+	updateOperatorCmd.Flags().StringVarP(&updateSecretBlackduckPassword, "blackduck-password", "b", updateSecretBlackduckPassword, "blackduck password for 'sysadmin' account")
+	updateOperatorCmd.Flags().StringVarP(&updateExposeUI, "expose-ui", "e", updateExposeUI, "expose the synopsys operator's user interface. possible values are NODEPORT, LOADBALANCER, OPENSHIFT (to create routes)")
+	updateOperatorCmd.Flags().Int64VarP(&updateOperatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", updateOperatorTimeBombInSeconds, "termination grace period in seconds for shutting down crds")
+	updateOperatorCmd.Flags().Int64VarP(&updatePostgresRestartInMins, "postgres-restart-in-minutes", "n", updatePostgresRestartInMins, "check for postgres restart in minutes")
+	updateOperatorCmd.Flags().Int64VarP(&updatePodWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", updatePodWaitTimeoutSeconds, "wait for pod to be running in seconds")
+	updateOperatorCmd.Flags().Int64VarP(&updateResyncIntervalInSeconds, "resync-interval-in-seconds", "r", updateResyncIntervalInSeconds, "custom resources resync time period in seconds")
+	updateOperatorCmd.Flags().Int64VarP(&updateTerminationGracePeriodSeconds, "postgres-termination-grace-period", "g", updateTerminationGracePeriodSeconds, "termination grace period in seconds for shutting down postgres")
+	updateOperatorCmd.Flags().StringVarP(&updateLogLevel, "log-level", "l", updateLogLevel, "log level of synopsys operator")
+	updateOperatorCmd.Flags().IntVarP(&updateThreadiness, "no-of-threads", "c", updateThreadiness, "number of threads to process the custom resources")
 	updateCmd.AddCommand(updateOperatorCmd)
 
 	// Add Bladuck Commands

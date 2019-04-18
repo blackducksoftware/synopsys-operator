@@ -87,11 +87,11 @@ var editBlackduckCmd = &cobra.Command{
 		} else {
 			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
 			if err != nil {
-				log.Errorf("Error Editing the Blackduck: %s", err)
+				log.Errorf("error Editing the Blackduck: %s", err)
 				return nil
 			}
 		}
-		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -113,7 +113,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		blackduckName := args[0]
 		pvcName := args[1]
 
-		log.Debugf("Adding PVC to BlackDuck %s...", blackduckName)
+		log.Debugf("adding PVC to BlackDuck %s...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
@@ -134,7 +134,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -153,7 +153,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		blackduckName := args[0]
 		environ := args[1]
 
-		log.Debugf("Adding Environ to BlackDuck %s...", blackduckName)
+		log.Debugf("adding Environ to BlackDuck %s...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
@@ -169,7 +169,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -188,7 +188,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		blackduckName := args[0]
 		registry := args[1]
 
-		log.Debugf("Adding an Image Registry to Blackduck %s...", blackduckName)
+		log.Debugf("adding an Image Registry to Blackduck %s...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
@@ -204,7 +204,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -224,7 +224,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		uidKey := args[1]
 		uidVal := args[2]
 
-		log.Debugf("Adding an Image UID to BlackDuck %s...", blackduckName)
+		log.Debugf("adding an Image UID to BlackDuck %s...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
@@ -247,7 +247,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("Successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -289,11 +289,11 @@ var editOpsSightCmd = &cobra.Command{
 		} else {
 			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
 			if err != nil {
-				log.Errorf("Error Editing the OpsSight: %s", err)
+				log.Errorf("error Editing the OpsSight: %s", err)
 				return nil
 			}
 		}
-		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
+		log.Infof("successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -314,7 +314,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 		regUser := args[2]
 		regPass := args[3]
 
-		log.Debugf("Adding Internal Registry to OpsSight %s...", opsSightName)
+		log.Debugf("adding Internal Registry to OpsSight %s...", opsSightName)
 
 		// Get OpsSight Spec
 		ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
@@ -335,7 +335,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
+		log.Infof("successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -355,7 +355,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		domain := args[1]
 		port := args[2]
 
-		log.Debugf("Adding BlackDuck Host to OpsSight %s...", opsSightName)
+		log.Debugf("adding BlackDuck Host to OpsSight %s...", opsSightName)
 
 		// Get OpsSight Spec
 		ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
@@ -378,7 +378,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("Successfully edited OpsSight: '%s'", opsSightName)
+		log.Infof("successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -420,11 +420,11 @@ var editAlertCmd = &cobra.Command{
 		} else {
 			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
 			if err != nil {
-				log.Errorf("Error Editing the Alert: %s", err)
+				log.Errorf("error Editing the Alert: %s", err)
 				return nil
 			}
 		}
-		log.Infof("Successfully edited Alert: '%s'", alertName)
+		log.Infof("successfully edited Alert: '%s'", alertName)
 		return nil
 	},
 }

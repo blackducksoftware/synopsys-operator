@@ -22,6 +22,7 @@ under the License.
 package synopsysctl
 
 import (
+	"crypto/x509/pkix"
 	"fmt"
 	"strings"
 
@@ -88,38 +89,46 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Infof("Deploying the Synopsys-Operator in namespace %s...", deployNamespace)
+		log.Infof("deploying the Synopsys-Operator in namespace %s...", deployNamespace)
 
-		log.Debugf("Getting Seal Key")
+		log.Debugf("getting Seal Key")
 		sealKey, err := operatorutil.GetRandomString(32)
 		if err != nil {
 			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
 		}
 
+		cert, key, err := operatorutil.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
+			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", deployNamespace),
+		})
+		if err != nil {
+			log.Error("couldn't generate certificate and key.")
+			return nil
+		}
+
 		// Deploy synopsys-operator
-		log.Debugf("Creating Synopsys-Operator components")
+		log.Debugf("creating Synopsys-Operator components")
 		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, adminPassword, postgresPassword,
 			userPassword, blackduckPassword, secretType, operatorTimeBombInSeconds, dryRun, logLevel, threadiness, postgresRestartInMins,
-			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient)
+			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key)
 
 		err = soperatorSpec.UpdateSOperatorComponents()
 		if err != nil {
-			log.Errorf("Error in deploying the synopsys operator due to %+v", err)
+			log.Errorf("error in deploying the synopsys operator due to %+v", err)
 			return nil
 		}
 
 		// Deploy prometheus
-		log.Debugf("Creating Prometheus components")
+		log.Debugf("creating Prometheus components")
 		promtheusSpec := soperator.NewPrometheus(deployNamespace, prometheusImage, restconfig, kubeClient)
 		err = promtheusSpec.UpdatePrometheus()
 		if err != nil {
-			log.Errorf("Error deploying Prometheus: %s", err)
+			log.Errorf("error deploying Prometheus: %s", err)
 			return nil
 		}
 
 		// expose the routes
 		if strings.EqualFold(exposeUI, "OPENSHIFT") {
-			log.Debugf("Creating Openshift Route for the Synopsys-Operator")
+			log.Debugf("creating Openshift Route for the Synopsys-Operator")
 			routeClient, err := routeclient.NewForConfig(restconfig)
 			if err != nil {
 				log.Errorf("Unable to create the route client due to %+v", err)
@@ -131,7 +140,7 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		log.Infof("Successfully deployed the Synopsys-Operator")
+		log.Infof("successfully deployed the Synopsys-Operator")
 		return nil
 	},
 }
