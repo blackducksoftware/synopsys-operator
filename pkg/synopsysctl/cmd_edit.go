@@ -87,11 +87,11 @@ var editBlackduckCmd = &cobra.Command{
 		} else {
 			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
 			if err != nil {
-				log.Errorf("error Editing the Blackduck: %s", err)
+				log.Errorf("error editing the Black Duck: %s", err)
 				return nil
 			}
 		}
-		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -113,7 +113,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		blackduckName := args[0]
 		pvcName := args[1]
 
-		log.Debugf("adding PVC to BlackDuck %s...", blackduckName)
+		log.Debugf("adding PVC to Black Duck %s...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
@@ -153,7 +153,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		blackduckName := args[0]
 		environ := args[1]
 
-		log.Debugf("adding Environ to BlackDuck %s...", blackduckName)
+		log.Debugf("adding Environ to Black Duck %s...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
@@ -169,7 +169,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -188,7 +188,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		blackduckName := args[0]
 		registry := args[1]
 
-		log.Debugf("adding an Image Registry to Blackduck %s...", blackduckName)
+		log.Debugf("adding an Image Registry to Black Duck %s...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
@@ -204,7 +204,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -224,7 +224,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		uidKey := args[1]
 		uidVal := args[2]
 
-		log.Debugf("adding an Image UID to BlackDuck %s...", blackduckName)
+		log.Debugf("adding an Image UID to Black Duck %s...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
@@ -247,7 +247,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
-		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -368,7 +368,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		host.Domain = domain
 		intPort, err := strconv.ParseInt(port, 0, 64)
 		if err != nil {
-			log.Errorf("Couldn't convert Port '%s' to int", port)
+			log.Errorf("couldn't convert Port '%s' to int", port)
 		}
 		host.Port = int(intPort)
 		ops.Spec.Blackduck.ExternalHosts = append(ops.Spec.Blackduck.ExternalHosts, &host)
@@ -396,14 +396,14 @@ var editAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName := args[0]
-		log.Debugf("Editing Alert %s...", alertName)
+		log.Debugf("editing Alert %s...", alertName)
 
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			alt, err := operatorutil.GetAlert(alertClient, alertName, alertName)
 			if err != nil {
-				log.Errorf("Get Spec: %s", err)
+				log.Errorf("get Spec: %s", err)
 				return nil
 			}
 			editAlertCtl.SetSpec(alt.Spec)
@@ -414,13 +414,13 @@ var editAlertCmd = &cobra.Command{
 			alt.Spec = alertSpec
 			_, err = operatorutil.UpdateAlert(alertClient, alertName, alt)
 			if err != nil {
-				log.Errorf("Update Spec: %s", err)
+				log.Errorf("update Spec: %s", err)
 				return nil
 			}
 		} else {
 			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
 			if err != nil {
-				log.Errorf("error Editing the Alert: %s", err)
+				log.Errorf("error editing the Alert: %s", err)
 				return nil
 			}
 		}
