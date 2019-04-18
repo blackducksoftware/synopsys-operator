@@ -149,6 +149,7 @@ type replicationControllerComparator struct {
 	MaxCPU   *resource.Quantity
 	MinMem   *resource.Quantity
 	MaxMem   *resource.Quantity
+	EnvFrom  []corev1.EnvFromSource
 }
 
 // patch patches the replication controller
@@ -178,6 +179,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 						MaxCPU:   oldContainer.Resources.Limits.Cpu(),
 						MinMem:   oldContainer.Resources.Requests.Memory(),
 						MaxMem:   oldContainer.Resources.Limits.Memory(),
+						EnvFrom:  oldContainer.EnvFrom,
 					},
 					replicationControllerComparator{
 						Image:    newContainer.Image,
@@ -186,7 +188,11 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 						MaxCPU:   newContainer.Resources.Limits.Cpu(),
 						MinMem:   newContainer.Resources.Requests.Memory(),
 						MaxMem:   newContainer.Resources.Limits.Memory(),
-					}) {
+						EnvFrom:  newContainer.EnvFrom,
+					}) &&
+				!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) &&
+				!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) &&
+				!reflect.DeepEqual(sortVolumes(r.oldReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes), sortVolumes(r.newReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes)) {
 				isChanged = true
 				break
 			}
