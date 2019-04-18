@@ -104,11 +104,11 @@ var updateOperatorCmd = &cobra.Command{
 		// Update Spec with changed values
 		if cmd.Flag("synopsys-operator-image").Changed {
 			log.Debugf("updating Synopsys Operator Image to %s", updateSynopsysOperatorImage)
-			// if no tag, add "latest"
+			// check image tag
 			imageHasTag := len(strings.Split(updateSynopsysOperatorImage, ":")) == 2
 			if !imageHasTag {
-				updateSynopsysOperatorImage = fmt.Sprintf("%s:latest", updateSynopsysOperatorImage)
-				log.Debugf("adding tag 'latest' to Synopsys-Operator's image: %s", updateSynopsysOperatorImage)
+				log.Errorf("Synopsys-Operator's image does not have a tag: %s", updateSynopsysOperatorImage)
+				return nil
 			}
 			newOperatorSpec.Image = updateSynopsysOperatorImage
 		}

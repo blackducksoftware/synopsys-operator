@@ -91,11 +91,11 @@ var deployCmd = &cobra.Command{
 
 		log.Infof("deploying the Synopsys-Operator in namespace %s...", deployNamespace)
 
-		// if image has no tag then add "latest"
+		// if image image tag
 		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
 		if !imageHasTag {
-			synopsysOperatorImage = fmt.Sprintf("%s:latest", synopsysOperatorImage)
-			log.Debugf("adding tag 'latest' to Synopsys-Operator's image: %s", synopsysOperatorImage)
+			log.Errorf("the Synopsys-Operator image doesn't have a tag: %s", synopsysOperatorImage)
+			return nil
 		}
 
 		log.Debugf("getting Seal Key")
