@@ -57,7 +57,7 @@ var editBlackduckCmd = &cobra.Command{
 	Short: "Edit an instance of Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
@@ -105,7 +105,7 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 	Short: "Add a PVC to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("This command takes 2 argument")
+			return fmt.Errorf("this command takes 2 arguments")
 		}
 		return nil
 	},
@@ -145,7 +145,7 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 	Short: "Add an Environment Variable to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("This command accepts 2 arguments")
+			return fmt.Errorf("this command takes 2 arguments")
 		}
 		return nil
 	},
@@ -180,7 +180,7 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 	Short: "Add an Image Registry to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("This command accepts 2 arguments")
+			return fmt.Errorf("this command takes 2 arguments")
 		}
 		return nil
 	},
@@ -215,7 +215,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 	Short: "Add an Image UID to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
-			return fmt.Errorf("This command accepts 3 arguments")
+			return fmt.Errorf("this command takes 3 arguments")
 		}
 		return nil
 	},
@@ -259,7 +259,7 @@ var editOpsSightCmd = &cobra.Command{
 	Short: "Edit an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
@@ -304,7 +304,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 	Short: "Add an Internal Registry to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 4 {
-			return fmt.Errorf("This command takes 4 arguments")
+			return fmt.Errorf("this command takes 4 arguments")
 		}
 		return nil
 	},
@@ -346,7 +346,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 	Short: "Add a Blackduck Host to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
-			return fmt.Errorf("This command takes 3 arguments")
+			return fmt.Errorf("this command takes 3 arguments")
 		}
 		return nil
 	},
@@ -390,7 +390,7 @@ var editAlertCmd = &cobra.Command{
 	Short: "Edit an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
