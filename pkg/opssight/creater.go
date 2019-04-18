@@ -45,6 +45,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const (
+	// OPENSHIFT will denote to create openshift route
+	OPENSHIFT = "OPENSHIFT"
+)
+
 // Creater will store the configuration to create OpsSight
 type Creater struct {
 	config           *protoform.Config
@@ -283,7 +288,7 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 
 func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
 	// Create Perceptor model Route on Openshift
-	if strings.EqualFold(spec.opssight.Spec.Perceptor.Expose, "OPENSHIFT") && ac.routeClient != nil {
+	if strings.ToUpper(spec.opssight.Spec.Perceptor.Expose) == OPENSHIFT && ac.routeClient != nil {
 		namespace := spec.opssight.Spec.Namespace
 		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Perceptor.Name, namespace)
 		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
@@ -296,7 +301,7 @@ func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
 	}
 
 	// Create Perceptor metrics Route on Openshift
-	if strings.EqualFold(spec.opssight.Spec.Prometheus.Expose, "OPENSHIFT") && ac.routeClient != nil {
+	if strings.ToUpper(spec.opssight.Spec.Prometheus.Expose) == OPENSHIFT && ac.routeClient != nil {
 		namespace := spec.opssight.Spec.Namespace
 		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Prometheus.Name, namespace)
 		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
