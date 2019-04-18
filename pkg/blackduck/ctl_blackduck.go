@@ -24,6 +24,7 @@ package blackduck
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -226,9 +227,9 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
 	cmd.Flags().StringSliceVar(&ctl.PVCJSONSlice, "pvc", ctl.PVCJSONSlice, "List of PVC json structs")
 	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.Certificate, "certificate", ctl.Certificate, "Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key", ctl.CertificateKey, "Black Duck nginx certificate key")
-	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate", ctl.ProxyCertificate, "Black Duck proxy certificate")
+	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File to the Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key-file", ctl.CertificateKey, "File to the Black Duck nginx certificate key")
+	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate-file", ctl.ProxyCertificate, "File to the Black Duck proxy certificate")
 	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca", ctl.AuthCustomCA, "Custom Auth CA for BlackDuck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
@@ -308,12 +309,24 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 		case "db-certificate-name":
 			ctl.Spec.CertificateName = ctl.CertificateName
-		case "certificate":
-			ctl.Spec.Certificate = ctl.Certificate
-		case "certificate-key":
-			ctl.Spec.CertificateKey = ctl.CertificateKey
-		case "proxy-certificate":
-			ctl.Spec.ProxyCertificate = ctl.ProxyCertificate
+		case "certificate-file":
+			data, err := ioutil.ReadFile(ctl.Certificate)
+			if err != nil {
+				log.Errorf("failed to read certificate file: %s", err)
+			}
+			ctl.Spec.Certificate = strings.TrimSuffix(string(data), "\n")
+		case "certificate-key-file":
+			data, err := ioutil.ReadFile(ctl.CertificateKey)
+			if err != nil {
+				log.Errorf("failed to read certificate file: %s", err)
+			}
+			ctl.Spec.CertificateKey = strings.TrimSuffix(string(data), "\n")
+		case "proxy-certificate-file":
+			data, err := ioutil.ReadFile(ctl.ProxyCertificate)
+			if err != nil {
+				log.Errorf("failed to read certificate file: %s", err)
+			}
+			ctl.Spec.ProxyCertificate = strings.TrimSuffix(string(data), "\n")
 		case "auth-custom-ca":
 			ctl.Spec.AuthCustomCA = ctl.AuthCustomCA
 		case "type":
