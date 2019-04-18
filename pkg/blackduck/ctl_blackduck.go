@@ -24,10 +24,10 @@ package blackduck
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -310,23 +310,23 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "db-certificate-name":
 			ctl.Spec.CertificateName = ctl.CertificateName
 		case "certificate-file":
-			data, err := ioutil.ReadFile(ctl.Certificate)
+			data, err := util.ReadFileData(ctl.Certificate)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
 			}
-			ctl.Spec.Certificate = strings.TrimSuffix(string(data), "\n")
+			ctl.Spec.Certificate = data
 		case "certificate-key-file":
-			data, err := ioutil.ReadFile(ctl.CertificateKey)
+			data, err := util.ReadFileData(ctl.CertificateKey)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
 			}
-			ctl.Spec.CertificateKey = strings.TrimSuffix(string(data), "\n")
+			ctl.Spec.CertificateKey = data
 		case "proxy-certificate-file":
-			data, err := ioutil.ReadFile(ctl.ProxyCertificate)
+			data, err := util.ReadFileData(ctl.ProxyCertificate)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
 			}
-			ctl.Spec.ProxyCertificate = strings.TrimSuffix(string(data), "\n")
+			ctl.Spec.ProxyCertificate = data
 		case "auth-custom-ca":
 			ctl.Spec.AuthCustomCA = ctl.AuthCustomCA
 		case "type":
