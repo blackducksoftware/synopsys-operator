@@ -54,7 +54,7 @@ var describeBlackduckCmd = &cobra.Command{
 
 		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
 		if err != nil {
-			log.Errorf("error Describing the Blackduck: %s", out)
+			log.Errorf("error describing the Black Duck: %s - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -79,7 +79,7 @@ var describeOpsSightCmd = &cobra.Command{
 
 		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
 		if err != nil {
-			log.Errorf("error Describing the OpsSight: %s", out)
+			log.Errorf("error describing the OpsSight: %s - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -104,7 +104,7 @@ var describeAlertCmd = &cobra.Command{
 
 		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace)
 		if err != nil {
-			log.Errorf("error Describing the Alert: '%s'", out)
+			log.Errorf("error describing the Alert: %s - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
