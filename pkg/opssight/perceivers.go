@@ -151,6 +151,7 @@ func (p *SpecConfig) perceiverService(name string) *components.Service {
 		Port:       int32(p.opssight.Spec.Perceiver.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Perceiver.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", name),
 	})
 
 	service.AddLabels(map[string]string{"name": name, "app": "opssight"})

@@ -187,7 +187,7 @@ func (ctl *Ctl) CheckSpecFlags() error {
 		registry := &opssightv1.RegistryAuth{}
 		err := json.Unmarshal([]byte(registryJSON), registry)
 		if err != nil {
-			return fmt.Errorf("Invalid Registry Format")
+			return fmt.Errorf("invalid Registry Format")
 		}
 	}
 	return nil

@@ -45,6 +45,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const (
+	// OPENSHIFT will denote to create openshift route
+	OPENSHIFT = "OPENSHIFT"
+)
+
 // Creater will store the configuration to create OpsSight
 type Creater struct {
 	config           *protoform.Config
@@ -282,6 +287,32 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 }
 
 func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
+	// Create Perceptor model Route on Openshift
+	if strings.ToUpper(spec.opssight.Spec.Perceptor.Expose) == OPENSHIFT && ac.routeClient != nil {
+		namespace := spec.opssight.Spec.Namespace
+		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Perceptor.Name, namespace)
+		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
+		if err != nil {
+			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", spec.opssight.Spec.Perceptor.Name, fmt.Sprintf("port-%s", spec.opssight.Spec.Perceptor.Name), routev1.TLSTerminationEdge)
+			if err != nil {
+				log.Errorf("unable to create the perceptor openshift route due to %+v", err)
+			}
+		}
+	}
+
+	// Create Perceptor metrics Route on Openshift
+	if strings.ToUpper(spec.opssight.Spec.Prometheus.Expose) == OPENSHIFT && ac.routeClient != nil {
+		namespace := spec.opssight.Spec.Namespace
+		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Prometheus.Name, namespace)
+		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
+		if err != nil {
+			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", spec.opssight.Spec.Prometheus.Name, fmt.Sprintf("port-%s", spec.opssight.Spec.Prometheus.Name), routev1.TLSTerminationEdge)
+			if err != nil {
+				log.Errorf("unable to create the perceptor metrics openshift route due to %+v", err)
+			}
+		}
+	}
+
 	// Need to add the perceptor-scanner service account to the privileged scc
 	if ac.osSecurityClient != nil {
 		scannerServiceAccount := spec.ScannerServiceAccount()
@@ -291,32 +322,6 @@ func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
 			serviceAccounts = append(serviceAccounts, fmt.Sprintf("system:serviceaccount:%s:%s", namespace, scannerServiceAccount.GetName()))
 		}
 		return util.UpdateOpenShiftSecurityConstraint(ac.osSecurityClient, serviceAccounts, "privileged")
-	}
-
-	// Create Perceptor model Route on Openshift
-	if strings.ToUpper(spec.opssight.Spec.Perceptor.Expose) == "OPENSHIFT" && ac.routeClient != nil {
-		namespace := spec.opssight.Spec.Namespace
-		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Perceptor.Name, namespace)
-		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
-		if err != nil {
-			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", name, routev1.TLSTerminationEdge)
-			if err != nil {
-				log.Errorf("unable to create the perceptor openshift route due to %+v", err)
-			}
-		}
-	}
-
-	// Create Perceptor metrics Route on Openshift
-	if strings.ToUpper(spec.opssight.Spec.Prometheus.Expose) == "OPENSHIFT" && ac.routeClient != nil {
-		namespace := spec.opssight.Spec.Namespace
-		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Prometheus.Name, namespace)
-		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
-		if err != nil {
-			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", name, routev1.TLSTerminationEdge)
-			if err != nil {
-				log.Errorf("unable to create the perceptor metrics openshift route due to %+v", err)
-			}
-		}
 	}
 	return nil
 }

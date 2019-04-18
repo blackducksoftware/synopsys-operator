@@ -52,12 +52,15 @@ type SpecConfig struct {
 	SealKey                       string
 	RestConfig                    *rest.Config
 	KubeClient                    *kubernetes.Clientset
+	Certificate                   string
+	CertificateKey                string
 }
 
 // NewSOperator will create a SOperator type
 func NewSOperator(namespace, synopsysOperatorImage, expose, adminPassword, postgresPassword, userPassword, blackduckpassword string,
 	secretType horizonapi.SecretType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
-	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config, kubeClient *kubernetes.Clientset) *SpecConfig {
+	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
+	kubeClient *kubernetes.Clientset, certificate string, certificateKey string) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,
@@ -78,6 +81,8 @@ func NewSOperator(namespace, synopsysOperatorImage, expose, adminPassword, postg
 		SealKey:                       sealKey,
 		RestConfig:                    restConfig,
 		KubeClient:                    kubeClient,
+		Certificate:                   certificate,
+		CertificateKey:                certificateKey,
 	}
 }
 
@@ -104,7 +109,8 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 			specConfig.GetOperatorClusterRole(),
 		},
 		Secrets: []*components.Secret{
-			specConfig.GetOperatorSecret(), specConfig.GetTLSCertificateSecret(),
+			specConfig.GetOperatorSecret(),
+			specConfig.GetTLSCertificateSecret(),
 		},
 	}
 	return components, nil

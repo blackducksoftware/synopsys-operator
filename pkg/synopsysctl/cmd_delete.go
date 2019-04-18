@@ -55,10 +55,10 @@ var deleteBlackduckCmd = &cobra.Command{
 		// Delete Blackduck with Client
 		err := blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
 		if err != nil {
-			log.Errorf("Error deleting the Blackduck: '%s'", err)
+			log.Errorf("error deleting the Blackduck: '%s'", err)
 			return nil
 		}
-		log.Infof("Successfully deleted BlackDuck: %s", blackduckNamespace)
+		log.Infof("successfully deleted BlackDuck: %s", blackduckNamespace)
 		return nil
 	},
 }
@@ -80,10 +80,10 @@ var deleteOpsSightCmd = &cobra.Command{
 		// Delete OpsSight with Client
 		err := opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
 		if err != nil {
-			log.Errorf("Error deleting the OpsSight: '%s'", err)
+			log.Errorf("error deleting the OpsSight: '%s'", err)
 			return nil
 		}
-		log.Infof("Successfully deleted OpsSight: %s", opsSightNamespace)
+		log.Infof("successfully deleted OpsSight: %s", opsSightNamespace)
 		return nil
 	},
 }
@@ -105,10 +105,10 @@ var deleteAlertCmd = &cobra.Command{
 		// Delete Alert with Client
 		err := alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
 		if err != nil {
-			log.Errorf("Error deleting the Alert: %s", err)
+			log.Errorf("error deleting the Alert: %s", err)
 			return nil
 		}
-		log.Infof("Successfully deleted Alert: %s", alertNamespace)
+		log.Infof("successfully deleted Alert: %s", alertNamespace)
 		return nil
 	},
 }

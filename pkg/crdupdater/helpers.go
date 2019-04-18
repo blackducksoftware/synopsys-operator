@@ -22,7 +22,10 @@ under the License.
 package crdupdater
 
 import (
+	"sort"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 type label struct {
@@ -113,4 +116,19 @@ func isLabelsExist(expectedLabels map[string]label, actualLabels map[string]stri
 		}
 	}
 	return true
+}
+
+func sortEnvs(envs []corev1.EnvVar) []corev1.EnvVar {
+	sort.Slice(envs, func(i, j int) bool { return envs[i].Name < envs[j].Name })
+	return envs
+}
+
+func sortVolumeMounts(volumeMounts []corev1.VolumeMount) []corev1.VolumeMount {
+	sort.Slice(volumeMounts, func(i, j int) bool { return volumeMounts[i].Name < volumeMounts[j].Name })
+	return volumeMounts
+}
+
+func sortVolumes(volumes []corev1.Volume) []corev1.Volume {
+	sort.Slice(volumes, func(i, j int) bool { return volumes[i].Name < volumes[j].Name })
+	return volumes
 }
