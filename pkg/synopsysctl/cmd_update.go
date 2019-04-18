@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -78,6 +79,10 @@ var updateOperatorCmd = &cobra.Command{
 	Use:   "operator",
 	Short: "Update the Synopsys-Operator",
 	Args: func(cmd *cobra.Command, args []string) error {
+		// Check Number of Arguments
+		if len(args) != 0 {
+			return fmt.Errorf("this command takes 0 arguments")
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -99,6 +104,12 @@ var updateOperatorCmd = &cobra.Command{
 		// Update Spec with changed values
 		if cmd.Flag("synopsys-operator-image").Changed {
 			log.Debugf("updating Synopsys Operator Image to %s", updateSynopsysOperatorImage)
+			// check image tag
+			imageHasTag := len(strings.Split(updateSynopsysOperatorImage, ":")) == 2
+			if !imageHasTag {
+				log.Errorf("Synopsys-Operator's image does not have a tag: %s", updateSynopsysOperatorImage)
+				return nil
+			}
 			newOperatorSpec.Image = updateSynopsysOperatorImage
 		}
 		if cmd.Flag("admin-password").Changed {
@@ -203,7 +214,7 @@ var updateBlackduckCmd = &cobra.Command{
 	Short: "Update an instance of Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
@@ -250,7 +261,7 @@ var updateBlackduckRootKeyCmd = &cobra.Command{
 	Short: "Update the root key of Black Duck for source code upload",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
-			return fmt.Errorf("Black Duck name, new seal key or file path to retrieve the master key is missing")
+			return fmt.Errorf("this command takes 3 arguments")
 		}
 		return nil
 	},
@@ -317,7 +328,7 @@ var updateOpsSightCmd = &cobra.Command{
 	Short: "Update an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
@@ -364,7 +375,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 	Short: "Update an image for a component of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
-			return fmt.Errorf("This command takes 3 arguments")
+			return fmt.Errorf("this command takes 3 arguments")
 		}
 		return nil
 	},
@@ -428,7 +439,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 	Short: "Update an external host for a component of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 7 {
-			return fmt.Errorf("This command takes 7 arguments")
+			return fmt.Errorf("this command takes 7 arguments")
 		}
 		return nil
 	},
@@ -492,7 +503,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 	Short: "Add an Internal Registry to OpsSight's ImageFacade",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 4 {
-			return fmt.Errorf("This command takes 4 arguments")
+			return fmt.Errorf("this command takes 4 arguments")
 		}
 		return nil
 	},
@@ -543,7 +554,7 @@ var updateAlertCmd = &cobra.Command{
 	Short: "Describe an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
