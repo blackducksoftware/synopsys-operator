@@ -135,6 +135,14 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 		// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
 
+		// add security context constraint if bdba enabled
+		if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
+			err = hc.addAnyUIDToServiceAccount(&blackduck.Spec)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+
 		if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
 			newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
 		} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {

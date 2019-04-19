@@ -66,7 +66,7 @@ var destroyCmd = &cobra.Command{
 			log.Errorf("error creating the api extension client due to %+v", err)
 		}
 
-		crds := []string{"alerts.synopsys.com", "blackducks.synopsys.com", "hubs.synopsys.com", "opssights.synopsys.com"}
+		crds := []string{"alerts.synopsys.com", "blackducks.synopsys.com", "opssights.synopsys.com"}
 
 		for _, crd := range crds {
 			err = util.DeleteCustomResourceDefinition(apiExtensionClient, crd)

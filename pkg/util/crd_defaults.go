@@ -54,6 +54,7 @@ func GetBlackDuckTemplate() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "blackduck-pvc",
+		Size:              "Small",
 		LicenseKey:        "",
 		CertificateName:   "default",
 		Version:           "2019.4.0",
