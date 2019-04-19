@@ -179,6 +179,7 @@ func GetOldPrometheusSpec(restConfig *rest.Config, kubeClient *kubernetes.Client
 		return nil, fmt.Errorf("Failed to get Prometheus ConfigMap: %s", err)
 	}
 	prometheusSpec.Image = currCM.Data["Image"]
+	prometheusSpec.Expose = currCM.Data["Expose"]
 	prometheusSpec.RestConfig = restConfig
 	prometheusSpec.KubeClient = kubeClient
 	log.Debugf("added image %s to Prometheus SpecConfig", prometheusSpec.Image)
