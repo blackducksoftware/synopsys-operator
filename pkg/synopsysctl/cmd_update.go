@@ -38,6 +38,8 @@ import (
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
+	routev1 "github.com/openshift/api/route/v1"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,6 +58,7 @@ var updateSecretPostgresPassword = ""
 var updateSecretUserPassword = ""
 var updateSecretBlackduckPassword = ""
 var updateExposeUI = ""
+var updateExposePrometheusMetrics = ""
 var updateTerminationGracePeriodSeconds int64
 var updateOperatorTimeBombInSeconds int64
 var updateLogLevel = ""
@@ -92,7 +95,7 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Infof("updating the synopsys operator in namespace %s...", namespace)
+		log.Infof("updating the synopsys operator in '%s' namespace...", namespace)
 
 		// Create new Synopsys-Operator SpecConfig
 		oldOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespace)
@@ -103,11 +106,11 @@ var updateOperatorCmd = &cobra.Command{
 		newOperatorSpec := soperator.SpecConfig{}
 		// Update Spec with changed values
 		if cmd.Flag("synopsys-operator-image").Changed {
-			log.Debugf("updating Synopsys Operator Image to %s", updateSynopsysOperatorImage)
+			log.Debugf("updating synopsys operator image to %s", updateSynopsysOperatorImage)
 			// check image tag
 			imageHasTag := len(strings.Split(updateSynopsysOperatorImage, ":")) == 2
 			if !imageHasTag {
-				log.Errorf("Synopsys-Operator's image does not have a tag: %s", updateSynopsysOperatorImage)
+				log.Errorf("synopsys operator's image does not have a tag: %s", updateSynopsysOperatorImage)
 				return nil
 			}
 			newOperatorSpec.Image = updateSynopsysOperatorImage
@@ -189,6 +192,10 @@ var updateOperatorCmd = &cobra.Command{
 			log.Debugf("updating PrometheusImage to %s", updatePrometheusImage)
 			newPrometheusSpec.Image = updatePrometheusImage
 		}
+		if cmd.Flag("expose-prometheus-metrics").Changed {
+			log.Debugf("updating expose prometheus metrics")
+			newPrometheusSpec.Expose = updateExposePrometheusMetrics
+		}
 
 		// merge old and new data
 		err = mergo.Merge(&newPrometheusSpec, oldPrometheusSpec)
@@ -202,6 +209,39 @@ var updateOperatorCmd = &cobra.Command{
 		if err != nil {
 			log.Errorf("unable to update Prometheus because %+v", err)
 			return nil
+		}
+
+		routeClient, err := routeclient.NewForConfig(restconfig)
+		// expose the routes
+		if strings.ToUpper(updateExposeUI) == OPENSHIFT {
+			if err != nil {
+				log.Errorf("unable to create the route client due to %+v", err)
+				return nil
+			}
+			_, err = operatorutil.GetOpenShiftRoutes(routeClient, namespace, "synopsys-operator-ui")
+			if err != nil {
+				log.Infof("creating openshift routes for the synopsys operator user interface")
+				_, err = operatorutil.CreateOpenShiftRoutes(routeClient, namespace, "synopsys-operator-ui", "Service", "synopsys-operator", "synopsys-operator-ui", routev1.TLSTerminationEdge)
+				if err != nil {
+					log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
+				}
+			}
+		}
+
+		// expose the metrics routes
+		if strings.ToUpper(updateExposePrometheusMetrics) == OPENSHIFT {
+			if err != nil {
+				log.Errorf("unable to create the route client due to %+v", err)
+				return nil
+			}
+			_, err = operatorutil.GetOpenShiftRoutes(routeClient, namespace, "synopsys-operator-prometheus")
+			if err != nil {
+				log.Infof("creating openshift routes for the synopsys operator prometheus metrics")
+				_, err = operatorutil.CreateOpenShiftRoutes(routeClient, namespace, "synopsys-operator-prometheus", "Service", "prometheus", "prometheus", routev1.TLSTerminationEdge)
+				if err != nil {
+					log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
+				}
+			}
 		}
 		log.Infof("successfully updated the synopsys operator in '%s' namespace", namespace)
 		return nil
@@ -606,13 +646,14 @@ func init() {
 	rootCmd.AddCommand(updateCmd)
 
 	// Add Operator Commands
+	updateOperatorCmd.Flags().StringVarP(&updateExposeUI, "expose-ui", "e", updateExposeUI, "expose the synopsys operator's user interface. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
 	updateOperatorCmd.Flags().StringVarP(&updateSynopsysOperatorImage, "synopsys-operator-image", "i", updateSynopsysOperatorImage, "synopsys operator image URL")
+	updateOperatorCmd.Flags().StringVarP(&updateExposePrometheusMetrics, "expose-prometheus-metrics", "m", updateExposePrometheusMetrics, "expose the synopsys operator's prometheus metrics. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
 	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "prometheus-image", "k", updatePrometheusImage, "prometheus image URL")
 	updateOperatorCmd.Flags().StringVarP(&updateSecretAdminPassword, "admin-password", "a", updateSecretAdminPassword, "postgres admin password")
 	updateOperatorCmd.Flags().StringVarP(&updateSecretPostgresPassword, "postgres-password", "p", updateSecretPostgresPassword, "postgres password")
 	updateOperatorCmd.Flags().StringVarP(&updateSecretUserPassword, "user-password", "u", updateSecretUserPassword, "postgres user password")
 	updateOperatorCmd.Flags().StringVarP(&updateSecretBlackduckPassword, "blackduck-password", "b", updateSecretBlackduckPassword, "blackduck password for 'sysadmin' account")
-	updateOperatorCmd.Flags().StringVarP(&updateExposeUI, "expose-ui", "e", updateExposeUI, "expose the synopsys operator's user interface. possible values are NODEPORT, LOADBALANCER, OPENSHIFT (to create routes)")
 	updateOperatorCmd.Flags().Int64VarP(&updateOperatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", updateOperatorTimeBombInSeconds, "termination grace period in seconds for shutting down crds")
 	updateOperatorCmd.Flags().Int64VarP(&updatePostgresRestartInMins, "postgres-restart-in-minutes", "n", updatePostgresRestartInMins, "check for postgres restart in minutes")
 	updateOperatorCmd.Flags().Int64VarP(&updatePodWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", updatePodWaitTimeoutSeconds, "wait for pod to be running in seconds")

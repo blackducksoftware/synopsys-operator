@@ -36,8 +36,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	// OPENSHIFT denotes to create an OpenShift routes
+	OPENSHIFT = "OPENSHIFT"
+)
+
 //  Deploy Command Defaults
 var exposeUI = ""
+var exposePrometheusMetrics = ""
 var deployNamespace = "synopsys-operator"
 var synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.4.0-RC"
 var prometheusImage = "docker.io/prom/prometheus:v2.1.0"
@@ -49,7 +55,6 @@ var threadiness = 5
 var postgresRestartInMins int64 = 10
 var podWaitTimeoutSeconds int64 = 600
 var resyncIntervalInSeconds int64 = 120
-var dockerConfigPath = ""
 var deploySecretType = "Opaque"
 var adminPassword = "blackduck"
 var postgresPassword = "blackduck"
@@ -72,7 +77,7 @@ var deployCmd = &cobra.Command{
 		var err error
 		secretType, err = operatorutil.SecretTypeNameToHorizon(deploySecretType)
 		if err != nil {
-			log.Errorf("Failed to convert secret type: %s", err)
+			log.Errorf("failed to convert secret type: %s", err)
 			return nil
 		}
 		return nil
@@ -85,11 +90,11 @@ var deployCmd = &cobra.Command{
 		// check if operator is already installed
 		ns, err := GetOperatorNamespace()
 		if err == nil {
-			log.Errorf("Synopsys-Operator is already installed in '%s' namespace", ns)
+			log.Errorf("synopsys operator is already installed in '%s' namespace", ns)
 			return nil
 		}
 
-		log.Infof("deploying the Synopsys-Operator in namespace %s...", deployNamespace)
+		log.Infof("deploying the synopsys operator in '%s' namespace......", deployNamespace)
 
 		// if image image tag
 		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
@@ -126,38 +131,52 @@ var deployCmd = &cobra.Command{
 
 		// Deploy prometheus
 		log.Debugf("creating Prometheus components")
-		promtheusSpec := soperator.NewPrometheus(deployNamespace, prometheusImage, restconfig, kubeClient)
+		promtheusSpec := soperator.NewPrometheus(deployNamespace, prometheusImage, exposePrometheusMetrics, restconfig, kubeClient)
 		err = promtheusSpec.UpdatePrometheus()
 		if err != nil {
 			log.Errorf("error deploying Prometheus: %s", err)
 			return nil
 		}
 
+		routeClient, err := routeclient.NewForConfig(restconfig)
 		// expose the routes
-		if strings.EqualFold(exposeUI, "OPENSHIFT") {
-			log.Debugf("creating Openshift Route for the Synopsys-Operator")
-			routeClient, err := routeclient.NewForConfig(restconfig)
+		if strings.ToUpper(exposeUI) == OPENSHIFT {
+			log.Infof("creating openshift routes for the synopsys operator user interface")
 			if err != nil {
-				log.Errorf("Unable to create the route client due to %+v", err)
+				log.Errorf("unable to create the route client due to %+v", err)
 				return nil
 			}
-			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator", "Service", "synopsys-operator", "synopsys-operator-ui", routev1.TLSTerminationEdge)
+			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator-ui", "Service", "synopsys-operator", "synopsys-operator-ui", routev1.TLSTerminationEdge)
 			if err != nil {
-				log.Warnf("Could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
+				log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
 			}
 		}
 
-		log.Infof("successfully deployed the Synopsys-Operator")
+		// expose the metrics routes
+		if strings.ToUpper(exposePrometheusMetrics) == OPENSHIFT {
+			log.Infof("creating openshift routes for the synopsys operator prometheus metrics")
+			routeClient, err := routeclient.NewForConfig(restconfig)
+			if err != nil {
+				log.Errorf("unable to create the route client due to %+v", err)
+				return nil
+			}
+			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator-prometheus", "Service", "prometheus", "prometheus", routev1.TLSTerminationEdge)
+			if err != nil {
+				log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
+			}
+		}
+
+		log.Infof("successfully deployed the synopsys operator")
 		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deployCmd)
-	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "expose the synopsys operator's user interface. possible values are NODEPORT, LOADBALANCER, OPENSHIFT (to create routes)")
+	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "expose the synopsys operator's user interface. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
 	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "synopsys operator image URL")
+	deployCmd.Flags().StringVarP(&exposePrometheusMetrics, "expose-prometheus-metrics", "m", exposePrometheusMetrics, "expose the synopsys operator's prometheus metrics. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
 	deployCmd.Flags().StringVarP(&prometheusImage, "prometheus-image", "k", prometheusImage, "prometheus image URL")
-	deployCmd.Flags().StringVarP(&dockerConfigPath, "docker-config", "d", dockerConfigPath, "path to docker config (image pull secrets etc)")
 	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret to store the postgres and blackduck credentials")
 	deployCmd.Flags().StringVarP(&adminPassword, "admin-password", "a", adminPassword, "postgres admin password")
 	deployCmd.Flags().StringVarP(&postgresPassword, "postgres-password", "p", postgresPassword, "postgres password")
