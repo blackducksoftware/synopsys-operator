@@ -81,29 +81,6 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() []*horizoncompone
 	return services
 }
 
-// GetPrometheusExposedService creates a Prometheus exposed service
-func (specConfig *PrometheusSpecConfig) GetPrometheusExposedService() *horizoncomponents.Service {
-
-	// Add Service for Prometheus
-	prometheusService := horizoncomponents.NewService(horizonapi.ServiceConfig{
-		APIVersion:    "v1",
-		Name:          "prometheus-exposed",
-		Namespace:     specConfig.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
-	})
-	prometheusService.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	prometheusService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
-	prometheusService.AddPort(horizonapi.ServicePortConfig{
-		Name:       "prometheus",
-		Port:       9090,
-		TargetPort: "9090",
-		Protocol:   horizonapi.ProtocolTCP,
-	})
-
-	prometheusService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
-	return prometheusService
-}
-
 // GetPrometheusDeployment creates a Horizon Deployment component for Prometheus
 func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncomponents.Deployment {
 	// Deployment
