@@ -99,7 +99,7 @@ var deployCmd = &cobra.Command{
 		// if image image tag
 		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
 		if !imageHasTag {
-			log.Errorf("the Synopsys-Operator image doesn't have a tag: %s", synopsysOperatorImage)
+			log.Errorf("synopsys operator image doesn't have a tag: %s", synopsysOperatorImage)
 			return nil
 		}
 
@@ -113,7 +113,7 @@ var deployCmd = &cobra.Command{
 			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", deployNamespace),
 		})
 		if err != nil {
-			log.Error("couldn't generate certificate and key.")
+			log.Errorf("couldn't generate certificate and key due to %+v", err)
 			return nil
 		}
 
