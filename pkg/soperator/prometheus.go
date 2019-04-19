@@ -34,15 +34,17 @@ import (
 type PrometheusSpecConfig struct {
 	Namespace  string
 	Image      string
+	Expose     string
 	RestConfig *rest.Config
 	KubeClient *kubernetes.Clientset
 }
 
 // NewPrometheus will create a PromtheusSpecConfig type
-func NewPrometheus(namespace, image string, restConfig *rest.Config, kubeClient *kubernetes.Clientset) *PrometheusSpecConfig {
+func NewPrometheus(namespace, image string, expose string, restConfig *rest.Config, kubeClient *kubernetes.Clientset) *PrometheusSpecConfig {
 	return &PrometheusSpecConfig{
 		Namespace:  namespace,
 		Image:      image,
+		Expose:     expose,
 		RestConfig: restConfig,
 		KubeClient: kubeClient,
 	}
@@ -55,9 +57,7 @@ func (specConfig *PrometheusSpecConfig) GetComponents() (*api.ComponentList, err
 		Deployments: []*components.Deployment{
 			specConfig.GetPrometheusDeployment(),
 		},
-		Services: []*components.Service{
-			specConfig.GetPrometheusService(),
-		},
+		Services: specConfig.GetPrometheusService(),
 		ConfigMaps: []*components.ConfigMap{
 			specConfig.GetPrometheusConfigMap(),
 		},
