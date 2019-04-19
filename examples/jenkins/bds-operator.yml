@@ -15,7 +15,7 @@ objects:
     exposeService: OPENSHIFT
     type: master
     size: ${HUB_TYPE}
-    version: ${ACTUAL_HUB_VERSION}
+    version: ${ORCHESTRATION_VERSION}
     environs:
     - HTTPS_VERIFY_CERTS:yes
     - HUB_POSTGRES_ENABLE_SSL:"false"
@@ -75,6 +75,8 @@ parameters:
   name: BDS_RELENG_DEP_DETAILS_FILENAME
 - description: Actual Hub version, without the build number
   name: ACTUAL_HUB_VERSION
+- description: Version of orchestration to use
+  name: ORCHESTRATION_VERSION
 - description: Docker registry to pull images from
   name: DOCKER_REGISTRY
 - description: Docker repository to pull images from
