@@ -26,14 +26,25 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// GetServiceAccount will return the service account
-func (c *Creater) GetServiceAccount() *components.ServiceAccount {
-	svc := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
+// GetClusterRoleBinding will return the cluster role binding
+func (c *Creater) GetClusterRoleBinding() *components.ClusterRoleBinding {
+	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
+		Name:       "blackduck",
+		APIVersion: "rbac.authorization.k8s.io/v1",
+	})
+
+	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
+		Kind:      "ServiceAccount",
 		Name:      c.hubSpec.Namespace,
 		Namespace: c.hubSpec.Namespace,
 	})
+	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
+		APIGroup: "",
+		Kind:     "ClusterRole",
+		Name:     "synopsys-operator-admin",
+	})
 
-	svc.AddLabels(c.GetVersionLabel("serviceAccount"))
+	clusterRoleBinding.AddLabels(c.GetVersionLabel("clusterRoleBinding"))
 
-	return svc
+	return clusterRoleBinding
 }

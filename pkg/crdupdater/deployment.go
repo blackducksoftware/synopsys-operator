@@ -172,7 +172,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 	for _, oldContainer := range d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Containers {
 		for _, newContainer := range d.newDeployments[deployment.GetName()].Spec.Template.Spec.Containers {
 			if strings.EqualFold(oldContainer.Name, newContainer.Name) && !d.config.dryRun &&
-				!reflect.DeepEqual(
+				(!reflect.DeepEqual(
 					deploymentComparator{
 						Image:    oldContainer.Image,
 						Replicas: d.oldDeployments[deployment.GetName()].Spec.Replicas,
@@ -190,10 +190,10 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 						MinMem:   newContainer.Resources.Requests.Memory(),
 						MaxMem:   newContainer.Resources.Limits.Memory(),
 						EnvFrom:  newContainer.EnvFrom,
-					}) &&
-				!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) &&
-				!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) &&
-				!reflect.DeepEqual(sortVolumes(d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Volumes), sortVolumes(d.newDeployments[deployment.GetName()].Spec.Template.Spec.Volumes)) {
+					}) ||
+					!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) ||
+					!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) ||
+					!compareVolumes(sortVolumes(d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Volumes), sortVolumes(d.newDeployments[deployment.GetName()].Spec.Template.Spec.Volumes))) {
 				isChanged = true
 				break
 			}

@@ -322,7 +322,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 	synopsysOperatorClusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
 		Kind:     "ClusterRole",
-		Name:     "cluster-admin",
+		Name:     "synopsys-operator-admin",
 	})
 
 	synopsysOperatorClusterRoleBinding.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})

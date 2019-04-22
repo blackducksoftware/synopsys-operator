@@ -22,6 +22,7 @@ under the License.
 package crdupdater
 
 import (
+	"reflect"
 	"sort"
 	"strings"
 
@@ -128,7 +129,28 @@ func sortVolumeMounts(volumeMounts []corev1.VolumeMount) []corev1.VolumeMount {
 	return volumeMounts
 }
 
+func compareVolumes(oldVolume []corev1.Volume, newVolume []corev1.Volume) bool {
+	for i, volume := range oldVolume {
+		if volume.Secret != nil && !reflect.DeepEqual(volume.Secret.SecretName, newVolume[i].Secret.SecretName) && !reflect.DeepEqual(volume.Secret.Items, newVolume[i].Secret.Items) {
+			return false
+		} else if volume.ConfigMap != nil && !reflect.DeepEqual(volume.ConfigMap.Name, newVolume[i].ConfigMap.Name) && !reflect.DeepEqual(volume.ConfigMap.Items, newVolume[i].ConfigMap.Items) {
+			return false
+		} else if volume.Secret == nil && volume.ConfigMap == nil && !reflect.DeepEqual(oldVolume, newVolume) {
+			return false
+		}
+	}
+	return true
+}
+
 func sortVolumes(volumes []corev1.Volume) []corev1.Volume {
+	for _, volume := range volumes {
+		if volume.Secret != nil {
+			sort.Slice(volume.Secret.Items, func(i, j int) bool { return volume.Secret.Items[i].Key < volume.Secret.Items[j].Key })
+		}
+		if volume.ConfigMap != nil {
+			sort.Slice(volume.ConfigMap.Items, func(i, j int) bool { return volume.ConfigMap.Items[i].Key < volume.ConfigMap.Items[j].Key })
+		}
+	}
 	sort.Slice(volumes, func(i, j int) bool { return volumes[i].Name < volumes[j].Name })
 	return volumes
 }
