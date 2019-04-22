@@ -145,8 +145,8 @@ func (specConfig *SpecConfig) UpdateSOperatorComponents() error {
 	if err != nil {
 		return fmt.Errorf("failed to get Synopsys-Operator components: %s", err)
 	}
-	sOperatorCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, specConfig.Namespace, sOperatorComponents, "app=synopsys-operator,component=operator")
-	errs := sOperatorCommonConfig.CRUDComponents()
+	sOperatorCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, false, specConfig.Namespace, sOperatorComponents, "app=synopsys-operator,component=operator")
+	_, errs := sOperatorCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Synopsys-Operator components: %+v", errs)
 	}
@@ -160,8 +160,8 @@ func (specConfig *PrometheusSpecConfig) UpdatePrometheus() error {
 	if err != nil {
 		return fmt.Errorf("failed to get Prometheus components: %s", err)
 	}
-	prometheusCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, specConfig.Namespace, prometheusComponents, "app=synopsys-operator,component=prometheus")
-	errs := prometheusCommonConfig.CRUDComponents()
+	prometheusCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, false, specConfig.Namespace, prometheusComponents, "app=synopsys-operator,component=prometheus")
+	_, errs := prometheusCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Prometheus components: %+v", errs)
 	}

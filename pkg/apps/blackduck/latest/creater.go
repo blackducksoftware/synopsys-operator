@@ -72,16 +72,16 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	pvcs := hc.GetPVC(blackduck)
 
 	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
-		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
+		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck")
-		errors := commonConfig.CRUDComponents()
+		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("stop blackduck: %+v", errors)
 		}
 	} else {
-		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
+		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck,component=pvc")
-		errors := commonConfig.CRUDComponents()
+		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update pvc: %+v", errors)
 		}
@@ -93,11 +93,11 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// install postgres
-		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
 			cpPostgresList, "app=blackduck,component=postgres")
-		errors = commonConfig.CRUDComponents()
+		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
-			return fmt.Errorf("update postgres: %+v", errors)
+			return fmt.Errorf("update postgres component: %+v", errors)
 		}
 		// log.Debugf("created/updated postgres component for %s", blackduck.Spec.Namespace)
 
@@ -116,24 +116,17 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return err
 		}
 
-		// deploy non postgres and uploadcache component
-		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
-			cpList, "app=blackduck,component notin (postgres,uploadcache)")
-		errors = commonConfig.CRUDComponents()
+		// install cfssl
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
+			cpList, "app=blackduck,component in (configmap,serviceAccount,cfssl)")
+		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
-			return fmt.Errorf("update non postgres and uploadcache components: %+v", errors)
+			return fmt.Errorf("update cfssl component: %+v", errors)
 		}
 
-		// log.Debugf("created/updated non postgres and upload cache component for %s", blackduck.Spec.Namespace)
-
-		// deploy upload cache component
-		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
-			cpList, "app=blackduck,component=uploadcache")
-		errors = commonConfig.CRUDComponents()
-		if len(errors) > 0 {
-			return fmt.Errorf("update upload cache components: %+v", errors)
+		if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
+			return err
 		}
-		// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
 
 		// add security context constraint if bdba enabled
 		if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
@@ -142,6 +135,24 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 				log.Error(err)
 			}
 		}
+
+		// deploy non postgres and uploadcache component
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
+			cpList, "app=blackduck,component notin (postgres,cfssl,configmap,serviceAccount,uploadcache)")
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update non postgres, cfssl and uploadcache components: %+v", errors)
+		}
+		// log.Debugf("created/updated non postgres and upload cache component for %s", blackduck.Spec.Namespace)
+
+		// deploy upload cache component
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
+			cpList, "app=blackduck,component=uploadcache")
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update upload cache component: %+v", errors)
+		}
+		// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
 
 		if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
 			newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
