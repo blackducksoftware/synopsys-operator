@@ -26,6 +26,7 @@ import (
 	"fmt"
 
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -35,134 +36,134 @@ import (
 // Ctl type provides functionality for an OpsSight
 // for the Synopsysctl tool
 type Ctl struct {
-	Spec                                             *opssightv1.OpsSightSpec
-	PerceptorName                                    string
-	PerceptorImage                                   string
-	PerceptorPort                                    int
-	PerceptorExpose                                  string
-	PerceptorCheckForStalledScansPauseHours          int
-	PerceptorStalledScanClientTimeoutHours           int
-	PerceptorModelMetricsPauseSeconds                int
-	PerceptorUnknownImagePauseMilliseconds           int
-	PerceptorClientTimeoutMilliseconds               int
-	ScannerPodName                                   string
-	ScannerPodScannerName                            string
-	ScannerPodScannerImage                           string
-	ScannerPodScannerPort                            int
-	ScannerPodScannerClientTimeoutSeconds            int
-	ScannerPodImageFacadeName                        string
-	ScannerPodImageFacadeImage                       string
-	ScannerPodImageFacadePort                        int
-	ScannerPodImageFacadeInternalRegistriesJSONSlice []string
-	ScannerPodImageFacadeImagePullerType             string
-	ScannerPodImageFacadeServiceAccount              string
-	ScannerPodReplicaCount                           int
-	ScannerPodImageDirectory                         string
-	PerceiverEnableImagePerceiver                    bool
-	PerceiverEnablePodPerceiver                      bool
-	PerceiverImagePerceiverName                      string
-	PerceiverImagePerceiverImage                     string
-	PerceiverPodPerceiverName                        string
-	PerceiverPodPerceiverImage                       string
-	PerceiverPodPerceiverNamespaceFilter             string
-	PerceiverAnnotationIntervalSeconds               int
-	PerceiverDumpIntervalMinutes                     int
-	PerceiverServiceAccount                          string
-	PerceiverPort                                    int
-	ConfigMapName                                    string
-	SecretName                                       string
-	DefaultCPU                                       string
-	DefaultMem                                       string
-	ScannerCPU                                       string
-	ScannerMem                                       string
-	LogLevel                                         string
-	EnableMetrics                                    bool
-	PrometheusName                                   string
-	PrometheusImage                                  string
-	PrometheusPort                                   int
-	PrometheusExpose                                 string
-	EnableSkyfire                                    bool
-	SkyfireName                                      string
-	SkyfireImage                                     string
-	SkyfirePort                                      int
-	SkyfirePrometheusPort                            int
-	SkyfireServiceAccount                            string
-	SkyfireHubClientTimeoutSeconds                   int
-	SkyfireHubDumpPauseSeconds                       int
-	SkyfireKubeDumpIntervalSeconds                   int
-	SkyfirePerceptorDumpIntervalSeconds              int
-	BlackduckExternalHostsJSON                       []string
-	BlackduckConnectionsEnvironmentVaraiableName     string
-	BlackduckTLSVerification                         bool
-	BlackduckPasswordEnvVar                          string
-	BlackduckInitialCount                            int
-	BlackduckMaxCount                                int
+	Spec                                         *opssightv1.OpsSightSpec
+	PerceptorName                                string
+	PerceptorImage                               string
+	PerceptorPort                                int
+	PerceptorExpose                              string
+	PerceptorCheckForStalledScansPauseHours      int
+	PerceptorStalledScanClientTimeoutHours       int
+	PerceptorModelMetricsPauseSeconds            int
+	PerceptorUnknownImagePauseMilliseconds       int
+	PerceptorClientTimeoutMilliseconds           int
+	ScannerPodName                               string
+	ScannerPodScannerName                        string
+	ScannerPodScannerImage                       string
+	ScannerPodScannerPort                        int
+	ScannerPodScannerClientTimeoutSeconds        int
+	ScannerPodImageFacadeName                    string
+	ScannerPodImageFacadeImage                   string
+	ScannerPodImageFacadePort                    int
+	ScannerPodImageFacadeInternalRegistriesFile  string
+	ScannerPodImageFacadeImagePullerType         string
+	ScannerPodImageFacadeServiceAccount          string
+	ScannerPodReplicaCount                       int
+	ScannerPodImageDirectory                     string
+	PerceiverEnableImagePerceiver                bool
+	PerceiverEnablePodPerceiver                  bool
+	PerceiverImagePerceiverName                  string
+	PerceiverImagePerceiverImage                 string
+	PerceiverPodPerceiverName                    string
+	PerceiverPodPerceiverImage                   string
+	PerceiverPodPerceiverNamespaceFilter         string
+	PerceiverAnnotationIntervalSeconds           int
+	PerceiverDumpIntervalMinutes                 int
+	PerceiverServiceAccount                      string
+	PerceiverPort                                int
+	ConfigMapName                                string
+	SecretName                                   string
+	DefaultCPU                                   string
+	DefaultMem                                   string
+	ScannerCPU                                   string
+	ScannerMem                                   string
+	LogLevel                                     string
+	EnableMetrics                                bool
+	PrometheusName                               string
+	PrometheusImage                              string
+	PrometheusPort                               int
+	PrometheusExpose                             string
+	EnableSkyfire                                bool
+	SkyfireName                                  string
+	SkyfireImage                                 string
+	SkyfirePort                                  int
+	SkyfirePrometheusPort                        int
+	SkyfireServiceAccount                        string
+	SkyfireHubClientTimeoutSeconds               int
+	SkyfireHubDumpPauseSeconds                   int
+	SkyfireKubeDumpIntervalSeconds               int
+	SkyfirePerceptorDumpIntervalSeconds          int
+	BlackduckExternalHostsFile                   string
+	BlackduckConnectionsEnvironmentVaraiableName string
+	BlackduckTLSVerification                     bool
+	BlackduckPasswordEnvVar                      string
+	BlackduckInitialCount                        int
+	BlackduckMaxCount                            int
 }
 
 // NewOpsSightCtl creates a new Ctl struct
 func NewOpsSightCtl() *Ctl {
 	return &Ctl{
-		Spec:                                             &opssightv1.OpsSightSpec{},
-		PerceptorName:                                    "",
-		PerceptorImage:                                   "",
-		PerceptorExpose:                                  "",
-		PerceptorPort:                                    0,
-		PerceptorCheckForStalledScansPauseHours:          0,
-		PerceptorStalledScanClientTimeoutHours:           0,
-		PerceptorModelMetricsPauseSeconds:                0,
-		PerceptorUnknownImagePauseMilliseconds:           0,
-		PerceptorClientTimeoutMilliseconds:               0,
-		ScannerPodName:                                   "",
-		ScannerPodScannerName:                            "",
-		ScannerPodScannerImage:                           "",
-		ScannerPodScannerPort:                            0,
-		ScannerPodScannerClientTimeoutSeconds:            0,
-		ScannerPodImageFacadeName:                        "",
-		ScannerPodImageFacadeImage:                       "",
-		ScannerPodImageFacadePort:                        0,
-		ScannerPodImageFacadeInternalRegistriesJSONSlice: []string{},
-		ScannerPodImageFacadeImagePullerType:             "",
-		ScannerPodImageFacadeServiceAccount:              "",
-		ScannerPodReplicaCount:                           0,
-		ScannerPodImageDirectory:                         "",
-		PerceiverEnableImagePerceiver:                    false,
-		PerceiverEnablePodPerceiver:                      false,
-		PerceiverImagePerceiverName:                      "",
-		PerceiverImagePerceiverImage:                     "",
-		PerceiverPodPerceiverName:                        "",
-		PerceiverPodPerceiverImage:                       "",
-		PerceiverPodPerceiverNamespaceFilter:             "",
-		PerceiverAnnotationIntervalSeconds:               0,
-		PerceiverDumpIntervalMinutes:                     0,
-		PerceiverServiceAccount:                          "",
-		PerceiverPort:                                    0,
-		ConfigMapName:                                    "",
-		SecretName:                                       "",
-		DefaultCPU:                                       "",
-		DefaultMem:                                       "",
-		ScannerCPU:                                       "",
-		ScannerMem:                                       "",
-		LogLevel:                                         "",
-		EnableMetrics:                                    false,
-		PrometheusName:                                   "",
-		PrometheusImage:                                  "",
-		PrometheusExpose:                                 "",
-		PrometheusPort:                                   0,
-		EnableSkyfire:                                    false,
-		SkyfireName:                                      "",
-		SkyfireImage:                                     "",
-		SkyfirePort:                                      0,
-		SkyfirePrometheusPort:                            0,
-		SkyfireServiceAccount:                            "",
-		SkyfireHubClientTimeoutSeconds:                   0,
-		SkyfireHubDumpPauseSeconds:                       0,
-		SkyfireKubeDumpIntervalSeconds:                   0,
-		SkyfirePerceptorDumpIntervalSeconds:              0,
-		BlackduckExternalHostsJSON:                       []string{},
-		BlackduckConnectionsEnvironmentVaraiableName:     "",
-		BlackduckTLSVerification:                         false,
-		BlackduckInitialCount:                            0,
-		BlackduckMaxCount:                                0,
+		Spec:                                         &opssightv1.OpsSightSpec{},
+		PerceptorName:                                "",
+		PerceptorImage:                               "",
+		PerceptorExpose:                              "",
+		PerceptorPort:                                0,
+		PerceptorCheckForStalledScansPauseHours:      0,
+		PerceptorStalledScanClientTimeoutHours:       0,
+		PerceptorModelMetricsPauseSeconds:            0,
+		PerceptorUnknownImagePauseMilliseconds:       0,
+		PerceptorClientTimeoutMilliseconds:           0,
+		ScannerPodName:                               "",
+		ScannerPodScannerName:                        "",
+		ScannerPodScannerImage:                       "",
+		ScannerPodScannerPort:                        0,
+		ScannerPodScannerClientTimeoutSeconds:        0,
+		ScannerPodImageFacadeName:                    "",
+		ScannerPodImageFacadeImage:                   "",
+		ScannerPodImageFacadePort:                    0,
+		ScannerPodImageFacadeInternalRegistriesFile:  "",
+		ScannerPodImageFacadeImagePullerType:         "",
+		ScannerPodImageFacadeServiceAccount:          "",
+		ScannerPodReplicaCount:                       0,
+		ScannerPodImageDirectory:                     "",
+		PerceiverEnableImagePerceiver:                false,
+		PerceiverEnablePodPerceiver:                  false,
+		PerceiverImagePerceiverName:                  "",
+		PerceiverImagePerceiverImage:                 "",
+		PerceiverPodPerceiverName:                    "",
+		PerceiverPodPerceiverImage:                   "",
+		PerceiverPodPerceiverNamespaceFilter:         "",
+		PerceiverAnnotationIntervalSeconds:           0,
+		PerceiverDumpIntervalMinutes:                 0,
+		PerceiverServiceAccount:                      "",
+		PerceiverPort:                                0,
+		ConfigMapName:                                "",
+		SecretName:                                   "",
+		DefaultCPU:                                   "",
+		DefaultMem:                                   "",
+		ScannerCPU:                                   "",
+		ScannerMem:                                   "",
+		LogLevel:                                     "",
+		EnableMetrics:                                false,
+		PrometheusName:                               "",
+		PrometheusImage:                              "",
+		PrometheusExpose:                             "",
+		PrometheusPort:                               0,
+		EnableSkyfire:                                false,
+		SkyfireName:                                  "",
+		SkyfireImage:                                 "",
+		SkyfirePort:                                  0,
+		SkyfirePrometheusPort:                        0,
+		SkyfireServiceAccount:                        "",
+		SkyfireHubClientTimeoutSeconds:               0,
+		SkyfireHubDumpPauseSeconds:                   0,
+		SkyfireKubeDumpIntervalSeconds:               0,
+		SkyfirePerceptorDumpIntervalSeconds:          0,
+		BlackduckExternalHostsFile:                   "",
+		BlackduckConnectionsEnvironmentVaraiableName: "",
+		BlackduckTLSVerification:                     false,
+		BlackduckInitialCount:                        0,
+		BlackduckMaxCount:                            0,
 	}
 }
 
@@ -183,13 +184,6 @@ func (ctl *Ctl) SetSpec(spec interface{}) error {
 
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *Ctl) CheckSpecFlags() error {
-	for _, registryJSON := range ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice {
-		registry := &opssightv1.RegistryAuth{}
-		err := json.Unmarshal([]byte(registryJSON), registry)
-		if err != nil {
-			return fmt.Errorf("invalid Registry Format")
-		}
-	}
 	return nil
 }
 
@@ -249,7 +243,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scannerpod-scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Scanner timeout for Black Duck Scan Client in seconds")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "scannerpod-imagefacade-image", ctl.ScannerPodImageFacadeImage, "ImageFacade Container's image")
 	cmd.Flags().IntVar(&ctl.ScannerPodImageFacadePort, "scannerpod-imagefacade-port", ctl.ScannerPodImageFacadePort, "ImageFacade Container's port")
-	cmd.Flags().StringSliceVar(&ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice, "scannerpod-imagefacade-internal-registries", ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice, "Secure Docker registries credentials to pull the images for scan")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeInternalRegistriesFile, "scannerpod-imagefacade-internal-registries-file", ctl.ScannerPodImageFacadeInternalRegistriesFile, "File for secure docker registries credentials to pull the images for scan")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "scannerpod-imagefacade-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of ImageFacade's Image Puller - docker, skopeo")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "scannerpod-imagefacade-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account for the ImageFacade")
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Scan Containers")
@@ -279,7 +273,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying Black Ducks")
 	cmd.Flags().IntVar(&ctl.SkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", ctl.SkyfireKubeDumpIntervalSeconds, "Seconds Skyfire waits between querying the KubeAPI")
 	cmd.Flags().IntVar(&ctl.SkyfirePerceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", ctl.SkyfirePerceptorDumpIntervalSeconds, "Seconds Skyfire waits between querying the Perceptor Model")
-	cmd.Flags().StringSliceVar(&ctl.BlackduckExternalHostsJSON, "blackduck-external-hosts", ctl.BlackduckExternalHostsJSON, "List of Black Duck External Hosts")
+	cmd.Flags().StringVar(&ctl.BlackduckExternalHostsFile, "blackduck-external-hosts-file", ctl.BlackduckExternalHostsFile, "File containing a list of Black Duck External Hosts")
 	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Perform TLS Verification for Black Duck")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
@@ -402,17 +396,29 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
 			ctl.Spec.ScannerPod.ImageFacade.Port = ctl.ScannerPodImageFacadePort
-		case "scannerpod-imagefacade-internal-registries":
+		case "scannerpod-imagefacade-internal-registries-file":
 			if ctl.Spec.ScannerPod == nil {
 				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
 			}
 			if ctl.Spec.ScannerPod.ImageFacade == nil {
 				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
-			for _, registryJSON := range ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice {
-				registry := &opssightv1.RegistryAuth{}
-				json.Unmarshal([]byte(registryJSON), registry)
-				ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ctl.Spec.ScannerPod.ImageFacade.InternalRegistries, registry)
+			data, err := util.ReadFileData(ctl.ScannerPodImageFacadeInternalRegistriesFile)
+			if err != nil {
+				log.Errorf("failed to read internal registries file: %s", err)
+			}
+			type InternalRegistryStructs struct {
+				Data []opssightv1.RegistryAuth
+			}
+			registryStructs := InternalRegistryStructs{Data: []opssightv1.RegistryAuth{}}
+			err = json.Unmarshal([]byte(data), &registryStructs)
+			if err != nil {
+				log.Errorf("failed to unmarshal internal registry structs: %s", err)
+				return
+			}
+			ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = []*opssightv1.RegistryAuth{} // clear old values
+			for _, registry := range registryStructs.Data {
+				ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ctl.Spec.ScannerPod.ImageFacade.InternalRegistries, &registry)
 			}
 		case "scannerpod-imagefacade-image-puller-type":
 			if ctl.Spec.ScannerPod == nil {
@@ -593,14 +599,26 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
 			}
 			ctl.Spec.Skyfire.PerceptorDumpIntervalSeconds = ctl.SkyfirePerceptorDumpIntervalSeconds
-		case "blackduck-external-hosts":
+		case "blackduck-external-hosts-file":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
 			}
-			for _, hostJSON := range ctl.BlackduckExternalHostsJSON {
-				host := &opssightv1.Host{}
-				json.Unmarshal([]byte(hostJSON), host)
-				ctl.Spec.Blackduck.ExternalHosts = append(ctl.Spec.Blackduck.ExternalHosts, host)
+			data, err := util.ReadFileData(ctl.BlackduckExternalHostsFile)
+			if err != nil {
+				log.Errorf("failed to read external hosts file: %s", err)
+			}
+			type ExternalHostStructs struct {
+				Data []opssightv1.Host
+			}
+			hostStructs := ExternalHostStructs{Data: []opssightv1.Host{}}
+			err = json.Unmarshal([]byte(data), &hostStructs)
+			if err != nil {
+				log.Errorf("failed to unmarshal internal registry structs: %s", err)
+				return
+			}
+			ctl.Spec.Blackduck.ExternalHosts = []*opssightv1.Host{} // clear old values
+			for _, host := range hostStructs.Data {
+				ctl.Spec.Blackduck.ExternalHosts = append(ctl.Spec.Blackduck.ExternalHosts, &host)
 			}
 		case "blackduck-connections-environment-variable-name":
 			if ctl.Spec.Blackduck == nil {

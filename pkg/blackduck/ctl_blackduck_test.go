@@ -51,7 +51,7 @@ func TestNewBlackduckCtl(t *testing.T) {
 		LivenessProbes:                        false,
 		ScanType:                              "",
 		PersistentStorage:                     false,
-		PVCJSONSlice:                          []string{},
+		PVCFile:                               "",
 		CertificateName:                       "",
 		Certificate:                           "",
 		CertificateKey:                        "",
@@ -61,7 +61,7 @@ func TestNewBlackduckCtl(t *testing.T) {
 		DesiredState:                          "",
 		Environs:                              []string{},
 		ImageRegistries:                       []string{},
-		ImageUIDMapJSONSlice:                  []string{},
+		ImageUIDMapFile:                       "",
 		LicenseKey:                            "",
 	}, blackduckCtl)
 }
@@ -100,19 +100,8 @@ func TestCheckSpecFlags(t *testing.T) {
 		}},
 		// case
 		{input: &Ctl{
-			Spec:         &blackduckv1.BlackduckSpec{},
-			PVCJSONSlice: []string{"invalid:"},
-		}},
-		// case
-		{input: &Ctl{
 			Spec:     &blackduckv1.BlackduckSpec{},
 			Environs: []string{"invalid"},
-		}},
-		// case
-		{input: &Ctl{
-			Spec:                 &blackduckv1.BlackduckSpec{},
-			ImageUIDMapJSONSlice: []string{"invalid:"},
-			LicenseKey:           "",
 		}},
 	}
 
@@ -175,9 +164,9 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
 	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "Type of Scan artifact. Possible values are Artifacts/Images/Custom")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
-	cmd.Flags().StringSliceVar(&ctl.PVCJSONSlice, "pvc", ctl.PVCJSONSlice, "List of PVC json structs")
+	cmd.Flags().StringVar(&ctl.PVCFile, "pvc-file", ctl.PVCFile, "File containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File to the Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File for the Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key-file", ctl.CertificateKey, "File for the Black Duck nginx certificate key")
 	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate-file", ctl.ProxyCertificate, "File for the Black Duck proxy certificate")
 	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca-file", ctl.AuthCustomCA, "File for the Custom Auth CA for Black Duck")
@@ -185,7 +174,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "Map of Container UIDs to Tags")
+	cmd.Flags().StringVar(&ctl.ImageUIDMapFile, "image-uid-map-file", ctl.ImageUIDMapFile, "File containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
@@ -380,16 +369,6 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "pvc",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:         &blackduckv1.BlackduckSpec{},
-				PVCJSONSlice: []string{"{\"name\": \"changed\", \"size\": \"1G\"}"},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "changed", Size: "1G"}}},
-		},
-		// case
-		{
 			flagName:   "db-certificate-name",
 			initialCtl: NewBlackduckCtl(),
 			changedCtl: &Ctl{
@@ -439,16 +418,6 @@ func TestSetFlag(t *testing.T) {
 				ImageRegistries: []string{"changed"},
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{ImageRegistries: []string{"changed"}},
-		},
-		// case
-		{
-			flagName:   "image-uid-map",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{},
-				ImageUIDMapJSONSlice: []string{"{\"Key\": \"changed\", \"Value\": 1}"},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{ImageUIDMap: map[string]int64{"changed": 1}},
 		},
 		// case
 		{

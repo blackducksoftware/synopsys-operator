@@ -58,7 +58,7 @@ type Ctl struct {
 	LivenessProbes                        bool
 	ScanType                              string
 	PersistentStorage                     bool
-	PVCJSONSlice                          []string
+	PVCFile                               string
 	CertificateName                       string
 	Certificate                           string
 	CertificateKey                        string
@@ -68,7 +68,7 @@ type Ctl struct {
 	DesiredState                          string
 	Environs                              []string
 	ImageRegistries                       []string
-	ImageUIDMapJSONSlice                  []string
+	ImageUIDMapFile                       string
 	LicenseKey                            string
 }
 
@@ -91,7 +91,7 @@ func NewBlackduckCtl() *Ctl {
 		LivenessProbes:                        false,
 		ScanType:                              "",
 		PersistentStorage:                     false,
-		PVCJSONSlice:                          []string{},
+		PVCFile:                               "",
 		CertificateName:                       "",
 		Certificate:                           "",
 		CertificateKey:                        "",
@@ -101,7 +101,7 @@ func NewBlackduckCtl() *Ctl {
 		DesiredState:                          "",
 		Environs:                              []string{},
 		ImageRegistries:                       []string{},
-		ImageUIDMapJSONSlice:                  []string{},
+		ImageUIDMapFile:                       "",
 		LicenseKey:                            "",
 	}
 }
@@ -139,23 +139,9 @@ func (ctl *Ctl) CheckSpecFlags() error {
 	if !isValidSize(ctl.Size) {
 		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'xlarge'")
 	}
-	for _, pvcJSON := range ctl.PVCJSONSlice {
-		pvc := &blackduckv1.PVC{}
-		err := json.Unmarshal([]byte(pvcJSON), pvc)
-		if err != nil {
-			return fmt.Errorf("invalid format for PVC: %+v", err)
-		}
-	}
 	for _, environ := range ctl.Environs {
 		if !strings.Contains(environ, ":") {
 			return fmt.Errorf("invalid Environ Format - NAME:VALUE")
-		}
-	}
-	for _, uidJSON := range ctl.ImageUIDMapJSONSlice {
-		uidStruct := &uid{}
-		err := json.Unmarshal([]byte(uidJSON), uidStruct)
-		if err != nil {
-			return fmt.Errorf("invalid format for Image UID")
 		}
 	}
 	return nil
@@ -225,9 +211,9 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
 	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "Type of Scan artifact. Possible values are Artifacts/Images/Custom")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
-	cmd.Flags().StringSliceVar(&ctl.PVCJSONSlice, "pvc", ctl.PVCJSONSlice, "List of PVC json structs")
+	cmd.Flags().StringVar(&ctl.PVCFile, "pvc-file", ctl.PVCFile, "File containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File to the Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File for the Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key-file", ctl.CertificateKey, "File for the Black Duck nginx certificate key")
 	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate-file", ctl.ProxyCertificate, "File for the Black Duck proxy certificate")
 	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca-file", ctl.AuthCustomCA, "File for the Custom Auth CA for Black Duck")
@@ -235,7 +221,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "Map of Container UIDs to Tags")
+	cmd.Flags().StringVar(&ctl.ImageUIDMapFile, "image-uid-map-file", ctl.ImageUIDMapFile, "File containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
 }
 
@@ -301,11 +287,23 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.ScanType = ctl.ScanType
 		case "persistent-storage":
 			ctl.Spec.PersistentStorage = ctl.PersistentStorage
-		case "pvc":
-			for _, pvcJSON := range ctl.PVCJSONSlice {
-				pvc := &blackduckv1.PVC{}
-				json.Unmarshal([]byte(pvcJSON), pvc)
-				ctl.Spec.PVC = append(ctl.Spec.PVC, *pvc)
+		case "pvc-file":
+			data, err := util.ReadFileData(ctl.PVCFile)
+			if err != nil {
+				log.Errorf("failed to read pvc file: %s", err)
+			}
+			type PVCStructs struct {
+				Data []blackduckv1.PVC
+			}
+			pvcStructs := PVCStructs{Data: []blackduckv1.PVC{}}
+			err = json.Unmarshal([]byte(data), &pvcStructs)
+			if err != nil {
+				log.Errorf("failed to unmarshal pvc structs: %s", err)
+				return
+			}
+			ctl.Spec.PVC = []blackduckv1.PVC{} // clear old values
+			for _, pvc := range pvcStructs.Data {
+				ctl.Spec.PVC = append(ctl.Spec.PVC, pvc)
 			}
 		case "db-certificate-name":
 			ctl.Spec.CertificateName = ctl.CertificateName
@@ -330,7 +328,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "auth-custom-ca-file":
 			data, err := util.ReadFileData(ctl.AuthCustomCA)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %s", err)
+				log.Errorf("failed to read authCustomCA file: %s", err)
 			}
 			ctl.Spec.AuthCustomCA = data
 		case "type":
@@ -341,12 +339,23 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.Environs = ctl.Environs
 		case "image-registries":
 			ctl.Spec.ImageRegistries = ctl.ImageRegistries
-		case "image-uid-map":
+		case "image-uid-map-file":
+			data, err := util.ReadFileData(ctl.ImageUIDMapFile)
+			if err != nil {
+				log.Errorf("failed to read image UID map file: %s", err)
+			}
+			type UIDStructs struct {
+				Data []uid
+			}
+			uidStructs := UIDStructs{Data: []uid{}}
+			err = json.Unmarshal([]byte(data), &uidStructs)
+			if err != nil {
+				log.Errorf("failed to unmarshal UID Map structs: %s", err)
+				return
+			}
 			ctl.Spec.ImageUIDMap = make(map[string]int64)
-			for _, uidJSON := range ctl.ImageUIDMapJSONSlice {
-				uidStruct := &uid{}
-				json.Unmarshal([]byte(uidJSON), uidStruct)
-				ctl.Spec.ImageUIDMap[uidStruct.Key] = uidStruct.Value
+			for _, mapStruct := range uidStructs.Data {
+				ctl.Spec.ImageUIDMap[mapStruct.Key] = mapStruct.Value
 			}
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
