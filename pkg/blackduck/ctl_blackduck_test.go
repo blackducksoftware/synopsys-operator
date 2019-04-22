@@ -178,9 +178,9 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringSliceVar(&ctl.PVCJSONSlice, "pvc", ctl.PVCJSONSlice, "List of PVC json structs")
 	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File to the Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key-file", ctl.CertificateKey, "File to the Black Duck nginx certificate key")
-	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate-file", ctl.ProxyCertificate, "File to the Black Duck proxy certificate")
-	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca", ctl.AuthCustomCA, "Custom Auth CA for BlackDuck")
+	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key-file", ctl.CertificateKey, "File for the Black Duck nginx certificate key")
+	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate-file", ctl.ProxyCertificate, "File for the Black Duck proxy certificate")
+	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca-file", ctl.AuthCustomCA, "File for the Custom Auth CA for Black Duck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
@@ -397,16 +397,6 @@ func TestSetFlag(t *testing.T) {
 				CertificateName: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{CertificateName: "changed"},
-		},
-		// case
-		{
-			flagName:   "auth-custom-ca",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:         &blackduckv1.BlackduckSpec{},
-				AuthCustomCA: "changed",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{AuthCustomCA: "changed"},
 		},
 		// case
 		{
