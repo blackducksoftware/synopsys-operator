@@ -51,17 +51,17 @@ func TestNewBlackduckCtl(t *testing.T) {
 		LivenessProbes:                        false,
 		ScanType:                              "",
 		PersistentStorage:                     false,
-		PVCJSONSlice:                          []string{},
+		PVCFilePath:                           "",
 		CertificateName:                       "",
-		Certificate:                           "",
-		CertificateKey:                        "",
-		ProxyCertificate:                      "",
-		AuthCustomCA:                          "",
+		CertificateFilePath:                   "",
+		CertificateKeyFilePath:                "",
+		ProxyCertificateFilePath:              "",
+		AuthCustomCAFilePath:                  "",
 		Type:                                  "",
 		DesiredState:                          "",
 		Environs:                              []string{},
 		ImageRegistries:                       []string{},
-		ImageUIDMapJSONSlice:                  []string{},
+		ImageUIDMapFilePath:                   "",
 		LicenseKey:                            "",
 	}, blackduckCtl)
 }
@@ -100,19 +100,8 @@ func TestCheckSpecFlags(t *testing.T) {
 		}},
 		// case
 		{input: &Ctl{
-			Spec:         &blackduckv1.BlackduckSpec{},
-			PVCJSONSlice: []string{"invalid:"},
-		}},
-		// case
-		{input: &Ctl{
 			Spec:     &blackduckv1.BlackduckSpec{},
 			Environs: []string{"invalid"},
-		}},
-		// case
-		{input: &Ctl{
-			Spec:                 &blackduckv1.BlackduckSpec{},
-			ImageUIDMapJSONSlice: []string{"invalid:"},
-			LicenseKey:           "",
 		}},
 	}
 
@@ -175,17 +164,17 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
 	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "Type of Scan artifact. Possible values are Artifacts/Images/Custom")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
-	cmd.Flags().StringSliceVar(&ctl.PVCJSONSlice, "pvc", ctl.PVCJSONSlice, "List of PVC json structs")
-	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File to the Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key-file", ctl.CertificateKey, "File to the Black Duck nginx certificate key")
-	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate-file", ctl.ProxyCertificate, "File to the Black Duck proxy certificate")
-	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca", ctl.AuthCustomCA, "Custom Auth CA for Black Duck")
-	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck (OpsSight specific)")
-	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Black Duck")
+	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
+	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to a file for the Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to a file for the Black Duck nginx certificate key")
+	cmd.Flags().StringVar(&ctl.ProxyCertificateFilePath, "proxy-certificate-file-path", ctl.ProxyCertificateFilePath, "Absolute path to a file for the Black Duck proxy certificate")
+	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
+	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck")
+	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "Map of Container UIDs to Tags")
+	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
@@ -380,16 +369,6 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "pvc",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:         &blackduckv1.BlackduckSpec{},
-				PVCJSONSlice: []string{"{\"name\": \"changed\", \"size\": \"1G\"}"},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "changed", Size: "1G"}}},
-		},
-		// case
-		{
 			flagName:   "certificate-name",
 			initialCtl: NewBlackduckCtl(),
 			changedCtl: &Ctl{
@@ -397,16 +376,6 @@ func TestSetFlag(t *testing.T) {
 				CertificateName: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{CertificateName: "changed"},
-		},
-		// case
-		{
-			flagName:   "auth-custom-ca",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:         &blackduckv1.BlackduckSpec{},
-				AuthCustomCA: "changed",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{AuthCustomCA: "changed"},
 		},
 		// case
 		{
@@ -449,16 +418,6 @@ func TestSetFlag(t *testing.T) {
 				ImageRegistries: []string{"changed"},
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{ImageRegistries: []string{"changed"}},
-		},
-		// case
-		{
-			flagName:   "image-uid-map",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{},
-				ImageUIDMapJSONSlice: []string{"{\"Key\": \"changed\", \"Value\": 1}"},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{ImageUIDMap: map[string]int64{"changed": 1}},
 		},
 		// case
 		{

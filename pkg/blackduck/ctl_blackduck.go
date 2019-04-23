@@ -58,17 +58,17 @@ type Ctl struct {
 	LivenessProbes                        bool
 	ScanType                              string
 	PersistentStorage                     bool
-	PVCJSONSlice                          []string
+	PVCFilePath                           string
 	CertificateName                       string
-	Certificate                           string
-	CertificateKey                        string
-	ProxyCertificate                      string
-	AuthCustomCA                          string
+	CertificateFilePath                   string
+	CertificateKeyFilePath                string
+	ProxyCertificateFilePath              string
+	AuthCustomCAFilePath                  string
 	Type                                  string
 	DesiredState                          string
 	Environs                              []string
 	ImageRegistries                       []string
-	ImageUIDMapJSONSlice                  []string
+	ImageUIDMapFilePath                   string
 	LicenseKey                            string
 }
 
@@ -91,17 +91,17 @@ func NewBlackduckCtl() *Ctl {
 		LivenessProbes:                        false,
 		ScanType:                              "",
 		PersistentStorage:                     false,
-		PVCJSONSlice:                          []string{},
+		PVCFilePath:                           "",
 		CertificateName:                       "",
-		Certificate:                           "",
-		CertificateKey:                        "",
-		ProxyCertificate:                      "",
-		AuthCustomCA:                          "",
+		CertificateFilePath:                   "",
+		CertificateKeyFilePath:                "",
+		ProxyCertificateFilePath:              "",
+		AuthCustomCAFilePath:                  "",
 		Type:                                  "",
 		DesiredState:                          "",
 		Environs:                              []string{},
 		ImageRegistries:                       []string{},
-		ImageUIDMapJSONSlice:                  []string{},
+		ImageUIDMapFilePath:                   "",
 		LicenseKey:                            "",
 	}
 }
@@ -139,23 +139,9 @@ func (ctl *Ctl) CheckSpecFlags() error {
 	if !isValidSize(ctl.Size) {
 		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'x-large'")
 	}
-	for _, pvcJSON := range ctl.PVCJSONSlice {
-		pvc := &blackduckv1.PVC{}
-		err := json.Unmarshal([]byte(pvcJSON), pvc)
-		if err != nil {
-			return fmt.Errorf("invalid format for PVC: %+v", err)
-		}
-	}
 	for _, environ := range ctl.Environs {
 		if !strings.Contains(environ, ":") {
 			return fmt.Errorf("invalid Environ Format - NAME:VALUE")
-		}
-	}
-	for _, uidJSON := range ctl.ImageUIDMapJSONSlice {
-		uidStruct := &uid{}
-		err := json.Unmarshal([]byte(uidJSON), uidStruct)
-		if err != nil {
-			return fmt.Errorf("invalid format for Image UID")
 		}
 	}
 	return nil
@@ -225,17 +211,17 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
 	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "Type of Scan artifact. Possible values are Artifacts/Images/Custom")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
-	cmd.Flags().StringSliceVar(&ctl.PVCJSONSlice, "pvc", ctl.PVCJSONSlice, "List of PVC json structs")
-	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File to the Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key-file", ctl.CertificateKey, "File to the Black Duck nginx certificate key")
-	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate-file", ctl.ProxyCertificate, "File to the Black Duck proxy certificate")
-	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca", ctl.AuthCustomCA, "Custom Auth CA for Black Duck")
-	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck (OpsSight specific)")
-	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Black Duck")
+	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
+	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to a file for the Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to a file for the Black Duck nginx certificate key")
+	cmd.Flags().StringVar(&ctl.ProxyCertificateFilePath, "proxy-certificate-file-path", ctl.ProxyCertificateFilePath, "Absolute path to a file for the Black Duck proxy certificate")
+	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
+	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck")
+	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "Map of Container UIDs to Tags")
+	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 }
 
@@ -243,6 +229,16 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 // the resource's spec
 func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 	flagset.VisitAll(ctl.SetFlag)
+}
+
+// PVCStructs - file format for reading data
+type PVCStructs struct {
+	Data []blackduckv1.PVC
+}
+
+// UIDStructs - file format for reading data
+type UIDStructs struct {
+	Data []uid
 }
 
 // SetFlag sets a Blackduck's Spec field if its flag was changed
@@ -301,34 +297,47 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.ScanType = ctl.ScanType
 		case "persistent-storage":
 			ctl.Spec.PersistentStorage = ctl.PersistentStorage
-		case "pvc":
-			for _, pvcJSON := range ctl.PVCJSONSlice {
-				pvc := &blackduckv1.PVC{}
-				json.Unmarshal([]byte(pvcJSON), pvc)
-				ctl.Spec.PVC = append(ctl.Spec.PVC, *pvc)
+		case "pvc-file-path":
+			data, err := util.ReadFileData(ctl.PVCFilePath)
+			if err != nil {
+				log.Errorf("failed to read pvc file: %s", err)
+			}
+			pvcStructs := PVCStructs{Data: []blackduckv1.PVC{}}
+			err = json.Unmarshal([]byte(data), &pvcStructs)
+			if err != nil {
+				log.Errorf("failed to unmarshal pvc structs: %s", err)
+				return
+			}
+			ctl.Spec.PVC = []blackduckv1.PVC{} // clear old values
+			for _, pvc := range pvcStructs.Data {
+				ctl.Spec.PVC = append(ctl.Spec.PVC, pvc)
 			}
 		case "certificate-name":
 			ctl.Spec.CertificateName = ctl.CertificateName
 		case "certificate-file":
-			data, err := util.ReadFileData(ctl.Certificate)
+			data, err := util.ReadFileData(ctl.CertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
 			}
 			ctl.Spec.Certificate = data
-		case "certificate-key-file":
-			data, err := util.ReadFileData(ctl.CertificateKey)
+		case "certificate-key-file-path":
+			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
 			}
 			ctl.Spec.CertificateKey = data
-		case "proxy-certificate-file":
-			data, err := util.ReadFileData(ctl.ProxyCertificate)
+		case "proxy-certificate-file-path":
+			data, err := util.ReadFileData(ctl.ProxyCertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
 			}
 			ctl.Spec.ProxyCertificate = data
-		case "auth-custom-ca":
-			ctl.Spec.AuthCustomCA = ctl.AuthCustomCA
+		case "auth-custom-ca-file-path":
+			data, err := util.ReadFileData(ctl.AuthCustomCAFilePath)
+			if err != nil {
+				log.Errorf("failed to read authCustomCA file: %s", err)
+			}
+			ctl.Spec.AuthCustomCA = data
 		case "type":
 			ctl.Spec.Type = ctl.Type
 		case "desired-state":
@@ -337,12 +346,20 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.Environs = ctl.Environs
 		case "image-registries":
 			ctl.Spec.ImageRegistries = ctl.ImageRegistries
-		case "image-uid-map":
+		case "image-uid-map-file-path":
+			data, err := util.ReadFileData(ctl.ImageUIDMapFilePath)
+			if err != nil {
+				log.Errorf("failed to read image UID map file: %s", err)
+			}
+			uidStructs := UIDStructs{Data: []uid{}}
+			err = json.Unmarshal([]byte(data), &uidStructs)
+			if err != nil {
+				log.Errorf("failed to unmarshal UID Map structs: %s", err)
+				return
+			}
 			ctl.Spec.ImageUIDMap = make(map[string]int64)
-			for _, uidJSON := range ctl.ImageUIDMapJSONSlice {
-				uidStruct := &uid{}
-				json.Unmarshal([]byte(uidJSON), uidStruct)
-				ctl.Spec.ImageUIDMap[uidStruct.Key] = uidStruct.Value
+			for _, mapStruct := range uidStructs.Data {
+				ctl.Spec.ImageUIDMap[mapStruct.Key] = mapStruct.Value
 			}
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
