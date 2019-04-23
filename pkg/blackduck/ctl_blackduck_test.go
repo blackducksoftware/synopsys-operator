@@ -51,17 +51,17 @@ func TestNewBlackduckCtl(t *testing.T) {
 		LivenessProbes:                        false,
 		ScanType:                              "",
 		PersistentStorage:                     false,
-		PVCFile:                               "",
+		PVCFilePath:                           "",
 		CertificateName:                       "",
-		Certificate:                           "",
-		CertificateKey:                        "",
-		ProxyCertificate:                      "",
-		AuthCustomCA:                          "",
+		CertificateFilePath:                   "",
+		CertificateKeyFilePath:                "",
+		ProxyCertificateFilePath:              "",
+		AuthCustomCAFilePath:                  "",
 		Type:                                  "",
 		DesiredState:                          "",
 		Environs:                              []string{},
 		ImageRegistries:                       []string{},
-		ImageUIDMapFile:                       "",
+		ImageUIDMapFilePath:                   "",
 		LicenseKey:                            "",
 	}, blackduckCtl)
 }
@@ -164,17 +164,17 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
 	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "Type of Scan artifact. Possible values are Artifacts/Images/Custom")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
-	cmd.Flags().StringVar(&ctl.PVCFile, "pvc-file", ctl.PVCFile, "File containing a list of PVC json structs")
+	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.Certificate, "certificate-file", ctl.Certificate, "File for the Black Duck nginx certificate")
-	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key-file", ctl.CertificateKey, "File for the Black Duck nginx certificate key")
-	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate-file", ctl.ProxyCertificate, "File for the Black Duck proxy certificate")
-	cmd.Flags().StringVar(&ctl.AuthCustomCA, "auth-custom-ca-file", ctl.AuthCustomCA, "File for the Custom Auth CA for Black Duck")
+	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to a file for the Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to a file for the Black Duck nginx certificate key")
+	cmd.Flags().StringVar(&ctl.ProxyCertificateFilePath, "proxy-certificate-file-path", ctl.ProxyCertificateFilePath, "Absolute path to a file for the Black Duck proxy certificate")
+	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringVar(&ctl.ImageUIDMapFile, "image-uid-map-file", ctl.ImageUIDMapFile, "File containing a map of Container UIDs to Tags")
+	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
