@@ -57,7 +57,7 @@
 
 [[projects]]
   branch = "environs"
-  digest = "1:ed8038937847e841f7c89a73fb03f81781585ba54b24852aaeca49596e73eca2"
+  digest = "1:377341e6989077e399e7965df79b95f3c9baea64ae285589d529463a18624f46"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/alert/client/clientset/versioned",
@@ -93,7 +93,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "57d9ef6d527b24b114fa0ef77e652619dde60435"
+  revision = "24f06b97c10bf47f7f7d08a41d64259597ed1032"
 
 [[projects]]
   digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
@@ -1274,7 +1274,7 @@
   name = "golang.org/x/sync"
   packages = ["errgroup"]
   pruneopts = "UT"
-  revision = "56d357773e8497dfd526f0727e187720d1093757"
+  revision = "112230192c580c3556b8cee6403af37a4fc5f28c"
 
 [[projects]]
   branch = "master"
@@ -1553,7 +1553,7 @@
   input-imports = [
     "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1",
     "github.com/blackducksoftware/synopsys-operator/pkg/apps",
-    "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest",
+    "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers",
     "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned",
     "github.com/blackducksoftware/synopsys-operator/pkg/protoform",
     "github.com/blackducksoftware/synopsys-operator/pkg/util",

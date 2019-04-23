@@ -43,8 +43,8 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 	for _, value := range c.hubSpec.Environs {
 		values := strings.SplitN(value, ":", 2)
 		if len(values) == 2 {
-			mapKey := strings.Trim(values[0], " ")
-			mapValue := strings.Trim(values[1], " ")
+			mapKey := strings.TrimSpace(values[0])
+			mapValue := strings.TrimSpace(values[1])
 			if len(mapKey) > 0 && len(mapValue) > 0 {
 				hubData[mapKey] = mapValue
 			}
