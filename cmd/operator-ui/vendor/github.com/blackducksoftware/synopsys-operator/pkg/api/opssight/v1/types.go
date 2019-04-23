@@ -79,6 +79,7 @@ type Perceptor struct {
 	ModelMetricsPauseSeconds       int    `json:"modelMetricsPauseSeconds"`
 	UnknownImagePauseMilliseconds  int    `json:"unknownImagePauseMilliseconds"`
 	ClientTimeoutMilliseconds      int    `json:"clientTimeoutMilliseconds"`
+	Expose                         string `json:"expose"`
 }
 
 // ScannerPod stores the Perceptor scanner and Image Facade configuration
@@ -149,9 +150,10 @@ type Skyfire struct {
 
 // Prometheus container definition
 type Prometheus struct {
-	Name  string `json:"name"`
-	Image string `json:"image"`
-	Port  int    `json:"port"`
+	Name   string `json:"name"`
+	Image  string `json:"image"`
+	Port   int    `json:"port"`
+	Expose string `json:"expose"`
 }
 
 // OpsSightSpec is the spec for a OpsSight resource

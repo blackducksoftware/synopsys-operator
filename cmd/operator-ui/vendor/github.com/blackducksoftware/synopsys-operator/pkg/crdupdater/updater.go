@@ -38,15 +38,17 @@ type UpdateComponents interface {
 
 // Updater handles in updating the components
 type Updater struct {
-	updaters []UpdateComponents
-	dryRun   bool
+	updaters  []UpdateComponents
+	dryRun    bool
+	isPatched bool
 }
 
 // NewUpdater will create the specification that is used for updating the components
-func NewUpdater(dryRun bool) *Updater {
+func NewUpdater(dryRun bool, isPatched bool) *Updater {
 	updater := Updater{
-		updaters: make([]UpdateComponents, 0),
-		dryRun:   dryRun,
+		updaters:  make([]UpdateComponents, 0),
+		dryRun:    dryRun,
+		isPatched: isPatched,
 	}
 	return &updater
 }
@@ -57,26 +59,26 @@ func (u *Updater) AddUpdater(updater UpdateComponents) {
 }
 
 // Update add or remove the components
-func (u *Updater) Update() error {
+func (u *Updater) Update() (bool, error) {
 	isPatched := false
 	for _, updater := range u.updaters {
 		if !u.dryRun {
 			err := updater.buildNewAndOldObject()
 			if err != nil {
-				return errors.Annotatef(err, "build components:")
+				return false, errors.Annotatef(err, "build components:")
 			}
 		}
 		isUpdated, err := updater.add(isPatched)
-		isPatched = isPatched || isUpdated
+		isPatched = isPatched || u.isPatched || isUpdated
 		if err != nil {
-			return errors.Annotatef(err, "add/patch components:")
+			return false, errors.Annotatef(err, "add/patch components:")
 		}
 		if !u.dryRun {
 			err = updater.remove()
 			if err != nil {
-				return errors.Annotatef(err, "remove components:")
+				return false, errors.Annotatef(err, "remove components:")
 			}
 		}
 	}
-	return nil
+	return isPatched, nil
 }

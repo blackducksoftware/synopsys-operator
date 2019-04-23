@@ -32,7 +32,6 @@ import (
 	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
@@ -41,6 +40,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	routev1 "github.com/openshift/api/route/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -69,93 +69,120 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	newBlackuck := blackduck.DeepCopy()
 
-	// Sets PVC sizes
 	pvcs := hc.GetPVC(blackduck)
 
-	commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
-		&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck,component=pvc")
-	errors := commonConfig.CRUDComponents()
-	if len(errors) > 0 {
-		return fmt.Errorf("unable to update postgres components due to %+v", errors)
-	}
+	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
+		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck")
+		_, errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("stop blackduck: %+v", errors)
+		}
+	} else {
+		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck,component=pvc")
+		isPatched, errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update pvc: %+v", errors)
+		}
 
-	// Get postgres components
-	cpPostgresList, err := hc.getPostgresComponents(blackduck)
-	if err != nil {
-		return err
-	}
-
-	// install postgres
-	commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
-		cpPostgresList, "app=blackduck,component=postgres")
-	errors = commonConfig.CRUDComponents()
-	if len(errors) > 0 {
-		return fmt.Errorf("unable to update postgres components due to %+v", errors)
-	}
-	// log.Debugf("created/updated postgres component for %s", blackduck.Spec.Namespace)
-
-	// Check postgres and initialize if needed.
-	if blackduck.Spec.ExternalPostgres == nil {
-		// TODO return whether we re-initialized or not
-		err = hc.initPostgres(&blackduck.Spec)
+		// Get postgres components
+		cpPostgresList, err := hc.getPostgresComponents(blackduck)
 		if err != nil {
 			return err
 		}
-	}
 
-	// Get non postgres components
-	cpList, err := hc.getComponents(blackduck)
-	if err != nil {
-		return err
-	}
+		// install postgres
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
+			cpPostgresList, "app=blackduck,component=postgres")
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update postgres component: %+v", errors)
+		}
+		// log.Debugf("created/updated postgres component for %s", blackduck.Spec.Namespace)
 
-	// deploy non postgres and uploadcache component
-	commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
-		cpList, "app=blackduck,component notin (postgres,uploadcache)")
-	errors = commonConfig.CRUDComponents()
-	if len(errors) > 0 {
-		return fmt.Errorf("unable to update non postgres and uploadcache components due to %+v", errors)
-	}
-
-	// log.Debugf("created/updated non postgres and upload cache component for %s", blackduck.Spec.Namespace)
-
-	// deploy upload cache component
-	commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, blackduck.Spec.Namespace,
-		cpList, "app=blackduck,component=uploadcache")
-	errors = commonConfig.CRUDComponents()
-	if len(errors) > 0 {
-		return fmt.Errorf("unable to update upload cache components due to %+v", errors)
-	}
-	// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
-
-	if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
-		newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
-	} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
-		newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
-	}
-
-	// Create Route on Openshift
-	if strings.ToUpper(blackduck.Spec.ExposeService) == "OPENSHIFT" && hc.routeClient != nil {
-		route, err := util.GetOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
-		if err != nil {
-			route, err = util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver")
+		// Check postgres and initialize if needed.
+		if blackduck.Spec.ExternalPostgres == nil {
+			// TODO return whether we re-initialized or not
+			err = hc.initPostgres(&blackduck.Spec)
 			if err != nil {
-				log.Errorf("unable to create the openshift route due to %+v", err)
+				return err
 			}
 		}
-		if route != nil {
-			newBlackuck.Status.IP = route.Spec.Host
+
+		// Get non postgres components
+		cpList, err := hc.getComponents(blackduck)
+		if err != nil {
+			return err
 		}
-	}
 
-	if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
-		return err
-	}
+		// install cfssl
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
+			cpList, "app=blackduck,component in (configmap,serviceAccount,cfssl)")
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update cfssl component: %+v", errors)
+		}
 
-	// TODO wait for webserver to be up before we register
-	if len(blackduck.Spec.LicenseKey) > 0 {
-		if err := hc.registerIfNeeded(blackduck); err != nil {
-			log.Infof("couldn't register blackduck %s: %v", blackduck.Name, err)
+		if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
+			return err
+		}
+
+		// deploy non postgres and uploadcache component
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
+			cpList, "app=blackduck,component notin (postgres,configmap,serviceAccount,cfssl)")
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update non postgres and cfssl component: %+v", errors)
+		}
+		// log.Debugf("created/updated non postgres and upload cache component for %s", blackduck.Spec.Namespace)
+
+		// add security context constraint if bdba enabled
+		if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
+			// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
+			err = hc.addAnyUIDToServiceAccount(&blackduck.Spec)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+
+		// add security context constraint if bdba enabled
+		if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
+			err = hc.addAnyUIDToServiceAccount(&blackduck.Spec)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+
+		if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
+			newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
+		} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
+			newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
+		}
+
+		// Create Route on Openshift
+		if strings.ToUpper(blackduck.Spec.ExposeService) == "OPENSHIFT" && hc.routeClient != nil {
+			route, err := util.GetOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
+			if err != nil {
+				route, err = util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver", "port-webserver", routev1.TLSTerminationPassthrough)
+				if err != nil {
+					log.Errorf("unable to create the openshift route due to %+v", err)
+				}
+			}
+			if route != nil {
+				newBlackuck.Status.IP = route.Spec.Host
+			}
+		}
+
+		if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
+			return err
+		}
+
+		// TODO wait for webserver to be up before we register
+		if len(blackduck.Spec.LicenseKey) > 0 {
+			if err := hc.registerIfNeeded(blackduck); err != nil {
+				log.Infof("couldn't register blackduck %s: %v", blackduck.Name, err)
+			}
 		}
 	}
 
@@ -355,7 +382,7 @@ func (hc *Creater) isBinaryAnalysisEnabled(bdspec *blackduckapi.BlackduckSpec) b
 		if strings.Contains(value, "USE_BINARY_UPLOADS") {
 			values := strings.SplitN(value, ":", 2)
 			if len(values) == 2 {
-				mapValue := strings.Trim(values[1], " ")
+				mapValue := strings.TrimSpace(values[1])
 				if strings.EqualFold(mapValue, "1") {
 					return true
 				}

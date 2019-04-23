@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2018 Synopsys, Inc.
+Copyright (C) 2019 Synopsys, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
@@ -22,13 +22,25 @@ under the License.
 package containers
 
 import (
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"strings"
 )
 
-func (c *Creater) getHubConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"}
-}
+const envOptions = `
+IPV4_ONLY=0
+USE_ALERT=0
+USE_BINARY_UPLOADS=0
+ENABLE_SOURCE_UPLOADS=false
+DATA_RETENTION_IN_DAYS=180
+MAX_TOTAL_SOURCE_SIZE_MB=4000`
 
-func (c *Creater) getHubDBConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "hub-db-config"}
+// GetHubKnobs returns the default environs
+func GetHubKnobs() (env map[string]string) {
+	env = map[string]string{}
+	for _, val := range strings.Split(envOptions, "\n") {
+		if strings.Contains(val, "=") {
+			keyval := strings.Split(val, "=")
+			env[keyval[0]] = keyval[1]
+		}
+	}
+	return env
 }
