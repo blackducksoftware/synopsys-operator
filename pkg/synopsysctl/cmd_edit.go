@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -63,25 +64,31 @@ var editBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackduckName := args[0]
-		log.Debugf("Editing BlackDuck %s...", blackduckName)
+		log.Debugf("editing Black Duck %s instance instance...", blackduckName)
 
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 			if err != nil {
-				log.Errorf("%s", err)
+				log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
 				return nil
 			}
-			editBlackduckCtl.SetSpec(bd.Spec)
+			err = editBlackduckCtl.SetSpec(bd.Spec)
+			if err != nil {
+				log.Errorf("cannot set an existing %s Black Duck instance to spec due to %+v", blackduckName, err)
+				return nil
+			}
 			// Update Spec with User's Flags
 			editBlackduckCtl.SetChangedFlags(flagset)
 			// Update Blackduck with Updates
 			blackduckSpec := editBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
+			// merge environs
+			blackduckSpec.Environs = operatorutil.MergeEnvSlices(blackduckSpec.Environs, bd.Spec.Environs)
 			bd.Spec = blackduckSpec
 			_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 			if err != nil {
-				log.Errorf("%s", err)
+				log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 				return nil
 			}
 		} else {
@@ -91,7 +98,7 @@ var editBlackduckCmd = &cobra.Command{
 				return nil
 			}
 		}
-		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
+		log.Infof("successfully updated the '%s' Black Duck instance", blackduckName)
 		return nil
 	},
 }
@@ -113,12 +120,12 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		blackduckName := args[0]
 		pvcName := args[1]
 
-		log.Debugf("adding PVC to Black Duck %s...", blackduckName)
+		log.Infof("adding PVC to Black Duck %s instance...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
 		// Add PVC to Spec
@@ -131,10 +138,10 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		// Update Blackduck with PVC
 		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
-		log.Infof("successfully edited BlackDuck: '%s'", blackduckName)
+		log.Infof("successfully updated the '%s' Black Duck instance", blackduckName)
 		return nil
 	},
 }
@@ -153,23 +160,23 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 		blackduckName := args[0]
 		environ := args[1]
 
-		log.Debugf("adding Environ to Black Duck %s...", blackduckName)
+		log.Infof("adding Environ to Black Duck %s instance...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
-		// Add Environ to Spec
-		bd.Spec.Environs = append(bd.Spec.Environs, environ)
+		// Merge Environ to Spec
+		bd.Spec.Environs = operatorutil.MergeEnvSlices(strings.Split(environ, ","), bd.Spec.Environs)
 		// Update Blackduck with Environ
 		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
-		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
+		log.Infof("successfully updated the '%s' Black Duck instance", blackduckName)
 		return nil
 	},
 }
@@ -188,12 +195,12 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		blackduckName := args[0]
 		registry := args[1]
 
-		log.Debugf("adding an Image Registry to Black Duck %s...", blackduckName)
+		log.Infof("adding an Image Registry to Black Duck %s instance...", blackduckName)
 
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
 		// Add Registry to Spec
@@ -201,10 +208,10 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		// Update Blackduck with Environ
 		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
-		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
+		log.Infof("successfully updated the '%s' Black Duck instance", blackduckName)
 		return nil
 	},
 }
@@ -244,7 +251,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		// Update Blackduck with UID mapping
 		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
 		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
@@ -396,25 +403,31 @@ var editAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName := args[0]
-		log.Debugf("editing Alert %s...", alertName)
+		log.Infof("editing Alert %s instance...", alertName)
 
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			alt, err := operatorutil.GetAlert(alertClient, alertName, alertName)
 			if err != nil {
-				log.Errorf("get Spec: %s", err)
+				log.Errorf("error getting an Alert %s instance due to %+v", alertName, err)
 				return nil
 			}
-			editAlertCtl.SetSpec(alt.Spec)
+			err = editAlertCtl.SetSpec(alt.Spec)
+			if err != nil {
+				log.Errorf("cannot set an existing %s Alert instance to spec due to %+v", alertName, err)
+				return nil
+			}
 			// Update Spec with User's Flags
 			editAlertCtl.SetChangedFlags(flagset)
 			// Update Alert with Updates
 			alertSpec := editAlertCtl.GetSpec().(alertv1.AlertSpec)
+			// merge environs
+			alertSpec.Environs = operatorutil.MergeEnvSlices(alertSpec.Environs, alt.Spec.Environs)
 			alt.Spec = alertSpec
 			_, err = operatorutil.UpdateAlert(alertClient, alertName, alt)
 			if err != nil {
-				log.Errorf("update Spec: %s", err)
+				log.Errorf("error updating the %s Alert instance due to %+v", alertName, err)
 				return nil
 			}
 		} else {
@@ -424,7 +437,7 @@ var editAlertCmd = &cobra.Command{
 				return nil
 			}
 		}
-		log.Infof("successfully edited Alert: '%s'", alertName)
+		log.Infof("successfully updated the '%s' Alert instance", alertName)
 		return nil
 	},
 }

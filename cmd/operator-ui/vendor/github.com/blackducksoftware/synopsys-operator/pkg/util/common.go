@@ -51,6 +51,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/api/storage/v1beta1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -976,7 +978,7 @@ func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	} else {
 		_, err := GetOpenShiftRoutes(routeClient, "default", "docker-registry")
 		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("Ignoring routes for kubernetes cluster")
+			// log.Debugf("Ignoring routes for kubernetes cluster")
 			routeClient = nil
 		}
 	}
@@ -989,19 +991,19 @@ func GetOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string
 }
 
 // CreateOpenShiftRoutes creates a OpenShift routes
-func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string) (*routev1.Route, error) {
+func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string, portName string, tlsTerminationType routev1.TLSTerminationType) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Create(&routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: routev1.RouteSpec{
-			TLS: &routev1.TLSConfig{Termination: routev1.TLSTerminationPassthrough},
+			TLS: &routev1.TLSConfig{Termination: tlsTerminationType},
 			To: routev1.RouteTargetReference{
 				Kind: routeKind,
 				Name: serviceName,
 			},
-			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: fmt.Sprintf("port-%s", serviceName)}},
+			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: portName}},
 		},
 	})
 }
@@ -1166,4 +1168,24 @@ func UniqueValues(input []string) []string {
 	}
 
 	return u
+}
+
+// GetCustomResourceDefinition get the custom resource defintion
+func GetCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, name string) (*apiextensions.CustomResourceDefinition, error) {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(name, metav1.GetOptions{})
+}
+
+// ListCustomResourceDefinitions list the custom resource defintions
+func ListCustomResourceDefinitions(apiExtensionClient *apiextensionsclient.Clientset, labelSelector string) (*apiextensions.CustomResourceDefinitionList, error) {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// UpdateCustomResourceDefinition updates the custom resource defintion
+func UpdateCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, crd *apiextensions.CustomResourceDefinition) (*apiextensions.CustomResourceDefinition, error) {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Update(crd)
+}
+
+// DeleteCustomResourceDefinition deletes the custom resource defintion
+func DeleteCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, name string) error {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(name, &metav1.DeleteOptions{})
 }

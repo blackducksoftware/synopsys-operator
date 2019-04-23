@@ -260,16 +260,21 @@ var updateBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackduckNamespace := args[0]
-		log.Infof("updating BlackDuck %s...", blackduckNamespace)
+		log.Infof("updating Black Duck %s instance...", blackduckNamespace)
 
-		// Get the Blackuck
+		// Get the Black Duck
 		currBlackduck, err := operatorutil.GetHub(blackduckClient, blackduckNamespace, blackduckNamespace)
 		if err != nil {
-			log.Errorf("error getting Blackduck: %s", err)
+			log.Errorf("error getting %s Black Duck instance due to %+v", blackduckNamespace, err)
+			return nil
+		}
+		// Set the existing Black Duck to the spec
+		err = updateBlackduckCtl.SetSpec(currBlackduck.Spec)
+		if err != nil {
+			log.Errorf("cannot set an existing %s Black Duck instance to spec due to %+v", blackduckNamespace, err)
 			return nil
 		}
 		// Check if it can be updated
-		updateBlackduckCtl.SetSpec(currBlackduck.Spec)
 		canUpdate, err := updateBlackduckCtl.CanUpdate()
 		if err != nil {
 			log.Errorf("cannot Update: %s", err)
@@ -280,16 +285,18 @@ var updateBlackduckCmd = &cobra.Command{
 			flagset := cmd.Flags()
 			updateBlackduckCtl.SetChangedFlags(flagset)
 			newSpec := updateBlackduckCtl.GetSpec().(blackduckapi.BlackduckSpec)
+			// merge environs
+			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currBlackduck.Spec.Environs)
 			// Create new Blackduck CRD
 			newBlackduck := *currBlackduck //make copy
 			newBlackduck.Spec = newSpec
 			// Update Blackduck
 			_, err = operatorutil.UpdateBlackduck(blackduckClient, newBlackduck.Spec.Namespace, &newBlackduck)
 			if err != nil {
-				log.Errorf("error updating the BlackDuck: %s", err)
+				log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated BlackDuck: '%s'", blackduckNamespace)
+			log.Infof("successfully updated the '%s' Black Duck instance", blackduckNamespace)
 		}
 		return nil
 	},
@@ -601,15 +608,19 @@ var updateAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertNamespace := args[0]
 
-		log.Infof("updating Alert %s...", alertNamespace)
+		log.Infof("updating Alert %s instance...", alertNamespace)
 
 		// Get the Alert
 		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
 		if err != nil {
-			log.Errorf("error Updaing Alert while getting the Alert: %s", err)
+			log.Errorf("error getting an Alert %s instance due to %+v", alertNamespace, err)
 			return nil
 		}
-		updateAlertCtl.SetSpec(currAlert.Spec)
+		err = updateAlertCtl.SetSpec(currAlert.Spec)
+		if err != nil {
+			log.Errorf("cannot set an existing %s Alert instance to spec due to %+v", alertNamespace, err)
+			return nil
+		}
 
 		// Check if it can be updated
 		canUpdate, err := updateAlertCtl.CanUpdate()
@@ -622,16 +633,18 @@ var updateAlertCmd = &cobra.Command{
 			flagset := cmd.Flags()
 			updateAlertCtl.SetChangedFlags(flagset)
 			newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
+			// merge environs
+			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currAlert.Spec.Environs)
 			// Create new Alert CRD
 			newAlert := *currAlert //make copy
 			newAlert.Spec = newSpec
 			// Update Alert
 			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
 			if err != nil {
-				log.Errorf("error in updating the alert due to %+v", err)
+				log.Errorf("error updating the %s Alert instance due to %+v", alertNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated Alert: '%s'", alertNamespace)
+			log.Infof("successfully updated the '%s' Alert instance", alertNamespace)
 		}
 		return nil
 	},

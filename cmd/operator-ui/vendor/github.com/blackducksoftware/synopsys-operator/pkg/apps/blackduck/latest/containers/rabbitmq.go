@@ -35,7 +35,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) *components.Replicatio
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RabbitmqMemoryLimit, MaxMem: c.hubContainerFlavor.RabbitmqMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
-		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubDBConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: volumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: rabbitmqPort, Protocol: horizonapi.ProtocolTCP}},
 	}

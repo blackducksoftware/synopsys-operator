@@ -37,7 +37,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.8",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 }

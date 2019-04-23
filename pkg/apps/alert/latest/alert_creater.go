@@ -64,8 +64,8 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 		return err
 	}
 	// Update components in cluster
-	commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, alert.Spec.Namespace, cpList, "app=alert")
-	errors := commonConfig.CRUDComponents()
+	commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, false, alert.Spec.Namespace, cpList, "app=alert")
+	_, errors := commonConfig.CRUDComponents()
 	if len(errors) > 0 {
 		return fmt.Errorf("unable to update Alert components due to %+v", errors)
 	}

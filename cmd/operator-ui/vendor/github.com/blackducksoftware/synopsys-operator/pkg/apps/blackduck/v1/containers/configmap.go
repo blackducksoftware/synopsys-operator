@@ -26,6 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetConfigmaps will create  hub configMaps
@@ -33,27 +34,25 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 
 	var configMaps []*components.ConfigMap
 
-	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: "hub-config"})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: "blackduck-config"})
 	hubData := map[string]string{
-		"PUBLIC_HUB_WEBSERVER_HOST": "localhost",
-		"PUBLIC_HUB_WEBSERVER_PORT": "443",
-		"HUB_WEBSERVER_PORT":        "8443",
-		"IPV4_ONLY":                 "0",
-		"RUN_SECRETS_DIR":           "/tmp/secrets",
-		"HUB_PROXY_NON_PROXY_HOSTS": "solr",
-		"HUB_VERSION":               c.hubSpec.Version,
+		"RUN_SECRETS_DIR": "/tmp/secrets",
+		"HUB_VERSION":     c.hubSpec.Version,
 	}
 
 	for _, value := range c.hubSpec.Environs {
 		values := strings.SplitN(value, ":", 2)
 		if len(values) == 2 {
-			mapKey := strings.Trim(values[0], " ")
-			mapValue := strings.Trim(values[1], " ")
+			mapKey := strings.TrimSpace(values[0])
+			mapValue := strings.TrimSpace(values[1])
 			if len(mapKey) > 0 && len(mapValue) > 0 {
 				hubData[mapKey] = mapValue
 			}
 		}
 	}
+
+	environs := GetHubKnobs()
+	hubData = util.MergeEnvMaps(hubData, environs)
 	hubConfig.AddData(hubData)
 	hubConfig.AddLabels(c.GetVersionLabel("configmap"))
 	configMaps = append(configMaps, hubConfig)

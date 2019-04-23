@@ -149,8 +149,8 @@ func TestAddSpecFlags(t *testing.T) {
 	ctl.AddSpecFlags(actualCmd, true)
 
 	cmd := &cobra.Command{}
-	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large, xlarge")
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
+	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large, x-large")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Black Duck Version")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose webserver service [LOADBALANCER/NODEPORT/OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
@@ -175,7 +175,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
-	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
+	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
@@ -369,7 +369,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "db-certificate-name",
+			flagName:   "certificate-name",
 			initialCtl: NewBlackduckCtl(),
 			changedCtl: &Ctl{
 				Spec:            &blackduckv1.BlackduckSpec{},

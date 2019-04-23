@@ -115,20 +115,20 @@ func (ctl *Ctl) GetSpec() interface{} {
 func (ctl *Ctl) SetSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(blackduckv1.BlackduckSpec)
 	if !ok {
-		return fmt.Errorf("Error setting Blackduck Spec")
+		return fmt.Errorf("error in Black Duck spec conversion")
 	}
 	ctl.Spec = &convertedSpec
 	return nil
 }
 
 func isValidSize(size string) bool {
-	switch size {
+	switch strings.ToLower(size) {
 	case
 		"",
 		"small",
 		"medium",
 		"large",
-		"xlarge":
+		"x-large":
 		return true
 	}
 	return false
@@ -137,7 +137,7 @@ func isValidSize(size string) bool {
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *Ctl) CheckSpecFlags() error {
 	if !isValidSize(ctl.Size) {
-		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'xlarge'")
+		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'x-large'")
 	}
 	for _, environ := range ctl.Environs {
 		if !strings.Contains(environ, ":") {
@@ -196,8 +196,8 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
-	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large, xlarge")
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
+	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large, x-large")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Black Duck Version")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose webserver service [LOADBALANCER/NODEPORT/OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
@@ -222,7 +222,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
-	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
+	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -312,7 +312,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			for _, pvc := range pvcStructs.Data {
 				ctl.Spec.PVC = append(ctl.Spec.PVC, pvc)
 			}
-		case "db-certificate-name":
+		case "certificate-name":
 			ctl.Spec.CertificateName = ctl.CertificateName
 		case "certificate-file":
 			data, err := util.ReadFileData(ctl.CertificateFilePath)
