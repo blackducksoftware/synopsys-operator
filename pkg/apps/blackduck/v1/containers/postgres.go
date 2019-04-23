@@ -56,7 +56,7 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 		AdminPasswordSecretKey: "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
 		MaxConnections:         300,
 		SharedBufferInMB:       1024,
-		EnvConfigMapRefs:       []string{"hub-db-config"},
+		EnvConfigMapRefs:       []string{"blackduck-db-config"},
 		Labels:                 c.GetVersionLabel("postgres"),
 	}
 }
@@ -64,7 +64,7 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 // GetPostgresConfigmap will return the postgres configMaps
 func (c *Creater) GetPostgresConfigmap() *components.ConfigMap {
 	// DB
-	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: "hub-db-config"})
+	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: "blackduck-db-config"})
 	if c.hubSpec.ExternalPostgres != nil {
 		hubDbConfig.AddData(map[string]string{
 			"HUB_POSTGRES_ADMIN": c.hubSpec.ExternalPostgres.PostgresAdmin,
