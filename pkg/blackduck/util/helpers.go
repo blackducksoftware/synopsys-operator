@@ -23,7 +23,6 @@ package util
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
@@ -34,6 +33,7 @@ import (
 	"k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -43,7 +43,7 @@ func GetHubVersion(environs []string) string {
 		if strings.Contains(value, "HUB_VERSION") {
 			values := strings.SplitN(value, ":", 2)
 			if len(values) == 2 {
-				return strings.Trim(values[1], " ")
+				return strings.TrimSpace(values[1])
 			}
 			break
 		}
