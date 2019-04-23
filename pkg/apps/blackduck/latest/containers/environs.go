@@ -21,37 +21,25 @@ under the License.
 
 package containers
 
-import (
-	"strings"
-)
-
-const envOptions = `
-IPV4_ONLY=0
-USE_ALERT=0
-USE_BINARY_UPLOADS=0
-RABBIT_MQ_HOST=rabbitmq
-RABBIT_MQ_PORT=5671
-BROKER_URL=amqps://rabbitmq/protecodesc
-BROKER_USE_SSL=yes
-CFSSL=cfssl:8888
-HUB_LOGSTASH_HOST=logstash
-SCANNER_CONCURRENCY=1
-HTTPS_VERIFY_CERTS=yes
-RABBITMQ_DEFAULT_VHOST=protecodesc
-RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT=false
-CLIENT_CERT_CN=binaryscanner
-ENABLE_SOURCE_UPLOADS=false
-DATA_RETENTION_IN_DAYS=180
-MAX_TOTAL_SOURCE_SIZE_MB=4000`
-
 // GetHubKnobs returns the default environs
 func GetHubKnobs() (env map[string]string) {
-	env = map[string]string{}
-	for _, val := range strings.Split(envOptions, "\n") {
-		if strings.Contains(val, "=") {
-			keyval := strings.Split(val, "=")
-			env[keyval[0]] = keyval[1]
-		}
+	return map[string]string{
+		"IPV4_ONLY":                         "0",
+		"USE_ALERT":                         "0",
+		"USE_BINARY_UPLOADS":                "0",
+		"RABBIT_MQ_HOST":                    "rabbitmq",
+		"RABBIT_MQ_PORT":                    "5671",
+		"BROKER_URL":                        "amqps://rabbitmq/protecodesc",
+		"BROKER_USE_SSL":                    "yes",
+		"CFSSL":                             "cfssl:8888",
+		"HUB_LOGSTASH_HOST":                 "logstash",
+		"SCANNER_CONCURRENCY":               "1",
+		"HTTPS_VERIFY_CERTS":                "yes",
+		"RABBITMQ_DEFAULT_VHOST":            "protecodesc",
+		"RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT": "false",
+		"CLIENT_CERT_CN":                    "binaryscanner",
+		"ENABLE_SOURCE_UPLOADS":             "false",
+		"DATA_RETENTION_IN_DAYS":            "180",
+		"MAX_TOTAL_SOURCE_SIZE_MB":          "4000",
 	}
-	return env
 }
