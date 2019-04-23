@@ -103,6 +103,7 @@ func (c *ConfigMap) add(isPatched bool) (bool, error) {
 				return false, errors.Annotatef(err, "patch config map:")
 			}
 		}
+		isPatched = isAdded || isUpdated || isPatched
 	}
 	if isAdded && !c.config.dryRun {
 		err = c.deployer.Deployer.Run()
@@ -110,7 +111,7 @@ func (c *ConfigMap) add(isPatched bool) (bool, error) {
 			return false, errors.Annotatef(err, "unable to deploy config map in %s", c.config.namespace)
 		}
 	}
-	return isAdded || isUpdated, nil
+	return isPatched, nil
 }
 
 // get gets the config map

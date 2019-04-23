@@ -164,11 +164,11 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		componentList.Services = append(componentList.Services, containerCreater.GetLogStashService())
 	}
 
-	//Service account
-	componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
-	componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
-
 	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
+		//Service account
+		componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
+		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
+
 		// Upload cache
 		imageName := containerCreater.GetImageTag("blackduck-upload-cache")
 		if len(imageName) > 0 {
@@ -258,7 +258,6 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 // needs to run as root and we plan to add that into protoform in 2.1 / 3.0.
 func (hc *Creater) addAnyUIDToServiceAccount(createHub *blackduckapi.BlackduckSpec) error {
 	if hc.osSecurityClient != nil {
-		log.Debugf("Adding anyuid securitycontextconstraint to the service account %s", createHub.Namespace)
 		scc, err := util.GetOpenShiftSecurityConstraint(hc.osSecurityClient, "anyuid")
 		if err != nil {
 			return fmt.Errorf("failed to get scc anyuid: %v", err)
@@ -276,8 +275,8 @@ func (hc *Creater) addAnyUIDToServiceAccount(createHub *blackduckapi.BlackduckSp
 		}
 
 		if !exists {
+			log.Debugf("Adding anyuid securitycontextconstraint to the service account %s", createHub.Namespace)
 			scc.Users = append(scc.Users, serviceAccount)
-
 			_, err = hc.osSecurityClient.SecurityContextConstraints().Update(scc)
 			if err != nil {
 				return fmt.Errorf("failed to update scc anyuid: %v", err)

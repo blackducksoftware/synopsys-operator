@@ -36,6 +36,7 @@ type CommonConfig struct {
 	kubeConfig     *rest.Config
 	kubeClient     *kubernetes.Clientset
 	dryRun         bool
+	isPatched      bool
 	namespace      string
 	components     *api.ComponentList
 	labelSelector  string
@@ -44,12 +45,13 @@ type CommonConfig struct {
 }
 
 // NewCRUDComponents returns the common configuration which will be used to add, patch or remove the components
-func NewCRUDComponents(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, dryRun bool, namespace string,
-	components *api.ComponentList, labelSelector string) *CommonConfig {
+func NewCRUDComponents(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, dryRun bool, isPatched bool,
+	namespace string, components *api.ComponentList, labelSelector string) *CommonConfig {
 	return &CommonConfig{
 		kubeConfig:     kubeConfig,
 		kubeClient:     kubeClient,
 		dryRun:         dryRun,
+		isPatched:      isPatched,
 		namespace:      namespace,
 		components:     components,
 		labelSelector:  labelSelector,
@@ -64,10 +66,10 @@ func (c *CommonConfig) AddController(name string, controller horizonapi.Deployer
 }
 
 // CRUDComponents will add, update or delete components
-func (c *CommonConfig) CRUDComponents() []error {
+func (c *CommonConfig) CRUDComponents() (bool, []error) {
 	// log.Debugf("expected labels: %+v", c.expectedLabels)
 	var errors []error
-	updater := NewUpdater(c.dryRun)
+	updater := NewUpdater(c.dryRun, c.isPatched)
 
 	// namespace
 	namespaces, err := NewNamespace(c)
@@ -140,7 +142,7 @@ func (c *CommonConfig) CRUDComponents() []error {
 	updater.AddUpdater(deployments)
 
 	// execute updates for all added components
-	err = updater.Update()
+	isPatched, err := updater.Update()
 	if err != nil {
 		errors = append(errors, err)
 	}
@@ -160,5 +162,5 @@ func (c *CommonConfig) CRUDComponents() []error {
 		deployer.StartControllers()
 	}
 
-	return errors
+	return isPatched, errors
 }

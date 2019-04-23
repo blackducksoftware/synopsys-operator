@@ -26,9 +26,9 @@ import (
 )
 
 func (c *Creater) getHubConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"}
+	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "blackduck-config"}
 }
 
 func (c *Creater) getHubDBConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "hub-db-config"}
+	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "blackduck-db-config"}
 }
