@@ -23,12 +23,28 @@ package containers
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-func (c *Creater) getHubConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "hub-config"}
-}
+// GetClusterRoleBinding will return the cluster role binding
+func (c *Creater) GetClusterRoleBinding() *components.ClusterRoleBinding {
+	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
+		Name:       "blackduck",
+		APIVersion: "rbac.authorization.k8s.io/v1",
+	})
 
-func (c *Creater) getHubDBConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "hub-db-config"}
+	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
+		Kind:      "ServiceAccount",
+		Name:      c.hubSpec.Namespace,
+		Namespace: c.hubSpec.Namespace,
+	})
+	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
+		APIGroup: "",
+		Kind:     "ClusterRole",
+		Name:     "synopsys-operator-admin",
+	})
+
+	clusterRoleBinding.AddLabels(c.GetVersionLabel("clusterRoleBinding"))
+
+	return clusterRoleBinding
 }

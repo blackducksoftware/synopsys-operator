@@ -19,12 +19,10 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package blackduck
+package containers
 
 import (
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 const envOptions = `
@@ -66,14 +64,15 @@ RABBIT_MQ_HOST=rabbitmq
 RABBIT_MQ_PORT=5671
 SCANNER_CONCURRENCY=1
 USE_ALERT=0
-USE_BINARY_UPLOADS=0`
+USE_BINARY_UPLOADS=0
+ENABLE_SOURCE_UPLOADS=false
+DATA_RETENTION_IN_DAYS=180
+MAX_TOTAL_SOURCE_SIZE_MB=4000`
 
 // GetHubKnobs ...
 func GetHubKnobs() (env map[string]string, images []string) {
 	env = map[string]string{}
 	images = []string{}
-	logrus.Infof("%v", len(strings.Split(envOptions, "\n")))
-
 	for _, val := range strings.Split(envOptions, "\n") {
 		if strings.Contains(val, "=") {
 			keyval := strings.Split(val, "=")
@@ -81,10 +80,7 @@ func GetHubKnobs() (env map[string]string, images []string) {
 		} else if strings.Contains(val, "image") {
 			fullImage := strings.Split(val, ": ")
 			images = append(images, fullImage[1])
-		} else {
-			logrus.Infof("Skipping line %v", val)
 		}
 	}
-	logrus.Infof("%v \n %v", images, env)
 	return env, images
 }

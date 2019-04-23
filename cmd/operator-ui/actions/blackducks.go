@@ -7,11 +7,10 @@ import (
 
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/gobuffalo/buffalo"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -79,7 +78,7 @@ func (v BlackducksResource) Show(c buffalo.Context) error {
 // New renders the form for creating a new Blackduck.
 // This function is mapped to the path GET /blackducks/new
 func (v BlackducksResource) New(c buffalo.Context) error {
-	blackduckSpec := bdutil.GetHubDefaultValue()
+	blackduckSpec := util.GetBlackDuckDefaultPersistentStorageLatest()
 	blackduck := &blackduckapi.Blackduck{}
 	blackduck.Spec = *blackduckSpec
 	blackduck.Spec.PersistentStorage = true
@@ -171,7 +170,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 
 	// environment variables
 	if bd.View.Environs == nil {
-		env, _ := blackduck.GetHubKnobs()
+		env, _ := containers.GetHubKnobs()
 		environs := []string{}
 		for key, value := range env {
 			if !strings.EqualFold(value, "") {
@@ -186,7 +185,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 		}
 	}
 
-	kubeconfig, err := protoform.GetKubeConfig()
+	kubeconfig, err := protoform.GetKubeConfig("", false)
 	if err != nil {
 		return fmt.Errorf("unable to get the kube configuration")
 	}
