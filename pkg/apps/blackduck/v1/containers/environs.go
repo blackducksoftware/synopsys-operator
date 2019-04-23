@@ -22,7 +22,7 @@ under the License.
 package containers
 
 // GetHubKnobs returns the default environs
-func GetHubKnobs() (env map[string]string) {
+func GetHubKnobs() map[string]string {
 	return map[string]string{
 		"IPV4_ONLY":                         "0",
 		"USE_ALERT":                         "0",
