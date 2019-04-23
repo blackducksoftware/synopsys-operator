@@ -61,8 +61,8 @@ func MergeEnvSlices(source, destination []string) []string {
 	for _, value := range destination {
 		values := strings.SplitN(value, ":", 2)
 		if len(values) == 2 {
-			mapKey := strings.Trim(values[0], " ")
-			mapValue := strings.Trim(values[1], " ")
+			mapKey := strings.TrimSpace(values[0])
+			mapValue := strings.TrimSpace(values[1])
 			if len(mapKey) > 0 && len(mapValue) > 0 {
 				destinationMap[mapKey] = mapValue
 			}
@@ -74,8 +74,8 @@ func MergeEnvSlices(source, destination []string) []string {
 	for _, value := range source {
 		values := strings.SplitN(value, ":", 2)
 		if len(values) == 2 {
-			mapKey := strings.Trim(values[0], " ")
-			mapValue := strings.Trim(values[1], " ")
+			mapKey := strings.TrimSpace(values[0])
+			mapValue := strings.TrimSpace(values[1])
 			if len(mapValue) == 0 {
 				delete(destinationMap, mapKey)
 			} else {

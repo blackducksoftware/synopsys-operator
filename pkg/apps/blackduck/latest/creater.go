@@ -389,7 +389,7 @@ func (hc *Creater) isBinaryAnalysisEnabled(bdspec *blackduckapi.BlackduckSpec) b
 		if strings.Contains(value, "USE_BINARY_UPLOADS") {
 			values := strings.SplitN(value, ":", 2)
 			if len(values) == 2 {
-				mapValue := strings.Trim(values[1], " ")
+				mapValue := strings.TrimSpace(values[1])
 				if strings.EqualFold(mapValue, "1") {
 					return true
 				}
