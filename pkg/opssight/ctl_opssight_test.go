@@ -35,65 +35,65 @@ func TestNewOpsSightCtl(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
 	assert.Equal(&Ctl{
-		Spec:                                             &opssightv1.OpsSightSpec{},
-		PerceptorName:                                    "",
-		PerceptorImage:                                   "",
-		PerceptorPort:                                    0,
-		PerceptorCheckForStalledScansPauseHours:          0,
-		PerceptorStalledScanClientTimeoutHours:           0,
-		PerceptorModelMetricsPauseSeconds:                0,
-		PerceptorUnknownImagePauseMilliseconds:           0,
-		PerceptorClientTimeoutMilliseconds:               0,
-		ScannerPodName:                                   "",
-		ScannerPodScannerName:                            "",
-		ScannerPodScannerImage:                           "",
-		ScannerPodScannerPort:                            0,
-		ScannerPodScannerClientTimeoutSeconds:            0,
-		ScannerPodImageFacadeName:                        "",
-		ScannerPodImageFacadeImage:                       "",
-		ScannerPodImageFacadePort:                        0,
-		ScannerPodImageFacadeInternalRegistriesJSONSlice: []string{},
-		ScannerPodImageFacadeImagePullerType:             "",
-		ScannerPodImageFacadeServiceAccount:              "",
-		ScannerPodReplicaCount:                           0,
-		ScannerPodImageDirectory:                         "",
-		PerceiverEnableImagePerceiver:                    false,
-		PerceiverEnablePodPerceiver:                      false,
-		PerceiverImagePerceiverName:                      "",
-		PerceiverImagePerceiverImage:                     "",
-		PerceiverPodPerceiverName:                        "",
-		PerceiverPodPerceiverImage:                       "",
-		PerceiverPodPerceiverNamespaceFilter:             "",
-		PerceiverAnnotationIntervalSeconds:               0,
-		PerceiverDumpIntervalMinutes:                     0,
-		PerceiverServiceAccount:                          "",
-		PerceiverPort:                                    0,
-		ConfigMapName:                                    "",
-		SecretName:                                       "",
-		DefaultCPU:                                       "",
-		DefaultMem:                                       "",
-		ScannerCPU:                                       "",
-		ScannerMem:                                       "",
-		LogLevel:                                         "",
-		EnableMetrics:                                    false,
-		PrometheusName:                                   "",
-		PrometheusImage:                                  "",
-		PrometheusPort:                                   0,
-		EnableSkyfire:                                    false,
-		SkyfireName:                                      "",
-		SkyfireImage:                                     "",
-		SkyfirePort:                                      0,
-		SkyfirePrometheusPort:                            0,
-		SkyfireServiceAccount:                            "",
-		SkyfireHubClientTimeoutSeconds:                   0,
-		SkyfireHubDumpPauseSeconds:                       0,
-		SkyfireKubeDumpIntervalSeconds:                   0,
-		SkyfirePerceptorDumpIntervalSeconds:              0,
-		BlackduckExternalHostsJSON:                       []string{},
-		BlackduckConnectionsEnvironmentVaraiableName:     "",
-		BlackduckTLSVerification:                         false,
-		BlackduckInitialCount:                            0,
-		BlackduckMaxCount:                                0,
+		Spec:                                            &opssightv1.OpsSightSpec{},
+		PerceptorName:                                   "",
+		PerceptorImage:                                  "",
+		PerceptorPort:                                   0,
+		PerceptorCheckForStalledScansPauseHours:         0,
+		PerceptorStalledScanClientTimeoutHours:          0,
+		PerceptorModelMetricsPauseSeconds:               0,
+		PerceptorUnknownImagePauseMilliseconds:          0,
+		PerceptorClientTimeoutMilliseconds:              0,
+		ScannerPodName:                                  "",
+		ScannerPodScannerName:                           "",
+		ScannerPodScannerImage:                          "",
+		ScannerPodScannerPort:                           0,
+		ScannerPodScannerClientTimeoutSeconds:           0,
+		ScannerPodImageFacadeName:                       "",
+		ScannerPodImageFacadeImage:                      "",
+		ScannerPodImageFacadePort:                       0,
+		ScannerPodImageFacadeInternalRegistriesFilePath: "",
+		ScannerPodImageFacadeImagePullerType:            "",
+		ScannerPodImageFacadeServiceAccount:             "",
+		ScannerPodReplicaCount:                          0,
+		ScannerPodImageDirectory:                        "",
+		PerceiverEnableImagePerceiver:                   false,
+		PerceiverEnablePodPerceiver:                     false,
+		PerceiverImagePerceiverName:                     "",
+		PerceiverImagePerceiverImage:                    "",
+		PerceiverPodPerceiverName:                       "",
+		PerceiverPodPerceiverImage:                      "",
+		PerceiverPodPerceiverNamespaceFilter:            "",
+		PerceiverAnnotationIntervalSeconds:              0,
+		PerceiverDumpIntervalMinutes:                    0,
+		PerceiverServiceAccount:                         "",
+		PerceiverPort:                                   0,
+		ConfigMapName:                                   "",
+		SecretName:                                      "",
+		DefaultCPU:                                      "",
+		DefaultMem:                                      "",
+		ScannerCPU:                                      "",
+		ScannerMem:                                      "",
+		LogLevel:                                        "",
+		EnableMetrics:                                   false,
+		PrometheusName:                                  "",
+		PrometheusImage:                                 "",
+		PrometheusPort:                                  0,
+		EnableSkyfire:                                   false,
+		SkyfireName:                                     "",
+		SkyfireImage:                                    "",
+		SkyfirePort:                                     0,
+		SkyfirePrometheusPort:                           0,
+		SkyfireServiceAccount:                           "",
+		SkyfireHubClientTimeoutSeconds:                  0,
+		SkyfireHubDumpPauseSeconds:                      0,
+		SkyfireKubeDumpIntervalSeconds:                  0,
+		SkyfirePerceptorDumpIntervalSeconds:             0,
+		BlackduckExternalHostsFilePath:                  "",
+		BlackduckConnectionsEnvironmentVaraiableName:    "",
+		BlackduckTLSVerification:                        false,
+		BlackduckInitialCount:                           0,
+		BlackduckMaxCount:                               0,
 	}, opsSightCtl)
 }
 
@@ -116,23 +116,9 @@ func TestSetSpec(t *testing.T) {
 
 func TestCheckSpecFlags(t *testing.T) {
 	assert := assert.New(t)
-
 	opsSightCtl := NewOpsSightCtl()
-	assert.Nil(opsSightCtl.CheckSpecFlags())
-
-	var tests = []struct {
-		input *Ctl
-	}{ // case
-		{input: &Ctl{
-			Spec: &opssightv1.OpsSightSpec{},
-			ScannerPodImageFacadeInternalRegistriesJSONSlice: []string{"notValid"},
-		}},
-	}
-
-	for _, test := range tests {
-		assert.Error(test.input.CheckSpecFlags())
-	}
-
+	specFlags := opsSightCtl.CheckSpecFlags()
+	assert.Nil(specFlags)
 }
 
 func TestSwitchSpec(t *testing.T) {
@@ -195,7 +181,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scannerpod-scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Scanner timeout for Black Duck Scan Client in seconds")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "scannerpod-imagefacade-image", ctl.ScannerPodImageFacadeImage, "ImageFacade Container's image")
 	cmd.Flags().IntVar(&ctl.ScannerPodImageFacadePort, "scannerpod-imagefacade-port", ctl.ScannerPodImageFacadePort, "ImageFacade Container's port")
-	cmd.Flags().StringSliceVar(&ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice, "scannerpod-imagefacade-internal-registries", ctl.ScannerPodImageFacadeInternalRegistriesJSONSlice, "Secure Docker registries credentials to pull the images for scan")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "scannerpod-imagefacade-internal-registries-file-path", ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "Absolute path to a file for secure docker registries credentials to pull the images for scan")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "scannerpod-imagefacade-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of ImageFacade's Image Puller - docker, skopeo")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "scannerpod-imagefacade-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account for the ImageFacade")
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Scan Containers")
@@ -225,7 +211,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying Black Ducks")
 	cmd.Flags().IntVar(&ctl.SkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", ctl.SkyfireKubeDumpIntervalSeconds, "Seconds Skyfire waits between querying the KubeAPI")
 	cmd.Flags().IntVar(&ctl.SkyfirePerceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", ctl.SkyfirePerceptorDumpIntervalSeconds, "Seconds Skyfire waits between querying the Perceptor Model")
-	cmd.Flags().StringSliceVar(&ctl.BlackduckExternalHostsJSON, "blackduck-external-hosts", ctl.BlackduckExternalHostsJSON, "List of Black Duck External Hosts")
+	cmd.Flags().StringVar(&ctl.BlackduckExternalHostsFilePath, "blackduck-external-hosts-file-path", ctl.BlackduckExternalHostsFilePath, "Absolute path to a file containing a list of Black Duck External Hosts")
 	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Perform TLS Verification for Black Duck")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
@@ -426,16 +412,6 @@ func TestSetFlag(t *testing.T) {
 				ScannerPodImageFacadePort: 10,
 			},
 			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{ImageFacade: &opssightv1.ImageFacade{Port: 10}}},
-		},
-		// case
-		{
-			flagName:   "scannerpod-imagefacade-internal-registries",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec: &opssightv1.OpsSightSpec{},
-				ScannerPodImageFacadeInternalRegistriesJSONSlice: []string{"{\"URL\": \"changed\"}"},
-			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{ImageFacade: &opssightv1.ImageFacade{InternalRegistries: []*opssightv1.RegistryAuth{{URL: "changed"}}}}},
 		},
 		// case
 		{
@@ -796,16 +772,6 @@ func TestSetFlag(t *testing.T) {
 				SkyfirePerceptorDumpIntervalSeconds: 10,
 			},
 			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{PerceptorDumpIntervalSeconds: 10}},
-		},
-		// case
-		{
-			flagName:   "blackduck-external-hosts",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                       &opssightv1.OpsSightSpec{},
-				BlackduckExternalHostsJSON: []string{"{\"Scheme\": \"changed\"}"},
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Blackduck: &opssightv1.Blackduck{ExternalHosts: []*opssightv1.Host{{Scheme: "changed"}}}},
 		},
 		// case
 		{
