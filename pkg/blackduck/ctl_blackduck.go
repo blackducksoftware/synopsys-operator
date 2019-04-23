@@ -314,7 +314,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 		case "certificate-name":
 			ctl.Spec.CertificateName = ctl.CertificateName
-		case "certificate-file":
+		case "certificate-file-path":
 			data, err := util.ReadFileData(ctl.CertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
