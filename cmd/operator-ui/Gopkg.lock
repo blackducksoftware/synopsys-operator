@@ -57,7 +57,7 @@
 
 [[projects]]
   branch = "environs"
-  digest = "1:377341e6989077e399e7965df79b95f3c9baea64ae285589d529463a18624f46"
+  digest = "1:5aabbc1aa00594a867dfa2eac00f5f750969ed60c009e4b1a621f8f41c3dbcc6"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/alert/client/clientset/versioned",
@@ -93,7 +93,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "24f06b97c10bf47f7f7d08a41d64259597ed1032"
+  revision = "cfa9a0a787cdea18e452b1c4a2e4db676796e1ac"
 
 [[projects]]
   digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"

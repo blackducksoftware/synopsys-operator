@@ -51,7 +51,7 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 		}
 	}
 
-	environs, _ := GetHubKnobs()
+	environs := GetHubKnobs()
 	hubData = util.MergeEnvMaps(hubData, environs)
 	hubConfig.AddData(hubData)
 	hubConfig.AddLabels(c.GetVersionLabel("configmap"))

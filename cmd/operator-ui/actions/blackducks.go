@@ -170,7 +170,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 
 	// environment variables
 	if bd.View.Environs == nil {
-		env, _ := containers.GetHubKnobs()
+		env := containers.GetHubKnobs()
 		environs := []string{}
 		for key, value := range env {
 			if !strings.EqualFold(value, "") {

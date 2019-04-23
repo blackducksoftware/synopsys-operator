@@ -52,7 +52,7 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 	}
 
 	// merge default and input environs
-	environs, _ := GetHubKnobs()
+	environs := GetHubKnobs()
 	hubData = util.MergeEnvMaps(hubData, environs)
 
 	hubConfig.AddData(hubData)

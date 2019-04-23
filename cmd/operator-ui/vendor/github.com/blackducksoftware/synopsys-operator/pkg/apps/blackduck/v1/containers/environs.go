@@ -30,18 +30,14 @@ IPV4_ONLY=0
 USE_ALERT=0
 USE_BINARY_UPLOADS=0`
 
-// GetHubKnobs ...
-func GetHubKnobs() (env map[string]string, images []string) {
+// GetHubKnobs returns the default environs
+func GetHubKnobs() (env map[string]string) {
 	env = map[string]string{}
-	images = []string{}
 	for _, val := range strings.Split(envOptions, "\n") {
 		if strings.Contains(val, "=") {
 			keyval := strings.Split(val, "=")
 			env[keyval[0]] = keyval[1]
-		} else if strings.Contains(val, "image") {
-			fullImage := strings.Split(val, ": ")
-			images = append(images, fullImage[1])
 		}
 	}
-	return env, images
+	return env
 }
