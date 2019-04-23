@@ -40,7 +40,7 @@ type Container struct {
 	PreStopConfig         *horizonapi.ActionConfig
 }
 
-// MergeEnvMaps will merge the source and destination environs. If the same value exist in both, destination environ will given more preference
+// MergeEnvMaps will merge the source and destination environs. If the same value exist in both, source environ will given more preference
 func MergeEnvMaps(source, destination map[string]string) map[string]string {
 	// if the source key present in the destination map, it will overrides the destination value
 	// if the source value is empty, then delete it from the destination
@@ -54,7 +54,7 @@ func MergeEnvMaps(source, destination map[string]string) map[string]string {
 	return destination
 }
 
-// MergeEnvSlices will merge the source and destination environs. If the same value exist in both, destination environ will given more preference
+// MergeEnvSlices will merge the source and destination environs. If the same value exist in both, source environ will given more preference
 func MergeEnvSlices(source, destination []string) []string {
 	// create a destination map
 	destinationMap := make(map[string]string)
