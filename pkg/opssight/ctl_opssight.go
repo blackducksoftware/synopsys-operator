@@ -285,6 +285,16 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 	flagset.VisitAll(ctl.SetFlag)
 }
 
+// InternalRegistryStructs - file format for reading data
+type InternalRegistryStructs struct {
+	Data []opssightv1.RegistryAuth
+}
+
+// ExternalHostStructs - file format for reading data
+type ExternalHostStructs struct {
+	Data []opssightv1.Host
+}
+
 // SetFlag sets an OpsSights's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
@@ -406,9 +416,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.ScannerPodImageFacadeInternalRegistriesFilePath)
 			if err != nil {
 				log.Errorf("failed to read internal registries file: %s", err)
-			}
-			type InternalRegistryStructs struct {
-				Data []opssightv1.RegistryAuth
 			}
 			registryStructs := InternalRegistryStructs{Data: []opssightv1.RegistryAuth{}}
 			err = json.Unmarshal([]byte(data), &registryStructs)
@@ -606,9 +613,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.BlackduckExternalHostsFilePath)
 			if err != nil {
 				log.Errorf("failed to read external hosts file: %s", err)
-			}
-			type ExternalHostStructs struct {
-				Data []opssightv1.Host
 			}
 			hostStructs := ExternalHostStructs{Data: []opssightv1.Host{}}
 			err = json.Unmarshal([]byte(data), &hostStructs)

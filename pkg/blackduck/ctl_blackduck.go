@@ -231,6 +231,16 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 	flagset.VisitAll(ctl.SetFlag)
 }
 
+// PVCStructs - file format for reading data
+type PVCStructs struct {
+	Data []blackduckv1.PVC
+}
+
+// UIDStructs - file format for reading data
+type UIDStructs struct {
+	Data []uid
+}
+
 // SetFlag sets a Blackduck's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
@@ -292,9 +302,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if err != nil {
 				log.Errorf("failed to read pvc file: %s", err)
 			}
-			type PVCStructs struct {
-				Data []blackduckv1.PVC
-			}
 			pvcStructs := PVCStructs{Data: []blackduckv1.PVC{}}
 			err = json.Unmarshal([]byte(data), &pvcStructs)
 			if err != nil {
@@ -343,9 +350,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.ImageUIDMapFilePath)
 			if err != nil {
 				log.Errorf("failed to read image UID map file: %s", err)
-			}
-			type UIDStructs struct {
-				Data []uid
 			}
 			uidStructs := UIDStructs{Data: []uid{}}
 			err = json.Unmarshal([]byte(data), &uidStructs)
