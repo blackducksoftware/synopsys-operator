@@ -22,6 +22,9 @@ under the License.
 package util
 
 import (
+	"fmt"
+	"strings"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 )
 
@@ -35,4 +38,56 @@ type Container struct {
 	ReadinessProbeConfigs []*horizonapi.ProbeConfig
 	LivenessProbeConfigs  []*horizonapi.ProbeConfig
 	PreStopConfig         *horizonapi.ActionConfig
+}
+
+// MergeEnvMaps will merge the source and destination environs. If the same value exist in both, source environ will given more preference
+func MergeEnvMaps(source, destination map[string]string) map[string]string {
+	// if the source key present in the destination map, it will overrides the destination value
+	// if the source value is empty, then delete it from the destination
+	for key, value := range source {
+		if len(value) == 0 {
+			delete(destination, key)
+		} else {
+			destination[key] = value
+		}
+	}
+	return destination
+}
+
+// MergeEnvSlices will merge the source and destination environs. If the same value exist in both, source environ will given more preference
+func MergeEnvSlices(source, destination []string) []string {
+	// create a destination map
+	destinationMap := make(map[string]string)
+	for _, value := range destination {
+		values := strings.SplitN(value, ":", 2)
+		if len(values) == 2 {
+			mapKey := strings.TrimSpace(values[0])
+			mapValue := strings.TrimSpace(values[1])
+			if len(mapKey) > 0 && len(mapValue) > 0 {
+				destinationMap[mapKey] = mapValue
+			}
+		}
+	}
+
+	// if the source key present in the destination map, it will overrides the destination value
+	// if the source value is empty, then delete it from the destination
+	for _, value := range source {
+		values := strings.SplitN(value, ":", 2)
+		if len(values) == 2 {
+			mapKey := strings.TrimSpace(values[0])
+			mapValue := strings.TrimSpace(values[1])
+			if len(mapValue) == 0 {
+				delete(destinationMap, mapKey)
+			} else {
+				destinationMap[mapKey] = mapValue
+			}
+		}
+	}
+
+	// convert destination map to string array
+	mergedValues := []string{}
+	for key, value := range destinationMap {
+		mergedValues = append(mergedValues, fmt.Sprintf("%s:%s", key, value))
+	}
+	return mergedValues
 }
