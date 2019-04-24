@@ -39,7 +39,7 @@ var getOutputFormat string
 // getCmd lists resources in the cluster
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: "List Synopsys Resources in your cluster",
+	Short: "Display Synopsys Resources from your cluster",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Not a Valid Command")
 	},
@@ -49,7 +49,7 @@ var getCmd = &cobra.Command{
 var getBlackduckCmd = &cobra.Command{
 	Use:     "blackduck [NAME]",
 	Aliases: []string{"blackducks"},
-	Short:   "Get a list of Blackducks in the cluster",
+	Short:   "Display one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("this command takes up to 1 argument")
@@ -140,7 +140,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 var getOpsSightCmd = &cobra.Command{
 	Use:     "opssight [NAME]",
 	Aliases: []string{"opssights"},
-	Short:   "Get a list of OpsSights in the cluster",
+	Short:   "Display one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("this command takes up to 1 argument")
@@ -171,7 +171,7 @@ var getOpsSightCmd = &cobra.Command{
 var getAlertCmd = &cobra.Command{
 	Use:     "alert [NAME]",
 	Aliases: []string{"alerts"},
-	Short:   "Get a list of Alerts in the cluster",
+	Short:   "Display one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("this command takes up to 1 argument")

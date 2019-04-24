@@ -31,7 +31,7 @@ import (
 // describeCmd prints the CRD for a resource
 var describeCmd = &cobra.Command{
 	Use:   "describe",
-	Short: "Print a detailed description of the selected resource",
+	Short: "Show details of a Synopsys Resource from you cluster",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Not a Valid Command")
 	},
@@ -41,7 +41,7 @@ var describeCmd = &cobra.Command{
 var describeBlackduckCmd = &cobra.Command{
 	Use:     "blackduck [NAME]",
 	Aliases: []string{"blackducks"},
-	Short:   "Describe an instance of Blackduck",
+	Short:   "Show details of one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("this command takes up to 1 arguments")
@@ -68,7 +68,7 @@ var describeBlackduckCmd = &cobra.Command{
 var describeOpsSightCmd = &cobra.Command{
 	Use:     "opssight [NAME]",
 	Aliases: []string{"opssights"},
-	Short:   "Describe an instance of OpsSight",
+	Short:   "Show details of one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("this command takes up to 1 argument")
@@ -95,7 +95,7 @@ var describeOpsSightCmd = &cobra.Command{
 var describeAlertCmd = &cobra.Command{
 	Use:     "alert [NAME]",
 	Aliases: []string{"alerts"},
-	Short:   "Describe an instance of Alert",
+	Short:   "Show details of one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("this command takes up to 1 argument")
