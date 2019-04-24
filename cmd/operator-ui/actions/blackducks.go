@@ -81,6 +81,7 @@ func (v BlackducksResource) New(c buffalo.Context) error {
 	blackduckSpec := util.GetBlackDuckDefaultPersistentStorageLatest()
 	blackduck := &blackduckapi.Blackduck{}
 	blackduck.Spec = *blackduckSpec
+	blackduck.Spec.Namespace = ""
 	blackduck.Spec.PersistentStorage = true
 	blackduck.Spec.PVCStorageClass = ""
 	blackduck.Spec.ScanType = "Artifacts"
