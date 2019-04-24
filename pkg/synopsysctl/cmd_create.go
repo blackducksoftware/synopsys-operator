@@ -46,7 +46,7 @@ var baseBlackduckSpec = "persistentStorageLatest"
 var baseOpsSightSpec = "disabledBlackDuck"
 var baseAlertSpec = "default"
 
-// Flags for using mock mode - don't deploy
+// Flag for using mock mode - doesn't deploy
 var mockFormat string
 
 // createCmd represents the create command
@@ -106,7 +106,7 @@ var createBlackduckCmd = &cobra.Command{
 		if cmd.LocalFlags().Lookup("mock").Changed {
 			_, err := util.PrettyPrint(blackduck, mockFormat)
 			if err != nil {
-				log.Warnf("failed to print in mock mode: %s", err)
+				log.Errorf("failed to print in mock mode: %s", err)
 				return nil
 			}
 		} else {
@@ -175,7 +175,7 @@ var createOpsSightCmd = &cobra.Command{
 		if cmd.LocalFlags().Lookup("mock").Changed {
 			_, err := util.PrettyPrint(opssight, mockFormat)
 			if err != nil {
-				log.Warnf("failed to print in mock mode: %s", err)
+				log.Errorf("failed to print in mock mode: %s", err)
 				return nil
 			}
 		} else {
@@ -243,7 +243,7 @@ var createAlertCmd = &cobra.Command{
 		if cmd.LocalFlags().Lookup("mock").Changed {
 			_, err := util.PrettyPrint(alert, mockFormat)
 			if err != nil {
-				log.Warnf("failed to print in mock mode: %s", err)
+				log.Errorf("failed to print in mock mode: %s", err)
 				return nil
 			}
 		} else {
@@ -276,19 +276,19 @@ func init() {
 
 	// Add Blackduck Command
 	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags [empty/template/persistentStorageLatest/persistentStorageV1/externalPersistentStorageLatest/externalPersistentStorageV1/bdba/ephemeral/ephemeralCustomAuthCA/externalDB/IPV6Disabled]")
-	createBlackduckCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints resource spec instead of creating [json/yaml]")
+	createBlackduckCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json/yaml]")
 	createBlackduckCtl.AddSpecFlags(createBlackduckCmd, true)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command
 	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags [empty/template/default/disabledBlackDuck]")
-	createOpsSightCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints resource spec instead of creating [json/yaml]")
+	createOpsSightCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json/yaml]")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command
 	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags [empty/template/default]")
-	createAlertCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints resource spec instead of creating [json/yaml]")
+	createAlertCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json/yaml]")
 	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	createCmd.AddCommand(createAlertCmd)
 }

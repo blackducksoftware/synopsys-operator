@@ -48,22 +48,19 @@ var getCmd = &cobra.Command{
 	},
 }
 
-// getBlackduckCmd lists Blackducks in the cluster
+// getBlackduckCmd Display one or many Black Ducks
 var getBlackduckCmd = &cobra.Command{
 	Use:     "blackduck [NAME]",
 	Aliases: []string{"blackducks"},
 	Short:   "Display one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("this command takes up to 1 argument")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Black Ducks...")
 		kCmd := []string{"get", "blackducks"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args[0])
+			kCmd = append(kCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("output").Changed {
 			kCmd = append(kCmd, "-o")
@@ -143,22 +140,19 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 	},
 }
 
-// getOpsSightCmd lists OpsSights in the cluster
+// getOpsSightCmd Display one or many OpsSights
 var getOpsSightCmd = &cobra.Command{
 	Use:     "opssight [NAME]",
 	Aliases: []string{"opssights"},
 	Short:   "Display one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("this command takes up to 1 argument")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting OpsSights...")
 		kCmd := []string{"get", "opssights"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args[0])
+			kCmd = append(kCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("output").Changed {
 			kCmd = append(kCmd, "-o")
@@ -178,22 +172,19 @@ var getOpsSightCmd = &cobra.Command{
 	},
 }
 
-// getAlertCmd lists Alerts in the cluster
+// getAlertCmd Display one or many Alerts
 var getAlertCmd = &cobra.Command{
 	Use:     "alert [NAME]",
 	Aliases: []string{"alerts"},
 	Short:   "Display one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 1 {
-			return fmt.Errorf("this command takes up to 1 argument")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Alerts...")
 		kCmd := []string{"get", "alerts"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args[0])
+			kCmd = append(kCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("output").Changed {
 			kCmd = append(kCmd, "-o")
