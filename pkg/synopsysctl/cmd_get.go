@@ -33,8 +33,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// flag for -o functionality
+// flag for -output functionality
 var getOutputFormat string
+
+// flag for -selector functionality
+var getSelector string
 
 // getCmd lists resources in the cluster
 var getCmd = &cobra.Command{
@@ -65,6 +68,10 @@ var getBlackduckCmd = &cobra.Command{
 		if cmd.LocalFlags().Lookup("output").Changed {
 			kCmd = append(kCmd, "-o")
 			kCmd = append(kCmd, getOutputFormat)
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, getSelector)
 		}
 		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
@@ -157,6 +164,10 @@ var getOpsSightCmd = &cobra.Command{
 			kCmd = append(kCmd, "-o")
 			kCmd = append(kCmd, getOutputFormat)
 		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, getSelector)
+		}
 		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error getting OpsSights due to %+v - %s", out, err)
@@ -188,6 +199,10 @@ var getAlertCmd = &cobra.Command{
 			kCmd = append(kCmd, "-o")
 			kCmd = append(kCmd, getOutputFormat)
 		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, getSelector)
+		}
 		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error getting Alerts due to %+v - %s", out, err)
@@ -204,12 +219,15 @@ func init() {
 
 	// Add Commands
 	getBlackduckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
+	getBlackduckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "kubectl's filter on labels")
 	getBlackduckCmd.AddCommand(getBlackduckRootKeyCmd)
 	getCmd.AddCommand(getBlackduckCmd)
 
 	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
+	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "kubectl's filter on labels")
 	getCmd.AddCommand(getOpsSightCmd)
 
 	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
+	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "kubectl's filter on labels")
 	getCmd.AddCommand(getAlertCmd)
 }

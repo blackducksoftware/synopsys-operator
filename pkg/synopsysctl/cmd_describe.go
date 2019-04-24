@@ -28,6 +28,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// flag for -selector functionality
+var describeSelector string
+
 // describeCmd prints the CRD for a resource
 var describeCmd = &cobra.Command{
 	Use:   "describe",
@@ -53,6 +56,10 @@ var describeBlackduckCmd = &cobra.Command{
 		kCmd := []string{"describe", "blackducks"}
 		if len(args) > 0 {
 			kCmd = append(kCmd, args[0])
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, describeSelector)
 		}
 		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
@@ -81,6 +88,10 @@ var describeOpsSightCmd = &cobra.Command{
 		if len(args) > 0 {
 			kCmd = append(kCmd, args[0])
 		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, describeSelector)
+		}
 		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error describing the OpsSight: %s - %s", out, err)
@@ -108,6 +119,10 @@ var describeAlertCmd = &cobra.Command{
 		if len(args) > 0 {
 			kCmd = append(kCmd, args[0])
 		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, describeSelector)
+		}
 		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error describing the Alert: %s - %s", out, err)
@@ -123,7 +138,12 @@ func init() {
 	rootCmd.AddCommand(describeCmd)
 
 	// Add Commands
+	describeBlackduckCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "kubectl's filter on labels")
 	describeCmd.AddCommand(describeBlackduckCmd)
+
+	describeOpsSightCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "kubectl's filter on labels")
 	describeCmd.AddCommand(describeOpsSightCmd)
+
+	describeAlertCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "kubectl's filter on labels")
 	describeCmd.AddCommand(describeAlertCmd)
 }
