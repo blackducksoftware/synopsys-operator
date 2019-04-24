@@ -33,6 +33,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// flag for -o functionality
+var getOutputFormat string
+
 // getCmd lists resources in the cluster
 var getCmd = &cobra.Command{
 	Use:   "get",
@@ -44,18 +47,26 @@ var getCmd = &cobra.Command{
 
 // getBlackduckCmd lists Blackducks in the cluster
 var getBlackduckCmd = &cobra.Command{
-	Use:     "blackduck",
+	Use:     "blackduck [NAME]",
 	Aliases: []string{"blackducks"},
 	Short:   "Get a list of Blackducks in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("this command takes 0 arguments")
+		if len(args) > 1 {
+			return fmt.Errorf("this command takes up to 1 argument")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Black Ducks...")
-		out, err := RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
+		kCmd := []string{"get", "blackducks"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args[0])
+		}
+		if cmd.LocalFlags().Lookup("output").Changed {
+			kCmd = append(kCmd, "-o")
+			kCmd = append(kCmd, getOutputFormat)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error getting Black Ducks due to %+v - %s", out, err)
 			return nil
@@ -127,18 +138,26 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 
 // getOpsSightCmd lists OpsSights in the cluster
 var getOpsSightCmd = &cobra.Command{
-	Use:     "opssight",
+	Use:     "opssight [NAME]",
 	Aliases: []string{"opssights"},
 	Short:   "Get a list of OpsSights in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("this command takes 0 arguments")
+		if len(args) > 1 {
+			return fmt.Errorf("this command takes up to 1 argument")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting OpsSights...")
-		out, err := RunKubeCmd(restconfig, kube, openshift, "get", "opssights")
+		kCmd := []string{"get", "opssights"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args[0])
+		}
+		if cmd.LocalFlags().Lookup("output").Changed {
+			kCmd = append(kCmd, "-o")
+			kCmd = append(kCmd, getOutputFormat)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error getting OpsSights due to %+v - %s", out, err)
 			return nil
@@ -150,18 +169,26 @@ var getOpsSightCmd = &cobra.Command{
 
 // getAlertCmd lists Alerts in the cluster
 var getAlertCmd = &cobra.Command{
-	Use:     "alert",
+	Use:     "alert [NAME]",
 	Aliases: []string{"alerts"},
 	Short:   "Get a list of Alerts in the cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("this command takes 0 arguments")
+		if len(args) > 1 {
+			return fmt.Errorf("this command takes up to 1 argument")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Alerts...")
-		out, err := RunKubeCmd(restconfig, kube, openshift, "get", "alerts")
+		kCmd := []string{"get", "alerts"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args[0])
+		}
+		if cmd.LocalFlags().Lookup("output").Changed {
+			kCmd = append(kCmd, "-o")
+			kCmd = append(kCmd, getOutputFormat)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error getting Alerts due to %+v - %s", out, err)
 			return nil
@@ -176,9 +203,13 @@ func init() {
 	rootCmd.AddCommand(getCmd)
 
 	// Add Commands
-	getCmd.AddCommand(getBlackduckCmd)
+	getBlackduckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
 	getBlackduckCmd.AddCommand(getBlackduckRootKeyCmd)
+	getCmd.AddCommand(getBlackduckCmd)
 
+	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
 	getCmd.AddCommand(getOpsSightCmd)
+
+	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
 	getCmd.AddCommand(getAlertCmd)
 }
