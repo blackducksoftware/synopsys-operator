@@ -66,7 +66,7 @@ var secretType horizonapi.SecretType
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use:   "deploy NAMESPACE",
+	Use:   "deploy [NAMESPACE]",
 	Short: "Deploys the synopsys operator onto your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
