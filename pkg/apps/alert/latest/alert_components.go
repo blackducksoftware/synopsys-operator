@@ -65,10 +65,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		log.Debugf("case %s: Adding LoadBalancer Service to ComponentList for Alert", a.config.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceLoadBalancer())
 	default:
-		log.Debugf("Not adding a Service to ComponentList for Alert")
-		if a.config.ExposeService != "" {
-			return nil, fmt.Errorf("the ExposeService value '%s' is not valid", a.config.ExposeService)
-		}
+		log.Debugf("not adding a Kubernetes Service to ComponentList for Alert")
 	}
 
 	sec, err := a.GetAlertSecret()
