@@ -28,9 +28,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// flag for -o functionality
-var describeOutputFormat string
-
 // describeCmd prints the CRD for a resource
 var describeCmd = &cobra.Command{
 	Use:   "describe",
@@ -42,26 +39,22 @@ var describeCmd = &cobra.Command{
 
 // describeBlackduckCmd prints the CRD for a Blackduck
 var describeBlackduckCmd = &cobra.Command{
-	Use:   "blackduck NAMESPACE",
-	Short: "Describe an instance of Blackduck",
+	Use:     "blackduck [NAME]",
+	Aliases: []string{"blackducks"},
+	Short:   "Describe an instance of Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
+		if len(args) > 1 {
+			return fmt.Errorf("this command takes up to 1 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing a Blackduck")
-		// Read Commandline Parameters
-		blackduckNamespace := args[0]
-
-		var out string
-		var err error
-		if cmd.LocalFlags().Lookup("output").Changed {
-			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace, "-o", describeOutputFormat)
-		} else {
-			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
+		kCmd := []string{"describe", "blackducks"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args[0])
 		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error describing the Black Duck: %s - %s", out, err)
 			return nil
@@ -73,26 +66,22 @@ var describeBlackduckCmd = &cobra.Command{
 
 // describeOpsSightCmd prints the CRD for an OpsSight
 var describeOpsSightCmd = &cobra.Command{
-	Use:   "opssight NAMESPACE",
-	Short: "Describe an instance of OpsSight",
+	Use:     "opssight [NAME]",
+	Aliases: []string{"opssights"},
+	Short:   "Describe an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
+		if len(args) > 1 {
+			return fmt.Errorf("this command takes up to 1 argument")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing an OpsSight")
-		// Read Commandline Parameters
-		opsSightNamespace := args[0]
-
-		var out string
-		var err error
-		if cmd.LocalFlags().Lookup("output").Changed {
-			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "opssight", opsSightNamespace, "-n", opsSightNamespace, "-o", describeOutputFormat)
-		} else {
-			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
+		kCmd := []string{"describe", "opssights"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args[0])
 		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error describing the OpsSight: %s - %s", out, err)
 			return nil
@@ -104,26 +93,22 @@ var describeOpsSightCmd = &cobra.Command{
 
 // describeAlertCmd prints the CRD for an Alert
 var describeAlertCmd = &cobra.Command{
-	Use:   "alert NAMESPACE",
-	Short: "Describe an instance of Alert",
+	Use:     "alert [NAME]",
+	Aliases: []string{"alerts"},
+	Short:   "Describe an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
+		if len(args) > 1 {
+			return fmt.Errorf("this command takes up to 1 argument")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing an Alert")
-		// Read Commandline Parameters
-		alertNamespace := args[0]
-
-		var out string
-		var err error
-		if cmd.LocalFlags().Lookup("output").Changed {
-			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace, "-o", describeOutputFormat)
-		} else {
-			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace)
+		kCmd := []string{"describe", "alerts"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args[0])
 		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
 			log.Errorf("error describing the Alert: %s - %s", out, err)
 			return nil
@@ -138,12 +123,7 @@ func init() {
 	rootCmd.AddCommand(describeCmd)
 
 	// Add Commands
-	describeBlackduckCmd.Flags().StringVarP(&describeOutputFormat, "output", "o", describeOutputFormat, "kubectl's output format")
 	describeCmd.AddCommand(describeBlackduckCmd)
-
-	describeOpsSightCmd.Flags().StringVarP(&describeOutputFormat, "output", "o", describeOutputFormat, "kubectl's output format")
 	describeCmd.AddCommand(describeOpsSightCmd)
-
-	describeAlertCmd.PersistentFlags().StringVarP(&describeOutputFormat, "output", "o", describeOutputFormat, "kubectl's output format")
 	describeCmd.AddCommand(describeAlertCmd)
 }
