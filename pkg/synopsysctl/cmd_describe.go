@@ -129,12 +129,12 @@ func init() {
 	rootCmd.AddCommand(describeCmd)
 
 	// Add Commands
-	describeBlackduckCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "kubectl's filter on labels")
+	describeBlackduckCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeBlackduckCmd)
 
-	describeOpsSightCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "kubectl's filter on labels")
+	describeOpsSightCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeOpsSightCmd)
 
-	describeAlertCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "kubectl's filter on labels")
+	describeAlertCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeAlertCmd)
 }

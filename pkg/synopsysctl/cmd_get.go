@@ -209,16 +209,16 @@ func init() {
 	rootCmd.AddCommand(getCmd)
 
 	// Add Commands
-	getBlackduckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
-	getBlackduckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "kubectl's filter on labels")
+	getBlackduckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
+	getBlackduckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getBlackduckCmd.AddCommand(getBlackduckRootKeyCmd)
 	getCmd.AddCommand(getBlackduckCmd)
 
-	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
-	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "kubectl's filter on labels")
+	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
+	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getOpsSightCmd)
 
-	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "kubectl's output format")
-	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "kubectl's filter on labels")
+	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
+	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getAlertCmd)
 }
