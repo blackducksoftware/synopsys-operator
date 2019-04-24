@@ -25,6 +25,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"math"
 	"net/http"
 	"reflect"
@@ -124,7 +125,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return fmt.Errorf("update cfssl component: %+v", errors)
 		}
 
-		if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, 600); err != nil {
+		if err := util.ValidatePodsAreRunningInNamespace(hc.KubeClient, blackduck.Spec.Namespace, hc.Config.PodWaitTimeoutSeconds); err != nil {
 			return err
 		}
 
@@ -246,16 +247,13 @@ func (hc *Creater) initPostgres(bdspec *blackduckapi.BlackduckSpec) error {
 		}
 	}
 
-	// Validate postgres pod is cloned/backed up
-	err = util.WaitForServiceEndpointReady(hc.KubeClient, bdspec.Namespace, "postgres")
+	ready, err := util.WaitUntilPodsAreReady(hc.KubeClient, bdspec.Namespace, "app=blackduck,component=postgres", hc.Config.PodWaitTimeoutSeconds)
 	if err != nil {
 		return err
 	}
 
-	// Validate the postgres container is running
-	err = util.ValidatePodsAreRunningInNamespace(hc.KubeClient, bdspec.Namespace, hc.Config.PodWaitTimeoutSeconds)
-	if err != nil {
-		return err
+	if !ready {
+		return errors.New("the postgres pod is not yet ready")
 	}
 
 	// Check if initialization is required.
