@@ -504,35 +504,35 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 
 func prettyPrintObj(components *api.ComponentList) {
 	for _, cb := range components.ClusterRoleBindings {
-		util.PrettyPrint(cb.GetObj())
+		util.PrettyPrint(cb.GetObj(), "json")
 	}
 
 	for _, cr := range components.ClusterRoles {
-		util.PrettyPrint(cr.GetObj())
+		util.PrettyPrint(cr.GetObj(), "json")
 	}
 
 	for _, cm := range components.ConfigMaps {
-		util.PrettyPrint(cm.GetObj())
+		util.PrettyPrint(cm.GetObj(), "json")
 	}
 
 	for _, d := range components.Deployments {
-		util.PrettyPrint(d.GetObj())
+		util.PrettyPrint(d.GetObj(), "json")
 	}
 
 	for _, rc := range components.ReplicationControllers {
-		util.PrettyPrint(rc.GetObj())
+		util.PrettyPrint(rc.GetObj(), "json")
 	}
 
 	for _, s := range components.Secrets {
-		util.PrettyPrint(s.GetObj())
+		util.PrettyPrint(s.GetObj(), "json")
 	}
 
 	for _, sa := range components.ServiceAccounts {
-		util.PrettyPrint(sa.GetObj())
+		util.PrettyPrint(sa.GetObj(), "json")
 	}
 
 	for _, svc := range components.Services {
-		util.PrettyPrint(svc.GetObj())
+		util.PrettyPrint(svc.GetObj(), "json")
 	}
 }
 
