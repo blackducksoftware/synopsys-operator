@@ -28,6 +28,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// flag for -o functionality
+var describeOutputFormat string
+
 // describeCmd prints the CRD for a resource
 var describeCmd = &cobra.Command{
 	Use:   "describe",
@@ -52,7 +55,13 @@ var describeBlackduckCmd = &cobra.Command{
 		// Read Commandline Parameters
 		blackduckNamespace := args[0]
 
-		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
+		var out string
+		var err error
+		if cmd.LocalFlags().Lookup("output").Changed {
+			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace, "-o", describeOutputFormat)
+		} else {
+			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "blackduck", blackduckNamespace, "-n", blackduckNamespace)
+		}
 		if err != nil {
 			log.Errorf("error describing the Black Duck: %s - %s", out, err)
 			return nil
@@ -77,7 +86,13 @@ var describeOpsSightCmd = &cobra.Command{
 		// Read Commandline Parameters
 		opsSightNamespace := args[0]
 
-		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
+		var out string
+		var err error
+		if cmd.LocalFlags().Lookup("output").Changed {
+			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "opssight", opsSightNamespace, "-n", opsSightNamespace, "-o", describeOutputFormat)
+		} else {
+			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "opssight", opsSightNamespace, "-n", opsSightNamespace)
+		}
 		if err != nil {
 			log.Errorf("error describing the OpsSight: %s - %s", out, err)
 			return nil
@@ -102,7 +117,13 @@ var describeAlertCmd = &cobra.Command{
 		// Read Commandline Parameters
 		alertNamespace := args[0]
 
-		out, err := RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace)
+		var out string
+		var err error
+		if cmd.LocalFlags().Lookup("output").Changed {
+			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace, "-o", describeOutputFormat)
+		} else {
+			out, err = RunKubeCmd(restconfig, kube, openshift, "describe", "alert", alertNamespace, "-n", alertNamespace)
+		}
 		if err != nil {
 			log.Errorf("error describing the Alert: %s - %s", out, err)
 			return nil
@@ -117,7 +138,12 @@ func init() {
 	rootCmd.AddCommand(describeCmd)
 
 	// Add Commands
+	describeBlackduckCmd.Flags().StringVarP(&describeOutputFormat, "output", "o", describeOutputFormat, "kubectl's output format")
 	describeCmd.AddCommand(describeBlackduckCmd)
+
+	describeOpsSightCmd.Flags().StringVarP(&describeOutputFormat, "output", "o", describeOutputFormat, "kubectl's output format")
 	describeCmd.AddCommand(describeOpsSightCmd)
+
+	describeAlertCmd.PersistentFlags().StringVarP(&describeOutputFormat, "output", "o", describeOutputFormat, "kubectl's output format")
 	describeCmd.AddCommand(describeAlertCmd)
 }
