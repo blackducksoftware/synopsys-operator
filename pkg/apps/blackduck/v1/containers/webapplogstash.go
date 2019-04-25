@@ -102,7 +102,7 @@ func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashIm
 
 	webappLogstash := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webapp-logstash", Replicas: util.IntToInt32(1)},
 		"", []*util.Container{webappContainerConfig, logstashContainerConfig}, c.getWebappLogtashVolumes(),
-		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("webapp-logstash"), c.GetLabel("webapp-logstash"))
+		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("webapp-logstash"), c.GetLabel("webapp-logstash"), c.hubSpec.RegistryConfiguration.PullSecrets)
 	return webappLogstash
 }
 

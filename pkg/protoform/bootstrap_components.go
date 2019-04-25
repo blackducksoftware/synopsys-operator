@@ -55,7 +55,7 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 		[]*util.Container{protoformContainer},
 		[]*components.Volume{protoformVolume, protoformVolume},
 		[]*util.Container{},
-		[]horizonapi.AffinityConfig{}, map[string]string{"app": "synopsys-operator"}, map[string]string{"app": "synopsys-operator"})
+		[]horizonapi.AffinityConfig{}, map[string]string{"app": "synopsys-operator"}, map[string]string{"app": "synopsys-operator"}, nil)
 
 	protoformsvc := util.CreateService("synopsys-operator", map[string]string{"app": "synopsys-operator"}, ns, "8080", "8080", horizonapi.ClusterIPServiceTypeDefault, map[string]string{"app": "synopsys-operator"})
 
@@ -139,7 +139,7 @@ func GetBootstrapComponents(ns string, branch string, regKey string) (*component
 		[]*util.Container{prometheusContainer},
 		[]*components.Volume{prometheusVol1, prometheusVol2},
 		[]*util.Container{},
-		[]horizonapi.AffinityConfig{}, map[string]string{"app": "prometheus"}, map[string]string{"app": "prometheus"})
+		[]horizonapi.AffinityConfig{}, map[string]string{"app": "prometheus"}, map[string]string{"app": "prometheus"}, nil)
 
 	return protoformRC, protoformsvc, protoformcfg, svcAcct, clusterRoleBinding, prometheusService, prometheusRC, promCfg
 }
