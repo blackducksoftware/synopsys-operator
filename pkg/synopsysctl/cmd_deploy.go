@@ -45,7 +45,7 @@ const (
 var exposeUI = ""
 var exposePrometheusMetrics = ""
 var deployNamespace = "synopsys-operator"
-var synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.4.0-RC"
+var synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.4.0"
 var prometheusImage = "docker.io/prom/prometheus:v2.1.0"
 var terminationGracePeriodSeconds int64 = 180
 var operatorTimeBombInSeconds int64 = 315576000
