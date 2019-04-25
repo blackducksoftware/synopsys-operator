@@ -16,6 +16,8 @@ const (
 	PluralizeKey   = "pluralize"
 	SingularizeKey = "singularize"
 	UnderscoreKey  = "underscore"
+	UpcaseKey      = "upcase"
+	DowncaseKey    = "downcase"
 )
 
 // New returns a map of the helpers within this package.
@@ -29,6 +31,9 @@ func New() hctx.Map {
 		PluralizeKey:          Pluralize,
 		SingularizeKey:        Singularize,
 		UnderscoreKey:         Underscore,
+		DowncaseKey:           Downcase,
+		UpcaseKey:             Upcase,
+
 		// "asciffy":             Asciify,
 		// "humanize":            Humanize,
 		// "parameterize":        Parameterize,

@@ -30,24 +30,24 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// getAlertDeployment returns a new deployment for an Alert
-func (a *SpecConfig) getAlertDeployment() (*components.Deployment, error) {
+// getAlertReplicationController returns a new replication controller for an Alert
+func (a *SpecConfig) getAlertReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(1)
-	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
+	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      "alert",
 		Namespace: a.config.Namespace,
 	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": "alert", "component": "alert"})
+	replicationController.AddLabelSelectors(map[string]string{"app": "alert", "component": "alert"})
 
 	pod, err := a.getAlertPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Alert Pod: %s", err)
 	}
 
-	deployment.AddPod(pod)
-	deployment.AddLabels(map[string]string{"app": "alert", "component": "alert"})
-	return deployment, nil
+	replicationController.AddPod(pod)
+	replicationController.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+	return replicationController, nil
 }
 
 // getAlertPod returns a new Pod for an Alert

@@ -28,24 +28,24 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
-// getCfsslDeployment returns a new Deployment for a Cffsl
-func (a *SpecConfig) getCfsslDeployment() (*components.Deployment, error) {
+// getCfsslReplicationController returns a new Replication Controller for a Cffsl
+func (a *SpecConfig) getCfsslReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(1)
-	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
+	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      "cfssl",
 		Namespace: a.config.Namespace,
 	})
-	deployment.AddMatchLabelsSelectors(map[string]string{"component": "cfssl", "app": "alert"})
+	replicationController.AddLabelSelectors(map[string]string{"app": "alert", "component": "cfssl"})
 
 	pod, err := a.getCfsslPod()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pod: %v", err)
 	}
-	deployment.AddPod(pod)
+	replicationController.AddPod(pod)
 
-	deployment.AddLabels(map[string]string{"component": "cfssl", "app": "alert"})
-	return deployment, nil
+	replicationController.AddLabels(map[string]string{"component": "cfssl", "app": "alert"})
+	return replicationController, nil
 }
 
 // getCfsslPod returns a new Pod for a Cffsl

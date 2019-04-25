@@ -230,8 +230,9 @@ func CreateReplicationController(replicationControllerConfig *horizonapi.Replica
 }
 
 // CreateReplicationControllerFromContainer will create a replication controller with multiple containers inside a pod
-func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string, labelSelector map[string]string) *components.ReplicationController {
+func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string, labelSelector map[string]string, imagePullSecrets []string) *components.ReplicationController {
 	pod := CreatePod(replicationControllerConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs, labels)
+	pod.AddImagePullSecrets(imagePullSecrets)
 	rc := CreateReplicationController(replicationControllerConfig, pod, labels, labelSelector)
 	return rc
 }
@@ -1188,4 +1189,46 @@ func UpdateCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clie
 // DeleteCustomResourceDefinition deletes the custom resource defintion
 func DeleteCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, name string) error {
 	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(name, &metav1.DeleteOptions{})
+}
+
+// WaitUntilPodsAreReady will wait for the pods to be ready
+func WaitUntilPodsAreReady(clientset *kubernetes.Clientset, namespace string, labelSelector string, timeoutInSeconds int64) (bool, error) {
+	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
+	timeout := time.NewTimer(time.Duration(timeoutInSeconds) * time.Second)
+	// ticker starts and execute the task for every n intervals
+	ticker := time.NewTicker(10 * time.Second)
+	for {
+		select {
+		case <-timeout.C:
+			ticker.Stop()
+			return false, fmt.Errorf("[NS: %s | Label: %s] the pods weren't ready - timing out after %d seconds", namespace, labelSelector, timeoutInSeconds)
+		case <-ticker.C:
+			ready, err := IsPodReady(clientset, namespace, labelSelector)
+			if err != nil || ready {
+				timeout.Stop()
+				ticker.Stop()
+				return ready, err
+			}
+		}
+	}
+}
+
+// IsPodReady returns whether the pods are ready or not
+func IsPodReady(clientset *kubernetes.Clientset, namespace string, labelSelector string) (bool, error) {
+	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	for _, p := range pods.Items {
+		for _, condition := range p.Status.Conditions {
+			if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionFalse {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+
 }
