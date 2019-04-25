@@ -57,7 +57,7 @@
 
 [[projects]]
   branch = "release-2019.4.x"
-  digest = "1:ab46067cad4c29c65799cf4f4bce2d1f93a9a61e5fc6c7606828682c6c5b27fa"
+  digest = "1:9e1bafa483609dc626402d8507ba6a27746419e493190431b7e7b4955a9a8ee0"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/alert/client/clientset/versioned",
@@ -93,7 +93,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "3347febb3410c9f61f32ca2d7588732649c2489d"
+  revision = "c4d0f99414292a767f836217c38c6d8a27d86dbd"
 
 [[projects]]
   digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
@@ -1288,7 +1288,7 @@
   revision = "16072639606ea9e22c7d86e4cbd6af6314f4193c"
 
 [[projects]]
-  digest = "1:f4ea3f623a07a2602bb9c1624d6dc7d291261278ba2484508fac559dc7926048"
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -1309,8 +1309,8 @@
     "unicode/rangetable",
   ]
   pruneopts = "UT"
-  revision = "c942b20a5d85b458c4dce1589326051d85e25d6d"
-  version = "v0.3.1"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [[projects]]
   branch = "master"
@@ -1547,7 +1547,7 @@
   name = "k8s.io/kube-openapi"
   packages = ["pkg/util/proto"]
   pruneopts = "UT"
-  revision = "6b3d3b2d5666c5912bab8b7bf26bf50f75a8f887"
+  revision = "07b8972065522ba66df16032247530e1dbaca011"
 
 [solve-meta]
   analyzer-name = "dep"
