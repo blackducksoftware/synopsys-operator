@@ -62,7 +62,7 @@ func (c *Creater) GetZookeeperDeployment(imageName string) *components.Replicati
 	c.PostEditContainer(zookeeperContainerConfig)
 
 	zookeeper := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{zookeeperContainerConfig}, c.getZookeeperVolumes(), initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("zookeeper"), c.GetLabel("zookeeper"))
+		[]*util.Container{zookeeperContainerConfig}, c.getZookeeperVolumes(), initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("zookeeper"), c.GetLabel("zookeeper"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
 	return zookeeper
 }

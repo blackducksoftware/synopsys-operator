@@ -61,7 +61,7 @@ func (c *Creater) GetSolrDeployment(imageName string) *components.ReplicationCon
 
 	solr := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "solr", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{solrContainerConfig}, c.getSolrVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("solr"), c.GetLabel("solr"))
+		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("solr"), c.GetLabel("solr"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
 	return solr
 }
