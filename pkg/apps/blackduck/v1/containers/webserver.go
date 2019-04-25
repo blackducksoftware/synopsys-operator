@@ -52,7 +52,7 @@ func (c *Creater) GetWebserverDeployment(imageName string) *components.Replicati
 
 	webserver := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{
 		Namespace: c.hubSpec.Namespace, Name: "webserver", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{webServerContainerConfig}, c.getWebserverVolumes(), []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("webserver"), c.GetLabel("webserver"))
+		[]*util.Container{webServerContainerConfig}, c.getWebserverVolumes(), []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("webserver"), c.GetLabel("webserver"), c.hubSpec.RegistryConfiguration.PullSecrets)
 	// log.Infof("webserver : %v\n", webserver.GetObj())
 	return webserver
 }

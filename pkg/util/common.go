@@ -230,8 +230,9 @@ func CreateReplicationController(replicationControllerConfig *horizonapi.Replica
 }
 
 // CreateReplicationControllerFromContainer will create a replication controller with multiple containers inside a pod
-func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string, labelSelector map[string]string) *components.ReplicationController {
+func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string, labelSelector map[string]string, imagePullSecrets []string) *components.ReplicationController {
 	pod := CreatePod(replicationControllerConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs, labels)
+	pod.AddImagePullSecrets(imagePullSecrets)
 	rc := CreateReplicationController(replicationControllerConfig, pod, labels, labelSelector)
 	return rc
 }

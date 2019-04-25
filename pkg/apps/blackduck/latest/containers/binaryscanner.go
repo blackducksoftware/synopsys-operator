@@ -42,7 +42,7 @@ func (c *Creater) GetBinaryScannerDeployment(imageName string) *components.Repli
 
 	binaryScanner := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
 		Name: "binaryscanner", Replicas: util.IntToInt32(1)}, c.hubSpec.Namespace, []*util.Container{binaryScannerContainerConfig},
-		[]*components.Volume{}, []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("binaryscanner"), c.GetLabel("binaryscanner"))
+		[]*components.Volume{}, []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("binaryscanner"), c.GetLabel("binaryscanner"), c.hubSpec.RegistryConfiguration.PullSecrets)
 	// log.Infof("binaryScanner : %v\n", binaryScanner.GetObj())
 	return binaryScanner
 }
