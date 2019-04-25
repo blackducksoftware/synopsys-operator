@@ -40,7 +40,7 @@ func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPasswor
 		fmt.Sprintf("ALTER USER blackduck_user WITH password '%s';", userPassword),
 		"CREATE USER blackduck_reporter;",
 		"CREATE USER blackduck_replication REPLICATION CONNECTION LIMIT 5;",
-	}, true)
+	})
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPasswor
 		"ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;",
 		"ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;",
 		"ALTER DATABASE bds_hub SET standard_conforming_strings TO OFF;",
-	}, false)
+	})
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPasswor
 		"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;",
 		"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;",
 		"ALTER DATABASE bds_hub_report SET standard_conforming_strings TO OFF;",
-	}, false)
+	})
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPasswor
 	err = database.ExecDBStatements(hostName, "bdio", "postgres", postgresPassword, "postgres", []string{
 		"GRANT ALL PRIVILEGES ON DATABASE bdio TO blackduck_user;",
 		"ALTER DATABASE bdio SET standard_conforming_strings TO ON;",
-	}, false)
+	})
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPasswor
 		"ALTER SYSTEM SET temp_buffers TO '16MB';",
 		"ALTER SYSTEM SET work_mem TO '32MB';",
 		"SELECT pg_reload_conf();",
-	}, false)
+	})
 	if err != nil {
 		return err
 	}

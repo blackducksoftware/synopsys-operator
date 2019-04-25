@@ -57,7 +57,7 @@
 
 [[projects]]
   branch = "release-2019.4.x"
-  digest = "1:662ea27310a73b23e7153b182f9d693dc8fdd34464ea2c32d0826a16329f9cf1"
+  digest = "1:ab46067cad4c29c65799cf4f4bce2d1f93a9a61e5fc6c7606828682c6c5b27fa"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/alert/client/clientset/versioned",
@@ -93,7 +93,7 @@
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "d6d4138dca9e51e981a9e76dda4574170ed5c22c"
+  revision = "3347febb3410c9f61f32ca2d7588732649c2489d"
 
 [[projects]]
   digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
@@ -295,7 +295,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f8582640f28fc6c8a6cab8b6664df6621f0fed92bcd800bd529d9e09c393e501"
+  digest = "1:ee6c63f6c7f299582277ce67d6af10048372ac25e242ee50dfa9f0ced893841d"
   name = "github.com/gobuffalo/helpers"
   packages = [
     ".",
@@ -315,7 +315,7 @@
     "text",
   ]
   pruneopts = "UT"
-  revision = "384f90c6579f208559c1eedfd5823bd7c242c96c"
+  revision = "cddb8b03d1d1d6a5f8b0230467a1e47cb35121eb"
 
 [[projects]]
   digest = "1:2c4739e3cc12df405efe42de157588d845aaba2fc87491eeb2ac20e35b894a09"
@@ -702,12 +702,12 @@
   revision = "e65537c515d77e35697c471d6c2755375cb3adc4"
 
 [[projects]]
-  digest = "1:38d2e838817528fd7d1ccdf7fa6700ee0f1727b3c484d13cab54bfbdaab12b0e"
+  digest = "1:4691cbb2f38f734a02226f246dbf081d9b15b249d1d6ef051b40e7e41aaf6ce5"
   name = "github.com/karrick/godirwalk"
   packages = ["."]
   pruneopts = "UT"
-  revision = "6d1c7760ec857d2984abe0a23fa263877f50d3f0"
-  version = "v1.8.0"
+  revision = "d363b358f6c055cf7bb8c6f73c5f892271e850dc"
+  version = "v1.8.2"
 
 [[projects]]
   branch = "master"
@@ -1003,12 +1003,12 @@
   revision = "53be0d36a84c2a886ca057d34b6aa4468df9ccb4"
 
 [[projects]]
-  digest = "1:0e7775ebbcf00d8dd28ac663614af924411c868dca3d5aa762af0fae3808d852"
+  digest = "1:a8c2725121694dfbf6d552fb86fe6b46e3e7135ea05db580c28695b916162aad"
   name = "github.com/peterbourgon/diskv"
   packages = ["."]
   pruneopts = "UT"
-  revision = "5f041e8faa004a95c88a202771f4cc3e991971e6"
-  version = "v2.0.1"
+  revision = "0be1b92a6df0e4f5cb0a5d15fb7f643d0ad93ce6"
+  version = "v3.0.0"
 
 [[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
@@ -1059,11 +1059,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:49b09905e781d7775c086604cc00083e1832d0783f1f421b79f42657c457d029"
+  digest = "1:2ea45e71e0198d6b989ed6302cc4f72a83be1e7d6469d08a59e56a2c447aea55"
   name = "github.com/prometheus/procfs"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8368d24ba045f26503eb745b624d930cbe214c79"
+  revision = "87a4384529e0652f5035fb5cc8095faf73ea9b0b"
 
 [[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
@@ -1235,11 +1235,11 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "d864b10871cd4370fe574816b489c819c675ccc7"
+  revision = "c05e17bb3b2dca130fc919668a96b4bec9eb9442"
 
 [[projects]]
   branch = "master"
-  digest = "1:dfdac5f7b01ef3c7c6c76348d439aa9dc4ef822a780e35bf50a4cfd4b7da4094"
+  digest = "1:51225fcd1ccd20ec7e2be247d13ff8783a7b0bb780d990b30ba7281120cca442"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -1252,7 +1252,7 @@
     "idna",
   ]
   pruneopts = "UT"
-  revision = "afa5a82059c6356159f699d81beff22a81842231"
+  revision = "4829fb13d2c62012c17688fa7f629f371014946d"
 
 [[projects]]
   branch = "master"
@@ -1278,23 +1278,25 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0b1c39a5f01b898239cc5c6ee20c6535cb2621685206a371d4a489477d75511b"
+  digest = "1:656ce95b4cdf841c00825f4cb94f6e0e1422d7d6faaf3094e94cd18884a32251"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "953cdadca894cdc07be76fc99f95b40c28f06623"
+  revision = "16072639606ea9e22c7d86e4cbd6af6314f4193c"
 
 [[projects]]
-  digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
+  digest = "1:f4ea3f623a07a2602bb9c1624d6dc7d291261278ba2484508fac559dc7926048"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
     "internal/colltab",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
     "internal/tag",
     "internal/triegen",
     "internal/ucd",
@@ -1307,8 +1309,8 @@
     "unicode/rangetable",
   ]
   pruneopts = "UT"
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
-  version = "v0.3.0"
+  revision = "c942b20a5d85b458c4dce1589326051d85e25d6d"
+  version = "v0.3.1"
 
 [[projects]]
   branch = "master"

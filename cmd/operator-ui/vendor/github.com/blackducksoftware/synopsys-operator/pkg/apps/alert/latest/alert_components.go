@@ -48,11 +48,11 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	// Add alert components
 	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
 
-	dep, err := a.getAlertDeployment()
+	rc, err := a.getAlertReplicationController()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Alert Deployment: %s", err)
+		return nil, fmt.Errorf("failed to create Alert Replication Controller: %s", err)
 	}
-	components.Deployments = append(components.Deployments, dep)
+	components.ReplicationControllers = append(components.ReplicationControllers, rc)
 
 	service := a.getAlertService()
 	components.Services = append(components.Services, service)
@@ -65,10 +65,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		log.Debugf("case %s: Adding LoadBalancer Service to ComponentList for Alert", a.config.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceLoadBalancer())
 	default:
-		log.Debugf("Not adding a Service to ComponentList for Alert")
-		if a.config.ExposeService != "" {
-			return nil, fmt.Errorf("the ExposeService value '%s' is not valid", a.config.ExposeService)
-		}
+		log.Debugf("not adding a Kubernetes Service to ComponentList for Alert")
 	}
 
 	sec, err := a.GetAlertSecret()
@@ -87,11 +84,11 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 
 	// Add cfssl if running in stand alone mode
 	if *a.config.StandAlone {
-		dep, err := a.getCfsslDeployment()
+		rc, err := a.getCfsslReplicationController()
 		if err != nil {
-			return nil, fmt.Errorf("failed to create cfssl deployment: %v", err)
+			return nil, fmt.Errorf("failed to create Cfssl Replication Controller: %v", err)
 		}
-		components.Deployments = append(components.Deployments, dep)
+		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, a.getCfsslService())
 	}
 
