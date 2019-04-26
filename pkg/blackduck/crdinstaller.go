@@ -37,6 +37,7 @@ import (
 	"github.com/juju/errors"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -86,21 +87,25 @@ func (c *CRDInstaller) Deploy() error {
 	}
 
 	// Blackduck CRD
-	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
-		APIVersion: "apiextensions.k8s.io/v1beta1",
-		Name:       "blackducks.synopsys.com",
-		Namespace:  c.config.Namespace,
-		Group:      "synopsys.com",
-		CRDVersion: "v1",
-		Kind:       "Blackduck",
-		Plural:     "blackducks",
-		Singular:   "blackduck",
-		// ShortNames: []string{
-		// 	"hub",
-		// 	"hubs",
-		// },
-		Scope: horizonapi.CRDClusterScoped,
-	}))
+	apiClientset, err := clientset.NewForConfig(c.kubeConfig)
+	_, err = util.GetCustomResourceDefinition(apiClientset, "blackducks.synopsys.com")
+	if err != nil {
+		deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
+			APIVersion: "apiextensions.k8s.io/v1beta1",
+			Name:       "blackducks.synopsys.com",
+			Namespace:  c.config.Namespace,
+			Group:      "synopsys.com",
+			CRDVersion: "v1",
+			Kind:       "Blackduck",
+			Plural:     "blackducks",
+			Singular:   "blackduck",
+			// ShortNames: []string{
+			// 	"hub",
+			// 	"hubs",
+			// },
+			Scope: horizonapi.CRDClusterScoped,
+		}))
+	}
 
 	// // Perceptor configMap
 	// hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.config.Namespace, Name: "federator"})
@@ -168,6 +173,31 @@ func (c *CRDInstaller) Deploy() error {
 	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
 
 	deployer.AddSecret(certificateSecret)
+
+	_, err = util.GetSecret(c.kubeClient, c.config.Namespace, "blackduck-secret")
+	if err != nil {
+		sealKey, err := util.GetRandomString(32)
+		if err != nil {
+			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
+		}
+		// create a secret
+		operatorSecret := components.NewSecret(horizonapi.SecretConfig{
+			APIVersion: "v1",
+			Name:       "blackduck-secret",
+			Namespace:  c.config.Namespace,
+			Type:       horizonapi.SecretTypeOpaque,
+		})
+		operatorSecret.AddData(map[string][]byte{
+			"ADMIN_PASSWORD":    []byte(""),
+			"POSTGRES_PASSWORD": []byte(""),
+			"USER_PASSWORD":     []byte(""),
+			"HUB_PASSWORD":      []byte(""),
+			"SEAL_KEY":          []byte(sealKey),
+		})
+
+		operatorSecret.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
+		deployer.AddSecret(operatorSecret)
+	}
 
 	err = deployer.Run()
 	if err != nil {

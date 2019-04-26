@@ -34,6 +34,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -83,17 +84,21 @@ func (c *CRDInstaller) Deploy() error {
 	}
 
 	// Alert CRD
-	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
-		APIVersion: "apiextensions.k8s.io/v1beta1",
-		Name:       "alerts.synopsys.com",
-		Namespace:  c.config.Namespace,
-		Group:      "synopsys.com",
-		CRDVersion: "v1",
-		Kind:       "Alert",
-		Plural:     "alerts",
-		Singular:   "alert",
-		Scope:      horizonapi.CRDClusterScoped,
-	}))
+	apiClientset, err := clientset.NewForConfig(c.kubeConfig)
+	_, err = util.GetCustomResourceDefinition(apiClientset, "alerts.synopsys.com")
+	if err != nil {
+		deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
+			APIVersion: "apiextensions.k8s.io/v1beta1",
+			Name:       "alerts.synopsys.com",
+			Namespace:  c.config.Namespace,
+			Group:      "synopsys.com",
+			CRDVersion: "v1",
+			Kind:       "Alert",
+			Plural:     "alerts",
+			Singular:   "alert",
+			Scope:      horizonapi.CRDClusterScoped,
+		}))
+	}
 
 	err = deployer.Run()
 	if err != nil {
