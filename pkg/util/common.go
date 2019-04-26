@@ -941,22 +941,22 @@ func IsClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace strin
 
 // GetClusterRole get a cluster role
 func GetClusterRole(clientset *kubernetes.Clientset, name string) (*rbacv1.ClusterRole, error) {
-	return clientset.Rbac().ClusterRoles().Get(name, metav1.GetOptions{})
+	return clientset.RbacV1().ClusterRoles().Get(name, metav1.GetOptions{})
 }
 
 // ListClusterRoles list a cluster role
 func ListClusterRoles(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleList, error) {
-	return clientset.Rbac().ClusterRoles().List(metav1.ListOptions{LabelSelector: labelSelector})
+	return clientset.RbacV1().ClusterRoles().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateClusterRole updates the cluster role
 func UpdateClusterRole(clientset *kubernetes.Clientset, clusterRole *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
-	return clientset.Rbac().ClusterRoles().Update(clusterRole)
+	return clientset.RbacV1().ClusterRoles().Update(clusterRole)
 }
 
 // DeleteClusterRole delete a cluster role binding
 func DeleteClusterRole(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{})
+	return clientset.RbacV1().ClusterRoles().Delete(name, &metav1.DeleteOptions{})
 }
 
 // IsClusterRoleRuleExist checks whether the namespace is already exist in the rule of cluster role
