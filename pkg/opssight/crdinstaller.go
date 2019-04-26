@@ -37,6 +37,7 @@ import (
 	"github.com/juju/errors"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -79,17 +80,21 @@ func (c *CRDInstaller) Deploy() error {
 	}
 
 	// OpsSight CRD
-	deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
-		APIVersion: "apiextensions.k8s.io/v1beta1",
-		Name:       "opssights.synopsys.com",
-		Namespace:  c.config.Config.Namespace,
-		Group:      "synopsys.com",
-		CRDVersion: "v1",
-		Kind:       "OpsSight",
-		Plural:     "opssights",
-		Singular:   "opssight",
-		Scope:      horizonapi.CRDClusterScoped,
-	}))
+	apiClientset, err := clientset.NewForConfig(c.config.KubeConfig)
+	_, err = util.GetCustomResourceDefinition(apiClientset, "opssights.synopsys.com")
+	if err != nil {
+		deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
+			APIVersion: "apiextensions.k8s.io/v1beta1",
+			Name:       "opssights.synopsys.com",
+			Namespace:  c.config.Config.Namespace,
+			Group:      "synopsys.com",
+			CRDVersion: "v1",
+			Kind:       "OpsSight",
+			Plural:     "opssights",
+			Singular:   "opssight",
+			Scope:      horizonapi.CRDClusterScoped,
+		}))
+	}
 
 	err = deployer.Run()
 	if err != nil {
