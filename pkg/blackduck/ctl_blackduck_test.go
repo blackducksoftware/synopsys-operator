@@ -37,6 +37,8 @@ func TestNewBlackduckCtl(t *testing.T) {
 	assert.Equal(&Ctl{
 		Spec:                                  &blackduckv1.BlackduckSpec{},
 		Size:                                  "",
+		Version:                               "",
+		ExposeService:                         "",
 		DbPrototype:                           "",
 		ExternalPostgresPostgresHost:          "",
 		ExternalPostgresPostgresPort:          0,
@@ -49,16 +51,17 @@ func TestNewBlackduckCtl(t *testing.T) {
 		LivenessProbes:                        false,
 		ScanType:                              "",
 		PersistentStorage:                     false,
-		PVCJSONSlice:                          []string{},
+		PVCFilePath:                           "",
 		CertificateName:                       "",
-		Certificate:                           "",
-		CertificateKey:                        "",
-		ProxyCertificate:                      "",
+		CertificateFilePath:                   "",
+		CertificateKeyFilePath:                "",
+		ProxyCertificateFilePath:              "",
+		AuthCustomCAFilePath:                  "",
 		Type:                                  "",
 		DesiredState:                          "",
 		Environs:                              []string{},
 		ImageRegistries:                       []string{},
-		ImageUIDMapJSONSlice:                  []string{},
+		ImageUIDMapFilePath:                   "",
 		LicenseKey:                            "",
 	}, blackduckCtl)
 }
@@ -97,19 +100,8 @@ func TestCheckSpecFlags(t *testing.T) {
 		}},
 		// case
 		{input: &Ctl{
-			Spec:         &blackduckv1.BlackduckSpec{},
-			PVCJSONSlice: []string{"invalid:"},
-		}},
-		// case
-		{input: &Ctl{
 			Spec:     &blackduckv1.BlackduckSpec{},
 			Environs: []string{"invalid"},
-		}},
-		// case
-		{input: &Ctl{
-			Spec:                 &blackduckv1.BlackduckSpec{},
-			ImageUIDMapJSONSlice: []string{"invalid:"},
-			LicenseKey:           "",
 		}},
 	}
 
@@ -117,7 +109,6 @@ func TestCheckSpecFlags(t *testing.T) {
 		assert.Error(test.input.CheckSpecFlags())
 	}
 }
-
 func TestSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	blackduckCtl := NewBlackduckCtl()
@@ -126,12 +117,17 @@ func TestSwitchSpec(t *testing.T) {
 		input    string
 		expected *blackduckv1.BlackduckSpec
 	}{
-		{input: "empty", expected: &blackduckv1.BlackduckSpec{}},
-		{input: "persistentStorageLatest", expected: crddefaults.GetBlackDuckDefaultPersistentStorageLatest()},
-		{input: "persistentStorageV1", expected: crddefaults.GetBlackDuckDefaultPersistentStorageV1()},
-		{input: "externalPersistentStorageLatest", expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()},
-		{input: "externalPersistentStorageV1", expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()},
-		{input: "default", expected: crddefaults.GetHubDefaultValue()},
+		{input: EmptySpec, expected: &blackduckv1.BlackduckSpec{}},
+		{input: TemplateSpec, expected: crddefaults.GetBlackDuckTemplate()},
+		{input: PersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageLatest()},
+		{input: PersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageV1()},
+		{input: ExternalPersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()},
+		{input: ExternalPersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()},
+		{input: BDBASpec, expected: crddefaults.GetBlackDuckDefaultBDBA()},
+		{input: EphemeralSpec, expected: crddefaults.GetBlackDuckDefaultEphemeral()},
+		{input: EphemeralCustomAuthCASpec, expected: crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()},
+		{input: ExternalDBSpec, expected: crddefaults.GetBlackDuckDefaultExternalDB()},
+		{input: IPV6DisabledSpec, expected: crddefaults.GetBlackDuckDefaultIPV6Disabled()},
 	}
 
 	// test cases: "empty", "persistentStorage", "default"
@@ -153,32 +149,33 @@ func TestAddSpecFlags(t *testing.T) {
 	ctl.AddSpecFlags(actualCmd, true)
 
 	cmd := &cobra.Command{}
-	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large")
-	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "TODO")
+	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large, x-large")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Black Duck Version")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose webserver service [LOADBALANCER/NODEPORT/OPENSHIFT]")
+	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "Port for Postgres")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresPostgresAdmin, "Name of Admin for Postgres")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUser, "external-postgres-user", ctl.ExternalPostgresPostgresUser, "Username for Postgres")
-	cmd.Flags().BoolVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "TODO")
+	cmd.Flags().BoolVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "Use SSL for Postgres connection")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresPostgresAdminPassword, "Password for the Postgres Admin")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "Password for a Postgres User")
-	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "TODO")
+	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
-	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "TODO")
+	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "Type of Scan artifact. Possible values are Artifacts/Images/Custom")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
-	cmd.Flags().StringSliceVar(&ctl.PVCJSONSlice, "pvc", ctl.PVCJSONSlice, "List of PVC json structs")
-	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "TODO")
-	cmd.Flags().StringVar(&ctl.Certificate, "certificate", ctl.Certificate, "TODO")
-	cmd.Flags().StringVar(&ctl.CertificateKey, "certificate-key", ctl.CertificateKey, "TODO")
-	cmd.Flags().StringVar(&ctl.ProxyCertificate, "proxy-certificate", ctl.ProxyCertificate, "TODO")
+	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
+	cmd.Flags().StringVar(&ctl.CertificateName, "db-certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to a file for the Black Duck nginx certificate")
+	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to a file for the Black Duck nginx certificate key")
+	cmd.Flags().StringVar(&ctl.ProxyCertificateFilePath, "proxy-certificate-file-path", ctl.ProxyCertificateFilePath, "Absolute path to a file for the Black Duck proxy certificate")
+	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringSliceVar(&ctl.ImageUIDMapJSONSlice, "image-uid-map", ctl.ImageUIDMapJSONSlice, "TODO")
-	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key for the Knowledge Base")
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Blackduck Version")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose service type [Loadbalancer/Nodeport]")
+	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
+	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
@@ -215,6 +212,26 @@ func TestSetFlag(t *testing.T) {
 				Size: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{Size: "changed"},
+		},
+		// case
+		{
+			flagName:   "version",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:    &blackduckv1.BlackduckSpec{},
+				Version: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Version: "changed"},
+		},
+		// case
+		{
+			flagName:   "expose-service",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:          &blackduckv1.BlackduckSpec{},
+				ExposeService: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{ExposeService: "changed"},
 		},
 		// case
 		{
@@ -352,53 +369,13 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "pvc",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:         &blackduckv1.BlackduckSpec{},
-				PVCJSONSlice: []string{"{\"name\": \"changed\", \"size\": \"1G\"}"},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "changed", Size: "1G"}}},
-		},
-		// case
-		{
-			flagName:   "db-certificate-name",
+			flagName:   "certificate-name",
 			initialCtl: NewBlackduckCtl(),
 			changedCtl: &Ctl{
 				Spec:            &blackduckv1.BlackduckSpec{},
 				CertificateName: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{CertificateName: "changed"},
-		},
-		// case
-		{
-			flagName:   "certificate",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:        &blackduckv1.BlackduckSpec{},
-				Certificate: "changed",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{Certificate: "changed"},
-		},
-		// case
-		{
-			flagName:   "certificate-key",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:           &blackduckv1.BlackduckSpec{},
-				CertificateKey: "changed",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{CertificateKey: "changed"},
-		},
-		// case
-		{
-			flagName:   "proxy-certificate",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:             &blackduckv1.BlackduckSpec{},
-				ProxyCertificate: "changed",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{ProxyCertificate: "changed"},
 		},
 		// case
 		{
@@ -444,16 +421,6 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "image-uid-map",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{},
-				ImageUIDMapJSONSlice: []string{"{\"Key\": \"changed\", \"Value\": 1}"},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{ImageUIDMap: map[string]int64{"changed": 1}},
-		},
-		// case
-		{
 			flagName:   "license-key",
 			initialCtl: NewBlackduckCtl(),
 			changedCtl: &Ctl{
@@ -461,26 +428,6 @@ func TestSetFlag(t *testing.T) {
 				LicenseKey: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{LicenseKey: "changed"},
-		},
-		// case
-		{
-			flagName:   "version",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:    &blackduckv1.BlackduckSpec{},
-				Version: "changed",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{Version: "changed"},
-		},
-		// case
-		{
-			flagName:   "expose-service",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:          &blackduckv1.BlackduckSpec{},
-				ExposeService: "changed",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{ExposeService: "changed"},
 		},
 		// case
 		{

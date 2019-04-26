@@ -92,7 +92,6 @@ func (c *ClusterRoleBinding) add(isPatched bool) (bool, error) {
 	var err error
 	for _, clusterRoleBinding := range c.clusterRoleBindings {
 		if _, ok := c.oldClusterRoleBindings[clusterRoleBinding.GetName()]; !ok {
-			log.Printf("cluster role binding %s added to deployer", clusterRoleBinding.GetName())
 			c.deployer.Deployer.AddClusterRoleBinding(clusterRoleBinding)
 			isAdded = true
 		} else {

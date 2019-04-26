@@ -35,7 +35,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) *components.Replicatio
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RabbitmqMemoryLimit, MaxMem: c.hubContainerFlavor.RabbitmqMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
-		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubDBConfigEnv()},
+		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
 		VolumeMounts: volumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: rabbitmqPort, Protocol: horizonapi.ProtocolTCP}},
 	}
@@ -53,7 +53,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) *components.Replicatio
 
 	rabbitmq := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
 		Name: "rabbitmq", Replicas: util.IntToInt32(1)}, "", []*util.Container{rabbitmqContainerConfig}, c.getRabbitmqVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("rabbitmq"), c.GetLabel("rabbitmq"))
+		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("rabbitmq"), c.GetLabel("rabbitmq"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
 	return rabbitmq
 }

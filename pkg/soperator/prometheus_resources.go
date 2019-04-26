@@ -23,39 +23,62 @@ package soperator
 
 import (
 	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetPrometheusService creates a Horizon Service component for Prometheus
-func (specConfig *PrometheusSpecConfig) GetPrometheusService() *horizoncomponents.Service {
-
+func (specConfig *PrometheusSpecConfig) GetPrometheusService() []*horizoncomponents.Service {
+	services := []*horizoncomponents.Service{}
 	// Add Service for Prometheus
 	prometheusService := horizoncomponents.NewService(horizonapi.ServiceConfig{
 		APIVersion: "v1",
-		//ClusterName:              "string",
-		Name:      "prometheus",
-		Namespace: specConfig.Namespace,
-		//ExternalName:             "string",
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
-		//ClusterIP:                "string",
-		//PublishNotReadyAddresses: "bool",
-		//TrafficPolicy:            "TrafficPolicyType",
-		//Affinity:                 "string",
+		Name:       "prometheus",
+		Namespace:  specConfig.Namespace,
 	})
 	prometheusService.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	prometheusService.AddSelectors(map[string]string{"app": "prometheus"})
+	prometheusService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
 	prometheusService.AddPort(horizonapi.ServicePortConfig{
 		Name:       "prometheus",
 		Port:       9090,
 		TargetPort: "9090",
-		//NodePort:   "int32",
-		Protocol: horizonapi.ProtocolTCP,
+		Protocol:   horizonapi.ProtocolTCP,
 	})
 
-	prometheusService.AddLabels(map[string]string{"name": "prometheus", "app": "prometheus"})
-	return prometheusService
+	prometheusService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
+	services = append(services, prometheusService)
+
+	if strings.EqualFold(specConfig.Expose, "NODEPORT") || strings.EqualFold(specConfig.Expose, "LOADBALANCER") {
+
+		var exposedServiceType horizonapi.ClusterIPServiceType
+		if strings.EqualFold(specConfig.Expose, "NODEPORT") {
+			exposedServiceType = horizonapi.ClusterIPServiceTypeNodePort
+		} else {
+			exposedServiceType = horizonapi.ClusterIPServiceTypeLoadBalancer
+		}
+		// Add Service for Prometheus
+		prometheusExposedService := horizoncomponents.NewService(horizonapi.ServiceConfig{
+			APIVersion:    "v1",
+			Name:          "prometheus-exposed",
+			Namespace:     specConfig.Namespace,
+			IPServiceType: exposedServiceType,
+		})
+		prometheusExposedService.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
+		prometheusExposedService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
+		prometheusExposedService.AddPort(horizonapi.ServicePortConfig{
+			Name:       "prometheus",
+			Port:       9090,
+			TargetPort: "9090",
+			Protocol:   horizonapi.ProtocolTCP,
+		})
+
+		prometheusExposedService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
+		services = append(services, prometheusExposedService)
+	}
+	return services
 }
 
 // GetPrometheusDeployment creates a Horizon Deployment component for Prometheus
@@ -64,93 +87,40 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 	var prometheusDeploymentReplicas int32 = 1
 	prometheusDeployment := horizoncomponents.NewDeployment(horizonapi.DeploymentConfig{
 		APIVersion: "extensions/v1beta1",
-		//ClusterName:             "string",
-		Name:      "prometheus",
-		Namespace: specConfig.Namespace,
-		Replicas:  &prometheusDeploymentReplicas,
-		//Recreate:                "bool",
-		//MaxUnavailable:          "string",
-		//MaxExtra:                "string",
-		//MinReadySeconds:         "int32",
-		//RevisionHistoryLimit:    "*int32",
-		//Paused:                  "bool",
-		//ProgressDeadlineSeconds: "*int32",
+		Name:       "prometheus",
+		Namespace:  specConfig.Namespace,
+		Replicas:   &prometheusDeploymentReplicas,
 	})
-	prometheusDeployment.AddMatchLabelsSelectors(map[string]string{"app": "prometheus"})
+	prometheusDeployment.AddMatchLabelsSelectors(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
 
 	prometheusPod := horizoncomponents.NewPod(horizonapi.PodConfig{
 		APIVersion: "v1",
-		//ClusterName          :  "string",
-		Name:      "prometheus",
-		Namespace: specConfig.Namespace,
-		//ServiceAccount       :  "string",
-		//RestartPolicy        :  "RestartPolicyType",
-		//TerminationGracePeriod : "*int64",
-		//ActiveDeadline       :  "*int64",
-		//Node                 :  "string",
-		//FSGID                :  "*int64",
-		//Hostname             :  "string",
-		//SchedulerName        :  "string",
-		//DNSPolicy           :   "DNSPolicyType",
-		//PriorityValue       :   "*int32",
-		//PriorityClass        :  "string",
-		//SELinux              :  "*SELinuxType",
-		//RunAsUser            :  "*int64",
-		//RunAsGroup           :  "*int64",
-		//ForceNonRoot         :  "*bool",
+		Name:       "prometheus",
+		Namespace:  specConfig.Namespace,
 	})
 
 	prometheusContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
-		Name: "prometheus",
-		Args: []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/"},
-		//Command:                  "[]string",
+		Name:  "prometheus",
+		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/"},
 		Image: specConfig.Image,
-		//PullPolicy:               "PullPolicyType",
-		//MinCPU:                   "string",
-		//MaxCPU:                   "string",
-		//MinMem:                   "string",
-		//MaxMem:                   "string",
-		//Privileged:               "*bool",
-		//AllowPrivilegeEscalation: "*bool",
-		//ReadOnlyFS:               "*bool",
-		//ForceNonRoot:             "*bool",
-		//SELinux:                  "*SELinuxType",
-		//UID:                      "*int64",
-		//AllocateStdin:            "bool",
-		//StdinOnce:                "bool",
-		//AllocateTTY:              "bool",
-		//WorkingDirectory:         "string",
-		//TerminationMsgPath:       "string",
-		//TerminationMsgPolicy:     "TerminationMessagePolicyType",
 	})
 
 	prometheusContainer.AddPort(horizonapi.PortConfig{
-		Name: "web",
-		//Protocol:      "ProtocolType",
-		//IP:            "string",
-		//HostPort:      "string",
+		Name:          "web",
 		ContainerPort: "9090",
 	})
 
 	prometheusContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/data",
-		//Propagation: "*MountPropagationType",
-		Name: "data",
-		//SubPath:     "string",
-		//ReadOnly:    "*bool",
+		Name:      "data",
 	})
 	prometheusContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/etc/prometheus",
-		//Propagation: "*MountPropagationType",
-		Name: "config-volume",
-		//SubPath:     "string",
-		//ReadOnly:    "*bool",
+		Name:      "config-volume",
 	})
 
 	prometheusEmptyDirVolume, err := horizoncomponents.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "data",
-		//Medium:     "StorageMediumType",
-		//SizeLimit:  "string",
 	})
 	if err != nil {
 		fmt.Printf("Error creating EmptyDirVolume for Prometheus: %s", err)
@@ -159,18 +129,16 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 	prometheusConfigMapVolume := horizoncomponents.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "config-volume",
 		MapOrSecretName: "prometheus",
-		//Items:           "map[string]KeyAndMode",
-		//DefaultMode:     "*int32",
-		//Required:        "*bool",
+		DefaultMode:     util.IntToInt32(420),
 	})
 
 	prometheusPod.AddContainer(prometheusContainer)
 	prometheusPod.AddVolume(prometheusEmptyDirVolume)
 	prometheusPod.AddVolume(prometheusConfigMapVolume)
-	prometheusPod.AddLabels(map[string]string{"app": "prometheus"})
+	prometheusPod.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
 	prometheusDeployment.AddPod(prometheusPod)
 
-	prometheusDeployment.AddLabels(map[string]string{"app": "prometheus"})
+	prometheusDeployment.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
 	return prometheusDeployment
 }
 
@@ -179,16 +147,16 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncompone
 	// Add prometheus config map
 	prometheusConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
 		APIVersion: "v1",
-		//ClusterName: "string",
-		Name:      "prometheus",
-		Namespace: specConfig.Namespace,
+		Name:       "prometheus",
+		Namespace:  specConfig.Namespace,
 	})
 
 	cmData := map[string]string{}
 	cmData["prometheus.yml"] = "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080', 'synopsys-operator-ui:3000']}]}]}"
-	cmData["image"] = specConfig.Image
+	cmData["Image"] = specConfig.Image
+	cmData["Expose"] = specConfig.Expose
 	prometheusConfigMap.AddData(cmData)
 
-	prometheusConfigMap.AddLabels(map[string]string{"app": "prometheus"})
+	prometheusConfigMap.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
 	return prometheusConfigMap
 }

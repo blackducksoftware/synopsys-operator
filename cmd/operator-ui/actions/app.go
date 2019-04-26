@@ -60,7 +60,7 @@ func App() *buffalo.App {
 		// creates the in-cluster config
 		kubeConfig, err := rest.InClusterConfig()
 		if err != nil {
-			log.Errorf("error getting in cluster config. Fallback to native config. Error message: %s\n", err)
+			log.Warnf("error getting in cluster config. Fallback to native config. Error message: %s", err)
 			kubeConfig, err = newKubeClientFromOutsideCluster()
 		}
 

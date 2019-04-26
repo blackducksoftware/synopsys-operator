@@ -27,53 +27,52 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// flag for -output functionality
+var getOutputFormat string
+
+// flag for -selector functionality
+var getSelector string
+
 // getCmd lists resources in the cluster
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: "List Synopsys Resources in your cluster",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		// Display synopsysctl's Help instead of sending to oc/kubectl
-		if len(args) == 1 && args[0] == "--help" {
-			return fmt.Errorf("Help Called")
-		}
-		return nil
-	},
+	Short: "Display Synopsys Resources from your cluster",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting a Non-Synopsys Resource\n")
-		kubeCmdArgs := append([]string{"get"}, args...)
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		if err != nil {
-			log.Errorf("Error Getting the Resource: %s", out)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
+		return fmt.Errorf("Not a Valid Command")
 	},
 }
 
-// getBlackduckCmd lists Blackducks in the cluster
+// getBlackduckCmd Display one or many Black Ducks
 var getBlackduckCmd = &cobra.Command{
-	Use:     "blackduck",
+	Use:     "blackduck [NAME]",
 	Aliases: []string{"blackducks"},
-	Short:   "Get a list of Blackducks in the cluster",
+	Short:   "Display one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Blackducks\n")
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "blackducks")
+		log.Debugf("getting Black Ducks...")
+		kCmd := []string{"get", "blackducks"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args...)
+		}
+		if cmd.LocalFlags().Lookup("output").Changed {
+			kCmd = append(kCmd, "-o")
+			kCmd = append(kCmd, getOutputFormat)
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, getSelector)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
-			log.Errorf("Error getting Blackducks: %s", out)
+			log.Errorf("error getting Black Ducks due to %+v - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -87,20 +86,24 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 	Short: "Get the root key of Black Duck for source code upload",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("Black Duck name or file path to store the master key is missing")
+			return fmt.Errorf("this command takes 2 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Blackduck Root Key\n")
 		namespace := args[0]
 		filePath := args[1]
+
+		log.Debugf("getting Black Duck %s Root Key...", namespace)
+
 		_, err := util.GetHub(blackduckClient, metav1.NamespaceDefault, namespace)
 		if err != nil {
 			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
 			return nil
 		}
-		operatorNamespace, err := soperator.GetOperatorNamespace(restconfig)
+
+		log.Debugf("getting Synopsys-Operator's Secret")
+		operatorNamespace, err := GetOperatorNamespace()
 		if err != nil {
 			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
 			return nil
@@ -132,26 +135,36 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 			log.Errorf("error writing to %s because %+v", fileName, err)
 			return nil
 		}
+		log.Infof("successfully wrote Root Key to %s", fileName)
 		return nil
 	},
 }
 
-// getOpsSightCmd lists OpsSights in the cluster
+// getOpsSightCmd Display one or many OpsSights
 var getOpsSightCmd = &cobra.Command{
-	Use:     "opssight",
+	Use:     "opssight [NAME]",
 	Aliases: []string{"opssights"},
-	Short:   "Get a list of OpsSights in the cluster",
+	Short:   "Display one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting OpsSights\n")
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "opssights")
+		log.Debugf("getting OpsSights...")
+		kCmd := []string{"get", "opssights"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args...)
+		}
+		if cmd.LocalFlags().Lookup("output").Changed {
+			kCmd = append(kCmd, "-o")
+			kCmd = append(kCmd, getOutputFormat)
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, getSelector)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
-			log.Errorf("Error getting OpsSights: %s", out)
+			log.Errorf("error getting OpsSights due to %+v - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -159,22 +172,31 @@ var getOpsSightCmd = &cobra.Command{
 	},
 }
 
-// getAlertCmd lists Alerts in the cluster
+// getAlertCmd Display one or many Alerts
 var getAlertCmd = &cobra.Command{
-	Use:     "alert",
+	Use:     "alert [NAME]",
 	Aliases: []string{"alerts"},
-	Short:   "Get a list of Alerts in the cluster",
+	Short:   "Display one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return fmt.Errorf("This command accepts 0 arguments")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Getting Alerts\n")
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, "get", "alerts")
+		log.Debugf("getting Alerts...")
+		kCmd := []string{"get", "alerts"}
+		if len(args) > 0 {
+			kCmd = append(kCmd, args...)
+		}
+		if cmd.LocalFlags().Lookup("output").Changed {
+			kCmd = append(kCmd, "-o")
+			kCmd = append(kCmd, getOutputFormat)
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kCmd = append(kCmd, "-l")
+			kCmd = append(kCmd, getSelector)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
 		if err != nil {
-			log.Errorf("Error getting Alerts with KubeCmd: %s", out)
+			log.Errorf("error getting Alerts due to %+v - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -183,13 +205,20 @@ var getAlertCmd = &cobra.Command{
 }
 
 func init() {
-	getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
+	//(PassCmd) getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
 	rootCmd.AddCommand(getCmd)
 
 	// Add Commands
-	getCmd.AddCommand(getBlackduckCmd)
+	getBlackduckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
+	getBlackduckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getBlackduckCmd.AddCommand(getBlackduckRootKeyCmd)
+	getCmd.AddCommand(getBlackduckCmd)
 
+	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
+	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getOpsSightCmd)
+
+	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
+	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getAlertCmd)
 }

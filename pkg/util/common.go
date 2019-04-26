@@ -51,6 +51,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/api/storage/v1beta1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -228,8 +230,9 @@ func CreateReplicationController(replicationControllerConfig *horizonapi.Replica
 }
 
 // CreateReplicationControllerFromContainer will create a replication controller with multiple containers inside a pod
-func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string, labelSelector map[string]string) *components.ReplicationController {
+func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string, labelSelector map[string]string, imagePullSecrets []string) *components.ReplicationController {
 	pod := CreatePod(replicationControllerConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs, labels)
+	pod.AddImagePullSecrets(imagePullSecrets)
 	rc := CreateReplicationController(replicationControllerConfig, pod, labels, labelSelector)
 	return rc
 }
@@ -976,7 +979,7 @@ func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	} else {
 		_, err := GetOpenShiftRoutes(routeClient, "default", "docker-registry")
 		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("Ignoring routes for kubernetes cluster")
+			// log.Debugf("Ignoring routes for kubernetes cluster")
 			routeClient = nil
 		}
 	}
@@ -989,19 +992,19 @@ func GetOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string
 }
 
 // CreateOpenShiftRoutes creates a OpenShift routes
-func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string) (*routev1.Route, error) {
+func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string, portName string, tlsTerminationType routev1.TLSTerminationType) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Create(&routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: routev1.RouteSpec{
-			TLS: &routev1.TLSConfig{Termination: routev1.TLSTerminationPassthrough},
+			TLS: &routev1.TLSConfig{Termination: tlsTerminationType},
 			To: routev1.RouteTargetReference{
 				Kind: routeKind,
 				Name: serviceName,
 			},
-			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: fmt.Sprintf("port-%s", serviceName)}},
+			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: portName}},
 		},
 	})
 }
@@ -1166,4 +1169,66 @@ func UniqueValues(input []string) []string {
 	}
 
 	return u
+}
+
+// GetCustomResourceDefinition get the custom resource defintion
+func GetCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, name string) (*apiextensions.CustomResourceDefinition, error) {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(name, metav1.GetOptions{})
+}
+
+// ListCustomResourceDefinitions list the custom resource defintions
+func ListCustomResourceDefinitions(apiExtensionClient *apiextensionsclient.Clientset, labelSelector string) (*apiextensions.CustomResourceDefinitionList, error) {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// UpdateCustomResourceDefinition updates the custom resource defintion
+func UpdateCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, crd *apiextensions.CustomResourceDefinition) (*apiextensions.CustomResourceDefinition, error) {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Update(crd)
+}
+
+// DeleteCustomResourceDefinition deletes the custom resource defintion
+func DeleteCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, name string) error {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(name, &metav1.DeleteOptions{})
+}
+
+// WaitUntilPodsAreReady will wait for the pods to be ready
+func WaitUntilPodsAreReady(clientset *kubernetes.Clientset, namespace string, labelSelector string, timeoutInSeconds int64) (bool, error) {
+	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
+	timeout := time.NewTimer(time.Duration(timeoutInSeconds) * time.Second)
+	// ticker starts and execute the task for every n intervals
+	ticker := time.NewTicker(10 * time.Second)
+	for {
+		select {
+		case <-timeout.C:
+			ticker.Stop()
+			return false, fmt.Errorf("[NS: %s | Label: %s] the pods weren't ready - timing out after %d seconds", namespace, labelSelector, timeoutInSeconds)
+		case <-ticker.C:
+			ready, err := IsPodReady(clientset, namespace, labelSelector)
+			if err != nil || ready {
+				timeout.Stop()
+				ticker.Stop()
+				return ready, err
+			}
+		}
+	}
+}
+
+// IsPodReady returns whether the pods are ready or not
+func IsPodReady(clientset *kubernetes.Clientset, namespace string, labelSelector string) (bool, error) {
+	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	for _, p := range pods.Items {
+		for _, condition := range p.Status.Conditions {
+			if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionFalse {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+
 }

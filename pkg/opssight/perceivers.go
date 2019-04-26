@@ -68,7 +68,7 @@ func (p *SpecConfig) perceiverReplicationController(name string, replicas int32)
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	rc.AddLabelSelectors(map[string]string{"name": name, "app": "opssight"})
-
+	rc.AddLabels(map[string]string{"name": name, "app": "opssight"})
 	return rc
 }
 
@@ -151,10 +151,11 @@ func (p *SpecConfig) perceiverService(name string) *components.Service {
 		Port:       int32(p.opssight.Spec.Perceiver.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Perceiver.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", name),
 	})
 
 	service.AddLabels(map[string]string{"name": name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": name})
+	service.AddSelectors(map[string]string{"name": name, "app": "opssight"})
 
 	return service
 }

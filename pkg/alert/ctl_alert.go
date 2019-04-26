@@ -104,15 +104,24 @@ func (ctl *Ctl) CheckSpecFlags() error {
 	return nil
 }
 
+// Constants for Default Specs
+const (
+	EmptySpec    string = "empty"
+	TemplateSpec string = "template"
+	DefaultSpec  string = "default"
+)
+
 // SwitchSpec switches the Alert's Spec to a different predefined spec
 func (ctl *Ctl) SwitchSpec(specType string) error {
 	switch specType {
-	case "empty":
+	case EmptySpec:
 		ctl.Spec = &alertapi.AlertSpec{}
-	case "default":
-		ctl.Spec = crddefaults.GetAlertDefaultValue()
+	case TemplateSpec:
+		ctl.Spec = crddefaults.GetAlertTemplate()
+	case DefaultSpec:
+		ctl.Spec = crddefaults.GetAlertDefault()
 	default:
-		return fmt.Errorf("Alert Spec Type %s does not match: default or empty", specType)
+		return fmt.Errorf("Alert Spec Type %s is not valid", specType)
 	}
 	return nil
 }
@@ -147,7 +156,7 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 // SetFlag sets an Alert's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s: CHANGED\n", f.Name)
+		log.Debugf("Flag %s: CHANGED", f.Name)
 		switch f.Name {
 		case "version":
 			ctl.Spec.Version = ctl.Version
@@ -182,10 +191,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "alert-desired-state":
 			ctl.Spec.DesiredState = ctl.DesiredState
 		default:
-			log.Debugf("Flag %s: Not Found\n", f.Name)
+			log.Debugf("Flag %s: Not Found", f.Name)
 		}
 	} else {
-		log.Debugf("Flag %s: UNCHANGED\n", f.Name)
+		log.Debugf("Flag %s: UNCHANGED", f.Name)
 	}
 }
 

@@ -38,6 +38,7 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	rc.AddLabelSelectors(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
+	rc.AddLabels(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
 	pod, err := p.perceptorSkyfirePod()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create skyfire volumes")
@@ -169,7 +170,7 @@ func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 	})
 
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": p.opssight.Spec.Skyfire.Name})
+	service.AddSelectors(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
 
 	return service
 }

@@ -22,14 +22,11 @@ under the License.
 package soperator
 
 import (
-	"crypto/x509/pkix"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
@@ -48,7 +45,7 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		//ReadySeconds: "int32",
 	})
 
-	synopsysOperatorRC.AddLabelSelectors(map[string]string{"name": "synopsys-operator"})
+	synopsysOperatorRC.AddLabelSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
 
 	synopsysOperatorPod := horizoncomponents.NewPod(horizonapi.PodConfig{
 		APIVersion: "v1",
@@ -177,7 +174,7 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainer)
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainerUI)
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
-	synopsysOperatorPod.AddLabels(map[string]string{"name": "synopsys-operator", "app": "synopsys-operator"})
+	synopsysOperatorPod.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 
 	synopsysOperatorTlSVolume := horizoncomponents.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "synopsys-operator-tls",
@@ -187,7 +184,7 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 	synopsysOperatorPod.AddVolume(synopsysOperatorTlSVolume)
 	synopsysOperatorRC.AddPod(synopsysOperatorPod)
 
-	synopsysOperatorRC.AddLabels(map[string]string{"app": "synopsys-operator"})
+	synopsysOperatorRC.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return synopsysOperatorRC
 }
 
@@ -202,7 +199,7 @@ func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service 
 		Namespace:  specConfig.Namespace,
 	})
 
-	synopsysOperatorService.AddSelectors(map[string]string{"name": "synopsys-operator"})
+	synopsysOperatorService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	synopsysOperatorService.AddPort(horizonapi.ServicePortConfig{
 		Name:       "synopsys-operator-ui",
 		Port:       3000,
@@ -228,7 +225,7 @@ func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service 
 		Protocol:   horizonapi.ProtocolTCP,
 	})
 
-	synopsysOperatorService.AddLabels(map[string]string{"app": "synopsys-operator"})
+	synopsysOperatorService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	services = append(services, synopsysOperatorService)
 
 	if strings.EqualFold(specConfig.Expose, "NODEPORT") || strings.EqualFold(specConfig.Expose, "LOADBALANCER") {
@@ -247,14 +244,14 @@ func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service 
 			Namespace:     specConfig.Namespace,
 			IPServiceType: exposedServiceType,
 		})
-		synopsysOperatorExposedService.AddSelectors(map[string]string{"name": "synopsys-operator"})
+		synopsysOperatorExposedService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
 		synopsysOperatorExposedService.AddPort(horizonapi.ServicePortConfig{
 			Name:       "synopsys-operator-ui",
 			Port:       80,
 			TargetPort: "3000",
 			Protocol:   horizonapi.ProtocolTCP,
 		})
-		synopsysOperatorExposedService.AddLabels(map[string]string{"app": "synopsys-operator"})
+		synopsysOperatorExposedService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 		services = append(services, synopsysOperatorExposedService)
 	}
 
@@ -281,6 +278,8 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 		"PodWaitTimeoutSeconds":         specConfig.PodWaitTimeoutSeconds,
 		"ResyncIntervalInSeconds":       specConfig.ResyncIntervalInSeconds,
 		"TerminationGracePeriodSeconds": specConfig.TerminationGracePeriodSeconds,
+		"Image":                         specConfig.Image,
+		"Expose":                        specConfig.Expose,
 	}
 	bytes, err := json.Marshal(configData)
 	if err != nil {
@@ -288,10 +287,9 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 	}
 
 	cmData["config.json"] = string(bytes)
-	cmData["image"] = specConfig.Image
 	synopsysOperatorConfigMap.AddData(cmData)
 
-	synopsysOperatorConfigMap.AddLabels(map[string]string{"app": "synopsys-operator"})
+	synopsysOperatorConfigMap.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return synopsysOperatorConfigMap, nil
 }
 
@@ -304,7 +302,7 @@ func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.Ser
 		Namespace:  specConfig.Namespace,
 	})
 
-	synopsysOperatorServiceAccount.AddLabels(map[string]string{"app": "synopsys-operator"})
+	synopsysOperatorServiceAccount.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return synopsysOperatorServiceAccount
 }
 
@@ -324,10 +322,10 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 	synopsysOperatorClusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
 		Kind:     "ClusterRole",
-		Name:     "cluster-admin",
+		Name:     "synopsys-operator-admin",
 	})
 
-	synopsysOperatorClusterRoleBinding.AddLabels(map[string]string{"app": "synopsys-operator"})
+	synopsysOperatorClusterRoleBinding.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return synopsysOperatorClusterRoleBinding
 }
 
@@ -412,12 +410,8 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	// Add Openshift rules
-	restConfig, err := protoform.GetKubeConfig()
-	if err != nil {
-		log.Errorf("Error getting Kube Rest Config: %s", err)
-	}
-	routeClient := util.GetRouteClient(restConfig) // kube doesn't have a routeclient
-	if routeClient != nil {                        // openshift: has a routeClient
+	routeClient := util.GetRouteClient(specConfig.RestConfig) // kube doesn't have a routeclient
+	if routeClient != nil {                                   // openshift: has a routeClient
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 			Verbs:           []string{"get", "update", "patch"},
 			APIGroups:       []string{"security.openshift.io"},
@@ -441,36 +435,27 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 			ResourceNames:   []string{},
 			NonResourceURLs: []string{},
 		})
-	} else if err != nil { // Kube or Error
-		log.Warnf("Skipping Openshift Cluster Role Rules: %s", err)
+	} else { // Kube or Error
+		log.Debug("Skipping Openshift Cluster Role Rules")
 	}
 
-	synopsysOperatorClusterRole.AddLabels(map[string]string{"app": "synopsys-operator"})
+	synopsysOperatorClusterRole.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return synopsysOperatorClusterRole
 }
 
 // GetTLSCertificateSecret creates a TLS certificate in horizon format
 func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secret {
-	//Generate certificate and key secret
-	cert, key, err := util.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
-		CommonName: fmt.Sprintf("synopsys-operator.%s.svc", specConfig.Namespace),
-	})
-	if err != nil {
-		log.Error("couldn't generate certificate and key.")
-		return nil
-	}
-
 	tlsSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 		Name:      "synopsys-operator-tls",
 		Namespace: specConfig.Namespace,
 		Type:      specConfig.SecretType,
 	})
-	tlsSecret.AddStringData(map[string]string{
-		"cert.crt": cert,
-		"cert.key": key,
+	tlsSecret.AddData(map[string][]byte{
+		"cert.crt": []byte(specConfig.Certificate),
+		"cert.key": []byte(specConfig.CertificateKey),
 	})
 
-	tlsSecret.AddLabels(map[string]string{"app": "synopsys-operator"})
+	tlsSecret.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return tlsSecret
 }
 
@@ -491,6 +476,6 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 		"SEAL_KEY":          []byte(specConfig.SealKey),
 	})
 
-	synopsysOperatorSecret.AddLabels(map[string]string{"app": "synopsys-operator"})
+	synopsysOperatorSecret.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return synopsysOperatorSecret
 }

@@ -33,23 +33,11 @@ type Database struct {
 }
 
 // ExecDBStatements will create the connection, execute statements and close the connection
-func ExecDBStatements(hostName string, databaseName string, user string, password string, driverName string, statements []string, checkDatabase bool) error {
+func ExecDBStatements(hostName string, databaseName string, user string, password string, driverName string, statements []string) error {
 	// create a new DB connection
 	db, err := NewDatabase(hostName, databaseName, user, password, driverName)
 	if err != nil {
 		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
-	}
-
-	// if check database is true, then verify the DB is serve to accept queries
-	if checkDatabase {
-		for {
-			log.Debug("executing SELECT 1")
-			errs := db.ExecuteStatements([]string{"SELECT 1;"})
-			if len(errs) == 0 {
-				break
-			}
-			time.Sleep(5 * time.Second)
-		}
 	}
 
 	// execute the statements

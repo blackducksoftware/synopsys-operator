@@ -31,14 +31,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	"github.com/imdario/mergo"
-
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -66,8 +65,6 @@ const (
 	Running State = "Running"
 	// Stopped is used when the instance is about to stop
 	Stopped State = "Stopped"
-	// Updating is used when the instance is about to update
-	Updating State = "Updating"
 	// Error is used when the instance deployment errored out
 	Error State = "Error"
 
@@ -166,14 +163,25 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
-	// Verify that we can access the Hub
-	hubURL := fmt.Sprintf("webserver.%s.svc", bd.Spec.Namespace)
-	h.verifyHub(hubURL, bd.Spec.Namespace)
+	if strings.EqualFold(bd.Spec.DesiredState, string(Stop)) {
+		if !strings.EqualFold(bd.Status.State, string(Stopped)) {
+			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Stopped), nil)
+			if err != nil {
+				log.Errorf("Couldn't update the blackduck state: %v", err)
+			}
+		}
+	} else {
+		if !strings.EqualFold(bd.Status.State, string(Running)) {
+			// Verify that we can access the Hub
+			hubURL := fmt.Sprintf("webserver.%s.svc", bd.Spec.Namespace)
+			status := h.verifyHub(hubURL, bd.Spec.Namespace)
 
-	if !strings.EqualFold(bd.Status.State, string(Running)) {
-		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
-		if err != nil {
-			log.Errorf("Couldn't update the blackduck state: %v", err)
+			if status {
+				bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
+				if err != nil {
+					log.Errorf("Couldn't update the blackduck state: %v", err)
+				}
+			}
 		}
 	}
 }
@@ -230,10 +238,10 @@ func (h *Handler) verifyHub(hubURL string, name string) bool {
 		Timeout: 5 * time.Second,
 	}
 
-	for i := 0; i < 120; i++ {
+	for i := 0; i < 10; i++ {
 		resp, err := client.Get(fmt.Sprintf("https://%s:443/api/current-version", hubURL))
 		if err != nil {
-			log.Debugf("unable to talk with the hub %s", hubURL)
+			log.Debugf("unable to talk with the blackduck %s", hubURL)
 			time.Sleep(10 * time.Second)
 			_, err := util.GetHub(h.blackduckClient, h.config.Namespace, name)
 			if err != nil {
@@ -244,7 +252,7 @@ func (h *Handler) verifyHub(hubURL string, name string) bool {
 
 		_, err = ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		log.Debugf("hub response status for %s is %v", hubURL, resp.Status)
+		log.Debugf("blackduck response status for %s is %v", hubURL, resp.Status)
 
 		if resp.StatusCode == 200 {
 			return true
@@ -282,7 +290,7 @@ func (h *Handler) isBinaryAnalysisEnabled(envs []string) bool {
 		if strings.Contains(value, "USE_BINARY_UPLOADS") {
 			values := strings.SplitN(value, ":", 2)
 			if len(values) == 2 {
-				mapValue := strings.Trim(values[1], " ")
+				mapValue := strings.TrimSpace(values[1])
 				if strings.EqualFold(mapValue, "1") {
 					return true
 				}

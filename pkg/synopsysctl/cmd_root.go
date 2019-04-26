@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"os"
 
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -35,10 +34,9 @@ import (
 var cfgFile string
 
 // Options flags for all commands
-var cluster string
-var kubeconfig string
-var context string
+var kubeconfig = ""
 var insecureSkipTLSVerify = false
+var logLevelCtl = "info"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -47,21 +45,19 @@ var rootCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 1 && args[0] == "--help" {
-			return fmt.Errorf("Help Called")
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Set the Log Level
+		lvl, err := log.ParseLevel(logLevelCtl)
+		if err != nil {
+			log.Errorf("ctl-log-Level '%s' is not a valid level: %s", logLevelCtl, err)
 		}
+		log.SetLevel(lvl)
+		// Sets kubeconfig and initializes resource client libraries
+		setResourceClients()
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Running Non-Synopsysctl Command\n")
-		out, err := util.RunKubeCmd(restconfig, kube, openshift, args...)
-		if err != nil {
-			log.Errorf("Error with KubeCmd: %s", out)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
+		return fmt.Errorf("Not a Valid Command")
 	},
 }
 
@@ -69,19 +65,17 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Errorf("%s", err)
 		os.Exit(1)
 	}
 }
 
 func init() {
-	setResourceClients()              // sets kubeconfig and initializes resource client libraries
-	rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
+	//(PassCmd) rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cluster, "cluster", cluster, "name of the kubeconfig cluster to use")
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "path to the kubeconfig file to use for CLI requests")
-	rootCmd.PersistentFlags().StringVar(&context, "context", context, "name of the kubeconfig context to use")
 	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "server's certificate won't be validated. HTTPS will be less secure")
+	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "log level for the Synopsysctl [trace/debug/info/warn/error/fatal/panic]")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -93,7 +87,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
+			log.Errorf("%s", err)
 			os.Exit(1)
 		}
 
@@ -106,6 +100,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		log.Infof("Using config file: %s", viper.ConfigFileUsed())
 	}
 }

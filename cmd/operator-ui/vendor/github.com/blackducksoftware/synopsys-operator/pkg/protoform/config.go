@@ -24,6 +24,7 @@ package protoform
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -81,14 +82,28 @@ func (config *Config) GetLogLevel() (log.Level, error) {
 func GetConfig(configPath string) (*Config, error) {
 	var config *Config
 
-	viper.SetConfigFile(configPath)
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %v", err)
+	if len(configPath) > 0 {
+		viper.SetConfigFile(configPath)
+		err := viper.ReadInConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read config file: %v", err)
+		}
+	} else {
+		viper.SetEnvPrefix("SO")
+		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		viper.BindEnv("DryRun")
+		viper.BindEnv("LogLevel")
+		viper.BindEnv("Namespace")
+		viper.BindEnv("Threadiness")
+		viper.BindEnv("PostgresRestartInMins")
+		viper.BindEnv("PodWaitTimeoutSeconds")
+		viper.BindEnv("ResyncIntervalInSeconds")
+		viper.BindEnv("TerminationGracePeriodSeconds")
+		viper.BindEnv("OperatorTimeBombInSeconds")
+		viper.AutomaticEnv()
 	}
 
-	err = viper.Unmarshal(&config)
+	err := viper.Unmarshal(&config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
 	}

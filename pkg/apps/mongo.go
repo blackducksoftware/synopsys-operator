@@ -90,7 +90,7 @@ func (p *Mongo) GetMongoReplicationController() *components.ReplicationControlle
 
 	mongo := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
 		Name: mongoName, Replicas: util.IntToInt32(1)}, "", []*util.Container{mongoExternalContainerConfig},
-		mongoVolumes, initContainers, []horizonapi.AffinityConfig{}, p.Labels, p.Labels)
+		mongoVolumes, initContainers, []horizonapi.AffinityConfig{}, p.Labels, p.Labels, nil)
 
 	return mongo
 }

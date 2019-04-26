@@ -40,7 +40,7 @@ func (p *SpecConfig) ScannerReplicationController() (*components.ReplicationCont
 	})
 
 	rc.AddLabelSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
-
+	rc.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 	pod, err := p.scannerPod()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create scanner pod")
@@ -128,7 +128,11 @@ func (p *SpecConfig) scannerContainer() (*components.Container, error) {
 }
 
 func (p *SpecConfig) imageFacadeContainer() (*components.Container, error) {
-	priv := true
+	priv := false
+	if !strings.EqualFold(p.opssight.Spec.ScannerPod.ImageFacade.ImagePullerType, "skopeo") {
+		priv = true
+	}
+
 	name := p.opssight.Spec.ScannerPod.ImageFacade.Name
 	container := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       name,
@@ -224,12 +228,13 @@ func (p *SpecConfig) ScannerService() *components.Service {
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name})
+	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 
 	service.AddPort(horizonapi.ServicePortConfig{
 		Port:       int32(p.opssight.Spec.ScannerPod.Scanner.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.ScannerPod.Scanner.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", p.opssight.Spec.ScannerPod.Scanner.Name),
 	})
 
 	return service
@@ -243,12 +248,13 @@ func (p *SpecConfig) ImageFacadeService() *components.Service {
 	})
 	// TODO verify that this hits the *perceptor-scanner pod* !!!
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name})
+	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 
 	service.AddPort(horizonapi.ServicePortConfig{
 		Port:       int32(p.opssight.Spec.ScannerPod.ImageFacade.Port),
 		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.ScannerPod.ImageFacade.Port),
 		Protocol:   horizonapi.ProtocolTCP,
+		Name:       fmt.Sprintf("port-%s", p.opssight.Spec.ScannerPod.ImageFacade.Name),
 	})
 
 	return service

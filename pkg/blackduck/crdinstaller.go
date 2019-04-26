@@ -95,10 +95,10 @@ func (c *CRDInstaller) Deploy() error {
 		Kind:       "Blackduck",
 		Plural:     "blackducks",
 		Singular:   "blackduck",
-		ShortNames: []string{
-			"hub",
-			"hubs",
-		},
+		// ShortNames: []string{
+		// 	"hub",
+		// 	"hubs",
+		// },
 		Scope: horizonapi.CRDClusterScoped,
 	}))
 
@@ -171,7 +171,7 @@ func (c *CRDInstaller) Deploy() error {
 
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("unable to create the hub federator resources due to %+v", err)
+		log.Errorf("unable to create the black duck crd due to %+v", err)
 	}
 
 	time.Sleep(5 * time.Second)

@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -45,23 +46,8 @@ var editAlertCtl ResourceCtl
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		// Display synopsysctl's Help instead of sending to oc/kubectl
-		if len(args) == 1 && args[0] == "--help" {
-			return fmt.Errorf("Help Called")
-		}
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing Non-Synopsys Resource\n")
-		kubeCmdArgs := append([]string{"edit"}, args...)
-		out, err := operatorutil.RunKubeCmd(restconfig, kube, openshift, kubeCmdArgs...)
-		if err != nil {
-			log.Errorf("Error Editing the Resource with KubeCmd: %s", out)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
+		return fmt.Errorf("Not a Valid Command")
 	},
 }
 
@@ -72,41 +58,47 @@ var editBlackduckCmd = &cobra.Command{
 	Short: "Edit an instance of Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing Blackduck\n")
-		// Read Commandline Parameters
 		blackduckName := args[0]
+		log.Debugf("editing Black Duck %s instance instance...", blackduckName)
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.Flags()
+		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 			if err != nil {
-				log.Errorf("%s", err)
+				log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
 				return nil
 			}
-			editBlackduckCtl.SetSpec(bd.Spec)
+			err = editBlackduckCtl.SetSpec(bd.Spec)
+			if err != nil {
+				log.Errorf("cannot set an existing %s Black Duck instance to spec due to %+v", blackduckName, err)
+				return nil
+			}
 			// Update Spec with User's Flags
 			editBlackduckCtl.SetChangedFlags(flagset)
 			// Update Blackduck with Updates
 			blackduckSpec := editBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
+			// merge environs
+			blackduckSpec.Environs = operatorutil.MergeEnvSlices(blackduckSpec.Environs, bd.Spec.Environs)
 			bd.Spec = blackduckSpec
 			_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 			if err != nil {
-				log.Errorf("%s", err)
+				log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 				return nil
 			}
 		} else {
-			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
+			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
 			if err != nil {
-				log.Errorf("Error Editing the Blackduck: %s", err)
+				log.Errorf("error editing the Black Duck: %s", err)
 				return nil
 			}
 		}
+		log.Infof("successfully updated the '%s' Black Duck instance", blackduckName)
 		return nil
 	},
 }
@@ -120,19 +112,20 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 	Short: "Add a PVC to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("This command takes 2 argument")
+			return fmt.Errorf("this command takes 2 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding PVC to Blackduck\n")
-		// Read Commandline Parameters
 		blackduckName := args[0]
 		pvcName := args[1]
+
+		log.Infof("adding PVC to Black Duck %s instance...", blackduckName)
+
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
 		// Add PVC to Spec
@@ -145,9 +138,10 @@ var editBlackduckAddPVCCmd = &cobra.Command{
 		// Update Blackduck with PVC
 		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
+		log.Infof("successfully updated the '%s' Black Duck instance", blackduckName)
 		return nil
 	},
 }
@@ -158,29 +152,31 @@ var editBlackduckAddEnvironCmd = &cobra.Command{
 	Short: "Add an Environment Variable to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("This command accepts 2 arguments")
+			return fmt.Errorf("this command takes 2 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Environ to Blackduck\n")
-		// Read Commandline Parameters
 		blackduckName := args[0]
 		environ := args[1]
+
+		log.Infof("adding Environ to Black Duck %s instance...", blackduckName)
+
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
-		// Add Environ to Spec
-		bd.Spec.Environs = append(bd.Spec.Environs, environ)
+		// Merge Environ to Spec
+		bd.Spec.Environs = operatorutil.MergeEnvSlices(strings.Split(environ, ","), bd.Spec.Environs)
 		// Update Blackduck with Environ
 		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
+		log.Infof("successfully updated the '%s' Black Duck instance", blackduckName)
 		return nil
 	},
 }
@@ -191,19 +187,20 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 	Short: "Add an Image Registry to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return fmt.Errorf("This command accepts 2 arguments")
+			return fmt.Errorf("this command takes 2 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding an Image Registry to Blackduck\n")
-		// Read Commandline Parameters
 		blackduckName := args[0]
 		registry := args[1]
+
+		log.Infof("adding an Image Registry to Black Duck %s instance...", blackduckName)
+
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
 		// Add Registry to Spec
@@ -211,9 +208,10 @@ var editBlackduckAddRegistryCmd = &cobra.Command{
 		// Update Blackduck with Environ
 		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
+		log.Infof("successfully updated the '%s' Black Duck instance", blackduckName)
 		return nil
 	},
 }
@@ -224,16 +222,17 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 	Short: "Add an Image UID to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
-			return fmt.Errorf("This command accepts 3 arguments")
+			return fmt.Errorf("this command takes 3 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding an Image UID to Blackduck\n")
-		// Read Commandline Parameters
 		blackduckName := args[0]
 		uidKey := args[1]
 		uidVal := args[2]
+
+		log.Debugf("adding an Image UID to Black Duck %s...", blackduckName)
+
 		// Get Blackduck Spec
 		bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 		if err != nil {
@@ -243,7 +242,7 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		// Add UID Mapping to Spec
 		intUIDVal, err := strconv.ParseInt(uidVal, 0, 64)
 		if err != nil {
-			fmt.Printf("Couldn't convert UID_VAL to int: %s\n", err)
+			log.Errorf("Couldn't convert UID_VAL to int: %s", err)
 		}
 		if bd.Spec.ImageUIDMap == nil {
 			bd.Spec.ImageUIDMap = make(map[string]int64)
@@ -252,9 +251,10 @@ var editBlackduckAddUIDCmd = &cobra.Command{
 		// Update Blackduck with UID mapping
 		_, err = operatorutil.UpdateBlackduck(blackduckClient, blackduckName, bd)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error updating the %s Black Duck instance due to %+v", blackduckName, err)
 			return nil
 		}
+		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
 		return nil
 	},
 }
@@ -266,17 +266,16 @@ var editOpsSightCmd = &cobra.Command{
 	Short: "Edit an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing an OpsSight\n")
-		// Read Commandline Parameters
 		opsSightName := args[0]
+		log.Debugf("Editing OpsSight %s...", opsSightName)
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.Flags()
+		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 			if err != nil {
@@ -295,12 +294,13 @@ var editOpsSightCmd = &cobra.Command{
 				return nil
 			}
 		} else {
-			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
+			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
 			if err != nil {
-				log.Errorf("Error Editing the OpsSight: %s", err)
+				log.Errorf("error Editing the OpsSight: %s", err)
 				return nil
 			}
 		}
+		log.Infof("successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -310,17 +310,19 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 	Use:   "addRegistry NAMESPACE URL USER PASSWORD",
 	Short: "Add an Internal Registry to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("This command takes 4 arguments")
+		if len(args) != 4 {
+			return fmt.Errorf("this command takes 4 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Internal Registry to OpsSight\n")
 		opsSightName := args[0]
 		regURL := args[1]
 		regUser := args[2]
 		regPass := args[3]
+
+		log.Debugf("adding Internal Registry to OpsSight %s...", opsSightName)
+
 		// Get OpsSight Spec
 		ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
@@ -340,6 +342,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
+		log.Infof("successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -350,15 +353,17 @@ var editOpsSightAddHostCmd = &cobra.Command{
 	Short: "Add a Blackduck Host to OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
-			return fmt.Errorf("This command takes 3 arguments")
+			return fmt.Errorf("this command takes 3 arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Adding Blackduck Host to OpsSight\n")
 		opsSightName := args[0]
 		domain := args[1]
 		port := args[2]
+
+		log.Debugf("adding BlackDuck Host to OpsSight %s...", opsSightName)
+
 		// Get OpsSight Spec
 		ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 		if err != nil {
@@ -370,7 +375,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 		host.Domain = domain
 		intPort, err := strconv.ParseInt(port, 0, 64)
 		if err != nil {
-			log.Errorf("Couldn't convert Port '%s' to int", port)
+			log.Errorf("couldn't convert Port '%s' to int", port)
 		}
 		host.Port = int(intPort)
 		ops.Spec.Blackduck.ExternalHosts = append(ops.Spec.Blackduck.ExternalHosts, &host)
@@ -380,6 +385,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 			log.Errorf("%s", err)
 			return nil
 		}
+		log.Infof("successfully edited OpsSight: '%s'", opsSightName)
 		return nil
 	},
 }
@@ -391,41 +397,47 @@ var editAlertCmd = &cobra.Command{
 	Short: "Edit an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("This command only accepts 1 argument")
+			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Editing an Alert\n")
-		// Read Commandline Parameters
 		alertName := args[0]
+		log.Infof("editing Alert %s instance...", alertName)
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.Flags()
+		flagset := cmd.LocalFlags()
 		if flagset.NFlag() != 0 {
 			alt, err := operatorutil.GetAlert(alertClient, alertName, alertName)
 			if err != nil {
-				log.Errorf("Get Spec: %s", err)
+				log.Errorf("error getting an Alert %s instance due to %+v", alertName, err)
 				return nil
 			}
-			editAlertCtl.SetSpec(alt.Spec)
+			err = editAlertCtl.SetSpec(alt.Spec)
+			if err != nil {
+				log.Errorf("cannot set an existing %s Alert instance to spec due to %+v", alertName, err)
+				return nil
+			}
 			// Update Spec with User's Flags
 			editAlertCtl.SetChangedFlags(flagset)
 			// Update Alert with Updates
 			alertSpec := editAlertCtl.GetSpec().(alertv1.AlertSpec)
+			// merge environs
+			alertSpec.Environs = operatorutil.MergeEnvSlices(alertSpec.Environs, alt.Spec.Environs)
 			alt.Spec = alertSpec
 			_, err = operatorutil.UpdateAlert(alertClient, alertName, alt)
 			if err != nil {
-				log.Errorf("Update Spec: %s", err)
+				log.Errorf("error updating the %s Alert instance due to %+v", alertName, err)
 				return nil
 			}
 		} else {
-			err := operatorutil.RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
+			err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
 			if err != nil {
-				log.Errorf("Error Editing the Alert: %s", err)
+				log.Errorf("error editing the Alert: %s", err)
 				return nil
 			}
 		}
+		log.Infof("successfully updated the '%s' Alert instance", alertName)
 		return nil
 	},
 }
@@ -436,7 +448,7 @@ func init() {
 	editOpsSightCtl = opssight.NewOpsSightCtl()
 	editAlertCtl = alert.NewAlertCtl()
 
-	editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
+	//(PassCmd) editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
 	rootCmd.AddCommand(editCmd)
 
 	// Add Blackduck Edit Commands

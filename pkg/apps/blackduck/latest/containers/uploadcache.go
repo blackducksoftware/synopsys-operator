@@ -37,7 +37,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) *components.Replica
 			MinCPU: "", MaxCPU: ""},
 		EnvConfigs: []*horizonapi.EnvConfig{
 			c.getHubConfigEnv(),
-			{NameOrPrefix: "SEAL_KEY", Type: horizonapi.EnvFromSecret, KeyOrVal: "SEAL_KEY", FromName: "upload-cache"},
+			// {NameOrPrefix: "SEAL_KEY", Type: horizonapi.EnvFromSecret, KeyOrVal: "SEAL_KEY", FromName: "upload-cache"},
 		},
 		VolumeMounts: volumeMounts,
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: uploadCachePort1, Protocol: horizonapi.ProtocolTCP},
@@ -67,7 +67,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) *components.Replica
 
 	uploadCache := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
 		Name: "uploadcache", Replicas: util.IntToInt32(1)}, "", []*util.Container{uploadCacheContainerConfig}, c.getUploadCacheVolumes(),
-		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("uploadcache"), c.GetLabel("uploadcache"))
+		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("uploadcache"), c.GetLabel("uploadcache"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
 	return uploadCache
 }

@@ -37,7 +37,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) *components.Replica
 			MinCPU: "", MaxCPU: ""},
 		EnvConfigs: []*horizonapi.EnvConfig{
 			c.getHubConfigEnv(),
-			{NameOrPrefix: "SEAL_KEY", Type: horizonapi.EnvFromSecret, KeyOrVal: "SEAL_KEY", FromName: "upload-cache"},
+			// {NameOrPrefix: "SEAL_KEY", Type: horizonapi.EnvFromSecret, KeyOrVal: "SEAL_KEY", FromName: "upload-cache"},
 		},
 		VolumeMounts: volumeMounts,
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: uploadCachePort1, Protocol: horizonapi.ProtocolTCP},
@@ -57,7 +57,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) *components.Replica
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-upload-cache/uploads"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/blackduck-upload-cache/security /opt/blackduck/hub/blackduck-upload-cache/keys /opt/blackduck/hub/blackduck-upload-cache/uploads"}},
 			VolumeMounts:    volumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
@@ -67,7 +67,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) *components.Replica
 
 	uploadCache := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
 		Name: "uploadcache", Replicas: util.IntToInt32(1)}, "", []*util.Container{uploadCacheContainerConfig}, c.getUploadCacheVolumes(),
-		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("uploadcache"), c.GetLabel("uploadcache"))
+		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("uploadcache"), c.GetLabel("uploadcache"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
 	return uploadCache
 }

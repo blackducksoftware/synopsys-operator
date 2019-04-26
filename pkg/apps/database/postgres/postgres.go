@@ -81,6 +81,17 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 		VolumeMounts:  postgresVolumeMounts,
 		PortConfig:    []*horizonapi.PortConfig{{ContainerPort: p.Port, Protocol: horizonapi.ProtocolTCP}},
 		PreStopConfig: &horizonapi.ActionConfig{Command: []string{"sh", "-c", "LD_LIBRARY_PATH=/opt/rh/rh-postgresql96/root/usr/lib64 /opt/rh/rh-postgresql96/root/usr/bin/pg_ctl -D /var/lib/pgsql/data/userdata -l logfile stop"}},
+		ReadinessProbeConfigs: []*horizonapi.ProbeConfig{{
+			ActionConfig: horizonapi.ActionConfig{Command: []string{
+				"/bin/bash",
+				"-c",
+				"/opt/rh/rh-postgresql96/root/usr/bin/pg_isready -h localhost",
+			}},
+			Delay:           5,
+			Interval:        10,
+			Timeout:         5,
+			MinCountFailure: 10,
+		}},
 	}
 	var initContainers []*util.Container
 	if len(p.PVCName) > 0 {

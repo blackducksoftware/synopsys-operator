@@ -45,6 +45,7 @@ type App struct {
 	WithGrifts  bool        `json:"with_grifts" toml:"with_grifts"`
 	AsWeb       bool        `json:"as_web" toml:"as_web"`
 	AsAPI       bool        `json:"as_api" toml:"as_api"`
+	InApp       bool        `json:"in_app" toml:"-"`
 	PackageJSON PackageJSON `json:"-" toml:"-"`
 }
 
