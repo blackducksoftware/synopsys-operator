@@ -24,38 +24,16 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-
-	yaml "gopkg.in/yaml.v2"
-)
-
-// PrintFormat represents the format to print the struct
-type PrintFormat string
-
-// Constants for the PrintFormats
-const (
-	JSON PrintFormat = "json"
-	YAML PrintFormat = "yaml"
 )
 
 // PrettyPrint will print the interface in string format
-func PrettyPrint(v interface{}, format string) (string, error) {
+func PrettyPrint(v interface{}) (string, error) {
 	var b []byte
 	var err error
-	switch {
-	case format == string(JSON):
-		b, err = json.MarshalIndent(v, "", "  ")
-		if err != nil {
-			return "", fmt.Errorf("Failed to convert struct to yaml. Struct: %+v", v)
-		}
-		fmt.Println(string(b))
-	case format == string(YAML):
-		b, err = yaml.Marshal(v)
-		if err != nil {
-			return "", fmt.Errorf("Failed to convert struct to yaml. Struct: %+v", v)
-		}
-		fmt.Println(string(b))
-	default:
-		return "", fmt.Errorf("%s is an invalid format for PrettyPrint", format)
+	b, err = json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to convert struct to json. Struct: %+v", v)
 	}
+	fmt.Println(string(b))
 	return string(b), nil
 }

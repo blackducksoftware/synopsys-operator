@@ -39,10 +39,9 @@ func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deploy
 	// Add the Replication Controller to the Deployer
 	var synopsysOperatorReplicas int32 = 1
 	synopsysOperator := horizoncomponents.NewDeployment(horizonapi.DeploymentConfig{
-		APIVersion: "v1",
-		Name:       "synopsys-operator",
-		Namespace:  specConfig.Namespace,
-		Replicas:   &synopsysOperatorReplicas,
+		Name:      "synopsys-operator",
+		Namespace: specConfig.Namespace,
+		Replicas:  &synopsysOperatorReplicas,
 	})
 
 	synopsysOperator.AddMatchLabelsSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
@@ -231,17 +230,18 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 
 	cmData := map[string]string{}
 	configData := map[string]interface{}{
+		"Namespace":                     specConfig.Namespace,
+		"Image":                         specConfig.Image,
+		"Expose":                        specConfig.Expose,
+		"ClusterType":                   specConfig.ClusterType,
 		"OperatorTimeBombInSeconds":     specConfig.OperatorTimeBombInSeconds,
 		"DryRun":                        specConfig.DryRun,
 		"LogLevel":                      specConfig.LogLevel,
-		"Namespace":                     specConfig.Namespace,
 		"Threadiness":                   specConfig.Threadiness,
 		"PostgresRestartInMins":         specConfig.PostgresRestartInMins,
 		"PodWaitTimeoutSeconds":         specConfig.PodWaitTimeoutSeconds,
 		"ResyncIntervalInSeconds":       specConfig.ResyncIntervalInSeconds,
 		"TerminationGracePeriodSeconds": specConfig.TerminationGracePeriodSeconds,
-		"Image":                         specConfig.Image,
-		"Expose":                        specConfig.Expose,
 	}
 	bytes, err := json.Marshal(configData)
 	if err != nil {
@@ -372,8 +372,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	// Add Openshift rules
-	routeClient := util.GetRouteClient(specConfig.RestConfig) // kube doesn't have a routeclient
-	if routeClient != nil {                                   // openshift: has a routeClient
+	if specConfig.ClusterType == OpenshiftClusterType {
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 			Verbs:           []string{"get", "update", "patch"},
 			APIGroups:       []string{"security.openshift.io"},

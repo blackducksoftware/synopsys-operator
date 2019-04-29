@@ -28,6 +28,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	latestblackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	v1blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
@@ -148,4 +150,13 @@ func (b Blackduck) Ensure(bd *v1.Blackduck) error {
 	}
 
 	return creater.Ensure(bd)
+}
+
+// GetComponents gets the BlackDuck's creater and returns the components
+func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck) (*api.ComponentList, error) {
+	creater, err := b.getCreater(bd.Spec.Version)
+	if err != nil {
+		return nil, err
+	}
+	return creater.GetComponents(bd)
 }

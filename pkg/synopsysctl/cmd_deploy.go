@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"strings"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -46,6 +47,13 @@ var threadiness = 5
 var postgresRestartInMins int64 = 10
 var podWaitTimeoutSeconds int64 = 600
 var resyncIntervalInSeconds int64 = 120
+
+// Flags for using mock mode - doesn't deploy
+var deployMockFormat string
+var deployMockKubeFormat string
+
+// Deploy Global Variables
+var secretType horizonapi.SecretType
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
@@ -81,21 +89,21 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Infof("deploying Synopsys Operator in '%s' namespace......", deployNamespace)
-
-		// if image image tag
+		// verify operator image has a tag
 		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
 		if !imageHasTag {
 			log.Errorf("Synopsys Operator image doesn't have a tag: %s", synopsysOperatorImage)
 			return nil
 		}
 
+		// Create a Seal Key for the Operator
 		log.Debugf("getting Seal Key")
 		sealKey, err := operatorutil.GetRandomString(32)
 		if err != nil {
 			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
 		}
 
+		// Create Certificate data for the Operator
 		cert, key, err := operatorutil.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
 			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", deployNamespace),
 		})
@@ -104,28 +112,45 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		// Deploy Synopsys Operator
-		log.Debugf("creating Synopsys-Operator components")
-		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI,
+		// Create Spec for the Synopsys Operator
+		log.Debugf("creating Synopsys Operator components")
+		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig),
 			operatorTimeBombInSeconds, strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins,
 			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key)
 
-		err = soperatorSpec.UpdateSOperatorComponents()
-		if err != nil {
-			log.Errorf("error in deploying Synopsys Operator due to %+v", err)
-			return nil
-		}
+		if cmd.LocalFlags().Lookup("mock").Changed {
+			log.Debugf("running mock mode")
+			err := PrintResource(*soperatorSpec, deployMockFormat, false)
+			if err != nil {
+				log.Errorf("%s", err)
+			}
+		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+			log.Debugf("running kube mock mode")
+			err := PrintResource(*soperatorSpec, deployMockKubeFormat, true)
+			if err != nil {
+				log.Errorf("%s", err)
+			}
+		} else {
+			sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
+			// Deploy the Synopsys Operator
+			log.Infof("deploying the Synopsys Operator in '%s' namespace......", deployNamespace)
+			err = sOperatorCreater.UpdateSOperatorComponents(soperatorSpec)
+			if err != nil {
+				log.Errorf("error deploying the Synopsys Operator due to %+v", err)
+				return nil
+			}
 
-		// Deploy Metrics Components for Prometheus
-		log.Debugf("creating Metrics components")
-		promtheusSpec := soperator.NewPrometheus(deployNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
-		err = promtheusSpec.UpdatePrometheus()
-		if err != nil {
-			log.Errorf("error deploying metrics: %s", err)
-			return nil
-		}
+			// Deploy Prometheus Metrics Components for the Synopsys Operator
+			log.Debugf("creating Metrics components")
+			promtheusSpec := soperator.NewPrometheus(deployNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
+			err = sOperatorCreater.UpdatePrometheus(promtheusSpec)
+			if err != nil {
+				log.Errorf("error deploying metrics: %s", err)
+				return nil
+			}
 
-		log.Infof("successfully deployed Synopsys Operator")
+			log.Infof("successfully deployed the Synopsys Operator")
+		}
 		return nil
 	},
 }
@@ -144,4 +169,6 @@ func init() {
 	deployCmd.Flags().StringVar(&dryRun, "dryRun", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
 	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "Log level of Synopsys Operator")
 	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "Number of threads to process the custom resources")
+	deployCmd.Flags().StringVar(&deployMockFormat, "mock", deployMockFormat, "Prints the Synopsys Operator spec in the specified format instead of creating it [json|yaml]")
+	deployCmd.Flags().StringVar(&deployMockKubeFormat, "mock-kube", deployMockKubeFormat, "Prints the Synopsys Operator's kubernetes resource specs in the specified format instead of creating it [json|yaml]")
 }

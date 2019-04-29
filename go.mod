@@ -59,7 +59,7 @@ require (
 	k8s.io/klog v0.3.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208 // indirect
 	k8s.io/utils v0.0.0-20190529001817-6999998975a7 // indirect
-	sigs.k8s.io/yaml v1.1.0 // indirect
+	sigs.k8s.io/yaml v1.1.0
 )
 
 replace (

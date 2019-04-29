@@ -68,6 +68,15 @@ type crdVersionData struct {
 	APIVersion string
 }
 
+// GetVersions returns a list of strings for the supported Operator Versions
+func (m *operatorCRDVersionMap) GetVersions() []string {
+	versions := []string{}
+	for v := range m.versionMap {
+		versions = append(versions, v)
+	}
+	return versions
+}
+
 // GetCRDVersions returns CRDVersionData for an Operator's Version. If the Operator's
 // version doesn't exist then it assumes master
 func (m *operatorCRDVersionMap) GetCRDVersions(operatorVersion string) operatorVersions {

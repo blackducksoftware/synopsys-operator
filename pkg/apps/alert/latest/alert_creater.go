@@ -49,6 +49,12 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, AlertClient: alertClient, RouteClient: routeClient}
 }
 
+// GetComponents returns the resource components for an Alert
+func (ac *Creater) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
+	specConfig := NewSpecConfig(&alert.Spec)
+	return specConfig.GetComponents()
+}
+
 // Versions is an Interface function that returns the versions supported by this Creater
 func (ac *Creater) Versions() []string {
 	return GetVersions()

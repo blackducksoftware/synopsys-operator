@@ -30,7 +30,6 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,8 +45,9 @@ var baseAlertSpec string
 var baseBlackDuckSpec string
 var baseOpsSightSpec string
 
-// Create Command Flag for using mock mode (doesn't deploy)
-var mockFormat string
+// Flags for using mock mode - doesn't deploy
+var createMockFormat string
+var createMockKubeFormat string
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -58,7 +58,7 @@ var createCmd = &cobra.Command{
 	},
 }
 
-// createCmd represents the create command for Alert
+// createAlertCmd represents the create command for Alert
 var createAlertCmd = &cobra.Command{
 	Use:     "alert NAMESPACE",
 	Example: "synopsysctl create alert altnamespace\nsynopsysctl create alt altnamespace --mock json",
@@ -107,10 +107,16 @@ var createAlertCmd = &cobra.Command{
 		alert.Kind = "Alert"
 		alert.APIVersion = "synopsys.com/v1"
 		if cmd.LocalFlags().Lookup("mock").Changed {
-			_, err := util.PrettyPrint(alert, mockFormat)
+			log.Debugf("running mock mode")
+			err := PrintResource(*alert, createMockFormat, false)
 			if err != nil {
-				log.Errorf("failed to print in mock mode: %s", err)
-				return nil
+				log.Errorf("%s", err)
+			}
+		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+			log.Debugf("running kube mock mode")
+			err := PrintResource(*alert, createMockKubeFormat, true)
+			if err != nil {
+				log.Errorf("%s", err)
 			}
 		} else {
 			// Create namespace for Alert
@@ -131,7 +137,7 @@ var createAlertCmd = &cobra.Command{
 	},
 }
 
-// createCmd represents the create command for Black Duck
+// createBlackDuckCmd represents the create command for Black Duck
 var createBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAMESPACE",
 	Example: "synopsysctl create blackduck bdnamespace\nsynopsysctl create blackduck bdnamespace --mock json",
@@ -181,10 +187,16 @@ var createBlackDuckCmd = &cobra.Command{
 		blackDuck.Kind = "Blackduck"
 		blackDuck.APIVersion = "synopsys.com/v1"
 		if cmd.LocalFlags().Lookup("mock").Changed {
-			_, err := util.PrettyPrint(blackDuck, mockFormat)
+			log.Debugf("running mock mode")
+			err := PrintResource(*blackDuck, createMockFormat, false)
 			if err != nil {
-				log.Errorf("failed to print in mock mode: %s", err)
-				return nil
+				log.Errorf("%s", err)
+			}
+		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+			log.Debugf("running kube mock mode")
+			err := PrintResource(*blackDuck, createMockKubeFormat, true)
+			if err != nil {
+				log.Errorf("%s", err)
 			}
 		} else {
 			// Create namespace for Black Duck
@@ -244,20 +256,26 @@ var createOpsSightCmd = &cobra.Command{
 		opssightSpec.Namespace = opsSightNamespace
 
 		// Create and Deploy OpsSight CRD
-		opssight := &opssightv1.OpsSight{
+		opsSight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      opsSightNamespace,
 				Namespace: opsSightNamespace,
 			},
 			Spec: opssightSpec,
 		}
-		opssight.Kind = "OpsSight"
-		opssight.APIVersion = "synopsys.com/v1"
+		opsSight.Kind = "OpsSight"
+		opsSight.APIVersion = "synopsys.com/v1"
 		if cmd.LocalFlags().Lookup("mock").Changed {
-			_, err := util.PrettyPrint(opssight, mockFormat)
+			log.Debugf("running mock mode")
+			err := PrintResource(*opsSight, createMockFormat, false)
 			if err != nil {
-				log.Errorf("failed to print in mock mode: %s", err)
-				return nil
+				log.Errorf("%s", err)
+			}
+		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+			log.Debugf("running kube mock mode")
+			err := PrintResource(*opsSight, createMockKubeFormat, true)
+			if err != nil {
+				log.Errorf("%s", err)
 			}
 		} else {
 			// Create namespace for OpsSight
@@ -267,7 +285,7 @@ var createOpsSightCmd = &cobra.Command{
 			}
 			// Create OpsSight with Client
 			log.Debugf("deploying OpsSight in namespace %s", opsSightNamespace)
-			_, err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
+			_, err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opsSight)
 			if err != nil {
 				log.Errorf("error creating the %s OpsSight instance due to %+v", opsSightNamespace, err)
 				return nil
@@ -288,20 +306,23 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 
 	// Add Alert Command
-	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", defaultBaseAlertSpec, "Base resource configuration to modify with flags [empty|default]")
-	createAlertCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json|yaml]")
+	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags [empty|default]")
+	createAlertCmd.Flags().StringVarP(&createMockFormat, "mock", "o", createMockFormat, "Prints the resource spec in the specified format instead of creating it [json|yaml]")
+	createAlertCmd.Flags().StringVarP(&createMockKubeFormat, "mock-kube", "k", createMockKubeFormat, "Prints the Kubernetes resource specs in the specified format instead of creating it [json|yaml]")
 	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	createCmd.AddCommand(createAlertCmd)
 
 	// Add Black Duck Command
-	createBlackDuckCmd.Flags().StringVar(&baseBlackDuckSpec, "template", defaultBaseBlackDuckSpec, "Base resource configuration to modify with flags [empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled]")
-	createBlackDuckCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json|yaml]")
+	createBlackDuckCmd.Flags().StringVar(&baseBlackDuckSpec, "template", baseBlackDuckSpec, "Base resource configuration to modify with flags [empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled]")
+	createBlackDuckCmd.Flags().StringVarP(&createMockFormat, "mock", "o", createMockFormat, "Prints the CRD resource spec in the specified format instead of creating it [json|yaml]")
+	createBlackDuckCmd.Flags().StringVarP(&createMockKubeFormat, "mock-kube", "k", createMockKubeFormat, "Prints the Kubernetes resource specs in the specified format instead of creating it [json|yaml]")
 	createBlackDuckCtl.AddSpecFlags(createBlackDuckCmd, true)
 	createCmd.AddCommand(createBlackDuckCmd)
 
 	// Add OpsSight Command
-	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", defaultBaseOpsSightSpec, "Base resource configuration to modify with flags [empty|upstream|default|disabledBlackDuck]")
-	createOpsSightCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json|yaml]")
+	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags [empty|upstream|default|disabledBlackDuck]")
+	createOpsSightCmd.Flags().StringVarP(&createMockFormat, "mock", "o", createMockFormat, "Prints the resource spec in the specified format instead of creating it [json|yaml]")
+	createOpsSightCmd.Flags().StringVarP(&createMockKubeFormat, "mock-kube", "k", createMockKubeFormat, "Prints the Kubernetes resource specs in the specified format instead of creating it [json|yaml]")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 }

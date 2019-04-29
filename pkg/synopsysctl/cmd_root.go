@@ -80,9 +80,9 @@ func Execute() {
 func init() {
 	//(PassCmd) rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "path to the kubeconfig file to use for CLI requests")
-	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "server's certificate won't be validated. HTTPS will be less secure")
-	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "log level for the synopsysctl [trace|debug|info|warn|error|fatal|panic]")
+	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "Path to the kubeconfig file to use for CLI requests")
+	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "Server's certificate won't be validated. HTTPS will be less secure")
+	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "Log level for the synopsysctl [trace|debug|info|warn|error|fatal|panic]")
 }
 
 // initConfig reads in config file and ENV variables if set.
