@@ -1031,7 +1031,7 @@ func GetOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1C
 	return osSecurityClient.SecurityContextConstraints().Get(name, metav1.GetOptions{})
 }
 
-// UpdateOpenShiftSecurityConstraint updates am OpenShift security constraints
+// UpdateOpenShiftSecurityConstraint updates an OpenShift security constraints
 func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, serviceAccounts []string, name string) error {
 	scc, err := GetOpenShiftSecurityConstraint(osSecurityClient, name)
 	if err != nil {
