@@ -1,0 +1,17 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+filters:
+  ".*":
+    reviewers:
+      - rrati
+      - msenmurugan
+      - jdartigalongue
+      - mphammer
+      - yashbhutwala
+      - VSharapov
+    approvers:
+      - rrati
+      - msenmurugan
+      - jdartigalongue
+      - mphammer
+      - yashbhutwala
