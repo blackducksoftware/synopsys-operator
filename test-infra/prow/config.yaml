@@ -2,15 +2,31 @@ prowjob_namespace: default
 pod_namespace: test-pods
 log_level: debug
 
+# plank:
+# TODO: remove upstream gcs stuff and make synopsys bucket:
+# Use: https://github.com/kubernetes/test-infra/pull/12444
+# default_decoration_config:
+#   timeout: 7200000000000 # 2h
+#   grace_period: 15000000000 # 15s
+#   utility_images:
+#     clonerefs: "gcr.io/k8s-prow/clonerefs:v20190430-6a7dd776a"
+#     initupload: "gcr.io/k8s-prow/initupload:v20190430-6a7dd776a"
+#     entrypoint: "gcr.io/k8s-prow/entrypoint:v20190430-6a7dd776a"
+#     sidecar: "gcr.io/k8s-prow/sidecar:v20190430-6a7dd776a"
+#   gcs_configuration:
+#     bucket: "kubernetes-jenkins"
+#     path_strategy: "legacy"
+#     default_org: "kubernetes"
+#     default_repo: "kubernetes"
+#   gcs_credentials_secret: "service-account"
+
 sinker:
   resync_period: 1h
-  max_prowjob_age: 168h
-  max_pod_age: 12h
-
-deck:
-  tide_update_period: 1s
+  max_prowjob_age: 48h
+  max_pod_age: 30m
 
 tide:
+  sync_period: 2m
   target_url: http://35.186.244.90/tide
   pr_status_base_url: http://35.186.244.90/pr
 
@@ -28,3 +44,30 @@ tide:
         - do-not-merge/hold
         - do-not-merge/work-in-progress
         - do-not-merge/invalid-owners-file
+        - needs-rebase
+
+# done for current travis-job
+branch-protection:
+  orgs:
+    blackducksoftware:
+      repos:
+        synopsys-operator:
+          required_status_checks:
+            contexts:
+              - continuous-integration/travis-ci/pr
+          required_pull_request_reviews:
+            required_approving_review_count: 1
+#
+# TODO: Migrate travis job to prow job
+# presubmits:
+#   blackducksoftware/synopsys-operator:
+#     - name: gofmt
+#       decorate: true
+#       always_run: true
+#       rerun_command: "/test gofmt"
+#       spec:
+#         containers:
+#           - command:
+#               - ./hack/verify-gofmt.sh
+#             image: golang:1.11
+#
