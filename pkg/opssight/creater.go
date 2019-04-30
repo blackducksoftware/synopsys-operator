@@ -23,7 +23,6 @@ package opssight
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -35,7 +34,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
-	routev1 "github.com/openshift/api/route/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -43,11 +41,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-)
-
-const (
-	// OPENSHIFT will denote to create openshift route
-	OPENSHIFT = "OPENSHIFT"
 )
 
 // Creater will store the configuration to create OpsSight
@@ -253,25 +246,36 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 	}
 
 	internalRegistries := []*string{}
-	route, err := util.GetOpenShiftRoutes(ac.routeClient, "default", "docker-registry")
-	if err != nil {
-		log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
-	} else {
-		internalRegistries = append(internalRegistries, &route.Spec.Host)
-		routeHostPort := fmt.Sprintf("%s:443", route.Spec.Host)
-		internalRegistries = append(internalRegistries, &routeHostPort)
+
+	// Adding default image registry routes
+	routes := map[string]string{"default": "docker-registry", "openshift-image-registry": "image-registry"}
+	for namespace, name := range routes {
+		route, err := util.GetRoute(ac.routeClient, namespace, name)
+		if err != nil {
+			log.Warnf("unable to find an OpenShift %s router in %s namespace due to %+v", name, namespace, err)
+		} else {
+			internalRegistries = append(internalRegistries, &route.Spec.Host)
+			routeHostPort := fmt.Sprintf("%s:443", route.Spec.Host)
+			internalRegistries = append(internalRegistries, &routeHostPort)
+		}
 	}
 
-	registrySvc, err := util.GetService(ac.kubeClient, "default", "docker-registry")
-	if err != nil {
-		log.Errorf("unable to get docker-registry service in default namespace due to %+v", err)
-	} else {
-		if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
-			for _, port := range registrySvc.Spec.Ports {
-				clusterIPSvc := fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port)))
-				internalRegistries = append(internalRegistries, &clusterIPSvc)
-				clusterIPSvcPort := fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port)))
-				internalRegistries = append(internalRegistries, &clusterIPSvcPort)
+	// Adding default OpenShift internal Docker/image registry service
+	labelSelectors := []string{"docker-registry=default", "router in (router,router-default)"}
+	for _, labelSelector := range labelSelectors {
+		registrySvcs, err := util.ListServices(ac.kubeClient, "", labelSelector)
+		if err != nil {
+			log.Warnf("unable to find an OpenShift image registry service with labels %s due to %+v", labelSelector, err)
+			continue
+		}
+		for _, registrySvc := range registrySvcs.Items {
+			if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
+				for _, port := range registrySvc.Spec.Ports {
+					clusterIPSvc := fmt.Sprintf("%s:%d", registrySvc.Spec.ClusterIP, port.Port)
+					internalRegistries = append(internalRegistries, &clusterIPSvc)
+					clusterIPSvcPort := fmt.Sprintf("%s.%s.svc:%d", registrySvc.Name, registrySvc.Namespace, port.Port)
+					internalRegistries = append(internalRegistries, &clusterIPSvcPort)
+				}
 			}
 		}
 	}
@@ -287,32 +291,6 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 }
 
 func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
-	// Create Perceptor model Route on Openshift
-	if strings.ToUpper(spec.opssight.Spec.Perceptor.Expose) == OPENSHIFT && ac.routeClient != nil {
-		namespace := spec.opssight.Spec.Namespace
-		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Perceptor.Name, namespace)
-		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
-		if err != nil {
-			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", spec.opssight.Spec.Perceptor.Name, fmt.Sprintf("port-%s", spec.opssight.Spec.Perceptor.Name), routev1.TLSTerminationEdge)
-			if err != nil {
-				log.Errorf("unable to create the perceptor openshift route due to %+v", err)
-			}
-		}
-	}
-
-	// Create Perceptor metrics Route on Openshift
-	if strings.ToUpper(spec.opssight.Spec.Prometheus.Expose) == OPENSHIFT && ac.routeClient != nil {
-		namespace := spec.opssight.Spec.Namespace
-		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Prometheus.Name, namespace)
-		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
-		if err != nil {
-			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", spec.opssight.Spec.Prometheus.Name, fmt.Sprintf("port-%s", spec.opssight.Spec.Prometheus.Name), routev1.TLSTerminationEdge)
-			if err != nil {
-				log.Errorf("unable to create the perceptor metrics openshift route due to %+v", err)
-			}
-		}
-	}
-
 	// Need to add the perceptor-scanner service account to the privileged scc
 	if ac.osSecurityClient != nil {
 		scannerServiceAccount := spec.ScannerServiceAccount()

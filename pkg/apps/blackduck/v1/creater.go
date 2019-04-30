@@ -41,7 +41,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	routev1 "github.com/openshift/api/route/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -162,14 +161,8 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// Create Route on Openshift
-		if strings.ToUpper(blackduck.Spec.ExposeService) == "OPENSHIFT" && hc.routeClient != nil {
-			route, err := util.GetOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
-			if err != nil {
-				route, err = util.CreateOpenShiftRoutes(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace, "Service", "webserver", "port-webserver", routev1.TLSTerminationPassthrough)
-				if err != nil {
-					log.Errorf("unable to create the openshift route due to %+v", err)
-				}
-			}
+		if strings.ToUpper(blackduck.Spec.ExposeService) == util.OPENSHIFT && hc.routeClient != nil {
+			route, _ := util.GetRoute(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
 			if route != nil {
 				newBlackuck.Status.IP = route.Spec.Host
 			}

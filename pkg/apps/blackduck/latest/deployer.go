@@ -197,6 +197,12 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	if svc := hc.getExposeService(blackduck); svc != nil {
 		componentList.Services = append(componentList.Services, svc)
 	}
+
+	// Add OpenShift routes
+	route := containerCreater.GetOpenShiftRoute()
+	if route != nil {
+		componentList.Routes = []*api.Route{route}
+	}
 	return componentList, nil
 }
 

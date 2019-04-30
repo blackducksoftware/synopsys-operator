@@ -24,10 +24,14 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	routev1 "github.com/openshift/api/route/v1"
 )
 
 // PerceptorMetricsDeployment creates a deployment for perceptor metrics
@@ -99,6 +103,7 @@ func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "prometheus",
 		MapOrSecretName: "prometheus",
+		DefaultMode:     util.IntToInt32(420),
 	}))
 
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
@@ -244,8 +249,25 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	configMap.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
+	configMap.AddLabels(map[string]string{"app": "opssight"})
 	configMap.AddData(map[string]string{"prometheus.yml": string(bytes)})
 
 	return configMap, nil
+}
+
+// GetPrometheusOpenShiftRoute creates the OpenShift route component for the prometheus metrics
+func (p *SpecConfig) GetPrometheusOpenShiftRoute() *api.Route {
+	namespace := p.opssight.Spec.Namespace
+	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
+		return &api.Route{
+			Name:               fmt.Sprintf("%s-%s", p.opssight.Spec.Prometheus.Name, namespace),
+			Namespace:          namespace,
+			Kind:               "Service",
+			ServiceName:        p.opssight.Spec.Prometheus.Name,
+			PortName:           fmt.Sprintf("port-%s", p.opssight.Spec.Prometheus.Name),
+			Labels:             map[string]string{"app": "opssight"},
+			TLSTerminationType: routev1.TLSTerminationEdge,
+		}
+	}
+	return nil
 }
