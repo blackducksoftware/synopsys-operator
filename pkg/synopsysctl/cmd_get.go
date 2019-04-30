@@ -58,19 +58,19 @@ var getBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Black Ducks...")
-		kCmd := []string{"get", "blackducks"}
+		kubectlCmd := []string{"get", "blackducks"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args...)
+			kubectlCmd = append(kubectlCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("output").Changed {
-			kCmd = append(kCmd, "-o")
-			kCmd = append(kCmd, getOutputFormat)
+			kubectlCmd = append(kubectlCmd, "-o")
+			kubectlCmd = append(kubectlCmd, getOutputFormat)
 		}
 		if cmd.LocalFlags().Lookup("selector").Changed {
-			kCmd = append(kCmd, "-l")
-			kCmd = append(kCmd, getSelector)
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting Black Ducks due to %+v - %s", out, err)
 			return nil
@@ -150,19 +150,19 @@ var getOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting OpsSights...")
-		kCmd := []string{"get", "opssights"}
+		kubectlCmd := []string{"get", "opssights"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args...)
+			kubectlCmd = append(kubectlCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("output").Changed {
-			kCmd = append(kCmd, "-o")
-			kCmd = append(kCmd, getOutputFormat)
+			kubectlCmd = append(kubectlCmd, "-o")
+			kubectlCmd = append(kubectlCmd, getOutputFormat)
 		}
 		if cmd.LocalFlags().Lookup("selector").Changed {
-			kCmd = append(kCmd, "-l")
-			kCmd = append(kCmd, getSelector)
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting OpsSights due to %+v - %s", out, err)
 			return nil
@@ -182,19 +182,19 @@ var getAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Alerts...")
-		kCmd := []string{"get", "alerts"}
+		kubectlCmd := []string{"get", "alerts"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args...)
+			kubectlCmd = append(kubectlCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("output").Changed {
-			kCmd = append(kCmd, "-o")
-			kCmd = append(kCmd, getOutputFormat)
+			kubectlCmd = append(kubectlCmd, "-o")
+			kubectlCmd = append(kubectlCmd, getOutputFormat)
 		}
 		if cmd.LocalFlags().Lookup("selector").Changed {
-			kCmd = append(kCmd, "-l")
-			kCmd = append(kCmd, getSelector)
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting Alerts due to %+v - %s", out, err)
 			return nil

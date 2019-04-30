@@ -35,7 +35,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
-	routev1 "github.com/openshift/api/route/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
@@ -253,7 +252,7 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 	}
 
 	internalRegistries := []*string{}
-	route, err := util.GetOpenShiftRoutes(ac.routeClient, "default", "docker-registry")
+	route, err := util.GetRoute(ac.routeClient, "default", "docker-registry")
 	if err != nil {
 		log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
 	} else {
@@ -287,32 +286,6 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 }
 
 func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
-	// Create Perceptor model Route on Openshift
-	if strings.ToUpper(spec.opssight.Spec.Perceptor.Expose) == OPENSHIFT && ac.routeClient != nil {
-		namespace := spec.opssight.Spec.Namespace
-		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Perceptor.Name, namespace)
-		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
-		if err != nil {
-			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", spec.opssight.Spec.Perceptor.Name, fmt.Sprintf("port-%s", spec.opssight.Spec.Perceptor.Name), routev1.TLSTerminationEdge)
-			if err != nil {
-				log.Errorf("unable to create the perceptor openshift route due to %+v", err)
-			}
-		}
-	}
-
-	// Create Perceptor metrics Route on Openshift
-	if strings.ToUpper(spec.opssight.Spec.Prometheus.Expose) == OPENSHIFT && ac.routeClient != nil {
-		namespace := spec.opssight.Spec.Namespace
-		name := fmt.Sprintf("%s-%s", spec.opssight.Spec.Prometheus.Name, namespace)
-		_, err := util.GetOpenShiftRoutes(ac.routeClient, namespace, name)
-		if err != nil {
-			_, err = util.CreateOpenShiftRoutes(ac.routeClient, namespace, name, "Service", spec.opssight.Spec.Prometheus.Name, fmt.Sprintf("port-%s", spec.opssight.Spec.Prometheus.Name), routev1.TLSTerminationEdge)
-			if err != nil {
-				log.Errorf("unable to create the perceptor metrics openshift route due to %+v", err)
-			}
-		}
-	}
-
 	// Need to add the perceptor-scanner service account to the privileged scc
 	if ac.osSecurityClient != nil {
 		scannerServiceAccount := spec.ScannerServiceAccount()

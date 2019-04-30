@@ -27,8 +27,10 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	routev1 "github.com/openshift/api/route/v1"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -478,4 +480,20 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 
 	synopsysOperatorSecret.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return synopsysOperatorSecret
+}
+
+// GetOpenShiftRoute creates the OpenShift route component for the synopsys operator
+func (specConfig *SpecConfig) GetOpenShiftRoute() *api.Route {
+	if strings.ToUpper(specConfig.Expose) == "OPENSHIFT" {
+		return &api.Route{
+			Name:               "synopsys-operator-ui",
+			Namespace:          specConfig.Namespace,
+			Kind:               "Service",
+			ServiceName:        "synopsys-operator",
+			PortName:           "synopsys-operator-ui",
+			Labels:             map[string]string{"app": "synopsys-operator", "component": "operator"},
+			TLSTerminationType: routev1.TLSTerminationEdge,
+		}
+	}
+	return nil
 }

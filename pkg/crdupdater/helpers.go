@@ -119,6 +119,11 @@ func isLabelsExist(expectedLabels map[string]label, actualLabels map[string]stri
 	return true
 }
 
+func sortPorts(ports []corev1.ServicePort) []corev1.ServicePort {
+	sort.Slice(ports, func(i, j int) bool { return ports[i].Name < ports[j].Name })
+	return ports
+}
+
 func sortEnvs(envs []corev1.EnvVar) []corev1.EnvVar {
 	sort.Slice(envs, func(i, j int) bool { return envs[i].Name < envs[j].Name })
 	return envs

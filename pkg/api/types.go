@@ -23,7 +23,19 @@ package api
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
+	routev1 "github.com/openshift/api/route/v1"
 )
+
+// Route defines the route component
+type Route struct {
+	Namespace          string
+	Name               string
+	Kind               string
+	ServiceName        string
+	PortName           string
+	Labels             map[string]string `json:"labels,omitempty"`
+	TLSTerminationType routev1.TLSTerminationType
+}
 
 // ComponentList defines the list of components for an app
 type ComponentList struct {
@@ -36,4 +48,5 @@ type ComponentList struct {
 	Deployments            []*components.Deployment
 	Secrets                []*components.Secret
 	PersistentVolumeClaims []*components.PersistentVolumeClaim
+	Routes                 []*Route
 }

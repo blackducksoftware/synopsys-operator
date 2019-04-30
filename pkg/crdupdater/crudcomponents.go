@@ -127,6 +127,12 @@ func (c *CommonConfig) CRUDComponents() (bool, []error) {
 	}
 	updater.AddUpdater(services)
 
+	routes, err := NewRoute(c, c.components.Routes)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("unable to create route updater due to %+v", err))
+	}
+	updater.AddUpdater(routes)
+
 	// replication controller
 	rcs, err := NewReplicationController(c, c.components.ReplicationControllers)
 	if err != nil {

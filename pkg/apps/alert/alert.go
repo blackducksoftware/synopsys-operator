@@ -63,11 +63,6 @@ func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
 	routeClient, err := routeclient.NewForConfig(kubeConfig)
 	if err != nil {
 		routeClient = nil
-	} else {
-		_, err := util.GetOpenShiftRoutes(routeClient, "default", "docker-registry")
-		if err != nil {
-			routeClient = nil
-		}
 	}
 	// Initialize creaters for different versions of Alert (each Creater can support differernt versions)
 	creaters := []Creater{

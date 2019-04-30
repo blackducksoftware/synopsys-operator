@@ -50,15 +50,15 @@ var describeBlackduckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing a Blackduck")
-		kCmd := []string{"describe", "blackducks"}
+		kubectlCmd := []string{"describe", "blackducks"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args...)
+			kubectlCmd = append(kubectlCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("selector").Changed {
-			kCmd = append(kCmd, "-l")
-			kCmd = append(kCmd, describeSelector)
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, describeSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error describing the Black Duck: %s - %s", out, err)
 			return nil
@@ -78,15 +78,15 @@ var describeOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing an OpsSight")
-		kCmd := []string{"describe", "opssights"}
+		kubectlCmd := []string{"describe", "opssights"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args...)
+			kubectlCmd = append(kubectlCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("selector").Changed {
-			kCmd = append(kCmd, "-l")
-			kCmd = append(kCmd, describeSelector)
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, describeSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error describing the OpsSight: %s - %s", out, err)
 			return nil
@@ -106,15 +106,15 @@ var describeAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("Describing an Alert")
-		kCmd := []string{"describe", "alerts"}
+		kubectlCmd := []string{"describe", "alerts"}
 		if len(args) > 0 {
-			kCmd = append(kCmd, args...)
+			kubectlCmd = append(kubectlCmd, args...)
 		}
 		if cmd.LocalFlags().Lookup("selector").Changed {
-			kCmd = append(kCmd, "-l")
-			kCmd = append(kCmd, describeSelector)
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, describeSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kCmd...)
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error describing the Alert: %s - %s", out, err)
 			return nil

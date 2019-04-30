@@ -147,6 +147,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.Secrets = append(components.Secrets, secret)
 
+	route := p.GetPerceptorOpenShiftRoute()
+	if route != nil {
+		components.Routes = append(components.Routes, route)
+	}
+
 	// Add Perceptor Scanner
 	scannerRC, err := p.ScannerReplicationController()
 	if err != nil {
@@ -229,6 +234,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 			return nil, errors.Annotate(err, "failed to create perceptor config map")
 		}
 		components.ConfigMaps = append(components.ConfigMaps, perceptorCm)
+
+		route := p.GetPrometheusOpenShiftRoute()
+		if route != nil {
+			components.Routes = append(components.Routes, route)
+		}
 	}
 
 	return components, nil
