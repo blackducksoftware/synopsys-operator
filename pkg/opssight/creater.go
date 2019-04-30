@@ -23,7 +23,6 @@ package opssight
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -252,25 +251,36 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 	}
 
 	internalRegistries := []*string{}
-	route, err := util.GetRoute(ac.routeClient, "default", "docker-registry")
-	if err != nil {
-		log.Errorf("unable to get docker-registry router in default namespace due to %+v", err)
-	} else {
-		internalRegistries = append(internalRegistries, &route.Spec.Host)
-		routeHostPort := fmt.Sprintf("%s:443", route.Spec.Host)
-		internalRegistries = append(internalRegistries, &routeHostPort)
+
+	// Adding default image registry routes
+	routes := map[string]string{"default": "docker-registry", "openshift-image-registry": "image-registry"}
+	for namespace, name := range routes {
+		route, err := util.GetRoute(ac.routeClient, namespace, name)
+		if err != nil {
+			log.Warnf("unable to find an OpenShift %s router in %s namespace due to %+v", name, namespace, err)
+		} else {
+			internalRegistries = append(internalRegistries, &route.Spec.Host)
+			routeHostPort := fmt.Sprintf("%s:443", route.Spec.Host)
+			internalRegistries = append(internalRegistries, &routeHostPort)
+		}
 	}
 
-	registrySvc, err := util.GetService(ac.kubeClient, "default", "docker-registry")
-	if err != nil {
-		log.Errorf("unable to get docker-registry service in default namespace due to %+v", err)
-	} else {
-		if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
-			for _, port := range registrySvc.Spec.Ports {
-				clusterIPSvc := fmt.Sprintf("%s:%s", registrySvc.Spec.ClusterIP, strconv.Itoa(int(port.Port)))
-				internalRegistries = append(internalRegistries, &clusterIPSvc)
-				clusterIPSvcPort := fmt.Sprintf("%s:%s", "docker-registry.default.svc", strconv.Itoa(int(port.Port)))
-				internalRegistries = append(internalRegistries, &clusterIPSvcPort)
+	// Adding default OpenShift internal Docker/image registry service
+	labelSelectors := []string{"docker-registry=default", "router in (router,router-default)"}
+	for _, labelSelector := range labelSelectors {
+		registrySvcs, err := util.ListServices(ac.kubeClient, "", labelSelector)
+		if err != nil {
+			log.Warnf("unable to find an OpenShift image registry service with labels %s due to %+v", labelSelector, err)
+			continue
+		}
+		for _, registrySvc := range registrySvcs.Items {
+			if !strings.EqualFold(registrySvc.Spec.ClusterIP, "") {
+				for _, port := range registrySvc.Spec.Ports {
+					clusterIPSvc := fmt.Sprintf("%s:%d", registrySvc.Spec.ClusterIP, port.Port)
+					internalRegistries = append(internalRegistries, &clusterIPSvc)
+					clusterIPSvcPort := fmt.Sprintf("%s.%s.svc:%d", registrySvc.Name, registrySvc.Namespace, port.Port)
+					internalRegistries = append(internalRegistries, &clusterIPSvcPort)
+				}
 			}
 		}
 	}
