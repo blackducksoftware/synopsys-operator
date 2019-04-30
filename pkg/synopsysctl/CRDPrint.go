@@ -34,7 +34,6 @@ import (
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 )
@@ -89,8 +88,7 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		kubeInterfaces = cList.GetKubeInterfaces()
 	case reflect.TypeOf(opssightapi.OpsSight{}):
 		opsSight := crd.(opssightapi.OpsSight)
-		sc := opssight.NewSpecConfig(pc, kubeClient, opsSightClient, blackDuckClient, &opsSight, true)
-		cList, err := sc.GetComponents()
+		cList, err := app.OpsSight().GetComponents(&opsSight)
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}

@@ -22,26 +22,29 @@ under the License.
 package opssight
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
+	log "github.com/sirupsen/logrus"
 )
 
-// PerceptorReplicationController creates a replication controller for perceptor
-func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationController, error) {
+// GetPerceptorReplicationController creates a replication controller for OpsSight's Perceptor
+func (p *SpecConfig) GetPerceptorReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      p.opssight.Spec.Perceptor.Name,
 		Namespace: p.opssight.Spec.Namespace,
 	})
-	pod, err := p.perceptorPod()
+	pod, err := p.getPerceptorPod()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -51,12 +54,13 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	return rc, nil
 }
 
-func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
+// getPerceptorPod returns a Pod for OpsSight's Perceptor
+func (p *SpecConfig) getPerceptorPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: p.opssight.Spec.Perceptor.Name,
 	})
 	pod.AddLabels(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
-	cont, err := p.perceptorContainer()
+	cont, err := p.getPerceptorContainer()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -73,11 +77,16 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
+// getPerceptorContainer returns a Container for OpsSight's Perceptor
+func (p *SpecConfig) getPerceptorContainer() (*components.Container, error) {
 	name := p.opssight.Spec.Perceptor.Name
+	image := p.opssight.Spec.Perceptor.Image
+	if image == "" {
+		image = GetImageTag(p.opssight.Spec.Version, "opssight-core")
+	}
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    name,
-		Image:   p.opssight.Spec.Perceptor.Image,
+		Image:   image,
 		Command: []string{fmt.Sprintf("./%s", name)},
 		Args:    []string{fmt.Sprintf("/etc/%s/%s.json", name, p.opssight.Spec.ConfigMapName)},
 		MinCPU:  p.opssight.Spec.DefaultCPU,
@@ -104,8 +113,8 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 	return container, nil
 }
 
-// PerceptorService creates a service for perceptor
-func (p *SpecConfig) PerceptorService() (*components.Service, error) {
+// GetPerceptorService creates a service for OpsSight's Perceptor
+func (p *SpecConfig) GetPerceptorService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.opssight.Spec.Perceptor.Name,
 		Namespace: p.opssight.Spec.Namespace,
@@ -121,15 +130,30 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
 
 	return service, nil
 }
 
-// PerceptorNodePortService creates a nodeport service for perceptor
-func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
+// GetPerceptorExposeService returns the correct Service type for OpsSight's Perceptor
+func (p *SpecConfig) GetPerceptorExposeService() (*components.Service, error) {
+	var svc *components.Service
+	var err error
+	switch strings.ToUpper(p.opssight.Spec.Perceptor.Expose) {
+	case "NODEPORT":
+		svc, err = p.GetPerceptorNodePortService()
+		break
+	case "LOADBALANCER":
+		svc, err = p.GetPerceptorLoadBalancerService()
+		break
+	default:
+	}
+	return svc, err
+}
+
+// GetPerceptorNodePortService creates a nodeport service for OpsSight's Perceptor
+func (p *SpecConfig) GetPerceptorNodePortService() (*components.Service, error) {
 	name := fmt.Sprintf("%s-exposed", p.opssight.Spec.Perceptor.Name)
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      name,
@@ -153,8 +177,8 @@ func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
 	return service, nil
 }
 
-// PerceptorLoadBalancerService creates a loadbalancer service for perceptor
-func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error) {
+// GetPerceptorLoadBalancerService creates a loadbalancer service for OpsSight's Perceptor
+func (p *SpecConfig) GetPerceptorLoadBalancerService() (*components.Service, error) {
 	name := fmt.Sprintf("%s-exposed", p.opssight.Spec.Perceptor.Name)
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      name,
@@ -178,14 +202,30 @@ func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error)
 	return service, nil
 }
 
-// PerceptorSecret create a secret for perceptor
-func (p *SpecConfig) PerceptorSecret() *components.Secret {
+// GetPerceptorSecret create a secret for OpsSight's Perceptor
+func (p *SpecConfig) GetPerceptorSecret() *components.Secret {
 	secretConfig := horizonapi.SecretConfig{
 		Name:      p.opssight.Spec.SecretName,
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.SecretTypeOpaque,
 	}
 	secret := components.NewSecret(secretConfig)
+
+	// empty data fields that will be overwritten
+	emptyHosts := make(map[string]*opssightapi.Host)
+	bytes, err := json.Marshal(emptyHosts)
+	if err != nil {
+		log.Errorf("unable to marshal Black Duck passwords: %+v", err)
+	}
+	secret.AddData(map[string][]byte{p.opssight.Spec.Blackduck.ConnectionsEnvironmentVariableName: bytes})
+
+	emptySecuredRegistries := make(map[string]*opssightapi.RegistryAuth)
+	bytes, err = json.Marshal(emptySecuredRegistries)
+	if err != nil {
+		log.Errorf("unable to marshal secured registries: %+v", err)
+	}
+	secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
+
 	secret.AddLabels(map[string]string{"name": p.opssight.Spec.SecretName, "app": "opssight"})
 	return secret
 }

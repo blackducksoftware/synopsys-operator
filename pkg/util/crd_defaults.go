@@ -338,6 +338,7 @@ func GetBlackDuckDefaultIPV6Disabled() *blackduckv1.BlackduckSpec {
 // GetOpsSightUpstream returns the required fields for an upstream OpsSight
 func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
+		Version: "2.2.3",
 		Perceptor: &opssightv1.Perceptor{
 			Name:                           "perceptor",
 			Port:                           3001,
@@ -421,6 +422,7 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Namespace: "opssight-test",
+		Version:   "2.2.3",
 		Perceptor: &opssightv1.Perceptor{
 			Name:                           "opssight-core",
 			Port:                           3001,
@@ -506,6 +508,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Namespace: "opssight-test",
+		Version:   "2.2.3",
 		Perceptor: &opssightv1.Perceptor{
 			Name:                           "opssight-core",
 			Port:                           3001,

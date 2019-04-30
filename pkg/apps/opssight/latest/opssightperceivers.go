@@ -29,14 +29,17 @@ import (
 	"github.com/juju/errors"
 )
 
-// PodPerceiverReplicationController creates a replication controller for the pod perceiver
-func (p *SpecConfig) PodPerceiverReplicationController() (*components.ReplicationController, error) {
+// GetPodPerceiverReplicationController creates a replication controller for the OpsSight's Pod Perceiver
+func (p *SpecConfig) GetPodPerceiverReplicationController() (*components.ReplicationController, error) {
 	name := p.opssight.Spec.Perceiver.PodPerceiver.Name
 	image := p.opssight.Spec.Perceiver.PodPerceiver.Image
+	if image == "" {
+		image = GetImageTag(p.opssight.Spec.Version, "opssight-pod-processor")
+	}
 
-	rc := p.perceiverReplicationController(name, 1)
+	rc := p.createPerceiverReplicationController(name, 1)
 
-	pod, err := p.perceiverPod(name, image, p.opssight.Spec.Perceiver.ServiceAccount)
+	pod, err := p.createPerceiverPod(name, image, p.opssight.Spec.Perceiver.ServiceAccount)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create pod perceiver pod")
 	}
@@ -45,14 +48,17 @@ func (p *SpecConfig) PodPerceiverReplicationController() (*components.Replicatio
 	return rc, nil
 }
 
-// ImagePerceiverReplicationController creates a replication controller for the image perceiver
-func (p *SpecConfig) ImagePerceiverReplicationController() (*components.ReplicationController, error) {
+// GetImagePerceiverReplicationController creates a replication controller for OpsSight's Image Perceiver
+func (p *SpecConfig) GetImagePerceiverReplicationController() (*components.ReplicationController, error) {
 	name := p.opssight.Spec.Perceiver.ImagePerceiver.Name
 	image := p.opssight.Spec.Perceiver.ImagePerceiver.Image
+	if image == "" {
+		image = GetImageTag(p.opssight.Spec.Version, "opssight-image-processor")
+	}
 
-	rc := p.perceiverReplicationController(name, 1)
+	rc := p.createPerceiverReplicationController(name, 1)
 
-	pod, err := p.perceiverPod(name, image, p.opssight.Spec.Perceiver.ServiceAccount)
+	pod, err := p.createPerceiverPod(name, image, p.opssight.Spec.Perceiver.ServiceAccount)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create image perceiver pod")
 	}
@@ -61,7 +67,8 @@ func (p *SpecConfig) ImagePerceiverReplicationController() (*components.Replicat
 	return rc, nil
 }
 
-func (p *SpecConfig) perceiverReplicationController(name string, replicas int32) *components.ReplicationController {
+// createPerceiverReplicationController returns a Replication Controller for a Perceiver
+func (p *SpecConfig) createPerceiverReplicationController(name string, replicas int32) *components.ReplicationController {
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
 		Name:      name,
@@ -72,20 +79,21 @@ func (p *SpecConfig) perceiverReplicationController(name string, replicas int32)
 	return rc
 }
 
-func (p *SpecConfig) perceiverPod(name string, image string, account string) (*components.Pod, error) {
+// createPerceiverPod returns a Pod for a Perceiver
+func (p *SpecConfig) createPerceiverPod(name string, image string, account string) (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name:           name,
 		ServiceAccount: account,
 	})
 
 	pod.AddLabels(map[string]string{"name": name, "app": "opssight"})
-	container, err := p.perceiverContainer(name, image)
+	container, err := p.createPerceiverContainer(name, image)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	pod.AddContainer(container)
 
-	vols, err := p.perceiverVolumes(name)
+	vols, err := p.createPerceiverVolumes(name)
 
 	if err != nil {
 		return nil, errors.Annotate(err, "unable to create volumes")
@@ -101,7 +109,8 @@ func (p *SpecConfig) perceiverPod(name string, image string, account string) (*c
 	return pod, nil
 }
 
-func (p *SpecConfig) perceiverContainer(name string, image string) (*components.Container, error) {
+// createPerceiverContainer returns a Container for a Perciever
+func (p *SpecConfig) createPerceiverContainer(name string, image string) (*components.Container, error) {
 	cmd := fmt.Sprintf("./%s", name)
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    name,
@@ -139,7 +148,8 @@ func (p *SpecConfig) perceiverContainer(name string, image string) (*components.
 	return container, nil
 }
 
-func (p *SpecConfig) perceiverVolumes(name string) ([]*components.Volume, error) {
+// createPerceiverVolumes returns a Volume for a Perceiver
+func (p *SpecConfig) createPerceiverVolumes(name string) ([]*components.Volume, error) {
 	vols := []*components.Volume{p.configMapVolume(name)}
 
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
@@ -155,7 +165,18 @@ func (p *SpecConfig) perceiverVolumes(name string) ([]*components.Volume, error)
 	return vols, nil
 }
 
-func (p *SpecConfig) perceiverService(name string) *components.Service {
+// GetPodPerceiverService creates a service for OpsSight's Pod Perceiver
+func (p *SpecConfig) GetPodPerceiverService() *components.Service {
+	return p.createPerceiverService(p.opssight.Spec.Perceiver.PodPerceiver.Name)
+}
+
+// GetImagePerceiverService creates a service for OpsSight's Image Perceiver
+func (p *SpecConfig) GetImagePerceiverService() *components.Service {
+	return p.createPerceiverService(p.opssight.Spec.Perceiver.ImagePerceiver.Name)
+}
+
+// createPerceiverService returns a Service for a Perceiver
+func (p *SpecConfig) createPerceiverService(name string) *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      name,
 		Namespace: p.opssight.Spec.Namespace,
@@ -175,17 +196,18 @@ func (p *SpecConfig) perceiverService(name string) *components.Service {
 	return service
 }
 
-// PodPerceiverService creates a service for the pod perceiver
-func (p *SpecConfig) PodPerceiverService() *components.Service {
-	return p.perceiverService(p.opssight.Spec.Perceiver.PodPerceiver.Name)
+// GetPodPerceiverServiceAccount creates a service account for OpsSight's Pod Perceiver
+func (p *SpecConfig) GetPodPerceiverServiceAccount() *components.ServiceAccount {
+	return p.createPerceiverServiceAccount(p.opssight.Spec.Perceiver.ServiceAccount)
 }
 
-// ImagePerceiverService creates a service for the image perceiver
-func (p *SpecConfig) ImagePerceiverService() *components.Service {
-	return p.perceiverService(p.opssight.Spec.Perceiver.ImagePerceiver.Name)
+// GetImagePerceiverServiceAccount creates a service account for OopsSight's Image Perceiver
+func (p *SpecConfig) GetImagePerceiverServiceAccount() *components.ServiceAccount {
+	return p.createPerceiverServiceAccount(p.opssight.Spec.Perceiver.ServiceAccount)
 }
 
-func (p *SpecConfig) perceiverServiceAccount(name string) *components.ServiceAccount {
+// createPerceiverServiceAccount returns a Service Account for a Perceiver
+func (p *SpecConfig) createPerceiverServiceAccount(name string) *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		Name:      name,
 		Namespace: p.opssight.Spec.Namespace,
@@ -194,18 +216,8 @@ func (p *SpecConfig) perceiverServiceAccount(name string) *components.ServiceAcc
 	return serviceAccount
 }
 
-// PodPerceiverServiceAccount creates a service account for the pod perceiver
-func (p *SpecConfig) PodPerceiverServiceAccount() *components.ServiceAccount {
-	return p.perceiverServiceAccount(p.opssight.Spec.Perceiver.ServiceAccount)
-}
-
-// ImagePerceiverServiceAccount creates a service account for the image perceiver
-func (p *SpecConfig) ImagePerceiverServiceAccount() *components.ServiceAccount {
-	return p.perceiverServiceAccount(p.opssight.Spec.Perceiver.ServiceAccount)
-}
-
-// PodPerceiverClusterRole creates a cluster role for the pod perceiver
-func (p *SpecConfig) PodPerceiverClusterRole() *components.ClusterRole {
+// GetPodPerceiverClusterRole creates a cluster role for OpsSight's Pod Perceiver
+func (p *SpecConfig) GetPodPerceiverClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
 		Name:       p.opssight.Spec.Perceiver.PodPerceiver.Name,
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -220,8 +232,8 @@ func (p *SpecConfig) PodPerceiverClusterRole() *components.ClusterRole {
 	return clusterRole
 }
 
-// ImagePerceiverClusterRole creates a cluster role for the image perceiver
-func (p *SpecConfig) ImagePerceiverClusterRole() *components.ClusterRole {
+// GetImagePerceiverClusterRole creates a cluster role for OpsSight's Image Perceiver
+func (p *SpecConfig) GetImagePerceiverClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
 		Name:       p.opssight.Spec.Perceiver.ImagePerceiver.Name,
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -236,8 +248,8 @@ func (p *SpecConfig) ImagePerceiverClusterRole() *components.ClusterRole {
 	return clusterRole
 }
 
-// PodPerceiverClusterRoleBinding creates a cluster role binding for the pod perceiver
-func (p *SpecConfig) PodPerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
+// GetPodPerceiverClusterRoleBinding creates a cluster role binding for OpsSight's Pod Perceiver
+func (p *SpecConfig) GetPodPerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       p.opssight.Spec.Perceiver.PodPerceiver.Name,
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -257,8 +269,8 @@ func (p *SpecConfig) PodPerceiverClusterRoleBinding(clusterRole *components.Clus
 	return clusterRoleBinding
 }
 
-// ImagePerceiverClusterRoleBinding creates a cluster role binding for the image perceiver
-func (p *SpecConfig) ImagePerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
+// GetImagePerceiverClusterRoleBinding creates a cluster role binding for OpsSight's Image Perceiver
+func (p *SpecConfig) GetImagePerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       p.opssight.Spec.Perceiver.ImagePerceiver.Name,
 		APIVersion: "rbac.authorization.k8s.io/v1",

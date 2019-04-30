@@ -89,11 +89,11 @@ func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components
 	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
 	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
 
-	scannerClusterRoleBinding, _ := opssightSpecConfig.ScannerClusterRoleBinding()
+	scannerClusterRoleBinding, _ := opssightSpecConfig.GetScannerClusterRoleBinding()
 	expectedClusterRoleBindings := map[string]*components.ClusterRoleBinding{
 		scanner:        scannerClusterRoleBinding,
-		podPerceiver:   opssightSpecConfig.PodPerceiverClusterRoleBinding(opssightSpecConfig.PodPerceiverClusterRole()),
-		imagePerceiver: opssightSpecConfig.ImagePerceiverClusterRoleBinding(opssightSpecConfig.ImagePerceiverClusterRole()),
+		podPerceiver:   opssightSpecConfig.GetPodPerceiverClusterRoleBinding(opssightSpecConfig.GetPodPerceiverClusterRole()),
+		imagePerceiver: opssightSpecConfig.GetImagePerceiverClusterRoleBinding(opssightSpecConfig.GetImagePerceiverClusterRole()),
 	}
 
 	for _, cb := range clusterRoleBindings {
@@ -111,8 +111,8 @@ func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, 
 	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
 	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
 	expectedClusterRoles := map[string]*components.ClusterRole{
-		podPerceiver:   opssightSpecConfig.PodPerceiverClusterRole(),
-		imagePerceiver: opssightSpecConfig.ImagePerceiverClusterRole(),
+		podPerceiver:   opssightSpecConfig.GetPodPerceiverClusterRole(),
+		imagePerceiver: opssightSpecConfig.GetImagePerceiverClusterRole(),
 	}
 
 	for _, cr := range clusterRoles {
@@ -165,7 +165,7 @@ func validateDeployments(t *testing.T, deployments []*components.Deployment, ops
 		t.Errorf("deployments length not equal to 1, actual: %d", len(deployments))
 	}
 
-	prometheusDeployment, _ := opssightSpecConfig.PerceptorMetricsDeployment()
+	prometheusDeployment, _ := opssightSpecConfig.GetPrometheusDeployment()
 
 	expectedDeployment := map[string]*components.Deployment{
 		"prometheus": prometheusDeployment,
@@ -188,10 +188,10 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
 	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
 
-	perceptorRc, _ := opssightSpecConfig.PerceptorReplicationController()
-	scannerRc, _ := opssightSpecConfig.ScannerReplicationController()
-	podPerceiverRc, _ := opssightSpecConfig.PodPerceiverReplicationController()
-	imagePerceiverRc, _ := opssightSpecConfig.ImagePerceiverReplicationController()
+	perceptorRc, _ := opssightSpecConfig.GetPerceptorReplicationController()
+	scannerRc, _ := opssightSpecConfig.GetScannerReplicationController()
+	podPerceiverRc, _ := opssightSpecConfig.GetPodPerceiverReplicationController()
+	imagePerceiverRc, _ := opssightSpecConfig.GetImagePerceiverReplicationController()
 	expectedReplicationController := map[string]*components.ReplicationController{
 		perceptor:      perceptorRc,
 		scanner:        scannerRc,
@@ -212,7 +212,7 @@ func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *o
 	}
 
 	expectedSecrets := map[string]*components.Secret{
-		opssightSpec.SecretName: opssightSpecConfig.PerceptorSecret(),
+		opssightSpec.SecretName: opssightSpecConfig.GetPerceptorSecret(),
 	}
 
 	for _, secret := range secrets {
@@ -231,9 +231,9 @@ func validateServiceAccounts(t *testing.T, serviceAccounts []*components.Service
 	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
 	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
 	expectedServiceAccounts := map[string]*components.ServiceAccount{
-		scanner:        opssightSpecConfig.ScannerServiceAccount(),
-		imagePerceiver: opssightSpecConfig.ImagePerceiverServiceAccount(),
-		podPerceiver:   opssightSpecConfig.PodPerceiverServiceAccount(),
+		scanner:        opssightSpecConfig.GetScannerServiceAccount(),
+		imagePerceiver: opssightSpecConfig.GetImagePerceiverServiceAccount(),
+		podPerceiver:   opssightSpecConfig.GetPodPerceiverServiceAccount(),
 	}
 
 	for _, serviceAccount := range serviceAccounts {
@@ -250,21 +250,21 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 
 	// perceptor
 	perceptor := opssightSpec.Perceptor.Name
-	perceptorService, _ := opssightSpecConfig.PerceptorService()
+	perceptorService, _ := opssightSpecConfig.GetPerceptorService()
 	scanner := opssightSpec.ScannerPod.Scanner.Name
 	imageFacade := opssightSpec.ScannerPod.ImageFacade.Name
 	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
 	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
 
 	// prometheus
-	prometheusService, _ := opssightSpecConfig.PerceptorMetricsService()
+	prometheusService, _ := opssightSpecConfig.GetPrometheusService()
 
 	expectedServices := map[string]*components.Service{
 		perceptor:      perceptorService,
-		scanner:        opssightSpecConfig.ScannerService(),
-		imageFacade:    opssightSpecConfig.ImageFacadeService(),
-		podPerceiver:   opssightSpecConfig.PodPerceiverService(),
-		imagePerceiver: opssightSpecConfig.ImageFacadeService(),
+		scanner:        opssightSpecConfig.GetScannerService(),
+		imageFacade:    opssightSpecConfig.GetImageFacadeService(),
+		podPerceiver:   opssightSpecConfig.GetPodPerceiverService(),
+		imagePerceiver: opssightSpecConfig.GetImageFacadeService(),
 		"prometheus":   prometheusService,
 	}
 

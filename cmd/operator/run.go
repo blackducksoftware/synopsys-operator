@@ -90,13 +90,13 @@ func runProtoform(configPath string) {
 	hubController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetBlackDuckTemplate(), stopCh)
 	deployer.AddController(hubController)
 
-	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
-		Config:        deployer.Config,
-		KubeConfig:    deployer.KubeConfig,
-		KubeClientSet: deployer.KubeClientSet,
-		Defaults:      bdutil.GetOpsSightDefault(),
-		Threadiness:   deployer.Config.Threadiness,
-		StopCh:        stopCh,
+	opssSightController, err := opssight.NewCRDInstaller(&opssight.InstallerConfig{
+		ProtoformConfig: deployer.Config,
+		KubeConfig:      deployer.KubeConfig,
+		KubeClientSet:   deployer.KubeClientSet,
+		Defaults:        bdutil.GetOpsSightDefault(),
+		Threadiness:     deployer.Config.Threadiness,
+		StopCh:          stopCh,
 	})
 	if err != nil {
 		panic(err)

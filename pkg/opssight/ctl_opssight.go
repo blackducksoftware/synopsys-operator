@@ -39,6 +39,7 @@ import (
 // for the Synopsysctl tool
 type Ctl struct {
 	Spec                                            *opssightapi.OpsSightSpec
+	Version                                         string
 	PerceptorName                                   string
 	PerceptorImage                                  string
 	PerceptorPort                                   int
@@ -164,6 +165,7 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 // AddSpecFlags adds flags for OpsSight's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of the OpsSight")
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of OpsSight's Core")
 	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Type of service for OpsSight's Core model [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours Perepetor waits between checking for scans")
@@ -224,6 +226,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag %s: CHANGED", f.Name)
 		switch f.Name {
+		case "version":
+			ctl.Spec.Version = ctl.Version
 		case "opssight-core-image":
 			if ctl.Spec.Perceptor == nil {
 				ctl.Spec.Perceptor = &opssightapi.Perceptor{}

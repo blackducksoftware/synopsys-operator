@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -108,6 +109,13 @@ func (a Alert) Versions() []string {
 // Ensure will get the necessary Creater and make sure the instance
 // is correctly deployed or deploy it if needed
 func (a Alert) Ensure(alt *alertapi.Alert) error {
+	// If the version is not specified then we set it to be the latest.
+	if len(alt.Spec.Version) == 0 {
+		versions := a.Versions()
+		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+		alt.Spec.Version = versions[0]
+	}
+
 	creater, err := a.getCreater(alt.Spec.Version) // get Creater for the Alert Version
 	if err != nil {
 		return err

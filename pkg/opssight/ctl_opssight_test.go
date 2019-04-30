@@ -102,6 +102,7 @@ func TestAddSpecFlags(t *testing.T) {
 	ctl.AddSpecFlags(actualCmd, true)
 
 	cmd := &cobra.Command{}
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of the OpsSight")
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of OpsSight's Core")
 	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Type of service for OpsSight's Core model [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours Perepetor waits between checking for scans")
@@ -167,6 +168,16 @@ func TestSetFlag(t *testing.T) {
 		changedCtl  *Ctl
 		changedSpec *opssightapi.OpsSightSpec
 	}{
+		// case
+		{
+			flagName:   "version",
+			initialCtl: NewOpsSightCtl(),
+			changedCtl: &Ctl{
+				Spec:    &opssightapi.OpsSightSpec{},
+				Version: "changed",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{Version: "changed"},
+		},
 		// case
 		{
 			flagName:   "opssight-core-image",

@@ -29,8 +29,8 @@ import (
 	"github.com/juju/errors"
 )
 
-// PerceptorSkyfireReplicationController creates a replication controller for perceptor skyfire
-func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.ReplicationController, error) {
+// GetSkyfireReplicationController creates a replication controller for OpsSight's Skyfire
+func (p *SpecConfig) GetSkyfireReplicationController() (*components.ReplicationController, error) {
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
@@ -39,7 +39,7 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 	})
 	rc.AddSelectors(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
 	rc.AddLabels(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
-	pod, err := p.perceptorSkyfirePod()
+	pod, err := p.getSkyfirePod()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create skyfire volumes")
 	}
@@ -48,14 +48,15 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 	return rc, nil
 }
 
-func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
+// getSkyfirePod returns a Pod for the OpsSight's Skyfire
+func (p *SpecConfig) getSkyfirePod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name:           p.opssight.Spec.Skyfire.Name,
 		ServiceAccount: p.opssight.Spec.Skyfire.ServiceAccount,
 	})
 	pod.AddLabels(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
 
-	cont, err := p.perceptorSkyfireContainer()
+	cont, err := p.getSkyfireContainer()
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +65,7 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 		return nil, errors.Annotate(err, "unable to add skyfire container")
 	}
 
-	vols, err := p.perceptorSkyfireVolumes()
+	vols, err := p.getSkyfireVolumes()
 	if err != nil {
 		return nil, errors.Annotate(err, "error creating skyfire volumes")
 	}
@@ -78,33 +79,9 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *SpecConfig) pyfireContainer() (*components.Container, error) {
-	return components.NewContainer(horizonapi.ContainerConfig{
-		Name:    p.opssight.Spec.Skyfire.Name,
-		Image:   p.opssight.Spec.Skyfire.Image,
-		Command: []string{"python3"},
-		Args: []string{
-			"src/main.py",
-			fmt.Sprintf("/etc/skyfire/%s.json", p.opssight.Spec.ConfigMapName),
-		},
-		MinCPU: p.opssight.Spec.DefaultCPU,
-		MinMem: p.opssight.Spec.DefaultMem,
-	})
-}
-
-func (p *SpecConfig) golangSkyfireContainer() (*components.Container, error) {
-	return components.NewContainer(horizonapi.ContainerConfig{
-		Name:    p.opssight.Spec.Skyfire.Name,
-		Image:   p.opssight.Spec.Skyfire.Image,
-		Command: []string{fmt.Sprintf("./%s", p.opssight.Spec.Skyfire.Name)},
-		Args:    []string{fmt.Sprintf("/etc/skyfire/%s.json", p.opssight.Spec.ConfigMapName)},
-		MinCPU:  p.opssight.Spec.DefaultCPU,
-		MinMem:  p.opssight.Spec.DefaultMem,
-	})
-}
-
-func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) {
-	container, err := p.pyfireContainer()
+// getSkyfireContainer returns a Container for OpsSight's Skyfire
+func (p *SpecConfig) getSkyfireContainer() (*components.Container, error) {
+	container, err := p.createPyfireContainer() // switch b/w Pyfire (Python) and Skyfire (Golang)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -134,7 +111,43 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 	return container, nil
 }
 
-func (p *SpecConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
+// createPyfireContainer returns a Container for the Python version of OpsSight's Skyfire
+func (p *SpecConfig) createPyfireContainer() (*components.Container, error) {
+	image := p.opssight.Spec.Skyfire.Image
+	if image == "" {
+		image = GetImageTag(p.opssight.Spec.Version, "pyfire")
+	}
+	return components.NewContainer(horizonapi.ContainerConfig{
+		Name:    p.opssight.Spec.Skyfire.Name,
+		Image:   image,
+		Command: []string{"python3"},
+		Args: []string{
+			"src/main.py",
+			fmt.Sprintf("/etc/skyfire/%s.json", p.opssight.Spec.ConfigMapName),
+		},
+		MinCPU: p.opssight.Spec.DefaultCPU,
+		MinMem: p.opssight.Spec.DefaultMem,
+	})
+}
+
+// createGolangSkyfireContainer returns a Container for the Golang version of OpsSight's Skyfire
+func (p *SpecConfig) createGolangSkyfireContainer() (*components.Container, error) {
+	image := p.opssight.Spec.Skyfire.Image
+	if image == "" {
+		image = GetImageTag(p.opssight.Spec.Version, "skyfire")
+	}
+	return components.NewContainer(horizonapi.ContainerConfig{
+		Name:    p.opssight.Spec.Skyfire.Name,
+		Image:   image,
+		Command: []string{fmt.Sprintf("./%s", p.opssight.Spec.Skyfire.Name)},
+		Args:    []string{fmt.Sprintf("/etc/skyfire/%s.json", p.opssight.Spec.ConfigMapName)},
+		MinCPU:  p.opssight.Spec.DefaultCPU,
+		MinMem:  p.opssight.Spec.DefaultMem,
+	})
+}
+
+// getSkyfireVolumes returns Volume's for OpsSight's Skyfire
+func (p *SpecConfig) getSkyfireVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{p.configMapVolume("skyfire")}
 
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
@@ -149,8 +162,8 @@ func (p *SpecConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 	return vols, nil
 }
 
-// PerceptorSkyfireService creates a service for perceptor skyfire
-func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
+// GetSkyfireService creates a service for OpsSight's Skyfire
+func (p *SpecConfig) GetSkyfireService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.opssight.Spec.Skyfire.Name,
 		Namespace: p.opssight.Spec.Namespace,
@@ -176,8 +189,8 @@ func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 	return service
 }
 
-// PerceptorSkyfireServiceAccount creates a service account for perceptor skyfire
-func (p *SpecConfig) PerceptorSkyfireServiceAccount() *components.ServiceAccount {
+// GetSkyfireServiceAccount creates a service account for OpsSight's Skyfire
+func (p *SpecConfig) GetSkyfireServiceAccount() *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		Name:      "skyfire",
 		Namespace: p.opssight.Spec.Namespace,
@@ -186,8 +199,8 @@ func (p *SpecConfig) PerceptorSkyfireServiceAccount() *components.ServiceAccount
 	return serviceAccount
 }
 
-// PerceptorSkyfireClusterRole creates a cluster role for perceptor skyfire
-func (p *SpecConfig) PerceptorSkyfireClusterRole() *components.ClusterRole {
+// GetSkyfireClusterRole creates a cluster role for OpsSight's Skyfire
+func (p *SpecConfig) GetSkyfireClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
 		Name:       "skyfire",
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -202,8 +215,8 @@ func (p *SpecConfig) PerceptorSkyfireClusterRole() *components.ClusterRole {
 	return clusterRole
 }
 
-// PerceptorSkyfireClusterRoleBinding creates a cluster role binding for perceptor skyfire
-func (p *SpecConfig) PerceptorSkyfireClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
+// GetSkyfireClusterRoleBinding creates a cluster role binding for OpsSight's Skyfire
+func (p *SpecConfig) GetSkyfireClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       "skyfire",
 		APIVersion: "rbac.authorization.k8s.io/v1",

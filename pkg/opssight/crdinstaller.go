@@ -33,30 +33,50 @@ import (
 	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	opssightinformer "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
 
 // CRDInstaller defines the specification
 type CRDInstaller struct {
-	config *Config
+	config *InstallerConfig
+}
+
+// InstallerConfig defines the specification for the controller
+type InstallerConfig struct {
+	ProtoformConfig *protoform.Config
+	KubeConfig      *rest.Config
+	KubeClientSet   *kubernetes.Clientset
+	Defaults        interface{}
+	resyncPeriod    time.Duration
+	indexers        cache.Indexers
+	informer        cache.SharedIndexInformer
+	queue           workqueue.RateLimitingInterface
+	handler         *Handler
+	controller      *Controller
+	customClientSet *opssightclientset.Clientset
+	Threadiness     int
+	StopCh          <-chan struct{}
 }
 
 // NewCRDInstaller will create a controller configuration
 func NewCRDInstaller(config interface{}) (*CRDInstaller, error) {
-	dependentConfig, ok := config.(*Config)
+	dependentConfig, ok := config.(*InstallerConfig)
 	if !ok {
 		return nil, errors.Errorf("failed to convert opssight defaults: %v", config)
 	}
 	c := &CRDInstaller{config: dependentConfig}
 
-	log.Debugf("resync period: %d", c.config.Config.ResyncIntervalInSeconds)
-	c.config.resyncPeriod = time.Duration(c.config.Config.ResyncIntervalInSeconds) * time.Second
+	log.Debugf("resync period: %d", c.config.ProtoformConfig.ResyncIntervalInSeconds)
+	c.config.resyncPeriod = time.Duration(c.config.ProtoformConfig.ResyncIntervalInSeconds) * time.Second
 	c.config.indexers = cache.Indexers{}
 
 	return c, nil
@@ -87,7 +107,7 @@ func (c *CRDInstaller) Deploy() error {
 			components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 				APIVersion: "apiextensions.k8s.io/v1beta1",
 				Name:       "opssights.synopsys.com",
-				Namespace:  c.config.Config.Namespace,
+				Namespace:  c.config.ProtoformConfig.Namespace,
 				Group:      "synopsys.com",
 				CRDVersion: "v1",
 				Kind:       "OpsSight",
@@ -110,7 +130,7 @@ func (c *CRDInstaller) Deploy() error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	configMapEditor := NewUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
+	configMapEditor := NewConfigUpdater(c.config.ProtoformConfig, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
 	configMapEditor.Run(c.config.StopCh)
 
 	return nil
@@ -124,7 +144,7 @@ func (c *CRDInstaller) PostDeploy() {
 func (c *CRDInstaller) CreateInformer() {
 	c.config.informer = opssightinformer.NewOpsSightInformer(
 		c.config.customClientSet,
-		c.config.Config.Namespace,
+		c.config.ProtoformConfig.Namespace,
 		c.config.resyncPeriod,
 		c.config.indexers,
 	)
@@ -207,11 +227,11 @@ func (c *CRDInstaller) CreateHandler() {
 	}
 
 	c.config.handler = &Handler{
-		Config:           c.config.Config,
+		Config:           c.config.ProtoformConfig,
 		KubeConfig:       c.config.KubeConfig,
 		KubeClient:       c.config.KubeClientSet,
 		OpsSightClient:   c.config.customClientSet,
-		Namespace:        c.config.Config.Namespace,
+		Namespace:        c.config.ProtoformConfig.Namespace,
 		OSSecurityClient: osClient,
 		RouteClient:      routeClient,
 		Defaults:         c.config.Defaults.(*opssightapi.OpsSightSpec),
@@ -229,7 +249,7 @@ func (c *CRDInstaller) CreateController() {
 			Informer:          c.config.informer,
 			Handler:           c.config.handler,
 			OpsSightClientset: c.config.customClientSet,
-			Namespace:         c.config.Config.Namespace,
+			Namespace:         c.config.ProtoformConfig.Namespace,
 		})
 }
 

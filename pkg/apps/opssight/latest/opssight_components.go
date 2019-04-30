@@ -24,7 +24,9 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
+	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -35,6 +37,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -103,14 +106,6 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 	return &SpecConfig{config: config, kubeClient: kubeClient, opssightClient: opssightClient, hubClient: hubClient, opssight: opssight, configMap: configMap, dryRun: dryRun}
 }
 
-func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
-	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      volumeName,
-		MapOrSecretName: p.opssight.Spec.ConfigMapName,
-		DefaultMode:     util.IntToInt32(420),
-	})
-}
-
 // GetComponents will return the list of components
 func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
@@ -126,24 +121,24 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.ConfigMaps = append(components.ConfigMaps, cm)
 
 	// Add Perceptor
-	rc, err := p.PerceptorReplicationController()
+	rc, err := p.GetPerceptorReplicationController()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	components.ReplicationControllers = append(components.ReplicationControllers, rc)
-	service, err := p.PerceptorService()
+	service, err := p.GetPerceptorService()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	components.Services = append(components.Services, service)
-	perceptorSvc, err := p.getPerceptorExposeService()
+	perceptorSvc, err := p.GetPerceptorExposeService()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create perceptor service")
 	}
 	if perceptorSvc != nil {
 		components.Services = append(components.Services, perceptorSvc)
 	}
-	secret := p.PerceptorSecret()
+	secret := p.GetPerceptorSecret()
 	if !p.dryRun {
 		p.addSecretData(secret)
 	}
@@ -155,15 +150,15 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	// Add Perceptor Scanner
-	scannerRC, err := p.ScannerReplicationController()
+	scannerRC, err := p.GetScannerReplicationController()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create scanner replication controller")
 	}
 	components.ReplicationControllers = append(components.ReplicationControllers, scannerRC)
-	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
+	components.Services = append(components.Services, p.GetScannerService(), p.GetImageFacadeService())
 
-	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
-	clusterRoleBinding, err := p.ScannerClusterRoleBinding()
+	components.ServiceAccounts = append(components.ServiceAccounts, p.GetScannerServiceAccount())
+	clusterRoleBinding, err := p.GetScannerClusterRoleBinding()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create scanner cluster role binding")
 	}
@@ -171,62 +166,62 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 
 	// Add Pod Perceiver
 	if p.opssight.Spec.Perceiver.EnablePodPerceiver {
-		rc, err = p.PodPerceiverReplicationController()
+		rc, err = p.GetPodPerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create pod perceiver")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
-		components.Services = append(components.Services, p.PodPerceiverService())
-		components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
-		podClusterRole := p.PodPerceiverClusterRole()
+		components.Services = append(components.Services, p.GetPodPerceiverService())
+		components.ServiceAccounts = append(components.ServiceAccounts, p.GetPodPerceiverServiceAccount())
+		podClusterRole := p.GetPodPerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, podClusterRole)
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(podClusterRole))
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.GetPodPerceiverClusterRoleBinding(podClusterRole))
 	}
 
 	// Add Image Perceiver
 	if p.opssight.Spec.Perceiver.EnableImagePerceiver {
-		rc, err = p.ImagePerceiverReplicationController()
+		rc, err = p.GetImagePerceiverReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create image perceiver")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
-		components.Services = append(components.Services, p.ImagePerceiverService())
-		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
-		imageClusterRole := p.ImagePerceiverClusterRole()
+		components.Services = append(components.Services, p.GetImagePerceiverService())
+		components.ServiceAccounts = append(components.ServiceAccounts, p.GetImagePerceiverServiceAccount())
+		imageClusterRole := p.GetImagePerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, imageClusterRole)
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(imageClusterRole))
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.GetImagePerceiverClusterRoleBinding(imageClusterRole))
 	}
 
 	// Add skyfire
 	if p.opssight.Spec.EnableSkyfire {
-		skyfireRC, err := p.PerceptorSkyfireReplicationController()
+		skyfireRC, err := p.GetSkyfireReplicationController()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create skyfire")
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, skyfireRC)
-		components.Services = append(components.Services, p.PerceptorSkyfireService())
-		components.ServiceAccounts = append(components.ServiceAccounts, p.PerceptorSkyfireServiceAccount())
-		skyfireClusterRole := p.PerceptorSkyfireClusterRole()
+		components.Services = append(components.Services, p.GetSkyfireService())
+		components.ServiceAccounts = append(components.ServiceAccounts, p.GetSkyfireServiceAccount())
+		skyfireClusterRole := p.GetSkyfireClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, skyfireClusterRole)
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PerceptorSkyfireClusterRoleBinding(skyfireClusterRole))
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.GetSkyfireClusterRoleBinding(skyfireClusterRole))
 	}
 
 	// Add Metrics
 	if p.opssight.Spec.EnableMetrics {
 		// deployments
-		dep, err := p.PerceptorMetricsDeployment()
+		dep, err := p.GetPrometheusDeployment()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create metrics")
 		}
 		components.Deployments = append(components.Deployments, dep)
 
 		// services
-		prometheusService, err := p.PerceptorMetricsService()
+		prometheusService, err := p.GetPrometheusService()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create prometheus metrics service")
 		}
 		components.Services = append(components.Services, prometheusService)
-		prometheusSvc, err := p.getPerceptorMetricsExposeService()
+		prometheusSvc, err := p.GetPrometheusExposeService()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create prometheus metrics exposed service")
 		}
@@ -235,7 +230,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 
 		// config map
-		perceptorCm, err := p.PerceptorMetricsConfigMap()
+		perceptorCm, err := p.GetPrometheusConfigMap()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create perceptor config map")
 		}
@@ -250,34 +245,12 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	return components, nil
 }
 
-func (p *SpecConfig) getPerceptorExposeService() (*components.Service, error) {
-	var svc *components.Service
-	var err error
-	switch strings.ToUpper(p.opssight.Spec.Perceptor.Expose) {
-	case "NODEPORT":
-		svc, err = p.PerceptorNodePortService()
-		break
-	case "LOADBALANCER":
-		svc, err = p.PerceptorLoadBalancerService()
-		break
-	default:
-	}
-	return svc, err
-}
-
-func (p *SpecConfig) getPerceptorMetricsExposeService() (*components.Service, error) {
-	var svc *components.Service
-	var err error
-	switch strings.ToUpper(p.opssight.Spec.Prometheus.Expose) {
-	case "NODEPORT":
-		svc, err = p.PerceptorMetricsNodePortService()
-		break
-	case "LOADBALANCER":
-		svc, err = p.PerceptorMetricsLoadBalancerService()
-		break
-	default:
-	}
-	return svc, err
+func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
+	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      volumeName,
+		MapOrSecretName: p.opssight.Spec.ConfigMapName,
+		DefaultMode:     util.IntToInt32(420),
+	})
 }
 
 func (p *SpecConfig) addSecretData(secret *components.Secret) error {
@@ -288,15 +261,14 @@ func (p *SpecConfig) addSecretData(secret *components.Secret) error {
 	}
 
 	// adding Internal Black Duck credentials
-	secretEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient)
 	hubType := p.opssight.Spec.Blackduck.BlackduckSpec.Type
 	blackduckPassword, err := util.Base64Decode(p.opssight.Spec.Blackduck.BlackduckPassword)
 	if err != nil {
 		return errors.Annotatef(err, "unable to decode blackduckPassword")
 	}
 
-	allHubs := secretEditor.getAllHubs(hubType, blackduckPassword)
-	blackduckPasswords := secretEditor.appendBlackDuckSecrets(blackduckHosts, p.opssight.Status.InternalHosts, allHubs)
+	allHubs := p.getAllHubs(hubType, blackduckPassword)
+	blackduckPasswords := util.AppendBlackDuckSecrets(blackduckHosts, p.opssight.Status.InternalHosts, allHubs)
 
 	// marshal the blackduck credentials to bytes
 	bytes, err := json.Marshal(blackduckPasswords)
@@ -318,6 +290,51 @@ func (p *SpecConfig) addSecretData(secret *components.Secret) error {
 	secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
 
 	// add internal hosts to status
-	p.opssight.Status.InternalHosts = secretEditor.appendBlackDuckHosts(p.opssight.Status.InternalHosts, allHubs)
+	p.opssight.Status.InternalHosts = util.AppendBlackDuckHosts(p.opssight.Status.InternalHosts, allHubs)
 	return nil
+}
+
+// getAllHubs get only the internal Black Duck instances from the cluster
+func (p *SpecConfig) getAllHubs(hubType string, blackduckPassword string) []*opssightapi.Host {
+	hosts := []*opssightapi.Host{}
+	hubsList, err := util.ListHubs(p.hubClient, p.config.Namespace)
+	if err != nil {
+		log.Errorf("unable to list blackducks due to %+v", err)
+	}
+	for _, hub := range hubsList.Items {
+		if strings.EqualFold(hub.Spec.Type, hubType) {
+			var concurrentScanLimit int
+			switch strings.ToUpper(hub.Spec.Size) {
+			case "MEDIUM":
+				concurrentScanLimit = 3
+			case "LARGE":
+				concurrentScanLimit = 4
+			case "X-LARGE":
+				concurrentScanLimit = 6
+			default:
+				concurrentScanLimit = 2
+			}
+			host := &opssightapi.Host{Domain: fmt.Sprintf("webserver.%s.svc", hub.Name), ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysadmin", Port: 443, Password: blackduckPassword}
+			hosts = append(hosts, host)
+		}
+	}
+	log.Debugf("total no of Black Duck's for type %s is %d", hubType, len(hosts))
+	return hosts
+}
+
+// getDefaultPassword get the default password for the hub
+func (p *SpecConfig) getDefaultPassword() string {
+	var hubPassword string
+	var err error
+	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
+		// get the secret from the default operator namespace, then copy it into the hub namespace.
+		_, _, _, hubPassword, err = util.GetDefaultPasswords(p.kubeClient, p.config.Namespace)
+		if err == nil {
+			break
+		} else {
+			log.Infof("wasn't able to get hub password, sleeping 5 seconds.  try = %v", dbInitTry)
+			time.Sleep(5 * time.Second)
+		}
+	}
+	return hubPassword
 }

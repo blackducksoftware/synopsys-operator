@@ -24,6 +24,7 @@ package apps
 import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"k8s.io/client-go/rest"
 )
@@ -44,7 +45,12 @@ func (a *App) Alert() *alert.Alert {
 	return alert.NewAlert(a.config, a.kubeConfig)
 }
 
-// Blackduck will return a Blackduck
+// Blackduck will return a Black Duck
 func (a *App) Blackduck() *blackduck.Blackduck {
 	return blackduck.NewBlackduck(a.config, a.kubeConfig)
+}
+
+// OpsSight will return an OpsSight
+func (a *App) OpsSight() *opssight.OpsSight {
+	return opssight.NewOpsSight(a.config, a.kubeConfig)
 }

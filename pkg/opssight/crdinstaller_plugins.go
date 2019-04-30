@@ -25,6 +25,7 @@ package opssight
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -53,17 +54,17 @@ func init() {
 // It is assumed that the secret in perceptor will roll over any time this is updated, and
 // if not, that there is a problem in the orchestration environment.
 
-// Updater stores the opssight updater configuration
-type Updater struct {
+// ConfigUpdater stores the opssight updater configuration
+type ConfigUpdater struct {
 	config         *protoform.Config
 	kubeClient     *kubernetes.Clientset
 	hubClient      *hubclient.Clientset
 	opssightClient *opssightclientset.Clientset
 }
 
-// NewUpdater returns the opssight updater configuration
-func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *Updater {
-	return &Updater{
+// NewConfigUpdater returns the opssight updater configuration
+func NewConfigUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *ConfigUpdater {
+	return &ConfigUpdater{
 		config:         config,
 		kubeClient:     kubeClient,
 		hubClient:      hubClient,
@@ -73,7 +74,7 @@ func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubC
 
 // Run watches for Black Duck and OpsSight events and update the internal Black Duck hosts in Perceptor secret and
 // then patch the corresponding replication controller
-func (p *Updater) Run(ch <-chan struct{}) {
+func (p *ConfigUpdater) Run(ch <-chan struct{}) {
 	logger.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
 
 	syncFunc := func() {
@@ -120,7 +121,7 @@ func (p *Updater) Run(ch <-chan struct{}) {
 }
 
 // isBlackDuckRunning return whether the Black Duck instance is in running state
-func (p *Updater) isBlackDuckRunning(obj interface{}) bool {
+func (p *ConfigUpdater) isBlackDuckRunning(obj interface{}) bool {
 	blackduck, _ := obj.(*blackduckapi.Blackduck)
 	if strings.EqualFold(blackduck.Status.State, "Running") {
 		return true
@@ -129,7 +130,7 @@ func (p *Updater) isBlackDuckRunning(obj interface{}) bool {
 }
 
 // isOpsSightRunning return whether the OpsSight is in running state
-func (p *Updater) isOpsSightRunning(obj interface{}) bool {
+func (p *ConfigUpdater) isOpsSightRunning(obj interface{}) bool {
 	opssight, _ := obj.(*opssightapi.OpsSight)
 	if strings.EqualFold(opssight.Status.State, "Running") {
 		return true
@@ -138,7 +139,7 @@ func (p *Updater) isOpsSightRunning(obj interface{}) bool {
 }
 
 // updateAllHubs will update the Black Duck instances in opssight resources
-func (p *Updater) updateAllHubs() []error {
+func (p *ConfigUpdater) updateAllHubs() []error {
 	opssights, err := util.GetOpsSights(p.opssightClient)
 	if err != nil {
 		return []error{errors.Annotate(err, "unable to get opssights")}
@@ -159,7 +160,7 @@ func (p *Updater) updateAllHubs() []error {
 }
 
 // updateOpsSight will update the opssight resource with latest Black Duck instances
-func (p *Updater) updateOpsSight(obj interface{}) error {
+func (p *ConfigUpdater) updateOpsSight(obj interface{}) error {
 	opssight, ok := obj.(*opssightapi.OpsSight)
 	if !ok {
 		return errors.Errorf("unable to cast object")
@@ -184,7 +185,7 @@ func (p *Updater) updateOpsSight(obj interface{}) error {
 }
 
 // update will list all Black Ducks in the cluster, and send them to opssight as scan targets.
-func (p *Updater) update(opssight *opssightapi.OpsSight) error {
+func (p *ConfigUpdater) update(opssight *opssightapi.OpsSight) error {
 	hubType := opssight.Spec.Blackduck.BlackduckSpec.Type
 
 	blackduckPassword, err := util.Base64Decode(opssight.Spec.Blackduck.BlackduckPassword)
@@ -202,7 +203,7 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 }
 
 // getAllHubs get only the internal Black Duck instances from the cluster
-func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssightapi.Host {
+func (p *ConfigUpdater) getAllHubs(hubType string, blackduckPassword string) []*opssightapi.Host {
 	hosts := []*opssightapi.Host{}
 	hubsList, err := util.ListHubs(p.hubClient, p.config.Namespace)
 	if err != nil {
@@ -229,8 +230,25 @@ func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssig
 	return hosts
 }
 
+// getDefaultPassword get the default password for the hub
+func (p *ConfigUpdater) getDefaultPassword() string {
+	var hubPassword string
+	var err error
+	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
+		// get the secret from the default operator namespace, then copy it into the hub namespace.
+		_, _, _, hubPassword, err = util.GetDefaultPasswords(p.kubeClient, p.config.Namespace)
+		if err == nil {
+			break
+		} else {
+			log.Infof("wasn't able to get hub password, sleeping 5 seconds.  try = %v", dbInitTry)
+			time.Sleep(5 * time.Second)
+		}
+	}
+	return hubPassword
+}
+
 // updateOpsSightCRD will update the opssight CRD
-func (p *Updater) updateOpsSightCRD(opsSightSpec *opssightapi.OpsSightSpec, hubs []*opssightapi.Host) error {
+func (p *ConfigUpdater) updateOpsSightCRD(opsSightSpec *opssightapi.OpsSightSpec, hubs []*opssightapi.Host) error {
 	opssightName := opsSightSpec.Namespace
 	logger.WithField("opssight", opssightName).Info("update opssight: looking for opssight")
 	opssight, err := p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Get(opssightName, metav1.GetOptions{})
@@ -238,63 +256,11 @@ func (p *Updater) updateOpsSightCRD(opsSightSpec *opssightapi.OpsSightSpec, hubs
 		return errors.Annotatef(err, "unable to get opssight %s in %s namespace", opssightName, opsSightSpec.Namespace)
 	}
 
-	opssight.Status.InternalHosts = p.appendBlackDuckHosts(opssight.Status.InternalHosts, hubs)
+	opssight.Status.InternalHosts = util.AppendBlackDuckHosts(opssight.Status.InternalHosts, hubs)
 
 	_, err = p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Update(opssight)
 	if err != nil {
 		return errors.Annotatef(err, "unable to update opssight %s in %s", opssightName, opsSightSpec.Namespace)
 	}
 	return nil
-}
-
-// appendBlackDuckHosts will append the old and new internal Black Duck hosts
-func (p *Updater) appendBlackDuckHosts(oldBlackDucks []*opssightapi.Host, newBlackDucks []*opssightapi.Host) []*opssightapi.Host {
-	existingBlackDucks := make(map[string]*opssightapi.Host)
-	for _, oldBlackDuck := range oldBlackDucks {
-		existingBlackDucks[oldBlackDuck.Domain] = oldBlackDuck
-	}
-
-	finalBlackDucks := []*opssightapi.Host{}
-	for _, newBlackDuck := range newBlackDucks {
-		if existingBlackduck, ok := existingBlackDucks[newBlackDuck.Domain]; ok {
-			// add the existing internal Black Duck from the final Black Duck list
-			finalBlackDucks = append(finalBlackDucks, existingBlackduck)
-		} else {
-			// add the new internal Black Duck to the final Black Duck list
-			finalBlackDucks = append(finalBlackDucks, newBlackDuck)
-		}
-	}
-
-	return finalBlackDucks
-}
-
-// appendBlackDuckSecrets will append the secrets of external and internal Black Duck
-func (p *Updater) appendBlackDuckSecrets(existingExternalBlackDucks map[string]*opssightapi.Host, oldInternalBlackDucks []*opssightapi.Host, newInternalBlackDucks []*opssightapi.Host) map[string]*opssightapi.Host {
-	existingInternalBlackducks := make(map[string]*opssightapi.Host)
-	for _, oldInternalBlackDuck := range oldInternalBlackDucks {
-		existingInternalBlackducks[oldInternalBlackDuck.Domain] = oldInternalBlackDuck
-	}
-
-	currentInternalBlackducks := make(map[string]*opssightapi.Host)
-	for _, newInternalBlackDuck := range newInternalBlackDucks {
-		currentInternalBlackducks[newInternalBlackDuck.Domain] = newInternalBlackDuck
-	}
-
-	for _, currentInternalBlackduck := range currentInternalBlackducks {
-		// check if external host contains the internal host
-		if _, ok := existingExternalBlackDucks[currentInternalBlackduck.Domain]; ok {
-			// if internal host contains an external host, then check whether it is already part of status,
-			// if yes replace it with existing internal host else with new internal host
-			if existingInternalBlackduck, ok1 := existingInternalBlackducks[currentInternalBlackduck.Domain]; ok1 {
-				existingExternalBlackDucks[currentInternalBlackduck.Domain] = existingInternalBlackduck
-			} else {
-				existingExternalBlackDucks[currentInternalBlackduck.Domain] = currentInternalBlackduck
-			}
-		} else {
-			// add new internal Black Duck
-			existingExternalBlackDucks[currentInternalBlackduck.Domain] = currentInternalBlackduck
-		}
-	}
-
-	return existingExternalBlackDucks
 }
