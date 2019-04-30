@@ -1,0 +1,25 @@
+approve:
+  - repos:
+      - blackducksoftware/synopsys-operator
+    implicit_self_approve: true
+    lgtm_acts_as_approve: true
+
+plugins:
+  blackducksoftware/synopsys-operator:
+    - approve
+    - assign
+    - blunderbuss
+    - cat
+    - dog
+    - golint
+    - help
+    - hold
+    - label
+    - lgtm
+    - lifecycle
+    - shrug
+    - size
+    - trigger
+    - verify-owners
+    - wip
+    - yuks

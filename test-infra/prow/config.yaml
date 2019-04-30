@@ -1,0 +1,30 @@
+prowjob_namespace: default
+pod_namespace: test-pods
+log_level: debug
+
+sinker:
+  resync_period: 1h
+  max_prowjob_age: 168h
+  max_pod_age: 12h
+
+deck:
+  tide_update_period: 1s
+
+tide:
+  target_url: http://35.186.244.90/tide
+  pr_status_base_url: http://35.186.244.90/pr
+
+  merge_method:
+    blackducksoftware/synopsys-operator: squash
+
+  queries:
+    - repos:
+        - blackducksoftware/synopsys-operator
+      labels:
+        - lgtm
+        - approved
+      missingLabels:
+        - do-not-merge
+        - do-not-merge/hold
+        - do-not-merge/work-in-progress
+        - do-not-merge/invalid-owners-file
