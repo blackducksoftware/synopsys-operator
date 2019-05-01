@@ -40,35 +40,18 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 	var synopsysOperatorRCReplicas int32 = 1
 	synopsysOperatorRC := horizoncomponents.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		APIVersion: "v1",
-		//ClusterName:  "string",
-		Name:      "synopsys-operator",
-		Namespace: specConfig.Namespace,
-		Replicas:  &synopsysOperatorRCReplicas,
-		//ReadySeconds: "int32",
+		Name:       "synopsys-operator",
+		Namespace:  specConfig.Namespace,
+		Replicas:   &synopsysOperatorRCReplicas,
 	})
 
 	synopsysOperatorRC.AddLabelSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
 
 	synopsysOperatorPod := horizoncomponents.NewPod(horizonapi.PodConfig{
-		APIVersion: "v1",
-		//ClusterName:            "string",
+		APIVersion:     "v1",
 		Name:           "synopsys-operator",
 		Namespace:      specConfig.Namespace,
 		ServiceAccount: "synopsys-operator",
-		//RestartPolicy:          "RestartPolicyType",
-		//TerminationGracePeriod: "*int64",
-		//ActiveDeadline:         "*int64",
-		//Node:                   "string",
-		//FSGID:                  "*int64",
-		//Hostname:               "string",
-		//SchedulerName:          "string",
-		//DNSPolicy:              "DNSPolicType",
-		//PriorityValue:          "*int32",
-		//PriorityClass:          "string",
-		//SELinux:                "*SELinuxType",
-		//RunAsUser:              "*int64",
-		//RunAsGroup:             "*int64",
-		//ForceNonRoot:           "*bool",
 	})
 
 	synopsysOperatorContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
@@ -77,28 +60,8 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		Command:    []string{"./operator"},
 		Image:      specConfig.Image,
 		PullPolicy: horizonapi.PullAlways,
-		//MinCPU:                   "string",
-		//MaxCPU:                   "string",
-		//MinMem:                   "string",
-		//MaxMem:                   "string",
-		//Privileged:               "*bool",
-		//AllowPrivilegeEscalation: "*bool",
-		//ReadOnlyFS:               "*bool",
-		//ForceNonRoot:             "*bool",
-		//SELinux:                  "*SELinuxType",
-		//UID:                      "*int64",
-		//AllocateStdin:            "bool",
-		//StdinOnce:                "bool",
-		//AllocateTTY:              "bool",
-		//WorkingDirectory:         "string",
-		//TerminationMsgPath:       "string",
-		//TerminationMsgPolicy:     "TerminationMessagePolicyType",
 	})
 	synopsysOperatorContainer.AddPort(horizonapi.PortConfig{
-		//Name:          "string",
-		//Protocol:      "ProtocolType",
-		//IP:            "string",
-		//HostPort:      "string",
 		ContainerPort: "8080",
 	})
 	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
@@ -117,52 +80,28 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 	})
 
 	synopsysOperatorContainerUI := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
-		Name: "synopsys-operator-ui",
-		//Args:                     "[]string",
+		Name:       "synopsys-operator-ui",
 		Command:    []string{"./app"},
 		Image:      specConfig.Image,
 		PullPolicy: horizonapi.PullAlways,
-		//MinCPU:                   "string",
-		//MaxCPU:                   "string",
-		//MinMem:                   "string",
-		//MaxMem:                   "string",
-		//Privileged:               "*bool",
-		//AllowPrivilegeEscalation: "*bool",
-		//ReadOnlyFS:               "*bool",
-		//ForceNonRoot:             "*bool",
-		//SELinux:                  "*SELinuxType",
-		//UID:                      "*int64",
-		//AllocateStdin:            "bool",
-		//StdinOnce:                "bool",
-		//AllocateTTY:              "bool",
-		//WorkingDirectory:         "string",
-		//TerminationMsgPath:       "string",
-		//TerminationMsgPolicy:     "TerminationMessagePolicyType",
 	})
 	synopsysOperatorContainerUI.AddPort(horizonapi.PortConfig{
-		//Name:          "string",
-		//Protocol:      "ProtocolType",
-		//IP:            "string",
-		//HostPort:      "string",
 		ContainerPort: "3000",
 	})
 	synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "ADDR",
 		Type:         horizonapi.EnvVal,
 		KeyOrVal:     "0.0.0.0",
-		//FromName:     "string",
 	})
 	synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "PORT",
 		Type:         horizonapi.EnvVal,
 		KeyOrVal:     "3000",
-		//FromName:     "string",
 	})
 	synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "GO_ENV",
 		Type:         horizonapi.EnvVal,
 		KeyOrVal:     "development",
-		//FromName:     "string",
 	})
 
 	// Create config map volume
@@ -423,7 +362,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 		})
 
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:           []string{"get", "create"},
+			Verbs:           []string{"get", "list", "create", "delete", "deletecollection"},
 			APIGroups:       []string{"route.openshift.io"},
 			Resources:       []string{"routes"},
 			ResourceNames:   []string{},
