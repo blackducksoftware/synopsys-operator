@@ -33,7 +33,7 @@ type Route struct {
 	Kind               string
 	ServiceName        string
 	PortName           string
-	Labels             map[string]string `json:"labels,omitempty"`
+	Labels             map[string]string
 	TLSTerminationType routev1.TLSTerminationType
 }
 

@@ -981,7 +981,7 @@ func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	return routeClient
 }
 
-// GetRoute get an OpenShift routes
+// GetRoute gets an OpenShift routes
 func GetRoute(routeClient *routeclient.RouteV1Client, namespace string, name string) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Get(name, metav1.GetOptions{})
 }
