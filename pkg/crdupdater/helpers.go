@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -134,6 +135,23 @@ func sortPorts(ports []corev1.ServicePort) []servicePort {
 		servicePorts = append(servicePorts, servicePort{Name: port.Name, Protocol: port.Protocol, Port: port.Port, TargetPort: port.TargetPort})
 	}
 	return servicePorts
+}
+
+type policyRule struct {
+	Verbs     []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
+	APIGroups []string `json:"apiGroups,omitempty" protobuf:"bytes,2,rep,name=apiGroups"`
+	Resources []string `json:"resources,omitempty" protobuf:"bytes,3,rep,name=resources"`
+}
+
+func sortPolicyRule(rules []rbacv1.PolicyRule) []policyRule {
+	policyRules := []policyRule{}
+	for _, rule := range rules {
+		sort.Strings(rule.APIGroups)
+		sort.Strings(rule.Resources)
+		sort.Strings(rule.Verbs)
+		policyRules = append(policyRules, policyRule{Verbs: rule.Verbs, APIGroups: rule.APIGroups, Resources: rule.APIGroups})
+	}
+	return policyRules
 }
 
 func sortEnvs(envs []corev1.EnvVar) []corev1.EnvVar {
