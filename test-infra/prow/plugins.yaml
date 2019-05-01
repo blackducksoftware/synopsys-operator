@@ -1,8 +1,8 @@
 approve:
   - repos:
       - blackducksoftware/synopsys-operator
-    implicit_self_approve: true
-    lgtm_acts_as_approve: true
+    require_self_approval: true
+    lgtm_acts_as_approve: false
 
 plugins:
   blackducksoftware/synopsys-operator:
@@ -12,14 +12,24 @@ plugins:
     - cat
     - dog
     - golint
+    - heart
     - help
     - hold
     - label
     - lgtm
     - lifecycle
+    - milestone
+    - owners-label
+    - pony
     - shrug
     - size
     - trigger
     - verify-owners
     - wip
     - yuks
+
+external_plugins:
+  blackducksoftware/synopsys-operator:
+    - name: needs-rebase
+      events:
+        - pull_request
