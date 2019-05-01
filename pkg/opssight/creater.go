@@ -43,11 +43,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const (
-	// OPENSHIFT will denote to create openshift route
-	OPENSHIFT = "OPENSHIFT"
-)
-
 // Creater will store the configuration to create OpsSight
 type Creater struct {
 	config           *protoform.Config

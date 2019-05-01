@@ -64,6 +64,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const (
+	// OPENSHIFT denotes to create an OpenShift routes
+	OPENSHIFT = "OPENSHIFT"
+)
+
 // CreateContainer will create the container
 func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, ports []*horizonapi.PortConfig,
 	actionConfig *horizonapi.ActionConfig, preStopConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {

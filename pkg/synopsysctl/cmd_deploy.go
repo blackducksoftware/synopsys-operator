@@ -33,11 +33,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	// OPENSHIFT denotes to create an OpenShift routes
-	OPENSHIFT = "OPENSHIFT"
-)
-
 //  Deploy Command Defaults
 var exposeUI = ""
 var exposePrometheusMetrics = ""

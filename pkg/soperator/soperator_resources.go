@@ -423,7 +423,7 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 
 // GetOpenShiftRoute creates the OpenShift route component for the synopsys operator
 func (specConfig *SpecConfig) GetOpenShiftRoute() *api.Route {
-	if strings.ToUpper(specConfig.Expose) == "OPENSHIFT" {
+	if strings.ToUpper(specConfig.Expose) == util.OPENSHIFT {
 		return &api.Route{
 			Name:               "synopsys-operator-ui",
 			Namespace:          specConfig.Namespace,

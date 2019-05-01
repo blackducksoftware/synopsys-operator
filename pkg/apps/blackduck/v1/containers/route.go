@@ -25,12 +25,13 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routev1 "github.com/openshift/api/route/v1"
 )
 
 // GetOpenShiftRoute creates the OpenShift route component for the webserver
 func (c *Creater) GetOpenShiftRoute() *api.Route {
-	if strings.ToUpper(c.hubSpec.ExposeService) == "OPENSHIFT" {
+	if strings.ToUpper(c.hubSpec.ExposeService) == util.OPENSHIFT {
 		return &api.Route{
 			Name:               c.hubSpec.Namespace,
 			Namespace:          c.hubSpec.Namespace,

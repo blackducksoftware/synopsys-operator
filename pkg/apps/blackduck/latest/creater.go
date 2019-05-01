@@ -169,7 +169,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// Create Route on Openshift
-		if strings.ToUpper(blackduck.Spec.ExposeService) == "OPENSHIFT" && hc.routeClient != nil {
+		if strings.ToUpper(blackduck.Spec.ExposeService) == util.OPENSHIFT && hc.routeClient != nil {
 			route, _ := util.GetRoute(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
 			if route != nil {
 				newBlackuck.Status.IP = route.Spec.Host

@@ -29,6 +29,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
 )
@@ -256,7 +257,7 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 // GetPrometheusOpenShiftRoute creates the OpenShift route component for the prometheus metrics
 func (p *SpecConfig) GetPrometheusOpenShiftRoute() *api.Route {
 	namespace := p.opssight.Spec.Namespace
-	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == "OPENSHIFT" {
+	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
 		return &api.Route{
 			Name:               fmt.Sprintf("%s-%s", p.opssight.Spec.Prometheus.Name, namespace),
 			Namespace:          namespace,

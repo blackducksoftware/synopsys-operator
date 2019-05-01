@@ -165,7 +165,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncompone
 
 // GetOpenShiftRoute creates the OpenShift route component for the prometheus
 func (specConfig *PrometheusSpecConfig) GetOpenShiftRoute() *api.Route {
-	if strings.ToUpper(specConfig.Expose) == "OPENSHIFT" {
+	if strings.ToUpper(specConfig.Expose) == util.OPENSHIFT {
 		return &api.Route{
 			Name:               "synopsys-operator-prometheus",
 			Namespace:          specConfig.Namespace,

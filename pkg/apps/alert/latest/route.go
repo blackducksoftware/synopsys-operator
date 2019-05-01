@@ -26,12 +26,13 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routev1 "github.com/openshift/api/route/v1"
 )
 
 // GetOpenShiftRoute creates the OpenShift route component for the alert
 func (a *SpecConfig) GetOpenShiftRoute() *api.Route {
-	if strings.ToUpper(a.config.ExposeService) == "OPENSHIFT" {
+	if strings.ToUpper(a.config.ExposeService) == util.OPENSHIFT {
 		return &api.Route{
 			Name:               a.config.Namespace,
 			Namespace:          a.config.Namespace,
