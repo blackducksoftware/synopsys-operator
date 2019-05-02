@@ -130,7 +130,7 @@ func TestSwitchSpec(t *testing.T) {
 		expected *opssightv1.OpsSightSpec
 	}{
 		{input: EmptySpec, expected: &opssightv1.OpsSightSpec{}},
-		{input: TemplateSpec, expected: crddefaults.GetOpsSightTemplate()},
+		{input: UpstreamSpec, expected: crddefaults.GetOpsSightUpstream()},
 		{input: DefaultSpec, expected: crddefaults.GetOpsSightDefault()},
 		{input: DisabledBlackDuckSpec, expected: crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()},
 	}
@@ -155,19 +155,6 @@ func TestAddSpecFlags(t *testing.T) {
 	ctl.AddSpecFlags(actualCmd, true)
 
 	cmd := &cobra.Command{}
-	cmd.Flags().StringVar(&ctl.PerceptorName, "opssight-core-name", ctl.PerceptorName, "Name of the OpsSight Core")
-	cmd.Flags().StringVar(&ctl.ScannerPodName, "scannerpod-name", ctl.ScannerPodName, "Name of the ScannerPod")
-	cmd.Flags().StringVar(&ctl.ScannerPodScannerName, "scanner-name", ctl.ScannerPodScannerName, "Name of the Scanner Container")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeName, "image-getter-name", ctl.ScannerPodImageFacadeName, "Name of the Image Getter Container")
-	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverName, "image-processor-name", ctl.PerceiverImagePerceiverName, "Name of the Image Processor Container")
-	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverName, "pod-processor-name", ctl.PerceiverPodPerceiverName, "Name of the Pod Processor Container")
-	cmd.Flags().StringVar(&ctl.PerceiverServiceAccount, "processorpod-service-account", ctl.PerceiverServiceAccount, "Name of the Service Account Resource for the Image Processor's and Pod Processor's Pod")
-	cmd.Flags().StringVar(&ctl.PrometheusName, "prometheus-name", ctl.PrometheusName, "Name of Prometheus")
-	cmd.Flags().StringVar(&ctl.SkyfireName, "skyfire-name", ctl.SkyfireName, "Name of Skyfire")
-	cmd.Flags().StringVar(&ctl.SkyfireServiceAccount, "skyfire-service-account", ctl.SkyfireServiceAccount, "Service Account for Skyfire")
-	cmd.Flags().StringVar(&ctl.BlackduckConnectionsEnvironmentVaraiableName, "blackduck-connections-environment-variable-name", ctl.BlackduckConnectionsEnvironmentVaraiableName, "Environment Variable name to store the Black Duck connections")
-	cmd.Flags().StringVar(&ctl.ConfigMapName, "config-map-name", ctl.ConfigMapName, "Name of the config map for OpsSight")
-	cmd.Flags().StringVar(&ctl.SecretName, "secret-name", ctl.SecretName, "Name of the Secret for OpsSight")
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core", ctl.PerceptorImage, "Image of the OpsSight Core")
 	cmd.Flags().IntVar(&ctl.PerceptorPort, "opssight-core-port", ctl.PerceptorPort, "Port for the OpsSight Core")
 	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Expose the OpsSight Core model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
@@ -243,16 +230,6 @@ func TestSetFlag(t *testing.T) {
 		changedCtl  *Ctl
 		changedSpec *opssightv1.OpsSightSpec
 	}{
-		// case
-		{
-			flagName:   "opssight-core-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:          &opssightv1.OpsSightSpec{},
-				PerceptorName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceptor: &opssightv1.Perceptor{Name: "changed"}},
-		},
 		// case
 		{
 			flagName:   "opssight-core-image",
@@ -335,26 +312,6 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:           &opssightv1.OpsSightSpec{},
-				ScannerPodName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{Name: "changed"}},
-		},
-		// case
-		{
-			flagName:   "scanner-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                  &opssightv1.OpsSightSpec{},
-				ScannerPodScannerName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{Scanner: &opssightv1.Scanner{Name: "changed"}}},
-		},
-		// case
-		{
 			flagName:   "scanner-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
@@ -382,16 +339,6 @@ func TestSetFlag(t *testing.T) {
 				ScannerPodScannerClientTimeoutSeconds: 10,
 			},
 			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{Scanner: &opssightv1.Scanner{ClientTimeoutSeconds: 10}}},
-		},
-		// case
-		{
-			flagName:   "image-getter-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                      &opssightv1.OpsSightSpec{},
-				ScannerPodImageFacadeName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{ImageFacade: &opssightv1.ImageFacade{Name: "changed"}}},
 		},
 		// case
 		{
@@ -465,16 +412,6 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "image-processor-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                        &opssightv1.OpsSightSpec{},
-				PerceiverImagePerceiverName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{ImagePerceiver: &opssightv1.ImagePerceiver{Name: "changed"}}},
-		},
-		// case
-		{
 			flagName:   "image-processor-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
@@ -482,16 +419,6 @@ func TestSetFlag(t *testing.T) {
 				PerceiverImagePerceiverImage: "changed",
 			},
 			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{ImagePerceiver: &opssightv1.ImagePerceiver{Image: "changed"}}},
-		},
-		// case
-		{
-			flagName:   "pod-processor-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                      &opssightv1.OpsSightSpec{},
-				PerceiverPodPerceiverName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{PodPerceiver: &opssightv1.PodPerceiver{Name: "changed"}}},
 		},
 		// case
 		{
@@ -535,16 +462,6 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "processorpod-service-account",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                    &opssightv1.OpsSightSpec{},
-				PerceiverServiceAccount: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{ServiceAccount: "changed"}},
-		},
-		// case
-		{
 			flagName:   "processorpod-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
@@ -552,26 +469,6 @@ func TestSetFlag(t *testing.T) {
 				PerceiverPort: 10,
 			},
 			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{Port: 10}},
-		},
-		// case
-		{
-			flagName:   "config-map-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:          &opssightv1.OpsSightSpec{},
-				ConfigMapName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{ConfigMapName: "changed"},
-		},
-		// case
-		{
-			flagName:   "secret-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:       &opssightv1.OpsSightSpec{},
-				SecretName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{SecretName: "changed"},
 		},
 		// case
 		{
@@ -635,16 +532,6 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "prometheus-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:           &opssightv1.OpsSightSpec{},
-				PrometheusName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Prometheus: &opssightv1.Prometheus{Name: "changed"}},
-		},
-		// case
-		{
 			flagName:   "prometheus-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
@@ -685,16 +572,6 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "skyfire-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:        &opssightv1.OpsSightSpec{},
-				SkyfireName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{Name: "changed"}},
-		},
-		// case
-		{
 			flagName:   "skyfire-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
@@ -722,16 +599,6 @@ func TestSetFlag(t *testing.T) {
 				SkyfirePrometheusPort: 10,
 			},
 			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{PrometheusPort: 10}},
-		},
-		// case
-		{
-			flagName:   "skyfire-service-account",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                  &opssightv1.OpsSightSpec{},
-				SkyfireServiceAccount: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{ServiceAccount: "changed"}},
 		},
 		// case
 		{
@@ -772,16 +639,6 @@ func TestSetFlag(t *testing.T) {
 				SkyfirePerceptorDumpIntervalSeconds: 10,
 			},
 			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{PerceptorDumpIntervalSeconds: 10}},
-		},
-		// case
-		{
-			flagName:   "blackduck-connections-environment-variable-name",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec: &opssightv1.OpsSightSpec{},
-				BlackduckConnectionsEnvironmentVaraiableName: "changed",
-			},
-			changedSpec: &opssightv1.OpsSightSpec{Blackduck: &opssightv1.Blackduck{ConnectionsEnvironmentVariableName: "changed"}},
 		},
 		// case
 		{

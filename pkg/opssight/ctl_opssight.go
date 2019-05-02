@@ -190,7 +190,7 @@ func (ctl *Ctl) CheckSpecFlags() error {
 // Constants for Default Specs
 const (
 	EmptySpec             string = "empty"
-	TemplateSpec          string = "template"
+	UpstreamSpec          string = "upstream"
 	DefaultSpec           string = "default"
 	DisabledBlackDuckSpec string = "disabledBlackDuck"
 )
@@ -200,8 +200,8 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
 	case EmptySpec:
 		ctl.Spec = &opssightv1.OpsSightSpec{}
-	case TemplateSpec:
-		ctl.Spec = crddefaults.GetOpsSightTemplate()
+	case UpstreamSpec:
+		ctl.Spec = crddefaults.GetOpsSightUpstream()
 	case DefaultSpec:
 		ctl.Spec = crddefaults.GetOpsSightDefault()
 	case DisabledBlackDuckSpec:
@@ -215,21 +215,6 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
-	if master {
-		cmd.Flags().StringVar(&ctl.PerceptorName, "opssight-core-name", ctl.PerceptorName, "Name of the OpsSight Core")
-		cmd.Flags().StringVar(&ctl.ScannerPodName, "scannerpod-name", ctl.ScannerPodName, "Name of the ScannerPod")
-		cmd.Flags().StringVar(&ctl.ScannerPodScannerName, "scanner-name", ctl.ScannerPodScannerName, "Name of the Scanner Container")
-		cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeName, "image-getter-name", ctl.ScannerPodImageFacadeName, "Name of the Image Getter Container")
-		cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverName, "image-processor-name", ctl.PerceiverImagePerceiverName, "Name of the Image Processor Container")
-		cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverName, "pod-processor-name", ctl.PerceiverPodPerceiverName, "Name of the Pod Processor Container")
-		cmd.Flags().StringVar(&ctl.PerceiverServiceAccount, "processorpod-service-account", ctl.PerceiverServiceAccount, "Name of the Service Account Resource for the Image Processor's and Pod Processor's Pod")
-		cmd.Flags().StringVar(&ctl.PrometheusName, "prometheus-name", ctl.PrometheusName, "Name of Prometheus")
-		cmd.Flags().StringVar(&ctl.SkyfireName, "skyfire-name", ctl.SkyfireName, "Name of Skyfire")
-		cmd.Flags().StringVar(&ctl.SkyfireServiceAccount, "skyfire-service-account", ctl.SkyfireServiceAccount, "Service Account for Skyfire")
-		cmd.Flags().StringVar(&ctl.BlackduckConnectionsEnvironmentVaraiableName, "blackduck-connections-environment-variable-name", ctl.BlackduckConnectionsEnvironmentVaraiableName, "Environment Variable name to store the Black Duck connections")
-		cmd.Flags().StringVar(&ctl.ConfigMapName, "config-map-name", ctl.ConfigMapName, "Name of the config map for OpsSight")
-		cmd.Flags().StringVar(&ctl.SecretName, "secret-name", ctl.SecretName, "Name of the Secret for OpsSight")
-	}
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core", ctl.PerceptorImage, "Image of the OpsSight Core")
 	cmd.Flags().IntVar(&ctl.PerceptorPort, "opssight-core-port", ctl.PerceptorPort, "Port for the OpsSight Core")
 	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Expose the OpsSight Core model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
@@ -300,11 +285,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED", f.Name)
 		switch f.Name {
-		case "opssight-core-name":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
-			}
-			ctl.Spec.Perceptor.Name = ctl.PerceptorName
 		case "opssight-core-image":
 			if ctl.Spec.Perceptor == nil {
 				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
@@ -345,19 +325,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
 			}
 			ctl.Spec.Perceptor.ClientTimeoutMilliseconds = ctl.PerceptorClientTimeoutMilliseconds
-		case "scannerpod-name":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
-			}
-			ctl.Spec.ScannerPod.Name = ctl.ScannerPodName
-		case "scanner-name":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
-			}
-			if ctl.Spec.ScannerPod.Scanner == nil {
-				ctl.Spec.ScannerPod.Scanner = &opssightv1.Scanner{}
-			}
-			ctl.Spec.ScannerPod.Scanner.Name = ctl.ScannerPodScannerName
 		case "scanner-image":
 			if ctl.Spec.ScannerPod == nil {
 				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
@@ -382,14 +349,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.ScannerPod.Scanner = &opssightv1.Scanner{}
 			}
 			ctl.Spec.ScannerPod.Scanner.ClientTimeoutSeconds = ctl.ScannerPodScannerClientTimeoutSeconds
-		case "image-getter-name":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
-			}
-			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
-			}
-			ctl.Spec.ScannerPod.ImageFacade.Name = ctl.ScannerPodImageFacadeName
 		case "image-getter-image":
 			if ctl.Spec.ScannerPod == nil {
 				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
@@ -463,14 +422,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
 			}
 			ctl.Spec.Perceiver.EnablePodPerceiver = ctl.PerceiverEnablePodPerceiver
-		case "image-processor-name":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
-			}
-			if ctl.Spec.Perceiver.ImagePerceiver == nil {
-				ctl.Spec.Perceiver.ImagePerceiver = &opssightv1.ImagePerceiver{}
-			}
-			ctl.Spec.Perceiver.ImagePerceiver.Name = ctl.PerceiverImagePerceiverName
 		case "image-processor-image":
 			if ctl.Spec.Perceiver == nil {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
@@ -479,14 +430,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceiver.ImagePerceiver = &opssightv1.ImagePerceiver{}
 			}
 			ctl.Spec.Perceiver.ImagePerceiver.Image = ctl.PerceiverImagePerceiverImage
-		case "pod-processor-name":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
-			}
-			if ctl.Spec.Perceiver.PodPerceiver == nil {
-				ctl.Spec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
-			}
-			ctl.Spec.Perceiver.PodPerceiver.Name = ctl.PerceiverPodPerceiverName
 		case "pod-processor-image":
 			if ctl.Spec.Perceiver == nil {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
@@ -513,20 +456,11 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
 			}
 			ctl.Spec.Perceiver.DumpIntervalMinutes = ctl.PerceiverDumpIntervalMinutes
-		case "processorpod-service-account":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
-			}
-			ctl.Spec.Perceiver.ServiceAccount = ctl.PerceiverServiceAccount
 		case "processorpod-port":
 			if ctl.Spec.Perceiver == nil {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
 			}
 			ctl.Spec.Perceiver.Port = ctl.PerceiverPort
-		case "config-map-name":
-			ctl.Spec.ConfigMapName = ctl.ConfigMapName
-		case "secret-name":
-			ctl.Spec.SecretName = ctl.SecretName
 		case "default-cpu":
 			ctl.Spec.DefaultCPU = ctl.DefaultCPU
 		case "default-memory":
@@ -539,11 +473,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.LogLevel = ctl.LogLevel
 		case "enable-metrics":
 			ctl.Spec.EnableMetrics = ctl.EnableMetrics
-		case "prometheus-name":
-			if ctl.Spec.Prometheus == nil {
-				ctl.Spec.Prometheus = &opssightv1.Prometheus{}
-			}
-			ctl.Spec.Prometheus.Name = ctl.PrometheusName
 		case "prometheus-image":
 			if ctl.Spec.Prometheus == nil {
 				ctl.Spec.Prometheus = &opssightv1.Prometheus{}
@@ -561,11 +490,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.Prometheus.Expose = ctl.PrometheusExpose
 		case "enable-skyfire":
 			ctl.Spec.EnableSkyfire = ctl.EnableSkyfire
-		case "skyfire-name":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
-			}
-			ctl.Spec.Skyfire.Name = ctl.SkyfireName
 		case "skyfire-image":
 			if ctl.Spec.Skyfire == nil {
 				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
@@ -581,11 +505,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
 			}
 			ctl.Spec.Skyfire.PrometheusPort = ctl.SkyfirePrometheusPort
-		case "skyfire-service-account":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
-			}
-			ctl.Spec.Skyfire.ServiceAccount = ctl.SkyfireServiceAccount
 		case "skyfire-hub-client-timeout-seconds":
 			if ctl.Spec.Skyfire == nil {
 				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
@@ -624,11 +543,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			for _, host := range hostStructs.Data {
 				ctl.Spec.Blackduck.ExternalHosts = append(ctl.Spec.Blackduck.ExternalHosts, &host)
 			}
-		case "blackduck-connections-environment-variable-name":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
-			}
-			ctl.Spec.Blackduck.ConnectionsEnvironmentVariableName = ctl.BlackduckConnectionsEnvironmentVaraiableName
 		case "blackduck-TLS-verification":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightv1.Blackduck{}

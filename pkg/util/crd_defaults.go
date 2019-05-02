@@ -362,8 +362,8 @@ func GetBlackDuckDefaultIPV6Disabled() *blackduckv1.BlackduckSpec {
 	}
 }
 
-// GetOpsSightTemplate returns the required fields for OpsSight
-func GetOpsSightTemplate() *opssightv1.OpsSightSpec {
+// GetOpsSightUpstream returns the required fields for an upstream OpsSight
+func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Perceptor: &opssightv1.Perceptor{
 			Name:                           "perceptor",
