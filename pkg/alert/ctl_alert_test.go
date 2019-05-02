@@ -136,6 +136,27 @@ func TestAddSpecFlags(t *testing.T) {
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
 
+func TestNSpecFlag(t *testing.T) {
+	assert := assert.New(t)
+
+	alertCtl := NewAlertCtl()
+	cmd := &cobra.Command{}
+	alertCtl.AddSpecFlags(cmd, true)
+
+	// Case: Same flags as Spec and none are set
+	flagset := cmd.Flags()
+	numFlagsChanged := alertCtl.NSpecFlag(flagset)
+	assert.Equal(numFlagsChanged, 0)
+
+	// Case: Additional flags than Spec and none are set
+	var testVal string
+	cmd.Flags().StringVar(&testVal, "test-flag", "", "")
+	cmd.Flag("test-flag")
+	flagset = cmd.Flags()
+	numFlagsChanged = alertCtl.NSpecFlag(flagset)
+	assert.Equal(numFlagsChanged, 0)
+}
+
 func TestSetChangedFlags(t *testing.T) {
 	assert := assert.New(t)
 
@@ -147,7 +168,6 @@ func TestSetChangedFlags(t *testing.T) {
 	expCtl := NewAlertCtl()
 
 	assert.Equal(expCtl.Spec, actualCtl.Spec)
-
 }
 
 func TestSetFlag(t *testing.T) {

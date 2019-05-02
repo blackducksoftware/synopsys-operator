@@ -180,6 +180,27 @@ func TestAddSpecFlags(t *testing.T) {
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
 
+func TestNSpecFlag(t *testing.T) {
+	assert := assert.New(t)
+
+	blackDuckCtl := NewBlackduckCtl()
+	cmd := &cobra.Command{}
+	blackDuckCtl.AddSpecFlags(cmd, true)
+
+	// Case: Same flags as Spec and none are set
+	flagset := cmd.Flags()
+	numFlagsChanged := blackDuckCtl.NSpecFlag(flagset)
+	assert.Equal(numFlagsChanged, 0)
+
+	// Case: Additional flags than Spec and none are set
+	var testVal string
+	cmd.Flags().StringVar(&testVal, "test-flag", "", "")
+	cmd.Flag("test-flag")
+	flagset = cmd.Flags()
+	numFlagsChanged = blackDuckCtl.NSpecFlag(flagset)
+	assert.Equal(numFlagsChanged, 0)
+}
+
 func TestSetChangedFlags(t *testing.T) {
 	assert := assert.New(t)
 

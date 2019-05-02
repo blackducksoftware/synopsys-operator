@@ -197,7 +197,27 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
+}
 
+func TestNSpecFlag(t *testing.T) {
+	assert := assert.New(t)
+
+	opsSightCtl := NewOpsSightCtl()
+	cmd := &cobra.Command{}
+	opsSightCtl.AddSpecFlags(cmd, true)
+
+	// Case: Same flags as Spec and none are set
+	flagset := cmd.Flags()
+	numFlagsChanged := opsSightCtl.NSpecFlag(flagset)
+	assert.Equal(numFlagsChanged, 0)
+
+	// Case: Additional flags than Spec and none are set
+	var testVal string
+	cmd.Flags().StringVar(&testVal, "test-flag", "", "")
+	cmd.Flag("test-flag")
+	flagset = cmd.Flags()
+	numFlagsChanged = opsSightCtl.NSpecFlag(flagset)
+	assert.Equal(numFlagsChanged, 0)
 }
 
 func TestSetChangedFlags(t *testing.T) {

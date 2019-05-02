@@ -33,7 +33,8 @@ type ResourceCtl interface {
 	GetSpec() interface{}              // returns spec for the resource
 	SetSpec(interface{}) error         // sets the spec
 	SwitchSpec(string) error           // change the spec for the resource
-	AddSpecFlags(*cobra.Command, bool) // Add flags for the resource spec
+	AddSpecFlags(*cobra.Command, bool) // add flags for the resource spec
+	NSpecFlag(*pflag.FlagSet) int      // returns number of spec flags that were changed in the flagset
 	SetChangedFlags(*pflag.FlagSet)    // calls setFlag on each flag in flagset
 	SetFlag(*pflag.Flag)               // updates the spec value for the flag
 	SpecIsValid() (bool, error)        // verifies the spec has necessary fields to deploy

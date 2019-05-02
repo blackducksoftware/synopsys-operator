@@ -67,8 +67,8 @@ var editBlackduckCmd = &cobra.Command{
 		log.Debugf("editing Black Duck %s instance instance...", blackduckName)
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.LocalFlags()
-		if flagset.NFlag() != 0 {
+		flagset := cmd.Flags()
+		if editBlackduckCtl.NSpecFlag(flagset) != 0 {
 			bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 			if err != nil {
 				log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
@@ -275,8 +275,8 @@ var editOpsSightCmd = &cobra.Command{
 		log.Debugf("Editing OpsSight %s...", opsSightName)
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.LocalFlags()
-		if flagset.NFlag() != 0 {
+		flagset := cmd.Flags()
+		if editOpsSightCtl.NSpecFlag(flagset) != 0 {
 			ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 			if err != nil {
 				log.Errorf("%s", err)
@@ -406,8 +406,8 @@ var editAlertCmd = &cobra.Command{
 		log.Infof("editing Alert %s instance...", alertName)
 
 		// Update spec with flags or pipe to KubeCmd
-		flagset := cmd.LocalFlags()
-		if flagset.NFlag() != 0 {
+		flagset := cmd.Flags()
+		if editAlertCtl.NSpecFlag(flagset) != 0 {
 			alt, err := operatorutil.GetAlert(alertClient, alertName, alertName)
 			if err != nil {
 				log.Errorf("error getting an Alert %s instance due to %+v", alertName, err)
@@ -475,4 +475,5 @@ func init() {
 	// Add Alert Edit Comamnds
 	editAlertCtl.AddSpecFlags(editAlertCmd, true)
 	editCmd.AddCommand(editAlertCmd)
+	editAlertCmd.LocalFlags().Parse([]string{})
 }
