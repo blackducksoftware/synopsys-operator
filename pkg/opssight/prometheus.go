@@ -103,6 +103,7 @@ func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "prometheus",
 		MapOrSecretName: "prometheus",
+		DefaultMode:     util.IntToInt32(420),
 	}))
 
 	vol, err := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
