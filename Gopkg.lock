@@ -65,7 +65,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
   digest = "1:aa55f25019101848d22833de915f45e36cc4f9cba23b8c5ecabcf9376170b23a"
   name = "github.com/blackducksoftware/horizon"
   packages = [
@@ -76,7 +75,8 @@
     "pkg/util/error",
   ]
   pruneopts = "UT"
-  revision = "370ac9fd2f493ce9aa8fdc57ad6a67dcb4458e62"
+  revision = "468dd34a4629594652ddb719c536d85e4ba8e83b"
+  version = "0.1.1"
 
 [[projects]]
   digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
@@ -1827,6 +1827,7 @@
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/unrolled/secure",
+    "gopkg.in/yaml.v2",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
@@ -1837,6 +1838,7 @@
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1",
     "k8s.io/api/storage/v1beta1",
+    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/resource",
