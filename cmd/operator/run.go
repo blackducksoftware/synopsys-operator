@@ -82,7 +82,7 @@ func runProtoform(configPath string) {
 		Config:        deployer.Config,
 		KubeConfig:    deployer.KubeConfig,
 		KubeClientSet: deployer.KubeClientSet,
-		Defaults:      bdutil.GetOpsSightTemplate(),
+		Defaults:      bdutil.GetOpsSightDefault(),
 		Threadiness:   deployer.Config.Threadiness,
 		StopCh:        stopCh,
 	})
