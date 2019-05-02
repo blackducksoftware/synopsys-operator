@@ -155,45 +155,45 @@ func TestAddSpecFlags(t *testing.T) {
 	ctl.AddSpecFlags(actualCmd, true)
 
 	cmd := &cobra.Command{}
-	cmd.Flags().StringVar(&ctl.PerceptorName, "perceptor-name", ctl.PerceptorName, "Name of the Perceptor")
+	cmd.Flags().StringVar(&ctl.PerceptorName, "opssight-core-name", ctl.PerceptorName, "Name of the OpsSight Core")
 	cmd.Flags().StringVar(&ctl.ScannerPodName, "scannerpod-name", ctl.ScannerPodName, "Name of the ScannerPod")
-	cmd.Flags().StringVar(&ctl.ScannerPodScannerName, "scannerpod-scanner-name", ctl.ScannerPodScannerName, "Name of the ScannerPod's Scanner Container")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeName, "scannerpod-imagefacade-name", ctl.ScannerPodImageFacadeName, "Name of the ScannerPod's ImageFacade Container")
-	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverName, "imageperceiver-name", ctl.PerceiverImagePerceiverName, "Name of the ImagePerceiver")
-	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverName, "podperceiver-name", ctl.PerceiverPodPerceiverName, "Name of the PodPerceiver")
-	cmd.Flags().StringVar(&ctl.PerceiverServiceAccount, "perceiver-service-account", ctl.PerceiverServiceAccount, "Name of the Service Account Resource for the Perceiver")
+	cmd.Flags().StringVar(&ctl.ScannerPodScannerName, "scanner-name", ctl.ScannerPodScannerName, "Name of the Scanner Container")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeName, "image-getter-name", ctl.ScannerPodImageFacadeName, "Name of the Image Getter Container")
+	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverName, "image-processor-name", ctl.PerceiverImagePerceiverName, "Name of the Image Processor Container")
+	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverName, "pod-processor-name", ctl.PerceiverPodPerceiverName, "Name of the Pod Processor Container")
+	cmd.Flags().StringVar(&ctl.PerceiverServiceAccount, "processorpod-service-account", ctl.PerceiverServiceAccount, "Name of the Service Account Resource for the Image Processor's and Pod Processor's Pod")
 	cmd.Flags().StringVar(&ctl.PrometheusName, "prometheus-name", ctl.PrometheusName, "Name of Prometheus")
 	cmd.Flags().StringVar(&ctl.SkyfireName, "skyfire-name", ctl.SkyfireName, "Name of Skyfire")
 	cmd.Flags().StringVar(&ctl.SkyfireServiceAccount, "skyfire-service-account", ctl.SkyfireServiceAccount, "Service Account for Skyfire")
 	cmd.Flags().StringVar(&ctl.BlackduckConnectionsEnvironmentVaraiableName, "blackduck-connections-environment-variable-name", ctl.BlackduckConnectionsEnvironmentVaraiableName, "Environment Variable name to store the Black Duck connections")
 	cmd.Flags().StringVar(&ctl.ConfigMapName, "config-map-name", ctl.ConfigMapName, "Name of the config map for OpsSight")
 	cmd.Flags().StringVar(&ctl.SecretName, "secret-name", ctl.SecretName, "Name of the Secret for OpsSight")
-	cmd.Flags().StringVar(&ctl.PerceptorImage, "perceptor-image", ctl.PerceptorImage, "Image of the Perceptor")
-	cmd.Flags().IntVar(&ctl.PerceptorPort, "perceptor-port", ctl.PerceptorPort, "Port for the Perceptor")
-	cmd.Flags().StringVar(&ctl.PerceptorExpose, "perceptor-expose", ctl.PerceptorExpose, "Expose the Perceptor model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
-	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "perceptor-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours the Percpetor waits between checking for scans")
-	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "perceptor-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until Perceptor stops checking for scans")
-	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "perceptor-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "Perceptor metrics pause in seconds")
-	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "perceptor-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "Perceptor unknown image pause in milliseconds")
-	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "perceptor-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "Perceptor timeout for Black Duck Scan Client in seconds")
-	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scannerpod-scanner-image", ctl.ScannerPodScannerImage, "Scanner Container's image")
-	cmd.Flags().IntVar(&ctl.ScannerPodScannerPort, "scannerpod-scanner-port", ctl.ScannerPodScannerPort, "Scanner Container's port")
-	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scannerpod-scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Scanner timeout for Black Duck Scan Client in seconds")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "scannerpod-imagefacade-image", ctl.ScannerPodImageFacadeImage, "ImageFacade Container's image")
-	cmd.Flags().IntVar(&ctl.ScannerPodImageFacadePort, "scannerpod-imagefacade-port", ctl.ScannerPodImageFacadePort, "ImageFacade Container's port")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "scannerpod-imagefacade-internal-registries-file-path", ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "Absolute path to a file for secure docker registries credentials to pull the images for scan")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "scannerpod-imagefacade-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of ImageFacade's Image Puller - docker, skopeo")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "scannerpod-imagefacade-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account for the ImageFacade")
+	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core", ctl.PerceptorImage, "Image of the OpsSight Core")
+	cmd.Flags().IntVar(&ctl.PerceptorPort, "opssight-core-port", ctl.PerceptorPort, "Port for the OpsSight Core")
+	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Expose the OpsSight Core model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
+	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours the Percpetor waits between checking for scans")
+	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "opssight-core-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until the OpsSight Core stops checking for scans")
+	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "opssight-core-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "Perceptor metrics pause in seconds")
+	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "opssight-core-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "OpsSight Core's unknown image pause in milliseconds")
+	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "opssight-core-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "OpsSight Core's timeout for Black Duck Scan Client in seconds")
+	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scanner-image", ctl.ScannerPodScannerImage, "Scanner Container's image")
+	cmd.Flags().IntVar(&ctl.ScannerPodScannerPort, "scanner-port", ctl.ScannerPodScannerPort, "Scanner Container's port")
+	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Scanner timeout for Black Duck Scan Client in seconds")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "image-getter-image", ctl.ScannerPodImageFacadeImage, "Image Getter Container's image")
+	cmd.Flags().IntVar(&ctl.ScannerPodImageFacadePort, "image-getter-port", ctl.ScannerPodImageFacadePort, "Image Getter Container's port")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "image-getter-internal-registries-file-path", ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "Absolute path to a file for secure docker registries credentials to pull the images for scan")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "image-getter-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of Image Getter's Image Puller - docker, skopeo")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "image-getter-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account for the Image Getter")
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Scan Containers")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in Pod where images are stored for scanning")
-	cmd.Flags().BoolVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-perceiver", ctl.PerceiverEnableImagePerceiver, "Enables the perceiver to discover images for scanning")
-	cmd.Flags().BoolVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-perceiver", ctl.PerceiverEnablePodPerceiver, "Enables the perceriver to discover Pods for scanning")
-	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverImage, "imageperceiver-image", ctl.PerceiverImagePerceiverImage, "Image of the ImagePerceiver")
-	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverImage, "podperceiver-image", ctl.PerceiverPodPerceiverImage, "Image of the PodPerceiver")
-	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "podperceiver-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Filter pods to scan by namespace")
-	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "perceiver-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
-	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "perceiver-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes the perceiver waits between creating dumps of data/metrics")
-	cmd.Flags().IntVar(&ctl.PerceiverPort, "perceiver-port", ctl.PerceiverPort, "Port for the Perceiver")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in the Scanner Pod where images are stored for scanning")
+	cmd.Flags().BoolVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "Enables the Image Processor to discover images for scanning")
+	cmd.Flags().BoolVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "Enables the Pod Processor to discover Pods for scanning")
+	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverImage, "image-processor-image", ctl.PerceiverImagePerceiverImage, "Image of the Image Processor Container")
+	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverImage, "pod-processor-image", ctl.PerceiverPodPerceiverImage, "Image of the Pod Processor Container")
+	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
+	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processorpod-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
+	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processorpod-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes the Image Processor and Pod Processor wait between creating dumps of data/metrics")
+	cmd.Flags().IntVar(&ctl.PerceiverPort, "processorpod-port", ctl.PerceiverPort, "Port for the Image Processor's and Pod Processor's Pod")
 	cmd.Flags().StringVar(&ctl.DefaultCPU, "default-cpu", ctl.DefaultCPU, "CPU size for the OpsSight")
 	cmd.Flags().StringVar(&ctl.DefaultMem, "default-memory", ctl.DefaultMem, "Memory size for the OpsSight")
 	cmd.Flags().StringVar(&ctl.ScannerCPU, "scanner-cpu", ctl.ScannerCPU, "CPU size for the OpsSight's Scanner")
@@ -245,7 +245,7 @@ func TestSetFlag(t *testing.T) {
 	}{
 		// case
 		{
-			flagName:   "perceptor-name",
+			flagName:   "opssight-core-name",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:          &opssightv1.OpsSightSpec{},
@@ -255,7 +255,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceptor-image",
+			flagName:   "opssight-core-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:           &opssightv1.OpsSightSpec{},
@@ -265,7 +265,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceptor-port",
+			flagName:   "opssight-core-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:          &opssightv1.OpsSightSpec{},
@@ -275,7 +275,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceptor-expose",
+			flagName:   "opssight-core-expose",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:            &opssightv1.OpsSightSpec{},
@@ -285,7 +285,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceptor-check-scan-hours",
+			flagName:   "opssight-core-check-scan-hours",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                                    &opssightv1.OpsSightSpec{},
@@ -295,7 +295,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceptor-scan-client-timeout-hours",
+			flagName:   "opssight-core-scan-client-timeout-hours",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                                   &opssightv1.OpsSightSpec{},
@@ -305,7 +305,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceptor-metrics-pause-seconds",
+			flagName:   "opssight-core-metrics-pause-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                              &opssightv1.OpsSightSpec{},
@@ -315,7 +315,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceptor-unknown-image-pause-milliseconds",
+			flagName:   "opssight-core-unknown-image-pause-milliseconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                                   &opssightv1.OpsSightSpec{},
@@ -325,7 +325,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceptor-client-timeout-milliseconds",
+			flagName:   "opssight-core-client-timeout-milliseconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                               &opssightv1.OpsSightSpec{},
@@ -345,7 +345,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-scanner-name",
+			flagName:   "scanner-name",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                  &opssightv1.OpsSightSpec{},
@@ -355,7 +355,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-scanner-image",
+			flagName:   "scanner-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                   &opssightv1.OpsSightSpec{},
@@ -365,7 +365,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-scanner-port",
+			flagName:   "scanner-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                  &opssightv1.OpsSightSpec{},
@@ -375,7 +375,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-scanner-client-timeout-seconds",
+			flagName:   "scanner-client-timeout-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                                  &opssightv1.OpsSightSpec{},
@@ -385,7 +385,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-imagefacade-name",
+			flagName:   "image-getter-name",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                      &opssightv1.OpsSightSpec{},
@@ -395,7 +395,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-imagefacade-image",
+			flagName:   "image-getter-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                       &opssightv1.OpsSightSpec{},
@@ -405,7 +405,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-imagefacade-port",
+			flagName:   "image-getter-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                      &opssightv1.OpsSightSpec{},
@@ -415,7 +415,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-imagefacade-image-puller-type",
+			flagName:   "image-getter-image-puller-type",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                                 &opssightv1.OpsSightSpec{},
@@ -425,7 +425,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scannerpod-imagefacade-service-account",
+			flagName:   "image-getter-service-account",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                                &opssightv1.OpsSightSpec{},
@@ -455,7 +455,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "enable-pod-perceiver",
+			flagName:   "enable-pod-processor",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                        &opssightv1.OpsSightSpec{},
@@ -465,7 +465,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "imageperceiver-name",
+			flagName:   "image-processor-name",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                        &opssightv1.OpsSightSpec{},
@@ -475,7 +475,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "imageperceiver-image",
+			flagName:   "image-processor-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                         &opssightv1.OpsSightSpec{},
@@ -485,7 +485,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "podperceiver-name",
+			flagName:   "pod-processor-name",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                      &opssightv1.OpsSightSpec{},
@@ -495,7 +495,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "podperceiver-image",
+			flagName:   "pod-processor-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                       &opssightv1.OpsSightSpec{},
@@ -505,7 +505,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "podperceiver-namespace-filter",
+			flagName:   "pod-processor-namespace-filter",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                                 &opssightv1.OpsSightSpec{},
@@ -515,7 +515,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceiver-annotation-interval-seconds",
+			flagName:   "processorpod-annotation-interval-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                               &opssightv1.OpsSightSpec{},
@@ -525,7 +525,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceiver-dump-interval-minutes",
+			flagName:   "processorpod-dump-interval-minutes",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                         &opssightv1.OpsSightSpec{},
@@ -535,7 +535,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceiver-service-account",
+			flagName:   "processorpod-service-account",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                    &opssightv1.OpsSightSpec{},
@@ -545,7 +545,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "perceiver-port",
+			flagName:   "processorpod-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:          &opssightv1.OpsSightSpec{},
