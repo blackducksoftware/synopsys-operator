@@ -33,6 +33,7 @@ import (
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	"k8s.io/client-go/kubernetes"
 )
@@ -106,6 +107,7 @@ func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
 	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
 		MapOrSecretName: p.opssight.Spec.ConfigMapName,
+		DefaultMode:     util.IntToInt32(420),
 	})
 }
 
@@ -146,6 +148,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		p.addSecretData(secret)
 	}
 	components.Secrets = append(components.Secrets, secret)
+
+	route := p.GetPerceptorOpenShiftRoute()
+	if route != nil {
+		components.Routes = append(components.Routes, route)
+	}
 
 	// Add Perceptor Scanner
 	scannerRC, err := p.ScannerReplicationController()
@@ -229,6 +236,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 			return nil, errors.Annotate(err, "failed to create perceptor config map")
 		}
 		components.ConfigMaps = append(components.ConfigMaps, perceptorCm)
+
+		route := p.GetPrometheusOpenShiftRoute()
+		if route != nil {
+			components.Routes = append(components.Routes, route)
+		}
 	}
 
 	return components, nil

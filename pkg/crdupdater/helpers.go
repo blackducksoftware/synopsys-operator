@@ -27,6 +27,8 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type label struct {
@@ -117,6 +119,39 @@ func isLabelsExist(expectedLabels map[string]label, actualLabels map[string]stri
 		}
 	}
 	return true
+}
+
+type servicePort struct {
+	Name       string             `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	Protocol   corev1.Protocol    `json:"protocol,omitempty" protobuf:"bytes,2,opt,name=protocol,casttype=Protocol"`
+	Port       int32              `json:"port" protobuf:"varint,3,opt,name=port"`
+	TargetPort intstr.IntOrString `json:"targetPort,omitempty" protobuf:"bytes,4,opt,name=targetPort"`
+}
+
+func sortPorts(ports []corev1.ServicePort) []servicePort {
+	sort.Slice(ports, func(i, j int) bool { return ports[i].Name < ports[j].Name })
+	servicePorts := []servicePort{}
+	for _, port := range ports {
+		servicePorts = append(servicePorts, servicePort{Name: port.Name, Protocol: port.Protocol, Port: port.Port, TargetPort: port.TargetPort})
+	}
+	return servicePorts
+}
+
+type policyRule struct {
+	Verbs     []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
+	APIGroups []string `json:"apiGroups,omitempty" protobuf:"bytes,2,rep,name=apiGroups"`
+	Resources []string `json:"resources,omitempty" protobuf:"bytes,3,rep,name=resources"`
+}
+
+func sortPolicyRule(rules []rbacv1.PolicyRule) []policyRule {
+	policyRules := []policyRule{}
+	for _, rule := range rules {
+		sort.Strings(rule.APIGroups)
+		sort.Strings(rule.Resources)
+		sort.Strings(rule.Verbs)
+		policyRules = append(policyRules, policyRule{Verbs: rule.Verbs, APIGroups: rule.APIGroups, Resources: rule.APIGroups})
+	}
+	return policyRules
 }
 
 func sortEnvs(envs []corev1.EnvVar) []corev1.EnvVar {
