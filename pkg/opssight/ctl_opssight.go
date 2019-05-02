@@ -216,7 +216,6 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core", ctl.PerceptorImage, "Image of the OpsSight Core")
-	cmd.Flags().IntVar(&ctl.PerceptorPort, "opssight-core-port", ctl.PerceptorPort, "Port for the OpsSight Core")
 	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Expose the OpsSight Core model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
 	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours the Percpetor waits between checking for scans")
 	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "opssight-core-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until the OpsSight Core stops checking for scans")
@@ -224,10 +223,8 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "opssight-core-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "OpsSight Core's unknown image pause in milliseconds")
 	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "opssight-core-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "OpsSight Core's timeout for Black Duck Scan Client in seconds")
 	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scanner-image", ctl.ScannerPodScannerImage, "Scanner Container's image")
-	cmd.Flags().IntVar(&ctl.ScannerPodScannerPort, "scanner-port", ctl.ScannerPodScannerPort, "Scanner Container's port")
 	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Scanner timeout for Black Duck Scan Client in seconds")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "image-getter-image", ctl.ScannerPodImageFacadeImage, "Image Getter Container's image")
-	cmd.Flags().IntVar(&ctl.ScannerPodImageFacadePort, "image-getter-port", ctl.ScannerPodImageFacadePort, "Image Getter Container's port")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "image-getter-internal-registries-file-path", ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "Absolute path to a file for secure docker registries credentials to pull the images for scan")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "image-getter-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of Image Getter's Image Puller - docker, skopeo")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "image-getter-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account for the Image Getter")
@@ -238,9 +235,8 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverImage, "image-processor-image", ctl.PerceiverImagePerceiverImage, "Image of the Image Processor Container")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverImage, "pod-processor-image", ctl.PerceiverPodPerceiverImage, "Image of the Pod Processor Container")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
-	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processorpod-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
-	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processorpod-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes the Image Processor and Pod Processor wait between creating dumps of data/metrics")
-	cmd.Flags().IntVar(&ctl.PerceiverPort, "processorpod-port", ctl.PerceiverPort, "Port for the Image Processor's and Pod Processor's Pod")
+	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processor-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
+	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processor-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes the Image Processor and Pod Processor wait between creating dumps of data/metrics")
 	cmd.Flags().StringVar(&ctl.DefaultCPU, "default-cpu", ctl.DefaultCPU, "CPU size for the OpsSight")
 	cmd.Flags().StringVar(&ctl.DefaultMem, "default-memory", ctl.DefaultMem, "Memory size for the OpsSight")
 	cmd.Flags().StringVar(&ctl.ScannerCPU, "scanner-cpu", ctl.ScannerCPU, "CPU size for the OpsSight's Scanner")
@@ -252,7 +248,6 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.PrometheusExpose, "prometheus-expose", ctl.PrometheusExpose, "Expose the Prometheus metrics. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
 	cmd.Flags().BoolVar(&ctl.EnableSkyfire, "enable-skyfire", ctl.EnableSkyfire, "Enables Skyfire Pod if true")
 	cmd.Flags().StringVar(&ctl.SkyfireImage, "skyfire-image", ctl.SkyfireImage, "Image of Skyfire")
-	cmd.Flags().IntVar(&ctl.SkyfirePort, "skyfire-port", ctl.SkyfirePort, "Port of Skyfire")
 	cmd.Flags().IntVar(&ctl.SkyfirePrometheusPort, "skyfire-prometheus-port", ctl.SkyfirePrometheusPort, "Skyfire's Prometheus port")
 	cmd.Flags().IntVar(&ctl.SkyfireHubClientTimeoutSeconds, "skyfire-hub-client-timeout-seconds", ctl.SkyfireHubClientTimeoutSeconds, "Seconds Skyfire waits to receive response from the Black Duck client")
 	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying Black Ducks")
@@ -290,11 +285,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
 			}
 			ctl.Spec.Perceptor.Image = ctl.PerceptorImage
-		case "opssight-core-port":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
-			}
-			ctl.Spec.Perceptor.Port = ctl.PerceptorPort
 		case "opssight-core-expose":
 			if ctl.Spec.Perceptor == nil {
 				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
@@ -333,14 +323,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.ScannerPod.Scanner = &opssightv1.Scanner{}
 			}
 			ctl.Spec.ScannerPod.Scanner.Image = ctl.ScannerPodScannerImage
-		case "scanner-port":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
-			}
-			if ctl.Spec.ScannerPod.Scanner == nil {
-				ctl.Spec.ScannerPod.Scanner = &opssightv1.Scanner{}
-			}
-			ctl.Spec.ScannerPod.Scanner.Port = ctl.ScannerPodScannerPort
 		case "scanner-client-timeout-seconds":
 			if ctl.Spec.ScannerPod == nil {
 				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
@@ -357,14 +339,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
 			}
 			ctl.Spec.ScannerPod.ImageFacade.Image = ctl.ScannerPodImageFacadeImage
-		case "image-getter-port":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
-			}
-			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
-			}
-			ctl.Spec.ScannerPod.ImageFacade.Port = ctl.ScannerPodImageFacadePort
 		case "image-getter-internal-registries-file-path":
 			if ctl.Spec.ScannerPod == nil {
 				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
@@ -446,21 +420,16 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
 			}
 			ctl.Spec.Perceiver.PodPerceiver.NamespaceFilter = ctl.PerceiverPodPerceiverNamespaceFilter
-		case "processorpod-annotation-interval-seconds":
+		case "processor-annotation-interval-seconds":
 			if ctl.Spec.Perceiver == nil {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
 			}
 			ctl.Spec.Perceiver.AnnotationIntervalSeconds = ctl.PerceiverAnnotationIntervalSeconds
-		case "processorpod-dump-interval-minutes":
+		case "processor-dump-interval-minutes":
 			if ctl.Spec.Perceiver == nil {
 				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
 			}
 			ctl.Spec.Perceiver.DumpIntervalMinutes = ctl.PerceiverDumpIntervalMinutes
-		case "processorpod-port":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
-			}
-			ctl.Spec.Perceiver.Port = ctl.PerceiverPort
 		case "default-cpu":
 			ctl.Spec.DefaultCPU = ctl.DefaultCPU
 		case "default-memory":
@@ -495,11 +464,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
 			}
 			ctl.Spec.Skyfire.Image = ctl.SkyfireImage
-		case "skyfire-port":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
-			}
-			ctl.Spec.Skyfire.Port = ctl.SkyfirePort
 		case "skyfire-prometheus-port":
 			if ctl.Spec.Skyfire == nil {
 				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
