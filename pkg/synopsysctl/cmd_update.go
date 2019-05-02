@@ -38,8 +38,6 @@ import (
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
-	routev1 "github.com/openshift/api/route/v1"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -211,38 +209,6 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 
-		routeClient, err := routeclient.NewForConfig(restconfig)
-		// expose the routes
-		if strings.ToUpper(updateExposeUI) == OPENSHIFT {
-			if err != nil {
-				log.Errorf("unable to create the route client due to %+v", err)
-				return nil
-			}
-			_, err = operatorutil.GetOpenShiftRoutes(routeClient, namespace, "synopsys-operator-ui")
-			if err != nil {
-				log.Infof("creating openshift routes for the synopsys operator user interface")
-				_, err = operatorutil.CreateOpenShiftRoutes(routeClient, namespace, "synopsys-operator-ui", "Service", "synopsys-operator", "synopsys-operator-ui", routev1.TLSTerminationEdge)
-				if err != nil {
-					log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
-				}
-			}
-		}
-
-		// expose the metrics routes
-		if strings.ToUpper(updateExposePrometheusMetrics) == OPENSHIFT {
-			if err != nil {
-				log.Errorf("unable to create the route client due to %+v", err)
-				return nil
-			}
-			_, err = operatorutil.GetOpenShiftRoutes(routeClient, namespace, "synopsys-operator-prometheus")
-			if err != nil {
-				log.Infof("creating openshift routes for the synopsys operator prometheus metrics")
-				_, err = operatorutil.CreateOpenShiftRoutes(routeClient, namespace, "synopsys-operator-prometheus", "Service", "prometheus", "prometheus", routev1.TLSTerminationEdge)
-				if err != nil {
-					log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
-				}
-			}
-		}
 		log.Infof("successfully updated the synopsys operator in '%s' namespace", namespace)
 		return nil
 	},

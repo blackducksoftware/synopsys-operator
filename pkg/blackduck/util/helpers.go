@@ -71,8 +71,6 @@ func GetLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string
 		return "", fmt.Errorf("unable to get service %s in %s namespace because %s", serviceName, namespace, err.Error())
 	}
 
-	log.Debugf("[%s] service: %v", serviceName, service.Status.LoadBalancer.Ingress)
-
 	if len(service.Status.LoadBalancer.Ingress) > 0 {
 		ipAddress := service.Status.LoadBalancer.Ingress[0].IP
 		return ipAddress, nil
@@ -92,7 +90,6 @@ func GetNodePortIPAddress(kubeClient *kubernetes.Clientset, namespace string, se
 	var nodePort []int32
 	// Get the nodeport
 	for _, port := range service.Spec.Ports {
-		log.Debugf("[%s] node port: %v", namespace, port.NodePort)
 		nodePort = append(nodePort, port.NodePort)
 	}
 	return intArrayToStringArray(nodePort, ","), nil

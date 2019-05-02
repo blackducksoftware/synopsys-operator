@@ -23,6 +23,7 @@ package crdupdater
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -146,13 +147,30 @@ func (c *ClusterRoleBinding) patch(crb interface{}, isPatched bool) (bool, error
 	clusterRoleBindingName := clusterRoleBinding.GetName()
 	oldclusterRoleBinding := c.oldClusterRoleBindings[clusterRoleBindingName]
 	newClusterRoleBinding := c.newClusterRoleBindings[clusterRoleBindingName]
+	isChanged := false
+	// check for role ref changes
+	if (!strings.EqualFold(oldclusterRoleBinding.RoleRef.Name, newClusterRoleBinding.RoleRef.Name) || !strings.EqualFold(oldclusterRoleBinding.RoleRef.Kind, newClusterRoleBinding.RoleRef.Kind)) && !c.config.dryRun {
+		isChanged = true
+	}
+	// check for subject changes
 	for _, subject := range newClusterRoleBinding.Subjects {
 		if !util.IsClusterRoleBindingSubjectExist(oldclusterRoleBinding.Subjects, subject.Namespace, subject.Name) {
 			oldclusterRoleBinding.Subjects = append(oldclusterRoleBinding.Subjects, rbacv1.Subject{Name: subject.Name, Namespace: subject.Namespace, Kind: "ServiceAccount"})
-			_, err := util.UpdateClusterRoleBinding(c.config.kubeClient, &oldclusterRoleBinding)
-			if err != nil {
-				return false, errors.Annotate(err, fmt.Sprintf("failed to update %s cluster role binding", clusterRoleBinding.GetName()))
-			}
+			isChanged = true
+		}
+	}
+	if isChanged {
+		log.Infof("updating the cluster role binding %s for %s namespace", clusterRoleBindingName, c.config.namespace)
+		getCrb, err := c.get(clusterRoleBindingName)
+		if err != nil {
+			return false, errors.Annotatef(err, "unable to get the cluster role binding %s for namespace %s", clusterRoleBindingName, c.config.namespace)
+		}
+		oldLatestClusterRoleBinding := getCrb.(*rbacv1.ClusterRoleBinding)
+		oldLatestClusterRoleBinding.RoleRef = newClusterRoleBinding.RoleRef
+		oldLatestClusterRoleBinding.Subjects = oldclusterRoleBinding.Subjects
+		_, err = util.UpdateClusterRoleBinding(c.config.kubeClient, oldLatestClusterRoleBinding)
+		if err != nil {
+			return false, errors.Annotate(err, fmt.Sprintf("failed to update %s cluster role binding for namespace %s", clusterRoleBinding.GetName(), c.config.namespace))
 		}
 	}
 	return false, nil

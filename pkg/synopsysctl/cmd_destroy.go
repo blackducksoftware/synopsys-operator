@@ -50,17 +50,16 @@ var destroyCmd = &cobra.Command{
 		if err != nil {
 			log.Warnf("error finding synopsys operator due to %+v", err)
 		}
-		log.Infof("Destroying the Synopsys-Operator '%s'...", destroyNamespace)
+		log.Infof("destroying the synopsys operator in '%s' namespace...", destroyNamespace)
 
 		// delete  namespace
-		log.Debugf("Deleting namespace %s", destroyNamespace)
+		log.Debugf("deleting namespace %s", destroyNamespace)
 		err = util.DeleteNamespace(kubeClient, destroyNamespace)
 		if err != nil {
 			log.Warnf("Unable to delete the %s namespace because %+v", destroyNamespace, err)
 		}
 
 		// delete crds
-		log.Debugf("Deleting CRDs")
 		apiExtensionClient, err := apiextensionsclient.NewForConfig(restconfig)
 		if err != nil {
 			log.Errorf("error creating the api extension client due to %+v", err)
@@ -69,6 +68,7 @@ var destroyCmd = &cobra.Command{
 		crds := []string{"alerts.synopsys.com", "blackducks.synopsys.com", "opssights.synopsys.com"}
 
 		for _, crd := range crds {
+			log.Infof("deleting %s CRD", crd)
 			err = util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
 			if err != nil {
 				log.Warnf("Unable to delete the %s crd because %+v", crd, err)
@@ -76,20 +76,20 @@ var destroyCmd = &cobra.Command{
 		}
 
 		// delete cluster role bindings
-		log.Debugf("Deleting ClusterRoleBinding")
+		log.Infof("deleting synopsys-operator-admin cluster role binding")
 		err = util.DeleteClusterRoleBinding(kubeClient, "synopsys-operator-admin")
 		if err != nil {
 			log.Warnf("Unable to delete the synopsys-operator-admin cluster role binding because %+v", err)
 		}
 
 		// delete cluster roles
-		log.Debugf("Deleting ClusterRoles")
+		log.Infof("deleting synopsys-operator-admin cluster role ")
 		err = util.DeleteClusterRole(kubeClient, "synopsys-operator-admin")
 		if err != nil {
 			log.Warnf("Unable to delete the synopsys-operator-admin cluster role because %+v", err)
 		}
 
-		log.Infof("Finished destroying synopsys-operator: '%s'", destroyNamespace)
+		log.Infof("finished destroying synopsys operator in '%s' namespace", destroyNamespace)
 		return nil
 	},
 }

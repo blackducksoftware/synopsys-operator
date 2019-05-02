@@ -36,6 +36,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -61,6 +62,11 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+)
+
+const (
+	// OPENSHIFT denotes to create an OpenShift routes
+	OPENSHIFT = "OPENSHIFT"
 )
 
 // CreateContainer will create the container
@@ -974,47 +980,57 @@ func IsClusterRoleRuleExist(oldRules []rbacv1.PolicyRule, newRule rbacv1.PolicyR
 func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	routeClient, err := routeclient.NewForConfig(restConfig)
 	if err != nil {
-		routeClient = nil
-		log.Debugf("Error getting route client")
-	} else {
-		_, err := GetOpenShiftRoutes(routeClient, "default", "docker-registry")
-		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			// log.Debugf("Ignoring routes for kubernetes cluster")
-			routeClient = nil
-		}
+		log.Debugf("unable to get route client")
+		return nil
 	}
 	return routeClient
 }
 
-// GetOpenShiftRoutes get a OpenShift routes
-func GetOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string) (*routev1.Route, error) {
+// GetRoute gets an OpenShift routes
+func GetRoute(routeClient *routeclient.RouteV1Client, namespace string, name string) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Get(name, metav1.GetOptions{})
 }
 
-// CreateOpenShiftRoutes creates a OpenShift routes
-func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string, portName string, tlsTerminationType routev1.TLSTerminationType) (*routev1.Route, error) {
-	return routeClient.Routes(namespace).Create(&routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: routev1.RouteSpec{
-			TLS: &routev1.TLSConfig{Termination: tlsTerminationType},
-			To: routev1.RouteTargetReference{
-				Kind: routeKind,
-				Name: serviceName,
-			},
-			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: portName}},
-		},
-	})
+// ListRoutes list an OpenShift routes
+func ListRoutes(routeClient *routeclient.RouteV1Client, namespace string, labelSelector string) (*routev1.RouteList, error) {
+	return routeClient.Routes(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
-// GetOpenShiftSecurityConstraint get a OpenShift security constraints
+// GetRouteComponent returns the route component
+func GetRouteComponent(routeClient *routeclient.RouteV1Client, route *api.Route, labels map[string]string) *routev1.Route {
+	return &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      route.Name,
+			Namespace: route.Namespace,
+			Labels:    labels,
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{Termination: route.TLSTerminationType},
+			To: routev1.RouteTargetReference{
+				Kind: route.Kind,
+				Name: route.ServiceName,
+			},
+			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: route.PortName}},
+		},
+	}
+}
+
+// CreateRoute creates an OpenShift routes
+func CreateRoute(routeClient *routeclient.RouteV1Client, namespace string, route *routev1.Route) (*routev1.Route, error) {
+	return routeClient.Routes(namespace).Create(route)
+}
+
+// DeleteRoute deletes an OpenShift routes
+func DeleteRoute(routeClient *routeclient.RouteV1Client, namespace string, name string) error {
+	return routeClient.Routes(namespace).Delete(name, &metav1.DeleteOptions{})
+}
+
+// GetOpenShiftSecurityConstraint gets an OpenShift security constraints
 func GetOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, name string) (*securityv1.SecurityContextConstraints, error) {
 	return osSecurityClient.SecurityContextConstraints().Get(name, metav1.GetOptions{})
 }
 
-// UpdateOpenShiftSecurityConstraint updates a OpenShift security constraints
+// UpdateOpenShiftSecurityConstraint updates an OpenShift security constraints
 func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, serviceAccounts []string, name string) error {
 	scc, err := GetOpenShiftSecurityConstraint(osSecurityClient, name)
 	if err != nil {
