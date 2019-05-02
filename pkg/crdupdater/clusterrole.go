@@ -93,6 +93,11 @@ func (c *ClusterRole) add(isPatched bool) (bool, error) {
 		if _, ok := c.oldClusterRoles[clusterRole.GetName()]; !ok {
 			c.deployer.Deployer.AddClusterRole(clusterRole)
 			isAdded = true
+		} else {
+			_, err := c.patch(clusterRole, isPatched)
+			if err != nil {
+				return false, errors.Annotatef(err, "patch cluster role:")
+			}
 		}
 	}
 	if isAdded && !c.config.dryRun {
@@ -140,7 +145,7 @@ func (c *ClusterRole) patch(cr interface{}, isPatched bool) (bool, error) {
 	clusterRoleName := clusterRole.GetName()
 	oldclusterRole := c.oldClusterRoles[clusterRoleName]
 	newClusterRole := c.newClusterRoles[clusterRoleName]
-	if !reflect.DeepEqual(oldclusterRole.Rules, newClusterRole.Rules) && !c.config.dryRun {
+	if !reflect.DeepEqual(sortPolicyRule(oldclusterRole.Rules), sortPolicyRule(newClusterRole.Rules)) && !c.config.dryRun {
 		log.Infof("updating the cluster role %s for %s namespace", clusterRoleName, c.config.namespace)
 		getCr, err := c.get(clusterRoleName)
 		if err != nil {

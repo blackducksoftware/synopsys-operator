@@ -28,17 +28,9 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
-	routev1 "github.com/openshift/api/route/v1"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-)
-
-const (
-	// OPENSHIFT denotes to create an OpenShift routes
-	OPENSHIFT = "OPENSHIFT"
 )
 
 //  Deploy Command Defaults
@@ -136,34 +128,6 @@ var deployCmd = &cobra.Command{
 		if err != nil {
 			log.Errorf("error deploying Prometheus: %s", err)
 			return nil
-		}
-
-		routeClient, err := routeclient.NewForConfig(restconfig)
-		// expose the routes
-		if strings.ToUpper(exposeUI) == OPENSHIFT {
-			log.Infof("creating openshift routes for the synopsys operator user interface")
-			if err != nil {
-				log.Errorf("unable to create the route client due to %+v", err)
-				return nil
-			}
-			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator-ui", "Service", "synopsys-operator", "synopsys-operator-ui", routev1.TLSTerminationEdge)
-			if err != nil {
-				log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
-			}
-		}
-
-		// expose the metrics routes
-		if strings.ToUpper(exposePrometheusMetrics) == OPENSHIFT {
-			log.Infof("creating openshift routes for the synopsys operator prometheus metrics")
-			routeClient, err := routeclient.NewForConfig(restconfig)
-			if err != nil {
-				log.Errorf("unable to create the route client due to %+v", err)
-				return nil
-			}
-			_, err = util.CreateOpenShiftRoutes(routeClient, deployNamespace, "synopsys-operator-prometheus", "Service", "prometheus", "prometheus", routev1.TLSTerminationEdge)
-			if err != nil {
-				log.Warnf("could not create route (possible reason: kubernetes doesn't support routes) due to %+v", err)
-			}
 		}
 
 		log.Infof("successfully deployed the synopsys operator")

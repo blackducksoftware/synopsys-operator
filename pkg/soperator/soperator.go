@@ -113,5 +113,11 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 			specConfig.GetTLSCertificateSecret(),
 		},
 	}
+
+	// Add routes for OpenShift
+	route := specConfig.GetOpenShiftRoute()
+	if route != nil {
+		components.Routes = []*api.Route{route}
+	}
 	return components, nil
 }

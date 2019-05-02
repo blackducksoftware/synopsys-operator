@@ -62,5 +62,11 @@ func (specConfig *PrometheusSpecConfig) GetComponents() (*api.ComponentList, err
 			specConfig.GetPrometheusConfigMap(),
 		},
 	}
+
+	// Add routes for OpenShift
+	route := specConfig.GetOpenShiftRoute()
+	if route != nil {
+		components.Routes = []*api.Route{route}
+	}
 	return components, nil
 }

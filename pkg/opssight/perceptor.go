@@ -23,10 +23,14 @@ package opssight
 
 import (
 	"fmt"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	routev1 "github.com/openshift/api/route/v1"
 )
 
 // PerceptorReplicationController creates a replication controller for perceptor
@@ -186,4 +190,21 @@ func (p *SpecConfig) PerceptorSecret() *components.Secret {
 	secret := components.NewSecret(secretConfig)
 	secret.AddLabels(map[string]string{"name": p.opssight.Spec.SecretName, "app": "opssight"})
 	return secret
+}
+
+// GetPerceptorOpenShiftRoute creates the OpenShift route component for the perceptor model
+func (p *SpecConfig) GetPerceptorOpenShiftRoute() *api.Route {
+	namespace := p.opssight.Spec.Namespace
+	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
+		return &api.Route{
+			Name:               fmt.Sprintf("%s-%s", p.opssight.Spec.Perceptor.Name, namespace),
+			Namespace:          namespace,
+			Kind:               "Service",
+			ServiceName:        p.opssight.Spec.Perceptor.Name,
+			PortName:           fmt.Sprintf("port-%s", p.opssight.Spec.Perceptor.Name),
+			Labels:             map[string]string{"app": "opssight"},
+			TLSTerminationType: routev1.TLSTerminationEdge,
+		}
+	}
+	return nil
 }
