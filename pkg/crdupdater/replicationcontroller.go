@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"strings"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
@@ -50,7 +51,7 @@ func NewReplicationController(config *CommonConfig, replicationControllers []*co
 	}
 	newReplicationControllers := append([]*components.ReplicationController{}, replicationControllers...)
 	for i := 0; i < len(newReplicationControllers); i++ {
-		if !isLabelsExist(config.expectedLabels, newReplicationControllers[i].GetObj().Labels) {
+		if !isLabelsExist(config.expectedLabels, newReplicationControllers[i].Labels) {
 			// log.Debugf("removing::expected Labels: %+v, actual Labels: %+v", config.expectedLabels, newReplicationControllers[i].GetObj().Labels)
 			newReplicationControllers = append(newReplicationControllers[:i], newReplicationControllers[i+1:]...)
 			i--
@@ -78,11 +79,7 @@ func (r *ReplicationController) buildNewAndOldObject() error {
 
 	// build new replication controller
 	for _, newRc := range r.replicationControllers {
-		newReplicationControllerKube, err := newRc.ToKube()
-		if err != nil {
-			return errors.Annotatef(err, "unable to convert replication controller %s to kube %s", newRc.GetName(), r.config.namespace)
-		}
-		r.newReplicationControllers[newRc.GetName()] = newReplicationControllerKube.(*corev1.ReplicationController)
+		r.newReplicationControllers[newRc.GetName()] = newRc.ReplicationController
 	}
 
 	return nil
@@ -93,7 +90,7 @@ func (r *ReplicationController) add(isPatched bool) (bool, error) {
 	isAdded := false
 	for _, replicationController := range r.replicationControllers {
 		if _, ok := r.oldReplicationControllers[replicationController.GetName()]; !ok {
-			r.deployer.Deployer.AddReplicationController(replicationController)
+			r.deployer.Deployer.AddComponent(horizonapi.ReplicationControllerComponent, replicationController)
 			isAdded = true
 		} else {
 			_, err := r.patch(replicationController, isPatched)
@@ -193,6 +190,9 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 					!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) ||
 					!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) ||
 					!compareVolumes(sortVolumes(r.oldReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes), sortVolumes(r.newReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes))) {
+				log.Infof("old: %+v", sortVolumes(r.oldReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes))
+				log.Infof("new: %+v", sortVolumes(r.newReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes))
+				log.Infof("compare: %+v", compareVolumes(sortVolumes(r.oldReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes), sortVolumes(r.newReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Volumes)))
 				isChanged = true
 				break
 			}

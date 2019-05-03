@@ -28,7 +28,7 @@ import (
 )
 
 // GetJobRunnerDeployment will return the job runner deployment
-func (c *Creater) GetJobRunnerDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetJobRunnerDeployment(imageName string) (*components.ReplicationController, error) {
 	jobRunnerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-jobrunner")
 	jobRunnerEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	jobRunnerEnvs = append(jobRunnerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.JobRunnerHubMaxMemory})
@@ -46,7 +46,10 @@ func (c *Creater) GetJobRunnerDeployment(imageName string) *components.Replicati
 
 	if c.hubSpec.LivenessProbes {
 		jobRunnerContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type:    horizonapi.ActionTypeCommand,
+				Command: []string{"/usr/local/bin/docker-healthcheck.sh"},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,
@@ -68,8 +71,7 @@ func (c *Creater) GetJobRunnerDeployment(imageName string) *components.Replicati
 		jobRunnerVolumes = append(jobRunnerVolumes, c.getProxyVolume())
 	}
 
-	jobRunner := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "jobrunner", Replicas: c.hubContainerFlavor.JobRunnerReplicas}, "",
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "jobrunner", Replicas: c.hubContainerFlavor.JobRunnerReplicas}, "",
 		[]*util.Container{jobRunnerContainerConfig}, jobRunnerVolumes, []*util.Container{},
-		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("jobrunner"), c.GetLabel("jobrunner"), c.hubSpec.RegistryConfiguration.PullSecrets)
-	return jobRunner
+		[]horizonapi.PodAffinityConfig{}, c.GetVersionLabel("jobrunner"), c.GetLabel("jobrunner"), c.hubSpec.RegistryConfiguration.PullSecrets)
 }

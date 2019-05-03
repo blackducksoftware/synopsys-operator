@@ -25,7 +25,6 @@ type Container struct {
 	RO                   *bool                    `json:"ro,omitempty"`
 	ForceNonRoot         *bool                    `json:"force_non_root,omitempty"`
 	UID                  *int64                   `json:"uid,omitempty"`
-	GID                  *int64                   `json:"gid,omitempty"`
 	SELinux              *SELinux                 `json:"selinux,omitempty"`
 	LivenessProbe        *Probe                   `json:"liveness_probe,omitempty"`
 	ReadinessProbe       *Probe                   `json:"readiness_probe,omitempty"`
@@ -71,7 +70,7 @@ type ContainerStateTerminated struct {
 
 type VolumeMount struct {
 	MountPath   string           `json:"mount,omitempty"`
-	Propagation *MountPropagation `json:"propagation,omitempty"`
+	Propagation MountPropagation `json:"propagation,omitempty"`
 	Store       string           `json:"store,omitempty"`
 }
 

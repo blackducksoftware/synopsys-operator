@@ -28,7 +28,7 @@ import (
 )
 
 // GetBinaryScannerDeployment will return the binary scanner deployment
-func (c *Creater) GetBinaryScannerDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.ReplicationController, error) {
 	binaryScannerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "binaryscanner", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.BinaryScannerMemoryLimit,
@@ -40,9 +40,7 @@ func (c *Creater) GetBinaryScannerDeployment(imageName string) *components.Repli
 
 	c.PostEditContainer(binaryScannerContainerConfig)
 
-	binaryScanner := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
 		Name: "binaryscanner", Replicas: util.IntToInt32(1)}, c.hubSpec.Namespace, []*util.Container{binaryScannerContainerConfig},
-		[]*components.Volume{}, []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("binaryscanner"), c.GetLabel("binaryscanner"), c.hubSpec.RegistryConfiguration.PullSecrets)
-	// log.Infof("binaryScanner : %v\n", binaryScanner.GetObj())
-	return binaryScanner
+		[]*components.Volume{}, []*util.Container{}, []horizonapi.PodAffinityConfig{}, c.GetVersionLabel("binaryscanner"), c.GetLabel("binaryscanner"), c.hubSpec.RegistryConfiguration.PullSecrets)
 }

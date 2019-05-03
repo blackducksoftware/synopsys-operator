@@ -29,9 +29,9 @@ import (
 // getCfsslService returns a new Service for a Cffsl
 func (a *SpecConfig) getCfsslService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "cfssl",
-		Namespace:     a.config.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeDefault,
+		Name:      "cfssl",
+		Namespace: a.config.Namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{

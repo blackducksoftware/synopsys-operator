@@ -28,7 +28,7 @@ import (
 )
 
 // GetRegistrationDeployment will return the registration deployment
-func (c *Creater) GetRegistrationDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetRegistrationDeployment(imageName string) (*components.ReplicationController, error) {
 
 	volumeMounts := c.getRegistrationVolumeMounts()
 
@@ -43,6 +43,7 @@ func (c *Creater) GetRegistrationDeployment(imageName string) *components.Replic
 	if c.hubSpec.LivenessProbes {
 		registrationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
+				Type: horizonapi.ActionTypeCommand,
 				Command: []string{
 					"/usr/local/bin/docker-healthcheck.sh",
 					"https://localhost:8443/registration/health-checks/liveness",
@@ -69,11 +70,10 @@ func (c *Creater) GetRegistrationDeployment(imageName string) *components.Replic
 
 	c.PostEditContainer(registrationContainerConfig)
 
-	registration := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{registrationContainerConfig}, c.getRegistrationVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("registration"), c.GetLabel("registration"), c.hubSpec.RegistryConfiguration.PullSecrets)
+		[]horizonapi.PodAffinityConfig{}, c.GetVersionLabel("registration"), c.GetLabel("registration"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
-	return registration
 }
 
 // getRegistrationVolumes will return the registration volumes
@@ -117,5 +117,5 @@ func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig 
 
 // GetRegistrationService will return the registration service
 func (c *Creater) GetRegistrationService() *components.Service {
-	return util.CreateService("registration", c.GetLabel("registration"), c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("registration"))
+	return util.CreateService("registration", c.GetLabel("registration"), c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("registration"))
 }

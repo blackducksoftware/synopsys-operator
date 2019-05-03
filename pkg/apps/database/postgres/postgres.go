@@ -43,7 +43,7 @@ const (
 type Postgres struct {
 	Namespace                     string
 	PVCName                       string
-	Port                          string
+	Port                          int32
 	Image                         string
 	MinCPU                        string
 	MaxCPU                        string
@@ -62,7 +62,7 @@ type Postgres struct {
 }
 
 // GetPostgresReplicationController will return the postgres replication controller
-func (p *Postgres) GetPostgresReplicationController() *components.ReplicationController {
+func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationController, error) {
 	postgresEnvs := p.getPostgresEnvconfigs()
 	postgresVolumes := p.getPostgresVolumes()
 	postgresVolumeMounts := p.getPostgresVolumeMounts()
@@ -77,16 +77,21 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 			MinCPU:     p.MinCPU,
 			MaxCPU:     p.MaxCPU,
 		},
-		EnvConfigs:    postgresEnvs,
-		VolumeMounts:  postgresVolumeMounts,
-		PortConfig:    []*horizonapi.PortConfig{{ContainerPort: p.Port, Protocol: horizonapi.ProtocolTCP}},
-		PreStopConfig: &horizonapi.ActionConfig{Command: []string{"sh", "-c", "LD_LIBRARY_PATH=/opt/rh/rh-postgresql96/root/usr/lib64 /opt/rh/rh-postgresql96/root/usr/bin/pg_ctl -D /var/lib/pgsql/data/userdata -l logfile stop"}},
+		EnvConfigs:   postgresEnvs,
+		VolumeMounts: postgresVolumeMounts,
+		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: p.Port, Protocol: horizonapi.ProtocolTCP}},
+		PreStopConfig: &horizonapi.ActionConfig{
+			Type:    horizonapi.ActionTypeCommand,
+			Command: []string{"sh", "-c", "LD_LIBRARY_PATH=/opt/rh/rh-postgresql96/root/usr/lib64 /opt/rh/rh-postgresql96/root/usr/bin/pg_ctl -D /var/lib/pgsql/data/userdata -l logfile stop"},
+		},
 		ReadinessProbeConfigs: []*horizonapi.ProbeConfig{{
-			ActionConfig: horizonapi.ActionConfig{Command: []string{
-				"/bin/bash",
-				"-c",
-				"/opt/rh/rh-postgresql96/root/usr/bin/pg_isready -h localhost",
-			}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type: horizonapi.ActionTypeCommand,
+				Command: []string{
+					"/bin/bash",
+					"-c",
+					"/opt/rh/rh-postgresql96/root/usr/bin/pg_isready -h localhost"},
+			},
 			Delay:           5,
 			Interval:        10,
 			Timeout:         5,
@@ -99,25 +104,27 @@ func (p *Postgres) GetPostgresReplicationController() *components.ReplicationCon
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine",
 				Command: []string{"sh", "-c", fmt.Sprintf("chmod -cR 777 %s", postgresDataMountPath)}},
 			VolumeMounts: postgresVolumeMounts,
-			PortConfig:   []*horizonapi.PortConfig{{ContainerPort: "3001", Protocol: horizonapi.ProtocolTCP}},
+			PortConfig:   []*horizonapi.PortConfig{{ContainerPort: 3001, Protocol: horizonapi.ProtocolTCP}},
 		}
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
 
-	pod := util.CreatePod(postgresName, "", postgresVolumes, []*util.Container{postgresExternalContainerConfig}, initContainers, []horizonapi.AffinityConfig{}, p.Labels)
-
+	pod, err := util.CreatePod(postgresName, "", postgresVolumes, []*util.Container{postgresExternalContainerConfig}, initContainers, []horizonapi.PodAffinityConfig{}, p.Labels)
+	if err != nil {
+		return nil, fmt.Errorf("%+v", err)
+	}
 	// increase TerminationGracePeriod to better handle pg shutdown
-	pod.GetObj().PodTemplate.TerminationGracePeriod = &p.TerminationGracePeriodSeconds
+	pod.Spec.TerminationGracePeriodSeconds = &p.TerminationGracePeriodSeconds
 
 	postgres := util.CreateReplicationController(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
 		Name: postgresName, Replicas: util.IntToInt32(1)}, pod, p.Labels, p.Labels)
 
-	return postgres
+	return postgres, nil
 }
 
 // GetPostgresService will return the postgres service
 func (p *Postgres) GetPostgresService() *components.Service {
-	return util.CreateService(postgresName, p.Labels, p.Namespace, p.Port, p.Port, horizonapi.ClusterIPServiceTypeDefault, p.Labels)
+	return util.CreateService(postgresName, p.Labels, p.Namespace, p.Port, p.Port, horizonapi.ServiceTypeServiceIP, p.Labels)
 }
 
 // getPostgresVolumes will return the postgres volumes

@@ -28,7 +28,7 @@ import (
 )
 
 // GetScanDeployment will return the scan deployment
-func (c *Creater) GetScanDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetScanDeployment(imageName string) (*components.ReplicationController, error) {
 	scannerEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.ScanHubMaxMemory})
 	hubScanEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-scan")
@@ -58,6 +58,7 @@ func (c *Creater) GetScanDeployment(imageName string) *components.ReplicationCon
 	if c.hubSpec.LivenessProbes {
 		hubScanContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
+				Type: horizonapi.ActionTypeCommand,
 				Command: []string{
 					"/usr/local/bin/docker-healthcheck.sh",
 					"https://127.0.0.1:8443/api/health-checks/liveness",
@@ -86,13 +87,12 @@ func (c *Creater) GetScanDeployment(imageName string) *components.ReplicationCon
 	}
 	c.PostEditContainer(hubScanContainerConfig)
 
-	hubScan := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "scan", Replicas: c.hubContainerFlavor.ScanReplicas}, "",
-		[]*util.Container{hubScanContainerConfig}, hubScanVolumes, []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("scan"), c.GetLabel("scan"), c.hubSpec.RegistryConfiguration.PullSecrets)
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "scan", Replicas: c.hubContainerFlavor.ScanReplicas}, "",
+		[]*util.Container{hubScanContainerConfig}, hubScanVolumes, []*util.Container{}, []horizonapi.PodAffinityConfig{}, c.GetVersionLabel("scan"), c.GetLabel("scan"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
-	return hubScan
 }
 
 // GetScanService will return the scan service
 func (c *Creater) GetScanService() *components.Service {
-	return util.CreateService("scan", c.GetLabel("scan"), c.hubSpec.Namespace, scannerPort, scannerPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("scan"))
+	return util.CreateService("scan", c.GetLabel("scan"), c.hubSpec.Namespace, scannerPort, scannerPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("scan"))
 }

@@ -28,7 +28,7 @@ import (
 )
 
 // GetWebserverDeployment will return the webserver deployment
-func (c *Creater) GetWebserverDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetWebserverDeployment(imageName string) (*components.ReplicationController, error) {
 	webServerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.WebserverMemoryLimit,
@@ -40,7 +40,10 @@ func (c *Creater) GetWebserverDeployment(imageName string) *components.Replicati
 
 	if c.hubSpec.LivenessProbes {
 		webServerContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/health-checks/liveness", "/tmp/secrets/WEBSERVER_CUSTOM_CERT_FILE"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type:    horizonapi.ActionTypeCommand,
+				Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/health-checks/liveness", "/tmp/secrets/WEBSERVER_CUSTOM_CERT_FILE"},
+			},
 			Delay:           180,
 			Interval:        30,
 			Timeout:         10,
@@ -50,11 +53,9 @@ func (c *Creater) GetWebserverDeployment(imageName string) *components.Replicati
 
 	c.PostEditContainer(webServerContainerConfig)
 
-	webserver := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{
 		Namespace: c.hubSpec.Namespace, Name: "webserver", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{webServerContainerConfig}, c.getWebserverVolumes(), []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("webserver"), c.GetLabel("webserver"), c.hubSpec.RegistryConfiguration.PullSecrets)
-	// log.Infof("webserver : %v\n", webserver.GetObj())
-	return webserver
+		[]*util.Container{webServerContainerConfig}, c.getWebserverVolumes(), []*util.Container{}, []horizonapi.PodAffinityConfig{}, c.GetVersionLabel("webserver"), c.GetLabel("webserver"), c.hubSpec.RegistryConfiguration.PullSecrets)
 }
 
 // getWebserverVolumes will return the authentication volumes
@@ -93,15 +94,15 @@ func (c *Creater) getWebserverVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetWebServerService will return the webserver service
 func (c *Creater) GetWebServerService() *components.Service {
-	return util.CreateService("webserver", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("webserver"))
+	return util.CreateService("webserver", c.GetLabel("webserver"), c.hubSpec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webserver"))
 }
 
 // GetWebServerNodePortService will return the webserver nodeport service
 func (c *Creater) GetWebServerNodePortService() *components.Service {
-	return util.CreateService("webserver-exposed", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeNodePort, c.GetLabel("webserver-exposed"))
+	return util.CreateService("webserver-exposed", c.GetLabel("webserver"), c.hubSpec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeNodePort, c.GetLabel("webserver-exposed"))
 }
 
 // GetWebServerLoadBalancerService will return the webserver loadbalancer service
 func (c *Creater) GetWebServerLoadBalancerService() *components.Service {
-	return util.CreateService("webserver-exposed", c.GetLabel("webserver"), c.hubSpec.Namespace, "443", webserverPort, horizonapi.ClusterIPServiceTypeLoadBalancer, c.GetLabel("webserver-exposed"))
+	return util.CreateService("webserver-exposed", c.GetLabel("webserver"), c.hubSpec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeLoadBalancer, c.GetLabel("webserver-exposed"))
 }

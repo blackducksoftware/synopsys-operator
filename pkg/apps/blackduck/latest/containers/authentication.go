@@ -28,13 +28,12 @@ import (
 )
 
 // GetAuthenticationDeployment will return the authentication deployment
-func (c *Creater) GetAuthenticationDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.ReplicationController, error) {
 	volumeMounts := c.getAuthenticationVolumeMounts()
 	var authEnvs []*horizonapi.EnvConfig
 	authEnvs = append(authEnvs, c.getHubDBConfigEnv())
 	authEnvs = append(authEnvs, c.getHubConfigEnv())
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.AuthenticationHubMaxMemory})
-
 	hubAuthContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MaxMem: c.hubContainerFlavor.AuthenticationMemoryLimit, MinCPU: "", MaxCPU: ""},
@@ -45,6 +44,7 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) *components.Repl
 	if c.hubSpec.LivenessProbes {
 		hubAuthContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
+				Type: horizonapi.ActionTypeCommand,
 				Command: []string{
 					"/usr/local/bin/docker-healthcheck.sh",
 					"https://127.0.0.1:8443/api/health-checks/liveness",
@@ -71,11 +71,10 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) *components.Repl
 
 	c.PostEditContainer(hubAuthContainerConfig)
 
-	hubAuth := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "authentication", Replicas: util.IntToInt32(1)}, "",
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "authentication", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{hubAuthContainerConfig}, c.getAuthenticationVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("authentication"), c.GetLabel("authentication"), c.hubSpec.RegistryConfiguration.PullSecrets)
+		[]horizonapi.PodAffinityConfig{}, c.GetVersionLabel("authentication"), c.GetLabel("authentication"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
-	return hubAuth
 }
 
 // getAuthenticationVolumes will return the authentication volumes
@@ -135,5 +134,5 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 
 // GetAuthenticationService will return the authentication service
 func (c *Creater) GetAuthenticationService() *components.Service {
-	return util.CreateService("authentication", c.GetLabel("authentication"), c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("authentication"))
+	return util.CreateService("authentication", c.GetLabel("authentication"), c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("authentication"))
 }

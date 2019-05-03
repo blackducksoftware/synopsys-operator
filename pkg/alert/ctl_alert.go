@@ -40,7 +40,7 @@ type Ctl struct {
 	CfsslImage           string
 	StandAlone           bool
 	ExposeService        string
-	Port                 int
+	Port                 int32
 	EncryptionPassword   string
 	EncryptionGlobalSalt string
 	Environs             []string
@@ -136,7 +136,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "Url of Cfssl Image")
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Type of Service to Expose")
-	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
+	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port for Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for the Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for the Alert")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")

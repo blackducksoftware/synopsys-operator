@@ -28,7 +28,7 @@ import (
 )
 
 // GetSolrDeployment will return the solr deployment
-func (c *Creater) GetSolrDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationController, error) {
 	solrVolumeMount := c.getSolrVolumeMounts()
 	solrContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "solr", Image: imageName,
@@ -40,7 +40,10 @@ func (c *Creater) GetSolrDeployment(imageName string) *components.ReplicationCon
 
 	if c.hubSpec.LivenessProbes {
 		solrContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:8983/solr/project/admin/ping?wt=json"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type:    horizonapi.ActionTypeCommand,
+				Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:8983/solr/project/admin/ping?wt=json"},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,
@@ -59,11 +62,9 @@ func (c *Creater) GetSolrDeployment(imageName string) *components.ReplicationCon
 
 	c.PostEditContainer(solrContainerConfig)
 
-	solr := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "solr", Replicas: util.IntToInt32(1)}, "",
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "solr", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{solrContainerConfig}, c.getSolrVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("solr"), c.GetLabel("solr"), c.hubSpec.RegistryConfiguration.PullSecrets)
-
-	return solr
+		[]horizonapi.PodAffinityConfig{}, c.GetVersionLabel("solr"), c.GetLabel("solr"), c.hubSpec.RegistryConfiguration.PullSecrets)
 }
 
 // getSolrVolumes will return the solr volumes
@@ -89,5 +90,5 @@ func (c *Creater) getSolrVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetSolrService will return the solr service
 func (c *Creater) GetSolrService() *components.Service {
-	return util.CreateService("solr", c.GetLabel("solr"), c.hubSpec.Namespace, solrPort, solrPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("solr"))
+	return util.CreateService("solr", c.GetLabel("solr"), c.hubSpec.Namespace, solrPort, solrPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("solr"))
 }

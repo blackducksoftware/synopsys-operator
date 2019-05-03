@@ -42,7 +42,7 @@ const (
 type Mongo struct {
 	Namespace              string
 	PVCName                string
-	Port                   string
+	Port                   int32
 	Image                  string
 	MinCPU                 string
 	MaxCPU                 string
@@ -58,7 +58,7 @@ type Mongo struct {
 }
 
 // GetMongoReplicationController will return the Mongo replication controller
-func (p *Mongo) GetMongoReplicationController() *components.ReplicationController {
+func (p *Mongo) GetMongoReplicationController() (*components.ReplicationController, error) {
 	mongoEnvs := p.getMongoEnvconfigs()
 	mongoVolumes := p.getMongoVolumes()
 	mongoVolumeMounts := p.getMongoVolumeMounts()
@@ -83,21 +83,19 @@ func (p *Mongo) GetMongoReplicationController() *components.ReplicationControlle
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine",
 				Command: []string{"sh", "-c", fmt.Sprintf("chmod -cR 777 %s", mongoDataMountPath)}},
 			VolumeMounts: mongoVolumeMounts,
-			PortConfig:   []*horizonapi.PortConfig{{ContainerPort: "3001", Protocol: horizonapi.ProtocolTCP}},
+			PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(3001), Protocol: horizonapi.ProtocolTCP}},
 		}
 		initContainers = append(initContainers, mongoInitContainerConfig)
 	}
 
-	mongo := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
 		Name: mongoName, Replicas: util.IntToInt32(1)}, "", []*util.Container{mongoExternalContainerConfig},
-		mongoVolumes, initContainers, []horizonapi.AffinityConfig{}, p.Labels, p.Labels, nil)
-
-	return mongo
+		mongoVolumes, initContainers, []horizonapi.PodAffinityConfig{}, p.Labels, p.Labels, nil)
 }
 
 // GetMongoService will return the Mongo service
 func (p *Mongo) GetMongoService() *components.Service {
-	return util.CreateService(mongoName, p.Labels, p.Namespace, p.Port, p.Port, horizonapi.ClusterIPServiceTypeDefault, p.Labels)
+	return util.CreateService(mongoName, p.Labels, p.Namespace, p.Port, p.Port, horizonapi.ServiceTypeServiceIP, p.Labels)
 }
 
 // getMongoVolumes will return the Mongo volumes

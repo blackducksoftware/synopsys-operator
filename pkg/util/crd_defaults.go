@@ -641,7 +641,6 @@ func GetAlertTemplate() *alertv1.AlertSpec {
 
 // GetAlertDefault creates an Alert crd configuration object with defaults
 func GetAlertDefault() *alertv1.AlertSpec {
-	port := 8443
 	standAlone := false
 
 	return &alertv1.AlertSpec{
@@ -650,7 +649,7 @@ func GetAlertDefault() *alertv1.AlertSpec {
 		AlertImage:           "docker.io/blackducksoftware/blackduck-alert:3.1.0",
 		CfsslImage:           "docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
 		ExposeService:        "NODEPORT",
-		Port:                 &port,
+		Port:                 IntToInt32(8443),
 		EncryptionPassword:   "",
 		EncryptionGlobalSalt: "",
 		PersistentStorage:    false,

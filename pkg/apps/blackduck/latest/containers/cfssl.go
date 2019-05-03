@@ -28,7 +28,7 @@ import (
 )
 
 // GetCfsslDeployment will return the cfssl deployment
-func (c *Creater) GetCfsslDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationController, error) {
 	cfsslVolumeMounts := c.getCfsslolumeMounts()
 	cfsslContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: imageName,
@@ -40,7 +40,10 @@ func (c *Creater) GetCfsslDeployment(imageName string) *components.ReplicationCo
 
 	if c.hubSpec.LivenessProbes {
 		cfsslContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:8888/api/v1/cfssl/scaninfo"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type:    horizonapi.ActionTypeCommand,
+				Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:8888/api/v1/cfssl/scaninfo"},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,
@@ -59,11 +62,10 @@ func (c *Creater) GetCfsslDeployment(imageName string) *components.ReplicationCo
 
 	c.PostEditContainer(cfsslContainerConfig)
 
-	cfssl := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "cfssl", Replicas: util.IntToInt32(1)}, "",
+	return util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "cfssl", Replicas: util.IntToInt32(1)}, "",
 		[]*util.Container{cfsslContainerConfig}, c.getCfsslVolumes(), initContainers,
-		[]horizonapi.AffinityConfig{}, c.GetVersionLabel("cfssl"), c.GetLabel("cfssl"), c.hubSpec.RegistryConfiguration.PullSecrets)
+		[]horizonapi.PodAffinityConfig{}, c.GetVersionLabel("cfssl"), c.GetLabel("cfssl"), c.hubSpec.RegistryConfiguration.PullSecrets)
 
-	return cfssl
 }
 
 // getCfsslVolumes will return the cfssl volumes
@@ -89,5 +91,5 @@ func (c *Creater) getCfsslolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetCfsslService will return the cfssl service
 func (c *Creater) GetCfsslService() *components.Service {
-	return util.CreateService("cfssl", c.GetLabel("cfssl"), c.hubSpec.Namespace, cfsslPort, cfsslPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("cfssl"))
+	return util.CreateService("cfssl", c.GetLabel("cfssl"), c.hubSpec.Namespace, cfsslPort, cfsslPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("cfssl"))
 }

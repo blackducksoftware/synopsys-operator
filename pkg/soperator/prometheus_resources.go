@@ -22,14 +22,15 @@ under the License.
 package soperator
 
 import (
-	"fmt"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
+	log "github.com/sirupsen/logrus"
 )
 
 // GetPrometheusService creates a Horizon Service component for Prometheus
@@ -55,18 +56,18 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() []*horizoncompone
 
 	if strings.EqualFold(specConfig.Expose, "NODEPORT") || strings.EqualFold(specConfig.Expose, "LOADBALANCER") {
 
-		var exposedServiceType horizonapi.ClusterIPServiceType
+		var exposedServiceType horizonapi.ServiceType
 		if strings.EqualFold(specConfig.Expose, "NODEPORT") {
-			exposedServiceType = horizonapi.ClusterIPServiceTypeNodePort
+			exposedServiceType = horizonapi.ServiceTypeNodePort
 		} else {
-			exposedServiceType = horizonapi.ClusterIPServiceTypeLoadBalancer
+			exposedServiceType = horizonapi.ServiceTypeLoadBalancer
 		}
 		// Add Service for Prometheus
 		prometheusExposedService := horizoncomponents.NewService(horizonapi.ServiceConfig{
-			APIVersion:    "v1",
-			Name:          "prometheus-exposed",
-			Namespace:     specConfig.Namespace,
-			IPServiceType: exposedServiceType,
+			APIVersion: "v1",
+			Name:       "prometheus-exposed",
+			Namespace:  specConfig.Namespace,
+			Type:       exposedServiceType,
 		})
 		prometheusExposedService.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
 		prometheusExposedService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
@@ -84,7 +85,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() []*horizoncompone
 }
 
 // GetPrometheusDeployment creates a Horizon Deployment component for Prometheus
-func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncomponents.Deployment {
+func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() (*horizoncomponents.Deployment, error) {
 	// Deployment
 	var prometheusDeploymentReplicas int32 = 1
 	prometheusDeployment := horizoncomponents.NewDeployment(horizonapi.DeploymentConfig{
@@ -101,32 +102,41 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 		Namespace:  specConfig.Namespace,
 	})
 
-	prometheusContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
+	prometheusContainer, err := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:  "prometheus",
 		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/"},
 		Image: specConfig.Image,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	prometheusContainer.AddPort(horizonapi.PortConfig{
 		Name:          "web",
-		ContainerPort: "9090",
+		ContainerPort: int32(9090),
 	})
 
-	prometheusContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = prometheusContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/data",
 		Name:      "data",
 	})
-	prometheusContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	err = prometheusContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/etc/prometheus",
 		Name:      "config-volume",
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	prometheusEmptyDirVolume, err := horizoncomponents.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
 		VolumeName: "data",
 	})
 	if err != nil {
-		fmt.Printf("Error creating EmptyDirVolume for Prometheus: %s", err)
-		return nil
+		log.Infof("error creating EmptyDirVolume for Prometheus: %s", err)
+		return nil, nil
 	}
 	prometheusConfigMapVolume := horizoncomponents.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "config-volume",
@@ -141,7 +151,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() *horizoncompon
 	prometheusDeployment.AddPod(prometheusPod)
 
 	prometheusDeployment.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
-	return prometheusDeployment
+	return prometheusDeployment, nil
 }
 
 // GetPrometheusConfigMap creates a Horizon ConfigMap component for Prometheus

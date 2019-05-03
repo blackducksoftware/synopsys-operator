@@ -90,21 +90,18 @@ func (c *CRDInstaller) Deploy() error {
 	apiClientset, err := clientset.NewForConfig(c.kubeConfig)
 	_, err = util.GetCustomResourceDefinition(apiClientset, "blackducks.synopsys.com")
 	if err != nil {
-		deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
-			APIVersion: "apiextensions.k8s.io/v1beta1",
-			Name:       "blackducks.synopsys.com",
-			Namespace:  c.config.Namespace,
-			Group:      "synopsys.com",
-			CRDVersion: "v1",
-			Kind:       "Blackduck",
-			Plural:     "blackducks",
-			Singular:   "blackduck",
-			// ShortNames: []string{
-			// 	"hub",
-			// 	"hubs",
-			// },
-			Scope: horizonapi.CRDClusterScoped,
-		}))
+		deployer.AddComponent(horizonapi.CRDComponent,
+			components.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       "blackducks.synopsys.com",
+				Namespace:  c.config.Namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "Blackduck",
+				Plural:     "blackducks",
+				Singular:   "blackduck",
+				Scope:      horizonapi.CRDClusterScoped,
+			}))
 	}
 
 	// // Perceptor configMap
@@ -172,7 +169,7 @@ func (c *CRDInstaller) Deploy() error {
 	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.config.Namespace, Name: "blackduck-certificate", Type: horizonapi.SecretTypeOpaque})
 	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
 
-	deployer.AddSecret(certificateSecret)
+	deployer.AddComponent(horizonapi.SecretComponent, certificateSecret)
 
 	_, err = util.GetSecret(c.kubeClient, c.config.Namespace, "blackduck-secret")
 	if err != nil {
@@ -196,7 +193,7 @@ func (c *CRDInstaller) Deploy() error {
 		})
 
 		operatorSecret.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
-		deployer.AddSecret(operatorSecret)
+		deployer.AddComponent(horizonapi.SecretComponent, operatorSecret)
 	}
 
 	err = deployer.Run()

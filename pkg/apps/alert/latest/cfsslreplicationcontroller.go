@@ -26,6 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/juju/errors"
 )
 
 // getCfsslReplicationController returns a new Replication Controller for a Cffsl
@@ -36,7 +37,7 @@ func (a *SpecConfig) getCfsslReplicationController() (*components.ReplicationCon
 		Name:      "cfssl",
 		Namespace: a.config.Namespace,
 	})
-	replicationController.AddLabelSelectors(map[string]string{"app": "alert", "component": "cfssl"})
+	replicationController.Spec.Selector = map[string]string{"app": "alert", "component": "cfssl"}
 
 	pod, err := a.getCfsslPod()
 	if err != nil {
@@ -55,7 +56,11 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	})
 	pod.AddLabels(map[string]string{"component": "cfssl", "app": "alert"})
 
-	pod.AddContainer(a.getCfsslContainer())
+	container, err := a.getCfsslContainer()
+	if err != nil {
+		return nil, err
+	}
+	pod.AddContainer(container)
 
 	vol, err := a.getCfsslVolume()
 	if err != nil {
@@ -67,27 +72,34 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 }
 
 // getCfsslContainer returns a new Container for a Cffsl
-func (a *SpecConfig) getCfsslContainer() *components.Container {
+func (a *SpecConfig) getCfsslContainer() (*components.Container, error) {
 	image := a.config.CfsslImage
 	if image == "" {
 		image = GetImageTag(a.config.Version, "blackduck-cfssl")
 	}
-	container := components.NewContainer(horizonapi.ContainerConfig{
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:   "hub-cfssl",
 		Image:  image,
 		MinMem: a.config.CfsslMemory,
 		MaxMem: a.config.CfsslMemory,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: "8888",
+		ContainerPort: int32(8888),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "dir-cfssl",
 		MountPath: "/etc/cfssl",
 	})
+
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromConfigMap,
@@ -96,6 +108,7 @@ func (a *SpecConfig) getCfsslContainer() *components.Container {
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{
 		ActionConfig: horizonapi.ActionConfig{
+			Type:    horizonapi.ActionTypeCommand,
 			Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:8888/api/v1/cfssl/scaninfo"},
 		},
 		Delay:           240,
@@ -104,7 +117,7 @@ func (a *SpecConfig) getCfsslContainer() *components.Container {
 		MinCountFailure: 10,
 	})
 
-	return container
+	return container, nil
 }
 
 // getCfsslVolume returns a new Volume for a Cffsl

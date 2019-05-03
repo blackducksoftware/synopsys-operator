@@ -75,8 +75,3 @@ var _ clientset.Interface = &Clientset{}
 func (c *Clientset) SynopsysV1() synopsysv1.SynopsysV1Interface {
 	return &fakesynopsysv1.FakeSynopsysV1{Fake: &c.Fake}
 }
-
-// Synopsys retrieves the SynopsysV1Client
-func (c *Clientset) Synopsys() synopsysv1.SynopsysV1Interface {
-	return &fakesynopsysv1.FakeSynopsysV1{Fake: &c.Fake}
-}
