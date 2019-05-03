@@ -27,6 +27,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 )
 
@@ -271,9 +272,18 @@ func (p *SpecConfig) ScannerServiceAccount() *components.ServiceAccount {
 }
 
 // ScannerClusterRoleBinding creates a cluster role binding for the perceptor scanner
-func (p *SpecConfig) ScannerClusterRoleBinding() *components.ClusterRoleBinding {
+func (p *SpecConfig) ScannerClusterRoleBinding() (*components.ClusterRoleBinding, error) {
+	var clusterRole string
+	var err error
+	if !p.config.DryRun {
+		clusterRole, err = util.GetOperatorClusterRole(p.kubeClient)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	scannerCRB := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
-		Name:       p.opssight.Spec.ScannerPod.Name, // TODO is this right?  or should it be .ImageFacade.Name ?
+		Name:       p.opssight.Spec.ScannerPod.Name,
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 
@@ -285,9 +295,9 @@ func (p *SpecConfig) ScannerClusterRoleBinding() *components.ClusterRoleBinding 
 	scannerCRB.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
 		Kind:     "ClusterRole",
-		Name:     "synopsys-operator-admin",
+		Name:     clusterRole,
 	})
 	scannerCRB.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 
-	return scannerCRB
+	return scannerCRB, nil
 }

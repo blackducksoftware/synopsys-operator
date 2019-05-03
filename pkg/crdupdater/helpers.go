@@ -170,7 +170,7 @@ func compareVolumes(oldVolume []corev1.Volume, newVolume []corev1.Volume) bool {
 			return false
 		} else if volume.ConfigMap != nil && !reflect.DeepEqual(volume.ConfigMap.Name, newVolume[i].ConfigMap.Name) && !reflect.DeepEqual(volume.ConfigMap.Items, newVolume[i].ConfigMap.Items) {
 			return false
-		} else if volume.Secret == nil && volume.ConfigMap == nil && !reflect.DeepEqual(oldVolume, newVolume) {
+		} else if volume.Secret == nil && volume.ConfigMap == nil && !reflect.DeepEqual(volume, newVolume[i]) {
 			return false
 		}
 	}

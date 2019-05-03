@@ -94,8 +94,8 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, err
 	}
 	components := &api.ComponentList{
-		ReplicationControllers: []*components.ReplicationController{
-			specConfig.GetOperatorReplicationController(),
+		Deployments: []*components.Deployment{
+			specConfig.GetOperatorDeployment(),
 		},
 		Services:   specConfig.GetOperatorService(),
 		ConfigMaps: []*components.ConfigMap{configMap},

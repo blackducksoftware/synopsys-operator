@@ -29,6 +29,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/google/go-cmp/cmp"
 	"github.com/koki/short/types"
@@ -40,7 +41,7 @@ import (
 // TestUpstreamPerceptor will test the upstream deployment
 func TestUpstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
-	opssight := NewSpecConfig(nil, nil, nil, nil, defaultValues, true)
+	opssight := NewSpecConfig(&protoform.Config{DryRun: true}, nil, nil, nil, defaultValues, true)
 
 	components, err := opssight.GetComponents()
 
@@ -64,7 +65,7 @@ func TestUpstreamPerceptor(t *testing.T) {
 func TestDownstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
 
-	opssight := NewSpecConfig(nil, nil, nil, nil, defaultValues, true)
+	opssight := NewSpecConfig(&protoform.Config{DryRun: true}, nil, nil, nil, defaultValues, true)
 
 	components, err := opssight.GetComponents()
 	fmt.Printf("tests of %+v temporarily disabled -- reenable using ginkgo (err: %+v)", components, err)

@@ -117,10 +117,14 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 	}
 
 	clusterRoleBindings, err := util.ListClusterRoleBindings(ac.kubeClient, "app=opssight")
+	operatorClusterRole, err := util.GetOperatorClusterRole(ac.kubeClient)
+	if err != nil {
+		return err
+	}
 
 	for _, clusterRoleBinding := range clusterRoleBindings.Items {
 		if len(clusterRoleBinding.Subjects) == 1 {
-			if !strings.EqualFold(clusterRoleBinding.RoleRef.Name, "synopsys-operator-admin") {
+			if !strings.EqualFold(clusterRoleBinding.RoleRef.Name, operatorClusterRole) {
 				log.Debugf("deleting cluster role %s", clusterRoleBinding.RoleRef.Name)
 				err = util.DeleteClusterRole(ac.kubeClient, clusterRoleBinding.RoleRef.Name)
 				if err != nil {
@@ -252,12 +256,11 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 	for namespace, name := range routes {
 		route, err := util.GetRoute(ac.routeClient, namespace, name)
 		if err != nil {
-			log.Warnf("unable to find an OpenShift %s router in %s namespace due to %+v", name, namespace, err)
-		} else {
-			internalRegistries = append(internalRegistries, &route.Spec.Host)
-			routeHostPort := fmt.Sprintf("%s:443", route.Spec.Host)
-			internalRegistries = append(internalRegistries, &routeHostPort)
+			continue
 		}
+		internalRegistries = append(internalRegistries, &route.Spec.Host)
+		routeHostPort := fmt.Sprintf("%s:443", route.Spec.Host)
+		internalRegistries = append(internalRegistries, &routeHostPort)
 	}
 
 	// Adding default OpenShift internal Docker/image registry service
@@ -265,7 +268,6 @@ func (ac *Creater) addRegistryAuth(opsSightSpec *opssightapi.OpsSightSpec) {
 	for _, labelSelector := range labelSelectors {
 		registrySvcs, err := util.ListServices(ac.kubeClient, "", labelSelector)
 		if err != nil {
-			log.Warnf("unable to find an OpenShift image registry service with labels %s due to %+v", labelSelector, err)
 			continue
 		}
 		for _, registrySvc := range registrySvcs.Items {
