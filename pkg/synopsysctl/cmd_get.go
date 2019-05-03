@@ -27,7 +27,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,7 +103,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 		}
 
 		log.Debugf("getting Synopsys-Operator's Secret")
-		operatorNamespace, err := GetOperatorNamespace()
+		operatorNamespace, err := util.GetOperatorNamespace(kubeClient)
 		if err != nil {
 			log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
 			return nil

@@ -1246,5 +1246,54 @@ func IsPodReady(clientset *kubernetes.Clientset, namespace string, labelSelector
 		}
 	}
 	return true, nil
+}
 
+// GetOperatorNamespace returns the namespace of the synopsys operator based on the labels
+func GetOperatorNamespace(clientset *kubernetes.Clientset) (string, error) {
+	// check if operator is already installed
+	rcs, rcErr := ListReplicationControllers(clientset, "", "app=synopsys-operator,component=operator")
+	if rcErr == nil && len(rcs.Items) > 0 {
+		return rcs.Items[0].Namespace, nil
+	}
+	deployments, dErr := ListDeployments(clientset, "", "app=synopsys-operator,component=operator")
+	if rcErr != nil || dErr != nil || (len(deployments.Items) == 0 && len(rcs.Items) == 0) {
+		return "", fmt.Errorf("synopsys operator namespace not found")
+	}
+	return deployments.Items[0].Namespace, nil
+}
+
+// GetOperatorClusterRole returns the cluster role of the synopsys operator based on the labels
+func GetOperatorClusterRole(clientset *kubernetes.Clientset) (string, error) {
+	crs, err := ListClusterRoles(clientset, "app=synopsys-operator,component=operator")
+
+	if err != nil || len(crs.Items) == 0 {
+		namespace, err := GetOperatorNamespace(clientset)
+		if err != nil {
+			return "", fmt.Errorf("synopsys operator namespace not found")
+		}
+
+		crs, err = ListClusterRoles(clientset, fmt.Sprintf("olm.owner.namespace=%s,olm.owner.kind=ClusterServiceVersion", namespace))
+		if err != nil || len(crs.Items) == 0 {
+			return "", fmt.Errorf("synopsys operator cluster role not found")
+		}
+	}
+	return crs.Items[0].Name, nil
+}
+
+// GetOperatorClusterRoleBinding returns the cluster role bindings of the synopsys operator based on the labels
+func GetOperatorClusterRoleBinding(clientset *kubernetes.Clientset) (string, error) {
+	crbs, err := ListClusterRoleBindings(clientset, "app=synopsys-operator,component=operator")
+
+	if err != nil || len(crbs.Items) == 0 {
+		namespace, err := GetOperatorNamespace(clientset)
+		if err != nil {
+			return "", fmt.Errorf("synopsys operator namespace not found")
+		}
+
+		crbs, err = ListClusterRoleBindings(clientset, fmt.Sprintf("olm.owner.namespace=%s,olm.owner.kind=ClusterServiceVersion", namespace))
+		if err != nil || len(crbs.Items) == 0 {
+			return "", fmt.Errorf("synopsys operator cluster role binding not found")
+		}
+	}
+	return crbs.Items[0].Name, nil
 }
