@@ -42,6 +42,10 @@ type Route struct {
 
 // NewRoute returns the route configuration
 func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
+	routeClient, _ := util.GetRouteClient(config.kubeConfig)
+	if routeClient == nil { // skip if running kubernetes
+		return nil, nil
+	}
 	deployer, err := util.NewDeployer(config.kubeConfig)
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
@@ -52,11 +56,6 @@ func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
 			newRoutes = append(newRoutes[:i], newRoutes[i+1:]...)
 			i--
 		}
-	}
-	routeClient, err := routeclient.NewForConfig(config.kubeConfig)
-	if err != nil {
-		log.Errorf("unable to create the route client due to %+v", err)
-		return nil, errors.Annotatef(err, "unable to create the route client for %s", config.namespace)
 	}
 	return &Route{
 		config:      config,

@@ -351,8 +351,8 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	// Add Openshift rules
-	routeClient := util.GetRouteClient(specConfig.RestConfig) // kube doesn't have a routeclient
-	if routeClient != nil {                                   // openshift: has a routeClient
+	routeClient, _ := util.GetRouteClient(specConfig.RestConfig) // kube doesn't have a routeclient
+	if routeClient != nil {                                      // openshift: has a routeClient
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
 			Verbs:           []string{"get", "update", "patch"},
 			APIGroups:       []string{"security.openshift.io"},

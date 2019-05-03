@@ -55,7 +55,9 @@ func NewUpdater(dryRun bool, isPatched bool) *Updater {
 
 // AddUpdater will add the updater to the list
 func (u *Updater) AddUpdater(updater UpdateComponents) {
-	u.updaters = append(u.updaters, updater)
+	if updater != nil {
+		u.updaters = append(u.updaters, updater)
+	}
 }
 
 // Update add or remove the components
