@@ -120,7 +120,7 @@ func DetermineClusterClients(restConfig *rest.Config) (kube, openshift bool) {
 
 	// Add Openshift rules
 	openshiftTest := false
-	routeClient := operatorutil.GetRouteClient(restConfig) // kube doesn't have a route client but openshift does
+	routeClient, _ := operatorutil.GetRouteClient(restConfig) // kube doesn't have a route client but openshift does
 	if routeClient != nil {
 		openshiftTest = true
 	}
