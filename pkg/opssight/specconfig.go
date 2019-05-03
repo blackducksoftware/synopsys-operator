@@ -163,7 +163,11 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.Services = append(components.Services, p.ScannerService(), p.ImageFacadeService())
 
 	components.ServiceAccounts = append(components.ServiceAccounts, p.ScannerServiceAccount())
-	components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ScannerClusterRoleBinding())
+	clusterRoleBinding, err := p.ScannerClusterRoleBinding()
+	if err != nil {
+		return nil, errors.Annotate(err, "failed to create scanner cluster role binding")
+	}
+	components.ClusterRoleBindings = append(components.ClusterRoleBindings, clusterRoleBinding)
 
 	// Add Pod Perceiver
 	if p.opssight.Spec.Perceiver.EnablePodPerceiver {

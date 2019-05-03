@@ -80,7 +80,7 @@ var deployCmd = &cobra.Command{
 			deployNamespace = args[0]
 		}
 		// check if operator is already installed
-		ns, err := GetOperatorNamespace()
+		ns, err := operatorutil.GetOperatorNamespace(kubeClient)
 		if err == nil {
 			log.Errorf("synopsys operator is already installed in '%s' namespace", ns)
 			return nil
