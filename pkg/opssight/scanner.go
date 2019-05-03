@@ -40,7 +40,7 @@ func (p *SpecConfig) ScannerReplicationController() (*components.ReplicationCont
 		Namespace: p.opssight.Spec.Namespace,
 	})
 
-	rc.AddLabelSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
+	rc.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 	rc.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 	pod, err := p.scannerPod()
 	if err != nil {
@@ -89,7 +89,7 @@ func (p *SpecConfig) scannerPod() (*components.Pod, error) {
 func (p *SpecConfig) scannerContainer() (*components.Container, error) {
 	priv := false
 	name := p.opssight.Spec.ScannerPod.Scanner.Name
-	container := components.NewContainer(horizonapi.ContainerConfig{
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       name,
 		Image:      p.opssight.Spec.ScannerPod.Scanner.Image,
 		Command:    []string{fmt.Sprintf("./%s", name)},
@@ -98,13 +98,16 @@ func (p *SpecConfig) scannerContainer() (*components.Container, error) {
 		MinMem:     p.opssight.Spec.ScannerMem,
 		Privileged: &priv,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.opssight.Spec.ScannerPod.Scanner.Port),
+		ContainerPort: int32(p.opssight.Spec.ScannerPod.Scanner.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      name,
 		MountPath: fmt.Sprintf("/etc/%s", name),
 	})
@@ -120,10 +123,7 @@ func (p *SpecConfig) scannerContainer() (*components.Container, error) {
 		return nil, errors.Trace(err)
 	}
 
-	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.Spec.SecretName})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
+	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.Spec.SecretName})
 
 	return container, nil
 }
@@ -135,7 +135,7 @@ func (p *SpecConfig) imageFacadeContainer() (*components.Container, error) {
 	}
 
 	name := p.opssight.Spec.ScannerPod.ImageFacade.Name
-	container := components.NewContainer(horizonapi.ContainerConfig{
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       name,
 		Image:      p.opssight.Spec.ScannerPod.ImageFacade.Image,
 		Command:    []string{fmt.Sprintf("./%s", name)},
@@ -144,13 +144,16 @@ func (p *SpecConfig) imageFacadeContainer() (*components.Container, error) {
 		MinMem:     p.opssight.Spec.ScannerMem,
 		Privileged: &priv,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.opssight.Spec.ScannerPod.ImageFacade.Port),
+		ContainerPort: int32(p.opssight.Spec.ScannerPod.ImageFacade.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      name,
 		MountPath: fmt.Sprintf("/etc/%s", name),
 	})
@@ -175,10 +178,7 @@ func (p *SpecConfig) imageFacadeContainer() (*components.Container, error) {
 		}
 	}
 
-	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.Spec.SecretName})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
+	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.Spec.SecretName})
 
 	return container, nil
 }
@@ -227,6 +227,7 @@ func (p *SpecConfig) ScannerService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.opssight.Spec.ScannerPod.Scanner.Name,
 		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 	service.AddSelectors(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
@@ -246,6 +247,7 @@ func (p *SpecConfig) ImageFacadeService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.opssight.Spec.ScannerPod.ImageFacade.Name,
 		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	// TODO verify that this hits the *perceptor-scanner pod* !!!
 	service.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})

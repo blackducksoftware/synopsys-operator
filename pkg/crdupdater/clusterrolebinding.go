@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"strings"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
@@ -49,7 +50,7 @@ func NewClusterRoleBinding(config *CommonConfig, clusterRoleBindings []*componen
 	}
 	newClusterRoleBindings := append([]*components.ClusterRoleBinding{}, clusterRoleBindings...)
 	for i := 0; i < len(newClusterRoleBindings); i++ {
-		if !isLabelsExist(config.expectedLabels, newClusterRoleBindings[i].GetObj().Labels) {
+		if !isLabelsExist(config.expectedLabels, newClusterRoleBindings[i].Labels) {
 			newClusterRoleBindings = append(newClusterRoleBindings[:i], newClusterRoleBindings[i+1:]...)
 			i--
 		}
@@ -77,11 +78,7 @@ func (c *ClusterRoleBinding) buildNewAndOldObject() error {
 
 	// build new cluster role binding
 	for _, newCrb := range c.clusterRoleBindings {
-		newClusterRoleBindingKube, err := newCrb.ToKube()
-		if err != nil {
-			return errors.Annotatef(err, "unable to convert cluster role binding %s to kube %s", newCrb.GetName(), c.config.namespace)
-		}
-		c.newClusterRoleBindings[newCrb.GetName()] = newClusterRoleBindingKube.(*rbacv1.ClusterRoleBinding)
+		c.newClusterRoleBindings[newCrb.GetName()] = newCrb.ClusterRoleBinding
 	}
 
 	return nil
@@ -93,7 +90,7 @@ func (c *ClusterRoleBinding) add(isPatched bool) (bool, error) {
 	var err error
 	for _, clusterRoleBinding := range c.clusterRoleBindings {
 		if _, ok := c.oldClusterRoleBindings[clusterRoleBinding.GetName()]; !ok {
-			c.deployer.Deployer.AddClusterRoleBinding(clusterRoleBinding)
+			c.deployer.Deployer.AddComponent(horizonapi.ClusterRoleBindingComponent, clusterRoleBinding)
 			isAdded = true
 		} else {
 			_, err = c.patch(clusterRoleBinding, isPatched)

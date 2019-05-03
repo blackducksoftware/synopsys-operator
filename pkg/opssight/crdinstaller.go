@@ -83,17 +83,18 @@ func (c *CRDInstaller) Deploy() error {
 	apiClientset, err := clientset.NewForConfig(c.config.KubeConfig)
 	_, err = util.GetCustomResourceDefinition(apiClientset, "opssights.synopsys.com")
 	if err != nil {
-		deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
-			APIVersion: "apiextensions.k8s.io/v1beta1",
-			Name:       "opssights.synopsys.com",
-			Namespace:  c.config.Config.Namespace,
-			Group:      "synopsys.com",
-			CRDVersion: "v1",
-			Kind:       "OpsSight",
-			Plural:     "opssights",
-			Singular:   "opssight",
-			Scope:      horizonapi.CRDClusterScoped,
-		}))
+		deployer.AddComponent(horizonapi.CRDComponent,
+			components.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       "opssights.synopsys.com",
+				Namespace:  c.config.Config.Namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "OpsSight",
+				Plural:     "opssights",
+				Singular:   "opssight",
+				Scope:      horizonapi.CRDClusterScoped,
+			}))
 	}
 
 	err = deployer.Run()

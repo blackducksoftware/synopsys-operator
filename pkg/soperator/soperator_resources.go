@@ -35,7 +35,7 @@ import (
 )
 
 // GetOperatorDeployment creates a deployment for the Synopsys-Operaotor
-func (specConfig *SpecConfig) GetOperatorDeployment() *horizoncomponents.Deployment {
+func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deployment, error) {
 	// Add the Replication Controller to the Deployer
 	var synopsysOperatorReplicas int32 = 1
 	synopsysOperator := horizoncomponents.NewDeployment(horizonapi.DeploymentConfig{
@@ -54,15 +54,18 @@ func (specConfig *SpecConfig) GetOperatorDeployment() *horizoncomponents.Deploym
 		ServiceAccount: "synopsys-operator",
 	})
 
-	synopsysOperatorContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
+	synopsysOperatorContainer, err := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator",
 		Args:       []string{"/etc/synopsys-operator/config.json"},
 		Command:    []string{"./operator"},
 		Image:      specConfig.Image,
 		PullPolicy: horizonapi.PullAlways,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	synopsysOperatorContainer.AddPort(horizonapi.PortConfig{
-		ContainerPort: "8080",
+		ContainerPort: int32(8080),
 	})
 	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
 		MountPath: "/etc/synopsys-operator",
@@ -72,6 +75,10 @@ func (specConfig *SpecConfig) GetOperatorDeployment() *horizoncomponents.Deploym
 		MountPath: "/opt/synopsys-operator/tls",
 		Name:      "synopsys-operator-tls",
 	})
+	synopsysOperatorContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
+		MountPath: "/tmp",
+		Name:      "tmp-logs",
+	})
 	synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "SEAL_KEY",
 		Type:         horizonapi.EnvFromSecret,
@@ -79,14 +86,17 @@ func (specConfig *SpecConfig) GetOperatorDeployment() *horizoncomponents.Deploym
 		FromName:     "blackduck-secret",
 	})
 
-	synopsysOperatorUIContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
+	synopsysOperatorUIContainer, err := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator-ui",
 		Command:    []string{"./app"},
 		Image:      specConfig.Image,
 		PullPolicy: horizonapi.PullAlways,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	synopsysOperatorUIContainer.AddPort(horizonapi.PortConfig{
-		ContainerPort: "3000",
+		ContainerPort: int32(3000),
 	})
 	synopsysOperatorUIContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "ADDR",
@@ -123,10 +133,21 @@ func (specConfig *SpecConfig) GetOperatorDeployment() *horizoncomponents.Deploym
 		DefaultMode:     &synopsysOperatorVolumeDefaultMode,
 	})
 	synopsysOperatorPod.AddVolume(synopsysOperatorTlSVolume)
+
+	// add temp log volume for glog issue
+	synopsysOperatorLogVolume, err := horizoncomponents.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
+		VolumeName: "tmp-logs",
+		Medium:     horizonapi.StorageMediumDefault,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	synopsysOperatorPod.AddVolume(synopsysOperatorLogVolume)
+
 	synopsysOperator.AddPod(synopsysOperatorPod)
 
 	synopsysOperator.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
-	return synopsysOperator
+	return synopsysOperator, nil
 }
 
 // GetOperatorService creates a Service Horizon component for the Synopsys-Operaotor
@@ -171,19 +192,19 @@ func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service 
 
 	if strings.EqualFold(specConfig.Expose, "NODEPORT") || strings.EqualFold(specConfig.Expose, "LOADBALANCER") {
 
-		var exposedServiceType horizonapi.ClusterIPServiceType
+		var exposedServiceType horizonapi.ServiceType
 		if strings.EqualFold(specConfig.Expose, "NODEPORT") {
-			exposedServiceType = horizonapi.ClusterIPServiceTypeNodePort
+			exposedServiceType = horizonapi.ServiceTypeNodePort
 		} else {
-			exposedServiceType = horizonapi.ClusterIPServiceTypeLoadBalancer
+			exposedServiceType = horizonapi.ServiceTypeLoadBalancer
 		}
 
 		// Synopsys operator UI exposed service
 		synopsysOperatorExposedService := horizoncomponents.NewService(horizonapi.ServiceConfig{
-			APIVersion:    "v1",
-			Name:          "synopsys-operator-exposed",
-			Namespace:     specConfig.Namespace,
-			IPServiceType: exposedServiceType,
+			APIVersion: "v1",
+			Name:       "synopsys-operator-exposed",
+			Namespace:  specConfig.Namespace,
+			Type:       exposedServiceType,
 		})
 		synopsysOperatorExposedService.AddSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
 		synopsysOperatorExposedService.AddPort(horizonapi.ServicePortConfig{

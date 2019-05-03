@@ -87,7 +87,7 @@ func (c *CRDInstaller) Deploy() error {
 	apiClientset, err := clientset.NewForConfig(c.kubeConfig)
 	_, err = util.GetCustomResourceDefinition(apiClientset, "alerts.synopsys.com")
 	if err != nil {
-		deployer.AddCustomDefinedResource(components.NewCustomResourceDefintion(horizonapi.CRDConfig{
+		deployer.AddComponent(horizonapi.CRDComponent, components.NewCustomResourceDefintion(horizonapi.CRDConfig{
 			APIVersion: "apiextensions.k8s.io/v1beta1",
 			Name:       "alerts.synopsys.com",
 			Namespace:  c.config.Namespace,

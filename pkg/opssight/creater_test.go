@@ -101,8 +101,8 @@ func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components
 	}
 
 	for _, cb := range clusterRoleBindings {
-		if !cmp.Equal(cb.GetObj(), expectedClusterRoleBindings[cb.GetName()]) {
-			t.Errorf("cluster role bindings is not equal for %s. Diff: %+v", cb.GetName(), cmp.Diff(cb.GetObj(), expectedClusterRoleBindings[cb.GetName()]))
+		if !cmp.Equal(cb.ClusterRoleBinding, expectedClusterRoleBindings[cb.GetName()]) {
+			t.Errorf("cluster role bindings is not equal for %s. Diff: %+v", cb.GetName(), cmp.Diff(cb.ClusterRoleBinding, expectedClusterRoleBindings[cb.GetName()]))
 		}
 	}
 }
@@ -121,8 +121,8 @@ func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, 
 	}
 
 	for _, cr := range clusterRoles {
-		if !cmp.Equal(cr.GetObj(), expectedClusterRoles[cr.GetName()]) {
-			t.Errorf("cluster role is not equal for %s. Diff: %+v", cr.GetName(), cmp.Diff(cr.GetObj(), expectedClusterRoles[cr.GetName()]))
+		if !cmp.Equal(cr.ClusterRole, expectedClusterRoles[cr.GetName()]) {
+			t.Errorf("cluster role is not equal for %s. Diff: %+v", cr.GetName(), cmp.Diff(cr.ClusterRole, expectedClusterRoles[cr.GetName()]))
 		}
 	}
 }
@@ -153,13 +153,13 @@ func validateConfigMaps(t *testing.T, configMaps []*components.ConfigMap, opssig
 
 	for _, cm := range configMaps {
 		actualConfigMap := expectedConfigMaps[cm.GetName()]
-		if !strings.EqualFold(cm.GetObj().Name, actualConfigMap.name) {
-			t.Errorf("config map name is not equal. Expected: %s, Actual: %s", actualConfigMap.name, cm.GetObj().Data)
+		if !strings.EqualFold(cm.Name, actualConfigMap.name) {
+			t.Errorf("config map name is not equal. Expected: %s, Actual: %s", actualConfigMap.name, cm.Data)
 		}
 
 		if !strings.EqualFold(cm.GetName(), prometheus) {
-			if _, ok := cm.GetObj().Data[actualConfigMap.fileName]; !ok {
-				t.Errorf("config map file name is not equal. Expected: %s, Actual: %s", actualConfigMap.fileName, cm.GetObj().Data[actualConfigMap.fileName])
+			if _, ok := cm.Data[actualConfigMap.fileName]; !ok {
+				t.Errorf("config map file name is not equal. Expected: %s, Actual: %s", actualConfigMap.fileName, cm.Data[actualConfigMap.fileName])
 			}
 		}
 	}
@@ -209,8 +209,8 @@ func validateDeployments(t *testing.T, deployments []*components.Deployment, ops
 	}
 
 	for _, d := range deployments {
-		if !cmp.Equal(d.GetObj(), expectedDeployment[d.GetName()]) {
-			t.Errorf("deployment is not equal for %s. Diff: %+v", d.GetName(), cmp.Diff(d.GetObj(), expectedDeployment[d.GetName()]))
+		if !cmp.Equal(d.Deployment, expectedDeployment[d.GetName()]) {
+			t.Errorf("deployment is not equal for %s. Diff: %+v", d.GetName(), cmp.Diff(d.Deployment, expectedDeployment[d.GetName()]))
 		}
 	}
 }
@@ -396,8 +396,8 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 	}
 
 	for _, rc := range replicationControllers {
-		if !cmp.Equal(rc.GetObj(), expectedReplicationController[rc.GetName()]) {
-			t.Errorf("replication controller is not equal for %s. Diff: %+v", rc.GetName(), cmp.Diff(rc.GetObj(), expectedReplicationController[rc.GetName()]))
+		if !cmp.Equal(rc.ReplicationController, expectedReplicationController[rc.GetName()]) {
+			t.Errorf("replication controller is not equal for %s. Diff: %+v", rc.GetName(), cmp.Diff(rc.ReplicationController, expectedReplicationController[rc.GetName()]))
 		}
 	}
 }
@@ -412,8 +412,8 @@ func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *o
 	}
 
 	for _, secret := range secrets {
-		if !cmp.Equal(secret.GetObj(), expectedSecrets[secret.GetName()]) {
-			t.Errorf("secret is not equal for %s. Diff: %+v", secret.GetName(), cmp.Diff(secret.GetObj(), expectedSecrets[secret.GetName()]))
+		if !cmp.Equal(secret.Secret, expectedSecrets[secret.GetName()]) {
+			t.Errorf("secret is not equal for %s. Diff: %+v", secret.GetName(), cmp.Diff(secret.Secret, expectedSecrets[secret.GetName()]))
 		}
 	}
 }
@@ -432,8 +432,8 @@ func validateServiceAccounts(t *testing.T, serviceAccounts []*components.Service
 	}
 
 	for _, serviceAccount := range serviceAccounts {
-		if !cmp.Equal(serviceAccount.GetObj(), expectedServiceAccounts[serviceAccount.GetName()]) {
-			t.Errorf("service account is not equal for %s. Diff: %+v", serviceAccount.GetName(), cmp.Diff(serviceAccount.GetObj(), expectedServiceAccounts[serviceAccount.GetName()]))
+		if !cmp.Equal(serviceAccount.ServiceAccount, expectedServiceAccounts[serviceAccount.GetName()]) {
+			t.Errorf("service account is not equal for %s. Diff: %+v", serviceAccount.GetName(), cmp.Diff(serviceAccount.ServiceAccount, expectedServiceAccounts[serviceAccount.GetName()]))
 		}
 	}
 }
@@ -497,43 +497,43 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 	}
 
 	for _, service := range services {
-		if !cmp.Equal(service.GetObj(), expectedServices[service.GetName()]) {
-			t.Errorf("service is not equal for %s. Diff: %+v", service.GetName(), cmp.Diff(service.GetObj(), expectedServices[service.GetName()]))
+		if !cmp.Equal(service.Service, expectedServices[service.GetName()]) {
+			t.Errorf("service is not equal for %s. Diff: %+v", service.GetName(), cmp.Diff(service.Service, expectedServices[service.GetName()]))
 		}
 	}
 }
 
 func prettyPrintObj(components *api.ComponentList) {
 	for _, cb := range components.ClusterRoleBindings {
-		util.PrettyPrint(cb.GetObj(), "json")
+		util.PrettyPrint(cb.ClusterRoleBinding, "json")
 	}
 
 	for _, cr := range components.ClusterRoles {
-		util.PrettyPrint(cr.GetObj(), "json")
+		util.PrettyPrint(cr.ClusterRole, "json")
 	}
 
 	for _, cm := range components.ConfigMaps {
-		util.PrettyPrint(cm.GetObj(), "json")
+		util.PrettyPrint(cm.ConfigMap, "json")
 	}
 
 	for _, d := range components.Deployments {
-		util.PrettyPrint(d.GetObj(), "json")
+		util.PrettyPrint(d.Deployment, "json")
 	}
 
 	for _, rc := range components.ReplicationControllers {
-		util.PrettyPrint(rc.GetObj(), "json")
+		util.PrettyPrint(rc.ReplicationController, "json")
 	}
 
 	for _, s := range components.Secrets {
-		util.PrettyPrint(s.GetObj(), "json")
+		util.PrettyPrint(s.Secret, "json")
 	}
 
 	for _, sa := range components.ServiceAccounts {
-		util.PrettyPrint(sa.GetObj(), "json")
+		util.PrettyPrint(sa.ServiceAccount, "json")
 	}
 
 	for _, svc := range components.Services {
-		util.PrettyPrint(svc.GetObj(), "json")
+		util.PrettyPrint(svc.Service, "json")
 	}
 }
 

@@ -28,7 +28,7 @@ import (
 )
 
 // GetZookeeperDeployment will return the zookeeper deployment
-func (c *Creater) GetZookeeperDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetZookeeperDeployment(imageName string) (*components.ReplicationController, error) {
 
 	volumeMounts := c.getZookeeperVolumeMounts()
 
@@ -42,7 +42,10 @@ func (c *Creater) GetZookeeperDeployment(imageName string) *components.Replicati
 
 	if c.hubSpec.LivenessProbes {
 		zookeeperContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"zkServer.sh", "status", "/opt/blackduck/zookeeper/conf/zoo.cfg"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type:    horizonapi.ActionTypeCommand,
+				Command: []string{"zkServer.sh", "status", "/opt/blackduck/zookeeper/conf/zoo.cfg"},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,
@@ -61,10 +64,15 @@ func (c *Creater) GetZookeeperDeployment(imageName string) *components.Replicati
 
 	c.PostEditContainer(zookeeperContainerConfig)
 
-	zookeeper := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{zookeeperContainerConfig}, c.getZookeeperVolumes(), initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("zookeeper"), c.GetLabel("zookeeper"), c.hubSpec.RegistryConfiguration.PullSecrets)
-
-	return zookeeper
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)},
+		&util.PodConfig{
+			Volumes:          c.getZookeeperVolumes(),
+			Containers:       []*util.Container{zookeeperContainerConfig},
+			InitContainers:   initContainers,
+			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:           c.GetVersionLabel("zookeeper"),
+		}, c.GetLabel("zookeeper"))
 }
 
 // getZookeeperVolumes will return the zookeeper volumes
@@ -99,5 +107,5 @@ func (c *Creater) getZookeeperVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetZookeeperService will return the zookeeper service
 func (c *Creater) GetZookeeperService() *components.Service {
-	return util.CreateService("zookeeper", c.GetLabel("zookeeper"), c.hubSpec.Namespace, zookeeperPort, zookeeperPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("zookeeper"))
+	return util.CreateService("zookeeper", c.GetLabel("zookeeper"), c.hubSpec.Namespace, zookeeperPort, zookeeperPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("zookeeper"))
 }

@@ -119,7 +119,7 @@ func (c *FakeBlackducks) DeleteCollection(options *v1.DeleteOptions, listOptions
 // Patch applies the patch and returns the patched blackduck.
 func (c *FakeBlackducks) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *blackduckv1.Blackduck, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(blackducksResource, c.ns, name, data, subresources...), &blackduckv1.Blackduck{})
+		Invokes(testing.NewPatchSubresourceAction(blackducksResource, c.ns, name, pt, data, subresources...), &blackduckv1.Blackduck{})
 
 	if obj == nil {
 		return nil, err

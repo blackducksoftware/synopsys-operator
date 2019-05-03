@@ -95,7 +95,7 @@ func (in *AlertSpec) DeepCopyInto(out *AlertSpec) {
 	}
 	if in.Port != nil {
 		in, out := &in.Port, &out.Port
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.Environs != nil {

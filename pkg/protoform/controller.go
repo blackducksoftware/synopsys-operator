@@ -22,6 +22,7 @@ under the License.
 package protoform
 
 import (
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -82,7 +83,7 @@ func NewController(configPath string) (*Deployer, error) {
 		if err != nil {
 			return nil, errors.Annotate(err, "unable to create operator configmap")
 		}
-		deployer.AddConfigMap(operatorCm)
+		deployer.AddComponent(horizonapi.ConfigMapComponent, operatorCm)
 		deployer.Run()
 	}
 
@@ -102,7 +103,7 @@ func NewController(configPath string) (*Deployer, error) {
 		if err != nil {
 			return nil, errors.Annotate(err, "unable to create prometheus configmap")
 		}
-		deployer.AddConfigMap(prometheusCm)
+		deployer.AddComponent(horizonapi.ConfigMapComponent, prometheusCm)
 		deployer.Run()
 	}
 

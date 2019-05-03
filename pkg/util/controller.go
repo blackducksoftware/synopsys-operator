@@ -41,7 +41,7 @@ func NewPodListController(ns string) *PodListController {
 }
 
 // Run will print to debug output the status of the pods that were started
-func (l *PodListController) Run(resources horizonapi.ControllerResources, stopCh chan struct{}) error {
+func (l *PodListController) Run(resources horizonapi.DeployerResources, stopCh chan struct{}) error {
 	client := resources.KubeClient
 	for cnt := 0; cnt < 20; cnt++ {
 		pods, _ := client.CoreV1().Pods(l.namespace).List(v1meta.ListOptions{})

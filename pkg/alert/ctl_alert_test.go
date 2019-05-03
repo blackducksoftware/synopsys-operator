@@ -121,7 +121,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "Url of Cfssl Image")
 	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "Enable Stand Alone mode")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Type of Service to Expose")
-	cmd.Flags().IntVar(&ctl.Port, "port", ctl.Port, "Port for Alert")
+	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port for Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for the Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for the Alert")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables for the Alert")
@@ -205,7 +205,7 @@ func TestSetFlag(t *testing.T) {
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Port: 1234,
 			},
-			changedSpec: &alertapi.AlertSpec{Port: crddefaults.IntToPtr(1234)},
+			changedSpec: &alertapi.AlertSpec{Port: crddefaults.IntToInt32(1234)},
 		},
 		// case
 		{flagName: "encryption-password",

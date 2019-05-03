@@ -29,7 +29,6 @@ import (
 	"io"
 	"io/ioutil"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -48,7 +47,6 @@ import (
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/api/storage/v1beta1"
@@ -71,9 +69,12 @@ const (
 
 // CreateContainer will create the container
 func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvConfig, volumeMounts []*horizonapi.VolumeMountConfig, ports []*horizonapi.PortConfig,
-	actionConfig *horizonapi.ActionConfig, preStopConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) *components.Container {
+	actionConfig *horizonapi.ActionConfig, preStopConfig *horizonapi.ActionConfig, livenessProbeConfigs []*horizonapi.ProbeConfig, readinessProbeConfigs []*horizonapi.ProbeConfig) (*components.Container, error) {
 
-	container := components.NewContainer(*config)
+	container, err := components.NewContainer(*config)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, env := range envs {
 		container.AddEnv(*env)
@@ -104,7 +105,7 @@ func CreateContainer(config *horizonapi.ContainerConfig, envs []*horizonapi.EnvC
 		container.AddReadinessProbe(*readinessProbe)
 	}
 
-	return container
+	return container, nil
 }
 
 // CreateGCEPersistentDiskVolume will create a GCE Persistent disk volume for a pod
@@ -170,93 +171,130 @@ func CreateSecretVolume(volumeName string, secretName string, defaultMode int) (
 }
 
 // CreatePod will create the pod
-func CreatePod(name string, serviceAccount string, volumes []*components.Volume, containers []*Container, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string) *components.Pod {
+func CreatePod(podConfig *PodConfig) (*components.Pod, error) {
+	name := podConfig.Name
+	// create pod config
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: name,
 	})
 
-	if !strings.EqualFold(serviceAccount, "") {
-		pod.GetObj().Account = serviceAccount
+	// set service account
+	if len(podConfig.ServiceAccount) > 0 {
+		pod.Spec.ServiceAccountName = podConfig.ServiceAccount
 	}
 
-	for _, volume := range volumes {
+	// add volumes
+	for _, volume := range podConfig.Volumes {
 		pod.AddVolume(volume)
 	}
 
-	pod.AddLabels(labels)
+	// add labels
+	pod.AddLabels(podConfig.Labels)
 
-	for _, affinityConfig := range affinityConfigs {
-		pod.AddAffinity(affinityConfig)
-	}
-
-	for _, containerConfig := range containers {
-		container := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
-			containerConfig.ActionConfig, containerConfig.PreStopConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
-		pod.AddContainer(container)
-	}
-
-	for _, initContainerConfig := range initContainers {
-		initContainer := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts,
-			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.PreStopConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
-		err := pod.AddInitContainer(initContainer)
-		if err != nil {
-			log.Printf("failed to create the init container for pod %s because %+v", name, err)
+	// add pod affinities
+	for affinityType, podAffinityConfigs := range podConfig.PodAffinityConfigs {
+		for _, podAffinityConfig := range podAffinityConfigs {
+			pod.AddPodAffinity(affinityType, *podAffinityConfig)
 		}
 	}
 
-	return pod
+	// add pod anti affinities
+	for affinityType, podAntiAffinityConfigs := range podConfig.PodAntiAffinityConfigs {
+		for _, podAntiAffinityConfig := range podAntiAffinityConfigs {
+			pod.AddPodAntiAffinity(affinityType, *podAntiAffinityConfig)
+		}
+	}
+
+	// add node affinities
+	for affinityType, nodeAffinityConfigs := range podConfig.NodeAffinityConfigs {
+		for _, nodeAffinityConfig := range nodeAffinityConfigs {
+			pod.AddNodeAffinity(affinityType, *nodeAffinityConfig)
+		}
+	}
+
+	// add containers
+	for _, containerConfig := range podConfig.Containers {
+		container, err := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
+			containerConfig.ActionConfig, containerConfig.PreStopConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the container for pod %s because %+v", name, err)
+		}
+		pod.AddContainer(container)
+	}
+
+	// add init containers
+	for _, initContainerConfig := range podConfig.InitContainers {
+		initContainer, err := CreateContainer(initContainerConfig.ContainerConfig, initContainerConfig.EnvConfigs, initContainerConfig.VolumeMounts,
+			initContainerConfig.PortConfig, initContainerConfig.ActionConfig, initContainerConfig.PreStopConfig, initContainerConfig.LivenessProbeConfigs, initContainerConfig.ReadinessProbeConfigs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the init container for pod %s because %+v", name, err)
+		}
+		err = pod.AddInitContainer(initContainer)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the init container for pod %s because %+v", name, err)
+		}
+	}
+
+	if len(podConfig.ImagePullSecrets) > 0 {
+		pod.AddImagePullSecrets(podConfig.ImagePullSecrets)
+	}
+
+	return pod, nil
 }
 
 // CreateDeployment will create a deployment
-func CreateDeployment(deploymentConfig *horizonapi.DeploymentConfig, pod *components.Pod) *components.Deployment {
+func CreateDeployment(deploymentConfig *horizonapi.DeploymentConfig, pod *components.Pod, labelSelector map[string]string) *components.Deployment {
 	deployment := components.NewDeployment(*deploymentConfig)
-
-	deployment.AddMatchLabelsSelectors(map[string]string{
-		"app":  deploymentConfig.Name,
-		"tier": deploymentConfig.Name,
-	})
+	deployment.AddMatchLabelsSelectors(labelSelector)
 	deployment.AddPod(pod)
 	return deployment
 }
 
 // CreateDeploymentFromContainer will create a deployment with multiple containers inside a pod
-func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string) *components.Deployment {
-	pod := CreatePod(deploymentConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs, labels)
-	deployment := CreateDeployment(deploymentConfig, pod)
-	return deployment
+func CreateDeploymentFromContainer(deploymentConfig *horizonapi.DeploymentConfig, podConfig *PodConfig, labelSelector map[string]string) (*components.Deployment, error) {
+	podConfig.Name = deploymentConfig.Name
+	pod, err := CreatePod(podConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create pod for the deployment %s due to %+v", deploymentConfig.Name, err)
+	}
+	deployment := CreateDeployment(deploymentConfig, pod, labelSelector)
+	return deployment, nil
 }
 
 // CreateReplicationController will create a replication controller
-func CreateReplicationController(replicationControllerConfig *horizonapi.ReplicationControllerConfig, pod *components.Pod, labels map[string]string, labelSelector map[string]string) *components.ReplicationController {
+func CreateReplicationController(replicationControllerConfig *horizonapi.ReplicationControllerConfig, pod *components.Pod, labels map[string]string,
+	labelSelector map[string]string) *components.ReplicationController {
 	rc := components.NewReplicationController(*replicationControllerConfig)
-	rc.AddLabelSelectors(labelSelector)
+	rc.AddSelectors(labelSelector)
 	rc.AddLabels(labels)
 	rc.AddPod(pod)
 	return rc
 }
 
 // CreateReplicationControllerFromContainer will create a replication controller with multiple containers inside a pod
-func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs []horizonapi.AffinityConfig, labels map[string]string, labelSelector map[string]string, imagePullSecrets []string) *components.ReplicationController {
-	pod := CreatePod(replicationControllerConfig.Name, serviceAccount, volumes, containers, initContainers, affinityConfigs, labels)
-	pod.AddImagePullSecrets(imagePullSecrets)
-	rc := CreateReplicationController(replicationControllerConfig, pod, labels, labelSelector)
-	return rc
+func CreateReplicationControllerFromContainer(replicationControllerConfig *horizonapi.ReplicationControllerConfig, podConfig *PodConfig, labelSelector map[string]string) (*components.ReplicationController, error) {
+	podConfig.Name = replicationControllerConfig.Name
+	pod, err := CreatePod(podConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create pod for the replication controller %s due to %+v", replicationControllerConfig.Name, err)
+	}
+	rc := CreateReplicationController(replicationControllerConfig, pod, podConfig.Labels, labelSelector)
+	return rc, nil
 }
 
 // CreateService will create the service
-func CreateService(name string, selectLabel map[string]string, namespace string, port string, target string, serviceType horizonapi.ClusterIPServiceType, label map[string]string) *components.Service {
+func CreateService(name string, selectLabel map[string]string, namespace string, port int32, target int32, serviceType horizonapi.ServiceType, label map[string]string) *components.Service {
 	svcConfig := horizonapi.ServiceConfig{
-		Name:          name,
-		Namespace:     namespace,
-		IPServiceType: serviceType,
+		Name:      name,
+		Namespace: namespace,
+		Type:      serviceType,
 	}
 
 	mySvc := components.NewService(svcConfig)
-	portVal, _ := strconv.Atoi(port)
 	myPort := &horizonapi.ServicePortConfig{
-		Name:       fmt.Sprintf("port-" + name),
-		Port:       int32(portVal),
-		TargetPort: target,
+		Name:       fmt.Sprintf("port-%d", port),
+		Port:       port,
+		TargetPort: fmt.Sprint(target),
 		Protocol:   horizonapi.ProtocolTCP,
 	}
 
@@ -268,21 +306,20 @@ func CreateService(name string, selectLabel map[string]string, namespace string,
 }
 
 // CreateServiceWithMultiplePort will create the service with multiple port
-func CreateServiceWithMultiplePort(name string, selectLabel map[string]string, namespace string, ports []string, serviceType horizonapi.ClusterIPServiceType, label map[string]string) *components.Service {
+func CreateServiceWithMultiplePort(name string, selectLabel map[string]string, namespace string, ports []int32, serviceType horizonapi.ServiceType, label map[string]string) *components.Service {
 	svcConfig := horizonapi.ServiceConfig{
-		Name:          name,
-		Namespace:     namespace,
-		IPServiceType: serviceType,
+		Name:      name,
+		Namespace: namespace,
+		Type:      serviceType,
 	}
 
 	mySvc := components.NewService(svcConfig)
 
 	for _, port := range ports {
-		portVal, _ := strconv.Atoi(port)
 		myPort := &horizonapi.ServicePortConfig{
-			Name:       fmt.Sprintf("port-" + port),
-			Port:       int32(portVal),
-			TargetPort: port,
+			Name:       fmt.Sprintf("port-%d", port),
+			Port:       port,
+			TargetPort: fmt.Sprint(port),
 			Protocol:   horizonapi.ProtocolTCP,
 		}
 		mySvc.AddPort(*myPort)
@@ -912,22 +949,22 @@ func CreateClusterRoleBinding(namespace string, name string, serviceAccountName 
 
 // GetClusterRoleBinding get a cluster role
 func GetClusterRoleBinding(clientset *kubernetes.Clientset, name string) (*rbacv1.ClusterRoleBinding, error) {
-	return clientset.Rbac().ClusterRoleBindings().Get(name, metav1.GetOptions{})
+	return clientset.RbacV1().ClusterRoleBindings().Get(name, metav1.GetOptions{})
 }
 
 // ListClusterRoleBindings list a cluster role binding
 func ListClusterRoleBindings(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleBindingList, error) {
-	return clientset.Rbac().ClusterRoleBindings().List(metav1.ListOptions{LabelSelector: labelSelector})
+	return clientset.RbacV1().ClusterRoleBindings().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateClusterRoleBinding updates the cluster role binding
 func UpdateClusterRoleBinding(clientset *kubernetes.Clientset, clusterRoleBinding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
-	return clientset.Rbac().ClusterRoleBindings().Update(clusterRoleBinding)
+	return clientset.RbacV1().ClusterRoleBindings().Update(clusterRoleBinding)
 }
 
 // DeleteClusterRoleBinding delete a cluster role binding
 func DeleteClusterRoleBinding(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{})
+	return clientset.RbacV1().ClusterRoleBindings().Delete(name, &metav1.DeleteOptions{})
 }
 
 // IsClusterRoleBindingSubjectNamespaceExist checks whether the namespace is already exist in the subject of cluster role binding
@@ -1152,7 +1189,7 @@ func PatchDeploymentForReplicas(clientset *kubernetes.Clientset, old *appsv1.Dep
 }
 
 // PatchDeployment patch a deployment
-func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1beta2.Deployment) error {
+func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new appsv1.Deployment) error {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return err

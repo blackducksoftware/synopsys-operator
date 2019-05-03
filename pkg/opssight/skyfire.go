@@ -37,7 +37,7 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 		Name:      p.opssight.Spec.Skyfire.Name,
 		Namespace: p.opssight.Spec.Namespace,
 	})
-	rc.AddLabelSelectors(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
+	rc.AddSelectors(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
 	rc.AddLabels(map[string]string{"name": p.opssight.Spec.Skyfire.Name, "app": "opssight"})
 	pod, err := p.perceptorSkyfirePod()
 	if err != nil {
@@ -78,7 +78,7 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *SpecConfig) pyfireContainer() *components.Container {
+func (p *SpecConfig) pyfireContainer() (*components.Container, error) {
 	return components.NewContainer(horizonapi.ContainerConfig{
 		Name:    p.opssight.Spec.Skyfire.Name,
 		Image:   p.opssight.Spec.Skyfire.Image,
@@ -92,7 +92,7 @@ func (p *SpecConfig) pyfireContainer() *components.Container {
 	})
 }
 
-func (p *SpecConfig) golangSkyfireContainer() *components.Container {
+func (p *SpecConfig) golangSkyfireContainer() (*components.Container, error) {
 	return components.NewContainer(horizonapi.ContainerConfig{
 		Name:    p.opssight.Spec.Skyfire.Name,
 		Image:   p.opssight.Spec.Skyfire.Image,
@@ -104,14 +104,17 @@ func (p *SpecConfig) golangSkyfireContainer() *components.Container {
 }
 
 func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) {
-	container := p.pyfireContainer()
+	container, err := p.pyfireContainer()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.opssight.Spec.Skyfire.Port),
+		ContainerPort: int32(p.opssight.Spec.Skyfire.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "skyfire",
 		MountPath: "/etc/skyfire",
 	})
@@ -126,10 +129,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 		return nil, err
 	}
 
-	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.Spec.SecretName})
-	if err != nil {
-		return nil, err
-	}
+	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.Spec.SecretName})
 
 	return container, nil
 }
@@ -154,6 +154,7 @@ func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.opssight.Spec.Skyfire.Name,
 		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{

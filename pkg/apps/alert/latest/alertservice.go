@@ -31,9 +31,9 @@ import (
 // getAlertService returns a new cluster Service for an Alert
 func (a *SpecConfig) getAlertService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "alert",
-		Namespace:     a.config.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeDefault,
+		Name:      "alert",
+		Namespace: a.config.Namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
@@ -51,9 +51,9 @@ func (a *SpecConfig) getAlertService() *components.Service {
 // getAlertServiceNodePort returns a new Node Port Service for an Alert
 func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "alert-np",
-		Namespace:     a.config.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
+		Name:      "alert-np",
+		Namespace: a.config.Namespace,
+		Type:      horizonapi.ServiceTypeNodePort,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
@@ -71,9 +71,9 @@ func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 // getAlertServiceLoadBalancer returns a new Load Balancer Service for an Alert
 func (a *SpecConfig) getAlertServiceLoadBalancer() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "alert-lb",
-		Namespace:     a.config.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeLoadBalancer,
+		Name:      "alert-lb",
+		Namespace: a.config.Namespace,
+		Type:      horizonapi.ServiceTypeLoadBalancer,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{

@@ -67,7 +67,7 @@ func (p *SpecConfig) perceiverReplicationController(name string, replicas int32)
 		Name:      name,
 		Namespace: p.opssight.Spec.Namespace,
 	})
-	rc.AddLabelSelectors(map[string]string{"name": name, "app": "opssight"})
+	rc.AddSelectors(map[string]string{"name": name, "app": "opssight"})
 	rc.AddLabels(map[string]string{"name": name, "app": "opssight"})
 	return rc
 }
@@ -79,7 +79,11 @@ func (p *SpecConfig) perceiverPod(name string, image string, account string) (*c
 	})
 
 	pod.AddLabels(map[string]string{"name": name, "app": "opssight"})
-	pod.AddContainer(p.perceiverContainer(name, image))
+	container, err := p.perceiverContainer(name, image)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	pod.AddContainer(container)
 
 	vols, err := p.perceiverVolumes(name)
 
@@ -97,9 +101,9 @@ func (p *SpecConfig) perceiverPod(name string, image string, account string) (*c
 	return pod, nil
 }
 
-func (p *SpecConfig) perceiverContainer(name string, image string) *components.Container {
+func (p *SpecConfig) perceiverContainer(name string, image string) (*components.Container, error) {
 	cmd := fmt.Sprintf("./%s", name)
-	container := components.NewContainer(horizonapi.ContainerConfig{
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    name,
 		Image:   image,
 		Command: []string{cmd},
@@ -107,22 +111,32 @@ func (p *SpecConfig) perceiverContainer(name string, image string) *components.C
 		MinCPU:  p.opssight.Spec.DefaultCPU,
 		MinMem:  p.opssight.Spec.DefaultMem,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.opssight.Spec.Perceiver.Port),
+		ContainerPort: int32(p.opssight.Spec.Perceiver.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      name,
 		MountPath: fmt.Sprintf("/etc/%s", name),
 	})
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "logs",
 		MountPath: "/tmp",
 	})
+	if err != nil {
+		return nil, errors.Annotatef(err, "unable to add the volume mount to %s container", name)
+	}
 
-	return container
+	return container, nil
 }
 
 func (p *SpecConfig) perceiverVolumes(name string) ([]*components.Volume, error) {
@@ -145,6 +159,7 @@ func (p *SpecConfig) perceiverService(name string) *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      name,
 		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{

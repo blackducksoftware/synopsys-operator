@@ -94,7 +94,7 @@ func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
 		Name:      namespace,
 		Namespace: namespace,
 	})
-	namespaceDeployer.AddNamespace(ns)
+	namespaceDeployer.AddComponent(horizonapi.NamespaceComponent, ns)
 	err = namespaceDeployer.Run()
 	if err != nil {
 		return fmt.Errorf("error in creating the namespace due to %+v", err)

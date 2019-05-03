@@ -28,7 +28,7 @@ import (
 )
 
 // GetUploadCacheDeployment will return the uploadCache deployment
-func (c *Creater) GetUploadCacheDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.ReplicationController, error) {
 	volumeMounts := c.getUploadCacheVolumeMounts()
 
 	uploadCacheContainerConfig := &util.Container{
@@ -46,7 +46,10 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) *components.Replica
 
 	if c.hubSpec.LivenessProbes {
 		uploadCacheContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"curl", "--insecure", "-X", "GET", "--verbose", "http://localhost:8086/live?full=1"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type:    horizonapi.ActionTypeCommand,
+				Command: []string{"curl", "--insecure", "-X", "GET", "--verbose", "http://localhost:8086/live?full=1"},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,
@@ -65,11 +68,15 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) *components.Replica
 
 	c.PostEditContainer(uploadCacheContainerConfig)
 
-	uploadCache := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace,
-		Name: "uploadcache", Replicas: util.IntToInt32(1)}, "", []*util.Container{uploadCacheContainerConfig}, c.getUploadCacheVolumes(),
-		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("uploadcache"), c.GetLabel("uploadcache"), c.hubSpec.RegistryConfiguration.PullSecrets)
-
-	return uploadCache
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "uploadcache", Replicas: util.IntToInt32(1)},
+		&util.PodConfig{
+			Volumes:          c.getUploadCacheVolumes(),
+			Containers:       []*util.Container{uploadCacheContainerConfig},
+			InitContainers:   initContainers,
+			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:           c.GetVersionLabel("uploadcache"),
+		}, c.GetLabel("uploadcache"))
 }
 
 // getUploadCacheVolumes will return the uploadCache volumes
@@ -102,6 +109,6 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetUploadCacheService will return the uploadCache service
 func (c *Creater) GetUploadCacheService() *components.Service {
-	return util.CreateServiceWithMultiplePort("uploadcache", c.GetLabel("uploadcache"), c.hubSpec.Namespace, []string{uploadCachePort1, uploadCachePort2},
-		horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("uploadcache"))
+	return util.CreateServiceWithMultiplePort("uploadcache", c.GetLabel("uploadcache"), c.hubSpec.Namespace, []int32{uploadCachePort1, uploadCachePort2},
+		horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("uploadcache"))
 }
