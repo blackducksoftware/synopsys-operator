@@ -521,6 +521,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 		ScannerMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
+		ConfigMapName: "opssight",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,
@@ -607,6 +608,7 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 		ScannerMem:    "1300Mi",
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
+		ConfigMapName: "opssight",
 		DesiredState:  "START",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
