@@ -45,7 +45,7 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, hubContainerFlavor, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, hubContainerFlavor, false)
 	// Get Db creds
 	var adminPassword, userPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
@@ -80,7 +80,7 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, flavor, false)
 
 	// Configmap
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
@@ -177,7 +177,11 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Service account
 		componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
-		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
+		clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
+		if err != nil {
+			return nil, err
+		}
+		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
 
 		// Binary Scanner
 		imageName := containerCreater.GetImageTag("appcheck-worker")
@@ -207,7 +211,7 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 }
 
 func (hc *Creater) getExposeService(bd *blackduckapi.Blackduck) *components.Service {
-	containerCreater := containers.NewCreater(hc.Config, &bd.Spec, nil, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &bd.Spec, nil, false)
 	var svc *components.Service
 
 	switch strings.ToUpper(bd.Spec.ExposeService) {
@@ -224,7 +228,7 @@ func (hc *Creater) getExposeService(bd *blackduckapi.Blackduck) *components.Serv
 
 // GetPVC returns the PVCs
 func (hc *Creater) GetPVC(blackduck *blackduckapi.Blackduck) []*components.PersistentVolumeClaim {
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, nil, hc.isBinaryAnalysisEnabled(&blackduck.Spec))
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, nil, hc.isBinaryAnalysisEnabled(&blackduck.Spec))
 	return containerCreater.GetPVCs()
 }
 
@@ -297,7 +301,7 @@ func (hc *Creater) addAnyUIDToServiceAccount(createHub *blackduckapi.BlackduckSp
 
 // AddExposeServices add the nodeport / LB services
 func (hc *Creater) AddExposeServices(deployer *horizon.Deployer, createHub *blackduckapi.BlackduckSpec) {
-	containerCreater := containers.NewCreater(hc.Config, createHub, nil, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, createHub, nil, false)
 	deployer.AddService(containerCreater.GetWebServerNodePortService())
 	deployer.AddService(containerCreater.GetWebServerLoadBalancerService())
 }

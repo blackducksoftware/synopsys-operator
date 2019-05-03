@@ -24,10 +24,16 @@ package containers
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetClusterRoleBinding will return the cluster role binding
-func (c *Creater) GetClusterRoleBinding() *components.ClusterRoleBinding {
+func (c *Creater) GetClusterRoleBinding() (*components.ClusterRoleBinding, error) {
+	clusterRole, err := util.GetOperatorClusterRole(c.kubeClient)
+	if err != nil {
+		return nil, err
+	}
+
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		Name:       "blackduck",
 		APIVersion: "rbac.authorization.k8s.io/v1",
@@ -41,10 +47,10 @@ func (c *Creater) GetClusterRoleBinding() *components.ClusterRoleBinding {
 	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
 		Kind:     "ClusterRole",
-		Name:     "synopsys-operator-admin",
+		Name:     clusterRole,
 	})
 
 	clusterRoleBinding.AddLabels(c.GetVersionLabel("clusterRoleBinding"))
 
-	return clusterRoleBinding
+	return clusterRoleBinding, nil
 }

@@ -24,7 +24,7 @@ package synopsysctl
 import (
 	"fmt"
 
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -46,7 +46,7 @@ var destroyCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get the namespace of the Synopsys-Operator
-		destroyNamespace, err := GetOperatorNamespace()
+		destroyNamespace, err := util.GetOperatorNamespace(kubeClient)
 		if err != nil {
 			log.Warnf("error finding synopsys operator due to %+v", err)
 		}
@@ -56,7 +56,7 @@ var destroyCmd = &cobra.Command{
 		log.Debugf("deleting namespace %s", destroyNamespace)
 		err = util.DeleteNamespace(kubeClient, destroyNamespace)
 		if err != nil {
-			log.Warnf("Unable to delete the %s namespace because %+v", destroyNamespace, err)
+			log.Warnf("unable to delete the %s namespace because %+v", destroyNamespace, err)
 		}
 
 		// delete crds
@@ -71,22 +71,32 @@ var destroyCmd = &cobra.Command{
 			log.Infof("deleting %s CRD", crd)
 			err = util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
 			if err != nil {
-				log.Warnf("Unable to delete the %s crd because %+v", crd, err)
+				log.Warnf("unable to delete the %s crd because %+v", crd, err)
 			}
 		}
 
-		// delete cluster role bindings
-		log.Infof("deleting synopsys-operator-admin cluster role binding")
-		err = util.DeleteClusterRoleBinding(kubeClient, "synopsys-operator-admin")
+		// delete cluster roles
+		clusterRole, err := util.GetOperatorClusterRole(kubeClient)
 		if err != nil {
-			log.Warnf("Unable to delete the synopsys-operator-admin cluster role binding because %+v", err)
+			log.Errorf("error deleting the cluster role due to %+v", err)
+			return nil
+		}
+		log.Infof("deleting %s cluster role ", clusterRole)
+		err = util.DeleteClusterRole(kubeClient, clusterRole)
+		if err != nil {
+			log.Warnf("unable to delete the %s cluster role because %+v", clusterRole, err)
 		}
 
-		// delete cluster roles
-		log.Infof("deleting synopsys-operator-admin cluster role ")
-		err = util.DeleteClusterRole(kubeClient, "synopsys-operator-admin")
+		// delete cluster role bindings
+		clusterRoleBinding, err := util.GetOperatorClusterRoleBinding(kubeClient)
 		if err != nil {
-			log.Warnf("Unable to delete the synopsys-operator-admin cluster role because %+v", err)
+			log.Errorf("error deleting the cluster role binding due to %+v", err)
+			return nil
+		}
+		log.Infof("deleting %s cluster role binding", clusterRoleBinding)
+		err = util.DeleteClusterRoleBinding(kubeClient, clusterRoleBinding)
+		if err != nil {
+			log.Warnf("unable to delete the %s cluster role binding because %+v", clusterRoleBinding, err)
 		}
 
 		log.Infof("finished destroying synopsys operator in '%s' namespace", destroyNamespace)

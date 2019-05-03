@@ -34,18 +34,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GetOperatorReplicationController creates a ReplicationController Horizon component for the Synopsys-Operaotor
-func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncomponents.ReplicationController {
+// GetOperatorDeployment creates a deployment for the Synopsys-Operaotor
+func (specConfig *SpecConfig) GetOperatorDeployment() *horizoncomponents.Deployment {
 	// Add the Replication Controller to the Deployer
-	var synopsysOperatorRCReplicas int32 = 1
-	synopsysOperatorRC := horizoncomponents.NewReplicationController(horizonapi.ReplicationControllerConfig{
+	var synopsysOperatorReplicas int32 = 1
+	synopsysOperator := horizoncomponents.NewDeployment(horizonapi.DeploymentConfig{
 		APIVersion: "v1",
 		Name:       "synopsys-operator",
 		Namespace:  specConfig.Namespace,
-		Replicas:   &synopsysOperatorRCReplicas,
+		Replicas:   &synopsysOperatorReplicas,
 	})
 
-	synopsysOperatorRC.AddLabelSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
+	synopsysOperator.AddMatchLabelsSelectors(map[string]string{"app": "synopsys-operator", "component": "operator"})
 
 	synopsysOperatorPod := horizoncomponents.NewPod(horizonapi.PodConfig{
 		APIVersion:     "v1",
@@ -79,26 +79,26 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		FromName:     "blackduck-secret",
 	})
 
-	synopsysOperatorContainerUI := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
+	synopsysOperatorUIContainer := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator-ui",
 		Command:    []string{"./app"},
 		Image:      specConfig.Image,
 		PullPolicy: horizonapi.PullAlways,
 	})
-	synopsysOperatorContainerUI.AddPort(horizonapi.PortConfig{
+	synopsysOperatorUIContainer.AddPort(horizonapi.PortConfig{
 		ContainerPort: "3000",
 	})
-	synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
+	synopsysOperatorUIContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "ADDR",
 		Type:         horizonapi.EnvVal,
 		KeyOrVal:     "0.0.0.0",
 	})
-	synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
+	synopsysOperatorUIContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "PORT",
 		Type:         horizonapi.EnvVal,
 		KeyOrVal:     "3000",
 	})
-	synopsysOperatorContainerUI.AddEnv(horizonapi.EnvConfig{
+	synopsysOperatorUIContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "GO_ENV",
 		Type:         horizonapi.EnvVal,
 		KeyOrVal:     "development",
@@ -113,7 +113,7 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 	})
 
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainer)
-	synopsysOperatorPod.AddContainer(synopsysOperatorContainerUI)
+	synopsysOperatorPod.AddContainer(synopsysOperatorUIContainer)
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
 	synopsysOperatorPod.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 
@@ -123,10 +123,10 @@ func (specConfig *SpecConfig) GetOperatorReplicationController() *horizoncompone
 		DefaultMode:     &synopsysOperatorVolumeDefaultMode,
 	})
 	synopsysOperatorPod.AddVolume(synopsysOperatorTlSVolume)
-	synopsysOperatorRC.AddPod(synopsysOperatorPod)
+	synopsysOperator.AddPod(synopsysOperatorPod)
 
-	synopsysOperatorRC.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
-	return synopsysOperatorRC
+	synopsysOperator.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
+	return synopsysOperator
 }
 
 // GetOperatorService creates a Service Horizon component for the Synopsys-Operaotor
