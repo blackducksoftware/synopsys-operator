@@ -424,6 +424,11 @@ func ListPods(clientset *kubernetes.Clientset, namespace string) (*corev1.PodLis
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 }
 
+// ListPodsWithLabels will get all the pods corresponding to a namespace and labels
+func ListPodsWithLabels(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.PodList, error) {
+	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
 // GetReplicationController will get the replication controller corresponding to a namespace and name
 func GetReplicationController(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ReplicationController, error) {
 	return clientset.CoreV1().ReplicationControllers(namespace).Get(name, metav1.GetOptions{})
@@ -1251,15 +1256,19 @@ func IsPodReady(clientset *kubernetes.Clientset, namespace string, labelSelector
 // GetOperatorNamespace returns the namespace of the synopsys operator based on the labels
 func GetOperatorNamespace(clientset *kubernetes.Clientset) (string, error) {
 	// check if operator is already installed
-	rcs, rcErr := ListReplicationControllers(clientset, "", "app=synopsys-operator,component=operator")
-	if rcErr == nil && len(rcs.Items) > 0 {
+	rcs, err := ListReplicationControllers(clientset, metav1.NamespaceAll, "app=synopsys-operator,component=operator")
+	if err == nil && len(rcs.Items) > 0 {
 		return rcs.Items[0].Namespace, nil
 	}
-	deployments, dErr := ListDeployments(clientset, "", "app=synopsys-operator,component=operator")
-	if rcErr != nil || dErr != nil || (len(deployments.Items) == 0 && len(rcs.Items) == 0) {
-		return "", fmt.Errorf("synopsys operator namespace not found")
+	deployments, err := ListDeployments(clientset, metav1.NamespaceAll, "app=synopsys-operator,component=operator")
+	if err == nil && len(deployments.Items) > 0 {
+		return deployments.Items[0].Namespace, nil
 	}
-	return deployments.Items[0].Namespace, nil
+	pods, err := ListPodsWithLabels(clientset, metav1.NamespaceAll, "app=synopsys-operator,component=operator")
+	if err == nil && len(pods.Items) > 0 {
+		return pods.Items[0].Namespace, nil
+	}
+	return "", fmt.Errorf("synopsys operator namespace not found")
 }
 
 // GetOperatorClusterRole returns the cluster role of the synopsys operator based on the labels
