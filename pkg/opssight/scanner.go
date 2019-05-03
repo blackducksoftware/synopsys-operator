@@ -273,9 +273,13 @@ func (p *SpecConfig) ScannerServiceAccount() *components.ServiceAccount {
 
 // ScannerClusterRoleBinding creates a cluster role binding for the perceptor scanner
 func (p *SpecConfig) ScannerClusterRoleBinding() (*components.ClusterRoleBinding, error) {
-	clusterRole, err := util.GetOperatorClusterRole(p.kubeClient)
-	if err != nil {
-		return nil, err
+	var clusterRole string
+	var err error
+	if !p.config.DryRun {
+		clusterRole, err = util.GetOperatorClusterRole(p.kubeClient)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	scannerCRB := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
