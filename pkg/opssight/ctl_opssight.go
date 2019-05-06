@@ -249,13 +249,6 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.PrometheusImage, "metrics-image", ctl.PrometheusImage, "Image for OpsSight's Prometheus Metrics")
 	cmd.Flags().IntVar(&ctl.PrometheusPort, "metrics-port", ctl.PrometheusPort, "Port for OpsSight's Prometheus Metrics")
 	cmd.Flags().StringVar(&ctl.PrometheusExpose, "metrics-expose", ctl.PrometheusExpose, "Expose the OpsSight's Prometheus Metrics. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
-	cmd.Flags().BoolVar(&ctl.EnableSkyfire, "enable-skyfire", ctl.EnableSkyfire, "Enables Skyfire Pod if true")
-	cmd.Flags().StringVar(&ctl.SkyfireImage, "skyfire-image", ctl.SkyfireImage, "Image of Skyfire")
-	cmd.Flags().IntVar(&ctl.SkyfirePrometheusPort, "skyfire-metrics-port", ctl.SkyfirePrometheusPort, "Skyfire's Prometheus port")
-	cmd.Flags().IntVar(&ctl.SkyfireHubClientTimeoutSeconds, "skyfire-hub-client-timeout-seconds", ctl.SkyfireHubClientTimeoutSeconds, "Seconds Skyfire waits to receive response from the Black Duck client")
-	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying Black Ducks")
-	cmd.Flags().IntVar(&ctl.SkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", ctl.SkyfireKubeDumpIntervalSeconds, "Seconds Skyfire waits between querying the KubeAPI")
-	cmd.Flags().IntVar(&ctl.SkyfirePerceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", ctl.SkyfirePerceptorDumpIntervalSeconds, "Seconds Skyfire waits between querying the Perceptor Model")
 	cmd.Flags().StringVar(&ctl.BlackduckExternalHostsFilePath, "blackduck-external-hosts-file-path", ctl.BlackduckExternalHostsFilePath, "Absolute path to a file containing a list of Black Duck External Hosts")
 	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Perform TLS Verification for Black Duck")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
@@ -461,38 +454,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
 			}
 			ctl.Spec.Prometheus.Expose = ctl.PrometheusExpose
-		case "enable-skyfire":
-			ctl.Spec.EnableSkyfire = ctl.EnableSkyfire
-		case "skyfire-image":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
-			}
-			ctl.Spec.Skyfire.Image = ctl.SkyfireImage
-		case "skyfire-metrics-port":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
-			}
-			ctl.Spec.Skyfire.PrometheusPort = ctl.SkyfirePrometheusPort
-		case "skyfire-hub-client-timeout-seconds":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
-			}
-			ctl.Spec.Skyfire.HubClientTimeoutSeconds = ctl.SkyfireHubClientTimeoutSeconds
-		case "skyfire-hub-dump-pause-seconds":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
-			}
-			ctl.Spec.Skyfire.HubDumpPauseSeconds = ctl.SkyfireHubDumpPauseSeconds
-		case "skyfire-kube-dump-interval-seconds":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
-			}
-			ctl.Spec.Skyfire.KubeDumpIntervalSeconds = ctl.SkyfireKubeDumpIntervalSeconds
-		case "skyfire-perceptor-dump-interval-seconds":
-			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
-			}
-			ctl.Spec.Skyfire.PerceptorDumpIntervalSeconds = ctl.SkyfirePerceptorDumpIntervalSeconds
 		case "blackduck-external-hosts-file-path":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightapi.Blackduck{}

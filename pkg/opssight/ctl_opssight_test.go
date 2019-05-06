@@ -187,13 +187,6 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.PrometheusImage, "metrics-image", ctl.PrometheusImage, "Image for OpsSight's Prometheus Metrics")
 	cmd.Flags().IntVar(&ctl.PrometheusPort, "metrics-port", ctl.PrometheusPort, "Port for OpsSight's Prometheus Metrics")
 	cmd.Flags().StringVar(&ctl.PrometheusExpose, "metrics-expose", ctl.PrometheusExpose, "Expose the OpsSight's Prometheus Metrics. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
-	cmd.Flags().BoolVar(&ctl.EnableSkyfire, "enable-skyfire", ctl.EnableSkyfire, "Enables Skyfire Pod if true")
-	cmd.Flags().StringVar(&ctl.SkyfireImage, "skyfire-image", ctl.SkyfireImage, "Image of Skyfire")
-	cmd.Flags().IntVar(&ctl.SkyfirePrometheusPort, "skyfire-metrics-port", ctl.SkyfirePrometheusPort, "Skyfire's Prometheus port")
-	cmd.Flags().IntVar(&ctl.SkyfireHubClientTimeoutSeconds, "skyfire-hub-client-timeout-seconds", ctl.SkyfireHubClientTimeoutSeconds, "Seconds Skyfire waits to receive response from the Black Duck client")
-	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying Black Ducks")
-	cmd.Flags().IntVar(&ctl.SkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", ctl.SkyfireKubeDumpIntervalSeconds, "Seconds Skyfire waits between querying the KubeAPI")
-	cmd.Flags().IntVar(&ctl.SkyfirePerceptorDumpIntervalSeconds, "skyfire-perceptor-dump-interval-seconds", ctl.SkyfirePerceptorDumpIntervalSeconds, "Seconds Skyfire waits between querying the Perceptor Model")
 	cmd.Flags().StringVar(&ctl.BlackduckExternalHostsFilePath, "blackduck-external-hosts-file-path", ctl.BlackduckExternalHostsFilePath, "Absolute path to a file containing a list of Black Duck External Hosts")
 	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Perform TLS Verification for Black Duck")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
@@ -516,76 +509,6 @@ func TestSetFlag(t *testing.T) {
 				PrometheusExpose: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Expose: "changed"}},
-		},
-		// case
-		{
-			flagName:   "enable-skyfire",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:          &opssightapi.OpsSightSpec{},
-				EnableSkyfire: true,
-			},
-			changedSpec: &opssightapi.OpsSightSpec{EnableSkyfire: true},
-		},
-		// case
-		{
-			flagName:   "skyfire-image",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:         &opssightapi.OpsSightSpec{},
-				SkyfireImage: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{Image: "changed"}},
-		},
-		// case
-		{
-			flagName:   "skyfire-metrics-port",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                  &opssightapi.OpsSightSpec{},
-				SkyfirePrometheusPort: 10,
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{PrometheusPort: 10}},
-		},
-		// case
-		{
-			flagName:   "skyfire-hub-client-timeout-seconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                           &opssightapi.OpsSightSpec{},
-				SkyfireHubClientTimeoutSeconds: 10,
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{HubClientTimeoutSeconds: 10}},
-		},
-		// case
-		{
-			flagName:   "skyfire-hub-dump-pause-seconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                       &opssightapi.OpsSightSpec{},
-				SkyfireHubDumpPauseSeconds: 10,
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{HubDumpPauseSeconds: 10}},
-		},
-		// case
-		{
-			flagName:   "skyfire-kube-dump-interval-seconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                           &opssightapi.OpsSightSpec{},
-				SkyfireKubeDumpIntervalSeconds: 10,
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{KubeDumpIntervalSeconds: 10}},
-		},
-		// case
-		{
-			flagName:   "skyfire-perceptor-dump-interval-seconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                                &opssightapi.OpsSightSpec{},
-				SkyfirePerceptorDumpIntervalSeconds: 10,
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{PerceptorDumpIntervalSeconds: 10}},
 		},
 		// case
 		{
