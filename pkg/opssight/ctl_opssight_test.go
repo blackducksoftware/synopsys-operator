@@ -24,7 +24,8 @@ package opssight
 import (
 	"testing"
 
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -35,7 +36,7 @@ func TestNewOpsSightCtl(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
 	assert.Equal(&Ctl{
-		Spec:                                            &opssightv1.OpsSightSpec{},
+		Spec:                                            &opssightapi.OpsSightSpec{},
 		PerceptorName:                                   "",
 		PerceptorImage:                                  "",
 		PerceptorPort:                                   0,
@@ -100,13 +101,13 @@ func TestNewOpsSightCtl(t *testing.T) {
 func TestGetSpec(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
-	assert.Equal(opssightv1.OpsSightSpec{}, opsSightCtl.GetSpec())
+	assert.Equal(opssightapi.OpsSightSpec{}, opsSightCtl.GetSpec())
 }
 
 func TestSetSpec(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
-	specToSet := opssightv1.OpsSightSpec{Namespace: "test"}
+	specToSet := opssightapi.OpsSightSpec{Namespace: "test"}
 	opsSightCtl.SetSpec(specToSet)
 	assert.Equal(specToSet, opsSightCtl.GetSpec())
 
@@ -127,9 +128,9 @@ func TestSwitchSpec(t *testing.T) {
 
 	var tests = []struct {
 		input    string
-		expected *opssightv1.OpsSightSpec
+		expected *opssightapi.OpsSightSpec
 	}{
-		{input: EmptySpec, expected: &opssightv1.OpsSightSpec{}},
+		{input: EmptySpec, expected: &opssightapi.OpsSightSpec{}},
 		{input: UpstreamSpec, expected: crddefaults.GetOpsSightUpstream()},
 		{input: DefaultSpec, expected: crddefaults.GetOpsSightDefault()},
 		{input: DisabledBlackDuckSpec, expected: crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()},
@@ -197,6 +198,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Perform TLS Verification for Black Duck")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
+	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 
@@ -223,297 +225,297 @@ func TestSetFlag(t *testing.T) {
 		flagName    string
 		initialCtl  *Ctl
 		changedCtl  *Ctl
-		changedSpec *opssightv1.OpsSightSpec
+		changedSpec *opssightapi.OpsSightSpec
 	}{
 		// case
 		{
 			flagName:   "opssight-core-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:           &opssightv1.OpsSightSpec{},
+				Spec:           &opssightapi.OpsSightSpec{},
 				PerceptorImage: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceptor: &opssightv1.Perceptor{Image: "changed"}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{Image: "changed"}},
 		},
 		// case
 		{
 			flagName:   "opssight-core-expose",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:            &opssightv1.OpsSightSpec{},
+				Spec:            &opssightapi.OpsSightSpec{},
 				PerceptorExpose: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceptor: &opssightv1.Perceptor{Expose: "changed"}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{Expose: "changed"}},
 		},
 		// case
 		{
 			flagName:   "opssight-core-check-scan-hours",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                                    &opssightv1.OpsSightSpec{},
+				Spec:                                    &opssightapi.OpsSightSpec{},
 				PerceptorCheckForStalledScansPauseHours: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceptor: &opssightv1.Perceptor{CheckForStalledScansPauseHours: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{CheckForStalledScansPauseHours: 10}},
 		},
 		// case
 		{
 			flagName:   "opssight-core-scan-client-timeout-hours",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                                   &opssightv1.OpsSightSpec{},
+				Spec:                                   &opssightapi.OpsSightSpec{},
 				PerceptorStalledScanClientTimeoutHours: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceptor: &opssightv1.Perceptor{StalledScanClientTimeoutHours: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{StalledScanClientTimeoutHours: 10}},
 		},
 		// case
 		{
 			flagName:   "opssight-core-metrics-pause-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                              &opssightv1.OpsSightSpec{},
+				Spec:                              &opssightapi.OpsSightSpec{},
 				PerceptorModelMetricsPauseSeconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceptor: &opssightv1.Perceptor{ModelMetricsPauseSeconds: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{ModelMetricsPauseSeconds: 10}},
 		},
 		// case
 		{
 			flagName:   "opssight-core-unknown-image-pause-milliseconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                                   &opssightv1.OpsSightSpec{},
+				Spec:                                   &opssightapi.OpsSightSpec{},
 				PerceptorUnknownImagePauseMilliseconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceptor: &opssightv1.Perceptor{UnknownImagePauseMilliseconds: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{UnknownImagePauseMilliseconds: 10}},
 		},
 		// case
 		{
 			flagName:   "opssight-core-client-timeout-milliseconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                               &opssightv1.OpsSightSpec{},
+				Spec:                               &opssightapi.OpsSightSpec{},
 				PerceptorClientTimeoutMilliseconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceptor: &opssightv1.Perceptor{ClientTimeoutMilliseconds: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{ClientTimeoutMilliseconds: 10}},
 		},
 		// case
 		{
 			flagName:   "scanner-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                   &opssightv1.OpsSightSpec{},
+				Spec:                   &opssightapi.OpsSightSpec{},
 				ScannerPodScannerImage: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{Scanner: &opssightv1.Scanner{Image: "changed"}}},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{Scanner: &opssightapi.Scanner{Image: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "scanner-client-timeout-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                                  &opssightv1.OpsSightSpec{},
+				Spec:                                  &opssightapi.OpsSightSpec{},
 				ScannerPodScannerClientTimeoutSeconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{Scanner: &opssightv1.Scanner{ClientTimeoutSeconds: 10}}},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{Scanner: &opssightapi.Scanner{ClientTimeoutSeconds: 10}}},
 		},
 		// case
 		{
 			flagName:   "image-getter-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                       &opssightv1.OpsSightSpec{},
+				Spec:                       &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeImage: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{ImageFacade: &opssightv1.ImageFacade{Image: "changed"}}},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{Image: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "image-getter-image-puller-type",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                                 &opssightv1.OpsSightSpec{},
+				Spec:                                 &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeImagePullerType: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{ImageFacade: &opssightv1.ImageFacade{ImagePullerType: "changed"}}},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{ImagePullerType: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "image-getter-service-account",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                                &opssightv1.OpsSightSpec{},
+				Spec:                                &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeServiceAccount: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{ImageFacade: &opssightv1.ImageFacade{ServiceAccount: "changed"}}},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{ServiceAccount: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "scannerpod-replica-count",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                   &opssightv1.OpsSightSpec{},
+				Spec:                   &opssightapi.OpsSightSpec{},
 				ScannerPodReplicaCount: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{ReplicaCount: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ReplicaCount: 10}},
 		},
 		// case
 		{
 			flagName:   "scannerpod-image-directory",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                     &opssightv1.OpsSightSpec{},
+				Spec:                     &opssightapi.OpsSightSpec{},
 				ScannerPodImageDirectory: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerPod: &opssightv1.ScannerPod{ImageDirectory: "changed"}},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageDirectory: "changed"}},
 		},
 		// case
 		{
 			flagName:   "enable-pod-processor",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                        &opssightv1.OpsSightSpec{},
+				Spec:                        &opssightapi.OpsSightSpec{},
 				PerceiverEnablePodPerceiver: true,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{EnablePodPerceiver: true}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{EnablePodPerceiver: true}},
 		},
 		// case
 		{
 			flagName:   "image-processor-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                         &opssightv1.OpsSightSpec{},
+				Spec:                         &opssightapi.OpsSightSpec{},
 				PerceiverImagePerceiverImage: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{ImagePerceiver: &opssightv1.ImagePerceiver{Image: "changed"}}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{ImagePerceiver: &opssightapi.ImagePerceiver{Image: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "pod-processor-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                       &opssightv1.OpsSightSpec{},
+				Spec:                       &opssightapi.OpsSightSpec{},
 				PerceiverPodPerceiverImage: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{PodPerceiver: &opssightv1.PodPerceiver{Image: "changed"}}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{PodPerceiver: &opssightapi.PodPerceiver{Image: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "pod-processor-namespace-filter",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                                 &opssightv1.OpsSightSpec{},
+				Spec:                                 &opssightapi.OpsSightSpec{},
 				PerceiverPodPerceiverNamespaceFilter: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{PodPerceiver: &opssightv1.PodPerceiver{NamespaceFilter: "changed"}}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{PodPerceiver: &opssightapi.PodPerceiver{NamespaceFilter: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "processor-annotation-interval-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                               &opssightv1.OpsSightSpec{},
+				Spec:                               &opssightapi.OpsSightSpec{},
 				PerceiverAnnotationIntervalSeconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{AnnotationIntervalSeconds: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{AnnotationIntervalSeconds: 10}},
 		},
 		// case
 		{
 			flagName:   "processor-dump-interval-minutes",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                         &opssightv1.OpsSightSpec{},
+				Spec:                         &opssightapi.OpsSightSpec{},
 				PerceiverDumpIntervalMinutes: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Perceiver: &opssightv1.Perceiver{DumpIntervalMinutes: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{DumpIntervalMinutes: 10}},
 		},
 		// case
 		{
 			flagName:   "default-cpu",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:       &opssightv1.OpsSightSpec{},
+				Spec:       &opssightapi.OpsSightSpec{},
 				DefaultCPU: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{DefaultCPU: "changed"},
+			changedSpec: &opssightapi.OpsSightSpec{DefaultCPU: "changed"},
 		},
 		// case
 		{
 			flagName:   "default-memory",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:       &opssightv1.OpsSightSpec{},
+				Spec:       &opssightapi.OpsSightSpec{},
 				DefaultMem: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{DefaultMem: "changed"},
+			changedSpec: &opssightapi.OpsSightSpec{DefaultMem: "changed"},
 		},
 		// case
 		{
 			flagName:   "scanner-cpu",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:       &opssightv1.OpsSightSpec{},
+				Spec:       &opssightapi.OpsSightSpec{},
 				ScannerCPU: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerCPU: "changed"},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerCPU: "changed"},
 		},
 		// case
 		{
 			flagName:   "scanner-memory",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:       &opssightv1.OpsSightSpec{},
+				Spec:       &opssightapi.OpsSightSpec{},
 				ScannerMem: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{ScannerMem: "changed"},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerMem: "changed"},
 		},
 		// case
 		{
 			flagName:   "log-level",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:     &opssightv1.OpsSightSpec{},
+				Spec:     &opssightapi.OpsSightSpec{},
 				LogLevel: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{LogLevel: "changed"},
+			changedSpec: &opssightapi.OpsSightSpec{LogLevel: "changed"},
 		},
 		// case
 		{
 			flagName:   "enable-metrics",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:          &opssightv1.OpsSightSpec{},
+				Spec:          &opssightapi.OpsSightSpec{},
 				EnableMetrics: true,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{EnableMetrics: true},
+			changedSpec: &opssightapi.OpsSightSpec{EnableMetrics: true},
 		},
 		// case
 		{
 			flagName:   "metrics-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:            &opssightv1.OpsSightSpec{},
+				Spec:            &opssightapi.OpsSightSpec{},
 				PrometheusImage: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Prometheus: &opssightv1.Prometheus{Image: "changed"}},
+			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Image: "changed"}},
 		},
 		// case
 		{
 			flagName:   "metrics-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:           &opssightv1.OpsSightSpec{},
+				Spec:           &opssightapi.OpsSightSpec{},
 				PrometheusPort: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Prometheus: &opssightv1.Prometheus{Port: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Port: 10}},
 		},
 		// case
 		{
 			flagName:   "metrics-expose",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:             &opssightv1.OpsSightSpec{},
+				Spec:             &opssightapi.OpsSightSpec{},
 				PrometheusExpose: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Prometheus: &opssightv1.Prometheus{Expose: "changed"}},
+			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Expose: "changed"}},
 		},
 		// case
 		{
@@ -590,39 +592,49 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "blackduck-TLS-verification",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                     &opssightv1.OpsSightSpec{},
+				Spec:                     &opssightapi.OpsSightSpec{},
 				BlackduckTLSVerification: true,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Blackduck: &opssightv1.Blackduck{TLSVerification: true}},
+			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{TLSVerification: true}},
 		},
 		// case
 		{
 			flagName:   "blackduck-initial-count",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                  &opssightv1.OpsSightSpec{},
+				Spec:                  &opssightapi.OpsSightSpec{},
 				BlackduckInitialCount: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Blackduck: &opssightv1.Blackduck{InitialCount: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{InitialCount: 10}},
 		},
 		// case
 		{
 			flagName:   "blackduck-max-count",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:              &opssightv1.OpsSightSpec{},
+				Spec:              &opssightapi.OpsSightSpec{},
 				BlackduckMaxCount: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Blackduck: &opssightv1.Blackduck{MaxCount: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{MaxCount: 10}},
+		},
+		// case
+		{
+			flagName:   "blackduck-type",
+			initialCtl: NewOpsSightCtl(),
+			changedCtl: &Ctl{
+				Spec:          &opssightapi.OpsSightSpec{},
+				BlackduckType: "changed",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{BlackduckSpec: &blackduckapi.BlackduckSpec{Type: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec: &opssightv1.OpsSightSpec{},
+				Spec: &opssightapi.OpsSightSpec{},
 			},
-			changedSpec: &opssightv1.OpsSightSpec{},
+			changedSpec: &opssightapi.OpsSightSpec{},
 		},
 	}
 
