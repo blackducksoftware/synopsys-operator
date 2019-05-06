@@ -197,7 +197,7 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	routeClient, _ := util.GetRouteClient(c.config.KubeConfig)
+	routeClient := util.GetRouteClient(c.config.KubeConfig)
 
 	hubClient, err := hubclient.NewForConfig(c.config.KubeConfig)
 	if err != nil {

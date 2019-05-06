@@ -42,7 +42,7 @@ type Route struct {
 
 // NewRoute returns the route configuration
 func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
-	routeClient, _ := util.GetRouteClient(config.kubeConfig)
+	routeClient := util.GetRouteClient(config.kubeConfig)
 	if routeClient == nil { // skip if running kubernetes
 		return nil, nil
 	}

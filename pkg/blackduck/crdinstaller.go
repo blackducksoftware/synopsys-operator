@@ -279,7 +279,7 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	routeClient, _ := util.GetRouteClient(c.kubeConfig)
+	routeClient := util.GetRouteClient(c.kubeConfig)
 
 	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), fmt.Sprint("http://federator:3016"), make(chan bool, 1), osClient, routeClient)
 }
