@@ -35,10 +35,10 @@ import (
 
 //  Deploy Command Defaults
 var exposeUI = ""
-var exposePrometheusMetrics = ""
+var exposeMetrics = ""
 var deployNamespace = "synopsys-operator"
 var synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.4.0"
-var prometheusImage = "docker.io/prom/prometheus:v2.1.0"
+var metricsImage = "docker.io/prom/prometheus:v2.1.0"
 var terminationGracePeriodSeconds int64 = 180
 var operatorTimeBombInSeconds int64 = 315576000
 var dryRun = false
@@ -121,12 +121,12 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		// Deploy prometheus
-		log.Debugf("creating Prometheus components")
-		promtheusSpec := soperator.NewPrometheus(deployNamespace, prometheusImage, exposePrometheusMetrics, restconfig, kubeClient)
+		// Deploy Metrics Components for Prometheus
+		log.Debugf("creating Metrics components")
+		promtheusSpec := soperator.NewPrometheus(deployNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
 		err = promtheusSpec.UpdatePrometheus()
 		if err != nil {
-			log.Errorf("error deploying Prometheus: %s", err)
+			log.Errorf("error deploying metrics: %s", err)
 			return nil
 		}
 
@@ -139,8 +139,8 @@ func init() {
 	rootCmd.AddCommand(deployCmd)
 	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "expose the synopsys operator's user interface. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
 	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "synopsys operator image URL")
-	deployCmd.Flags().StringVarP(&exposePrometheusMetrics, "expose-prometheus-metrics", "m", exposePrometheusMetrics, "expose the synopsys operator's prometheus metrics. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
-	deployCmd.Flags().StringVarP(&prometheusImage, "prometheus-image", "k", prometheusImage, "prometheus image URL")
+	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "m", exposeMetrics, "expose the Synopsys-Operator's metrics application. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
+	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "k", metricsImage, "image URL for the Synopsys-Operator's metrics pod")
 	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret to store the postgres and blackduck credentials")
 	deployCmd.Flags().StringVarP(&adminPassword, "admin-password", "a", adminPassword, "postgres admin password")
 	deployCmd.Flags().StringVarP(&postgresPassword, "postgres-password", "p", postgresPassword, "postgres password")
