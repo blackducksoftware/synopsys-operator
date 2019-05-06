@@ -522,70 +522,70 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "enable-skyfire",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:          &opssightv1.OpsSightSpec{},
+				Spec:          &opssightapi.OpsSightSpec{},
 				EnableSkyfire: true,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{EnableSkyfire: true},
+			changedSpec: &opssightapi.OpsSightSpec{EnableSkyfire: true},
 		},
 		// case
 		{
 			flagName:   "skyfire-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:         &opssightv1.OpsSightSpec{},
+				Spec:         &opssightapi.OpsSightSpec{},
 				SkyfireImage: "changed",
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{Image: "changed"}},
+			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{Image: "changed"}},
 		},
 		// case
 		{
 			flagName:   "skyfire-metrics-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                  &opssightv1.OpsSightSpec{},
+				Spec:                  &opssightapi.OpsSightSpec{},
 				SkyfirePrometheusPort: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{PrometheusPort: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{PrometheusPort: 10}},
 		},
 		// case
 		{
 			flagName:   "skyfire-hub-client-timeout-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                           &opssightv1.OpsSightSpec{},
+				Spec:                           &opssightapi.OpsSightSpec{},
 				SkyfireHubClientTimeoutSeconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{HubClientTimeoutSeconds: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{HubClientTimeoutSeconds: 10}},
 		},
 		// case
 		{
 			flagName:   "skyfire-hub-dump-pause-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                       &opssightv1.OpsSightSpec{},
+				Spec:                       &opssightapi.OpsSightSpec{},
 				SkyfireHubDumpPauseSeconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{HubDumpPauseSeconds: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{HubDumpPauseSeconds: 10}},
 		},
 		// case
 		{
 			flagName:   "skyfire-kube-dump-interval-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                           &opssightv1.OpsSightSpec{},
+				Spec:                           &opssightapi.OpsSightSpec{},
 				SkyfireKubeDumpIntervalSeconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{KubeDumpIntervalSeconds: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{KubeDumpIntervalSeconds: 10}},
 		},
 		// case
 		{
 			flagName:   "skyfire-perceptor-dump-interval-seconds",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
-				Spec:                                &opssightv1.OpsSightSpec{},
+				Spec:                                &opssightapi.OpsSightSpec{},
 				SkyfirePerceptorDumpIntervalSeconds: 10,
 			},
-			changedSpec: &opssightv1.OpsSightSpec{Skyfire: &opssightv1.Skyfire{PerceptorDumpIntervalSeconds: 10}},
+			changedSpec: &opssightapi.OpsSightSpec{Skyfire: &opssightapi.Skyfire{PerceptorDumpIntervalSeconds: 10}},
 		},
 		// case
 		{

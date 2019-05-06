@@ -465,32 +465,32 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.EnableSkyfire = ctl.EnableSkyfire
 		case "skyfire-image":
 			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
+				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
 			}
 			ctl.Spec.Skyfire.Image = ctl.SkyfireImage
 		case "skyfire-metrics-port":
 			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
+				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
 			}
 			ctl.Spec.Skyfire.PrometheusPort = ctl.SkyfirePrometheusPort
 		case "skyfire-hub-client-timeout-seconds":
 			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
+				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
 			}
 			ctl.Spec.Skyfire.HubClientTimeoutSeconds = ctl.SkyfireHubClientTimeoutSeconds
 		case "skyfire-hub-dump-pause-seconds":
 			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
+				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
 			}
 			ctl.Spec.Skyfire.HubDumpPauseSeconds = ctl.SkyfireHubDumpPauseSeconds
 		case "skyfire-kube-dump-interval-seconds":
 			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
+				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
 			}
 			ctl.Spec.Skyfire.KubeDumpIntervalSeconds = ctl.SkyfireKubeDumpIntervalSeconds
 		case "skyfire-perceptor-dump-interval-seconds":
 			if ctl.Spec.Skyfire == nil {
-				ctl.Spec.Skyfire = &opssightv1.Skyfire{}
+				ctl.Spec.Skyfire = &opssightapi.Skyfire{}
 			}
 			ctl.Spec.Skyfire.PerceptorDumpIntervalSeconds = ctl.SkyfirePerceptorDumpIntervalSeconds
 		case "blackduck-external-hosts-file-path":
