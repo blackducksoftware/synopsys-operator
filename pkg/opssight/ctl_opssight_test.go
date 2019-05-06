@@ -182,13 +182,13 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.ScannerCPU, "scanner-cpu", ctl.ScannerCPU, "CPU size for the OpsSight's Scanner")
 	cmd.Flags().StringVar(&ctl.ScannerMem, "scanner-memory", ctl.ScannerMem, "Memory size for the OpsSight's Scanner")
 	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "Log-level for OpsSight's logs")
-	cmd.Flags().BoolVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "Enable recording of Prometheus Metrics")
-	cmd.Flags().StringVar(&ctl.PrometheusImage, "prometheus-image", ctl.PrometheusImage, "Image for Prometheus")
-	cmd.Flags().IntVar(&ctl.PrometheusPort, "prometheus-port", ctl.PrometheusPort, "Port for Prometheus")
-	cmd.Flags().StringVar(&ctl.PrometheusExpose, "prometheus-expose", ctl.PrometheusExpose, "Expose the Prometheus metrics. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
+	cmd.Flags().BoolVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "Enable recording of OpsSight's Prometheus Metrics")
+	cmd.Flags().StringVar(&ctl.PrometheusImage, "metrics-image", ctl.PrometheusImage, "Image for OpsSight's Prometheus Metrics")
+	cmd.Flags().IntVar(&ctl.PrometheusPort, "metrics-port", ctl.PrometheusPort, "Port for OpsSight's Prometheus Metrics")
+	cmd.Flags().StringVar(&ctl.PrometheusExpose, "metrics-expose", ctl.PrometheusExpose, "Expose the OpsSight's Prometheus Metrics. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
 	cmd.Flags().BoolVar(&ctl.EnableSkyfire, "enable-skyfire", ctl.EnableSkyfire, "Enables Skyfire Pod if true")
 	cmd.Flags().StringVar(&ctl.SkyfireImage, "skyfire-image", ctl.SkyfireImage, "Image of Skyfire")
-	cmd.Flags().IntVar(&ctl.SkyfirePrometheusPort, "skyfire-prometheus-port", ctl.SkyfirePrometheusPort, "Skyfire's Prometheus port")
+	cmd.Flags().IntVar(&ctl.SkyfirePrometheusPort, "skyfire-metrics-port", ctl.SkyfirePrometheusPort, "Skyfire's Prometheus port")
 	cmd.Flags().IntVar(&ctl.SkyfireHubClientTimeoutSeconds, "skyfire-hub-client-timeout-seconds", ctl.SkyfireHubClientTimeoutSeconds, "Seconds Skyfire waits to receive response from the Black Duck client")
 	cmd.Flags().IntVar(&ctl.SkyfireHubDumpPauseSeconds, "skyfire-hub-dump-pause-seconds", ctl.SkyfireHubDumpPauseSeconds, "Seconds Skyfire waits between querying Black Ducks")
 	cmd.Flags().IntVar(&ctl.SkyfireKubeDumpIntervalSeconds, "skyfire-kube-dump-interval-seconds", ctl.SkyfireKubeDumpIntervalSeconds, "Seconds Skyfire waits between querying the KubeAPI")
@@ -487,7 +487,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "prometheus-image",
+			flagName:   "metrics-image",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:            &opssightv1.OpsSightSpec{},
@@ -497,7 +497,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "prometheus-port",
+			flagName:   "metrics-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:           &opssightv1.OpsSightSpec{},
@@ -507,7 +507,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "prometheus-expose",
+			flagName:   "metrics-expose",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:             &opssightv1.OpsSightSpec{},
@@ -537,7 +537,7 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "skyfire-prometheus-port",
+			flagName:   "skyfire-metrics-port",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                  &opssightv1.OpsSightSpec{},
