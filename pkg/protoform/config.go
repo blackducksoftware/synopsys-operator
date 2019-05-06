@@ -36,7 +36,7 @@ type Config struct {
 	LogLevel                      string
 	Namespace                     string
 	Threadiness                   int
-	PostgresRestartInMins         int
+	PostgresRestartInMins         int64
 	HubFederatorConfig            *HubFederatorConfig
 	PodWaitTimeoutSeconds         int64
 	ResyncIntervalInSeconds       int64
