@@ -25,6 +25,7 @@ import (
 	"fmt"
 
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -149,31 +150,9 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
 }
 
-var nSpecFlagCmd cobra.Command // command for getting flags for this spec
-var specFlags *pflag.FlagSet   // set of flags for this spec
-var numSpecFlagsChanged int    // number of flags that were set for the spec
-
 // NSpecFlag returns the number of spec flags that were set
 func (ctl *Ctl) NSpecFlag(flagset *pflag.FlagSet) int {
-	// Initialize variables for comparing flags
-	nSpecFlagCmd = cobra.Command{}
-	ctl.AddSpecFlags(&nSpecFlagCmd, true)
-	specFlags = nSpecFlagCmd.Flags()
-	numSpecFlagsChanged = 0
-	// Count changed flags
-	flagset.VisitAll(incrementNumSpecFlagsChanged)
-	return numSpecFlagsChanged
-}
-
-// incrementNumSpecFlagsChanged increments numSpecFlagsChanged if the flag relates to
-// the resource's spec and it has changed
-func incrementNumSpecFlagsChanged(flag *pflag.Flag) {
-	isFlagInSpec := specFlags.Lookup(flag.Name) != nil // check if the flag is in the Spec's Flags
-	if isFlagInSpec {
-		if flag.Changed {
-			numSpecFlagsChanged = numSpecFlagsChanged + 1
-		}
-	}
+	return util.NumSpecFlagsChanged(ctl, flagset)
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
