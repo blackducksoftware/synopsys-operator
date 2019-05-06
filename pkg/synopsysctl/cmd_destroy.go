@@ -79,7 +79,6 @@ var destroyCmd = &cobra.Command{
 		clusterRole, err := util.GetOperatorClusterRole(kubeClient)
 		if err != nil {
 			log.Errorf("error deleting the cluster role due to %+v", err)
-			return nil
 		}
 		log.Infof("deleting %s cluster role ", clusterRole)
 		err = util.DeleteClusterRole(kubeClient, clusterRole)
@@ -91,7 +90,6 @@ var destroyCmd = &cobra.Command{
 		clusterRoleBinding, err := util.GetOperatorClusterRoleBinding(kubeClient)
 		if err != nil {
 			log.Errorf("error deleting the cluster role binding due to %+v", err)
-			return nil
 		}
 		log.Infof("deleting %s cluster role binding", clusterRoleBinding)
 		err = util.DeleteClusterRoleBinding(kubeClient, clusterRoleBinding)

@@ -25,6 +25,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -116,6 +117,7 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 
 	// Add routes for OpenShift
 	route := specConfig.GetOpenShiftRoute()
+	log.Debugf("Route: %+v", route)
 	if route != nil {
 		components.Routes = []*api.Route{route}
 	}
