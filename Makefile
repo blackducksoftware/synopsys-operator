@@ -64,7 +64,7 @@ init:
 	brew install npm
 
 container:
-	docker build . --pull -t $(REGISTRY)/synopsys-operator:$(TAG) --build-arg VERSION=$(TAG) --build-arg 'BUILDTIME=$(BUILD_TIME)' --build-arg LASTCOMMIT=$(LAST_COMMIT)
+	docker build -f Dockerfile-Operator . --pull -t $(REGISTRY)/synopsys-operator:$(TAG) --build-arg VERSION=$(TAG) --build-arg 'BUILDTIME=$(BUILD_TIME)' --build-arg LASTCOMMIT=$(LAST_COMMIT)
 
 push: container
 	$(PREFIX_CMD) docker $(DOCKER_OPTS) push $(REGISTRY)/synopsys-operator:$(TAG)
