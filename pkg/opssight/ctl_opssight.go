@@ -25,7 +25,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -36,7 +37,7 @@ import (
 // Ctl type provides functionality for an OpsSight
 // for the Synopsysctl tool
 type Ctl struct {
-	Spec                                            *opssightv1.OpsSightSpec
+	Spec                                            *opssightapi.OpsSightSpec
 	PerceptorName                                   string
 	PerceptorImage                                  string
 	PerceptorPort                                   int
@@ -98,12 +99,13 @@ type Ctl struct {
 	BlackduckPasswordEnvVar                         string
 	BlackduckInitialCount                           int
 	BlackduckMaxCount                               int
+	BlackduckType                                   string
 }
 
 // NewOpsSightCtl creates a new Ctl struct
 func NewOpsSightCtl() *Ctl {
 	return &Ctl{
-		Spec:                                            &opssightv1.OpsSightSpec{},
+		Spec:                                            &opssightapi.OpsSightSpec{},
 		PerceptorName:                                   "",
 		PerceptorImage:                                  "",
 		PerceptorExpose:                                 "",
@@ -164,6 +166,7 @@ func NewOpsSightCtl() *Ctl {
 		BlackduckTLSVerification:                        false,
 		BlackduckInitialCount:                           0,
 		BlackduckMaxCount:                               0,
+		BlackduckType:                                   "",
 	}
 }
 
@@ -174,7 +177,7 @@ func (ctl *Ctl) GetSpec() interface{} {
 
 // SetSpec sets the Spec for the resource
 func (ctl *Ctl) SetSpec(spec interface{}) error {
-	convertedSpec, ok := spec.(opssightv1.OpsSightSpec)
+	convertedSpec, ok := spec.(opssightapi.OpsSightSpec)
 	if !ok {
 		return fmt.Errorf("Error setting OpsSight Spec")
 	}
@@ -199,7 +202,7 @@ const (
 func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
 	case EmptySpec:
-		ctl.Spec = &opssightv1.OpsSightSpec{}
+		ctl.Spec = &opssightapi.OpsSightSpec{}
 	case UpstreamSpec:
 		ctl.Spec = crddefaults.GetOpsSightUpstream()
 	case DefaultSpec:
@@ -257,6 +260,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Perform TLS Verification for Black Duck")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
+	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -267,12 +271,12 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 
 // InternalRegistryStructs - file format for reading data
 type InternalRegistryStructs struct {
-	Data []opssightv1.RegistryAuth
+	Data []opssightapi.RegistryAuth
 }
 
 // ExternalHostStructs - file format for reading data
 type ExternalHostStructs struct {
-	Data []opssightv1.Host
+	Data []opssightapi.Host
 }
 
 // SetFlag sets an OpsSights's Spec field if its flag was changed
@@ -282,152 +286,152 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		switch f.Name {
 		case "opssight-core-image":
 			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
+				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
 			}
 			ctl.Spec.Perceptor.Image = ctl.PerceptorImage
 		case "opssight-core-expose":
 			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
+				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
 			}
 			ctl.Spec.Perceptor.Expose = ctl.PerceptorExpose
 		case "opssight-core-check-scan-hours":
 			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
+				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
 			}
 			ctl.Spec.Perceptor.CheckForStalledScansPauseHours = ctl.PerceptorCheckForStalledScansPauseHours
 		case "opssight-core-scan-client-timeout-hours":
 			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
+				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
 			}
 			ctl.Spec.Perceptor.StalledScanClientTimeoutHours = ctl.PerceptorStalledScanClientTimeoutHours
 		case "opssight-core-metrics-pause-seconds":
 			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
+				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
 			}
 			ctl.Spec.Perceptor.ModelMetricsPauseSeconds = ctl.PerceptorModelMetricsPauseSeconds
 		case "opssight-core-unknown-image-pause-milliseconds":
 			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
+				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
 			}
 			ctl.Spec.Perceptor.UnknownImagePauseMilliseconds = ctl.PerceptorUnknownImagePauseMilliseconds
 		case "opssight-core-client-timeout-milliseconds":
 			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightv1.Perceptor{}
+				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
 			}
 			ctl.Spec.Perceptor.ClientTimeoutMilliseconds = ctl.PerceptorClientTimeoutMilliseconds
 		case "scanner-image":
 			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
+				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
 			}
 			if ctl.Spec.ScannerPod.Scanner == nil {
-				ctl.Spec.ScannerPod.Scanner = &opssightv1.Scanner{}
+				ctl.Spec.ScannerPod.Scanner = &opssightapi.Scanner{}
 			}
 			ctl.Spec.ScannerPod.Scanner.Image = ctl.ScannerPodScannerImage
 		case "scanner-client-timeout-seconds":
 			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
+				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
 			}
 			if ctl.Spec.ScannerPod.Scanner == nil {
-				ctl.Spec.ScannerPod.Scanner = &opssightv1.Scanner{}
+				ctl.Spec.ScannerPod.Scanner = &opssightapi.Scanner{}
 			}
 			ctl.Spec.ScannerPod.Scanner.ClientTimeoutSeconds = ctl.ScannerPodScannerClientTimeoutSeconds
 		case "image-getter-image":
 			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
+				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
 			}
 			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+				ctl.Spec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
 			ctl.Spec.ScannerPod.ImageFacade.Image = ctl.ScannerPodImageFacadeImage
 		case "image-getter-internal-registries-file-path":
 			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
+				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
 			}
 			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+				ctl.Spec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
 			data, err := util.ReadFileData(ctl.ScannerPodImageFacadeInternalRegistriesFilePath)
 			if err != nil {
 				log.Errorf("failed to read internal registries file: %s", err)
 			}
-			registryStructs := InternalRegistryStructs{Data: []opssightv1.RegistryAuth{}}
+			registryStructs := InternalRegistryStructs{Data: []opssightapi.RegistryAuth{}}
 			err = json.Unmarshal([]byte(data), &registryStructs)
 			if err != nil {
 				log.Errorf("failed to unmarshal internal registry structs: %s", err)
 				return
 			}
-			ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = []*opssightv1.RegistryAuth{} // clear old values
+			ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = []*opssightapi.RegistryAuth{} // clear old values
 			for _, registry := range registryStructs.Data {
 				ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ctl.Spec.ScannerPod.ImageFacade.InternalRegistries, &registry)
 			}
 		case "image-getter-image-puller-type":
 			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
+				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
 			}
 			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+				ctl.Spec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
 			ctl.Spec.ScannerPod.ImageFacade.ImagePullerType = ctl.ScannerPodImageFacadeImagePullerType
 		case "image-getter-service-account":
 			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
+				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
 			}
 			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightv1.ImageFacade{}
+				ctl.Spec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
 			ctl.Spec.ScannerPod.ImageFacade.ServiceAccount = ctl.ScannerPodImageFacadeServiceAccount
 		case "scannerpod-replica-count":
 			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
+				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
 			}
 			ctl.Spec.ScannerPod.ReplicaCount = ctl.ScannerPodReplicaCount
 		case "scannerpod-image-directory":
 			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightv1.ScannerPod{}
+				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
 			}
 			ctl.Spec.ScannerPod.ImageDirectory = ctl.ScannerPodImageDirectory
 		case "enable-image-processor":
 			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
+				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
 			ctl.Spec.Perceiver.EnableImagePerceiver = ctl.PerceiverEnableImagePerceiver
 		case "enable-pod-processor":
 			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
+				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
 			ctl.Spec.Perceiver.EnablePodPerceiver = ctl.PerceiverEnablePodPerceiver
 		case "image-processor-image":
 			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
+				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
 			if ctl.Spec.Perceiver.ImagePerceiver == nil {
-				ctl.Spec.Perceiver.ImagePerceiver = &opssightv1.ImagePerceiver{}
+				ctl.Spec.Perceiver.ImagePerceiver = &opssightapi.ImagePerceiver{}
 			}
 			ctl.Spec.Perceiver.ImagePerceiver.Image = ctl.PerceiverImagePerceiverImage
 		case "pod-processor-image":
 			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
+				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
 			if ctl.Spec.Perceiver.PodPerceiver == nil {
-				ctl.Spec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
+				ctl.Spec.Perceiver.PodPerceiver = &opssightapi.PodPerceiver{}
 			}
 			ctl.Spec.Perceiver.PodPerceiver.Image = ctl.PerceiverPodPerceiverImage
 		case "pod-processor-namespace-filter":
 			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
+				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
 			if ctl.Spec.Perceiver.PodPerceiver == nil {
-				ctl.Spec.Perceiver.PodPerceiver = &opssightv1.PodPerceiver{}
+				ctl.Spec.Perceiver.PodPerceiver = &opssightapi.PodPerceiver{}
 			}
 			ctl.Spec.Perceiver.PodPerceiver.NamespaceFilter = ctl.PerceiverPodPerceiverNamespaceFilter
 		case "processor-annotation-interval-seconds":
 			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
+				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
 			ctl.Spec.Perceiver.AnnotationIntervalSeconds = ctl.PerceiverAnnotationIntervalSeconds
 		case "processor-dump-interval-minutes":
 			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightv1.Perceiver{}
+				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
 			ctl.Spec.Perceiver.DumpIntervalMinutes = ctl.PerceiverDumpIntervalMinutes
 		case "default-cpu":
@@ -444,17 +448,17 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.EnableMetrics = ctl.EnableMetrics
 		case "prometheus-image":
 			if ctl.Spec.Prometheus == nil {
-				ctl.Spec.Prometheus = &opssightv1.Prometheus{}
+				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
 			}
 			ctl.Spec.Prometheus.Image = ctl.PrometheusImage
 		case "prometheus-port":
 			if ctl.Spec.Prometheus == nil {
-				ctl.Spec.Prometheus = &opssightv1.Prometheus{}
+				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
 			}
 			ctl.Spec.Prometheus.Port = ctl.PrometheusPort
 		case "prometheus-expose":
 			if ctl.Spec.Prometheus == nil {
-				ctl.Spec.Prometheus = &opssightv1.Prometheus{}
+				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
 			}
 			ctl.Spec.Prometheus.Expose = ctl.PrometheusExpose
 		case "enable-skyfire":
@@ -491,37 +495,45 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.Skyfire.PerceptorDumpIntervalSeconds = ctl.SkyfirePerceptorDumpIntervalSeconds
 		case "blackduck-external-hosts-file-path":
 			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
+				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
 			}
 			data, err := util.ReadFileData(ctl.BlackduckExternalHostsFilePath)
 			if err != nil {
 				log.Errorf("failed to read external hosts file: %s", err)
 			}
-			hostStructs := ExternalHostStructs{Data: []opssightv1.Host{}}
+			hostStructs := ExternalHostStructs{Data: []opssightapi.Host{}}
 			err = json.Unmarshal([]byte(data), &hostStructs)
 			if err != nil {
 				log.Errorf("failed to unmarshal internal registry structs: %s", err)
 				return
 			}
-			ctl.Spec.Blackduck.ExternalHosts = []*opssightv1.Host{} // clear old values
+			ctl.Spec.Blackduck.ExternalHosts = []*opssightapi.Host{} // clear old values
 			for _, host := range hostStructs.Data {
 				ctl.Spec.Blackduck.ExternalHosts = append(ctl.Spec.Blackduck.ExternalHosts, &host)
 			}
 		case "blackduck-TLS-verification":
 			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
+				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
 			}
 			ctl.Spec.Blackduck.TLSVerification = ctl.BlackduckTLSVerification
 		case "blackduck-initial-count":
 			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
+				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
 			}
 			ctl.Spec.Blackduck.InitialCount = ctl.BlackduckInitialCount
 		case "blackduck-max-count":
 			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightv1.Blackduck{}
+				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
 			}
 			ctl.Spec.Blackduck.MaxCount = ctl.BlackduckMaxCount
+		case "blackduck-type":
+			if ctl.Spec.Blackduck == nil {
+				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
+			}
+			if ctl.Spec.Blackduck.BlackduckSpec == nil {
+				ctl.Spec.Blackduck.BlackduckSpec = &blackduckapi.BlackduckSpec{}
+			}
+			ctl.Spec.Blackduck.BlackduckSpec.Type = ctl.BlackduckType
 		default:
 			log.Debugf("Flag %s: Not Found", f.Name)
 		}
