@@ -212,7 +212,7 @@ func (p *SpecConfig) ImagePerceiverClusterRole() *components.ClusterRole {
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		APIGroups: []string{""},
+		APIGroups: []string{"image.openshift.io"},
 		Resources: []string{"images"},
 		Verbs:     []string{"get", "watch", "list", "update"},
 	})
