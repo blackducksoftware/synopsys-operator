@@ -370,7 +370,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 		})
 
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:           []string{"get", "list", "watch"},
+			Verbs:           []string{"get", "list", "watch", "update"},
 			APIGroups:       []string{"image.openshift.io"},
 			Resources:       []string{"images"},
 			ResourceNames:   []string{},
