@@ -1,8 +1,8 @@
 approve:
   - repos:
       - blackducksoftware/synopsys-operator
-    require_self_approval: true
-    lgtm_acts_as_approve: false
+    require_self_approval: false
+    lgtm_acts_as_approve: true
 
 plugins:
   blackducksoftware/synopsys-operator:

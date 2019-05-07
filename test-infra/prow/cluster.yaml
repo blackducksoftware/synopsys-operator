@@ -411,6 +411,56 @@ spec:
   type: NodePort
 ---
 apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  namespace: default
+  name: cherrypick
+  labels:
+    app: cherrypick
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cherrypick
+    spec:
+      containers:
+        - name: cherrypick
+          image: gcr.io/k8s-prow/cherrypicker:v20190502-b23cfa09f
+          args:
+            - --dry-run=false
+          ports:
+            - name: http
+              containerPort: 8888
+          volumeMounts:
+            - name: hmac
+              mountPath: /etc/webhook
+              readOnly: true
+            - name: oauth
+              mountPath: /etc/github
+              readOnly: true
+      volumes:
+        - name: hmac
+          secret:
+            secretName: hmac-token
+        - name: oauth
+          secret:
+            secretName: oauth-token
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: default
+  name: cherrypick
+spec:
+  selector:
+    app: cherrypick
+  ports:
+    - port: 80
+      targetPort: 8888
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   namespace: default
