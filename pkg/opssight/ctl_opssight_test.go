@@ -125,6 +125,9 @@ func TestCheckSpecFlags(t *testing.T) {
 func TestSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
+	defaultSpec := crddefaults.GetOpsSightDefault()
+	defaultSpec.Perceiver.EnablePodPerceiver = true
+	defaultSpec.EnableMetrics = true
 
 	var tests = []struct {
 		input    string
@@ -132,7 +135,7 @@ func TestSwitchSpec(t *testing.T) {
 	}{
 		{input: EmptySpec, expected: &opssightapi.OpsSightSpec{}},
 		{input: UpstreamSpec, expected: crddefaults.GetOpsSightUpstream()},
-		{input: DefaultSpec, expected: crddefaults.GetOpsSightDefault()},
+		{input: DefaultSpec, expected: defaultSpec},
 		{input: DisabledBlackDuckSpec, expected: crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()},
 	}
 
