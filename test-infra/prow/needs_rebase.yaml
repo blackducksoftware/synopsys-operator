@@ -1,0 +1,71 @@
+# Modified from: https://github.com/openshift/release/blob/master/cluster/ci/config/prow/openshift/needs_rebase.yaml
+
+kind: List
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      namespace: default
+      name: needs-rebase
+    spec:
+      selector:
+        app: prow
+        component: needs-rebase
+      ports:
+        - port: 80
+          targetPort: 8888
+      type: ClusterIP
+
+  - apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      name: needs-rebase
+      labels:
+        app: prow
+        component: needs-rebase
+    spec:
+      replicas: 1
+      revisionHistoryLimit: 2
+      selector:
+        matchLabels:
+          app: prow
+          component: needs-rebase
+      template:
+        metadata:
+          labels:
+            app: prow
+            component: needs-rebase
+        spec:
+          containers:
+            - name: needs-rebase
+              image: gcr.io/k8s-prow/needs-rebase:v20190507-d0c146f3f
+              args:
+                - --dry-run=false
+                - --github-token-path=/etc/github/oauth
+                - --hmac-secret-file=/etc/webhook/hmac
+                - --plugin-config=/etc/plugins/plugins.yaml
+                # - --github-endpoint=http://ghproxy
+              ports:
+                - name: http
+                  containerPort: 8888
+              volumeMounts:
+                - name: hmac
+                  mountPath: /etc/webhook
+                  readOnly: true
+                - name: oauth
+                  mountPath: /etc/github
+                  readOnly: true
+                - name: plugins
+                  mountPath: /etc/plugins
+                  readOnly: true
+          volumes:
+            - name: hmac
+              secret:
+                secretName: hmac-token
+            - name: oauth
+              secret:
+                secretName: oauth-token
+            - name: plugins
+              configMap:
+                name: plugins

@@ -1,0 +1,110 @@
+# Modified from: https://github.com/kubernetes/test-infra/blob/master/prow/cluster/starter.yaml and https://github.com/openshift/release/blob/master/cluster/ci/config/prow/openshift/tide.yaml
+
+kind: List
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      namespace: default
+      name: tide
+      labels:
+        app: prow
+        component: tide
+    spec:
+      selector:
+        app: prow
+        component: tide
+      ports:
+        - port: 80
+          name: http
+          targetPort: 8888
+      type: NodePort
+
+  - apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      namespace: default
+      name: tide
+      labels:
+        app: prow
+        component: tide
+    spec:
+      # Do not scale up.
+      replicas: 1
+      strategy:
+        type: Recreate
+      selector:
+        matchLabels:
+          app: prow
+          component: tide
+      template:
+        metadata:
+          labels:
+            app: prow
+            component: tide
+        spec:
+          serviceAccountName: tide
+          containers:
+            - name: tide
+              image: gcr.io/k8s-prow/tide:v20190506-dd08c919a
+              args:
+                - --dry-run=false
+                - --config-path=/etc/config/config.yaml
+                - --github-token-path=/etc/github/oauth
+                # - --github-endpoint=http://ghproxy
+                # - --job-config-path=/etc/job-config
+                # - --gcs-credentials-file=/etc/service-account/service-account.json
+                # - --history-uri=gs://openshift-prow/tide-history.json
+                # - --status-path=gs://openshift-prow/tide-status-checkpoint.yaml
+              ports:
+                - name: http
+                  containerPort: 8888
+              volumeMounts:
+                - name: oauth
+                  mountPath: /etc/github
+                  readOnly: true
+                - name: config
+                  mountPath: /etc/config
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+                # - name: job-config-misc
+                #   mountPath: /etc/job-config/misc
+                #   readOnly: true
+                # - name: job-config-master
+                #   mountPath: /etc/job-config/master
+                #   readOnly: true
+                # - name: job-config-3x
+                #   mountPath: /etc/job-config/3.x
+                #   readOnly: true
+                # - name: job-config-40
+                #   mountPath: /etc/job-config/4.0
+                #   readOnly: true
+                # - name: service-account
+                #   mountPath: /etc/service-account
+                #   readOnly: true
+          volumes:
+            - name: oauth
+              secret:
+                secretName: oauth-token
+            - name: config
+              configMap:
+                name: config
+            - name: tmp
+              emptyDir: {}
+            # - name: job-config-misc
+            #   configMap:
+            #     name: job-config-misc
+            # - name: job-config-master
+            #   configMap:
+            #     name: job-config-master
+            # - name: job-config-3x
+            #   configMap:
+            #     name: job-config-3.x
+            # - name: job-config-40
+            #   configMap:
+            #     name: job-config-4.0
+            # - name: service-account
+            #   secret:
+            #     secretName: gce-sa-credentials-gcs-tide-publisher

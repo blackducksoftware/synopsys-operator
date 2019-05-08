@@ -1,0 +1,78 @@
+# Modified from: https://github.com/kubernetes/test-infra/blob/master/prow/cluster/starter.yaml and https://github.com/openshift/release/blob/master/cluster/ci/config/prow/openshift/plank.yaml
+
+kind: List
+apiVersion: v1
+items:
+  - apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      namespace: default
+      name: plank
+      labels:
+        app: prow
+        component: plank
+    spec:
+      # Do not scale up.
+      replicas: 1
+      revisionHistoryLimit: 2
+      strategy:
+        type: Recreate
+      selector:
+        matchLabels:
+          app: prow
+          component: plank
+      template:
+        metadata:
+          labels:
+            app: prow
+            component: plank
+        spec:
+          serviceAccountName: plank
+          containers:
+            - name: plank
+              image: gcr.io/k8s-prow/plank:v20190506-dd08c919a
+              args:
+                - --dry-run=false
+                - --config-path=/etc/config/config.yaml
+                - --github-token-path=/etc/github/oauth
+                # - --tot-url=http://tot
+                # - --job-config-path=/etc/job-config
+                # - --github-endpoint=http://ghproxy
+              volumeMounts:
+                - name: oauth
+                  mountPath: /etc/github
+                  readOnly: true
+                - name: config
+                  mountPath: /etc/config
+                  readOnly: true
+                # - name: job-config-misc
+                #   mountPath: /etc/job-config/misc
+                #   readOnly: true
+                # - name: job-config-master
+                #   mountPath: /etc/job-config/master
+                #   readOnly: true
+                # - name: job-config-3x
+                #   mountPath: /etc/job-config/3.x
+                #   readOnly: true
+                # - name: job-config-40
+                #   mountPath: /etc/job-config/4.0
+                #   readOnly: true
+          volumes:
+            - name: oauth
+              secret:
+                secretName: oauth-token
+            - name: config
+              configMap:
+                name: config
+            # - name: job-config-misc
+            #   configMap:
+            #     name: job-config-misc
+            # - name: job-config-master
+            #   configMap:
+            #     name: job-config-master
+            # - name: job-config-3x
+            #   configMap:
+            #     name: job-config-3.x
+            # - name: job-config-40
+            #   configMap:
+            #     name: job-config-4.0

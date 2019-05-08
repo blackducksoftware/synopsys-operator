@@ -1,0 +1,125 @@
+# Modified from: https://github.com/kubernetes/test-infra/blob/master/prow/cluster/starter.yaml and https://github.com/openshift/release/blob/master/cluster/ci/config/prow/openshift/deck.yaml
+
+kind: List
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      namespace: default
+      name: deck
+    spec:
+      selector:
+        app: prow
+        component: deck
+      ports:
+        - port: 80
+          targetPort: 8080
+      type: NodePort
+
+  - apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      namespace: default
+      name: deck
+      labels:
+        app: prow
+        component: deck
+    spec:
+      replicas: 2
+      revisionHistoryLimit: 2
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 1
+      selector:
+        matchLabels:
+          app: prow
+          component: deck
+      template:
+        metadata:
+          labels:
+            app: prow
+            component: deck
+        spec:
+          serviceAccountName: deck
+          terminationGracePeriodSeconds: 30
+          containers:
+            - name: deck
+              image: gcr.io/k8s-prow/deck:v20190506-dd08c919a
+              args:
+                - --config-path=/etc/config/config.yaml
+                - --tide-url=http://tide/
+                - --hook-url=http://hook:8888/plugin-help
+                # - --cookie-secret=/etc/cookie/cookie
+                # - --github-oauth-config-file=/etc/github/config.json
+                # - --oauth-url=/github-login
+                # - --job-config-path=/etc/job-config
+                # - --spyglass=true
+              ports:
+                - name: http
+                  containerPort: 8080
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/config
+                  readOnly: true
+                # - name: extensions
+                #   mountPath: /static/extensions
+                #   readOnly: true
+                # - name: oauth-config
+                #   mountPath: /etc/github
+                #   readOnly: true
+                # - name: cookie-secret
+                #   mountPath: /etc/cookie
+                #   readOnly: true
+                # - name: job-config-misc
+                #   mountPath: /etc/job-config/misc
+                #   readOnly: true
+                # - name: job-config-master
+                #   mountPath: /etc/job-config/master
+                #   readOnly: true
+                # - name: job-config-3x
+                #   mountPath: /etc/job-config/3.x
+                #   readOnly: true
+                # - name: job-config-40
+                #   mountPath: /etc/job-config/4.0
+                #   readOnly: true
+              livenessProbe:
+                httpGet:
+                  path: /healthz
+                  port: 8081
+                initialDelaySeconds: 3
+                periodSeconds: 3
+              readinessProbe:
+                httpGet:
+                  path: /healthz/ready
+                  port: 8081
+                initialDelaySeconds: 10
+                periodSeconds: 3
+                timeoutSeconds: 600
+          volumes:
+            - name: config
+              configMap:
+                name: config
+            # - name: extensions
+            #   secret:
+            #     secretName: deck-extensions
+            # - name: oauth-config
+            #   secret:
+            #     secretName: github-app-credentials
+            # - name: cookie-secret
+            #   secret:
+            #     secretName: cookie
+            # - name: job-config-misc
+            #   configMap:
+            #     name: job-config-misc
+            # - name: job-config-master
+            #   configMap:
+            #     name: job-config-master
+            # - name: job-config-3x
+            #   configMap:
+            #     name: job-config-3.x
+            # - name: job-config-40
+            #   configMap:
+            #     name: job-config-4.0

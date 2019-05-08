@@ -1,0 +1,85 @@
+# Modified from: https://github.com/kubernetes/test-infra/blob/master/prow/cluster/starter.yaml and https://github.com/openshift/release/blob/master/cluster/ci/config/prow/openshift/sinker.yaml
+
+kind: List
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      namespace: default
+      name: sinker
+      labels:
+        app: prow
+        component: sinker
+    spec:
+      selector:
+        app: prow
+        component: sinker
+      ports:
+        - name: http
+          port: 9090
+          protocol: TCP
+          targetPort: 9090
+      type: ClusterIP
+
+  - apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      namespace: default
+      name: sinker
+      labels:
+        app: prow
+        component: sinker
+    spec:
+      replicas: 1
+      revisionHistoryLimit: 2
+      selector:
+        matchLabels:
+          app: prow
+          component: sinker
+      template:
+        metadata:
+          labels:
+            app: prow
+            component: sinker
+        spec:
+          serviceAccountName: sinker
+          containers:
+            - name: sinker
+              image: gcr.io/k8s-prow/sinker:v20190506-dd08c919a
+              args:
+                - --dry-run=false
+                - --config-path=/etc/config/config.yaml
+                # - --job-config-path=/etc/job-config
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/config
+                  readOnly: true
+                # - name: job-config-misc
+                #   mountPath: /etc/job-config/misc
+                #   readOnly: true
+                # - name: job-config-master
+                #   mountPath: /etc/job-config/master
+                #   readOnly: true
+                # - name: job-config-3x
+                #   mountPath: /etc/job-config/3.x
+                #   readOnly: true
+                # - name: job-config-40
+                #   mountPath: /etc/job-config/4.0
+                #   readOnly: true
+          volumes:
+            - name: config
+              configMap:
+                name: config
+            # - name: job-config-misc
+            #   configMap:
+            #     name: job-config-misc
+            # - name: job-config-master
+            #   configMap:
+            #     name: job-config-master
+            # - name: job-config-3x
+            #   configMap:
+            #     name: job-config-3.x
+            # - name: job-config-40
+            #   configMap:
+            #     name: job-config-4.0
