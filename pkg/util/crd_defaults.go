@@ -482,7 +482,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 		},
 		Perceiver: &opssightv1.Perceiver{
 			EnableImagePerceiver: false,
-			EnablePodPerceiver:   true,
+			EnablePodPerceiver:   false,
 			Port:                 3002,
 			ImagePerceiver: &opssightv1.ImagePerceiver{
 				Name:  "opssight-image-processor",
@@ -514,7 +514,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			KubeDumpIntervalSeconds:      60,
 			PerceptorDumpIntervalSeconds: 60,
 		},
-		EnableMetrics: true,
+		EnableMetrics: false,
 		DefaultCPU:    "300m",
 		DefaultMem:    "1300Mi",
 		ScannerCPU:    "300m",
@@ -641,7 +641,7 @@ func GetAlertTemplate() *alertv1.AlertSpec {
 // GetAlertDefault creates an Alert crd configuration object with defaults
 func GetAlertDefault() *alertv1.AlertSpec {
 	port := 8443
-	standAlone := true
+	standAlone := false
 
 	return &alertv1.AlertSpec{
 		Namespace:            "alert-test",
@@ -652,7 +652,7 @@ func GetAlertDefault() *alertv1.AlertSpec {
 		Port:                 &port,
 		EncryptionPassword:   "",
 		EncryptionGlobalSalt: "",
-		PersistentStorage:    true,
+		PersistentStorage:    false,
 		PVCName:              "alert-pvc",
 		StandAlone:           &standAlone,
 		PVCSize:              "5G",

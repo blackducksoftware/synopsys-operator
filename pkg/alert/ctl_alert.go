@@ -120,6 +120,8 @@ func (ctl *Ctl) SwitchSpec(specType string) error {
 		ctl.Spec = crddefaults.GetAlertTemplate()
 	case DefaultSpec:
 		ctl.Spec = crddefaults.GetAlertDefault()
+		ctl.Spec.PersistentStorage = true
+		ctl.Spec.StandAlone = crddefaults.BoolToPtr(true)
 	default:
 		return fmt.Errorf("Alert Spec Type %s is not valid", specType)
 	}
