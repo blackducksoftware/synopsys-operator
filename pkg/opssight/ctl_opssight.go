@@ -205,10 +205,16 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 		ctl.Spec = &opssightapi.OpsSightSpec{}
 	case UpstreamSpec:
 		ctl.Spec = crddefaults.GetOpsSightUpstream()
+		ctl.Spec.Perceiver.EnablePodPerceiver = true
+		ctl.Spec.EnableMetrics = true
 	case DefaultSpec:
 		ctl.Spec = crddefaults.GetOpsSightDefault()
+		ctl.Spec.Perceiver.EnablePodPerceiver = true
+		ctl.Spec.EnableMetrics = true
 	case DisabledBlackDuckSpec:
 		ctl.Spec = crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()
+		ctl.Spec.Perceiver.EnablePodPerceiver = true
+		ctl.Spec.EnableMetrics = true
 	default:
 		return fmt.Errorf("OpsSight Spec Type %s is not valid", createOpsSightSpecType)
 	}

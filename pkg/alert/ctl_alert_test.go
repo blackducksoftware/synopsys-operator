@@ -82,6 +82,9 @@ func TestCheckSpecFlags(t *testing.T) {
 func TestSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
+	defaultSpec := *crddefaults.GetAlertDefault()
+	defaultSpec.StandAlone = crddefaults.BoolToPtr(true)
+	defaultSpec.PersistentStorage = true
 
 	var tests = []struct {
 		input    string
@@ -89,7 +92,7 @@ func TestSwitchSpec(t *testing.T) {
 	}{
 		{input: EmptySpec, expected: alertapi.AlertSpec{}},
 		{input: TemplateSpec, expected: *crddefaults.GetAlertTemplate()},
-		{input: DefaultSpec, expected: *crddefaults.GetAlertDefault()},
+		{input: DefaultSpec, expected: defaultSpec},
 	}
 
 	// test cases: "default"
