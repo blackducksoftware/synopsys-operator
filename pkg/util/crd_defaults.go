@@ -522,6 +522,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
 		ConfigMapName: "opssight",
+		DesiredState:  "START",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,
