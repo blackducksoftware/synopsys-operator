@@ -237,7 +237,8 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 		return blackduck.Spec.Certificate, blackduck.Spec.CertificateKey, nil
 	}
 
-	secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
+	// default cert
+	secret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-certificate")
 	if err == nil {
 		data := secret.Data
 		if len(data) >= 2 {
