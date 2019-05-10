@@ -233,8 +233,20 @@ func (hc *Creater) GetPVC(blackduck *blackduckapi.Blackduck) []*components.Persi
 }
 
 func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (string, string, error) {
-	if strings.EqualFold(blackduck.Spec.CertificateName, "manual") {
+	if len(blackduck.Spec.Certificate) > 0 && len(blackduck.Spec.CertificateKey) > 0 {
 		return blackduck.Spec.Certificate, blackduck.Spec.CertificateKey, nil
+	}
+
+	// Cert copy
+	if len(blackduck.Spec.CertificateName) > 0 && !strings.EqualFold(blackduck.Spec.CertificateName, "default") {
+		secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.CertificateName, "blackduck-certificate")
+		if err == nil {
+			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
+			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
+			if certok && keyok {
+				return string(cert), string(key), nil
+			}
+		}
 	}
 
 	// default cert
@@ -247,18 +259,6 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 			if !certok || !keyok {
 				util.DeleteSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
 			} else {
-				return string(cert), string(key), nil
-			}
-		}
-	}
-
-	// Cert copy
-	if !strings.EqualFold(blackduck.Spec.CertificateName, "default") {
-		secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.CertificateName, "blackduck-certificate")
-		if err == nil {
-			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
-			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
-			if certok && keyok {
 				return string(cert), string(key), nil
 			}
 		}
