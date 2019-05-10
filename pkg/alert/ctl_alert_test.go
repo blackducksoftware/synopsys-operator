@@ -59,7 +59,8 @@ func TestSetSpec(t *testing.T) {
 func TestCheckSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	specFlags := alertCtl.CheckSpecFlags()
+	cmd := &cobra.Command{}
+	specFlags := alertCtl.CheckSpecFlags(cmd.Flags())
 	assert.Nil(specFlags)
 }
 

@@ -410,7 +410,7 @@ func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secre
 	tlsSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 		Name:      "synopsys-operator-tls",
 		Namespace: specConfig.Namespace,
-		Type:      specConfig.SecretType,
+		Type:      horizonapi.SecretTypeOpaque,
 	})
 	tlsSecret.AddData(map[string][]byte{
 		"cert.crt": []byte(specConfig.Certificate),
@@ -428,14 +428,10 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 		APIVersion: "v1",
 		Name:       "blackduck-secret",
 		Namespace:  specConfig.Namespace,
-		Type:       specConfig.SecretType,
+		Type:       horizonapi.SecretTypeOpaque,
 	})
 	synopsysOperatorSecret.AddData(map[string][]byte{
-		"ADMIN_PASSWORD":    []byte(specConfig.AdminPassword),
-		"POSTGRES_PASSWORD": []byte(specConfig.PostgresPassword),
-		"USER_PASSWORD":     []byte(specConfig.UserPassword),
-		"HUB_PASSWORD":      []byte(specConfig.BlackduckPassword),
-		"SEAL_KEY":          []byte(specConfig.SealKey),
+		"SEAL_KEY": []byte(specConfig.SealKey),
 	})
 
 	synopsysOperatorSecret.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})

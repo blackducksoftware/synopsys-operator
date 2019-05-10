@@ -60,8 +60,9 @@ func TestCheckSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 
 	// default case
-	blackDuckCtl := NewBlackDuckCtl()
-	assert.Nil(blackDuckCtl.CheckSpecFlags())
+	blackduckCtl := NewBlackDuckCtl()
+	cmd := &cobra.Command{}
+	assert.Nil(blackduckCtl.CheckSpecFlags(cmd.Flags()))
 
 	var tests = []struct {
 		input *Ctl
@@ -79,7 +80,7 @@ func TestCheckSpecFlags(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		assert.Error(test.input.CheckSpecFlags())
+		assert.Error(test.input.CheckSpecFlags(cmd.Flags()))
 	}
 }
 func TestSwitchSpec(t *testing.T) {
@@ -125,13 +126,13 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Black Duck")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck Webserver's user interface [LOADBALANCER|NODEPORT|OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
-	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "Port for Postgres")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresPostgresAdmin, "Name of Admin for Postgres")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUser, "external-postgres-user", ctl.ExternalPostgresPostgresUser, "Username for Postgres")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "If true, Black Duck uses SSL for the Postgres connection [true|false]")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresPostgresAdminPassword, "Password for the Postgres Admin")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "Password for a Postgres User")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresHost, "external-postgres-host", ctl.ExternalPostgresHost, "Host of external Postgres")
+	cmd.Flags().IntVar(&ctl.ExternalPostgresPort, "external-postgres-port", ctl.ExternalPostgresPort, "Port of external Postgres")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresAdmin, "Name of 'admin' of external Postgres database")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresUser, "external-postgres-user", ctl.ExternalPostgresUser, "Name of 'user' of external Postgres database")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresSsl, "If true, Black Duck uses SSL for external Postgres connection [true|false]")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresAdminPassword, "'admin' password of external Postgres database")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresUserPassword, "'user' password of external Postgres database")
 	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
 	cmd.Flags().StringVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "If true, Black Duck uses liveness probes [true|false]")
 	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black duck has persistent storage [true|false]")
@@ -148,6 +149,9 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
+	cmd.Flags().StringVar(&ctl.AdminPassword, "admin-password", ctl.AdminPassword, "'admin' password of Postgres database")
+	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "'postgres' password of Postgres database")
+	cmd.Flags().StringVar(&ctl.UserPassword, "user-password", ctl.UserPassword, "'user' password of Postgres database")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
@@ -223,8 +227,8 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-host",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                         &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresHost: "changed",
+				Spec:                 &blackduckv1.BlackduckSpec{},
+				ExternalPostgresHost: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -235,8 +239,8 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-port",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                         &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresPort: 10,
+				Spec:                 &blackduckv1.BlackduckSpec{},
+				ExternalPostgresPort: 10,
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -247,8 +251,8 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-admin",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                          &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresAdmin: "changed",
+				Spec:                  &blackduckv1.BlackduckSpec{},
+				ExternalPostgresAdmin: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -259,8 +263,8 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-user",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                         &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresUser: "changed",
+				Spec:                 &blackduckv1.BlackduckSpec{},
+				ExternalPostgresUser: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -271,8 +275,8 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-ssl",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                        &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresSsl: "false",
+				Spec:                &blackduckv1.BlackduckSpec{},
+				ExternalPostgresSsl: "false",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -283,8 +287,8 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-ssl",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                        &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresSsl: "true",
+				Spec:                &blackduckv1.BlackduckSpec{},
+				ExternalPostgresSsl: "true",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -295,24 +299,24 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-admin-password",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                                  &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresAdminPassword: "changed",
+				Spec:                          &blackduckv1.BlackduckSpec{},
+				ExternalPostgresAdminPassword: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
-					PostgresAdminPassword: "changed"}},
+					PostgresAdminPassword: crddefaults.Base64Encode([]byte("changed"))}},
 		},
 		// case
 		{
 			flagName:   "external-postgres-user-password",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                                 &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresUserPassword: "changed",
+				Spec:                         &blackduckv1.BlackduckSpec{},
+				ExternalPostgresUserPassword: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
-					PostgresUserPassword: "changed"}},
+					PostgresUserPassword: crddefaults.Base64Encode([]byte("changed"))}},
 		},
 		// case
 		{

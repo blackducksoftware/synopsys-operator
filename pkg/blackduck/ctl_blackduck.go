@@ -42,34 +42,37 @@ type uid struct {
 // Ctl type provides functionality for a Black Duck
 // for the Synopsysctl tool
 type Ctl struct {
-	Spec                                  *blackduckv1.BlackduckSpec
-	Size                                  string
-	Version                               string
-	ExposeService                         string
-	DbPrototype                           string
-	ExternalPostgresPostgresHost          string
-	ExternalPostgresPostgresPort          int
-	ExternalPostgresPostgresAdmin         string
-	ExternalPostgresPostgresUser          string
-	ExternalPostgresPostgresSsl           string
-	ExternalPostgresPostgresAdminPassword string
-	ExternalPostgresPostgresUserPassword  string
-	PvcStorageClass                       string
-	LivenessProbes                        string
-	PersistentStorage                     string
-	PVCFilePath                           string
-	PostgresClaimSize                     string
-	CertificateName                       string
-	CertificateFilePath                   string
-	CertificateKeyFilePath                string
-	ProxyCertificateFilePath              string
-	AuthCustomCAFilePath                  string
-	Type                                  string
-	DesiredState                          string
-	Environs                              []string
-	ImageRegistries                       []string
-	ImageUIDMapFilePath                   string
-	LicenseKey                            string
+	Spec                          *blackduckv1.BlackduckSpec
+	Size                          string
+	Version                       string
+	ExposeService                 string
+	DbPrototype                   string
+	ExternalPostgresHost          string
+	ExternalPostgresPort          int
+	ExternalPostgresAdmin         string
+	ExternalPostgresUser          string
+	ExternalPostgresSsl           string
+	ExternalPostgresAdminPassword string
+	ExternalPostgresUserPassword  string
+	PvcStorageClass               string
+	LivenessProbes                string
+	PersistentStorage             string
+	PVCFilePath                   string
+	PostgresClaimSize             string
+	CertificateName               string
+	CertificateFilePath           string
+	CertificateKeyFilePath        string
+	ProxyCertificateFilePath      string
+	AuthCustomCAFilePath          string
+	Type                          string
+	DesiredState                  string
+	Environs                      []string
+	ImageRegistries               []string
+	ImageUIDMapFilePath           string
+	LicenseKey                    string
+	AdminPassword                 string
+	PostgresPassword              string
+	UserPassword                  string
 }
 
 // NewBlackDuckCtl creates a new Ctl struct
@@ -108,7 +111,7 @@ func isValidSize(size string) bool {
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags() error {
+func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 	if !isValidSize(ctl.Size) {
 		return fmt.Errorf("size must be 'small', 'medium', 'large', or 'x-large'")
 	}
@@ -116,6 +119,22 @@ func (ctl *Ctl) CheckSpecFlags() error {
 		if !strings.Contains(environ, ":") {
 			return fmt.Errorf("invalid environ format - NAME:VALUE")
 		}
+	}
+
+	if ctl.ExternalPostgresHost == "" {
+		// user is explicitly required to set the postgres passwords for: 'admin', 'postgres', and 'user'
+		cobra.MarkFlagRequired(flagset, "admin-password")
+		cobra.MarkFlagRequired(flagset, "postgres-password")
+		cobra.MarkFlagRequired(flagset, "user-password")
+	} else {
+		// require all external-postgres parameters
+		cobra.MarkFlagRequired(flagset, "external-postgres-host")
+		cobra.MarkFlagRequired(flagset, "external-postgres-port")
+		cobra.MarkFlagRequired(flagset, "external-postgres-admin")
+		cobra.MarkFlagRequired(flagset, "external-postgres-user")
+		cobra.MarkFlagRequired(flagset, "external-postgres-ssl")
+		cobra.MarkFlagRequired(flagset, "external-postgres-admin-password")
+		cobra.MarkFlagRequired(flagset, "external-postgres-user-password")
 	}
 	return nil
 }
@@ -170,13 +189,13 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Black Duck")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck Webserver's user interface [LOADBALANCER|NODEPORT|OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
-	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "Port for Postgres")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresPostgresAdmin, "Name of Admin for Postgres")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUser, "external-postgres-user", ctl.ExternalPostgresPostgresUser, "Username for Postgres")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "If true, Black Duck uses SSL for the Postgres connection [true|false]")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresPostgresAdminPassword, "Password for the Postgres Admin")
-	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "Password for a Postgres User")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresHost, "external-postgres-host", ctl.ExternalPostgresHost, "Host of external Postgres")
+	cmd.Flags().IntVar(&ctl.ExternalPostgresPort, "external-postgres-port", ctl.ExternalPostgresPort, "Port of external Postgres")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresAdmin, "Name of 'admin' of external Postgres database")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresUser, "external-postgres-user", ctl.ExternalPostgresUser, "Name of 'user' of external Postgres database")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresSsl, "If true, Black Duck uses SSL for external Postgres connection [true|false]")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresAdminPassword, "'admin' password of external Postgres database")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresUserPassword, "'user' password of external Postgres database")
 	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
 	cmd.Flags().StringVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "If true, Black Duck uses liveness probes [true|false]")
 	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black duck has persistent storage [true|false]")
@@ -193,6 +212,9 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
+	cmd.Flags().StringVar(&ctl.AdminPassword, "admin-password", ctl.AdminPassword, "'admin' password of Postgres database")
+	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "'postgres' password of Postgres database")
+	cmd.Flags().StringVar(&ctl.UserPassword, "user-password", ctl.UserPassword, "'user' password of Postgres database")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
@@ -231,37 +253,37 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresHost = ctl.ExternalPostgresPostgresHost
+			ctl.Spec.ExternalPostgres.PostgresHost = ctl.ExternalPostgresHost
 		case "external-postgres-port":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresPort = ctl.ExternalPostgresPostgresPort
+			ctl.Spec.ExternalPostgres.PostgresPort = ctl.ExternalPostgresPort
 		case "external-postgres-admin":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresAdmin = ctl.ExternalPostgresPostgresAdmin
+			ctl.Spec.ExternalPostgres.PostgresAdmin = ctl.ExternalPostgresAdmin
 		case "external-postgres-user":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresUser = ctl.ExternalPostgresPostgresUser
+			ctl.Spec.ExternalPostgres.PostgresUser = ctl.ExternalPostgresUser
 		case "external-postgres-ssl":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresSsl = strings.ToUpper(ctl.ExternalPostgresPostgresSsl) == "TRUE"
+			ctl.Spec.ExternalPostgres.PostgresSsl = strings.ToUpper(ctl.ExternalPostgresSsl) == "TRUE"
 		case "external-postgres-admin-password":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresAdminPassword = ctl.ExternalPostgresPostgresAdminPassword
+			ctl.Spec.ExternalPostgres.PostgresAdminPassword = crddefaults.Base64Encode([]byte(ctl.ExternalPostgresAdminPassword))
 		case "external-postgres-user-password":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresUserPassword = ctl.ExternalPostgresPostgresUserPassword
+			ctl.Spec.ExternalPostgres.PostgresUserPassword = crddefaults.Base64Encode([]byte(ctl.ExternalPostgresUserPassword))
 		case "pvc-storage-class":
 			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
@@ -342,6 +364,12 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
+		case "admin-password":
+			ctl.Spec.AdminPassword = crddefaults.Base64Encode([]byte(ctl.AdminPassword))
+		case "postgres-password":
+			ctl.Spec.PostgresPassword = crddefaults.Base64Encode([]byte(ctl.PostgresPassword))
+		case "user-password":
+			ctl.Spec.UserPassword = crddefaults.Base64Encode([]byte(ctl.UserPassword))
 		default:
 			log.Debugf("flag %s: NOT FOUND", f.Name)
 		}

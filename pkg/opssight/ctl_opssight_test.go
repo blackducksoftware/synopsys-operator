@@ -60,7 +60,8 @@ func TestSetSpec(t *testing.T) {
 func TestCheckSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
-	specFlags := opsSightCtl.CheckSpecFlags()
+	cmd := &cobra.Command{}
+	specFlags := opsSightCtl.CheckSpecFlags(cmd.Flags())
 	assert.Nil(specFlags)
 }
 
@@ -137,6 +138,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
+	cmd.Flags().StringVar(&ctl.BlackduckPassword, "blackduck-password", ctl.BlackduckPassword, "Password to use for all internal Blackduck `sysadmin` account")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 

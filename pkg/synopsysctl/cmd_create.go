@@ -68,7 +68,8 @@ var createAlertCmd = &cobra.Command{
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		err := createAlertCtl.CheckSpecFlags()
+		// Check the Arguments
+		err := createAlertCtl.CheckSpecFlags(cmd.Flags())
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
@@ -141,7 +142,7 @@ var createBlackDuckCmd = &cobra.Command{
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		// Check the Arguments
-		err := createBlackDuckCtl.CheckSpecFlags()
+		err := createBlackDuckCtl.CheckSpecFlags(cmd.Flags())
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}
@@ -215,7 +216,7 @@ var createOpsSightCmd = &cobra.Command{
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		// Check the Arguments
-		err := createOpsSightCtl.CheckSpecFlags()
+		err := createOpsSightCtl.CheckSpecFlags(cmd.Flags())
 		if err != nil {
 			return fmt.Errorf("%s", err)
 		}

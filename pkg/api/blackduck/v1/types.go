@@ -73,6 +73,9 @@ type BlackduckSpec struct {
 	ImageUIDMap           map[string]int64          `json:"imageUidMap,omitempty"`
 	LicenseKey            string                    `json:"licenseKey,omitempty"`
 	RegistryConfiguration RegistryConfiguration     `json:"registryConfiguration,omitempty"`
+	AdminPassword         string                    `json:"adminPassword"`
+	UserPassword          string                    `json:"userPassword"`
+	PostgresPassword      string                    `json:"postgresPassword"`
 }
 
 // Environs will hold the list of Environment variables

@@ -29,7 +29,6 @@ import (
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -101,23 +100,6 @@ func intArrayToStringArray(intArr []int32, delim string) string {
 		strArr = append(strArr, fmt.Sprintf("<<NODE_IP_ADDRESS>>:%+v", intArr[i]))
 	}
 	return strings.Join(strArr, delim)
-}
-
-// GetDefaultPasswords returns admin,user,postgres passwords for db maintainance tasks.  Should only be used during
-// initialization, or for 'babysitting' ephemeral hub instances (which might have postgres restarts)
-// MAKE SURE YOU SEND THE NAMESPACE OF THE SECRET SOURCE (operator), NOT OF THE new hub  THAT YOUR TRYING TO CREATE !
-func GetDefaultPasswords(kubeClient *kubernetes.Clientset, nsOfSecretHolder string) (adminPassword string, userPassword string, postgresPassword string, err error) {
-	blackduckSecret, err := util.GetSecret(kubeClient, nsOfSecretHolder, "blackduck-secret")
-	if err != nil {
-		log.Infof("warning: You need to first create a 'blackduck-secret' in this namespace with ADMIN_PASSWORD, USER_PASSWORD, POSTGRES_PASSWORD")
-		return "", "", "", err
-	}
-	adminPassword = string(blackduckSecret.Data["ADMIN_PASSWORD"])
-	userPassword = string(blackduckSecret.Data["USER_PASSWORD"])
-	postgresPassword = string(blackduckSecret.Data["POSTGRES_PASSWORD"])
-
-	// default named return
-	return adminPassword, userPassword, postgresPassword, err
 }
 
 func updateHubObject(h *blackduckclient.Clientset, namespace string, obj *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {

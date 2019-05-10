@@ -25,8 +25,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"math"
 	"net/http"
 	"reflect"
 	"strings"
@@ -45,6 +43,7 @@ import (
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -255,18 +254,17 @@ func (hc *Creater) getContainersFlavor(bd *blackduckapi.Blackduck) (*containers.
 }
 
 func (hc *Creater) initPostgres(bdspec *blackduckapi.BlackduckSpec) error {
-	var adminPassword, userPassword, postgresPassword string
-	var err error
-
-	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
-		// get the secret from the default operator namespace, then copy it into the hub namespace.
-		adminPassword, userPassword, postgresPassword, err = bdutils.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
-		if err == nil {
-			break
-		} else {
-			log.Infof("[%s] wasn't able to init database, sleeping 5 seconds.  try = %v", bdspec.Namespace, dbInitTry)
-			time.Sleep(5 * time.Second)
-		}
+	adminPassword, err := util.Base64Decode(bdspec.AdminPassword)
+	if err != nil {
+		return fmt.Errorf("%v: unable to decode adminPassword due to: %+v", bdspec.Namespace, err)
+	}
+	userPassword, err := util.Base64Decode(bdspec.UserPassword)
+	if err != nil {
+		return fmt.Errorf("%v: unable to decode userPassword due to: %+v", bdspec.Namespace, err)
+	}
+	postgresPassword, err := util.Base64Decode(bdspec.PostgresPassword)
+	if err != nil {
+		return fmt.Errorf("%v: unable to decode postgresPassword due to: %+v", bdspec.Namespace, err)
 	}
 
 	ready, err := util.WaitUntilPodsAreReady(hc.KubeClient, bdspec.Namespace, "app=blackduck,component=postgres", hc.Config.PodWaitTimeoutSeconds)

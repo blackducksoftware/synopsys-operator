@@ -31,7 +31,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
-	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
@@ -51,13 +50,29 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 	// Get Db creds
 	var adminPassword, userPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
-		adminPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
-		userPassword = blackduck.Spec.ExternalPostgres.PostgresUserPassword
-	} else {
-		adminPassword, userPassword, _, err = bdutil.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
+
+		adminPassword, err = util.Base64Decode(blackduck.Spec.ExternalPostgres.PostgresAdminPassword)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%v: unable to decode external Postgres adminPassword due to: %+v", blackduck.Spec.Namespace, err)
 		}
+
+		userPassword, err = util.Base64Decode(blackduck.Spec.ExternalPostgres.PostgresUserPassword)
+		if err != nil {
+			return nil, fmt.Errorf("%v: unable to decode external Postgres userPassword due to: %+v", blackduck.Spec.Namespace, err)
+		}
+
+	} else {
+
+		adminPassword, err = util.Base64Decode(blackduck.Spec.AdminPassword)
+		if err != nil {
+			return nil, fmt.Errorf("%v: unable to decode adminPassword due to: %+v", blackduck.Spec.Namespace, err)
+		}
+
+		userPassword, err = util.Base64Decode(blackduck.Spec.UserPassword)
+		if err != nil {
+			return nil, fmt.Errorf("%v: unable to decode userPassword due to: %+v", blackduck.Spec.Namespace, err)
+		}
+
 	}
 
 	postgres := containerCreater.GetPostgres()

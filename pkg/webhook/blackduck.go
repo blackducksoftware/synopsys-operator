@@ -2,15 +2,16 @@ package webhook
 
 import (
 	"encoding/json"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"net/http"
+	"reflect"
+	"strings"
+
+	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/admission/v1beta1"
 	v1beta12 "k8s.io/api/authentication/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"reflect"
-	"strings"
 )
 
 func (ow *OperatorWebhook) serveCustomResource(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +52,19 @@ func (ow *OperatorWebhook) blackduckCustomResource(ar v1beta1.AdmissionReview) *
 
 		if strings.Compare(current.Spec.Namespace, bd.Spec.Namespace) != 0 {
 			return ow.returnError("Namespace cannot be modified")
+		}
+
+		if bd.Spec.ExternalPostgres.PostgresHost == "" {
+			// if external postgres host is not configured, it means we are using internal and should require all internal passwords
+			if bd.Spec.AdminPassword == "" || bd.Spec.UserPassword == "" || bd.Spec.PostgresPassword == "" {
+				return ow.returnError("For Postgres, adminPassword, userPassword and postgressPassword are required")
+			}
+		} else {
+			// otherwise require all corresponding external postgress fields with the exception of Ssl, as it's set to false by default
+			if bd.Spec.ExternalPostgres.PostgresPort == 0 || bd.Spec.ExternalPostgres.PostgresAdmin == "" || bd.Spec.ExternalPostgres.PostgresUser == "" || bd.Spec.ExternalPostgres.PostgresAdminPassword == "" ||
+				bd.Spec.ExternalPostgres.PostgresUserPassword == "" {
+				return ow.returnError("For external Postgres, host, port, admin, user, adminPassword, and userPassword are required")
+			}
 		}
 	}
 
