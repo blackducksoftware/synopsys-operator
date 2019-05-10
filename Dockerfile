@@ -1,5 +1,7 @@
 FROM gobuffalo/buffalo:v0.13.5 as builder
 
+RUN go get -u github.com/golang/dep/cmd/dep
+
 # Set the environment
 ENV BP=$GOPATH/src/github.com/blackducksoftware/synopsys-operator
 
@@ -13,8 +15,7 @@ WORKDIR $BP
 RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/operator
 
 ### BUILD THE UI
-WORKDIR $BP/cmd/operator-ui
-RUN yarn install --no-progress && mkdir -p public/assets && dep ensure && buffalo build --static -o /bin/app
+RUN cd cmd/operator-ui && yarn install --no-progress && mkdir -p public/assets && dep ensure && buffalo build --static -o /bin/app
 
 # Container catalog requirements
 COPY ./LICENSE /bin/LICENSE 
