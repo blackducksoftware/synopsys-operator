@@ -57,7 +57,7 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 		MaxConnections:         300,
 		SharedBufferInMB:       1024,
 		EnvConfigMapRefs:       []string{"blackduck-db-config"},
-		Labels:                 c.GetVersionLabel("postgres"),
+		Labels:                 c.GetLabel("postgres"),
 	}
 }
 

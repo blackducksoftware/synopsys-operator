@@ -92,5 +92,11 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		components.Services = append(components.Services, a.getCfsslService())
 	}
 
+	// Add routes for OpenShift
+	route := a.GetOpenShiftRoute()
+	if route != nil {
+		components.Routes = []*api.Route{route}
+	}
+
 	return components, nil
 }

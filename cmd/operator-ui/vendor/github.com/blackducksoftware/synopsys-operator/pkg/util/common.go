@@ -36,6 +36,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -61,6 +62,11 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+)
+
+const (
+	// OPENSHIFT denotes to create an OpenShift routes
+	OPENSHIFT = "OPENSHIFT"
 )
 
 // CreateContainer will create the container
@@ -416,6 +422,11 @@ func GetPod(clientset *kubernetes.Clientset, namespace string, name string) (*co
 // ListPods will get all the pods corresponding to a namespace
 func ListPods(clientset *kubernetes.Clientset, namespace string) (*corev1.PodList, error) {
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+}
+
+// ListPodsWithLabels will get all the pods corresponding to a namespace and labels
+func ListPodsWithLabels(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.PodList, error) {
+	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // GetReplicationController will get the replication controller corresponding to a namespace and name
@@ -941,22 +952,22 @@ func IsClusterRoleBindingSubjectExist(subjects []rbacv1.Subject, namespace strin
 
 // GetClusterRole get a cluster role
 func GetClusterRole(clientset *kubernetes.Clientset, name string) (*rbacv1.ClusterRole, error) {
-	return clientset.Rbac().ClusterRoles().Get(name, metav1.GetOptions{})
+	return clientset.RbacV1().ClusterRoles().Get(name, metav1.GetOptions{})
 }
 
 // ListClusterRoles list a cluster role
 func ListClusterRoles(clientset *kubernetes.Clientset, labelSelector string) (*rbacv1.ClusterRoleList, error) {
-	return clientset.Rbac().ClusterRoles().List(metav1.ListOptions{LabelSelector: labelSelector})
+	return clientset.RbacV1().ClusterRoles().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateClusterRole updates the cluster role
 func UpdateClusterRole(clientset *kubernetes.Clientset, clusterRole *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
-	return clientset.Rbac().ClusterRoles().Update(clusterRole)
+	return clientset.RbacV1().ClusterRoles().Update(clusterRole)
 }
 
 // DeleteClusterRole delete a cluster role binding
 func DeleteClusterRole(clientset *kubernetes.Clientset, name string) error {
-	return clientset.Rbac().ClusterRoles().Delete(name, &metav1.DeleteOptions{})
+	return clientset.RbacV1().ClusterRoles().Delete(name, &metav1.DeleteOptions{})
 }
 
 // IsClusterRoleRuleExist checks whether the namespace is already exist in the rule of cluster role
@@ -974,47 +985,62 @@ func IsClusterRoleRuleExist(oldRules []rbacv1.PolicyRule, newRule rbacv1.PolicyR
 func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	routeClient, err := routeclient.NewForConfig(restConfig)
 	if err != nil {
-		routeClient = nil
-		log.Debugf("Error getting route client")
-	} else {
-		_, err := GetOpenShiftRoutes(routeClient, "default", "docker-registry")
-		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			// log.Debugf("Ignoring routes for kubernetes cluster")
-			routeClient = nil
-		}
+		log.Errorf("unable to get route client")
+		return nil
+	}
+	_, err = GetRoute(routeClient, "default", "docker-registry")
+	if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
+		log.Debugf("Ignoring routes for kubernetes cluster")
+		return nil
 	}
 	return routeClient
 }
 
-// GetOpenShiftRoutes get a OpenShift routes
-func GetOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string) (*routev1.Route, error) {
+// GetRoute gets an OpenShift routes
+func GetRoute(routeClient *routeclient.RouteV1Client, namespace string, name string) (*routev1.Route, error) {
 	return routeClient.Routes(namespace).Get(name, metav1.GetOptions{})
 }
 
-// CreateOpenShiftRoutes creates a OpenShift routes
-func CreateOpenShiftRoutes(routeClient *routeclient.RouteV1Client, namespace string, name string, routeKind string, serviceName string, portName string, tlsTerminationType routev1.TLSTerminationType) (*routev1.Route, error) {
-	return routeClient.Routes(namespace).Create(&routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: routev1.RouteSpec{
-			TLS: &routev1.TLSConfig{Termination: tlsTerminationType},
-			To: routev1.RouteTargetReference{
-				Kind: routeKind,
-				Name: serviceName,
-			},
-			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: portName}},
-		},
-	})
+// ListRoutes list an OpenShift routes
+func ListRoutes(routeClient *routeclient.RouteV1Client, namespace string, labelSelector string) (*routev1.RouteList, error) {
+	return routeClient.Routes(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
-// GetOpenShiftSecurityConstraint get a OpenShift security constraints
+// GetRouteComponent returns the route component
+func GetRouteComponent(routeClient *routeclient.RouteV1Client, route *api.Route, labels map[string]string) *routev1.Route {
+	return &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      route.Name,
+			Namespace: route.Namespace,
+			Labels:    labels,
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{Termination: route.TLSTerminationType},
+			To: routev1.RouteTargetReference{
+				Kind: route.Kind,
+				Name: route.ServiceName,
+			},
+			Port: &routev1.RoutePort{TargetPort: intstr.IntOrString{Type: intstr.String, StrVal: route.PortName}},
+		},
+	}
+}
+
+// CreateRoute creates an OpenShift routes
+func CreateRoute(routeClient *routeclient.RouteV1Client, namespace string, route *routev1.Route) (*routev1.Route, error) {
+	return routeClient.Routes(namespace).Create(route)
+}
+
+// DeleteRoute deletes an OpenShift routes
+func DeleteRoute(routeClient *routeclient.RouteV1Client, namespace string, name string) error {
+	return routeClient.Routes(namespace).Delete(name, &metav1.DeleteOptions{})
+}
+
+// GetOpenShiftSecurityConstraint gets an OpenShift security constraints
 func GetOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, name string) (*securityv1.SecurityContextConstraints, error) {
 	return osSecurityClient.SecurityContextConstraints().Get(name, metav1.GetOptions{})
 }
 
-// UpdateOpenShiftSecurityConstraint updates a OpenShift security constraints
+// UpdateOpenShiftSecurityConstraint updates an OpenShift security constraints
 func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.SecurityV1Client, serviceAccounts []string, name string) error {
 	scc, err := GetOpenShiftSecurityConstraint(osSecurityClient, name)
 	if err != nil {
@@ -1230,5 +1256,58 @@ func IsPodReady(clientset *kubernetes.Clientset, namespace string, labelSelector
 		}
 	}
 	return true, nil
+}
 
+// GetOperatorNamespace returns the namespace of the synopsys operator based on the labels
+func GetOperatorNamespace(clientset *kubernetes.Clientset) (string, error) {
+	// check if operator is already installed
+	rcs, err := ListReplicationControllers(clientset, metav1.NamespaceAll, "app=synopsys-operator,component=operator")
+	if err == nil && len(rcs.Items) > 0 {
+		return rcs.Items[0].Namespace, nil
+	}
+	deployments, err := ListDeployments(clientset, metav1.NamespaceAll, "app=synopsys-operator,component=operator")
+	if err == nil && len(deployments.Items) > 0 {
+		return deployments.Items[0].Namespace, nil
+	}
+	pods, err := ListPodsWithLabels(clientset, metav1.NamespaceAll, "app=synopsys-operator,component=operator")
+	if err == nil && len(pods.Items) > 0 {
+		return pods.Items[0].Namespace, nil
+	}
+	return "", fmt.Errorf("synopsys operator namespace not found")
+}
+
+// GetOperatorClusterRole returns the cluster role of the synopsys operator based on the labels
+func GetOperatorClusterRole(clientset *kubernetes.Clientset) (string, error) {
+	crs, err := ListClusterRoles(clientset, "app=synopsys-operator,component=operator")
+
+	if err != nil || len(crs.Items) == 0 {
+		namespace, err := GetOperatorNamespace(clientset)
+		if err != nil {
+			return "", fmt.Errorf("synopsys operator namespace not found")
+		}
+
+		crs, err = ListClusterRoles(clientset, fmt.Sprintf("olm.owner.namespace=%s,olm.owner.kind=ClusterServiceVersion", namespace))
+		if err != nil || len(crs.Items) == 0 {
+			return "", fmt.Errorf("synopsys operator cluster role not found")
+		}
+	}
+	return crs.Items[0].Name, nil
+}
+
+// GetOperatorClusterRoleBinding returns the cluster role bindings of the synopsys operator based on the labels
+func GetOperatorClusterRoleBinding(clientset *kubernetes.Clientset) (string, error) {
+	crbs, err := ListClusterRoleBindings(clientset, "app=synopsys-operator,component=operator")
+
+	if err != nil || len(crbs.Items) == 0 {
+		namespace, err := GetOperatorNamespace(clientset)
+		if err != nil {
+			return "", fmt.Errorf("synopsys operator namespace not found")
+		}
+
+		crbs, err = ListClusterRoleBindings(clientset, fmt.Sprintf("olm.owner.namespace=%s,olm.owner.kind=ClusterServiceVersion", namespace))
+		if err != nil || len(crbs.Items) == 0 {
+			return "", fmt.Errorf("synopsys operator cluster role binding not found")
+		}
+	}
+	return crbs.Items[0].Name, nil
 }
