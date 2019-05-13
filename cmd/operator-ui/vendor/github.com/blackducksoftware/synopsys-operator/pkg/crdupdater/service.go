@@ -92,6 +92,11 @@ func (s *Service) add(isPatched bool) (bool, error) {
 		if _, ok := s.oldServices[service.GetName()]; !ok {
 			s.deployer.Deployer.AddService(service)
 			isAdded = true
+		} else {
+			_, err := s.patch(service, isPatched)
+			if err != nil {
+				return false, errors.Annotatef(err, "patch service:")
+			}
 		}
 	}
 	if isAdded && !s.config.dryRun {
@@ -139,7 +144,7 @@ func (s *Service) patch(svc interface{}, isPatched bool) (bool, error) {
 	serviceName := service.GetName()
 	oldService := s.oldServices[serviceName]
 	newService := s.newServices[serviceName]
-	if (!reflect.DeepEqual(newService.Spec.Ports, oldService.Spec.Ports) ||
+	if (!reflect.DeepEqual(sortPorts(newService.Spec.Ports), sortPorts(oldService.Spec.Ports)) ||
 		!reflect.DeepEqual(newService.Spec.Selector, oldService.Spec.Selector) ||
 		!reflect.DeepEqual(newService.Spec.Type, oldService.Spec.Type)) && !s.config.dryRun {
 		log.Infof("updating the service %s in %s namespace", serviceName, s.config.namespace)

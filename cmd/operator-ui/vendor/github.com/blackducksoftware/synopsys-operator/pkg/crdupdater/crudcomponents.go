@@ -75,71 +75,89 @@ func (c *CommonConfig) CRUDComponents() (bool, []error) {
 	namespaces, err := NewNamespace(c)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new namespace updater due to %+v", err))
+	} else {
+		updater.AddUpdater(namespaces)
 	}
-	updater.AddUpdater(namespaces)
 
 	// service account
 	serviceAccounts, err := NewServiceAccount(c, c.components.ServiceAccounts)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new service account updater due to %+v", err))
+	} else {
+		updater.AddUpdater(serviceAccounts)
 	}
-	updater.AddUpdater(serviceAccounts)
 
 	// cluster role
 	clusterRoles, err := NewClusterRole(c, c.components.ClusterRoles)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new cluster role updater due to %+v", err))
+	} else {
+		updater.AddUpdater(clusterRoles)
 	}
-	updater.AddUpdater(clusterRoles)
 
 	// cluster role binding
 	clusterRoleBindings, err := NewClusterRoleBinding(c, c.components.ClusterRoleBindings)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new cluster role binding updater due to %+v", err))
+	} else {
+		updater.AddUpdater(clusterRoleBindings)
 	}
-	updater.AddUpdater(clusterRoleBindings)
 
 	// config map
 	configMaps, err := NewConfigMap(c, c.components.ConfigMaps)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new config map updater due to %+v", err))
+	} else {
+		updater.AddUpdater(configMaps)
 	}
-	updater.AddUpdater(configMaps)
 
 	// secret
 	secrets, err := NewSecret(c, c.components.Secrets)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new secret updater due to %+v", err))
+	} else {
+		updater.AddUpdater(secrets)
 	}
-	updater.AddUpdater(secrets)
 
 	// persistent volume claim
 	pvcs, err := NewPersistentVolumeClaim(c, c.components.PersistentVolumeClaims)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new persistent volume claim updater due to %+v", err))
+	} else {
+		updater.AddUpdater(pvcs)
 	}
-	updater.AddUpdater(pvcs)
 
 	// service
 	services, err := NewService(c, c.components.Services)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new service updater due to %+v", err))
+	} else {
+		updater.AddUpdater(services)
 	}
-	updater.AddUpdater(services)
 
 	// replication controller
 	rcs, err := NewReplicationController(c, c.components.ReplicationControllers)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new replication controller updater due to %+v", err))
+	} else {
+		updater.AddUpdater(rcs)
 	}
-	updater.AddUpdater(rcs)
 
 	// deployment
 	deployments, err := NewDeployment(c, c.components.Deployments)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("unable to create new deployment updater due to %+v", err))
+	} else {
+		updater.AddUpdater(deployments)
 	}
-	updater.AddUpdater(deployments)
+
+	// OpenShift routes
+	routes, err := NewRoute(c, c.components.Routes)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("unable to create route updater due to %+v", err))
+	} else if routes != nil {
+		updater.AddUpdater(routes)
+	}
 
 	// execute updates for all added components
 	isPatched, err := updater.Update()

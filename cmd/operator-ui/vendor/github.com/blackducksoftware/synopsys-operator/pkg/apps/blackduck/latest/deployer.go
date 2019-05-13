@@ -45,7 +45,7 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, hubContainerFlavor, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, hubContainerFlavor, false)
 	// Get Db creds
 	var adminPassword, userPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
@@ -80,7 +80,7 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, flavor, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, flavor, false)
 
 	// Configmap
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
@@ -177,7 +177,11 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Service account
 		componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
-		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, containerCreater.GetClusterRoleBinding())
+		clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
+		if err != nil {
+			return nil, err
+		}
+		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
 
 		// Binary Scanner
 		imageName := containerCreater.GetImageTag("appcheck-worker")
@@ -197,11 +201,17 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	if svc := hc.getExposeService(blackduck); svc != nil {
 		componentList.Services = append(componentList.Services, svc)
 	}
+
+	// Add OpenShift routes
+	route := containerCreater.GetOpenShiftRoute()
+	if route != nil {
+		componentList.Routes = []*api.Route{route}
+	}
 	return componentList, nil
 }
 
 func (hc *Creater) getExposeService(bd *blackduckapi.Blackduck) *components.Service {
-	containerCreater := containers.NewCreater(hc.Config, &bd.Spec, nil, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &bd.Spec, nil, false)
 	var svc *components.Service
 
 	switch strings.ToUpper(bd.Spec.ExposeService) {
@@ -218,16 +228,29 @@ func (hc *Creater) getExposeService(bd *blackduckapi.Blackduck) *components.Serv
 
 // GetPVC returns the PVCs
 func (hc *Creater) GetPVC(blackduck *blackduckapi.Blackduck) []*components.PersistentVolumeClaim {
-	containerCreater := containers.NewCreater(hc.Config, &blackduck.Spec, nil, hc.isBinaryAnalysisEnabled(&blackduck.Spec))
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, nil, hc.isBinaryAnalysisEnabled(&blackduck.Spec))
 	return containerCreater.GetPVCs()
 }
 
 func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (string, string, error) {
-	if strings.EqualFold(blackduck.Spec.CertificateName, "manual") {
+	if len(blackduck.Spec.Certificate) > 0 && len(blackduck.Spec.CertificateKey) > 0 {
 		return blackduck.Spec.Certificate, blackduck.Spec.CertificateKey, nil
 	}
 
-	secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
+	// Cert copy
+	if len(blackduck.Spec.CertificateName) > 0 && !strings.EqualFold(blackduck.Spec.CertificateName, "default") {
+		secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.CertificateName, "blackduck-certificate")
+		if err == nil {
+			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
+			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
+			if certok && keyok {
+				return string(cert), string(key), nil
+			}
+		}
+	}
+
+	// default cert
+	secret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-certificate")
 	if err == nil {
 		data := secret.Data
 		if len(data) >= 2 {
@@ -236,18 +259,6 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 			if !certok || !keyok {
 				util.DeleteSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
 			} else {
-				return string(cert), string(key), nil
-			}
-		}
-	}
-
-	// Cert copy
-	if !strings.EqualFold(blackduck.Spec.CertificateName, "default") {
-		secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.CertificateName, "blackduck-certificate")
-		if err == nil {
-			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
-			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
-			if certok && keyok {
 				return string(cert), string(key), nil
 			}
 		}
@@ -291,7 +302,7 @@ func (hc *Creater) addAnyUIDToServiceAccount(createHub *blackduckapi.BlackduckSp
 
 // AddExposeServices add the nodeport / LB services
 func (hc *Creater) AddExposeServices(deployer *horizon.Deployer, createHub *blackduckapi.BlackduckSpec) {
-	containerCreater := containers.NewCreater(hc.Config, createHub, nil, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, createHub, nil, false)
 	deployer.AddService(containerCreater.GetWebServerNodePortService())
 	deployer.AddService(containerCreater.GetWebServerLoadBalancerService())
 }

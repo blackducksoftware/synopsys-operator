@@ -29,6 +29,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 )
 
 // PostEditContainer ...
@@ -42,14 +43,15 @@ func (c *Creater) PostEditContainer(cc *util.Container) {
 // Creater will store the configuration to create the hub containers
 type Creater struct {
 	config                  *protoform.Config
+	kubeClient              *kubernetes.Clientset
 	hubSpec                 *blackduckapi.BlackduckSpec
 	hubContainerFlavor      *ContainerFlavor
 	isBinaryAnalysisEnabled bool
 }
 
 // NewCreater will return a creater
-func NewCreater(config *protoform.Config, hubSpec *blackduckapi.BlackduckSpec, hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
-	return &Creater{config: config, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
+func NewCreater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubSpec *blackduckapi.BlackduckSpec, hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
+	return &Creater{config: config, kubeClient: kubeClient, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
 }
 
 // GetFullContainerNameFromImageRegistryConf returns the tag that is specified for a container by trying to look in the custom tags provided,

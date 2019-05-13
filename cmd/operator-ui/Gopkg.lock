@@ -18,6 +18,19 @@
   revision = "0797b6dc7302931c214a24d1b0ebe057c31d6747"
 
 [[projects]]
+  digest = "1:7e11a0a4c2d7792a108629e27c83ff4397b950dede4ccce23f99639bfa84846b"
+  name = "github.com/Azure/go-autorest"
+  packages = [
+    "autorest",
+    "autorest/adal",
+    "autorest/azure",
+    "autorest/date",
+    "version",
+  ]
+  pruneopts = "UT"
+  revision = "bca49d5b51a50dc5bb17bbf6204c711c6dbded06"
+
+[[projects]]
   digest = "1:9f3b30d9f8e0d7040f729b82dcbc8f0dead820a133b3147ce355fc451f32d761"
   name = "github.com/BurntSushi/toml"
   packages = ["."]
@@ -42,7 +55,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
   digest = "1:aa55f25019101848d22833de915f45e36cc4f9cba23b8c5ecabcf9376170b23a"
   name = "github.com/blackducksoftware/horizon"
   packages = [
@@ -53,11 +65,12 @@
     "pkg/util/error",
   ]
   pruneopts = "UT"
-  revision = "370ac9fd2f493ce9aa8fdc57ad6a67dcb4458e62"
+  revision = "468dd34a4629594652ddb719c536d85e4ba8e83b"
+  version = "0.1.1"
 
 [[projects]]
   branch = "release-2019.4.x"
-  digest = "1:9e1bafa483609dc626402d8507ba6a27746419e493190431b7e7b4955a9a8ee0"
+  digest = "1:034b1bf8c35f2884edaca7b11227ee7b60bc82f03579909ba9d4851a636b4b44"
   name = "github.com/blackducksoftware/synopsys-operator"
   packages = [
     "pkg/alert/client/clientset/versioned",
@@ -90,10 +103,11 @@
     "pkg/opssight/client/clientset/versioned/scheme",
     "pkg/opssight/client/clientset/versioned/typed/opssight/v1",
     "pkg/protoform",
+    "pkg/soperator",
     "pkg/util",
   ]
   pruneopts = "UT"
-  revision = "c4d0f99414292a767f836217c38c6d8a27d86dbd"
+  revision = "0415c3d8da340dcb9b3014930749756dd37ff978"
 
 [[projects]]
   digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
@@ -118,6 +132,14 @@
   pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
+
+[[projects]]
+  digest = "1:76dc72490af7174349349838f2fe118996381b31ea83243812a97e5a0fd5ed55"
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   branch = "master"
@@ -572,6 +594,22 @@
   pruneopts = "UT"
   revision = "7c663266750e7d82587642f65e60bc4083f1f84e"
   version = "v0.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:cc45ef4fed27b5ce6d319d6a4212a34a3d5ccdb475748ac0a04f9305bce7c29d"
+  name = "github.com/gophercloud/gophercloud"
+  packages = [
+    ".",
+    "openstack",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/utils",
+    "pagination",
+  ]
+  pruneopts = "UT"
+  revision = "7892efa714f10951c5483a28c7471d8051b12975"
 
 [[projects]]
   digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
@@ -1465,7 +1503,7 @@
   revision = "94ebb086c69b9fec4ddbfb6a1433d28ecca9292b"
 
 [[projects]]
-  digest = "1:24a43df1d169c71503a77694f46080a623a324fae8179c1f78ffd98154286af9"
+  digest = "1:bad9f306f51fff8bc8130b1544aee86a1e901ab8194453eb7afd2392ed7ab280"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1504,8 +1542,12 @@
     "pkg/apis/clientauthentication/v1alpha1",
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
+    "plugin/pkg/client/auth",
+    "plugin/pkg/client/auth/azure",
     "plugin/pkg/client/auth/exec",
     "plugin/pkg/client/auth/gcp",
+    "plugin/pkg/client/auth/oidc",
+    "plugin/pkg/client/auth/openstack",
     "rest",
     "rest/watch",
     "third_party/forked/golang/template",
