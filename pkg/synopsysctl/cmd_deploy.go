@@ -37,7 +37,7 @@ import (
 var exposeUI = ""
 var exposeMetrics = ""
 var deployNamespace = "synopsys-operator"
-var synopsysOperatorImage = "docker.io/blackducksoftware/synopsys-operator:2019.4.0"
+var synopsysOperatorImage = "gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:master"
 var metricsImage = "docker.io/prom/prometheus:v2.1.0"
 var terminationGracePeriodSeconds int64 = 180
 var operatorTimeBombInSeconds int64 = 315576000
