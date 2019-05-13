@@ -52,15 +52,15 @@ var kube bool
 
 // setResourceClients sets the global variables for the kuberentes rest config
 // and the resource clients
-func setResourceClients() {
+func setResourceClients() error {
 	var err error
 	restconfig, err = protoform.GetKubeConfig(kubeconfig, insecureSkipTLSVerify)
 	if err != nil {
-		log.Errorf("error getting Kube Rest Config: %s", err)
+		return err
 	}
 	kubeClient, err = getKubeClient(restconfig)
 	if err != nil {
-		log.Errorf("error getting Kube Client: %s", err)
+		return err
 	}
 	blackduckClient, err = blackduckclientset.NewForConfig(restconfig)
 	if err != nil {
@@ -75,6 +75,7 @@ func setResourceClients() {
 		log.Errorf("error creating the Alert Clientset: %s", err)
 	}
 	kube, openshift = DetermineClusterClients(restconfig)
+	return nil
 }
 
 // getKubeClient gets the kubernetes client

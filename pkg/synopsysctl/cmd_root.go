@@ -53,7 +53,9 @@ var rootCmd = &cobra.Command{
 		}
 		log.SetLevel(lvl)
 		// Sets kubeconfig and initializes resource client libraries
-		setResourceClients()
+		if err := setResourceClients(); err != nil {
+			return err
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {

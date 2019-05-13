@@ -62,6 +62,10 @@
   source = "https://github.com/fsnotify/fsnotify/archive/v1.4.7.tar.gz"
   name = "gopkg.in/fsnotify.v1"
 
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  revision = "bca49d5b51a50dc5bb17bbf6204c711c6dbded06"
+
 [prune]
   go-tests = true
   unused-packages = true
