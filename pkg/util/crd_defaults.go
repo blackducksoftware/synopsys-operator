@@ -43,7 +43,7 @@ func GetBlackDuckTemplate() *blackduckv1.BlackduckSpec {
 		DbPrototype:       "",
 		CertificateName:   "default",
 		Type:              "",
-		Version:           "2019.4.1",
+		Version:           "2019.4.2",
 		LicenseKey:        "",
 		PersistentStorage: false,
 	}
@@ -57,7 +57,7 @@ func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 		Size:              "Small",
 		LicenseKey:        "",
 		CertificateName:   "default",
-		Version:           "2019.4.1",
+		Version:           "2019.4.2",
 		LivenessProbes:    false,
 		PersistentStorage: true,
 		PVCStorageClass:   "",
@@ -117,7 +117,7 @@ func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
-		Version:           "2019.4.1",
+		Version:           "2019.4.2",
 		Size:              "small",
 		PVCStorageClass:   "",
 		LivenessProbes:    false,
@@ -177,7 +177,7 @@ func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.Blackduck
 func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
-		Version:           "2019.2.2",
+		Version:           "2019.4.2",
 		Size:              "small",
 		PVCStorageClass:   "",
 		LivenessProbes:    false,
@@ -233,7 +233,7 @@ func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultExternalPersistentStorageV1() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
-		Version:           "2019.2.2",
+		Version:           "2019.4.2",
 		Size:              "small",
 		PVCStorageClass:   "",
 		LivenessProbes:    false,
@@ -282,7 +282,7 @@ func GetBlackDuckDefaultBDBA() *blackduckv1.BlackduckSpec {
 		Namespace:       "blackduck-bdba",
 		LicenseKey:      "",
 		CertificateName: "default",
-		Version:         "2019.4.1",
+		Version:         "2019.4.2",
 		Environs: []string{
 			"USE_BINARY_UPLOADS:1",
 		},
@@ -298,7 +298,7 @@ func GetBlackDuckDefaultEphemeral() *blackduckv1.BlackduckSpec {
 		Namespace:         "blackduck-ephemeral",
 		LicenseKey:        "",
 		CertificateName:   "default",
-		Version:           "2019.4.1",
+		Version:           "2019.4.2",
 		LivenessProbes:    false,
 		PersistentStorage: false,
 		Size:              "small",
@@ -313,7 +313,7 @@ func GetBlackDuckDefaultEphemeralCustomAuthCA() *blackduckv1.BlackduckSpec {
 		Namespace:         "blackduck-auth-ca",
 		LicenseKey:        "",
 		CertificateName:   "default",
-		Version:           "2019.4.1",
+		Version:           "2019.4.2",
 		LivenessProbes:    false,
 		PersistentStorage: false,
 		Size:              "Small",
@@ -340,7 +340,7 @@ func GetBlackDuckDefaultExternalDB() *blackduckv1.BlackduckSpec {
 			PostgresUserPassword:  "<<PASSWORD>>",
 		},
 		Type:    "worker",
-		Version: "2019.4.1",
+		Version: "2019.4.2",
 	}
 }
 
@@ -358,7 +358,7 @@ func GetBlackDuckDefaultIPV6Disabled() *blackduckv1.BlackduckSpec {
 		Size:              "small",
 		PersistentStorage: false,
 		Type:              "worker",
-		Version:           "2019.4.1",
+		Version:           "2019.4.2",
 	}
 }
 
@@ -628,7 +628,7 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 				DbPrototype: "",
 				Size:        "small",
 				Type:        "worker",
-				Version:     "2019.4.1",
+				Version:     "2019.4.2",
 			},
 		},
 	}
