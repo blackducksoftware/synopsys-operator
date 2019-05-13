@@ -69,6 +69,7 @@ func (d deployErrors) Errors() map[api.ComponentType][]error {
 	return d
 }
 
+// ComponentErrorCount returns the count by component
 func ComponentErrorCount(errs error, component api.ComponentType) int {
 	if errs == nil {
 		return 0

@@ -23,12 +23,9 @@ package components
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/api"
-
-	"k8s.io/api/core/v1"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/imdario/mergo"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ConfigMap defines the config map component
@@ -71,10 +68,12 @@ func (c *ConfigMap) RemoveData(remove []string) {
 	}
 }
 
+// AddBinaryData adds key value pairs to the config map
 func (c *ConfigMap) AddBinaryData(new map[string][]byte) {
 	_ = mergo.Merge(&c.BinaryData, new, mergo.WithOverride)
 }
 
+// RemoveBinaryData removes the provided keys from the config map
 func (c *ConfigMap) RemoveBinaryData(remove map[string][]byte) {
 	for k := range remove {
 		if _, exists := c.BinaryData[k]; exists {
@@ -84,12 +83,12 @@ func (c *ConfigMap) RemoveBinaryData(remove map[string][]byte) {
 }
 
 // Deploy will deploy the config map to the cluster
-func (cm *ConfigMap) Deploy(res api.DeployerResources) error {
-	_, err := res.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Create(cm.ConfigMap)
+func (c *ConfigMap) Deploy(res api.DeployerResources) error {
+	_, err := res.KubeClient.CoreV1().ConfigMaps(c.Namespace).Create(c.ConfigMap)
 	return err
 }
 
 // Undeploy will remove the config map from the cluster
-func (cm *ConfigMap) Undeploy(res api.DeployerResources) error {
-	return res.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Delete(cm.Name, &metav1.DeleteOptions{})
+func (c *ConfigMap) Undeploy(res api.DeployerResources) error {
+	return res.KubeClient.CoreV1().ConfigMaps(c.Namespace).Delete(c.Name, &metav1.DeleteOptions{})
 }

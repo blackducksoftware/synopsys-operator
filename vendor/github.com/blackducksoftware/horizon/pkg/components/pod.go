@@ -27,12 +27,9 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/horizon/pkg/api"
-
-	"k8s.io/api/core/v1"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/imdario/mergo"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Pod defines the pod component
@@ -99,7 +96,7 @@ func NewPod(config api.PodConfig) *Pod {
 	case api.DNSDefault:
 		p.Spec.DNSPolicy = v1.DNSDefault
 	default:
-		p.Spec.DNSPolicy = v1.DNSDefault
+		p.Spec.DNSPolicy = v1.DNSClusterFirst
 	}
 
 	return &Pod{&p, MetadataFuncs{&p}}

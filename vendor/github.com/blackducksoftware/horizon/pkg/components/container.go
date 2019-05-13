@@ -163,8 +163,8 @@ func (c *Container) RemoveSELinux() {
 
 // AddVolumeMount adds a volume mount to the container
 func (c *Container) AddVolumeMount(config api.VolumeMountConfig) error {
-	if loc := c.findVolumeMount(config.Name, c.VolumeMounts); loc >= 0 {
-		return fmt.Errorf("volume mount %s already exists", config.Name)
+	if loc := c.findVolumeMount(config, c.VolumeMounts); loc >= 0 {
+		return fmt.Errorf("volume mount %v already exists", config)
 	}
 
 	vm := v1.VolumeMount{
@@ -193,19 +193,21 @@ func (c *Container) AddVolumeMount(config api.VolumeMountConfig) error {
 }
 
 // RemoveVolumeMount removes a volume mount from the container
-func (c *Container) RemoveVolumeMount(name string) error {
-	loc := c.findVolumeMount(name, c.VolumeMounts)
+func (c *Container) RemoveVolumeMount(config api.VolumeMountConfig) error {
+	loc := c.findVolumeMount(config, c.VolumeMounts)
 	if loc < 0 {
-		return fmt.Errorf("volume mount with name %s doesn't exist", name)
+		return fmt.Errorf("volume mount %v doesn't exist", config)
 	}
 
 	c.VolumeMounts = append(c.VolumeMounts[:loc], c.VolumeMounts[loc+1:]...)
 	return nil
 }
 
-func (c *Container) findVolumeMount(name string, mounts []v1.VolumeMount) int {
+func (c *Container) findVolumeMount(mountConfig api.VolumeMountConfig, mounts []v1.VolumeMount) int {
 	for i, m := range mounts {
-		if strings.Compare(m.Name, name) == 0 {
+		if strings.EqualFold(mountConfig.Name, m.Name) &&
+			strings.EqualFold(mountConfig.MountPath, m.MountPath) &&
+			strings.EqualFold(mountConfig.SubPath, m.SubPath) {
 			return i
 		}
 	}
