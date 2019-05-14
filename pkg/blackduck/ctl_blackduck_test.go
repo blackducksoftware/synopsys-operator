@@ -429,24 +429,34 @@ func TestSetFlag(t *testing.T) {
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{LicenseKey: "changed"},
 		},
-		// case
-		{
-			flagName:   "",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec: &blackduckv1.BlackduckSpec{},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{},
-		},
 	}
 
+	// get the Ctl's flags
+	cmd := &cobra.Command{}
+	actualCtl := NewBlackduckCtl()
+	actualCtl.AddSpecFlags(cmd, true)
+	flagset := cmd.Flags()
+
 	for _, test := range tests {
-		actualCtl := NewBlackduckCtl()
+		actualCtl = NewBlackduckCtl()
+		// check the Flag exists
+		foundFlag := flagset.Lookup(test.flagName)
+		if foundFlag == nil {
+			t.Errorf("flag %s is not in the spec", test.flagName)
+		}
+		// check the correct Ctl is used
 		assert.Equal(test.initialCtl, actualCtl)
 		actualCtl = test.changedCtl
+		// test setting a flag
 		f := &pflag.Flag{Changed: true, Name: test.flagName}
 		actualCtl.SetFlag(f)
 		assert.Equal(test.changedSpec, actualCtl.Spec)
 	}
+
+	// case: nothing set if flag doesn't exist
+	actualCtl = NewBlackduckCtl()
+	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
+	actualCtl.SetFlag(f)
+	assert.Equal(&blackduckv1.BlackduckSpec{}, actualCtl.Spec)
 
 }

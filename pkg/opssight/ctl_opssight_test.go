@@ -553,23 +553,34 @@ func TestSetFlag(t *testing.T) {
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{BlackduckSpec: &blackduckapi.BlackduckSpec{Type: "changed"}}},
 		},
-		// case
-		{
-			flagName:   "",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec: &opssightapi.OpsSightSpec{},
-			},
-			changedSpec: &opssightapi.OpsSightSpec{},
-		},
 	}
 
+	// get the Ctl's flags
+	cmd := &cobra.Command{}
+	actualCtl := NewOpsSightCtl()
+	actualCtl.AddSpecFlags(cmd, true)
+	flagset := cmd.Flags()
+
 	for _, test := range tests {
-		actualCtl := NewOpsSightCtl()
+		actualCtl = NewOpsSightCtl()
+		// check the Flag exists
+		foundFlag := flagset.Lookup(test.flagName)
+		if foundFlag == nil {
+			t.Errorf("flag %s is not in the spec", test.flagName)
+		}
+		// check the correct Ctl is used
 		assert.Equal(test.initialCtl, actualCtl)
 		actualCtl = test.changedCtl
+		// test setting a flag
 		f := &pflag.Flag{Changed: true, Name: test.flagName}
 		actualCtl.SetFlag(f)
 		assert.Equal(test.changedSpec, actualCtl.Spec)
 	}
+
+	// case: nothing set if flag doesn't exist
+	actualCtl = NewOpsSightCtl()
+	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
+	actualCtl.SetFlag(f)
+	assert.Equal(&opssightapi.OpsSightSpec{}, actualCtl.Spec)
+
 }

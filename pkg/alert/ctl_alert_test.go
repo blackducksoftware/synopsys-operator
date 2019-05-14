@@ -289,12 +289,32 @@ func TestSetFlag(t *testing.T) {
 		},
 	}
 
+	// get the Ctl's flags
+	cmd := &cobra.Command{}
+	actualCtl := NewAlertCtl()
+	actualCtl.AddSpecFlags(cmd, true)
+	flagset := cmd.Flags()
+
 	for _, test := range tests {
-		actualCtl := NewAlertCtl()
+		actualCtl = NewAlertCtl()
+		// check the Flag exists
+		foundFlag := flagset.Lookup(test.flagName)
+		if foundFlag == nil {
+			t.Errorf("flag %s is not in the spec", test.flagName)
+		}
+		// check the correct Ctl is used
 		assert.Equal(test.initialCtl, actualCtl)
 		actualCtl = test.changedCtl
+		// test setting a flag
 		f := &pflag.Flag{Changed: true, Name: test.flagName}
 		actualCtl.SetFlag(f)
 		assert.Equal(test.changedSpec, actualCtl.Spec)
 	}
+
+	// case: nothing set if flag doesn't exist
+	actualCtl = NewAlertCtl()
+	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
+	actualCtl.SetFlag(f)
+	assert.Equal(&alertapi.AlertSpec{}, actualCtl.Spec)
+
 }
