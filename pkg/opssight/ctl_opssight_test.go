@@ -159,7 +159,7 @@ func TestAddSpecFlags(t *testing.T) {
 	ctl.AddSpecFlags(actualCmd, true)
 
 	cmd := &cobra.Command{}
-	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core", ctl.PerceptorImage, "Image of the OpsSight Core")
+	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of the OpsSight Core")
 	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Expose the OpsSight Core model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
 	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours the Percpetor waits between checking for scans")
 	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "opssight-core-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until the OpsSight Core stops checking for scans")
