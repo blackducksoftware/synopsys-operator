@@ -984,13 +984,13 @@ func IsClusterRoleRuleExist(oldRules []rbacv1.PolicyRule, newRule rbacv1.PolicyR
 // fails due to an error or due to being on kubernetes (doesn't support routes)
 func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	routeClient, err := routeclient.NewForConfig(restConfig)
-	if err != nil {
-		log.Errorf("unable to get route client")
+	if routeClient == nil || err != nil {
+		log.Debugf("unable to get route client")
 		return nil
 	}
-	_, err = GetRoute(routeClient, "default", "docker-registry")
-	if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-		log.Debugf("Ignoring routes for kubernetes cluster")
+	_, err = ListRoutes(routeClient, "default", "")
+	if err != nil {
+		log.Debugf("ignoring routes for kubernetes cluster")
 		return nil
 	}
 	return routeClient
