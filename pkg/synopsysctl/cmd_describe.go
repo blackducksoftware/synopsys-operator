@@ -42,7 +42,7 @@ var describeCmd = &cobra.Command{
 
 // describeBlackduckCmd Show details of one or many Black Ducks
 var describeBlackduckCmd = &cobra.Command{
-	Use:     "blackduck [NAME]",
+	Use:     "blackduck [NAME...]",
 	Aliases: []string{"blackducks"},
 	Short:   "Show details of one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -70,7 +70,7 @@ var describeBlackduckCmd = &cobra.Command{
 
 // describeOpsSightCmd Show details of one or many OpsSights
 var describeOpsSightCmd = &cobra.Command{
-	Use:     "opssight [NAME]",
+	Use:     "opssight [NAME...]",
 	Aliases: []string{"opssights"},
 	Short:   "Show details of one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -98,7 +98,7 @@ var describeOpsSightCmd = &cobra.Command{
 
 // describeAlertCmd details of one or many Alerts
 var describeAlertCmd = &cobra.Command{
-	Use:     "alert [NAME]",
+	Use:     "alert [NAME...]",
 	Aliases: []string{"alerts"},
 	Short:   "Show details of one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
