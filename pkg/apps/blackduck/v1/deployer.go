@@ -50,7 +50,7 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 	var adminPassword, userPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
 		adminPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
-		userPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
+		userPassword = blackduck.Spec.ExternalPostgres.PostgresUserPassword
 	} else {
 		adminPassword, userPassword, _, err = bdutil.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
 		if err != nil {
