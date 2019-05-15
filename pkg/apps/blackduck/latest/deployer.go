@@ -174,15 +174,15 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
 	}
 
-	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
-		// Service account
-		componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
-		clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
-		if err != nil {
-			return nil, err
-		}
-		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
+	// Service account
+	componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
+	clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
+	if err != nil {
+		return nil, err
+	}
+	componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
 
+	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Binary Scanner
 		imageName := containerCreater.GetImageTag("appcheck-worker")
 		if len(imageName) > 0 {
