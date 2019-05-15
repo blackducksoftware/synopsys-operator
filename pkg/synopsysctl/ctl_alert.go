@@ -19,22 +19,22 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package alert
+package synopsysctl
 
 import (
 	"fmt"
 
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-// Ctl type provides functionality for an Alert
+// AlertCtl type provides functionality for an Alert
 // for the Synopsysctl tool
-type Ctl struct {
+type AlertCtl struct {
+	CommonCtl
 	Spec                 *alertapi.AlertSpec
 	Version              string
 	AlertImage           string
@@ -55,8 +55,8 @@ type Ctl struct {
 }
 
 // NewAlertCtl creates a new AlertCtl struct
-func NewAlertCtl() *Ctl {
-	return &Ctl{
+func NewAlertCtl() *AlertCtl {
+	ctl := &AlertCtl{
 		Spec:                 &alertapi.AlertSpec{},
 		Version:              "",
 		AlertImage:           "",
@@ -75,25 +75,12 @@ func NewAlertCtl() *Ctl {
 		CfsslMemory:          "",
 		DesiredState:         "",
 	}
-}
-
-// GetSpec returns the Spec for the resource
-func (ctl *Ctl) GetSpec() interface{} {
-	return *ctl.Spec
-}
-
-// SetSpec sets the Spec for the resource
-func (ctl *Ctl) SetSpec(spec interface{}) error {
-	convertedSpec, ok := spec.(alertapi.AlertSpec)
-	if !ok {
-		return fmt.Errorf("Error setting Alert Spec")
-	}
-	ctl.Spec = &convertedSpec
-	return nil
+	ctl.CommonCtl = CommonCtl{Ctl: ctl}
+	return ctl
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags() error {
+func (ctl *AlertCtl) CheckSpecFlags() error {
 	encryptPassLength := len(ctl.EncryptionPassword)
 	if encryptPassLength > 0 && encryptPassLength < 16 {
 		return fmt.Errorf("flag EncryptionPassword is %d characters. Must be 16 or more characters", encryptPassLength)
@@ -107,19 +94,19 @@ func (ctl *Ctl) CheckSpecFlags() error {
 
 // Constants for Default Specs
 const (
-	EmptySpec    string = "empty"
-	TemplateSpec string = "template"
-	DefaultSpec  string = "default"
+	AlertEmptySpec    string = "empty"
+	AlertTemplateSpec string = "template"
+	AlertDefaultSpec  string = "default"
 )
 
 // SwitchSpec switches the Alert's Spec to a different predefined spec
-func (ctl *Ctl) SwitchSpec(specType string) error {
+func (ctl *AlertCtl) SwitchSpec(specType string) error {
 	switch specType {
-	case EmptySpec:
+	case AlertEmptySpec:
 		ctl.Spec = &alertapi.AlertSpec{}
-	case TemplateSpec:
+	case AlertTemplateSpec:
 		ctl.Spec = crddefaults.GetAlertTemplate()
-	case DefaultSpec:
+	case AlertDefaultSpec:
 		ctl.Spec = crddefaults.GetAlertDefault()
 		ctl.Spec.PersistentStorage = true
 		ctl.Spec.StandAlone = crddefaults.BoolToPtr(true)
@@ -131,7 +118,7 @@ func (ctl *Ctl) SwitchSpec(specType string) error {
 
 // AddSpecFlags adds flags for the Alert's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
+func (ctl *AlertCtl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of the Alert")
 	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "Url of the Alert Image")
 	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "Url of Cfssl Image")
@@ -150,19 +137,14 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of the Alert")
 }
 
-// NSpecFlag returns the number of spec flags that were set
-func (ctl *Ctl) NSpecFlag(flagset *pflag.FlagSet) int {
-	return util.NumSpecFlagsChanged(ctl, flagset)
-}
-
 // SetChangedFlags visits every flag and calls setFlag to update
 // the resource's spec
-func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
+func (ctl *AlertCtl) SetChangedFlags(flagset *pflag.FlagSet) {
 	flagset.VisitAll(ctl.SetFlag)
 }
 
 // SetFlag sets an Alert's Spec field if its flag was changed
-func (ctl *Ctl) SetFlag(f *pflag.Flag) {
+func (ctl *AlertCtl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED", f.Name)
 		switch f.Name {
@@ -207,11 +189,11 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 }
 
 // SpecIsValid verifies the spec has necessary fields to deploy
-func (ctl *Ctl) SpecIsValid() (bool, error) {
+func (ctl *AlertCtl) SpecIsValid() (bool, error) {
 	return true, nil
 }
 
 // CanUpdate checks if a user has permission to modify based on the spec
-func (ctl *Ctl) CanUpdate() (bool, error) {
+func (ctl *AlertCtl) CanUpdate() (bool, error) {
 	return true, nil
 }

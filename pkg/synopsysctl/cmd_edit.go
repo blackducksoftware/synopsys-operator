@@ -26,12 +26,10 @@ import (
 	"strconv"
 	"strings"
 
-	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
-	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -68,7 +66,7 @@ var editBlackduckCmd = &cobra.Command{
 
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
-		if editBlackduckCtl.NSpecFlag(flagset) != 0 {
+		if editBlackduckCtl.NumSpecFlagsChanged(flagset) != 0 {
 			bd, err := operatorutil.GetHub(blackduckClient, blackduckName, blackduckName)
 			if err != nil {
 				log.Errorf("error getting %s Black Duck instance due to %+v", blackduckName, err)
@@ -82,7 +80,12 @@ var editBlackduckCmd = &cobra.Command{
 			// Update Spec with User's Flags
 			editBlackduckCtl.SetChangedFlags(flagset)
 			// Update Blackduck with Updates
-			blackduckSpec := editBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
+			specInterface, err := editBlackduckCtl.GetSpec()
+			if err != nil {
+				log.Errorf("failed get Black Duck Spec due to %s", err)
+				return nil
+			}
+			blackduckSpec := specInterface.(blackduckapi.BlackduckSpec)
 			// merge environs
 			blackduckSpec.Environs = operatorutil.MergeEnvSlices(blackduckSpec.Environs, bd.Spec.Environs)
 			bd.Spec = blackduckSpec
@@ -276,7 +279,7 @@ var editOpsSightCmd = &cobra.Command{
 
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
-		if editOpsSightCtl.NSpecFlag(flagset) != 0 {
+		if editOpsSightCtl.NumSpecFlagsChanged(flagset) != 0 {
 			ops, err := operatorutil.GetOpsSight(opssightClient, opsSightName, opsSightName)
 			if err != nil {
 				log.Errorf("%s", err)
@@ -286,7 +289,12 @@ var editOpsSightCmd = &cobra.Command{
 			// Update Spec with User's Flags
 			editOpsSightCtl.SetChangedFlags(flagset)
 			// Update OpsSight with Updates
-			opsSightSpec := editOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
+			specInterface, err := editOpsSightCtl.GetSpec()
+			if err != nil {
+				log.Errorf("failed get OpsSight Spec due to %s", err)
+				return nil
+			}
+			opsSightSpec := specInterface.(opssightapi.OpsSightSpec)
 			ops.Spec = opsSightSpec
 			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightName, ops)
 			if err != nil {
@@ -330,7 +338,7 @@ var editOpsSightAddRegistryCmd = &cobra.Command{
 			return nil
 		}
 		// Add Internal Registry to Spec
-		newReg := opssightv1.RegistryAuth{
+		newReg := opssightapi.RegistryAuth{
 			URL:      regURL,
 			User:     regUser,
 			Password: regPass,
@@ -371,7 +379,7 @@ var editOpsSightAddHostCmd = &cobra.Command{
 			return nil
 		}
 		// Add Host to Spec
-		host := opssightv1.Host{}
+		host := opssightapi.Host{}
 		host.Domain = domain
 		intPort, err := strconv.ParseInt(port, 0, 64)
 		if err != nil {
@@ -407,7 +415,7 @@ var editAlertCmd = &cobra.Command{
 
 		// Update spec with flags or pipe to KubeCmd
 		flagset := cmd.Flags()
-		if editAlertCtl.NSpecFlag(flagset) != 0 {
+		if editAlertCtl.NumSpecFlagsChanged(flagset) != 0 {
 			alt, err := operatorutil.GetAlert(alertClient, alertName, alertName)
 			if err != nil {
 				log.Errorf("error getting an Alert %s instance due to %+v", alertName, err)
@@ -421,7 +429,12 @@ var editAlertCmd = &cobra.Command{
 			// Update Spec with User's Flags
 			editAlertCtl.SetChangedFlags(flagset)
 			// Update Alert with Updates
-			alertSpec := editAlertCtl.GetSpec().(alertv1.AlertSpec)
+			specInterface, err := editAlertCtl.GetSpec()
+			if err != nil {
+				log.Errorf("failed get Alert Spec due to %s", err)
+				return nil
+			}
+			alertSpec := specInterface.(alertapi.AlertSpec)
 			// merge environs
 			alertSpec.Environs = operatorutil.MergeEnvSlices(alertSpec.Environs, alt.Spec.Environs)
 			alt.Spec = alertSpec
@@ -444,9 +457,9 @@ var editAlertCmd = &cobra.Command{
 
 func init() {
 	// initialize global resource ctl structs for commands to use
-	editBlackduckCtl = blackduck.NewBlackduckCtl()
-	editOpsSightCtl = opssight.NewOpsSightCtl()
-	editAlertCtl = alert.NewAlertCtl()
+	editBlackduckCtl = NewBlackduckCtl()
+	editOpsSightCtl = NewOpsSightCtl()
+	editAlertCtl = NewAlertCtl()
 
 	//(PassCmd) editCmd.DisableFlagParsing = true // lets editCmd pass flags to kube/oc
 	rootCmd.AddCommand(editCmd)

@@ -24,12 +24,10 @@ package synopsysctl
 import (
 	"fmt"
 
-	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
-	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -90,11 +88,16 @@ var createBlackduckCmd = &cobra.Command{
 		createBlackduckCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
-		blackduckSpec, _ := createBlackduckCtl.GetSpec().(blackduckv1.BlackduckSpec)
+		specInterface, err := createBlackduckCtl.GetSpec()
+		if err != nil {
+			log.Errorf("failed get Black Duck Spec due to %s", err)
+			return nil
+		}
+		blackduckSpec := specInterface.(blackduckapi.BlackduckSpec)
 		blackduckSpec.Namespace = blackduckNamespace
 
 		// Create and Deploy Blackduck CRD
-		blackduck := &blackduckv1.Blackduck{
+		blackduck := &blackduckapi.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      blackduckNamespace,
 				Namespace: blackduckNamespace,
@@ -159,8 +162,13 @@ var createOpsSightCmd = &cobra.Command{
 		createOpsSightCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
-		opssightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
-		opssightSpec.Namespace = opsSightNamespace
+		specInterface, err := createOpsSightCtl.GetSpec()
+		if err != nil {
+			log.Errorf("failed get OpsSight Spec due to %s", err)
+			return nil
+		}
+		opsSightSpec := specInterface.(opssightapi.OpsSightSpec)
+		opsSightSpec.Namespace = opsSightNamespace
 
 		// Create and Deploy OpsSight CRD
 		opssight := &opssightv1.OpsSight{
@@ -168,7 +176,7 @@ var createOpsSightCmd = &cobra.Command{
 				Name:      opsSightNamespace,
 				Namespace: opsSightNamespace,
 			},
-			Spec: opssightSpec,
+			Spec: opsSightSpec,
 		}
 		opssight.Kind = "OpsSight"
 		opssight.APIVersion = "synopsys.com/v1"
@@ -227,11 +235,16 @@ var createAlertCmd = &cobra.Command{
 		createAlertCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
-		alertSpec, _ := createAlertCtl.GetSpec().(alertv1.AlertSpec)
+		specInterface, err := createAlertCtl.GetSpec()
+		if err != nil {
+			log.Errorf("failed get Alert Spec due to %s", err)
+			return nil
+		}
+		alertSpec := specInterface.(alertapi.AlertSpec)
 		alertSpec.Namespace = alertNamespace
 
 		// Create and Deploy Alert CRD
-		alert := &alertv1.Alert{
+		alert := &alertapi.Alert{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      alertNamespace,
 				Namespace: alertNamespace,
@@ -267,9 +280,9 @@ var createAlertCmd = &cobra.Command{
 
 func init() {
 	// initialize global resource ctl structs for commands to use
-	createBlackduckCtl = blackduck.NewBlackduckCtl()
-	createOpsSightCtl = opssight.NewOpsSightCtl()
-	createAlertCtl = alert.NewAlertCtl()
+	createBlackduckCtl = NewBlackduckCtl()
+	createOpsSightCtl = NewOpsSightCtl()
+	createAlertCtl = NewAlertCtl()
 
 	//(PassCmd) createCmd.DisableFlagParsing = true // lets createCmd pass flags to kube/oc
 	rootCmd.AddCommand(createCmd)

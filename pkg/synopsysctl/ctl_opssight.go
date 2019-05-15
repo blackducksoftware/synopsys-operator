@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package opssight
+package synopsysctl
 
 import (
 	"encoding/json"
@@ -34,9 +34,10 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Ctl type provides functionality for an OpsSight
+// OpsSightCtl type provides functionality for an OpsSight
 // for the Synopsysctl tool
-type Ctl struct {
+type OpsSightCtl struct {
+	CommonCtl
 	Spec                                            *opssightapi.OpsSightSpec
 	PerceptorName                                   string
 	PerceptorImage                                  string
@@ -102,9 +103,9 @@ type Ctl struct {
 	BlackduckType                                   string
 }
 
-// NewOpsSightCtl creates a new Ctl struct
-func NewOpsSightCtl() *Ctl {
-	return &Ctl{
+// NewOpsSightCtl creates a new OpsSightCtl struct
+func NewOpsSightCtl() *OpsSightCtl {
+	ctl := &OpsSightCtl{
 		Spec:                                            &opssightapi.OpsSightSpec{},
 		PerceptorName:                                   "",
 		PerceptorImage:                                  "",
@@ -168,50 +169,37 @@ func NewOpsSightCtl() *Ctl {
 		BlackduckMaxCount:                               0,
 		BlackduckType:                                   "",
 	}
-}
-
-// GetSpec returns the Spec for the resource
-func (ctl *Ctl) GetSpec() interface{} {
-	return *ctl.Spec
-}
-
-// SetSpec sets the Spec for the resource
-func (ctl *Ctl) SetSpec(spec interface{}) error {
-	convertedSpec, ok := spec.(opssightapi.OpsSightSpec)
-	if !ok {
-		return fmt.Errorf("Error setting OpsSight Spec")
-	}
-	ctl.Spec = &convertedSpec
-	return nil
+	ctl.CommonCtl = CommonCtl{Ctl: ctl}
+	return ctl
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags() error {
+func (ctl *OpsSightCtl) CheckSpecFlags() error {
 	return nil
 }
 
 // Constants for Default Specs
 const (
-	EmptySpec             string = "empty"
-	UpstreamSpec          string = "upstream"
-	DefaultSpec           string = "default"
-	DisabledBlackDuckSpec string = "disabledBlackDuck"
+	OpsSightEmptySpec             string = "empty"
+	OpsSightUpstreamSpec          string = "upstream"
+	OpsSightDefaultSpec           string = "default"
+	OpsSightDisabledBlackDuckSpec string = "disabledBlackDuck"
 )
 
 // SwitchSpec switches the OpsSight's Spec to a different predefined spec
-func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
+func (ctl *OpsSightCtl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
-	case EmptySpec:
+	case OpsSightEmptySpec:
 		ctl.Spec = &opssightapi.OpsSightSpec{}
-	case UpstreamSpec:
+	case OpsSightUpstreamSpec:
 		ctl.Spec = crddefaults.GetOpsSightUpstream()
 		ctl.Spec.Perceiver.EnablePodPerceiver = true
 		ctl.Spec.EnableMetrics = true
-	case DefaultSpec:
+	case OpsSightDefaultSpec:
 		ctl.Spec = crddefaults.GetOpsSightDefault()
 		ctl.Spec.Perceiver.EnablePodPerceiver = true
 		ctl.Spec.EnableMetrics = true
-	case DisabledBlackDuckSpec:
+	case OpsSightDisabledBlackDuckSpec:
 		ctl.Spec = crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()
 		ctl.Spec.Perceiver.EnablePodPerceiver = true
 		ctl.Spec.EnableMetrics = true
@@ -223,7 +211,7 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
+func (ctl *OpsSightCtl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core", ctl.PerceptorImage, "Image of the OpsSight Core")
 	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Expose the OpsSight Core model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
 	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours the Percpetor waits between checking for scans")
@@ -262,19 +250,9 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
 }
 
-// NSpecFlag returns the number of spec flags that were set
-func (ctl *Ctl) NSpecFlag(flagset *pflag.FlagSet) int {
-	return util.NumSpecFlagsChanged(ctl, flagset)
-}
-
-// NSpecFlag returns the number of spec flags that were set
-func (ctl *Ctl) NSpecFlag(flagset *pflag.FlagSet) int {
-	return util.NumSpecFlagsChanged(ctl, flagset)
-}
-
 // SetChangedFlags visits every flag and calls setFlag to update
 // the resource's spec
-func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
+func (ctl *OpsSightCtl) SetChangedFlags(flagset *pflag.FlagSet) {
 	flagset.VisitAll(ctl.SetFlag)
 }
 
@@ -289,7 +267,7 @@ type ExternalHostStructs struct {
 }
 
 // SetFlag sets an OpsSights's Spec field if its flag was changed
-func (ctl *Ctl) SetFlag(f *pflag.Flag) {
+func (ctl *OpsSightCtl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED", f.Name)
 		switch f.Name {
@@ -520,11 +498,11 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 }
 
 // SpecIsValid verifies the spec has necessary fields to deploy
-func (ctl *Ctl) SpecIsValid() (bool, error) {
+func (ctl *OpsSightCtl) SpecIsValid() (bool, error) {
 	return true, nil
 }
 
 // CanUpdate checks if a user has permission to modify based on the spec
-func (ctl *Ctl) CanUpdate() (bool, error) {
+func (ctl *OpsSightCtl) CanUpdate() (bool, error) {
 	return true, nil
 }

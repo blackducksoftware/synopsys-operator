@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package blackduck
+package synopsysctl
 
 import (
 	"encoding/json"
@@ -39,9 +39,10 @@ type uid struct {
 	Value int64  `json:"value"`
 }
 
-// Ctl type provides functionality for a Blackduck
+// BlackDuckCtl type provides functionality for a Blackduck
 // for the Synopsysctl tool
-type Ctl struct {
+type BlackDuckCtl struct {
+	CommonCtl
 	Spec                                  *blackduckv1.BlackduckSpec
 	Size                                  string
 	Version                               string
@@ -72,9 +73,9 @@ type Ctl struct {
 	LicenseKey                            string
 }
 
-// NewBlackduckCtl creates a new Ctl struct
-func NewBlackduckCtl() *Ctl {
-	return &Ctl{
+// NewBlackduckCtl creates a new BlackDuckCtl struct
+func NewBlackduckCtl() *BlackDuckCtl {
+	ctl := &BlackDuckCtl{
 		Spec:                                  &blackduckv1.BlackduckSpec{},
 		Size:                                  "",
 		Version:                               "",
@@ -104,21 +105,8 @@ func NewBlackduckCtl() *Ctl {
 		ImageUIDMapFilePath:                   "",
 		LicenseKey:                            "",
 	}
-}
-
-// GetSpec returns the Spec for the resource
-func (ctl *Ctl) GetSpec() interface{} {
-	return *ctl.Spec
-}
-
-// SetSpec sets the Spec for the resource
-func (ctl *Ctl) SetSpec(spec interface{}) error {
-	convertedSpec, ok := spec.(blackduckv1.BlackduckSpec)
-	if !ok {
-		return fmt.Errorf("error in Black Duck spec conversion")
-	}
-	ctl.Spec = &convertedSpec
-	return nil
+	ctl.CommonCtl = CommonCtl{Ctl: ctl}
+	return ctl
 }
 
 func isValidSize(size string) bool {
@@ -135,7 +123,7 @@ func isValidSize(size string) bool {
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags() error {
+func (ctl *BlackDuckCtl) CheckSpecFlags() error {
 	if !isValidSize(ctl.Size) {
 		return fmt.Errorf("Size must be 'small', 'medium', 'large', or 'x-large'")
 	}
@@ -163,7 +151,7 @@ const (
 )
 
 // SwitchSpec switches the Blackduck's Spec to a different predefined spec
-func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
+func (ctl *BlackDuckCtl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
 	case EmptySpec:
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
@@ -195,7 +183,7 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 
 // AddSpecFlags adds flags for the OpsSight's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
+func (ctl *BlackDuckCtl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large, x-large")
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Black Duck Version")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose webserver service [LOADBALANCER/NODEPORT/OPENSHIFT]")
@@ -225,14 +213,9 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 }
 
-// NSpecFlag returns the number of spec flags that were set
-func (ctl *Ctl) NSpecFlag(flagset *pflag.FlagSet) int {
-	return util.NumSpecFlagsChanged(ctl, flagset)
-}
-
 // SetChangedFlags visits every flag and calls setFlag to update
 // the resource's spec
-func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
+func (ctl *BlackDuckCtl) SetChangedFlags(flagset *pflag.FlagSet) {
 	flagset.VisitAll(ctl.SetFlag)
 }
 
@@ -247,7 +230,7 @@ type UIDStructs struct {
 }
 
 // SetFlag sets a Blackduck's Spec field if its flag was changed
-func (ctl *Ctl) SetFlag(f *pflag.Flag) {
+func (ctl *BlackDuckCtl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("Flag %s: CHANGED", f.Name)
 		switch f.Name {
@@ -377,11 +360,11 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 }
 
 // SpecIsValid verifies the spec has necessary fields to deploy
-func (ctl *Ctl) SpecIsValid() (bool, error) {
+func (ctl *BlackDuckCtl) SpecIsValid() (bool, error) {
 	return true, nil
 }
 
 // CanUpdate checks if a user has permission to modify based on the spec
-func (ctl *Ctl) CanUpdate() (bool, error) {
+func (ctl *BlackDuckCtl) CanUpdate() (bool, error) {
 	return true, nil
 }

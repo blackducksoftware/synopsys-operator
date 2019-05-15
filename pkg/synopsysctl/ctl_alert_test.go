@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package alert
+package synopsysctl
 
 import (
 	"testing"
@@ -34,7 +34,7 @@ import (
 func TestNewAlertCtl(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	assert.Equal(&Ctl{
+	ctl := &AlertCtl{
 		Spec:                 &alertapi.AlertSpec{},
 		Version:              "",
 		AlertImage:           "",
@@ -52,34 +52,44 @@ func TestNewAlertCtl(t *testing.T) {
 		AlertMemory:          "",
 		CfsslMemory:          "",
 		DesiredState:         "",
-	}, alertCtl)
+	}
+	ctl.CommonCtl = CommonCtl{Ctl: ctl}
+	assert.Equal(ctl, alertCtl)
 }
 
-func TestGetSpec(t *testing.T) {
+func TestAlertGetSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	assert.Equal(alertapi.AlertSpec{}, alertCtl.GetSpec())
+	spec, err := alertCtl.GetSpec()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	assert.Equal(alertapi.AlertSpec{}, spec)
 }
 
-func TestSetSpec(t *testing.T) {
+func TestAlertSetSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
 	specToSet := alertapi.AlertSpec{Namespace: "test", Version: "test"}
 	alertCtl.SetSpec(specToSet)
-	assert.Equal(specToSet, alertCtl.GetSpec())
+	spec, err := alertCtl.GetSpec()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	assert.Equal(specToSet, spec)
 
 	// check for error
 	assert.Error(alertCtl.SetSpec(""))
 }
 
-func TestCheckSpecFlags(t *testing.T) {
+func TestAlertCheckSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
 	specFlags := alertCtl.CheckSpecFlags()
 	assert.Nil(specFlags)
 }
 
-func TestSwitchSpec(t *testing.T) {
+func TestAlertSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
 	defaultSpec := *crddefaults.GetAlertDefault()
@@ -90,15 +100,19 @@ func TestSwitchSpec(t *testing.T) {
 		input    string
 		expected alertapi.AlertSpec
 	}{
-		{input: EmptySpec, expected: alertapi.AlertSpec{}},
-		{input: TemplateSpec, expected: *crddefaults.GetAlertTemplate()},
-		{input: DefaultSpec, expected: defaultSpec},
+		{input: AlertEmptySpec, expected: alertapi.AlertSpec{}},
+		{input: AlertTemplateSpec, expected: *crddefaults.GetAlertTemplate()},
+		{input: AlertDefaultSpec, expected: defaultSpec},
 	}
 
 	// test cases: "default"
 	for _, test := range tests {
 		assert.Nil(alertCtl.SwitchSpec(test.input))
-		assert.Equal(test.expected, alertCtl.GetSpec())
+		spec, err := alertCtl.GetSpec()
+		if err != nil {
+			t.Errorf("%s", err)
+		}
+		assert.Equal(test.expected, spec)
 	}
 
 	// test cases: default
@@ -107,7 +121,7 @@ func TestSwitchSpec(t *testing.T) {
 
 }
 
-func TestAddSpecFlags(t *testing.T) {
+func TestAlertAddSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 
 	// test case: Only Non-Master Flags are added
@@ -136,7 +150,7 @@ func TestAddSpecFlags(t *testing.T) {
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
 
-func TestNSpecFlag(t *testing.T) {
+func TestAlertNSpecFlag(t *testing.T) {
 	assert := assert.New(t)
 
 	alertCtl := NewAlertCtl()
@@ -145,7 +159,7 @@ func TestNSpecFlag(t *testing.T) {
 
 	// Case: Same flags as Spec and none are set
 	flagset := cmd.Flags()
-	numFlagsChanged := alertCtl.NSpecFlag(flagset)
+	numFlagsChanged := alertCtl.NumSpecFlagsChanged(flagset)
 	assert.Equal(numFlagsChanged, 0)
 
 	// Case: Additional flags than Spec and none are set
@@ -153,11 +167,11 @@ func TestNSpecFlag(t *testing.T) {
 	cmd.Flags().StringVar(&testVal, "test-flag", "", "")
 	cmd.Flag("test-flag")
 	flagset = cmd.Flags()
-	numFlagsChanged = alertCtl.NSpecFlag(flagset)
+	numFlagsChanged = alertCtl.NumSpecFlagsChanged(flagset)
 	assert.Equal(numFlagsChanged, 0)
 }
 
-func TestSetChangedFlags(t *testing.T) {
+func TestAlertSetChangedFlags(t *testing.T) {
 	assert := assert.New(t)
 
 	actualCtl := NewAlertCtl()
@@ -170,19 +184,19 @@ func TestSetChangedFlags(t *testing.T) {
 	assert.Equal(expCtl.Spec, actualCtl.Spec)
 }
 
-func TestSetFlag(t *testing.T) {
+func TestAlertSetFlag(t *testing.T) {
 	assert := assert.New(t)
 
 	var tests = []struct {
 		flagName    string
-		initialCtl  *Ctl
-		changedCtl  *Ctl
+		initialCtl  *AlertCtl
+		changedCtl  *AlertCtl
 		changedSpec *alertapi.AlertSpec
 	}{
 		// case
 		{flagName: "version",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				Version: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{Version: "changed"},
@@ -190,7 +204,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "alert-image",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				AlertImage: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{AlertImage: "changed"},
@@ -198,7 +212,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "cfssl-image",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				CfsslImage: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{CfsslImage: "changed"},
@@ -206,7 +220,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "stand-alone",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				StandAlone: true,
 			},
 			changedSpec: &alertapi.AlertSpec{StandAlone: crddefaults.BoolToPtr(true)},
@@ -214,7 +228,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "expose-service",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				ExposeService: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{ExposeService: "changed"},
@@ -222,7 +236,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "port",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				Port: 1234,
 			},
 			changedSpec: &alertapi.AlertSpec{Port: crddefaults.IntToInt32(1234)},
@@ -230,7 +244,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "encryption-password",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				EncryptionPassword: "changedEncryptionPassword",
 			},
 			changedSpec: &alertapi.AlertSpec{EncryptionPassword: "changedEncryptionPassword"},
@@ -238,7 +252,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "encryption-global-salt",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				EncryptionGlobalSalt: "changedEncryptionGlobalSalt",
 			},
 			changedSpec: &alertapi.AlertSpec{EncryptionGlobalSalt: "changedEncryptionGlobalSalt"},
@@ -246,7 +260,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "environs",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"},
 			},
 			changedSpec: &alertapi.AlertSpec{Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"}},
@@ -254,7 +268,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "persistent-storage",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				PersistentStorage: true,
 			},
 			changedSpec: &alertapi.AlertSpec{PersistentStorage: true},
@@ -262,7 +276,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "pvc-name",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				PVCName: "changedPVCName",
 			},
 			changedSpec: &alertapi.AlertSpec{PVCName: "changedPVCName"},
@@ -270,7 +284,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "pvc-storage-class",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				PVCStorageClass: "changedStorageClass",
 			},
 			changedSpec: &alertapi.AlertSpec{PVCStorageClass: "changedStorageClass"},
@@ -278,7 +292,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "pvc-size",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				PVCSize: "changedStorageSize",
 			},
 			changedSpec: &alertapi.AlertSpec{PVCSize: "changedStorageSize"},
@@ -286,7 +300,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "alert-memory",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				AlertMemory: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{AlertMemory: "changed"},
@@ -294,7 +308,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "cfssl-memory",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				CfsslMemory: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{CfsslMemory: "changed"},
@@ -302,7 +316,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{flagName: "alert-desired-state",
 			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			changedCtl: &AlertCtl{Spec: &alertapi.AlertSpec{},
 				DesiredState: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{DesiredState: "changed"},

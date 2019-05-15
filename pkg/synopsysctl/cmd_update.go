@@ -29,12 +29,9 @@ import (
 	"strconv"
 	"strings"
 
-	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
-	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
@@ -250,7 +247,12 @@ var updateBlackduckCmd = &cobra.Command{
 			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateBlackduckCtl.SetChangedFlags(flagset)
-			newSpec := updateBlackduckCtl.GetSpec().(blackduckapi.BlackduckSpec)
+			specInterface, err := updateBlackduckCtl.GetSpec()
+			if err != nil {
+				log.Errorf("failed get Black Duck Spec due to %s", err)
+				return nil
+			}
+			newSpec := specInterface.(blackduckapi.BlackduckSpec)
 			// merge environs
 			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currBlackduck.Spec.Environs)
 			// Create new Blackduck CRD
@@ -366,7 +368,12 @@ var updateOpsSightCmd = &cobra.Command{
 			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateOpsSightCtl.SetChangedFlags(flagset)
-			newSpec := updateOpsSightCtl.GetSpec().(opssightapi.OpsSightSpec)
+			specInterface, err := updateOpsSightCtl.GetSpec()
+			if err != nil {
+				log.Errorf("failed get OpsSight Spec due to %s", err)
+				return nil
+			}
+			newSpec := specInterface.(opssightapi.OpsSightSpec)
 			// Create new OpsSight CRD
 			newOpsSight := *currOpsSight //make copy
 			newOpsSight.Spec = newSpec
@@ -598,7 +605,12 @@ var updateAlertCmd = &cobra.Command{
 			// Make changes to Spec
 			flagset := cmd.Flags()
 			updateAlertCtl.SetChangedFlags(flagset)
-			newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
+			specInterface, err := updateAlertCtl.GetSpec()
+			if err != nil {
+				log.Errorf("failed get Alert Spec due to %s", err)
+				return nil
+			}
+			newSpec := specInterface.(alertapi.AlertSpec)
 			// merge environs
 			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currAlert.Spec.Environs)
 			// Create new Alert CRD
@@ -618,9 +630,9 @@ var updateAlertCmd = &cobra.Command{
 
 func init() {
 	// initialize global resource ctl structs for commands to use
-	updateBlackduckCtl = blackduck.NewBlackduckCtl()
-	updateOpsSightCtl = opssight.NewOpsSightCtl()
-	updateAlertCtl = alert.NewAlertCtl()
+	updateBlackduckCtl = NewBlackduckCtl()
+	updateOpsSightCtl = NewOpsSightCtl()
+	updateAlertCtl = NewAlertCtl()
 
 	rootCmd.AddCommand(updateCmd)
 

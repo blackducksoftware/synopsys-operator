@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package opssight
+package synopsysctl
 
 import (
 	"testing"
@@ -35,7 +35,7 @@ import (
 func TestNewOpsSightCtl(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
-	assert.Equal(&Ctl{
+	ctl := &OpsSightCtl{
 		Spec:                                            &opssightapi.OpsSightSpec{},
 		PerceptorName:                                   "",
 		PerceptorImage:                                  "",
@@ -95,34 +95,44 @@ func TestNewOpsSightCtl(t *testing.T) {
 		BlackduckTLSVerification:                        false,
 		BlackduckInitialCount:                           0,
 		BlackduckMaxCount:                               0,
-	}, opsSightCtl)
+	}
+	ctl.CommonCtl = CommonCtl{Ctl: ctl}
+	assert.Equal(ctl, opsSightCtl)
 }
 
-func TestGetSpec(t *testing.T) {
+func TestOpsSightGetSpec(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
-	assert.Equal(opssightapi.OpsSightSpec{}, opsSightCtl.GetSpec())
+	spec, err := opsSightCtl.GetSpec()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	assert.Equal(opssightapi.OpsSightSpec{}, spec)
 }
 
-func TestSetSpec(t *testing.T) {
+func TestOpsSightSetSpec(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
 	specToSet := opssightapi.OpsSightSpec{Namespace: "test"}
 	opsSightCtl.SetSpec(specToSet)
-	assert.Equal(specToSet, opsSightCtl.GetSpec())
+	spec, err := opsSightCtl.GetSpec()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	assert.Equal(specToSet, spec)
 
 	// check for error
 	assert.Error(opsSightCtl.SetSpec(""))
 }
 
-func TestCheckSpecFlags(t *testing.T) {
+func TestOpsSightCheckSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
 	specFlags := opsSightCtl.CheckSpecFlags()
 	assert.Nil(specFlags)
 }
 
-func TestSwitchSpec(t *testing.T) {
+func TestOpsSightSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	opsSightCtl := NewOpsSightCtl()
 	defaultSpec := crddefaults.GetOpsSightDefault()
@@ -133,16 +143,20 @@ func TestSwitchSpec(t *testing.T) {
 		input    string
 		expected *opssightapi.OpsSightSpec
 	}{
-		{input: EmptySpec, expected: &opssightapi.OpsSightSpec{}},
-		{input: UpstreamSpec, expected: crddefaults.GetOpsSightUpstream()},
-		{input: DefaultSpec, expected: defaultSpec},
-		{input: DisabledBlackDuckSpec, expected: crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()},
+		{input: OpsSightEmptySpec, expected: &opssightapi.OpsSightSpec{}},
+		{input: OpsSightUpstreamSpec, expected: crddefaults.GetOpsSightUpstream()},
+		{input: OpsSightDefaultSpec, expected: defaultSpec},
+		{input: OpsSightDisabledBlackDuckSpec, expected: crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()},
 	}
 
 	// test cases: "empty", "default", "disabledBlackduck"
 	for _, test := range tests {
 		assert.Nil(opsSightCtl.SwitchSpec(test.input))
-		assert.Equal(*test.expected, opsSightCtl.GetSpec())
+		spec, err := opsSightCtl.GetSpec()
+		if err != nil {
+			t.Errorf("%s", err)
+		}
+		assert.Equal(*test.expected, spec)
 	}
 
 	// test cases: default
@@ -151,7 +165,7 @@ func TestSwitchSpec(t *testing.T) {
 
 }
 
-func TestAddSpecFlags(t *testing.T) {
+func TestOpsSightAddSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 
 	ctl := NewOpsSightCtl()
@@ -199,7 +213,7 @@ func TestAddSpecFlags(t *testing.T) {
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
 
-func TestNSpecFlag(t *testing.T) {
+func TestOpsSightNSpecFlag(t *testing.T) {
 	assert := assert.New(t)
 
 	opsSightCtl := NewOpsSightCtl()
@@ -208,7 +222,7 @@ func TestNSpecFlag(t *testing.T) {
 
 	// Case: Same flags as Spec and none are set
 	flagset := cmd.Flags()
-	numFlagsChanged := opsSightCtl.NSpecFlag(flagset)
+	numFlagsChanged := opsSightCtl.NumSpecFlagsChanged(flagset)
 	assert.Equal(numFlagsChanged, 0)
 
 	// Case: Additional flags than Spec and none are set
@@ -216,11 +230,11 @@ func TestNSpecFlag(t *testing.T) {
 	cmd.Flags().StringVar(&testVal, "test-flag", "", "")
 	cmd.Flag("test-flag")
 	flagset = cmd.Flags()
-	numFlagsChanged = opsSightCtl.NSpecFlag(flagset)
+	numFlagsChanged = opsSightCtl.NumSpecFlagsChanged(flagset)
 	assert.Equal(numFlagsChanged, 0)
 }
 
-func TestSetChangedFlags(t *testing.T) {
+func TestOpsSightSetChangedFlags(t *testing.T) {
 	assert := assert.New(t)
 
 	actualCtl := NewOpsSightCtl()
@@ -234,20 +248,20 @@ func TestSetChangedFlags(t *testing.T) {
 
 }
 
-func TestSetFlag(t *testing.T) {
+func TestOpsSightSetFlag(t *testing.T) {
 	assert := assert.New(t)
 
 	var tests = []struct {
 		flagName    string
-		initialCtl  *Ctl
-		changedCtl  *Ctl
+		initialCtl  *OpsSightCtl
+		changedCtl  *OpsSightCtl
 		changedSpec *opssightapi.OpsSightSpec
 	}{
 		// case
 		{
 			flagName:   "opssight-core-image",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:           &opssightapi.OpsSightSpec{},
 				PerceptorImage: "changed",
 			},
@@ -257,7 +271,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "opssight-core-expose",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:            &opssightapi.OpsSightSpec{},
 				PerceptorExpose: "changed",
 			},
@@ -267,7 +281,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "opssight-core-check-scan-hours",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                                    &opssightapi.OpsSightSpec{},
 				PerceptorCheckForStalledScansPauseHours: 10,
 			},
@@ -277,7 +291,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "opssight-core-scan-client-timeout-hours",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                                   &opssightapi.OpsSightSpec{},
 				PerceptorStalledScanClientTimeoutHours: 10,
 			},
@@ -287,7 +301,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "opssight-core-metrics-pause-seconds",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                              &opssightapi.OpsSightSpec{},
 				PerceptorModelMetricsPauseSeconds: 10,
 			},
@@ -297,7 +311,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "opssight-core-unknown-image-pause-milliseconds",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                                   &opssightapi.OpsSightSpec{},
 				PerceptorUnknownImagePauseMilliseconds: 10,
 			},
@@ -307,7 +321,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "opssight-core-client-timeout-milliseconds",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                               &opssightapi.OpsSightSpec{},
 				PerceptorClientTimeoutMilliseconds: 10,
 			},
@@ -317,7 +331,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "scanner-image",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                   &opssightapi.OpsSightSpec{},
 				ScannerPodScannerImage: "changed",
 			},
@@ -327,7 +341,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "scanner-client-timeout-seconds",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                                  &opssightapi.OpsSightSpec{},
 				ScannerPodScannerClientTimeoutSeconds: 10,
 			},
@@ -337,7 +351,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "image-getter-image",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                       &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeImage: "changed",
 			},
@@ -347,7 +361,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "image-getter-image-puller-type",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                                 &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeImagePullerType: "changed",
 			},
@@ -357,7 +371,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "image-getter-service-account",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                                &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeServiceAccount: "changed",
 			},
@@ -367,7 +381,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "scannerpod-replica-count",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                   &opssightapi.OpsSightSpec{},
 				ScannerPodReplicaCount: 10,
 			},
@@ -377,7 +391,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "scannerpod-image-directory",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                     &opssightapi.OpsSightSpec{},
 				ScannerPodImageDirectory: "changed",
 			},
@@ -387,7 +401,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "enable-pod-processor",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                        &opssightapi.OpsSightSpec{},
 				PerceiverEnablePodPerceiver: true,
 			},
@@ -397,7 +411,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "image-processor-image",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                         &opssightapi.OpsSightSpec{},
 				PerceiverImagePerceiverImage: "changed",
 			},
@@ -407,7 +421,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "pod-processor-image",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                       &opssightapi.OpsSightSpec{},
 				PerceiverPodPerceiverImage: "changed",
 			},
@@ -417,7 +431,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "pod-processor-namespace-filter",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                                 &opssightapi.OpsSightSpec{},
 				PerceiverPodPerceiverNamespaceFilter: "changed",
 			},
@@ -427,7 +441,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "processor-annotation-interval-seconds",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                               &opssightapi.OpsSightSpec{},
 				PerceiverAnnotationIntervalSeconds: 10,
 			},
@@ -437,7 +451,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "processor-dump-interval-minutes",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                         &opssightapi.OpsSightSpec{},
 				PerceiverDumpIntervalMinutes: 10,
 			},
@@ -447,7 +461,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "default-cpu",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:       &opssightapi.OpsSightSpec{},
 				DefaultCPU: "changed",
 			},
@@ -457,7 +471,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "default-memory",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:       &opssightapi.OpsSightSpec{},
 				DefaultMem: "changed",
 			},
@@ -467,7 +481,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "scanner-cpu",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:       &opssightapi.OpsSightSpec{},
 				ScannerCPU: "changed",
 			},
@@ -477,7 +491,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "scanner-memory",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:       &opssightapi.OpsSightSpec{},
 				ScannerMem: "changed",
 			},
@@ -487,7 +501,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "log-level",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:     &opssightapi.OpsSightSpec{},
 				LogLevel: "changed",
 			},
@@ -497,7 +511,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "enable-metrics",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:          &opssightapi.OpsSightSpec{},
 				EnableMetrics: true,
 			},
@@ -507,7 +521,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "metrics-image",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:            &opssightapi.OpsSightSpec{},
 				PrometheusImage: "changed",
 			},
@@ -517,7 +531,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "metrics-port",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:           &opssightapi.OpsSightSpec{},
 				PrometheusPort: 10,
 			},
@@ -527,7 +541,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "metrics-expose",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:             &opssightapi.OpsSightSpec{},
 				PrometheusExpose: "changed",
 			},
@@ -537,7 +551,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "blackduck-TLS-verification",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                     &opssightapi.OpsSightSpec{},
 				BlackduckTLSVerification: true,
 			},
@@ -547,7 +561,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "blackduck-initial-count",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:                  &opssightapi.OpsSightSpec{},
 				BlackduckInitialCount: 10,
 			},
@@ -557,7 +571,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "blackduck-max-count",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:              &opssightapi.OpsSightSpec{},
 				BlackduckMaxCount: 10,
 			},
@@ -567,7 +581,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "blackduck-type",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec:          &opssightapi.OpsSightSpec{},
 				BlackduckType: "changed",
 			},
@@ -577,7 +591,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			flagName:   "",
 			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
+			changedCtl: &OpsSightCtl{
 				Spec: &opssightapi.OpsSightSpec{},
 			},
 			changedSpec: &opssightapi.OpsSightSpec{},
