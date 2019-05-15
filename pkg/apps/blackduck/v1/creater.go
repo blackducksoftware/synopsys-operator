@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"math"
 	"net/http"
 	"reflect"
@@ -182,7 +183,13 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 	if blackduck.Spec.PersistentStorage {
 		pvcVolumeNames := map[string]string{}
-		for _, v := range blackduck.Spec.PVC {
+		pvcList, err := hc.KubeClient.CoreV1().PersistentVolumeClaims(blackduck.Spec.Namespace).List(v1.ListOptions{
+			LabelSelector: "app=blackduck,component=pvc",
+		})
+		if err != nil {
+			return err
+		}
+		for _, v := range pvcList.Items {
 			pvName, err := hc.getPVCVolumeName(blackduck.Spec.Namespace, v.Name)
 			if err != nil {
 				continue
