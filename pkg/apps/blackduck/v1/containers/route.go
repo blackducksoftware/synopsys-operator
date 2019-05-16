@@ -22,6 +22,7 @@ under the License.
 package containers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
@@ -37,7 +38,7 @@ func (c *Creater) GetOpenShiftRoute() *api.Route {
 			Namespace:          c.hubSpec.Namespace,
 			Kind:               "Service",
 			ServiceName:        "webserver",
-			PortName:           "port-webserver",
+			PortName:           fmt.Sprintf("port-%d", 443),
 			Labels:             map[string]string{"app": "blackduck", "component": "webserver"},
 			TLSTerminationType: routev1.TLSTerminationPassthrough,
 		}

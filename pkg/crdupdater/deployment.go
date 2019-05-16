@@ -25,12 +25,12 @@ import (
 	"reflect"
 	"strings"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -41,7 +41,7 @@ type Deployment struct {
 	deployer       *util.DeployerHelper
 	deployments    []*components.Deployment
 	oldDeployments map[string]appsv1.Deployment
-	newDeployments map[string]*appsv1beta2.Deployment
+	newDeployments map[string]*appsv1.Deployment
 }
 
 // NewDeployment returns the deployment
@@ -52,7 +52,7 @@ func NewDeployment(config *CommonConfig, deployments []*components.Deployment) (
 	}
 	newDeployments := append([]*components.Deployment{}, deployments...)
 	for i := 0; i < len(newDeployments); i++ {
-		if !isLabelsExist(config.expectedLabels, newDeployments[i].GetObj().Labels) {
+		if !isLabelsExist(config.expectedLabels, newDeployments[i].Labels) {
 			newDeployments = append(newDeployments[:i], newDeployments[i+1:]...)
 			i--
 		}
@@ -62,7 +62,7 @@ func NewDeployment(config *CommonConfig, deployments []*components.Deployment) (
 		deployer:       deployer,
 		deployments:    newDeployments,
 		oldDeployments: make(map[string]appsv1.Deployment, 0),
-		newDeployments: make(map[string]*appsv1beta2.Deployment, 0),
+		newDeployments: make(map[string]*appsv1.Deployment, 0),
 	}, nil
 }
 
@@ -79,11 +79,7 @@ func (d *Deployment) buildNewAndOldObject() error {
 
 	// build new deployment
 	for _, newDp := range d.deployments {
-		newDeploymentKube, err := newDp.ToKube()
-		if err != nil {
-			return errors.Annotatef(err, "unable to convert deployment %s to kube %s", newDp.GetName(), d.config.namespace)
-		}
-		d.newDeployments[newDp.GetName()] = newDeploymentKube.(*appsv1beta2.Deployment)
+		d.newDeployments[newDp.GetName()] = newDp.Deployment
 	}
 
 	return nil
@@ -94,7 +90,7 @@ func (d *Deployment) add(isPatched bool) (bool, error) {
 	isAdded := false
 	for _, deployment := range d.deployments {
 		if _, ok := d.oldDeployments[deployment.GetName()]; !ok {
-			d.deployer.Deployer.AddDeployment(deployment)
+			d.deployer.Deployer.AddComponent(horizonapi.DeploymentComponent, deployment)
 			isAdded = true
 		} else {
 			_, err := d.patch(deployment, isPatched)

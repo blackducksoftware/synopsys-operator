@@ -28,7 +28,7 @@ import (
 )
 
 // GetWebappLogstashDeployment will return the webapp and logstash deployment
-func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashImageName string) *components.ReplicationController {
+func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashImageName string) (*components.ReplicationController, error) {
 	webappEnvs := []*horizonapi.EnvConfig{c.getHubConfigEnv(), c.getHubDBConfigEnv()}
 	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: c.hubContainerFlavor.WebappHubMaxMemory})
 
@@ -45,6 +45,7 @@ func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashIm
 	if c.hubSpec.LivenessProbes {
 		webappContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
+				Type: horizonapi.ActionTypeCommand,
 				Command: []string{
 					"/usr/local/bin/docker-healthcheck.sh",
 					"https://127.0.0.1:8443/api/health-checks/liveness",
@@ -74,7 +75,10 @@ func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashIm
 
 	if c.hubSpec.LivenessProbes {
 		logstashContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:9600/"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type:    horizonapi.ActionTypeCommand,
+				Command: []string{"/usr/local/bin/docker-healthcheck.sh", "http://localhost:9600/"},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,
@@ -100,10 +104,15 @@ func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashIm
 		initContainers = append(initContainers, initContainerConfig)
 	}
 
-	webappLogstash := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webapp-logstash", Replicas: util.IntToInt32(1)},
-		"", []*util.Container{webappContainerConfig, logstashContainerConfig}, c.getWebappLogtashVolumes(),
-		initContainers, []horizonapi.AffinityConfig{}, c.GetVersionLabel("webapp-logstash"), c.GetLabel("webapp-logstash"), c.hubSpec.RegistryConfiguration.PullSecrets)
-	return webappLogstash
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webapp-logstash", Replicas: util.IntToInt32(1)},
+		&util.PodConfig{
+			Volumes:          c.getWebappLogtashVolumes(),
+			Containers:       []*util.Container{webappContainerConfig, logstashContainerConfig},
+			InitContainers:   initContainers,
+			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:           c.GetVersionLabel("webapp-logstash"),
+		}, c.GetLabel("webapp-logstash"))
 }
 
 // getWebappLogtashVolumes will return the webapp and logstash volumes
@@ -164,10 +173,10 @@ func (c *Creater) getWebappVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetWebAppService will return the webapp service
 func (c *Creater) GetWebAppService() *components.Service {
-	return util.CreateService("webapp", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, webappPort, webappPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("webapp-logstash"))
+	return util.CreateService("webapp", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, webappPort, webappPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
 }
 
 // GetLogStashService will return the logstash service
 func (c *Creater) GetLogStashService() *components.Service {
-	return util.CreateService("logstash", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, logstashPort, logstashPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("webapp-logstash"))
+	return util.CreateService("logstash", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, logstashPort, logstashPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
 }

@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
 )
 
 // Container defines the configuration for a container
@@ -38,6 +39,20 @@ type Container struct {
 	ReadinessProbeConfigs []*horizonapi.ProbeConfig
 	LivenessProbeConfigs  []*horizonapi.ProbeConfig
 	PreStopConfig         *horizonapi.ActionConfig
+}
+
+// PodConfig used for configuring the pod
+type PodConfig struct {
+	Name                   string
+	Labels                 map[string]string
+	ServiceAccount         string
+	Containers             []*Container
+	Volumes                []*components.Volume
+	InitContainers         []*Container
+	PodAffinityConfigs     map[horizonapi.AffinityType][]*horizonapi.PodAffinityConfig
+	PodAntiAffinityConfigs map[horizonapi.AffinityType][]*horizonapi.PodAffinityConfig
+	NodeAffinityConfigs    map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig
+	ImagePullSecrets       []string
 }
 
 // MergeEnvMaps will merge the source and destination environs. If the same value exist in both, source environ will given more preference

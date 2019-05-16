@@ -138,7 +138,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		log.Errorf("unable to merge the hub structs for %s due to %+v", bd.Name, err)
 		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
 		if err != nil {
-			log.Errorf("Couldn't update the blackduck state: %v", err)
+			log.Errorf("couldn't update the blackduck state: %v", err)
 		}
 		return
 	}

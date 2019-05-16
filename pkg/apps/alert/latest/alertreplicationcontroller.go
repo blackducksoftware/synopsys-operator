@@ -23,10 +23,10 @@ package alert
 
 import (
 	"fmt"
-	"strconv"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -38,7 +38,7 @@ func (a *SpecConfig) getAlertReplicationController() (*components.ReplicationCon
 		Name:      "alert",
 		Namespace: a.config.Namespace,
 	})
-	replicationController.AddLabelSelectors(map[string]string{"app": "alert", "component": "alert"})
+	replicationController.AddSelectors(map[string]string{"app": "alert", "component": "alert"})
 
 	pod, err := a.getAlertPod()
 	if err != nil {
@@ -57,7 +57,11 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 	})
 	pod.AddLabels(map[string]string{"app": "alert", "component": "alert"})
 
-	pod.AddContainer(a.getAlertContainer())
+	container, err := a.getAlertContainer()
+	if err != nil {
+		return nil, err
+	}
+	pod.AddContainer(container)
 
 	if a.config.PersistentStorage {
 		log.Debugf("Adding a PersistentVolumeClaim Volume to the Alert's Pod")
@@ -76,12 +80,12 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 }
 
 // getAlertContainer returns a new Container for an Alert
-func (a *SpecConfig) getAlertContainer() *components.Container {
+func (a *SpecConfig) getAlertContainer() (*components.Container, error) {
 	image := a.config.AlertImage
 	if image == "" {
 		image = GetImageTag(a.config.Version, "blackduck-alert")
 	}
-	container := components.NewContainer(horizonapi.ContainerConfig{
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "alert",
 		Image:      image,
 		PullPolicy: horizonapi.PullAlways,
@@ -89,15 +93,22 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 		MaxMem:     a.config.AlertMemory,
 	})
 
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: strconv.Itoa(*a.config.Port),
+		ContainerPort: *a.config.Port,
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "dir-alert",
 		MountPath: "/opt/blackduck/alert/alert-config",
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromConfigMap,
@@ -111,6 +122,7 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{
 		ActionConfig: horizonapi.ActionConfig{
+			Type:    horizonapi.ActionTypeCommand,
 			Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://localhost:8443/alert/api/about"},
 		},
 		Delay:           240,
@@ -119,7 +131,7 @@ func (a *SpecConfig) getAlertContainer() *components.Container {
 		MinCountFailure: 5,
 	})
 
-	return container
+	return container, nil
 }
 
 // getAlertEmptyDirVolume returns a new EmptyDirVolume for an Alert

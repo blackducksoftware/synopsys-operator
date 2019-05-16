@@ -45,11 +45,8 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	err = rc.AddPod(pod)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-	rc.AddLabelSelectors(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
+	rc.AddPod(pod)
+	rc.AddSelectors(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
 	rc.AddLabels(map[string]string{"name": p.opssight.Spec.Perceptor.Name, "app": "opssight"})
 	return rc, nil
 }
@@ -78,7 +75,7 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 
 func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 	name := p.opssight.Spec.Perceptor.Name
-	container := components.NewContainer(horizonapi.ContainerConfig{
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:    name,
 		Image:   p.opssight.Spec.Perceptor.Image,
 		Command: []string{fmt.Sprintf("./%s", name)},
@@ -86,11 +83,15 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		MinCPU:  p.opssight.Spec.DefaultCPU,
 		MinMem:  p.opssight.Spec.DefaultMem,
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.opssight.Spec.Perceptor.Port),
+		ContainerPort: int32(p.opssight.Spec.Perceptor.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
-	err := container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      name,
 		MountPath: fmt.Sprintf("/etc/%s", name),
 	})
@@ -98,11 +99,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		return nil, errors.Trace(err)
 	}
 
-	err = container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.Spec.SecretName})
-
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
+	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: p.opssight.Spec.SecretName})
 
 	return container, nil
 }
@@ -112,6 +109,7 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      p.opssight.Spec.Perceptor.Name,
 		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
@@ -134,9 +132,9 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
 	name := fmt.Sprintf("%s-exposed", p.opssight.Spec.Perceptor.Name)
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          name,
-		Namespace:     p.opssight.Spec.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
+		Name:      name,
+		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeNodePort,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
@@ -159,9 +157,9 @@ func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
 func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error) {
 	name := fmt.Sprintf("%s-exposed", p.opssight.Spec.Perceptor.Name)
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          name,
-		Namespace:     p.opssight.Spec.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeLoadBalancer,
+		Name:      name,
+		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeLoadBalancer,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{

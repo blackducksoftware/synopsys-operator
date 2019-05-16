@@ -25,6 +25,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -92,14 +93,17 @@ func NewSOperator(namespace, synopsysOperatorImage, expose, adminPassword, postg
 func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	configMap, err := specConfig.GetOperatorConfigMap()
 	if err != nil {
-		return nil, err
+		return nil, errors.Trace(err)
+	}
+
+	deployment, err := specConfig.GetOperatorDeployment()
+	if err != nil {
+		return nil, errors.Trace(err)
 	}
 	components := &api.ComponentList{
-		Deployments: []*components.Deployment{
-			specConfig.GetOperatorDeployment(),
-		},
-		Services:   specConfig.GetOperatorService(),
-		ConfigMaps: []*components.ConfigMap{configMap},
+		Deployments: []*components.Deployment{deployment},
+		Services:    specConfig.GetOperatorService(),
+		ConfigMaps:  []*components.ConfigMap{configMap},
 		ServiceAccounts: []*components.ServiceAccount{
 			specConfig.GetOperatorServiceAccount(),
 		},

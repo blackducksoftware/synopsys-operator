@@ -28,7 +28,7 @@ import (
 )
 
 // GetDocumentationDeployment will return the documentation deployment
-func (c *Creater) GetDocumentationDeployment(imageName string) *components.ReplicationController {
+func (c *Creater) GetDocumentationDeployment(imageName string) (*components.ReplicationController, error) {
 	documentationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-documentation")
 	documentationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: imageName,
@@ -42,7 +42,10 @@ func (c *Creater) GetDocumentationDeployment(imageName string) *components.Repli
 
 	if c.hubSpec.LivenessProbes {
 		documentationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
-			ActionConfig:    horizonapi.ActionConfig{Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/hubdoc/health-checks/liveness", "/opt/blackduck/hub/hub-documentation/security/root.crt"}},
+			ActionConfig: horizonapi.ActionConfig{
+				Type:    horizonapi.ActionTypeCommand,
+				Command: []string{"/usr/local/bin/docker-healthcheck.sh", "https://127.0.0.1:8443/hubdoc/health-checks/liveness", "/opt/blackduck/hub/hub-documentation/security/root.crt"},
+			},
 			Delay:           240,
 			Interval:        30,
 			Timeout:         10,
@@ -51,13 +54,17 @@ func (c *Creater) GetDocumentationDeployment(imageName string) *components.Repli
 	}
 	c.PostEditContainer(documentationContainerConfig)
 
-	documentation := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "documentation", Replicas: util.IntToInt32(1)}, "",
-		[]*util.Container{documentationContainerConfig}, []*components.Volume{documentationEmptyDir}, []*util.Container{}, []horizonapi.AffinityConfig{}, c.GetVersionLabel("documentation"), c.GetLabel("documentation"), c.hubSpec.RegistryConfiguration.PullSecrets)
-
-	return documentation
+	return util.CreateReplicationControllerFromContainer(
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "documentation", Replicas: util.IntToInt32(1)},
+		&util.PodConfig{
+			Volumes:          []*components.Volume{documentationEmptyDir},
+			Containers:       []*util.Container{documentationContainerConfig},
+			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:           c.GetVersionLabel("documentation"),
+		}, c.GetLabel("documentation"))
 }
 
 // GetDocumentationService will return the cfssl service
 func (c *Creater) GetDocumentationService() *components.Service {
-	return util.CreateService("documentation", c.GetLabel("documentation"), c.hubSpec.Namespace, documentationPort, documentationPort, horizonapi.ClusterIPServiceTypeDefault, c.GetVersionLabel("documentation"))
+	return util.CreateService("documentation", c.GetLabel("documentation"), c.hubSpec.Namespace, documentationPort, documentationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("documentation"))
 }

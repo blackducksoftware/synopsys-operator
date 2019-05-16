@@ -59,8 +59,11 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 		Name: "prometheus",
 	})
 	pod.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
-
-	pod.AddContainer(p.perceptorMetricsContainer())
+	container, err := p.perceptorMetricsContainer()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	pod.AddContainer(container)
 
 	vols, err := p.perceptorMetricsVolumes()
 	if err != nil {
@@ -73,29 +76,38 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 	return pod, nil
 }
 
-func (p *SpecConfig) perceptorMetricsContainer() *components.Container {
-	container := components.NewContainer(horizonapi.ContainerConfig{
+func (p *SpecConfig) perceptorMetricsContainer() (*components.Container, error) {
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  p.opssight.Spec.Prometheus.Name,
 		Image: p.opssight.Spec.Prometheus.Image,
 		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d"},
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: fmt.Sprintf("%d", p.opssight.Spec.Prometheus.Port),
+		ContainerPort: int32(p.opssight.Spec.Prometheus.Port),
 		Protocol:      horizonapi.ProtocolTCP,
 		Name:          "web",
 	})
 
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "data",
 		MountPath: "/data",
 	})
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	err = container.AddVolumeMount(horizonapi.VolumeMountConfig{
 		Name:      "prometheus",
 		MountPath: "/etc/prometheus",
 	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 
-	return container
+	return container, nil
 }
 
 func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
@@ -123,6 +135,7 @@ func (p *SpecConfig) PerceptorMetricsService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      "prometheus",
 		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
@@ -142,9 +155,9 @@ func (p *SpecConfig) PerceptorMetricsService() (*components.Service, error) {
 // PerceptorMetricsNodePortService creates a nodeport service for perceptor metrics
 func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "prometheus-exposed",
-		Namespace:     p.opssight.Spec.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeNodePort,
+		Name:      "prometheus-exposed",
+		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeNodePort,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
@@ -164,9 +177,9 @@ func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, err
 // PerceptorMetricsLoadBalancerService creates a loadbalancer service for perceptor metrics
 func (p *SpecConfig) PerceptorMetricsLoadBalancerService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:          "prometheus-exposed",
-		Namespace:     p.opssight.Spec.Namespace,
-		IPServiceType: horizonapi.ClusterIPServiceTypeLoadBalancer,
+		Name:      "prometheus-exposed",
+		Namespace: p.opssight.Spec.Namespace,
+		Type:      horizonapi.ServiceTypeLoadBalancer,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{

@@ -42,23 +42,23 @@ const (
 	binaryScannerMaxCPUUsage = "1"
 
 	// Ports
-	cfsslPort          = "8888"
-	webserverPort      = "8443"
-	documentationPort  = "8443"
-	solrPort           = "8983"
-	registrationPort   = "8443"
-	zookeeperPort      = "2181"
-	jobRunnerPort      = "3001"
-	scannerPort        = "8443"
-	authenticationPort = "8443"
-	webappPort         = "8443"
-	logstashPort       = "5044"
+	cfsslPort          = int32(8888)
+	webserverPort      = int32(8443)
+	documentationPort  = int32(8443)
+	solrPort           = int32(8983)
+	registrationPort   = int32(8443)
+	zookeeperPort      = int32(2181)
+	jobRunnerPort      = int32(3001)
+	scannerPort        = int32(8443)
+	authenticationPort = int32(8443)
+	webappPort         = int32(8443)
+	logstashPort       = int32(5044)
 	// PostgresPort will hold the port number of Postgres
-	PostgresPort      = "5432"
-	binaryScannerPort = "3001"
-	rabbitmqPort      = "5671"
-	uploadCachePort1  = "9443"
-	uploadCachePort2  = "9444"
+	PostgresPort      = int32(5432)
+	binaryScannerPort = int32(3001)
+	rabbitmqPort      = int32(5671)
+	uploadCachePort1  = int32(9443)
+	uploadCachePort2  = int32(9444)
 
 	// Small Flavor
 	smallWebServerMemoryLimit = "512M"

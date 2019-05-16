@@ -24,6 +24,7 @@ package soperator
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/juju/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -53,11 +54,13 @@ func NewPrometheus(namespace, image string, expose string, restConfig *rest.Conf
 // GetComponents will return a ComponentList representing all
 // Kubernetes Resources for Prometheus
 func (specConfig *PrometheusSpecConfig) GetComponents() (*api.ComponentList, error) {
+	deployment, err := specConfig.GetPrometheusDeployment()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	components := &api.ComponentList{
-		Deployments: []*components.Deployment{
-			specConfig.GetPrometheusDeployment(),
-		},
-		Services: specConfig.GetPrometheusService(),
+		Deployments: []*components.Deployment{deployment},
+		Services:    specConfig.GetPrometheusService(),
 		ConfigMaps: []*components.ConfigMap{
 			specConfig.GetPrometheusConfigMap(),
 		},
