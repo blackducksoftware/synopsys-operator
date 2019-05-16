@@ -1,4 +1,0 @@
-create_table("labels") {
-  t.Column("id", "string", {"primary": true})
-  t.DisableTimestamps()
-}
