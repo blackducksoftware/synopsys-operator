@@ -3,6 +3,7 @@ FROM blackducksoftware/synopsys-operator:2019.4.0 as builder
 FROM golang:1.11 as operatorbuilder
 
 # Set the environment
+ENV GO111MODULE=on
 ENV BP=$GOPATH/src/github.com/blackducksoftware/synopsys-operator
 
 # Add the whole directory
