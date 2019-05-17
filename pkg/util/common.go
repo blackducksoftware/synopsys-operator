@@ -218,6 +218,9 @@ func CreatePod(podConfig *PodConfig) (*components.Pod, error) {
 	for _, containerConfig := range podConfig.Containers {
 		container, err := CreateContainer(containerConfig.ContainerConfig, containerConfig.EnvConfigs, containerConfig.VolumeMounts, containerConfig.PortConfig,
 			containerConfig.ActionConfig, containerConfig.PreStopConfig, containerConfig.LivenessProbeConfigs, containerConfig.ReadinessProbeConfigs)
+		if len(containerConfig.Capabilities) > 0 {
+			container.AddAddCapabilities(containerConfig.Capabilities)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the container for pod %s because %+v", name, err)
 		}
@@ -282,6 +285,28 @@ func CreateReplicationControllerFromContainer(replicationControllerConfig *horiz
 	}
 	rc := CreateReplicationController(replicationControllerConfig, pod, podConfig.Labels, labelSelector)
 	return rc, nil
+}
+
+// CreateStateFulSet will create a statefulset
+func CreateStateFulSet(stateFulSetConfig *horizonapi.StatefulSetConfig, pod *components.Pod) *components.StatefulSet {
+	stateFulSet := components.NewStatefulSet(*stateFulSetConfig)
+	stateFulSet.AddMatchLabelsSelectors(pod.GetLabels())
+	stateFulSet.AddPod(pod)
+	return stateFulSet
+}
+
+// CreateStateFulSetFromContainer will create a statefulset from a container
+func CreateStateFulSetFromContainer(stateFulSetConfig *horizonapi.StatefulSetConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig) *components.StatefulSet {
+	pod, _ := CreatePod(&PodConfig{
+		Name:                stateFulSetConfig.Name,
+		ServiceAccount:      serviceAccount,
+		Volumes:             volumes,
+		Containers:          containers,
+		InitContainers:      initContainers,
+		NodeAffinityConfigs: affinityConfigs,
+	})
+	stateFulSet := CreateStateFulSet(stateFulSetConfig, pod)
+	return stateFulSet
 }
 
 // CreateService will create the service

@@ -32,6 +32,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/rgp"
 	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
 	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
@@ -102,6 +103,10 @@ func runProtoform(configPath string) {
 		panic(err)
 	}
 	deployer.AddController(opssSightController)
+
+	// TODO: Add default template
+	rgpController := rgp.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, nil, stopCh)
+	deployer.AddController(rgpController)
 
 	logrus.Info("Starting deployer.  All controllers have been added to Protoform.")
 	if err = deployer.Deploy(); err != nil {

@@ -39,6 +39,7 @@ type Container struct {
 	ReadinessProbeConfigs []*horizonapi.ProbeConfig
 	LivenessProbeConfigs  []*horizonapi.ProbeConfig
 	PreStopConfig         *horizonapi.ActionConfig
+	Capabilities          []string
 }
 
 // PodConfig used for configuring the pod
