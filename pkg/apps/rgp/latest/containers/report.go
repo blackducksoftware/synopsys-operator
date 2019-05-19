@@ -55,9 +55,12 @@ func (g *RgpDeployer) GetReportPod() *components.Pod {
 		Name: "report-service",
 	})
 
-	container, _ := g.getReportContainer()
+	reportContainer, _ := g.getReportContainer()
+	clamavContainer, _ := g.getClamavContainer()
 
-	pod.AddContainer(container)
+	pod.AddContainer(reportContainer)
+	pod.AddContainer(clamavContainer)
+
 	for _, v := range g.getReportVolumes() {
 		pod.AddVolume(v)
 	}
@@ -70,7 +73,7 @@ func (g *RgpDeployer) GetReportPod() *components.Pod {
 	return pod
 }
 
-// getAuthServersContainer returns the auth server pod
+// getReportContainer returns the rp-report-service container
 func (g *RgpDeployer) getReportContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "report-service",
@@ -98,6 +101,26 @@ func (g *RgpDeployer) getReportContainer() (*components.Container, error) {
 	for _, v := range g.getReportEnvConfigs() {
 		container.AddEnv(*v)
 	}
+
+	return container, nil
+}
+
+// getClamavContainer returns the clamav container
+func (g *RgpDeployer) getClamavContainer() (*components.Container, error) {
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
+		Name:       "clamav",
+		Image:      "gcr.io/snps-swip-staging/reporting-clamav:latest",
+		PullPolicy: horizonapi.PullAlways,
+		// TODO: RESTART POLICY: ALWAYS, horizon doesn't have it
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	container.AddPort(horizonapi.PortConfig{
+		ContainerPort: 3310,
+		Protocol:      horizonapi.ProtocolTCP,
+	})
 
 	return container, nil
 }
