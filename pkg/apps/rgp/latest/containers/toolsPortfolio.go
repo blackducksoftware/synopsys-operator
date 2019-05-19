@@ -24,7 +24,6 @@ package containers
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 )
 
@@ -71,6 +70,7 @@ func (g *RgpDeployer) GetToolsPortfolioPod() *components.Pod {
 }
 
 func (g *RgpDeployer) getToolPortfolioContainer() (*components.Container, error) {
+	// TODO: HELM CHART HAS serviceAccount: "auth-server"
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "tools-portfolio-service",
 		Image:      "gcr.io/snps-swip-staging/reporting-tools-portfolio-service:0.0.974",
@@ -128,9 +128,10 @@ func (g *RgpDeployer) getToolsPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "vault-ca-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_cacrt",
-				Path: "tls.crt",
-				Mode: util.IntToInt32(420),
+				Key:  "tls.crt",
+				Path: "vault_cacrt",
+				// TODO: 420 not specified as DefaultMode in HELM chart, not sure, if bug on their end or we should just assume
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -140,9 +141,9 @@ func (g *RgpDeployer) getToolsPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "auth-server-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_server_key",
-				Path: "tls.key",
-				Mode: util.IntToInt32(420),
+				Key:  "tls.key",
+				Path: "vault_server_key",
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -152,9 +153,9 @@ func (g *RgpDeployer) getToolsPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "auth-server-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_server_cert",
-				Path: "tls.crt",
-				Mode: util.IntToInt32(420),
+				Key:  "tls.crt",
+				Path: "vault_server_cert",
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))

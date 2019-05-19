@@ -128,8 +128,8 @@ func (g *RgpDeployer) getPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "vault-ca-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_cacrt",
-				Path: "tls.crt",
+				Key:  "tls.crt",
+				Path: "vault_cacrt",
 				Mode: util.IntToInt32(420),
 			},
 		},
@@ -140,8 +140,8 @@ func (g *RgpDeployer) getPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "auth-client-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_client_key",
-				Path: "tls.key",
+				Key:  "tls.key",
+				Path: "vault_client_key",
 				Mode: util.IntToInt32(420),
 			},
 		},
@@ -152,8 +152,8 @@ func (g *RgpDeployer) getPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "auth-client-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_client_cert",
-				Path: "tls.crt",
+				Key:  "tls.crt",
+				Path: "vault_client_cert",
 				Mode: util.IntToInt32(420),
 			},
 		},
