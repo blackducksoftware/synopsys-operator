@@ -25,4 +25,4 @@ cd "${ROOT}"
 
 targets=$(go list -e ./... | egrep -v "/(vendor)/" | egrep -v "/(contrib)/")
 
-go vet ${targets[@]}
+GO111MODULE=on go vet ${targets[@]}

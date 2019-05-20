@@ -1,3 +1,0 @@
-create_table("students") {
- t.Column("id", "uuid", {"primary": true})
-}
