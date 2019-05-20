@@ -50,7 +50,7 @@ var getCmd = &cobra.Command{
 
 // getBlackduckCmd Display one or many Black Ducks
 var getBlackduckCmd = &cobra.Command{
-	Use:     "blackduck [NAME]",
+	Use:     "blackduck [NAME...]",
 	Aliases: []string{"blackducks"},
 	Short:   "Display one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -142,7 +142,7 @@ var getBlackduckRootKeyCmd = &cobra.Command{
 
 // getOpsSightCmd Display one or many OpsSights
 var getOpsSightCmd = &cobra.Command{
-	Use:     "opssight [NAME]",
+	Use:     "opssight [NAME...]",
 	Aliases: []string{"opssights"},
 	Short:   "Display one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -174,7 +174,7 @@ var getOpsSightCmd = &cobra.Command{
 
 // getAlertCmd Display one or many Alerts
 var getAlertCmd = &cobra.Command{
-	Use:     "alert [NAME]",
+	Use:     "alert [NAME...]",
 	Aliases: []string{"alerts"},
 	Short:   "Display one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {

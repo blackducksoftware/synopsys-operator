@@ -40,75 +40,69 @@ var deleteCmd = &cobra.Command{
 
 // deleteBlackduckCmd deletes a Blackduck from the cluster
 var deleteBlackduckCmd = &cobra.Command{
-	Use:   "blackduck NAMESPACE",
-	Short: "Delete a Blackduck",
+	Use:   "blackduck NAME...",
+	Short: "Delete one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
+		if len(args) == 0 {
+			return fmt.Errorf("this command takes 1 or more arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackduckNamespace := args[0]
-		log.Infof("Deleting BlackDuck %s...", blackduckNamespace)
-
-		// Delete Blackduck with Client
-		err := blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
-		if err != nil {
-			log.Errorf("error deleting the Blackduck: '%s'", err)
-			return nil
+		for _, blackduckNamespace := range args {
+			log.Infof("Deleting BlackDuck %s...", blackduckNamespace)
+			err := blackduckClient.SynopsysV1().Blackducks(blackduckNamespace).Delete(blackduckNamespace, &metav1.DeleteOptions{})
+			if err != nil {
+				log.Errorf("error deleting the Blackduck %s: '%s'", blackduckNamespace, err)
+			}
+			log.Infof("successfully deleted BlackDuck: %s", blackduckNamespace)
 		}
-		log.Infof("successfully deleted BlackDuck: %s", blackduckNamespace)
 		return nil
 	},
 }
 
 // deleteOpsSightCmd deletes an OpsSight from the cluster
 var deleteOpsSightCmd = &cobra.Command{
-	Use:   "opssight NAMESPACE",
-	Short: "Delete an OpsSight",
+	Use:   "opssight NAME...",
+	Short: "Delete one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
+		if len(args) == 0 {
+			return fmt.Errorf("this command takes 1 or more arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightNamespace := args[0]
-		log.Infof("Deleting OpsSight %s...", opsSightNamespace)
-
-		// Delete OpsSight with Client
-		err := opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
-		if err != nil {
-			log.Errorf("error deleting the OpsSight: '%s'", err)
-			return nil
+		for _, opsSightNamespace := range args {
+			log.Infof("Deleting OpsSight %s...", opsSightNamespace)
+			err := opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
+			if err != nil {
+				log.Errorf("error deleting the OpsSight %s: '%s'", opsSightNamespace, err)
+			}
+			log.Infof("successfully deleted OpsSight: %s", opsSightNamespace)
 		}
-		log.Infof("successfully deleted OpsSight: %s", opsSightNamespace)
 		return nil
 	},
 }
 
 // deleteAlertCmd deletes an Alert from the cluster
 var deleteAlertCmd = &cobra.Command{
-	Use:   "alert NAMESPACE",
-	Short: "Delete an Alert",
+	Use:   "alert NAME...",
+	Short: "Delete one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
+		if len(args) == 0 {
+			return fmt.Errorf("this command takes 1 or more arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertNamespace := args[0]
-		log.Infof("Deleting Alert %s...", alertNamespace)
-
-		// Delete Alert with Client
-		err := alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
-		if err != nil {
-			log.Errorf("error deleting the Alert: %s", err)
-			return nil
+		for _, alertNamespace := range args {
+			log.Infof("Deleting Alert %s...", alertNamespace)
+			err := alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
+			if err != nil {
+				log.Errorf("error deleting the Alert %s: %s", alertNamespace, err)
+			}
+			log.Infof("successfully deleted Alert: %s", alertNamespace)
 		}
-		log.Infof("successfully deleted Alert: %s", alertNamespace)
 		return nil
 	},
 }
