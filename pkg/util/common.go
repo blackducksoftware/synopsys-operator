@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/version"
 	"reflect"
 	"strings"
 	"time"
@@ -1347,4 +1348,29 @@ func GetOperatorClusterRoleBinding(clientset *kubernetes.Clientset) (string, err
 		}
 	}
 	return crbs.Items[0].Name, nil
+}
+
+// GetKubernetesVersion will return the kubernetes version
+func GetKubernetesVersion(clientset *kubernetes.Clientset) (string, error) {
+	k, err := clientset.Discovery().ServerVersion()
+	if k != nil {
+		return k.GitVersion, nil
+	}
+	return "", err
+}
+
+// GetOcVersion will return the version of openshift
+func GetOcVersion(clientset *kubernetes.Clientset) (string, error) {
+	body, err := clientset.Discovery().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
+	if err != nil {
+		return "", err
+	}
+
+	var info version.Info
+	err = json.Unmarshal(body, &info)
+	if err != nil {
+		return "", fmt.Errorf("unable to parse the server version: %v", err)
+	}
+
+	return info.GitVersion, err
 }
