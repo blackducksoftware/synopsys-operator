@@ -83,8 +83,14 @@ func (e *Eventstore) GetEventStoreStatefulSet() *components.StatefulSet {
 		Service:   "eventstore",
 	}
 
+	labelSelector := map[string]string{
+		"app": "eventstore",
+	}
+
 	// TODO add service account
-	stateFulSet := util.CreateStateFulSetFromContainer(stateFulSetConfig, "", containers, nil, nil, nil)
+	stateFulSet := util.CreateStateFulSetFromContainer(stateFulSetConfig, "", containers, nil, nil, nil, labelSelector)
+	stateFulSet.AddLabels(labelSelector)
+	stateFulSet.AddMatchLabelsSelectors(labelSelector)
 
 	claim, _ := util.CreatePersistentVolumeClaim("data", e.Namespace, fmt.Sprintf("%dGi", e.DiskSizeInGiB), e.StorageClass, horizonapi.ReadWriteOnce)
 	stateFulSet.AddVolumeClaimTemplate(*claim)

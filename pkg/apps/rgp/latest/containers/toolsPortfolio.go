@@ -74,7 +74,7 @@ func (g *RgpDeployer) getToolPortfolioContainer() (*components.Container, error)
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "tools-portfolio-service",
 		Image:      "gcr.io/snps-swip-staging/reporting-tools-portfolio-service:0.0.974",
-		PullPolicy: horizonapi.PullAlways,
+		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "250m",
 		MinMem:     "1Gi",
 	})

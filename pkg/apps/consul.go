@@ -124,7 +124,13 @@ func (c *Consul) GetConsulStatefulSet() *components.StatefulSet {
 		Service:   "consul",
 	}
 
-	stateFulSet := util.CreateStateFulSetFromContainer(stateFulSetConfig, "", containers, volumes, nil, nil)
+	labelSelector := map[string]string{
+		"app": "consul",
+	}
+
+	stateFulSet := util.CreateStateFulSetFromContainer(stateFulSetConfig, "", containers, volumes, nil, nil, labelSelector)
+	stateFulSet.AddLabels(labelSelector)
+	stateFulSet.AddMatchLabelsSelectors(labelSelector)
 
 	claim, _ := util.CreatePersistentVolumeClaim("datadir", c.namespace, "1Gi", c.storageClass, horizonapi.ReadWriteOnce)
 	stateFulSet.AddVolumeClaimTemplate(*claim)

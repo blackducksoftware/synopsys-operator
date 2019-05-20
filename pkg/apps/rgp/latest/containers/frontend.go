@@ -73,7 +73,7 @@ func (g *RgpDeployer) GetFrontendContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "frontend-service",
 		Image:      "gcr.io/snps-swip-staging/reporting-frontend-service:0.0.673",
-		PullPolicy: horizonapi.PullAlways,
+		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "250m",
 		MinMem:     "500Mi",
 	})

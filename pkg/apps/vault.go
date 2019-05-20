@@ -45,15 +45,6 @@ func NewVault(namespace string, vaultConfig string, vaultSecrets map[string]stri
 	return &Vault{namespace: namespace, vaultConfig: vaultConfig, vaultSecrets: vaultSecrets, vaultCacertPath: vaultCacertPath}
 }
 
-// GetVaultDeployment will return the vault deployment
-func (v *Vault) GetVaultDeployment() *components.Deployment {
-	deployConfig := &horizonapi.DeploymentConfig{
-		Name:      "vault",
-		Namespace: v.namespace,
-	}
-	return util.CreateDeployment(deployConfig, v.GetPod(), nil)
-}
-
 // GetPod returns the vault pod
 func (v *Vault) GetPod() *components.Pod {
 	envs := v.getVaultEnvConfigs()
@@ -91,7 +82,7 @@ func (v *Vault) GetPod() *components.Pod {
 			{
 				ActionConfig: horizonapi.ActionConfig{
 					Type: horizonapi.ActionTypeTCP,
-					Path: "TCP://:8200",
+					Port: "8200",
 				},
 			},
 		},
@@ -100,7 +91,8 @@ func (v *Vault) GetPod() *components.Pod {
 				Delay: 180,
 				ActionConfig: horizonapi.ActionConfig{
 					Type: horizonapi.ActionTypeHTTPS,
-					Path: "https://:8200/v1/sys/health?standbycode=204&uninitcode=204&",
+					Port: "8200",
+					Path: "v1/sys/health?standbycode=204&uninitcode=204&",
 				},
 			},
 		},
@@ -112,6 +104,7 @@ func (v *Vault) GetPod() *components.Pod {
 		ServiceAccount: "",
 		Volumes:        v.getVaultVolumes(),
 		Containers:     containers,
+		Labels:         map[string]string{"app": "vault"},
 	})
 	return pod
 }

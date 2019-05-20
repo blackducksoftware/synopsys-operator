@@ -82,9 +82,10 @@ func (c *Minio) GetDeployment() *components.Deployment {
 		ServiceAccount: "",
 		Containers:     containers,
 		Volumes:        volumes,
+		Labels:         map[string]string{"app": "minio"},
 	}
 
-	deployment, _ := util.CreateDeploymentFromContainer(deployConfig, podConfig, nil)
+	deployment, _ := util.CreateDeploymentFromContainer(deployConfig, podConfig, podConfig.Labels)
 	return deployment
 }
 

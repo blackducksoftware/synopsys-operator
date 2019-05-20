@@ -67,7 +67,7 @@ func (p *Mongo) GetMongoReplicationController() (*components.ReplicationControll
 		ContainerConfig: &horizonapi.ContainerConfig{
 			Name:       mongoName,
 			Image:      p.Image,
-			PullPolicy: horizonapi.PullAlways,
+			PullPolicy: horizonapi.PullIfNotPresent,
 			MinMem:     p.MinMemory,
 			MaxMem:     p.MaxMemory,
 			MinCPU:     p.MinCPU,

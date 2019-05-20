@@ -1,0 +1,14 @@
+{
+	"apiVersion": "synopsys.com/v1",
+	"kind": "Rgp",
+	"metadata": {
+		"clusterName": "",
+		"name": "rgp-test"
+	},
+	"spec": {
+		"namespace": "rgp-test",
+		"storageClass": "",
+		"ingressClass": "",
+		"ingressHost": ""
+	}
+}

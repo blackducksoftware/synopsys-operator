@@ -129,9 +129,10 @@ func (v *Vault) GetDeployment() *components.Deployment {
 		ServiceAccount: "vault-init",
 		Containers:     containers,
 		Volumes:        v.getVaultVolumes(),
+		Labels:         map[string]string{"app": "rgp", "component": "vault"},
 	}
 
-	deployment, _ := util.CreateDeploymentFromContainer(deployConfig, podConfig, nil)
+	deployment, _ := util.CreateDeploymentFromContainer(deployConfig, podConfig, podConfig.Labels)
 	return deployment
 }
 

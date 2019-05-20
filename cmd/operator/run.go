@@ -104,8 +104,7 @@ func runProtoform(configPath string) {
 	}
 	deployer.AddController(opssSightController)
 
-	// TODO: Add default template
-	rgpController := rgp.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, nil, stopCh)
+	rgpController := rgp.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetRgpTemplate(), stopCh)
 	deployer.AddController(rgpController)
 
 	logrus.Info("Starting deployer.  All controllers have been added to Protoform.")

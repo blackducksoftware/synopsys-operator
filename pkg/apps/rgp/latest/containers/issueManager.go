@@ -75,7 +75,7 @@ func (g *RgpDeployer) GetIssueManageContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "rp-issue-manager",
 		Image:      "gcr.io/snps-swip-staging/reporting-rp-issue-manager:0.0.487",
-		PullPolicy: horizonapi.PullAlways,
+		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "500m",
 		MinMem:     "1Gi",
 	})

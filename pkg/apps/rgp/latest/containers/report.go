@@ -45,6 +45,8 @@ func (g *RgpDeployer) GetReportDeployment() *components.Deployment {
 		"app":  "rgp",
 		"name": "report-service",
 	})
+	log.Debugf("report: %+v", deployment)
+
 	return deployment
 }
 
@@ -78,7 +80,7 @@ func (g *RgpDeployer) getReportContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "report-service",
 		Image:      "gcr.io/snps-swip-staging/reporting-report-service:0.0.450",
-		PullPolicy: horizonapi.PullAlways,
+		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "250m",
 		MinMem:     "1Gi",
 	})
@@ -110,7 +112,7 @@ func (g *RgpDeployer) getClamavContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "clamav",
 		Image:      "gcr.io/snps-swip-staging/reporting-clamav:latest",
-		PullPolicy: horizonapi.PullAlways,
+		PullPolicy: horizonapi.PullIfNotPresent,
 		// TODO: RESTART POLICY: ALWAYS, horizon doesn't have it
 	})
 	if err != nil {

@@ -108,7 +108,9 @@ func (c *Creater) init(spec *v1.RgpSpec) error {
 		Name:      "vault",
 		Namespace: spec.Namespace,
 		Replicas:  util.IntToInt32(3),
-	}, vaultPod, nil))
+	}, vaultPod, map[string]string{
+		"app": "vault",
+	}))
 	vaultDeployer.AddComponent(horizonapi.ConfigMapComponent, vaultCreater.GetVaultConfigConfigMap())
 	err = vaultDeployer.Run()
 	if err != nil {

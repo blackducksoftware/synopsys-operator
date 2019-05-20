@@ -74,7 +74,7 @@ func (g *RgpDeployer) getPortfolioContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "rp-portfolio-service",
 		Image:      "gcr.io/snps-swip-staging/reporting-rp-portfolio-service:0.0.663",
-		PullPolicy: horizonapi.PullAlways,
+		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "250m",
 		MinMem:     "500Mi",
 	})

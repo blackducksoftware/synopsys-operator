@@ -25,6 +25,7 @@ import (
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	rgpv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
 	//samplev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
 )
 
@@ -47,6 +48,11 @@ func GetBlackDuckTemplate() *blackduckv1.BlackduckSpec {
 		LicenseKey:        "",
 		PersistentStorage: false,
 	}
+}
+
+// GetRgpTemplate returns the required fields for Rgp
+func GetRgpTemplate() *rgpv1.RgpSpec {
+	return &rgpv1.RgpSpec{}
 }
 
 // GetBlackDuckDefaultPersistentStorageLatest creates a Black Duck crd configuration object

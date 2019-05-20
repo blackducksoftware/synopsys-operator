@@ -283,6 +283,7 @@ func CreateReplicationControllerFromContainer(replicationControllerConfig *horiz
 	if err != nil {
 		return nil, fmt.Errorf("unable to create pod for the replication controller %s due to %+v", replicationControllerConfig.Name, err)
 	}
+	// TODO:pod.AddImagePullSecrets()
 	rc := CreateReplicationController(replicationControllerConfig, pod, podConfig.Labels, labelSelector)
 	return rc, nil
 }
@@ -296,7 +297,7 @@ func CreateStateFulSet(stateFulSetConfig *horizonapi.StatefulSetConfig, pod *com
 }
 
 // CreateStateFulSetFromContainer will create a statefulset from a container
-func CreateStateFulSetFromContainer(stateFulSetConfig *horizonapi.StatefulSetConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig) *components.StatefulSet {
+func CreateStateFulSetFromContainer(stateFulSetConfig *horizonapi.StatefulSetConfig, serviceAccount string, containers []*Container, volumes []*components.Volume, initContainers []*Container, affinityConfigs map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig, labelSelector map[string]string) *components.StatefulSet {
 	pod, _ := CreatePod(&PodConfig{
 		Name:                stateFulSetConfig.Name,
 		ServiceAccount:      serviceAccount,
@@ -304,6 +305,7 @@ func CreateStateFulSetFromContainer(stateFulSetConfig *horizonapi.StatefulSetCon
 		Containers:          containers,
 		InitContainers:      initContainers,
 		NodeAffinityConfigs: affinityConfigs,
+		Labels:              labelSelector,
 	})
 	stateFulSet := CreateStateFulSet(stateFulSetConfig, pod)
 	return stateFulSet

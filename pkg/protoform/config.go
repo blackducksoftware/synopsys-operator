@@ -75,6 +75,9 @@ type HubConfig struct {
 
 // GetLogLevel will set the log level
 func (config *Config) GetLogLevel() (log.Level, error) {
+	if config.LogLevel == "" {
+		config.LogLevel = "debug"
+	}
 	return log.ParseLevel(config.LogLevel)
 }
 
