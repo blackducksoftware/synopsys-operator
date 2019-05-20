@@ -67,6 +67,18 @@ func runProtoform(configPath string) {
 		panic(err)
 	}
 
+	// Log Kubernetes version
+	kversion, err := bdutil.GetKubernetesVersion(deployer.KubeClientSet)
+	if err == nil {
+		logrus.Infof("Kubernetes: %s", kversion)
+	}
+
+	// Log Openshift version
+	oversion, err := bdutil.GetOcVersion(deployer.KubeClientSet)
+	if err == nil {
+		logrus.Infof("Openshift: %s", oversion)
+	}
+
 	stopCh := make(chan struct{})
 
 	//sampleController := sample.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetSampleDefaultValue(), stopCh)
