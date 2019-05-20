@@ -7,8 +7,9 @@
 	},
 	"spec": {
 		"namespace": "rgp-test",
+		"version": "2019.04",
 		"storageClass": "",
-		"ingressClass": "",
-		"ingressHost": ""
+		"ingressClass": "nginx",
+		"ingressHost": "example.com"
 	}
 }

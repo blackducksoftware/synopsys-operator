@@ -19,63 +19,63 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package containers
+package rgp
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 )
 
-// GetPolarisDeployment returns the polaris deployment
-func (g *RgpDeployer) GetPolarisDeployment() *components.Deployment {
+// GetToolsPortfolioDeployment returns the tools portfolio deployment
+func (g *SpecConfig) GetToolsPortfolioDeployment() *components.Deployment {
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
-		Name:      "polaris-service",
-		Namespace: g.Grspec.Namespace,
+		Name:      "tools-portfolio-service",
+		Namespace: g.config.Namespace,
 	})
 
-	deployment.AddPod(g.GetPolarisPod())
+	deployment.AddPod(g.getToolsPortfolioPod())
 	deployment.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "polaris-service",
+		"name": "tools-portfolio-service",
 	})
 
 	deployment.AddMatchLabelsSelectors(map[string]string{
 		"app":  "rgp",
-		"name": "polaris-service",
+		"name": "tools-portfolio-service",
 	})
 	return deployment
 }
 
-// GetPolarisPod returns the polaris pod
-func (g *RgpDeployer) GetPolarisPod() *components.Pod {
+func (g *SpecConfig) getToolsPortfolioPod() *components.Pod {
 
+	// TODO: HELM CHART HAS serviceAccount: "auth-server"
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "polaris-service",
+		Name:           "tools-portfolio-service",
+		ServiceAccount: "auth-server",
 	})
 
-	container, _ := g.getPolarisContainer()
+	container, _ := g.getToolPortfolioContainer()
 
 	pod.AddContainer(container)
-	for _, v := range g.getPolarisVolumes() {
+	for _, v := range g.getToolsPortfolioVolumes() {
 		pod.AddVolume(v)
 	}
 
 	pod.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "polaris-service",
+		"name": "tools-portfolio-service",
 	})
 
 	return pod
 }
 
-func (g *RgpDeployer) getPolarisContainer() (*components.Container, error) {
+func (g *SpecConfig) getToolPortfolioContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
-		Name:       "polaris-service",
-		Image:      "gcr.io/snps-swip-staging/reporting-polaris-service:0.0.111",
+		Name:       "tools-portfolio-service",
+		Image:      GetImageTag(g.config.Version, "reporting-tools-portfolio-service"),
 		PullPolicy: horizonapi.PullIfNotPresent,
-		MinCPU:     "500m",
+		MinCPU:     "250m",
 		MinMem:     "1Gi",
 	})
 	if err != nil {
@@ -83,44 +83,44 @@ func (g *RgpDeployer) getPolarisContainer() (*components.Container, error) {
 	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: 7788,
+		ContainerPort: 60281,
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	for _, v := range g.getPolarisVolumeMounts() {
+	for _, v := range g.getToolsPortfolioVolumeMounts() {
 		err := container.AddVolumeMount(*v)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	for _, v := range g.getPolarisEnvConfigs() {
+	for _, v := range g.getToolsPortfolioEnvConfigs() {
 		container.AddEnv(*v)
 	}
 
 	return container, nil
 }
 
-// GetPolarisService returns the polaris service
-func (g *RgpDeployer) GetPolarisService() *components.Service {
+// GetToolsPortfolioService returns the tools portfolio service
+func (g *SpecConfig) GetToolsPortfolioService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      "polaris-service",
-		Namespace: g.Grspec.Namespace,
+		Name:      "tools-portfolio-service",
+		Namespace: g.config.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	service.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "polaris-service",
+		"name": "tools-portfolio-service",
 	})
 	service.AddSelectors(map[string]string{
-		"name": "polaris-service",
+		"name": "tools-portfolio-service",
 	})
-	service.AddPort(horizonapi.ServicePortConfig{Name: "7788", Port: 7788, Protocol: horizonapi.ProtocolTCP, TargetPort: "7788"})
+	service.AddPort(horizonapi.ServicePortConfig{Name: "60289", Port: 60281, Protocol: horizonapi.ProtocolTCP, TargetPort: "60281"})
 	service.AddPort(horizonapi.ServicePortConfig{Name: "admin", Port: 8081, Protocol: horizonapi.ProtocolTCP, TargetPort: "8081"})
 	return service
 }
 
-func (g *RgpDeployer) getPolarisVolumes() []*components.Volume {
+func (g *SpecConfig) getToolsPortfolioVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -130,31 +130,32 @@ func (g *RgpDeployer) getPolarisVolumes() []*components.Volume {
 			{
 				Key:  "tls.crt",
 				Path: "vault_cacrt",
-				Mode: util.IntToInt32(420),
+				// TODO: 420 not specified as DefaultMode in HELM chart, not sure, if bug on their end or we should just assume
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "vault-client-key",
-		MapOrSecretName: "auth-client-tls-certificate",
+		VolumeName:      "vault-server-key",
+		MapOrSecretName: "auth-server-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
 				Key:  "tls.key",
-				Path: "vault_client_key",
-				Mode: util.IntToInt32(420),
+				Path: "vault_server_key",
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "vault-client-cert",
-		MapOrSecretName: "auth-client-tls-certificate",
+		VolumeName:      "vault-server-cert",
+		MapOrSecretName: "auth-server-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
 				Key:  "tls.crt",
-				Path: "vault_client_crt",
-				Mode: util.IntToInt32(420),
+				Path: "vault_server_cert",
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -162,21 +163,21 @@ func (g *RgpDeployer) getPolarisVolumes() []*components.Volume {
 	return volumes
 }
 
-func (g *RgpDeployer) getPolarisVolumeMounts() []*horizonapi.VolumeMountConfig {
+func (g *SpecConfig) getToolsPortfolioVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-cacert", MountPath: "/mnt/vault/ca"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-client-key", MountPath: "/mnt/vault/key"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-client-cert", MountPath: "/mnt/vault/cert"})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-key", MountPath: "/mnt/vault/key"})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-cert", MountPath: "/mnt/vault/cert"})
 
 	return volumeMounts
 }
 
-func (g *RgpDeployer) getPolarisEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getToolsPortfolioEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_client_key"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_client_cert"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_server_key"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_server_cert"})
 
 	envs = append(envs, g.getCommonEnvConfigs()...)
 	envs = append(envs, g.getSwipEnvConfigs()...)

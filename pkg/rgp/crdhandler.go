@@ -24,13 +24,17 @@ package rgp
 import (
 	"fmt"
 	"strings"
+	"time"
 
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
-	cr "github.com/blackducksoftware/synopsys-operator/pkg/apps/rgp/latest"
+	rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	rgpclientset "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/imdario/mergo"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -62,84 +66,99 @@ const (
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	config     *protoform.Config
-	kubeConfig *rest.Config
-	kubeClient *kubernetes.Clientset
-	rgpClient  *rgpclientset.Clientset
+	config      *protoform.Config
+	kubeConfig  *rest.Config
+	kubeClient  *kubernetes.Clientset
+	rgpClient   *rgpclientset.Clientset
+	defaults    *rgpapi.RgpSpec
+	routeClient *routeclient.RouteV1Client
 }
 
-// NewHandler ...
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, rgpClient *rgpclientset.Clientset) *Handler {
-	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, rgpClient: rgpClient}
+// NewHandler will create the handler
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, rgpClient *rgpclientset.Clientset, routeClient *routeclient.RouteV1Client, defaults *rgpapi.RgpSpec) *Handler {
+	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, rgpClient: rgpClient, routeClient: routeClient, defaults: defaults}
 }
 
-// ObjectCreated will be called for create events
+// ObjectCreated will be called for create rgp events
 func (h *Handler) ObjectCreated(obj interface{}) {
-	var err error
-	log.Debugf("ObjectCreated: %+v", obj)
-	gr, ok := obj.(*v1.Rgp)
-	if !ok {
-		log.Error("Unable to cast object")
-		return
-	}
-
-	if len(gr.Status.State) > 0 {
-		return
-	}
-
-	if strings.EqualFold(gr.Status.State, string(Running)) || strings.EqualFold(gr.Status.State, string(Stopped)) {
-		h.ObjectUpdated(nil, gr)
-	}
-
-	log.Info(gr.Name)
-
-	gr.Status.State = string(Creating)
-	gr, err = h.rgpClient.SynopsysV1().Rgps(h.config.Namespace).Update(gr)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-
-	creater := cr.NewCreater(h.kubeConfig, h.kubeClient, h.rgpClient)
-	err = creater.Create(&gr.Spec)
-	if err != nil {
-		log.Error(err.Error())
-		gr.Status.ErrorMessage = err.Error()
-		gr.Status.State = string(Error)
-	} else {
-		gr.Status.Fqdn = fmt.Sprintf("%s/reporting", gr.Spec.IngressHost)
-		gr.Status.State = string(Running)
-	}
-
-	_, err = h.rgpClient.SynopsysV1().Rgps(h.config.Namespace).Update(gr)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
+	log.Debugf("objectCreated: %+v", obj)
+	h.ObjectUpdated(nil, obj)
 }
 
-// ObjectDeleted will be called for delete events
+// ObjectDeleted will be called for delete alert events
 func (h *Handler) ObjectDeleted(name string) {
-	log.Debugf("ObjectDeleted: %s", name)
-	err := util.DeleteNamespace(h.kubeClient, name)
-	if err != nil {
-		log.Error(err.Error())
-	}
-}
+	log.Debugf("objectDeleted: %+v", name)
 
-// ObjectUpdated will be called for update events
-func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
-	gr, ok := objNew.(*v1.Rgp)
-	if !ok {
-		log.Error("Unable to cast object")
+	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
+	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("rgps.synopsys.com", v1.GetOptions{})
+	if err != nil || crd.DeletionTimestamp != nil {
+		// We do not delete the Rgp instance if the CRD doesn't exist or that it is in the process of being deleted
+		log.Warnf("Ignoring request to delete %s because the CRD doesn't exist or is being deleted", name)
 		return
 	}
-	if strings.EqualFold(gr.Status.State, string(Running)) || strings.EqualFold(gr.Status.State, string(Stopped)) {
-		log.Debugf("Update: %s", gr.Name)
-		creater := cr.NewCreater(h.kubeConfig, h.kubeClient, h.rgpClient)
-		err := creater.Update(&gr.Spec)
+
+	app := apps.NewApp(h.config, h.kubeConfig)
+	app.Rgp().Delete(name)
+}
+
+// ObjectUpdated will be called for update Rgp events
+func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
+	log.Debugf("updating Object to %+v", objNew)
+	// Verify the object is an Rgp
+	rgp, ok := objNew.(*rgpapi.Rgp)
+	if !ok {
+		log.Error("unable to cast to Rgp object")
+		return
+	}
+
+	// Get Default fields for Rgp
+	newSpec := rgp.Spec
+	rgpDefaultSpec := h.defaults
+	err := mergo.Merge(&newSpec, rgpDefaultSpec)
+	if err != nil {
+		log.Errorf("unable to merge the Rgo structs for %s due to %+v", rgp.Name, err)
+		rgp, err = h.updateState(Error, fmt.Sprintf("unable to merge the Rgp structs for %s due to %+v", rgp.Name, err), rgp)
 		if err != nil {
-			log.Error(err.Error())
+			log.Errorf("couldn't update Rgp state: %v", err)
+		}
+		return
+	}
+	rgp.Spec = newSpec
+
+	// An error occurred. We wait for one minute before we try to ensure again
+	if strings.EqualFold(rgp.Status.State, string(Error)) {
+		time.Sleep(time.Minute * 1)
+	}
+
+	// Update the Rgp
+	app := apps.NewApp(h.config, h.kubeConfig)
+	err = app.Rgp().Ensure(rgp)
+	if err != nil {
+		log.Errorf("unable to ensure the Rgp %s due to %+v", rgp.Name, err)
+		rgp, err = h.updateState(Error, fmt.Sprintf("%+v", err), rgp)
+		if err != nil {
+			log.Errorf("couldn't update Rgp state: %v", err)
+		}
+		return
+	}
+	if !strings.EqualFold(rgp.Status.State, string(Running)) {
+		_, err = h.updateState(Running, "", rgp)
+		if err != nil {
+			log.Errorf("couldn't update Rgp state: %v", err)
 		}
 	}
+}
+
+func (h *Handler) updateState(statusState State, errorMessage string, rgp *rgpapi.Rgp) (*rgpapi.Rgp, error) {
+	rgp.Status.State = string(statusState)
+	rgp.Status.ErrorMessage = errorMessage
+	rgp, err := h.updateRgpObject(rgp)
+	if err != nil {
+		log.Errorf("couldn't update the state of alert object: %s", err.Error())
+	}
+	return rgp, err
+}
+
+func (h *Handler) updateRgpObject(obj *rgpapi.Rgp) (*rgpapi.Rgp, error) {
+	return h.rgpClient.SynopsysV1().Rgps(h.config.Namespace).Update(obj)
 }

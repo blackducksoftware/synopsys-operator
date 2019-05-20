@@ -27,6 +27,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
+	rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	rgpclientset "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/clientset/versioned"
 	rgpinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/rgp/client/informers/externalversions/rgp/v1"
@@ -67,11 +68,11 @@ func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClie
 
 // CreateClientSet will create the CRD client
 func (c *CRDInstaller) CreateClientSet() error {
-	client, err := rgpclientset.NewForConfig(c.kubeConfig)
+	rgpClient, err := rgpclientset.NewForConfig(c.kubeConfig)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	c.rgpClient = client
+	c.rgpClient = rgpClient
 	return nil
 }
 
@@ -102,7 +103,7 @@ func (c *CRDInstaller) Deploy() error {
 
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("unable to create the CRD due to %+v", err)
+		log.Errorf("unable to create the Rgp CRD due to %+v", err)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -159,7 +160,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 			//
 			// this then in turn calls MetaNamespaceKeyFunc
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			log.Infof("delete : %s: %+v", key, obj)
+			log.Infof("delete rgp: %s: %+v", key, obj)
 
 			if err == nil {
 				c.queue.Add(key)
@@ -170,11 +171,15 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
+	routeClient := util.GetRouteClient(c.kubeConfig)
+
 	c.handler = &Handler{
-		config:     c.config,
-		kubeConfig: c.kubeConfig,
-		kubeClient: c.kubeClient,
-		rgpClient:  c.rgpClient,
+		config:      c.config,
+		kubeConfig:  c.kubeConfig,
+		kubeClient:  c.kubeClient,
+		rgpClient:   c.rgpClient,
+		defaults:    c.defaults.(*rgpapi.RgpSpec),
+		routeClient: routeClient,
 	}
 }
 

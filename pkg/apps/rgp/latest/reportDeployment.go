@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package containers
+package rgp
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -28,99 +28,119 @@ import (
 	"github.com/juju/errors"
 )
 
-// GetPortfolioDeployment returns the portfolio deployment
-func (g *RgpDeployer) GetPortfolioDeployment() *components.Deployment {
+// GetReportDeployment returns the report deployment
+func (g *SpecConfig) GetReportDeployment() *components.Deployment {
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
-		Name:      "rp-portfolio-service",
-		Namespace: g.Grspec.Namespace,
+		Name:      "report-service",
+		Namespace: g.config.Namespace,
 	})
 
-	deployment.AddPod(g.GetPortfolioPod())
+	deployment.AddPod(g.getReportPod())
 	deployment.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "rp-portfolio-service",
+		"name": "report-service",
 	})
 
 	deployment.AddMatchLabelsSelectors(map[string]string{
 		"app":  "rgp",
-		"name": "rp-portfolio-service",
+		"name": "report-service",
 	})
 	return deployment
 }
 
-// GetPortfolioPod returns the portfolio pod
-func (g *RgpDeployer) GetPortfolioPod() *components.Pod {
-
+func (g *SpecConfig) getReportPod() *components.Pod {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "rp-portfolio-service",
+		Name: "report-service",
 	})
 
-	container, _ := g.getPortfolioContainer()
+	reportContainer, _ := g.getReportContainer()
+	clamavContainer, _ := g.getClamavContainer()
 
-	pod.AddContainer(container)
-	for _, v := range g.getPortfolioVolumes() {
+	pod.AddContainer(reportContainer)
+	pod.AddContainer(clamavContainer)
+
+	for _, v := range g.getReportVolumes() {
 		pod.AddVolume(v)
 	}
 
 	pod.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "rp-portfolio-service",
+		"name": "report-service",
 	})
 
 	return pod
 }
 
-func (g *RgpDeployer) getPortfolioContainer() (*components.Container, error) {
+func (g *SpecConfig) getReportContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
-		Name:       "rp-portfolio-service",
-		Image:      "gcr.io/snps-swip-staging/reporting-rp-portfolio-service:0.0.663",
+		Name:       "report-service",
+		Image:      GetImageTag(g.config.Version, "reporting-report-service"),
 		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "250m",
-		MinMem:     "500Mi",
+		MinMem:     "1Gi",
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: 60289,
+		ContainerPort: 7979,
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	for _, v := range g.getPortfolioVolumeMounts() {
+	for _, v := range g.getReportVolumeMounts() {
 		err := container.AddVolumeMount(*v)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	for _, v := range g.getPortfolioEnvConfigs() {
+	for _, v := range g.getReportEnvConfigs() {
 		container.AddEnv(*v)
 	}
 
 	return container, nil
 }
 
-// GetPortfolioService returns the portfolio service
-func (g *RgpDeployer) GetPortfolioService() *components.Service {
+func (g *SpecConfig) getClamavContainer() (*components.Container, error) {
+	container, err := components.NewContainer(horizonapi.ContainerConfig{
+		Name:       "clamav",
+		Image:      "gcr.io/snps-swip-staging/reporting-clamav:latest",
+		PullPolicy: horizonapi.PullIfNotPresent,
+		// TODO: RESTART POLICY: ALWAYS, horizon doesn't have it
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	container.AddPort(horizonapi.PortConfig{
+		ContainerPort: 3310,
+		Protocol:      horizonapi.ProtocolTCP,
+	})
+
+	return container, nil
+}
+
+// GetReportService returns the report service
+func (g *SpecConfig) GetReportService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      "rp-portfolio-service",
-		Namespace: g.Grspec.Namespace,
+		Name:      "report-service",
+		Namespace: g.config.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	service.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "rp-portfolio-service",
+		"name": "report-service",
 	})
 	service.AddSelectors(map[string]string{
-		"name": "rp-portfolio-service",
+		"name": "report-service",
 	})
-	service.AddPort(horizonapi.ServicePortConfig{Name: "60289", Port: 60289, Protocol: horizonapi.ProtocolTCP, TargetPort: "60289"})
+	service.AddPort(horizonapi.ServicePortConfig{Name: "7979", Port: 7979, Protocol: horizonapi.ProtocolTCP, TargetPort: "7979"})
 	service.AddPort(horizonapi.ServicePortConfig{Name: "admin", Port: 8081, Protocol: horizonapi.ProtocolTCP, TargetPort: "8081"})
 	return service
 }
 
-func (g *RgpDeployer) getPortfolioVolumes() []*components.Volume {
+func (g *SpecConfig) getReportVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -162,7 +182,7 @@ func (g *RgpDeployer) getPortfolioVolumes() []*components.Volume {
 	return volumes
 }
 
-func (g *RgpDeployer) getPortfolioVolumeMounts() []*horizonapi.VolumeMountConfig {
+func (g *SpecConfig) getReportVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-cacert", MountPath: "/mnt/vault/ca"})
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-client-key", MountPath: "/mnt/vault/key"})
@@ -171,8 +191,10 @@ func (g *RgpDeployer) getPortfolioVolumeMounts() []*horizonapi.VolumeMountConfig
 	return volumeMounts
 }
 
-func (g *RgpDeployer) getPortfolioEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getReportEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
+	//envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromPodIP, NameOrPrefix: "POD_IP"})
+	//envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLUSTER_ADDR", KeyOrVal: "https://$(POD_IP):8201"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_client_key"})
@@ -181,6 +203,13 @@ func (g *RgpDeployer) getPortfolioEnvConfigs() []*horizonapi.EnvConfig {
 	envs = append(envs, g.getCommonEnvConfigs()...)
 	envs = append(envs, g.getSwipEnvConfigs()...)
 	envs = append(envs, g.getPostgresEnvConfigs()...)
+
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MINIO_HOST", KeyOrVal: "minio"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MINIO_PORT", KeyOrVal: "9000"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MINIO_BUCKET", KeyOrVal: "reports"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MINIO_REGION", KeyOrVal: "us-central1"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MINIO_ACCESS_KEY", KeyOrVal: "access_key", FromName: "minio-keys"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "MINIO_SECRET_KEY", KeyOrVal: "secret_key", FromName: "minio-keys"})
 
 	return envs
 }

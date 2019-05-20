@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package containers
+package rgp
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -28,14 +28,14 @@ import (
 )
 
 // GetFrontendDeployment returns the front end deployment
-func (g *RgpDeployer) GetFrontendDeployment() *components.Deployment {
+func (g *SpecConfig) GetFrontendDeployment() *components.Deployment {
 
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Name:      "frontend-service",
-		Namespace: g.Grspec.Namespace,
+		Namespace: g.config.Namespace,
 	})
 
-	deployment.AddPod(g.GetFrontendPod())
+	deployment.AddPod(g.getFrontendPod())
 	deployment.AddLabels(map[string]string{
 		"app":  "rgp",
 		"name": "frontend-service",
@@ -49,14 +49,13 @@ func (g *RgpDeployer) GetFrontendDeployment() *components.Deployment {
 	return deployment
 }
 
-// GetFrontendPod returns the front end pod
-func (g *RgpDeployer) GetFrontendPod() *components.Pod {
+func (g *SpecConfig) getFrontendPod() *components.Pod {
 
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "frontend-servicer",
 	})
 
-	container, _ := g.GetFrontendContainer()
+	container, _ := g.getFrontendContainer()
 
 	pod.AddContainer(container)
 
@@ -68,11 +67,10 @@ func (g *RgpDeployer) GetFrontendPod() *components.Pod {
 	return pod
 }
 
-// GetFrontendContainer will return the container
-func (g *RgpDeployer) GetFrontendContainer() (*components.Container, error) {
+func (g *SpecConfig) getFrontendContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "frontend-service",
-		Image:      "gcr.io/snps-swip-staging/reporting-frontend-service:0.0.673",
+		Image:      GetImageTag(g.config.Version, "reporting-frontend-service"),
 		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "250m",
 		MinMem:     "500Mi",
@@ -94,10 +92,10 @@ func (g *RgpDeployer) GetFrontendContainer() (*components.Container, error) {
 }
 
 // GetFrontendService returns the front end service
-func (g *RgpDeployer) GetFrontendService() *components.Service {
+func (g *SpecConfig) GetFrontendService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      "frontend-service",
-		Namespace: g.Grspec.Namespace,
+		Namespace: g.config.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	service.AddLabels(map[string]string{
@@ -111,7 +109,7 @@ func (g *RgpDeployer) GetFrontendService() *components.Service {
 	return service
 }
 
-func (g *RgpDeployer) getFrontendEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getFrontendEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, g.getSwipEnvConfigs()...)
 	return envs

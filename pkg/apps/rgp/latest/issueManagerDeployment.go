@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package containers
+package rgp
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -29,13 +29,13 @@ import (
 )
 
 // GetIssueManagerDeployment returns the issue manager deployment
-func (g *RgpDeployer) GetIssueManagerDeployment() *components.Deployment {
+func (g *SpecConfig) GetIssueManagerDeployment() *components.Deployment {
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Name:      "rp-issue-manager",
-		Namespace: g.Grspec.Namespace,
+		Namespace: g.config.Namespace,
 	})
 
-	deployment.AddPod(g.GetIssueManagerPod())
+	deployment.AddPod(g.getIssueManagerPod())
 	deployment.AddLabels(map[string]string{
 		"app":  "rgp",
 		"name": "rp-issue-manager",
@@ -48,14 +48,13 @@ func (g *RgpDeployer) GetIssueManagerDeployment() *components.Deployment {
 	return deployment
 }
 
-// GetIssueManagerPod returns the issue manager pod
-func (g *RgpDeployer) GetIssueManagerPod() *components.Pod {
+func (g *SpecConfig) getIssueManagerPod() *components.Pod {
 
 	pod := components.NewPod(horizonapi.PodConfig{
 		Name: "rp-issue-manager",
 	})
 
-	container, _ := g.GetIssueManageContainer()
+	container, _ := g.getIssueManageContainer()
 
 	pod.AddContainer(container)
 	for _, v := range g.getIssueManagerVolumes() {
@@ -70,11 +69,10 @@ func (g *RgpDeployer) GetIssueManagerPod() *components.Pod {
 	return pod
 }
 
-// GetIssueManageContainer will return the container
-func (g *RgpDeployer) GetIssueManageContainer() (*components.Container, error) {
+func (g *SpecConfig) getIssueManageContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "rp-issue-manager",
-		Image:      "gcr.io/snps-swip-staging/reporting-rp-issue-manager:0.0.487",
+		Image:      GetImageTag(g.config.Version, "reporting-rp-issue-manager"),
 		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "500m",
 		MinMem:     "1Gi",
@@ -103,10 +101,10 @@ func (g *RgpDeployer) GetIssueManageContainer() (*components.Container, error) {
 }
 
 // GetIssueManagerService returns the issue manager service
-func (g *RgpDeployer) GetIssueManagerService() *components.Service {
+func (g *SpecConfig) GetIssueManagerService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
 		Name:      "rp-issue-manager",
-		Namespace: g.Grspec.Namespace,
+		Namespace: g.config.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	service.AddLabels(map[string]string{
@@ -121,7 +119,7 @@ func (g *RgpDeployer) GetIssueManagerService() *components.Service {
 	return service
 }
 
-func (g *RgpDeployer) getIssueManagerVolumes() []*components.Volume {
+func (g *SpecConfig) getIssueManagerVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -163,7 +161,7 @@ func (g *RgpDeployer) getIssueManagerVolumes() []*components.Volume {
 	return volumes
 }
 
-func (g *RgpDeployer) getIssueManagerVolumeMounts() []*horizonapi.VolumeMountConfig {
+func (g *SpecConfig) getIssueManagerVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-cacert", MountPath: "/mnt/vault/ca"})
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-client-key", MountPath: "/mnt/vault/key"})
@@ -172,7 +170,7 @@ func (g *RgpDeployer) getIssueManagerVolumeMounts() []*horizonapi.VolumeMountCon
 	return volumeMounts
 }
 
-func (g *RgpDeployer) getIssueManagerEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getIssueManagerEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})

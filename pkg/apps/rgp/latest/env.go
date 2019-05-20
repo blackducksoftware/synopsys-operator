@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package containers
+package rgp
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 )
 
-func (g *RgpDeployer) getCommonEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getCommonEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "CONNECTION_POOL_SIZE", KeyOrVal: "10"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "LOG_LEVEL", KeyOrVal: "INFO"})
@@ -36,14 +36,14 @@ func (g *RgpDeployer) getCommonEnvConfigs() []*horizonapi.EnvConfig {
 	return envs
 }
 
-func (g *RgpDeployer) getSwipEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getSwipEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ROOT_DOMAIN", KeyOrVal: g.Grspec.IngressHost})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ENVIRONMENT_NAME", KeyOrVal: g.Grspec.Namespace})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ROOT_DOMAIN", KeyOrVal: g.config.IngressHost})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ENVIRONMENT_NAME", KeyOrVal: g.config.Namespace})
 	return envs
 }
 
-func (g *RgpDeployer) getPostgresEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getPostgresEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_HOST", KeyOrVal: "postgres"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "POSTGRES_PORT", KeyOrVal: "5432"})
@@ -52,14 +52,14 @@ func (g *RgpDeployer) getPostgresEnvConfigs() []*horizonapi.EnvConfig {
 	return envs
 }
 
-func (g *RgpDeployer) getMongoEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getMongoEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MONGODB_HOST", KeyOrVal: "mongodb"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "MONGODB_PORT", KeyOrVal: "27017"})
 	return envs
 }
 
-func (g *RgpDeployer) getEventStoreLegacyEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getEventStoreLegacyEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "EVENT_STORE_ADDR", KeyOrVal: "eventstore"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "EVENT_STORE_USERNAME", KeyOrVal: "admin"})
@@ -67,7 +67,7 @@ func (g *RgpDeployer) getEventStoreLegacyEnvConfigs() []*horizonapi.EnvConfig {
 	return envs
 }
 
-func (g *RgpDeployer) getEventStoreEnvConfigs(role string) []*horizonapi.EnvConfig {
+func (g *SpecConfig) getEventStoreEnvConfigs(role string) []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "EVENT_STORE_ADDR", KeyOrVal: "eventstore"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: fmt.Sprintf("EVENT_STORE_%s_USERNAME", strings.ToUpper(role)), KeyOrVal: role})

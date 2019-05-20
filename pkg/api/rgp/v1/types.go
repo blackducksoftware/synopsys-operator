@@ -39,6 +39,7 @@ type Rgp struct {
 // RgpSpec will be CRD Rgp definition's Spec
 type RgpSpec struct {
 	Namespace    string `json:"namespace"`
+	Version      string `json:"version,omitempty"`
 	StorageClass string `json:"storageClass"`
 	IngressClass string `json:"ingressClass"`
 	IngressHost  string `json:"ingressHost"`

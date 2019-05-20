@@ -24,6 +24,7 @@ package apps
 import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/rgp"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"k8s.io/client-go/rest"
 )
@@ -47,4 +48,9 @@ func (a *App) Alert() *alert.Alert {
 // Blackduck will return a Blackduck
 func (a *App) Blackduck() *blackduck.Blackduck {
 	return blackduck.NewBlackduck(a.config, a.kubeConfig)
+}
+
+// Rgp will return an Rgp
+func (a *App) Rgp() *rgp.Rgp {
+	return rgp.NewRgp(a.config, a.kubeConfig)
 }

@@ -25,201 +25,162 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"github.com/juju/errors"
-	v1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Vault stores the value configuration
+// Vault stores the vault configuration
 type Vault struct {
-	Namespace string
+	namespace   string
+	vaultConfig string
+	//vaultCaCert  string
+	//vaultTLSCert string
+	//vaultTLSKey  string
+	vaultSecrets    map[string]string
+	vaultCacertPath string
+	//vaultTLSSecretName string
+	//vaultTLSMountPath string
 }
 
-// GetConfigmap returns the vault configmap
-func (v *Vault) GetConfigmap() *components.ConfigMap {
-	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: v.Namespace, Name: "vault-policies"})
-	cm.AddData(map[string]string{
-		"auth-server.hcl": `path "secret/data/auth/*" {
-      capabilities = ["create", "read", "update", "delete", "list"]
-    }`,
-		"auth-client.hcl": `path "secret/data/auth/public/*" {
-      capabilities = ["list", "read"]
-    }`,
-	})
-
-	return cm
+// NewVault returns the vault configuration
+func NewVault(namespace string, vaultConfig string, vaultSecrets map[string]string, vaultCacertPath string) *Vault {
+	return &Vault{namespace: namespace, vaultConfig: vaultConfig, vaultSecrets: vaultSecrets, vaultCacertPath: vaultCacertPath}
 }
 
-// GetJob returns the vault job
-func (v *Vault) GetJob() *v1.Job {
+// GetPod returns the vault pod
+func (v *Vault) GetPod() *components.Pod {
+	envs := v.getVaultEnvConfigs()
 
-	job := &v1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "vault-init",
-		},
-		Spec: v1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					ServiceAccountName: "vault-init",
-					Containers: []corev1.Container{
-						{
-							Name:            "vault-init",
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Image:           "gcr.io/snps-swip-staging/vault-util:latest",
-							Command:         []string{"vault-tls-init"},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "VAULT_SERVICE_NAME",
-									Value: "vault",
-								},
-								{
-									Name:  "VAULT_KUBERNETES_NAMESPACE",
-									Value: v.Namespace,
-								},
-								{
-									Name:  "VAULT_CLIENT_CERTIFICATES",
-									Value: "auth-server,auth-client",
-								},
-							},
-						},
-					},
-					RestartPolicy: corev1.RestartPolicyOnFailure,
-				},
-			},
-		},
-	}
-
-	return job
-}
-
-// GetDeployment returns the vault deployment
-func (v *Vault) GetDeployment() *components.Deployment {
-
+	volumeMounts := v.getVaultVolumeMounts()
 	var containers []*util.Container
+
+	var trueBool = true
 
 	container := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
-			Name: "vault-init",
-			// TODO: NO LONGER IN THE HELM CHART, NOT SURE IF STILL NEEDED
-			Image:      "gcr.io/snps-swip-staging/vault-util:latest",
+			Name:       "vault",
+			Image:      "vault:0.11.2",
 			PullPolicy: horizonapi.PullIfNotPresent,
 			MinMem:     "",
 			MaxMem:     "",
 			MinCPU:     "",
 			MaxCPU:     "",
 			Command: []string{
-				"vault-init",
+				"vault",
+				"server",
+				"-config",
+				"/vault/config/config.json",
+			},
+			ReadOnlyFS: &trueBool,
+		},
+		Capabilities: []string{"IPC_LOCK"},
+		EnvConfigs:   envs,
+		VolumeMounts: volumeMounts,
+		PortConfig: []*horizonapi.PortConfig{
+			{ContainerPort: 8200},
+			{ContainerPort: 8201},
+		},
+		ReadinessProbeConfigs: []*horizonapi.ProbeConfig{
+			{
+				ActionConfig: horizonapi.ActionConfig{
+					Type: horizonapi.ActionTypeTCP,
+					Port: "8200",
+				},
 			},
 		},
-		EnvConfigs:   v.getVaultEnvConfigs(),
-		VolumeMounts: v.getVaultVolumeMounts(),
+		LivenessProbeConfigs: []*horizonapi.ProbeConfig{
+			{
+				Delay: 180,
+				ActionConfig: horizonapi.ActionConfig{
+					Type: horizonapi.ActionTypeHTTPS,
+					Port: "8200",
+					Path: "v1/sys/health?standbycode=204&uninitcode=204&",
+				},
+			},
+		},
 	}
 
 	containers = append(containers, container)
-
-	deployConfig := &horizonapi.DeploymentConfig{
-		Name:      "vault-init",
-		Namespace: v.Namespace,
-		Replicas:  util.IntToInt32(1),
-	}
-
-	podConfig := &util.PodConfig{
-		Name:           deployConfig.Name,
-		ServiceAccount: "vault-init",
-		Containers:     containers,
+	pod, _ := util.CreatePod(&util.PodConfig{
+		Name:           "vault",
+		ServiceAccount: "",
 		Volumes:        v.getVaultVolumes(),
-		Labels:         map[string]string{"app": "rgp", "component": "vault"},
-	}
-
-	deployment, _ := util.CreateDeploymentFromContainer(deployConfig, podConfig, podConfig.Labels)
-	return deployment
+		Containers:     containers,
+		Labels:         map[string]string{"app": "vault"},
+	})
+	return pod
 }
 
+// GetVaultServices will return the vault service
+func (v *Vault) GetVaultServices() *components.Service {
+	// Consul service
+	vault := components.NewService(horizonapi.ServiceConfig{
+		Name:      "vault",
+		Namespace: v.namespace,
+		Type:      horizonapi.ServiceTypeServiceIP,
+	})
+	vault.AddSelectors(map[string]string{
+		"app": "vault",
+	})
+	vault.AddPort(horizonapi.ServicePortConfig{Name: "api", Port: 8200, Protocol: horizonapi.ProtocolTCP})
+	return vault
+}
+
+// getVaultVolumes will return the vault volumes
 func (v *Vault) getVaultVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
-	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "vault-tls-certificate",
-		MapOrSecretName: "vault-tls-certificate",
-	}))
-
+	emptyDir, _ := components.NewEmptyDirVolume(horizonapi.EmptyDirVolumeConfig{
+		VolumeName: "vault-root",
+	})
 	volumes = append(volumes, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "vault-policy-configs",
-		MapOrSecretName: "vault-policies",
+		VolumeName:      "vault-config",
+		MapOrSecretName: "vault-config",
 	}))
+	volumes = append(volumes, emptyDir)
 
-	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "auth-server-tls-certificate",
-		MapOrSecretName: "auth-server-tls-certificate",
-	}))
-
-	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "auth-client-tls-certificate",
-		MapOrSecretName: "auth-client-tls-certificate",
-	}))
-
+	for k := range v.vaultSecrets {
+		volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
+			VolumeName:      k,
+			MapOrSecretName: k,
+		}))
+	}
 	return volumes
 }
 
-// getConsulVolumeMounts will return the postgres volume mounts
+// getVaultVolumeMounts will return the vault volume mounts
 func (v *Vault) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-tls-certificate", MountPath: "/vault/tls"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "auth-server-tls-certificate", MountPath: "/auth-server-tls-certificate"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "auth-client-tls-certificate", MountPath: "/auth-client-tls-certificate"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-policy-configs", MountPath: "/vault/policies"})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-config", MountPath: "/vault/config/"})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-root", MountPath: "/root/"})
+
+	for k, v := range v.vaultSecrets {
+		volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: k, MountPath: v})
+	}
 
 	return volumeMounts
 }
 
+// getVaultEnvConfigs will return the vault environment config maps
 func (v *Vault) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_ADDR", KeyOrVal: "https://vault:8200"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/vault/tls/ca.crt"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_INIT_SECRET", KeyOrVal: "vault-init-secret"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_SECRET_ENGINE_VERSION", KeyOrVal: "v2"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_KUBERNETES_NAMESPACE", KeyOrVal: v.Namespace})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_POLICY_CONFIGS", KeyOrVal: "/vault/policies"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "AUTH_SERVER_VAULT_CLIENT_CERTIFICATE", KeyOrVal: "/auth-server-tls-certificate/tls.crt"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "AUTH_CLIENT_VAULT_CLIENT_CERTIFICATE", KeyOrVal: "/auth-client-tls-certificate/tls.crt"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromPodIP, NameOrPrefix: "POD_IP"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLUSTER_ADDR", KeyOrVal: "https://$(POD_IP):8201"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_LOG_LEVEL", KeyOrVal: "info"})
+	if len(v.vaultCacertPath) > 0 {
+		envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: v.vaultCacertPath})
 
+	}
 	return envs
 }
 
-// GetSidecarUnsealContainer returns the side car container
-func (v *Vault) GetSidecarUnsealContainer() (*components.Container, error) {
-	container, err := components.NewContainer(horizonapi.ContainerConfig{
-		Name:       "vault-sidecar",
-		Image:      "gcr.io/snps-swip-staging/vault-util:latest",
-		PullPolicy: horizonapi.PullIfNotPresent,
-		Command:    []string{"vault-sidecar", "/vault/init"},
-	})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	container.AddEnv(horizonapi.EnvConfig{
-		Type:         horizonapi.EnvVal,
-		NameOrPrefix: "VAULT_ADDR",
-		KeyOrVal:     "https://localhost:8200",
+// GetVaultConfigConfigMap returns the vault config maps
+func (v *Vault) GetVaultConfigConfigMap() *components.ConfigMap {
+	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{
+		Name:      "vault-config",
+		Namespace: v.namespace,
 	})
 
-	container.AddEnv(horizonapi.EnvConfig{
-		Type:         horizonapi.EnvVal,
-		NameOrPrefix: "VAULT_CACERT",
-		KeyOrVal:     "/vault/tls/ca.crt",
+	cm.AddData(map[string]string{
+		"config.json": v.vaultConfig,
 	})
-
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
-		Name:      "vault-tls-certificate",
-		MountPath: "/vault/tls",
-	})
-
-	container.AddVolumeMount(horizonapi.VolumeMountConfig{
-		Name:      "vault-init-secret",
-		MountPath: "/vault/init",
-	})
-
-	return container, nil
+	return cm
 }

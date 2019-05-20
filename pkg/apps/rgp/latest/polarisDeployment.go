@@ -19,7 +19,7 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package containers
+package rgp
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -28,104 +28,99 @@ import (
 	"github.com/juju/errors"
 )
 
-// GetAuthServerDeployment return the auth server deployment
-func (g *RgpDeployer) GetAuthServerDeployment() *components.Deployment {
+// GetPolarisDeployment returns the polaris deployment
+func (g *SpecConfig) GetPolarisDeployment() *components.Deployment {
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
-		Name:      "auth-server",
-		Namespace: g.Grspec.Namespace,
+		Name:      "polaris-service",
+		Namespace: g.config.Namespace,
 	})
 
-	deployment.AddPod(g.GetAuthServersPod())
+	deployment.AddPod(g.GetPolarisPod())
 	deployment.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "auth-server",
+		"name": "polaris-service",
 	})
 
 	deployment.AddMatchLabelsSelectors(map[string]string{
 		"app":  "rgp",
-		"name": "auth-server",
+		"name": "polaris-service",
 	})
-
 	return deployment
 }
 
-// GetAuthServersPod returns the auth server pod
-func (g *RgpDeployer) GetAuthServersPod() *components.Pod {
+// GetPolarisPod returns the polaris pod
+func (g *SpecConfig) GetPolarisPod() *components.Pod {
 
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "auth-server",
+		Name: "polaris-service",
 	})
 
-	container, _ := g.getAuthServerContainer()
+	container, _ := g.getPolarisContainer()
 
 	pod.AddContainer(container)
-	for _, v := range g.getAuthServerVolumes() {
+	for _, v := range g.getPolarisVolumes() {
 		pod.AddVolume(v)
 	}
 
 	pod.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "auth-server",
+		"name": "polaris-service",
 	})
 
 	return pod
 }
 
-// getAuthServersContainer returns the auth server pod
-func (g *RgpDeployer) getAuthServerContainer() (*components.Container, error) {
+func (g *SpecConfig) getPolarisContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
-		Name: "auth-server",
-		// TODO: NO LONGER IN THE HELM CHART, NOT SURE IF STILL NEEDED
-		Image:      "gcr.io/snps-swip-staging/swip_auth-server:latest",
+		Name:       "polaris-service",
+		Image:      GetImageTag(g.config.Version, "reporting-polaris-service"),
 		PullPolicy: horizonapi.PullIfNotPresent,
-		//MinMem:     "2Gi",
-		//MaxMem:     "",
-		//MinCPU:     "250m",
-		//MaxCPU:     "",
+		MinCPU:     "500m",
+		MinMem:     "1Gi",
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: 8080,
+		ContainerPort: 7788,
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	for _, v := range g.getAuthServerVolumeMounts() {
+	for _, v := range g.getPolarisVolumeMounts() {
 		err := container.AddVolumeMount(*v)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	for _, v := range g.getAuthServerEnvConfigs() {
+	for _, v := range g.getPolarisEnvConfigs() {
 		container.AddEnv(*v)
 	}
 
 	return container, nil
 }
 
-// GetAuthServerService returns the auth server service
-func (g *RgpDeployer) GetAuthServerService() *components.Service {
+// GetPolarisService returns the polaris service
+func (g *SpecConfig) GetPolarisService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      "auth-server",
-		Namespace: g.Grspec.Namespace,
+		Name:      "polaris-service",
+		Namespace: g.config.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	service.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "auth-server",
+		"name": "polaris-service",
 	})
 	service.AddSelectors(map[string]string{
-		"name": "auth-server",
+		"name": "polaris-service",
 	})
-	service.AddPort(horizonapi.ServicePortConfig{Name: "http", Port: 80, Protocol: horizonapi.ProtocolTCP, TargetPort: "8080"})
+	service.AddPort(horizonapi.ServicePortConfig{Name: "7788", Port: 7788, Protocol: horizonapi.ProtocolTCP, TargetPort: "7788"})
 	service.AddPort(horizonapi.ServicePortConfig{Name: "admin", Port: 8081, Protocol: horizonapi.ProtocolTCP, TargetPort: "8081"})
 	return service
 }
 
-func (g *RgpDeployer) getAuthServerVolumes() []*components.Volume {
+func (g *SpecConfig) getPolarisVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -133,32 +128,32 @@ func (g *RgpDeployer) getAuthServerVolumes() []*components.Volume {
 		MapOrSecretName: "vault-ca-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_cacrt",
-				Path: "tls.crt",
+				Key:  "tls.crt",
+				Path: "vault_cacrt",
 				Mode: util.IntToInt32(420),
 			},
 		},
 	}))
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "vault-server-key",
-		MapOrSecretName: "auth-server-tls-certificate",
+		VolumeName:      "vault-client-key",
+		MapOrSecretName: "auth-client-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_server_key",
-				Path: "tls.key",
+				Key:  "tls.key",
+				Path: "vault_client_key",
 				Mode: util.IntToInt32(420),
 			},
 		},
 	}))
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-		VolumeName:      "vault-server-cert",
-		MapOrSecretName: "auth-server-tls-certificate",
+		VolumeName:      "vault-client-cert",
+		MapOrSecretName: "auth-client-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_server_cert",
-				Path: "tls.crt",
+				Key:  "tls.crt",
+				Path: "vault_client_crt",
 				Mode: util.IntToInt32(420),
 			},
 		},
@@ -167,33 +162,25 @@ func (g *RgpDeployer) getAuthServerVolumes() []*components.Volume {
 	return volumes
 }
 
-func (g *RgpDeployer) getAuthServerVolumeMounts() []*horizonapi.VolumeMountConfig {
+func (g *SpecConfig) getPolarisVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-cacert", MountPath: "/mnt/vault/ca"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-key", MountPath: "/mnt/vault/key"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-cert", MountPath: "/mnt/vault/cert"})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-client-key", MountPath: "/mnt/vault/key"})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-client-cert", MountPath: "/mnt/vault/cert"})
 
 	return volumeMounts
 }
 
-func (g *RgpDeployer) getAuthServerEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getPolarisEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_server_key"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_server_cert"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_client_key"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_client_cert"})
 
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "LOGGING_LEVEL", KeyOrVal: "INFO"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromNamespace, NameOrPrefix: "NAMESPACE"})
-
+	envs = append(envs, g.getCommonEnvConfigs()...)
 	envs = append(envs, g.getSwipEnvConfigs()...)
 	envs = append(envs, g.getPostgresEnvConfigs()...)
-	envs = append(envs, g.getMongoEnvConfigs()...)
-
-	envs = append(envs, g.getEventStoreLegacyEnvConfigs()...)
-	envs = append(envs, g.getEventStoreEnvConfigs("admin")...)
-	envs = append(envs, g.getEventStoreEnvConfigs("writer")...)
-	envs = append(envs, g.getEventStoreEnvConfigs("reader")...)
 
 	return envs
 }

@@ -30,7 +30,6 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	deployer2 "github.com/blackducksoftware/horizon/pkg/deployer"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	v1_batch "k8s.io/api/batch/v1"
@@ -47,10 +46,10 @@ func (c *Creater) init(spec *v1.RgpSpec) error {
 
 	// Minio
 	minioclaim, _ := util.CreatePersistentVolumeClaim("minio", spec.Namespace, "1Gi", spec.StorageClass, horizonapi.ReadWriteOnce)
-	minioDeployer, _ := deployer2.NewDeployer(c.kubeConfig)
+	minioDeployer, _ := deployer2.NewDeployer(c.KubeConfig)
 
 	// TODO generate random password
-	minioCreater := apps.NewMinio(spec.Namespace, "minio", "aaaa2wdadwdawdawd", "b2112r43rfefefbbb")
+	minioCreater := NewMinio(spec.Namespace, "minio", "aaaa2wdadwdawdawd", "b2112r43rfefefbbb")
 	minioDeployer.AddComponent(horizonapi.SecretComponent, minioCreater.GetSecret())
 	minioDeployer.AddComponent(horizonapi.ServiceComponent, minioCreater.GetServices())
 	minioDeployer.AddComponent(horizonapi.DeploymentComponent, minioCreater.GetDeployment())
@@ -61,8 +60,8 @@ func (c *Creater) init(spec *v1.RgpSpec) error {
 	}
 
 	// Consul
-	consulDeployer, _ := deployer2.NewDeployer(c.kubeConfig)
-	consulCreater := apps.NewConsul(spec.Namespace, spec.StorageClass)
+	consulDeployer, _ := deployer2.NewDeployer(c.KubeConfig)
+	consulCreater := NewConsul(spec.Namespace, spec.StorageClass)
 	consulDeployer.AddComponent(horizonapi.ServiceComponent, consulCreater.GetConsulServices())
 	consulDeployer.AddComponent(horizonapi.StatefulSetComponent, consulCreater.GetConsulStatefulSet())
 	consulDeployer.AddComponent(horizonapi.SecretComponent, consulCreater.GetConsulSecrets())
@@ -87,15 +86,15 @@ func (c *Creater) init(spec *v1.RgpSpec) error {
 	}
 
 	// Vault
-	vaultDeployer, _ := deployer2.NewDeployer(c.kubeConfig)
+	vaultDeployer, _ := deployer2.NewDeployer(c.KubeConfig)
 
-	vaultCreater := apps.NewVault(spec.Namespace, vaultConfig, map[string]string{
+	vaultCreater := NewVault(spec.Namespace, vaultConfig, map[string]string{
 		"vault-tls-certificate": "/vault/tls",
 	}, "/vault/tls/ca.crt")
 	vaultDeployer.AddComponent(horizonapi.ServiceComponent, vaultCreater.GetVaultServices())
 
 	// Inject auto-unseal sidecar
-	vaultInit := Vault{spec.Namespace}
+	vaultInit := RgpVault{spec.Namespace}
 	vaultPod := vaultCreater.GetPod()
 	vaultPod.AddVolume(components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "vault-init-secret",
@@ -126,7 +125,7 @@ func (c *Creater) eventStoreInit(spec *v1.RgpSpec) error {
 	eventStore := NewEventstore(spec.Namespace, spec.StorageClass, 100)
 
 	// eventstore
-	eventStoreDeployer, _ := deployer2.NewDeployer(c.kubeConfig)
+	eventStoreDeployer, _ := deployer2.NewDeployer(c.KubeConfig)
 	eventStoreDeployer.AddComponent(horizonapi.StatefulSetComponent, eventStore.GetEventStoreStatefulSet())
 	eventStoreDeployer.AddComponent(horizonapi.ServiceComponent, eventStore.GetEventStoreService())
 
@@ -136,7 +135,7 @@ func (c *Creater) eventStoreInit(spec *v1.RgpSpec) error {
 	}
 
 	// Create service account
-	_, err = c.kubeClient.CoreV1().ServiceAccounts(spec.Namespace).Create(&v14.ServiceAccount{
+	_, err = c.KubeClient.CoreV1().ServiceAccounts(spec.Namespace).Create(&v14.ServiceAccount{
 		ObjectMeta: v13.ObjectMeta{
 			Name: "eventstore-init",
 		},
@@ -146,7 +145,7 @@ func (c *Creater) eventStoreInit(spec *v1.RgpSpec) error {
 	}
 
 	// Create role
-	_, err = c.kubeClient.RbacV1().Roles(spec.Namespace).Create(&v12.Role{
+	_, err = c.KubeClient.RbacV1().Roles(spec.Namespace).Create(&v12.Role{
 		ObjectMeta: v13.ObjectMeta{
 			Name: "eventstore-init",
 		},
@@ -169,7 +168,7 @@ func (c *Creater) eventStoreInit(spec *v1.RgpSpec) error {
 	}
 
 	// Bind role to service account
-	_, err = c.kubeClient.RbacV1().RoleBindings(spec.Namespace).Create(&v12.RoleBinding{
+	_, err = c.KubeClient.RbacV1().RoleBindings(spec.Namespace).Create(&v12.RoleBinding{
 		ObjectMeta: v13.ObjectMeta{
 			Name: "eventstore-init",
 		},
@@ -203,7 +202,7 @@ func (c *Creater) eventStoreInit(spec *v1.RgpSpec) error {
 // vaultInit start the vault initialization job
 func (c *Creater) vaultInit(namespace string) error {
 	// Init
-	_, err := c.kubeClient.CoreV1().ServiceAccounts(namespace).Create(&v14.ServiceAccount{
+	_, err := c.KubeClient.CoreV1().ServiceAccounts(namespace).Create(&v14.ServiceAccount{
 		ObjectMeta: v13.ObjectMeta{
 			Name:      "vault-init",
 			Namespace: namespace,
@@ -212,7 +211,7 @@ func (c *Creater) vaultInit(namespace string) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.kubeClient.RbacV1().Roles(namespace).Create(&v12.Role{
+	_, err = c.KubeClient.RbacV1().Roles(namespace).Create(&v12.Role{
 		ObjectMeta: v13.ObjectMeta{
 			Name:      "vault-init",
 			Namespace: namespace,
@@ -234,7 +233,7 @@ func (c *Creater) vaultInit(namespace string) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.kubeClient.RbacV1().RoleBindings(namespace).Create(&v12.RoleBinding{
+	_, err = c.KubeClient.RbacV1().RoleBindings(namespace).Create(&v12.RoleBinding{
 		ObjectMeta: v13.ObjectMeta{
 			Name:      "vault-init",
 			Namespace: namespace,
@@ -256,14 +255,14 @@ func (c *Creater) vaultInit(namespace string) error {
 	}
 
 	// Start job and create CM
-	vaultInit := Vault{namespace}
+	vaultInit := RgpVault{namespace}
 	err = c.startJobAndWaitUntilCompletion(namespace, 30*time.Minute, vaultInit.GetJob())
 	if err != nil {
 		log.Print(err)
 		return err
 	}
 
-	vaultInitDeploy, _ := deployer2.NewDeployer(c.kubeConfig)
+	vaultInitDeploy, _ := deployer2.NewDeployer(c.KubeConfig)
 	vaultInitDeploy.AddComponent(horizonapi.ConfigMapComponent, vaultInit.GetConfigmap())
 	vaultInitDeploy.AddComponent(horizonapi.DeploymentComponent, vaultInit.GetDeployment())
 	err = vaultInitDeploy.Run()
@@ -329,7 +328,7 @@ func OpenDatabaseConnection(hostName string, dbName string, user string, passwor
 }
 
 func (c *Creater) startJobAndWaitUntilCompletion(namespace string, timeoutValue time.Duration, job *v1_batch.Job) error {
-	job, err := c.kubeClient.BatchV1().Jobs(namespace).Create(job)
+	job, err := c.KubeClient.BatchV1().Jobs(namespace).Create(job)
 	if err != nil {
 		return err
 	}
@@ -344,7 +343,7 @@ L:
 			return fmt.Errorf("job failed")
 
 		case <-tick.C:
-			job, err = c.kubeClient.BatchV1().Jobs(job.Namespace).Get(job.Name, v13.GetOptions{})
+			job, err = c.KubeClient.BatchV1().Jobs(job.Namespace).Get(job.Name, v13.GetOptions{})
 			if err != nil {
 				tick.Stop()
 				return err

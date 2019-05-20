@@ -19,108 +19,112 @@ specific language governing permissions and limitations
 under the License.
 */
 
-package containers
+package rgp
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 )
 
-// GetToolsPortfolioDeployment returns the tools portfolio deployment
-func (g *RgpDeployer) GetToolsPortfolioDeployment() *components.Deployment {
+// GetAuthServerDeployment return the auth server deployment
+func (g *SpecConfig) GetAuthServerDeployment() *components.Deployment {
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
-		Name:      "tools-portfolio-service",
-		Namespace: g.Grspec.Namespace,
+		Name:      "auth-server",
+		Namespace: g.config.Namespace,
 	})
 
-	deployment.AddPod(g.GetToolsPortfolioPod())
+	deployment.AddPod(g.getAuthServersPod())
 	deployment.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "tools-portfolio-service",
+		"name": "auth-server",
 	})
 
 	deployment.AddMatchLabelsSelectors(map[string]string{
 		"app":  "rgp",
-		"name": "tools-portfolio-service",
+		"name": "auth-server",
 	})
+
 	return deployment
 }
 
-// GetToolsPortfolioPod returns the tools portfolio pod
-func (g *RgpDeployer) GetToolsPortfolioPod() *components.Pod {
+func (g *SpecConfig) getAuthServersPod() *components.Pod {
 
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "tools-portfolio-service",
+		Name: "auth-server",
 	})
 
-	container, _ := g.getToolPortfolioContainer()
+	container, _ := g.getAuthServerContainer()
 
 	pod.AddContainer(container)
-	for _, v := range g.getToolsPortfolioVolumes() {
+	for _, v := range g.getAuthServerVolumes() {
 		pod.AddVolume(v)
 	}
 
 	pod.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "tools-portfolio-service",
+		"name": "auth-server",
 	})
 
 	return pod
 }
 
-func (g *RgpDeployer) getToolPortfolioContainer() (*components.Container, error) {
-	// TODO: HELM CHART HAS serviceAccount: "auth-server"
+// getAuthServersContainer returns the auth server pod
+func (g *SpecConfig) getAuthServerContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
-		Name:       "tools-portfolio-service",
-		Image:      "gcr.io/snps-swip-staging/reporting-tools-portfolio-service:0.0.974",
+		Name: "auth-server",
+		// TODO: NO LONGER IN THE HELM CHART, NOT SURE IF STILL NEEDED
+		Image:      "gcr.io/snps-swip-staging/swip_auth-server:latest",
 		PullPolicy: horizonapi.PullIfNotPresent,
-		MinCPU:     "250m",
-		MinMem:     "1Gi",
+		//MinMem:     "2Gi",
+		//MaxMem:     "",
+		//MinCPU:     "250m",
+		//MaxCPU:     "",
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: 60281,
+		ContainerPort: 8080,
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
-	for _, v := range g.getToolsPortfolioVolumeMounts() {
+	for _, v := range g.getAuthServerVolumeMounts() {
 		err := container.AddVolumeMount(*v)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	for _, v := range g.getToolsPortfolioEnvConfigs() {
+	for _, v := range g.getAuthServerEnvConfigs() {
 		container.AddEnv(*v)
 	}
 
 	return container, nil
 }
 
-// GetToolsPortfolioService returns the tools portfolio service
-func (g *RgpDeployer) GetToolsPortfolioService() *components.Service {
+// GetAuthServerService returns the auth server service
+func (g *SpecConfig) GetAuthServerService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      "tools-portfolio-service",
-		Namespace: g.Grspec.Namespace,
+		Name:      "auth-server",
+		Namespace: g.config.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	service.AddLabels(map[string]string{
 		"app":  "rgp",
-		"name": "tools-portfolio-service",
+		"name": "auth-server",
 	})
 	service.AddSelectors(map[string]string{
-		"name": "tools-portfolio-service",
+		"name": "auth-server",
 	})
-	service.AddPort(horizonapi.ServicePortConfig{Name: "60289", Port: 60281, Protocol: horizonapi.ProtocolTCP, TargetPort: "60281"})
+	service.AddPort(horizonapi.ServicePortConfig{Name: "http", Port: 80, Protocol: horizonapi.ProtocolTCP, TargetPort: "8080"})
 	service.AddPort(horizonapi.ServicePortConfig{Name: "admin", Port: 8081, Protocol: horizonapi.ProtocolTCP, TargetPort: "8081"})
 	return service
 }
 
-func (g *RgpDeployer) getToolsPortfolioVolumes() []*components.Volume {
+func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -128,10 +132,9 @@ func (g *RgpDeployer) getToolsPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "vault-ca-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "tls.crt",
-				Path: "vault_cacrt",
-				// TODO: 420 not specified as DefaultMode in HELM chart, not sure, if bug on their end or we should just assume
-				// Mode: util.IntToInt32(420),
+				Key:  "vault_cacrt",
+				Path: "tls.crt",
+				Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -141,9 +144,9 @@ func (g *RgpDeployer) getToolsPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "auth-server-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "tls.key",
-				Path: "vault_server_key",
-				// Mode: util.IntToInt32(420),
+				Key:  "vault_server_key",
+				Path: "tls.key",
+				Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -153,9 +156,9 @@ func (g *RgpDeployer) getToolsPortfolioVolumes() []*components.Volume {
 		MapOrSecretName: "auth-server-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "tls.crt",
-				Path: "vault_server_cert",
-				// Mode: util.IntToInt32(420),
+				Key:  "vault_server_cert",
+				Path: "tls.crt",
+				Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -163,7 +166,7 @@ func (g *RgpDeployer) getToolsPortfolioVolumes() []*components.Volume {
 	return volumes
 }
 
-func (g *RgpDeployer) getToolsPortfolioVolumeMounts() []*horizonapi.VolumeMountConfig {
+func (g *SpecConfig) getAuthServerVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-cacert", MountPath: "/mnt/vault/ca"})
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-key", MountPath: "/mnt/vault/key"})
@@ -172,16 +175,24 @@ func (g *RgpDeployer) getToolsPortfolioVolumeMounts() []*horizonapi.VolumeMountC
 	return volumeMounts
 }
 
-func (g *RgpDeployer) getToolsPortfolioEnvConfigs() []*horizonapi.EnvConfig {
+func (g *SpecConfig) getAuthServerEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_server_key"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_server_cert"})
 
-	envs = append(envs, g.getCommonEnvConfigs()...)
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "LOGGING_LEVEL", KeyOrVal: "INFO"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromNamespace, NameOrPrefix: "NAMESPACE"})
+
 	envs = append(envs, g.getSwipEnvConfigs()...)
 	envs = append(envs, g.getPostgresEnvConfigs()...)
+	envs = append(envs, g.getMongoEnvConfigs()...)
+
+	envs = append(envs, g.getEventStoreLegacyEnvConfigs()...)
+	envs = append(envs, g.getEventStoreEnvConfigs("admin")...)
+	envs = append(envs, g.getEventStoreEnvConfigs("writer")...)
+	envs = append(envs, g.getEventStoreEnvConfigs("reader")...)
 
 	return envs
 }
