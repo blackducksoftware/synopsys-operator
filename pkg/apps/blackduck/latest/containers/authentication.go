@@ -102,7 +102,7 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 
 	// Custom CA auth
 	if len(c.hubSpec.AuthCustomCA) > 1 {
-		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", "auth-custom-ca", 0777)
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", "auth-custom-ca", 0444)
 		volumes = append(volumes, authCustomCaVolume)
 	}
 	return volumes
