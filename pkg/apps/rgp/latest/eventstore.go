@@ -57,14 +57,11 @@ func (e *Eventstore) GetEventStoreStatefulSet() *components.StatefulSet {
 
 	containers = append(containers, &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
-			Name: "eventstore",
-			// TODO: NO LONGER IN THE HELM CHART, NOT SURE IF STILL NEEDED
-			Image:      "gcr.io/snps-swip-staging/swip_eventstore:latest",
+			Name:       "eventstore",
+			Image:      "gcr.io/snps-swip-staging/swip_eventstore:0.0.8",
 			PullPolicy: horizonapi.PullIfNotPresent,
-			//MinMem:     "8Gi",
-			MaxMem: "",
-			//MinCPU:     "1",
-			MaxCPU: "",
+			MinCPU:     "1000m",
+			MinMem:     "8Gi",
 		},
 		EnvConfigs:   envs,
 		VolumeMounts: volumeMounts,
@@ -84,7 +81,8 @@ func (e *Eventstore) GetEventStoreStatefulSet() *components.StatefulSet {
 	}
 
 	labelSelector := map[string]string{
-		"app": "eventstore",
+		"app":       "rgp",
+		"component": "eventstore",
 	}
 
 	// TODO add service account
@@ -105,8 +103,12 @@ func (e *Eventstore) GetEventStoreService() *components.Service {
 		Namespace: e.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
+	service.AddLabels(map[string]string{
+		"app":       "rgp",
+		"component": "eventstore",
+	})
 	service.AddSelectors(map[string]string{
-		"app": "eventstore",
+		"component": "eventstore",
 	})
 	service.AddPort(horizonapi.ServicePortConfig{Name: "int-tcp", Port: 1112})
 	service.AddPort(horizonapi.ServicePortConfig{Name: "int-http", Port: 1113})
@@ -147,7 +149,7 @@ func (e *Eventstore) GetInitJob() *v1.Job {
 						{
 							Name:            "eventstore-init",
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Image:           "gcr.io/snps-swip-staging/eventstore-util:latest",
+							Image:           "gcr.io/snps-swip-staging/eventstore-util:0.0.14",
 							Command:         []string{"eventstore-init"},
 							Env: []corev1.EnvVar{
 								{

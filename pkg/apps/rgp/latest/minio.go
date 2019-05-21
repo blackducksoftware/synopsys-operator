@@ -97,6 +97,10 @@ func (c *Minio) GetServices() *components.Service {
 		Namespace: c.namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
+	minio.AddLabels(map[string]string{
+		"app":       "rgp",
+		"component": "minio",
+	})
 	minio.AddSelectors(map[string]string{
 		"app":       "rgp",
 		"component": "minio",

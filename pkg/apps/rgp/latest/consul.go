@@ -109,6 +109,7 @@ func (c *Consul) GetConsulStatefulSet() *components.StatefulSet {
 		LivenessProbeConfigs: []*horizonapi.ProbeConfig{
 			{
 				ActionConfig: horizonapi.ActionConfig{
+					Type:    horizonapi.ActionTypeCommand,
 					Command: []string{"consul", "members"},
 				},
 				Delay:   300,
@@ -125,7 +126,8 @@ func (c *Consul) GetConsulStatefulSet() *components.StatefulSet {
 	}
 
 	labelSelector := map[string]string{
-		"app": "consul",
+		"app":       "rgp",
+		"component": "consul",
 	}
 
 	stateFulSet := util.CreateStateFulSetFromContainer(stateFulSetConfig, "", containers, volumes, nil, nil, labelSelector)
@@ -146,8 +148,13 @@ func (c *Consul) GetConsulServices() *components.Service {
 		Type:      horizonapi.ServiceTypeServiceIP,
 		ClusterIP: "None",
 	})
+	consul.AddLabels(map[string]string{
+		"app":       "rgp",
+		"component": "consul",
+	})
 	consul.AddSelectors(map[string]string{
-		"app": "consul",
+		"app":       "rgp",
+		"component": "consul",
 	})
 	consul.AddPort(horizonapi.ServicePortConfig{Name: "http", Port: 8500})
 	consul.AddPort(horizonapi.ServicePortConfig{Name: "rpc", Port: 8400})

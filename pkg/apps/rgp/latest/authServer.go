@@ -73,14 +73,11 @@ func (g *SpecConfig) getAuthServersPod() *components.Pod {
 // getAuthServersContainer returns the auth server pod
 func (g *SpecConfig) getAuthServerContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
-		Name: "auth-server",
-		// TODO: NO LONGER IN THE HELM CHART, NOT SURE IF STILL NEEDED
-		Image:      "gcr.io/snps-swip-staging/swip_auth-server:latest",
+		Name:       "auth-server",
+		Image:      "gcr.io/snps-swip-staging/swip_auth-server:1.6.1656",
 		PullPolicy: horizonapi.PullIfNotPresent,
-		//MinMem:     "2Gi",
-		//MaxMem:     "",
-		//MinCPU:     "250m",
-		//MaxCPU:     "",
+		MinCPU:     "250m",
+		MinMem:     "2Gi",
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -132,8 +129,8 @@ func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 		MapOrSecretName: "vault-ca-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_cacrt",
-				Path: "tls.crt",
+				Key:  "tls.crt",
+				Path: "vault_cacrt",
 				Mode: util.IntToInt32(420),
 			},
 		},
@@ -144,8 +141,8 @@ func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 		MapOrSecretName: "auth-server-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_server_key",
-				Path: "tls.key",
+				Key:  "tls.key",
+				Path: "vault_server_key",
 				Mode: util.IntToInt32(420),
 			},
 		},
@@ -156,8 +153,8 @@ func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 		MapOrSecretName: "auth-server-tls-certificate",
 		Items: []horizonapi.KeyPath{
 			{
-				Key:  "vault_server_cert",
-				Path: "tls.crt",
+				Key:  "tls.crt",
+				Path: "vault_server_cert",
 				Mode: util.IntToInt32(420),
 			},
 		},

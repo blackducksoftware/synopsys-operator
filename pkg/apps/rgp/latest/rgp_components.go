@@ -41,6 +41,7 @@ func NewSpecConfig(config *rgpapi.RgpSpec) *SpecConfig {
 func (a *SpecConfig) AddComponents(componentList *api.ComponentList) {
 	log.Infof("Adding Rgp Components")
 
+	componentList.Deployments = append(componentList.Deployments, a.GetAuthServerDeployment())
 	componentList.Deployments = append(componentList.Deployments, a.GetFrontendDeployment())
 	componentList.Deployments = append(componentList.Deployments, a.GetPolarisDeployment())
 	componentList.Deployments = append(componentList.Deployments, a.GetReportDeployment())
@@ -48,6 +49,7 @@ func (a *SpecConfig) AddComponents(componentList *api.ComponentList) {
 	componentList.Deployments = append(componentList.Deployments, a.GetPortfolioDeployment())
 	componentList.Deployments = append(componentList.Deployments, a.GetToolsPortfolioDeployment())
 
+	componentList.Services = append(componentList.Services, a.GetAuthServerService())
 	componentList.Services = append(componentList.Services, a.GetFrontendService())
 	componentList.Services = append(componentList.Services, a.GetPolarisService())
 	componentList.Services = append(componentList.Services, a.GetReportService())

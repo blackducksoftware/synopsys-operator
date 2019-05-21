@@ -117,6 +117,10 @@ func (v *Vault) GetVaultServices() *components.Service {
 		Namespace: v.namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
+	vault.AddLabels(map[string]string{
+		"app":       "rgp",
+		"component": "vault",
+	})
 	vault.AddSelectors(map[string]string{
 		"app":       "rgp",
 		"component": "vault",

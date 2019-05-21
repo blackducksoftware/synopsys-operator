@@ -3,13 +3,13 @@
 	"kind": "Rgp",
 	"metadata": {
 		"clusterName": "",
-		"name": "rgp-test"
+		"name": "rgp-trial"
 	},
 	"spec": {
-		"namespace": "rgp-test",
+		"namespace": "rgp-trial",
 		"version": "2019.04",
 		"storageClass": "",
 		"ingressClass": "nginx",
-		"ingressHost": "example.com"
+		"ingressHost": "rgp.yash.com"
 	}
 }

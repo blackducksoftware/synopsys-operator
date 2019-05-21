@@ -66,7 +66,7 @@ func (v *VaultSideCar) GetJob() *v1.Job {
 						{
 							Name:            "vault-init",
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Image:           "gcr.io/snps-swip-staging/vault-util:latest",
+							Image:           "gcr.io/snps-swip-staging/vault-util:0.0.12",
 							Command:         []string{"vault-tls-init"},
 							Env: []corev1.EnvVar{
 								{
@@ -101,7 +101,7 @@ func (v *VaultSideCar) GetDeployment() *components.Deployment {
 	container := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
 			Name:       "vault-init",
-			Image:      "gcr.io/snps-swip-staging/vault-util:latest",
+			Image:      "gcr.io/snps-swip-staging/vault-util:0.0.12",
 			PullPolicy: horizonapi.PullIfNotPresent,
 			MinMem:     "",
 			MaxMem:     "",
@@ -190,7 +190,7 @@ func (v *VaultSideCar) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 func (v *VaultSideCar) GetSidecarUnsealContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "vault-sidecar",
-		Image:      "gcr.io/snps-swip-staging/vault-util:latest",
+		Image:      "gcr.io/snps-swip-staging/vault-util:0.0.12",
 		PullPolicy: horizonapi.PullIfNotPresent,
 		Command:    []string{"vault-sidecar", "/vault/init"},
 	})
