@@ -31,13 +31,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// RgpVault stores the value configuration
-type RgpVault struct {
+// VaultSideCar stores the value configuration
+type VaultSideCar struct {
 	Namespace string
 }
 
 // GetConfigmap returns the vault configmap
-func (v *RgpVault) GetConfigmap() *components.ConfigMap {
+func (v *VaultSideCar) GetConfigmap() *components.ConfigMap {
 	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: v.Namespace, Name: "vault-policies"})
 	cm.AddData(map[string]string{
 		"auth-server.hcl": `path "secret/data/auth/*" {
@@ -52,7 +52,7 @@ func (v *RgpVault) GetConfigmap() *components.ConfigMap {
 }
 
 // GetJob returns the vault job
-func (v *RgpVault) GetJob() *v1.Job {
+func (v *VaultSideCar) GetJob() *v1.Job {
 
 	job := &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -94,14 +94,13 @@ func (v *RgpVault) GetJob() *v1.Job {
 }
 
 // GetDeployment returns the vault deployment
-func (v *RgpVault) GetDeployment() *components.Deployment {
+func (v *VaultSideCar) GetDeployment() *components.Deployment {
 
 	var containers []*util.Container
 
 	container := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
-			Name: "vault-init",
-			// TODO: NO LONGER IN THE HELM CHART, NOT SURE IF STILL NEEDED
+			Name:       "vault-init",
 			Image:      "gcr.io/snps-swip-staging/vault-util:latest",
 			PullPolicy: horizonapi.PullIfNotPresent,
 			MinMem:     "",
@@ -129,14 +128,14 @@ func (v *RgpVault) GetDeployment() *components.Deployment {
 		ServiceAccount: "vault-init",
 		Containers:     containers,
 		Volumes:        v.getVaultVolumes(),
-		Labels:         map[string]string{"app": "rgp", "component": "vault"},
+		Labels:         map[string]string{"app": "rgp", "component": "vault-sidecar"},
 	}
 
 	deployment, _ := util.CreateDeploymentFromContainer(deployConfig, podConfig, podConfig.Labels)
 	return deployment
 }
 
-func (v *RgpVault) getVaultVolumes() []*components.Volume {
+func (v *VaultSideCar) getVaultVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
@@ -163,7 +162,7 @@ func (v *RgpVault) getVaultVolumes() []*components.Volume {
 }
 
 // getConsulVolumeMounts will return the postgres volume mounts
-func (v *RgpVault) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
+func (v *VaultSideCar) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
 	var volumeMounts []*horizonapi.VolumeMountConfig
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-tls-certificate", MountPath: "/vault/tls"})
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "auth-server-tls-certificate", MountPath: "/auth-server-tls-certificate"})
@@ -173,7 +172,7 @@ func (v *RgpVault) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
 	return volumeMounts
 }
 
-func (v *RgpVault) getVaultEnvConfigs() []*horizonapi.EnvConfig {
+func (v *VaultSideCar) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_ADDR", KeyOrVal: "https://vault:8200"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/vault/tls/ca.crt"})
@@ -188,7 +187,7 @@ func (v *RgpVault) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 }
 
 // GetSidecarUnsealContainer returns the side car container
-func (v *RgpVault) GetSidecarUnsealContainer() (*components.Container, error) {
+func (v *VaultSideCar) GetSidecarUnsealContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "vault-sidecar",
 		Image:      "gcr.io/snps-swip-staging/vault-util:latest",

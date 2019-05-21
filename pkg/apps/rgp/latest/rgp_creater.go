@@ -22,10 +22,13 @@ under the License.
 package rgp
 
 import (
+	"database/sql"
 	"fmt"
+	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	rgpapi "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
 	pg "github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
@@ -34,6 +37,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
+	v1_batch "k8s.io/api/batch/v1"
 	v12 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	v13 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +69,7 @@ func (c *Creater) Versions() []string {
 func (c *Creater) Ensure(rgp *rgpapi.Rgp) error {
 	// Get Kubernetes Components for the Rgp
 	specConfig := NewSpecConfig(&rgp.Spec)
+	componentList := &api.ComponentList{}
 
 	log.Debugf("Create Rgp details for %s: %+v", rgp.Spec.Namespace, rgp.Spec)
 	_, err := util.GetNamespace(c.KubeClient, rgp.Spec.Namespace)
@@ -74,7 +79,10 @@ func (c *Creater) Ensure(rgp *rgpapi.Rgp) error {
 	}
 
 	// Mongo
-	mongoClaim, _ := util.CreatePersistentVolumeClaim("mongodb", rgp.Spec.Namespace, "20Gi", rgp.Spec.StorageClass, horizonapi.ReadWriteOnce)
+	mongoClaim, err := util.CreatePersistentVolumeClaim("mongodb", rgp.Spec.Namespace, "20Gi", rgp.Spec.StorageClass, horizonapi.ReadWriteOnce)
+	if err != nil {
+		return fmt.Errorf("unable to create mongo persistent volume claim due to %+v", err)
+	}
 	mongo := Mongo{
 		Namespace: rgp.Spec.Namespace,
 		PVCName:   "mongodb",
@@ -87,13 +95,17 @@ func (c *Creater) Ensure(rgp *rgpapi.Rgp) error {
 
 	mongoDeployer, _ := deployer.NewDeployer(c.KubeConfig)
 	mongorc, _ := mongo.GetMongoReplicationController()
+	mongosvc := mongo.GetMongoService()
 	mongoDeployer.AddComponent(horizonapi.ReplicationControllerComponent, mongorc)
-	mongoDeployer.AddComponent(horizonapi.ServiceComponent, mongo.GetMongoService())
+	mongoDeployer.AddComponent(horizonapi.ServiceComponent, mongosvc)
 	mongoDeployer.AddComponent(horizonapi.PersistentVolumeClaimComponent, mongoClaim)
 	err = mongoDeployer.Run()
 	if err != nil {
 		return err
 	}
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, mongorc)
+	componentList.Services = append(componentList.Services, mongosvc)
+	componentList.PersistentVolumeClaims = append(componentList.PersistentVolumeClaims, mongoClaim)
 
 	// Postgres
 	pw, err := util.RandomString(12)
@@ -132,15 +144,18 @@ func (c *Creater) Ensure(rgp *rgpapi.Rgp) error {
 
 	postgresDeployer, _ := deployer.NewDeployer(c.KubeConfig)
 	postgresrc, _ := postgres.GetPostgresReplicationController()
-
+	postgressvc := postgres.GetPostgresService()
 	postgresDeployer.AddComponent(horizonapi.ReplicationControllerComponent, postgresrc)
-	postgresDeployer.AddComponent(horizonapi.ServiceComponent, postgres.GetPostgresService())
+	postgresDeployer.AddComponent(horizonapi.ServiceComponent, postgressvc)
 	postgresDeployer.AddComponent(horizonapi.PersistentVolumeClaimComponent, postgresClaim)
 	err = postgresDeployer.Run()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
+	componentList.ReplicationControllers = append(componentList.ReplicationControllers, postgresrc)
+	componentList.Services = append(componentList.Services, postgressvc)
+	componentList.PersistentVolumeClaims = append(componentList.PersistentVolumeClaims, postgresClaim)
 
 	// Validate postgres pod is cloned/backed up
 	err = util.WaitForServiceEndpointReady(c.KubeClient, rgp.Spec.Namespace, "postgres")
@@ -160,26 +175,28 @@ func (c *Creater) Ensure(rgp *rgpapi.Rgp) error {
 		return err
 	}
 
-	err = c.init(&rgp.Spec)
+	err = c.init(&rgp.Spec, componentList)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	componentList, err := specConfig.GetComponents()
-	if err != nil {
-		return err
-	}
+	// Add rgp specific components
+	specConfig.AddComponents(componentList)
+
 	// Update components in cluster
 	commonConfig := crdupdater.NewCRUDComponents(c.KubeConfig, c.KubeClient, c.Config.DryRun, false, rgp.Spec.Namespace, componentList, "app=rgp")
 	_, errors := commonConfig.CRUDComponents()
 	if len(errors) > 0 {
 		return fmt.Errorf("unable to update Rgp components due to %+v", errors)
 	}
-	// return nil
 
-	return c.createIngress(&rgp.Spec)
-	// c.createIngress(&rgp.Spec)
+	err = c.createIngress(&rgp.Spec)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // createIngress creates the ingress
@@ -261,4 +278,87 @@ func (c *Creater) createIngress(spec *rgpapi.RgpSpec) error {
 		},
 	})
 	return err
+}
+
+// dbInit create the the databases
+func (c *Creater) dbInit(namespace string, pw string) error {
+	databaseName := "postgres"
+	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", namespace)
+
+	postgresDB, err := OpenDatabaseConnection(hostName, databaseName, "postgres", pw, "postgres")
+	// log.Infof("Db: %+v, error: %+v", db, err)
+	if err != nil {
+		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
+	}
+
+	for {
+		log.Debug("executing SELECT 1")
+		_, err := postgresDB.Exec("SELECT 1;")
+		if err == nil {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+
+	_, err = postgresDB.Exec("CREATE DATABASE \"tools-portfolio\";")
+	if err != nil {
+		return err
+	}
+	_, err = postgresDB.Exec("CREATE DATABASE \"rp-portfolio\";")
+	if err != nil {
+		return err
+	}
+	_, err = postgresDB.Exec("CREATE DATABASE \"report-service\";")
+	if err != nil {
+		return err
+	}
+	_, err = postgresDB.Exec("CREATE DATABASE \"issue-manager\";")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// OpenDatabaseConnection open a connection to the database
+func OpenDatabaseConnection(hostName string, dbName string, user string, password string, sqlType string) (*sql.DB, error) {
+	// Note that sslmode=disable is required it does not mean that the connection
+	// is unencrypted. All connections via the proxy are completely encrypted.
+	log.Debug("attempting to open database connection")
+	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable connect_timeout=10", hostName, dbName, user, password)
+	db, err := sql.Open(sqlType, dsn)
+	//defer db.Close()
+	if err == nil {
+		log.Debug("connected to database ")
+	}
+	return db, err
+}
+
+func (c *Creater) startJobAndWaitUntilCompletion(namespace string, timeoutValue time.Duration, job *v1_batch.Job) error {
+	job, err := c.KubeClient.BatchV1().Jobs(namespace).Create(job)
+	if err != nil {
+		return err
+	}
+	timeout := time.After(timeoutValue)
+	tick := time.NewTicker(10 * time.Second)
+
+L:
+	for {
+		select {
+		case <-timeout:
+			tick.Stop()
+			return fmt.Errorf("job failed")
+
+		case <-tick.C:
+			job, err = c.KubeClient.BatchV1().Jobs(job.Namespace).Get(job.Name, v13.GetOptions{})
+			if err != nil {
+				tick.Stop()
+				return err
+			}
+			if job.Status.Succeeded > 0 {
+				tick.Stop()
+				break L
+			}
+		}
+	}
+	return nil
 }

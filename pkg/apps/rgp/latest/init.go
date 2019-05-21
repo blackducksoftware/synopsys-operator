@@ -22,27 +22,25 @@ under the License.
 package rgp
 
 import (
-	"database/sql"
-	"fmt"
 	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	deployer2 "github.com/blackducksoftware/horizon/pkg/deployer"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/rgp/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
-	v1_batch "k8s.io/api/batch/v1"
 	v14 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/rbac/v1"
 	v13 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // init deploys  minio, vault and consul
-func (c *Creater) init(spec *v1.RgpSpec) error {
+func (c *Creater) init(spec *v1.RgpSpec, componentList *api.ComponentList) error {
 	const vaultConfig = `{"listener":{"tcp":{"address":"[::]:8200","cluster_address":"[::]:8201","tls_cert_file":"/vault/tls/tls.crt","tls_cipher_suites":"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA","tls_disable":false,"tls_key_file":"/vault/tls/tls.key","tls_prefer_server_cipher_suites":true}},"storage":{"consul":{"address":"consul:8500","path":"vault"}}}`
 
-	err := c.eventStoreInit(spec)
+	err := c.eventStoreInit(spec, componentList)
 
 	// Minio
 	minioclaim, _ := util.CreatePersistentVolumeClaim("minio", spec.Namespace, "1Gi", spec.StorageClass, horizonapi.ReadWriteOnce)
@@ -50,26 +48,40 @@ func (c *Creater) init(spec *v1.RgpSpec) error {
 
 	// TODO generate random password
 	minioCreater := NewMinio(spec.Namespace, "minio", "aaaa2wdadwdawdawd", "b2112r43rfefefbbb")
-	minioDeployer.AddComponent(horizonapi.SecretComponent, minioCreater.GetSecret())
-	minioDeployer.AddComponent(horizonapi.ServiceComponent, minioCreater.GetServices())
-	minioDeployer.AddComponent(horizonapi.DeploymentComponent, minioCreater.GetDeployment())
+	minioSecret := minioCreater.GetSecret()
+	minioService := minioCreater.GetServices()
+	minioDeployment := minioCreater.GetDeployment()
+	minioDeployer.AddComponent(horizonapi.SecretComponent, minioSecret)
+	minioDeployer.AddComponent(horizonapi.ServiceComponent, minioService)
+	minioDeployer.AddComponent(horizonapi.DeploymentComponent, minioDeployment)
 	minioDeployer.AddComponent(horizonapi.PersistentVolumeClaimComponent, minioclaim)
 	err = minioDeployer.Run()
 	if err != nil {
 		return err
 	}
+	componentList.Secrets = append(componentList.Secrets, minioSecret)
+	componentList.Services = append(componentList.Services, minioService)
+	componentList.Deployments = append(componentList.Deployments, minioDeployment)
+	componentList.PersistentVolumeClaims = append(componentList.PersistentVolumeClaims, minioclaim)
 
 	// Consul
 	consulDeployer, _ := deployer2.NewDeployer(c.KubeConfig)
 	consulCreater := NewConsul(spec.Namespace, spec.StorageClass)
-	consulDeployer.AddComponent(horizonapi.ServiceComponent, consulCreater.GetConsulServices())
-	consulDeployer.AddComponent(horizonapi.StatefulSetComponent, consulCreater.GetConsulStatefulSet())
-	consulDeployer.AddComponent(horizonapi.SecretComponent, consulCreater.GetConsulSecrets())
+	consulServices := consulCreater.GetConsulServices()
+	consulStatefulSet := consulCreater.GetConsulStatefulSet()
+	consulSecrets := consulCreater.GetConsulSecrets()
+
+	consulDeployer.AddComponent(horizonapi.ServiceComponent, consulServices)
+	consulDeployer.AddComponent(horizonapi.StatefulSetComponent, consulStatefulSet)
+	consulDeployer.AddComponent(horizonapi.SecretComponent, consulSecrets)
 
 	err = consulDeployer.Run()
 	if err != nil {
 		return err
 	}
+	componentList.Secrets = append(componentList.Secrets, consulSecrets)
+	componentList.Services = append(componentList.Services, consulServices)
+	componentList.StatefulSets = append(componentList.StatefulSets, consulStatefulSet)
 
 	time.Sleep(30 * time.Second)
 
@@ -80,7 +92,7 @@ func (c *Creater) init(spec *v1.RgpSpec) error {
 	// - vault-ca-certificate
 	// - vault-tls-certificate
 	// - vault-init-secret
-	err = c.vaultInit(spec.Namespace)
+	err = c.vaultInit(spec.Namespace, componentList)
 	if err != nil {
 		return err
 	}
@@ -91,10 +103,11 @@ func (c *Creater) init(spec *v1.RgpSpec) error {
 	vaultCreater := NewVault(spec.Namespace, vaultConfig, map[string]string{
 		"vault-tls-certificate": "/vault/tls",
 	}, "/vault/tls/ca.crt")
-	vaultDeployer.AddComponent(horizonapi.ServiceComponent, vaultCreater.GetVaultServices())
+	vaultServices := vaultCreater.GetVaultServices()
+	vaultDeployer.AddComponent(horizonapi.ServiceComponent, vaultServices)
 
 	// Inject auto-unseal sidecar
-	vaultInit := RgpVault{spec.Namespace}
+	vaultInit := VaultSideCar{spec.Namespace}
 	vaultPod := vaultCreater.GetPod()
 	vaultPod.AddVolume(components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "vault-init-secret",
@@ -103,36 +116,47 @@ func (c *Creater) init(spec *v1.RgpSpec) error {
 
 	sidecarUnsealContainer, _ := vaultInit.GetSidecarUnsealContainer()
 	vaultPod.AddContainer(sidecarUnsealContainer)
-	vaultDeployer.AddComponent(horizonapi.DeploymentComponent, util.CreateDeployment(&horizonapi.DeploymentConfig{
+	vaultDeployment := util.CreateDeployment(&horizonapi.DeploymentConfig{
 		Name:      "vault",
 		Namespace: spec.Namespace,
 		Replicas:  util.IntToInt32(3),
 	}, vaultPod, map[string]string{
-		"app": "vault",
-	}))
-	vaultDeployer.AddComponent(horizonapi.ConfigMapComponent, vaultCreater.GetVaultConfigConfigMap())
+		"app":       "rgp",
+		"component": "vault",
+	})
+	vaultConfigMap := vaultCreater.GetVaultConfigConfigMap()
+
+	vaultDeployer.AddComponent(horizonapi.DeploymentComponent, vaultDeployment)
+	vaultDeployer.AddComponent(horizonapi.ConfigMapComponent, vaultConfigMap)
+
 	err = vaultDeployer.Run()
 	if err != nil {
 		return err
 	}
+	componentList.Services = append(componentList.Services, vaultServices)
+	componentList.Deployments = append(componentList.Deployments, vaultDeployment)
+	componentList.ConfigMaps = append(componentList.ConfigMaps, vaultConfigMap)
 
 	time.Sleep(30 * time.Second)
 
 	return err
 }
 
-func (c *Creater) eventStoreInit(spec *v1.RgpSpec) error {
+func (c *Creater) eventStoreInit(spec *v1.RgpSpec, componentList *api.ComponentList) error {
 	eventStore := NewEventstore(spec.Namespace, spec.StorageClass, 100)
 
 	// eventstore
 	eventStoreDeployer, _ := deployer2.NewDeployer(c.KubeConfig)
-	eventStoreDeployer.AddComponent(horizonapi.StatefulSetComponent, eventStore.GetEventStoreStatefulSet())
-	eventStoreDeployer.AddComponent(horizonapi.ServiceComponent, eventStore.GetEventStoreService())
-
+	eventStoreService := eventStore.GetEventStoreService()
+	eventStoreStatefulSet := eventStore.GetEventStoreStatefulSet()
+	eventStoreDeployer.AddComponent(horizonapi.StatefulSetComponent, eventStoreStatefulSet)
+	eventStoreDeployer.AddComponent(horizonapi.ServiceComponent, eventStoreService)
 	err := eventStoreDeployer.Run()
 	if err != nil {
 		return err
 	}
+	componentList.Services = append(componentList.Services, eventStoreService)
+	componentList.StatefulSets = append(componentList.StatefulSets, eventStoreStatefulSet)
 
 	// Create service account
 	_, err = c.KubeClient.CoreV1().ServiceAccounts(spec.Namespace).Create(&v14.ServiceAccount{
@@ -200,9 +224,9 @@ func (c *Creater) eventStoreInit(spec *v1.RgpSpec) error {
 }
 
 // vaultInit start the vault initialization job
-func (c *Creater) vaultInit(namespace string) error {
+func (c *Creater) vaultInit(namespace string, componentList *api.ComponentList) error {
 	// Init
-	_, err := c.KubeClient.CoreV1().ServiceAccounts(namespace).Create(&v14.ServiceAccount{
+	serviceAccount, err := c.KubeClient.CoreV1().ServiceAccounts(namespace).Create(&v14.ServiceAccount{
 		ObjectMeta: v13.ObjectMeta{
 			Name:      "vault-init",
 			Namespace: namespace,
@@ -211,6 +235,9 @@ func (c *Creater) vaultInit(namespace string) error {
 	if err != nil {
 		return err
 	}
+	componentList.ServiceAccounts = append(componentList.ServiceAccounts,
+		&components.ServiceAccount{ServiceAccount: serviceAccount})
+
 	_, err = c.KubeClient.RbacV1().Roles(namespace).Create(&v12.Role{
 		ObjectMeta: v13.ObjectMeta{
 			Name:      "vault-init",
@@ -255,7 +282,7 @@ func (c *Creater) vaultInit(namespace string) error {
 	}
 
 	// Start job and create CM
-	vaultInit := RgpVault{namespace}
+	vaultInit := VaultSideCar{namespace}
 	err = c.startJobAndWaitUntilCompletion(namespace, 30*time.Minute, vaultInit.GetJob())
 	if err != nil {
 		log.Print(err)
@@ -263,96 +290,17 @@ func (c *Creater) vaultInit(namespace string) error {
 	}
 
 	vaultInitDeploy, _ := deployer2.NewDeployer(c.KubeConfig)
-	vaultInitDeploy.AddComponent(horizonapi.ConfigMapComponent, vaultInit.GetConfigmap())
-	vaultInitDeploy.AddComponent(horizonapi.DeploymentComponent, vaultInit.GetDeployment())
+	vaultInitConfigMap := vaultInit.GetConfigmap()
+	vaultInitDeployment := vaultInit.GetDeployment()
+	vaultInitDeploy.AddComponent(horizonapi.ConfigMapComponent, vaultInitConfigMap)
+	vaultInitDeploy.AddComponent(horizonapi.DeploymentComponent, vaultInitDeployment)
 	err = vaultInitDeploy.Run()
 	if err != nil {
 		log.Print(err)
 		return err
 	}
+	componentList.ConfigMaps = append(componentList.ConfigMaps, vaultInitConfigMap)
+	componentList.Deployments = append(componentList.Deployments, vaultInitDeployment)
 
-	return nil
-}
-
-// dbInit create the the databases
-func (c *Creater) dbInit(namespace string, pw string) error {
-	databaseName := "postgres"
-	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", namespace)
-
-	postgresDB, err := OpenDatabaseConnection(hostName, databaseName, "postgres", pw, "postgres")
-	// log.Infof("Db: %+v, error: %+v", db, err)
-	if err != nil {
-		return fmt.Errorf("unable to open database connection for %s database in the host %s due to %+v", databaseName, hostName, err)
-	}
-
-	for {
-		log.Debug("executing SELECT 1")
-		_, err := postgresDB.Exec("SELECT 1;")
-		if err == nil {
-			break
-		}
-		time.Sleep(5 * time.Second)
-	}
-
-	_, err = postgresDB.Exec("CREATE DATABASE \"tools-portfolio\";")
-	if err != nil {
-		return err
-	}
-	_, err = postgresDB.Exec("CREATE DATABASE \"rp-portfolio\";")
-	if err != nil {
-		return err
-	}
-	_, err = postgresDB.Exec("CREATE DATABASE \"report-service\";")
-	if err != nil {
-		return err
-	}
-	_, err = postgresDB.Exec("CREATE DATABASE \"issue-manager\";")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// OpenDatabaseConnection open a connection to the database
-func OpenDatabaseConnection(hostName string, dbName string, user string, password string, sqlType string) (*sql.DB, error) {
-	// Note that sslmode=disable is required it does not mean that the connection
-	// is unencrypted. All connections via the proxy are completely encrypted.
-	log.Debug("attempting to open database connection")
-	dsn := fmt.Sprintf("host=%s dbname=%s user=%s password=%s sslmode=disable connect_timeout=10", hostName, dbName, user, password)
-	db, err := sql.Open(sqlType, dsn)
-	//defer db.Close()
-	if err == nil {
-		log.Debug("connected to database ")
-	}
-	return db, err
-}
-
-func (c *Creater) startJobAndWaitUntilCompletion(namespace string, timeoutValue time.Duration, job *v1_batch.Job) error {
-	job, err := c.KubeClient.BatchV1().Jobs(namespace).Create(job)
-	if err != nil {
-		return err
-	}
-	timeout := time.After(timeoutValue)
-	tick := time.NewTicker(10 * time.Second)
-
-L:
-	for {
-		select {
-		case <-timeout:
-			tick.Stop()
-			return fmt.Errorf("job failed")
-
-		case <-tick.C:
-			job, err = c.KubeClient.BatchV1().Jobs(job.Namespace).Get(job.Name, v13.GetOptions{})
-			if err != nil {
-				tick.Stop()
-				return err
-			}
-			if job.Status.Succeeded > 0 {
-				tick.Stop()
-				break L
-			}
-		}
-	}
 	return nil
 }

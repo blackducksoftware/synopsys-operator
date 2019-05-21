@@ -531,6 +531,24 @@ func DeleteDeployment(clientset *kubernetes.Clientset, namespace string, name st
 	})
 }
 
+// GetStatefulSet will get the statefulSet corresponding to a namespace and name
+func GetStatefulSet(clientset *kubernetes.Clientset, namespace string, name string) (*appsv1.StatefulSet, error) {
+	return clientset.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+}
+
+// ListStatefulSets will get all the statefulSets corresponding to a namespace
+func ListStatefulSets(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*appsv1.StatefulSetList, error) {
+	return clientset.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// DeleteStatefulSet will delete the statefulSet corresponding to a namespace and name
+func DeleteStatefulSet(clientset *kubernetes.Clientset, namespace string, name string) error {
+	propagationPolicy := metav1.DeletePropagationBackground
+	return clientset.AppsV1().StatefulSets(namespace).Delete(name, &metav1.DeleteOptions{
+		PropagationPolicy: &propagationPolicy,
+	})
+}
+
 // CreatePersistentVolume will create the persistent volume
 func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storageClass string, claimSize string, nfsPath string, nfsServer string) (*corev1.PersistentVolume, error) {
 	pvQuantity, _ := resource.ParseQuantity(claimSize)
@@ -1254,6 +1272,60 @@ func PatchDeployment(clientset *kubernetes.Clientset, old appsv1.Deployment, new
 	}
 
 	newDeployment, err = PatchDeploymentForReplicas(clientset, newDeployment, new.Spec.Replicas)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// PatchStatefulSetForReplicas patch a statefulSet for replica update
+func PatchStatefulSetForReplicas(clientset *kubernetes.Clientset, old *appsv1.StatefulSet, replicas *int32) (*appsv1.StatefulSet, error) {
+	oldData, err := json.Marshal(old)
+	if err != nil {
+		return nil, err
+	}
+	new := old.DeepCopy()
+	new.Spec.Replicas = replicas
+	newData, err := json.Marshal(new)
+	if err != nil {
+		return nil, err
+	}
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, appsv1.Deployment{})
+	if err != nil {
+		return nil, err
+	}
+	newDeployment, err := clientset.AppsV1().StatefulSets(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return nil, err
+	}
+	return newDeployment, nil
+}
+
+// PatchStatefulSet patch a statefulSet
+func PatchStatefulSet(clientset *kubernetes.Clientset, old appsv1.StatefulSet, new appsv1.StatefulSet) error {
+	oldData, err := json.Marshal(old)
+	if err != nil {
+		return err
+	}
+	newData, err := json.Marshal(new)
+	if err != nil {
+		return err
+	}
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, appsv1.StatefulSet{})
+	if err != nil {
+		return err
+	}
+	newStatefulSet, err := clientset.AppsV1().StatefulSets(new.Namespace).Patch(new.Name, types.StrategicMergePatchType, patchBytes)
+	if err != nil {
+		return err
+	}
+
+	newStatefulSet, err = PatchStatefulSetForReplicas(clientset, newStatefulSet, IntToInt32(0))
+	if err != nil {
+		return err
+	}
+
+	newStatefulSet, err = PatchStatefulSetForReplicas(clientset, newStatefulSet, new.Spec.Replicas)
 	if err != nil {
 		return err
 	}

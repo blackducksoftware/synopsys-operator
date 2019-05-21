@@ -104,7 +104,7 @@ func (v *Vault) GetPod() *components.Pod {
 		ServiceAccount: "",
 		Volumes:        v.getVaultVolumes(),
 		Containers:     containers,
-		Labels:         map[string]string{"app": "vault"},
+		Labels:         map[string]string{"app": "rgp", "component": "vault"},
 	})
 	return pod
 }
@@ -118,7 +118,8 @@ func (v *Vault) GetVaultServices() *components.Service {
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	vault.AddSelectors(map[string]string{
-		"app": "vault",
+		"app":       "rgp",
+		"component": "vault",
 	})
 	vault.AddPort(horizonapi.ServicePortConfig{Name: "api", Port: 8200, Protocol: horizonapi.ProtocolTCP})
 	return vault

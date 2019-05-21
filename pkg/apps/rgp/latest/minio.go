@@ -82,7 +82,7 @@ func (c *Minio) GetDeployment() *components.Deployment {
 		ServiceAccount: "",
 		Containers:     containers,
 		Volumes:        volumes,
-		Labels:         map[string]string{"app": "minio"},
+		Labels:         map[string]string{"app": "rgp", "component": "minio"},
 	}
 
 	deployment, _ := util.CreateDeploymentFromContainer(deployConfig, podConfig, podConfig.Labels)
@@ -98,7 +98,8 @@ func (c *Minio) GetServices() *components.Service {
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 	minio.AddSelectors(map[string]string{
-		"app": "minio",
+		"app":       "rgp",
+		"component": "minio",
 	})
 	minio.AddPort(horizonapi.ServicePortConfig{Name: "minio", Port: 9000, Protocol: horizonapi.ProtocolTCP})
 	return minio

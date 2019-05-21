@@ -37,24 +37,22 @@ func NewSpecConfig(config *rgpapi.RgpSpec) *SpecConfig {
 	return &SpecConfig{config: config}
 }
 
-// GetComponents will return the list of components for rgp
-func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
-	log.Infof("Getting Rgp Components")
-	components := &api.ComponentList{}
+// AddComponents will return the list of components for rgp
+func (a *SpecConfig) AddComponents(componentList *api.ComponentList) {
+	log.Infof("Adding Rgp Components")
 
-	components.Deployments = append(components.Deployments, a.GetFrontendDeployment())
-	components.Deployments = append(components.Deployments, a.GetPolarisDeployment())
-	components.Deployments = append(components.Deployments, a.GetReportDeployment())
-	components.Deployments = append(components.Deployments, a.GetIssueManagerDeployment())
-	components.Deployments = append(components.Deployments, a.GetPortfolioDeployment())
-	components.Deployments = append(components.Deployments, a.GetToolsPortfolioDeployment())
+	componentList.Deployments = append(componentList.Deployments, a.GetFrontendDeployment())
+	componentList.Deployments = append(componentList.Deployments, a.GetPolarisDeployment())
+	componentList.Deployments = append(componentList.Deployments, a.GetReportDeployment())
+	componentList.Deployments = append(componentList.Deployments, a.GetIssueManagerDeployment())
+	componentList.Deployments = append(componentList.Deployments, a.GetPortfolioDeployment())
+	componentList.Deployments = append(componentList.Deployments, a.GetToolsPortfolioDeployment())
 
-	components.Services = append(components.Services, a.GetFrontendService())
-	components.Services = append(components.Services, a.GetPolarisService())
-	components.Services = append(components.Services, a.GetReportService())
-	components.Services = append(components.Services, a.GetIssueManagerService())
-	components.Services = append(components.Services, a.GetPortfolioService())
-	components.Services = append(components.Services, a.GetToolsPortfolioService())
+	componentList.Services = append(componentList.Services, a.GetFrontendService())
+	componentList.Services = append(componentList.Services, a.GetPolarisService())
+	componentList.Services = append(componentList.Services, a.GetReportService())
+	componentList.Services = append(componentList.Services, a.GetIssueManagerService())
+	componentList.Services = append(componentList.Services, a.GetPortfolioService())
+	componentList.Services = append(componentList.Services, a.GetToolsPortfolioService())
 
-	return components, nil
 }

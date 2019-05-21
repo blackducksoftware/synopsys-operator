@@ -49,6 +49,7 @@ type ComponentList struct {
 	Secrets                []*components.Secret
 	PersistentVolumeClaims []*components.PersistentVolumeClaim
 	Routes                 []*Route
+	StatefulSets           []*components.StatefulSet
 }
 
 // GetKubeInterfaces returns a list of kube components as interfaces

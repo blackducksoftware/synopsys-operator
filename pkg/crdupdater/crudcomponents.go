@@ -151,6 +151,14 @@ func (c *CommonConfig) CRUDComponents() (bool, []error) {
 		updater.AddUpdater(deployments)
 	}
 
+	// deployment
+	statefulsets, err := NewStatefulSet(c, c.components.StatefulSets)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("unable to create new statefulset updater due to %+v", err))
+	} else {
+		updater.AddUpdater(statefulsets)
+	}
+
 	// OpenShift routes
 	routes, err := NewRoute(c, c.components.Routes)
 	if err != nil {
