@@ -82,7 +82,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 // getUploadCacheVolumes will return the uploadCache volumes
 func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
-	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", "upload-cache", 0777)
+	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", "upload-cache", 0444)
 	var uploadCacheDataDir *components.Volume
 	var uploadCacheDataKey *components.Volume
 	if c.hubSpec.PersistentStorage {

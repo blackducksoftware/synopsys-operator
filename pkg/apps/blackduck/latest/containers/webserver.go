@@ -66,13 +66,13 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Replicat
 // getWebserverVolumes will return the authentication volumes
 func (c *Creater) getWebserverVolumes() []*components.Volume {
 	webServerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
-	webServerSecretVol, _ := util.CreateSecretVolume("certificate", "blackduck-certificate", 0777)
+	webServerSecretVol, _ := util.CreateSecretVolume("certificate", "blackduck-certificate", 0444)
 
 	volumes := []*components.Volume{webServerEmptyDir, webServerSecretVol}
 
 	// Custom CA auth
 	if len(c.hubSpec.AuthCustomCA) > 1 {
-		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", "auth-custom-ca", 0777)
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", "auth-custom-ca", 0444)
 		volumes = append(volumes, authCustomCaVolume)
 	}
 	return volumes
