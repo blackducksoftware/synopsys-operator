@@ -6,7 +6,7 @@
   },
   "spec": {
     "namespace": "opssight-test",
-    "desiredState": "start",
+    "desiredState": "",
     "perceptor": {
       "name": "perceptor",
       "port": 3001,
@@ -31,7 +31,7 @@
         "port": 3004,
         "internalRegistries": [],
         "image": "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-        "serviceAccount": "perceptor-scanner"      
+        "serviceAccount": "perceptor-scanner"
       },
       "replicaCount": 1
     },

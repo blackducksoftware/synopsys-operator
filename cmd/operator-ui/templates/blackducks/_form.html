@@ -1,81 +1,81 @@
 <body onload="formLoad()" onsubmit="return validateAndGetValues()">
-<div class="new-container">
-  <%= f.InputTag("Spec.Namespace", {value: blackduck.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
-  <%= f.SelectTag("Spec.Version", {options: blackduck.View.SupportedVersions, value: blackduck.Spec.Version, label: "Black Duck Version"}) %>
-  <%= f.InputTag("Spec.LicenseKey", {value: blackduck.Spec.LicenseKey, label: "License Key"}) %>
-  <%= if (blackduck.Spec.Namespace!="") { %>
-    <%= f.SelectTag("Spec.DesiredState", {options: ["Start", "Stop"], value: blackduck.Spec.DesiredState, label: "Desired State"}) %>
-  <% } %>
-  <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: blackduck.Spec.Size, label: "Size"}) %>
-  <%= f.SelectTag("Spec.ExposeService", {options: {"": "","Load Balancer": "LoadBalancer", "Node Port": "NodePort", "Routes for OpenShift": "OpenShift"}, value: blackduck.Spec.ExposeService, label: "Expose Service"}) %>
-  <%= f.InputTag("Spec.Type", {value: blackduck.Spec.Type, label: "Black Duck Type (OpsSight specific)"}) %>
-  <%= f.CheckboxTag("Spec.LivenessProbes", {value: blackduck.Spec.LivenessProbes, label: "Liveness Probes"}) %>
-  <%= f.CheckboxTag("Spec.PersistentStorage", {value: blackduck.Spec.PersistentStorage, label: "Persistent Storage", onchange: "checkPVC()"}) %>
-  <%= f.SelectTag("Spec.DbPrototype", {options: blackduck.View.Clones, value: blackduck.Spec.DbPrototype, label: "Clone DB"}) %>
-  <div id="pvcId">
-    <%= f.SelectTag("Spec.PVCStorageClass", {value: blackduck.Spec.PVCStorageClass, label: "PVC Storage Class", options: blackduck.View.StorageClasses}) %>
-    <%= if (blackduck.Spec.Namespace!="" && blackduck.Spec.PersistentStorage==true) { %>
+  <div class="new-container">
+    <%= f.InputTag("Spec.Namespace", {value: blackduck.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
+    <%= f.SelectTag("Spec.Version", {options: blackduck.View.SupportedVersions, value: blackduck.Spec.Version, label: "Black Duck Version"}) %>
+    <%= f.InputTag("Spec.LicenseKey", {value: blackduck.Spec.LicenseKey, label: "License Key"}) %>
+    <%= if (blackduck.Spec.Namespace!="") { %>
+    <%= f.SelectTag("Spec.DesiredState", {options: {"Start":"", "Stop":"Stop"}, value: blackduck.Spec.DesiredState, label: "Desired State"}) %>
+    <% } %>
+    <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: blackduck.Spec.Size, label: "Size"}) %>
+    <%= f.SelectTag("Spec.ExposeService", {options: {"": "","Load Balancer": "LoadBalancer", "Node Port": "NodePort", "Routes for OpenShift": "OpenShift"}, value: blackduck.Spec.ExposeService, label: "Expose Service"}) %>
+    <%= f.InputTag("Spec.Type", {value: blackduck.Spec.Type, label: "Black Duck Type (OpsSight specific)"}) %>
+    <%= f.CheckboxTag("Spec.LivenessProbes", {value: blackduck.Spec.LivenessProbes, label: "Liveness Probes"}) %>
+    <%= f.CheckboxTag("Spec.PersistentStorage", {value: blackduck.Spec.PersistentStorage, label: "Persistent Storage", onchange: "checkPVC()"}) %>
+    <%= f.SelectTag("Spec.DbPrototype", {options: blackduck.View.Clones, value: blackduck.Spec.DbPrototype, label: "Clone DB"}) %>
+    <div id="pvcId">
+      <%= f.SelectTag("Spec.PVCStorageClass", {value: blackduck.Spec.PVCStorageClass, label: "PVC Storage Class", options: blackduck.View.StorageClasses}) %>
+      <%= if (blackduck.Spec.Namespace!="" && blackduck.Spec.PersistentStorage==true) { %>
       <%= f.SelectTag("Spec.ScanType", {options: [blackduck.Spec.ScanType], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
-    <% } else { %>
+      <% } else { %>
       <%= f.SelectTag("Spec.ScanType", {options: ["Artifacts", "Images", "Custom"], value: blackduck.Spec.ScanType, label: "Scan Type", onchange: "checkScanType()"}) %>
-    <% } %>
-    <%= for (index, claim) in  blackduck.Spec.PVC { %>
-      <%= if (claim.Name=="blackduck-postgres") { %>
-        <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
-        <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: claim.Name, value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
       <% } %>
-    <% } %>
-  </div>
-  <%= f.CheckboxTag("externalDbCheckbox", {label: "External Database", onchange: "toggleDbCheckbox(this)"}) %>
-  <div id="externalDbId">
-    <%= f.InputTag("Spec.ExternalPostgres.PostgresHost", {value: blackduck.Spec.ExternalPostgres.PostgresHost, label: "PostgreSQL Host"}) %>
-    <%= f.InputTag("Spec.ExternalPostgres.PostgresPort", {value: blackduck.Spec.ExternalPostgres.PostgresPort, label: "PostgreSQL Port"}) %>
-    <%= f.InputTag("Spec.ExternalPostgres.PostgresAdmin", {value: blackduck.Spec.ExternalPostgres.PostgresAdmin, label: "PostgreSQL Admin User", placeholder: "blackduck"}) %>
-    <%= f.InputTag("Spec.ExternalPostgres.PostgresAdminPassword", {value: blackduck.Spec.ExternalPostgres.PostgresAdminPassword, label: "PostgreSQL Admin Password"}) %>
-    <%= f.InputTag("Spec.ExternalPostgres.PostgresUser", {value: blackduck.Spec.ExternalPostgres.PostgresUser, label: "PostgreSQL User", placeholder: "blackduck_user"}) %>
-    <%= f.InputTag("Spec.ExternalPostgres.PostgresUserPassword", {value: blackduck.Spec.ExternalPostgres.PostgresUserPassword, label: "PostgreSQL User Password"}) %>
-    <%= f.CheckboxTag("Spec.ExternalPostgres.PostgresSsl", {value: blackduck.Spec.ExternalPostgres.PostgresSsl, label: "Enable SSL"}) %>
-  </div>
-  <%= f.SelectTag("Spec.CertificateName", {value: blackduck.Spec.CertificateName, options: blackduck.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
-  <div id="certificateId">
-    <%= f.TextAreaTag("Spec.Certificate", {value: blackduck.Spec.Certificate, label: "Certificate"}) %>
-    <%= f.TextAreaTag("Spec.CertificateKey", {value: blackduck.Spec.CertificateKey, label: "Certificate Key"}) %>
-  </div>
-  <%= f.CheckboxTag("customAuthCACheckbox", {label: "Custom CA for certificate authentication", onchange: "toggleCustomAuthCACheckbox(this)"}) %>
-  <div id="customAuthCAId">
-    <%= f.TextAreaTag("Spec.AuthCustomCA", {value: blackduck.Spec.AuthCustomCA, label: "Authentication Certificate Authority (PEM)"}) %>
-  </div>
-  <%= f.TextAreaTag("Spec.ProxyCertificate", {value: blackduck.Spec.ProxyCertificate, label: "Proxy Root Certificate"}) %>
-  <label>Container Image Tags</label>
-  <ul id="containerTags" name="containerTags" contenteditable="true">
+      <%= for (index, claim) in  blackduck.Spec.PVC { %>
+      <%= if (claim.Name=="blackduck-postgres") { %>
+      <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
+      <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: claim.Name, value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+      <% } %>
+      <% } %>
+    </div>
+    <%= f.CheckboxTag("externalDbCheckbox", {label: "External Database", onchange: "toggleDbCheckbox(this)"}) %>
+    <div id="externalDbId">
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresHost", {value: blackduck.Spec.ExternalPostgres.PostgresHost, label: "PostgreSQL Host"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresPort", {value: blackduck.Spec.ExternalPostgres.PostgresPort, label: "PostgreSQL Port"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdmin", {value: blackduck.Spec.ExternalPostgres.PostgresAdmin, label: "PostgreSQL Admin User", placeholder: "blackduck"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdminPassword", {value: blackduck.Spec.ExternalPostgres.PostgresAdminPassword, label: "PostgreSQL Admin Password"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresUser", {value: blackduck.Spec.ExternalPostgres.PostgresUser, label: "PostgreSQL User", placeholder: "blackduck_user"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresUserPassword", {value: blackduck.Spec.ExternalPostgres.PostgresUserPassword, label: "PostgreSQL User Password"}) %>
+      <%= f.CheckboxTag("Spec.ExternalPostgres.PostgresSsl", {value: blackduck.Spec.ExternalPostgres.PostgresSsl, label: "Enable SSL"}) %>
+    </div>
+    <%= f.SelectTag("Spec.CertificateName", {value: blackduck.Spec.CertificateName, options: blackduck.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
+    <div id="certificateId">
+      <%= f.TextAreaTag("Spec.Certificate", {value: blackduck.Spec.Certificate, label: "Certificate"}) %>
+      <%= f.TextAreaTag("Spec.CertificateKey", {value: blackduck.Spec.CertificateKey, label: "Certificate Key"}) %>
+    </div>
+    <%= f.CheckboxTag("customAuthCACheckbox", {label: "Custom CA for certificate authentication", onchange: "toggleCustomAuthCACheckbox(this)"}) %>
+    <div id="customAuthCAId">
+      <%= f.TextAreaTag("Spec.AuthCustomCA", {value: blackduck.Spec.AuthCustomCA, label: "Authentication Certificate Authority (PEM)"}) %>
+    </div>
+    <%= f.TextAreaTag("Spec.ProxyCertificate", {value: blackduck.Spec.ProxyCertificate, label: "Proxy Root Certificate"}) %>
+    <label>Container Image Tags</label>
+    <ul id="containerTags" name="containerTags" contenteditable="true">
       <li value=""></li>
-    <%= for (containerTag) in  blackduck.View.ContainerTags { %>
-    <li value="<%= containerTag %>"><%= containerTag %></li>
-    <% } %>
-  </ul>
-  <label>Environment Variables</label>
-  <ul id="environs" name="environs" contenteditable="true">
-    <%= for (environ) in  blackduck.View.Environs { %>
-    <li value="<%= environ %>"><%= environ %></li>
-    <% } %>
-  </ul>
-  <select id="blackduck-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
-  <select id="blackduck-Spec.ImageRegistries" name="Spec.ImageRegistries" multiple="multiple" hidden></select>
-  <center>
-    <a href="<%= blackducksPath() %>" class="btn btn-info">Cancel</a>
-    <button class="btn btn-success" role="submit">Submit</button>
-    <a href="" class="btn btn-warning" data-confirm="Are you sure?">Clear</a>
-  </center>
-  <br/>
-  <br/>
-</div>
+      <%= for (containerTag) in  blackduck.View.ContainerTags { %>
+      <li value="<%= containerTag %>"><%= containerTag %></li>
+      <% } %>
+    </ul>
+    <label>Environment Variables</label>
+    <ul id="environs" name="environs" contenteditable="true">
+      <%= for (environ) in  blackduck.View.Environs { %>
+      <li value="<%= environ %>"><%= environ %></li>
+      <% } %>
+    </ul>
+    <select id="blackduck-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
+    <select id="blackduck-Spec.ImageRegistries" name="Spec.ImageRegistries" multiple="multiple" hidden></select>
+    <center>
+      <a href="<%= blackducksPath() %>" class="btn btn-info">Cancel</a>
+      <button class="btn btn-success" role="submit">Submit</button>
+      <a href="" class="btn btn-warning" data-confirm="Are you sure?">Clear</a>
+    </center>
+    <br />
+    <br />
+  </div>
 </body>
 
 <style>
   ul {
     position: relative;
     /* outline: 0; */
-    border:1px solid #ced4da;
+    border: 1px solid #ced4da;
   }
 
   ul li {
@@ -110,8 +110,8 @@
     editableFalse();
     checkNginxCertificate();
     loadPVC();
-    document.getElementById("externalDbId").style.display= 'none';
-    document.getElementById("customAuthCAId").style.display= 'none';
+    document.getElementById("externalDbId").style.display = 'none';
+    document.getElementById("customAuthCAId").style.display = 'none';
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
     //   document.getElementById("blackduck-Status.ErrorMessage").hidden = false;
     // }
@@ -139,10 +139,10 @@
   }
 
   // check the nginx certificate name, if manual display certificate and certificate key
-  function checkNginxCertificate(){
-    certificateId=document.getElementById("certificateId");
-    certificate=document.getElementById("blackduck-Spec.Certificate");
-    certificateKey=document.getElementById("blackduck-Spec.CertificateKey");
+  function checkNginxCertificate() {
+    certificateId = document.getElementById("certificateId");
+    certificate = document.getElementById("blackduck-Spec.Certificate");
+    certificateKey = document.getElementById("blackduck-Spec.CertificateKey");
     if (document.getElementById("blackduck-Spec.CertificateName").value == "manual") {
       certificateId.style.display = '';
       certificate.style.display = '';
@@ -169,7 +169,7 @@
 
   // load the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
   function loadPVC() {
-    pvcId=document.getElementById("pvcId")
+    pvcId = document.getElementById("pvcId")
     if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
       pvcId.style.display = '';
     } else {
@@ -179,7 +179,7 @@
 
   // check the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
   function checkPVC() {
-    pvcId=document.getElementById("pvcId")
+    pvcId = document.getElementById("pvcId")
     if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
       pvcId.style.display = '';
       pvcDefaultValue();
@@ -228,7 +228,7 @@
   }
 
   function toggleDbCheckbox(element) {
-    externalDbId=document.getElementById("externalDbId");
+    externalDbId = document.getElementById("externalDbId");
     if (element.checked) {
       externalDbId.style.display = '';
     } else {
@@ -237,7 +237,7 @@
   }
 
   function toggleCustomAuthCACheckbox(element) {
-    externalDbId=document.getElementById("customAuthCAId");
+    externalDbId = document.getElementById("customAuthCAId");
     if (element.checked) {
       externalDbId.style.display = '';
     } else {

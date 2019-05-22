@@ -23,8 +23,10 @@ package alert
 
 import (
 	"fmt"
+	"strings"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -60,11 +62,20 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	if err != nil {
 		return err
 	}
-	// Update components in cluster
-	commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, false, alert.Spec.Namespace, cpList, "app=alert")
-	_, errors := commonConfig.CRUDComponents()
-	if len(errors) > 0 {
-		return fmt.Errorf("unable to update Alert components due to %+v", errors)
+	if strings.EqualFold(alert.Spec.DesiredState, "STOP") {
+		commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, false, alert.Spec.Namespace,
+			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, "app=alert")
+		_, errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("unable to stop Alert: %+v", errors)
+		}
+	} else {
+		// Update components in cluster
+		commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, false, alert.Spec.Namespace, cpList, "app=alert")
+		_, errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("unable to update Alert components due to %+v", errors)
+		}
 	}
 	return nil
 }

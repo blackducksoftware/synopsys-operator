@@ -72,9 +72,9 @@ const (
 	// DbMigration is used when the instance is about to be in the migrated state
 	DbMigration DesiredState = "DbMigration"
 
-	// Start is used when the instance is created or updated
-	Start DesiredState = "Start"
-	// Stop is used when the instance is stopped
+	// Start is used when the instance to be created or updated
+	Start DesiredState = ""
+	// Stop is used when the instance to be stopped
 	Stop DesiredState = "Stop"
 	// DbMigrate is used when the instance is migrated
 	DbMigrate DesiredState = "DbMigrate"
