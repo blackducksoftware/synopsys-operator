@@ -73,13 +73,35 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	pvcs := hc.GetPVC(blackduck)
 
 	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
+		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck")
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("stop blackduck: %+v", errors)
 		}
+	} else if strings.EqualFold(blackduck.Spec.DesiredState, "DbMigrate") {
+		// Save/Update the PVCs for the Black Duck
+		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck,component=pvc")
+			isPatched, errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("stop blackduck: %+v", errors)
+		}
+
+		// Black Duck should only have the database during the DbMigrate State
+		cpPostgresList, err := hc.getPostgresComponents(blackduck)
+		if err != nil {
+			return err
+		}
+		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
+			cpPostgresList, "app=blackduck,component=postgres")
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update postgres component: %+v", errors)
+		}
 	} else {
+		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck,component=pvc")
 		isPatched, errors := commonConfig.CRUDComponents()
