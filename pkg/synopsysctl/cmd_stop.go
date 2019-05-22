@@ -74,7 +74,80 @@ var stopBlackduckCmd = &cobra.Command{
 	},
 }
 
+// stopAlertCmd stops a Blackduck in the cluster
+var stopAlertCmd = &cobra.Command{
+	Use:   "alert NAMESPACE",
+	Short: "Stops an Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alertNamespace := args[0]
+		log.Infof("Stopping Alert %s...", alertNamespace)
+
+		// Get the Alert
+		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
+		if err != nil {
+			log.Errorf("error getting %s Alert instance due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		// Make changes to Spec
+		currAlert.Spec.DesiredState = "STOP"
+		// Update Alert
+		_, err = util.UpdateAlert(alertClient,
+			currAlert.Spec.Namespace, currAlert)
+		if err != nil {
+			log.Errorf("error stopping the %s Alert instance due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		log.Infof("successfully stopped the '%s' Alert instance", alertNamespace)
+		return nil
+	},
+}
+
+// stopOpssightCmd stops a Blackduck in the cluster
+var stopOpssightCmd = &cobra.Command{
+	Use:   "opssight NAMESPACE",
+	Short: "Stops a Opssight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		opssightNamespace := args[0]
+		log.Infof("Stopping Opssight %s...", opssightNamespace)
+
+		// Get the Opssight
+		currOpssight, err := util.GetOpsSight(opssightClient, opssightNamespace, opssightNamespace)
+		if err != nil {
+			log.Errorf("error getting %s Opssight instance due to %+v", opssightNamespace, err)
+			return nil
+		}
+
+		// Make changes to Spec
+		currOpssight.Spec.DesiredState = "STOP"
+		// Update Opssight
+		_, err = util.UpdateOpsSight(opssightClient,
+			currOpssight.Spec.Namespace, currOpssight)
+		if err != nil {
+			log.Errorf("error stopping the %s Opssight instance due to %+v", opssightNamespace, err)
+			return nil
+		}
+
+		log.Infof("successfully stopped the '%s' Opssight instance", opssightNamespace)
+		return nil
+	},
+}
+
 func init() {
 	stopCmd.AddCommand(stopBlackduckCmd)
+	stopCmd.AddCommand(stopOpssightCmd)
 	rootCmd.AddCommand(stopCmd)
 }

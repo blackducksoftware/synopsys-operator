@@ -74,7 +74,83 @@ var startBlackduckCmd = &cobra.Command{
 	},
 }
 
+// startAlertCmd starts an Alert in the cluster
+var startAlertCmd = &cobra.Command{
+	Use:   "alert NAMESPACE",
+	Short: "Start an Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alertNamespace := args[0]
+		log.Infof("Starting Alert %s...", alertNamespace)
+
+		// Get the Alert
+		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
+
+		if err != nil {
+			log.Errorf("error getting %s Alert instance due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		// Make changes to Spec
+		currAlert.Spec.DesiredState = ""
+		// Update Alert
+		_, err = util.UpdateAlert(alertClient,
+			currAlert.Spec.Namespace, currAlert)
+		if err != nil {
+			log.Errorf("error starting the %s Alert instance due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		log.Infof("successfully started the '%s' Alert instance", alertNamespace)
+		return nil
+	},
+}
+
+// startOpssightCmd starts an Opssight in the cluster
+var startOpssightCmd = &cobra.Command{
+	Use:   "opssight NAMESPACE",
+	Short: "Start an Opssight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		opssightNamespace := args[0]
+		log.Infof("Starting Opssight %s...", opssightNamespace)
+
+		// Get the Opssight
+		currOpssight, err := util.GetOpsSight(opssightClient, opssightNamespace, opssightNamespace)
+
+		if err != nil {
+			log.Errorf("error getting %s Opssight instance due to %+v", opssightNamespace, err)
+			return nil
+		}
+
+		// Make changes to Spec
+		currOpssight.Spec.DesiredState = ""
+		// Update Opssight
+		_, err = util.UpdateOpsSight(opssightClient,
+			currOpssight.Spec.Namespace, currOpssight)
+		if err != nil {
+			log.Errorf("error starting the %s Opssight instance due to %+v", opssightNamespace, err)
+			return nil
+		}
+
+		log.Infof("successfully started the '%s' Opssight instance", opssightNamespace)
+		return nil
+	},
+}
+
 func init() {
 	startCmd.AddCommand(startBlackduckCmd)
+	startCmd.AddCommand(startAlertCmd)
+	startCmd.AddCommand(startOpssightCmd)
 	rootCmd.AddCommand(startCmd)
 }
