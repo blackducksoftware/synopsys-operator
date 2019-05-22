@@ -83,10 +83,10 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	} else if strings.EqualFold(blackduck.Spec.DesiredState, "DbMigrate") {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
-			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck,component=pvc")
-			isPatched, errors := commonConfig.CRUDComponents()
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck")
+		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
-			return fmt.Errorf("stop blackduck: %+v", errors)
+			return fmt.Errorf("migrate blackduck: %+v", errors)
 		}
 
 		// Black Duck should only have the database during the DbMigrate State

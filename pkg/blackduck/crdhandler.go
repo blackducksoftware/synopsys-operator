@@ -63,6 +63,8 @@ type DesiredState string
 const (
 	// Running is used when the instance is running
 	Running State = "Running"
+	// Starting is used when the instance is starting
+	Starting State = "Starting"
 	// Stopped is used when the instance is about to stop
 	Stopped State = "Stopped"
 	// Error is used when the instance deployment errored out
@@ -167,27 +169,27 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
-	if strings.EqualFold(bd.Spec.DesiredState, string(Stop)) {
+	if strings.EqualFold(bd.Spec.DesiredState, string(Stop)) { // Stop State
 		if !strings.EqualFold(bd.Status.State, string(Stopped)) {
 			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Stopped), nil)
 			if err != nil {
 				log.Errorf("couldn't update the Black Duck state: %v", err)
 			}
 		}
-	} else if strings.EqualFold(bd.Spec.DesiredState, string(DbMigrate)) {
+	} else if strings.EqualFold(bd.Spec.DesiredState, string(DbMigrate)) { // DbMigrate State
 		if !strings.EqualFold(bd.Status.State, string(DbMigration)) {
 			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(DbMigration), nil)
 			if err != nil {
 				log.Errorf("couldn't update the Black Duck state: %v", err)
 			}
 		}
-	} else {
+	} else { // Start, Running, and Error States
 		if !strings.EqualFold(bd.Status.State, string(Running)) {
 			// Verify that we can access the Black Duck
 			hubURL := fmt.Sprintf("webserver.%s.svc", bd.Spec.Namespace)
 			status := h.verifyHub(hubURL, bd.Spec.Namespace)
 
-			if status {
+			if status { // Set state to Running if we can access the Black Duck
 				bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
 				if err != nil {
 					log.Errorf("couldn't update the Black Duck state: %v", err)
