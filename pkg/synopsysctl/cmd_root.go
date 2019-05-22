@@ -52,6 +52,11 @@ var rootCmd = &cobra.Command{
 			log.Errorf("ctl-log-Level '%s' is not a valid level: %s", logLevelCtl, err)
 		}
 		log.SetLevel(lvl)
+		if !cmd.Flags().Lookup("kubeconfig").Changed { // if kubeconfig wasn't set, check the environ
+			if kubeconfigEnvVal, exists := os.LookupEnv("KUBECONFIG"); exists { // set kubeconfig if environ is set
+				kubeconfig = kubeconfigEnvVal
+			}
+		}
 		// Sets kubeconfig and initializes resource client libraries
 		if err := setResourceClients(); err != nil {
 			log.Error(err)
