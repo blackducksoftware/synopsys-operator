@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// flag for -selector functionality
+// Describe Command flag for -selector functionality
 var describeSelector string
 
 // describeCmd Show details of a Synopsys Resource from your cluster

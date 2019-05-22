@@ -36,17 +36,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Resource Ctls for Create Command
+// Create Command Resource Ctls
 var createBlackduckCtl ResourceCtl
 var createOpsSightCtl ResourceCtl
 var createAlertCtl ResourceCtl
 
-// Flags for the Base Spec (template)
-var baseBlackduckSpec = "persistentStorageLatest"
-var baseOpsSightSpec = "default"
-var baseAlertSpec = "default"
+// Default Base Specs for Create
+var baseBlackduckSpec string
+var baseOpsSightSpec string
+var baseAlertSpec string
 
-// Flag for using mock mode - doesn't deploy
+// Create Command Flag for using mock mode (doesn't deploy)
 var mockFormat string
 
 // createCmd represents the create command
@@ -73,6 +73,9 @@ var createBlackduckCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Set the Spec Type
+		if !cmd.Flags().Lookup("template").Changed {
+			baseBlackduckSpec = defaultBaseBlackduckSpec
+		}
 		log.Debugf("setting template spec %s", baseBlackduckSpec)
 		err = createBlackduckCtl.SwitchSpec(baseBlackduckSpec)
 		if err != nil {
@@ -143,6 +146,9 @@ var createOpsSightCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Set the Spec Type
+		if !cmd.Flags().Lookup("template").Changed {
+			baseOpsSightSpec = defaultBaseOpsSightSpec
+		}
 		log.Debugf("setting OpsSight template spec %s", baseOpsSightSpec)
 		err = createOpsSightCtl.SwitchSpec(baseOpsSightSpec)
 		if err != nil {
@@ -211,6 +217,9 @@ var createAlertCmd = &cobra.Command{
 			return fmt.Errorf("%s", err)
 		}
 		// Check/Set the Spec Type
+		if !cmd.Flags().Lookup("template").Changed {
+			baseAlertSpec = defaultBaseAlertSpec
+		}
 		log.Debugf("setting Alert template spec %s", baseAlertSpec)
 		err = createAlertCtl.SwitchSpec(baseAlertSpec)
 		if err != nil {

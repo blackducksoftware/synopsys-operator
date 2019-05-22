@@ -31,9 +31,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Root Command Options and Defaults
 var cfgFile string
-
-// Options flags for all commands
 var kubeconfig = ""
 var insecureSkipTLSVerify = false
 var logLevelCtl = "info"
@@ -41,7 +40,7 @@ var logLevelCtl = "info"
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "synopsysctl",
-	Short: "Command Line Tool for managing Synopsys Resources",
+	Short: fmt.Sprintf("[Version %s] Synopsysctl is a Command Line Tool for managing Synopsys Resources", SynopsysctlVersion),
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
