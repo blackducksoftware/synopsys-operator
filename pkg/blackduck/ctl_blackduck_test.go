@@ -49,7 +49,6 @@ func TestNewBlackduckCtl(t *testing.T) {
 		ExternalPostgresPostgresUserPassword:  "",
 		PvcStorageClass:                       "",
 		LivenessProbes:                        false,
-		ScanType:                              "",
 		PersistentStorage:                     false,
 		PVCFilePath:                           "",
 		CertificateName:                       "",
@@ -162,7 +161,6 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "Password for a Postgres User")
 	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
-	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "Type of Scan artifact. Possible values are Artifacts/Images/Custom")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
 	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
@@ -346,16 +344,6 @@ func TestSetFlag(t *testing.T) {
 				LivenessProbes: true,
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{LivenessProbes: true},
-		},
-		// case
-		{
-			flagName:   "scan-type",
-			initialCtl: NewBlackduckCtl(),
-			changedCtl: &Ctl{
-				Spec:     &blackduckv1.BlackduckSpec{},
-				ScanType: "changed",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{ScanType: "changed"},
 		},
 		// case
 		{

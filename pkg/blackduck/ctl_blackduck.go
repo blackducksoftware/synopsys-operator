@@ -56,7 +56,6 @@ type Ctl struct {
 	ExternalPostgresPostgresUserPassword  string
 	PvcStorageClass                       string
 	LivenessProbes                        bool
-	ScanType                              string
 	PersistentStorage                     bool
 	PVCFilePath                           string
 	CertificateName                       string
@@ -89,7 +88,6 @@ func NewBlackduckCtl() *Ctl {
 		ExternalPostgresPostgresUserPassword:  "",
 		PvcStorageClass:                       "",
 		LivenessProbes:                        false,
-		ScanType:                              "",
 		PersistentStorage:                     false,
 		PVCFilePath:                           "",
 		CertificateName:                       "",
@@ -209,7 +207,6 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "Password for a Postgres User")
 	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
-	cmd.Flags().StringVar(&ctl.ScanType, "scan-type", ctl.ScanType, "Type of Scan artifact. Possible values are Artifacts/Images/Custom")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
 	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
@@ -293,8 +290,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
 			ctl.Spec.LivenessProbes = ctl.LivenessProbes
-		case "scan-type":
-			ctl.Spec.ScanType = ctl.ScanType
 		case "persistent-storage":
 			ctl.Spec.PersistentStorage = ctl.PersistentStorage
 		case "pvc-file-path":
