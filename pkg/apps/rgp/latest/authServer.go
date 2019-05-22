@@ -181,6 +181,10 @@ func (g *SpecConfig) getAuthServerEnvConfigs() []*horizonapi.EnvConfig {
 
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "LOGGING_LEVEL", KeyOrVal: "INFO"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromNamespace, NameOrPrefix: "NAMESPACE"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_HOST", KeyOrVal: "mailhost.internal.synopsys.com"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_PORT", KeyOrVal: "25"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_USERNAME", KeyOrVal: ""})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_PASSWORD", KeyOrVal: ""})
 
 	envs = append(envs, g.getSwipEnvConfigs()...)
 	envs = append(envs, g.getPostgresEnvConfigs()...)

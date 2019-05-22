@@ -83,7 +83,7 @@ func (c *Creater) init(spec *v1.RgpSpec, componentList *api.ComponentList) error
 	componentList.Services = append(componentList.Services, consulServices)
 	componentList.StatefulSets = append(componentList.StatefulSets, consulStatefulSet)
 
-	time.Sleep(30 * time.Second)
+	time.Sleep(60 * time.Second)
 
 	// Vault Init - Generate Root CA and auth certs
 	// This will create the following secrets :
