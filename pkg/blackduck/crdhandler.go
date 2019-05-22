@@ -54,24 +54,30 @@ type HandlerInterface interface {
 	ObjectUpdated(objOld, objNew interface{})
 }
 
-// State contains the state of the OpsSight
+// State contains the state of the Black Duck
 type State string
 
-// DesiredState contains the desired state of the OpsSight
+// DesiredState contains the desired state of the Black Duck
 type DesiredState string
 
 const (
 	// Running is used when the instance is running
 	Running State = "Running"
+	// Starting is used when the instance is starting
+	Starting State = "Starting"
 	// Stopped is used when the instance is about to stop
 	Stopped State = "Stopped"
 	// Error is used when the instance deployment errored out
 	Error State = "Error"
+	// DbMigration is used when the instance is about to be in the migrated state
+	DbMigration DesiredState = "DbMigration"
 
-	// Start is used when the instance  to be created or updated
+	// Start is used when the instance is created or updated
 	Start DesiredState = "Start"
-	// Stop is used when the instance  to be stopped
+	// Stop is used when the instance is stopped
 	Stop DesiredState = "Stop"
+	// DbMigrate is used when the instance is migrated
+	DbMigrate DesiredState = "DbMigrate"
 )
 
 // Handler will store the configuration that is required to initiantiate the informers callback
@@ -94,7 +100,7 @@ func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 		federatorBaseURL: federatorBaseURL, cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
-// APISetHubsRequest to set the Blackduck urls for Perceptor
+// APISetHubsRequest to set the Black Duck urls for Perceptor
 type APISetHubsRequest struct {
 	HubURLs []string
 }
@@ -112,22 +118,22 @@ func (h *Handler) ObjectDeleted(name string) {
 	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
 	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("blackducks.synopsys.com", v1.GetOptions{})
 	if err != nil || crd.DeletionTimestamp != nil {
-		// We do not delete the Blackduck instance if the CRD doesn't exist or that it is in the process of being deleted
-		log.Warnf("Ignoring request to delete %s because the CRD doesn't exist or is being deleted", name)
+		// We do not delete the Black Duck instance if the CRD doesn't exist or that it is in the process of being deleted
+		log.Warnf("ignoring request to delete %s because the CRD doesn't exist or is being deleted", name)
 		return
 	}
 
-	// Voluntary deletion. The CRD still exists but the Blackduck resource has been deleted
+	// Voluntary deletion. The CRD still exists but the Black Duck resource has been deleted
 	app := apps.NewApp(h.config, h.kubeConfig)
 	app.Blackduck().Delete(name)
 
 }
 
-// ObjectUpdated will be called for update hub events
+// ObjectUpdated will be called for update black duck events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	bd, ok := objNew.(*blackduckv1.Blackduck)
 	if !ok {
-		log.Error("Unable to cast Blackduck object")
+		log.Error("unable to cast Black Duck object")
 		return
 	}
 
@@ -135,10 +141,10 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	hubDefaultSpec := h.defaults
 	err := mergo.Merge(&newSpec, hubDefaultSpec)
 	if err != nil {
-		log.Errorf("unable to merge the hub structs for %s due to %+v", bd.Name, err)
+		log.Errorf("unable to merge the Black Duck structs for %s due to %+v", bd.Name, err)
 		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
 		if err != nil {
-			log.Errorf("couldn't update the blackduck state: %v", err)
+			log.Errorf("couldn't update the Black Duck state: %v", err)
 		}
 		return
 	}
@@ -158,28 +164,35 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		log.Error(err)
 		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
 		if err != nil {
-			log.Errorf("Couldn't update the blackduck state: %v", err)
+			log.Errorf("couldn't update the Black Duck state: %v", err)
 		}
 		return
 	}
 
-	if strings.EqualFold(bd.Spec.DesiredState, string(Stop)) {
+	if strings.EqualFold(bd.Spec.DesiredState, string(Stop)) { // Stop State
 		if !strings.EqualFold(bd.Status.State, string(Stopped)) {
 			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Stopped), nil)
 			if err != nil {
-				log.Errorf("Couldn't update the blackduck state: %v", err)
+				log.Errorf("couldn't update the Black Duck state: %v", err)
 			}
 		}
-	} else {
+	} else if strings.EqualFold(bd.Spec.DesiredState, string(DbMigrate)) { // DbMigrate State
+		if !strings.EqualFold(bd.Status.State, string(DbMigration)) {
+			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(DbMigration), nil)
+			if err != nil {
+				log.Errorf("couldn't update the Black Duck state: %v", err)
+			}
+		}
+	} else { // Start, Running, and Error States
 		if !strings.EqualFold(bd.Status.State, string(Running)) {
-			// Verify that we can access the Hub
+			// Verify that we can access the Black Duck
 			hubURL := fmt.Sprintf("webserver.%s.svc", bd.Spec.Namespace)
 			status := h.verifyHub(hubURL, bd.Spec.Namespace)
 
-			if status {
+			if status { // Set state to Running if we can access the Black Duck
 				bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
 				if err != nil {
-					log.Errorf("Couldn't update the blackduck state: %v", err)
+					log.Errorf("couldn't update the Black Duck state: %v", err)
 				}
 			}
 		}
@@ -193,14 +206,14 @@ func (h *Handler) callHubFederator() {
 		<-h.cmMutex
 	}()
 	hubUrls, err := h.getHubUrls()
-	log.Debugf("hubUrls: %+v", hubUrls)
+	log.Debugf("blackDuckUrls: %+v", hubUrls)
 	if err != nil {
-		log.Errorf("unable to get the hub urls due to %+v", err)
+		log.Errorf("unable to get the Black Duck urls due to %+v", err)
 		return
 	}
 	err = h.addHubFederatorEvents(fmt.Sprintf("%s/sethubs", h.federatorBaseURL), hubUrls)
 	if err != nil {
-		log.Errorf("unable to update the hub urls in perceptor due to %+v", err)
+		log.Errorf("unable to update the Black Duck urls in perceptor due to %+v", err)
 		return
 	}
 }
@@ -241,7 +254,7 @@ func (h *Handler) verifyHub(hubURL string, name string) bool {
 	for i := 0; i < 10; i++ {
 		resp, err := client.Get(fmt.Sprintf("https://%s:443/api/current-version", hubURL))
 		if err != nil {
-			log.Debugf("unable to talk with the blackduck %s", hubURL)
+			log.Debugf("unable to talk with the Black Duck %s", hubURL)
 			time.Sleep(10 * time.Second)
 			_, err := util.GetHub(h.blackduckClient, h.config.Namespace, name)
 			if err != nil {
@@ -252,7 +265,7 @@ func (h *Handler) verifyHub(hubURL string, name string) bool {
 
 		_, err = ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		log.Debugf("blackduck response status for %s is %v", hubURL, resp.Status)
+		log.Debugf("black duck response status for %s is %v", hubURL, resp.Status)
 
 		if resp.StatusCode == 200 {
 			return true
@@ -269,12 +282,12 @@ func (h *Handler) addHubFederatorEvents(dest string, obj interface{}) error {
 	}
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPut, dest, bytes.NewBuffer(jsonBytes))
-	log.Debugf("hub req: %+v", req)
+	log.Debugf("black duck req: %+v", req)
 	if err != nil {
 		return fmt.Errorf("unable to create the request due to %v", err)
 	}
 	resp, err := client.Do(req)
-	log.Debugf("hub resp: %+v", resp)
+	log.Debugf("black duck resp: %+v", resp)
 	if err != nil {
 		return fmt.Errorf("unable to POST to %s: %v", dest, err)
 	}
