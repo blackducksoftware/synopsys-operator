@@ -275,19 +275,19 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 
 	// Add Blackduck Command
-	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags [empty/template/persistentStorageLatest/persistentStorageV1/externalPersistentStorageLatest/externalPersistentStorageV1/bdba/ephemeral/ephemeralCustomAuthCA/externalDB/IPV6Disabled]")
+	createBlackduckCmd.Flags().StringVar(&baseBlackduckSpec, "template", baseBlackduckSpec, "Base resource configuration to modify with flags [empty/persistentStorageLatest/persistentStorageV1/externalPersistentStorageLatest/externalPersistentStorageV1/bdba/ephemeral/ephemeralCustomAuthCA/externalDB/IPV6Disabled]")
 	createBlackduckCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json/yaml]")
 	createBlackduckCtl.AddSpecFlags(createBlackduckCmd, true)
 	createCmd.AddCommand(createBlackduckCmd)
 
 	// Add OpsSight Command
-	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags [empty/template/default/disabledBlackDuck]")
+	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags [empty/upstream/default/disabledBlackDuck]")
 	createOpsSightCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json/yaml]")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 
 	// Add Alert Command
-	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags [empty/template/default]")
+	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags [empty/default]")
 	createAlertCmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Prints the resource spec instead of creating it [json/yaml]")
 	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	createCmd.AddCommand(createAlertCmd)

@@ -106,9 +106,8 @@ func (ctl *Ctl) CheckSpecFlags() error {
 
 // Constants for Default Specs
 const (
-	EmptySpec    string = "empty"
-	TemplateSpec string = "template"
-	DefaultSpec  string = "default"
+	EmptySpec   string = "empty"
+	DefaultSpec string = "default"
 )
 
 // SwitchSpec switches the Alert's Spec to a different predefined spec
@@ -116,8 +115,6 @@ func (ctl *Ctl) SwitchSpec(specType string) error {
 	switch specType {
 	case EmptySpec:
 		ctl.Spec = &alertapi.AlertSpec{}
-	case TemplateSpec:
-		ctl.Spec = crddefaults.GetAlertTemplate()
 	case DefaultSpec:
 		ctl.Spec = crddefaults.GetAlertDefault()
 		ctl.Spec.PersistentStorage = true

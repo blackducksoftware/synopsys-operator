@@ -148,7 +148,6 @@ func (ctl *Ctl) CheckSpecFlags() error {
 // Constants for Default Specs
 const (
 	EmptySpec                           string = "empty"
-	TemplateSpec                        string = "template"
 	PersistentStorageLatestSpec         string = "persistentStorageLatest"
 	PersistentStorageV1Spec             string = "persistentStorageV1"
 	ExternalPersistentStorageLatestSpec string = "externalPersistentStorageLatest"
@@ -165,8 +164,6 @@ func (ctl *Ctl) SwitchSpec(createBlackduckSpecType string) error {
 	switch createBlackduckSpecType {
 	case EmptySpec:
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
-	case TemplateSpec:
-		ctl.Spec = crddefaults.GetBlackDuckTemplate()
 	case PersistentStorageLatestSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageLatest()
 	case PersistentStorageV1Spec:
