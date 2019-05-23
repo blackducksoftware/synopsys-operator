@@ -43,12 +43,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Resource Ctl for update
+// Update Command Resource Ctls
 var updateBlackduckCtl ResourceCtl
 var updateOpsSightCtl ResourceCtl
 var updateAlertCtl ResourceCtl
 
-// Update Defaults
+// Update Comamnd Defaults
 var updateSynopsysOperatorImage = ""
 var updatePrometheusImage = ""
 var updateSecretAdminPassword = ""

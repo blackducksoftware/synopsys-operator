@@ -33,10 +33,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// flag for -output functionality
+// Get Command flag for -output functionality
 var getOutputFormat string
 
-// flag for -selector functionality
+// Get Command flag for -selector functionality
 var getSelector string
 
 // getCmd lists resources in the cluster
