@@ -117,7 +117,6 @@ func TestSwitchSpec(t *testing.T) {
 		expected *blackduckv1.BlackduckSpec
 	}{
 		{input: EmptySpec, expected: &blackduckv1.BlackduckSpec{}},
-		{input: TemplateSpec, expected: crddefaults.GetBlackDuckTemplate()},
 		{input: PersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageLatest()},
 		{input: PersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageV1()},
 		{input: ExternalPersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()},

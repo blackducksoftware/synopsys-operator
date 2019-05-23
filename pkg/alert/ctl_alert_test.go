@@ -91,7 +91,6 @@ func TestSwitchSpec(t *testing.T) {
 		expected alertapi.AlertSpec
 	}{
 		{input: EmptySpec, expected: alertapi.AlertSpec{}},
-		{input: TemplateSpec, expected: *crddefaults.GetAlertTemplate()},
 		{input: DefaultSpec, expected: defaultSpec},
 	}
 
