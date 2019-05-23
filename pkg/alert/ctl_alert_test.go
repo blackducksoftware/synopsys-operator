@@ -35,23 +35,8 @@ func TestNewAlertCtl(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
 	assert.Equal(&Ctl{
-		Spec:                 &alertapi.AlertSpec{},
-		Version:              "",
-		AlertImage:           "",
-		CfsslImage:           "",
-		StandAlone:           false,
-		ExposeService:        "",
-		Port:                 0,
-		EncryptionPassword:   "",
-		EncryptionGlobalSalt: "",
-		Environs:             []string{},
-		PersistentStorage:    false,
-		PVCName:              "",
-		PVCStorageClass:      "",
-		PVCSize:              "",
-		AlertMemory:          "",
-		CfsslMemory:          "",
-		DesiredState:         "",
+		Spec:     &alertapi.AlertSpec{},
+		Environs: []string{},
 	}, alertCtl)
 }
 
