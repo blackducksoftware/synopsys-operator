@@ -192,6 +192,6 @@ func (ctl *Ctl) SpecIsValid() (bool, error) {
 }
 
 // CanUpdate checks if a user has permission to modify based on the spec
-func (ctl *Ctl) CanUpdate() (bool, error) {
+func (ctl *Ctl) CanUpdate(flagset *pflag.FlagSet) (bool, error) {
 	return true, nil
 }

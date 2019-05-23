@@ -197,9 +197,8 @@ var updateOperatorCmd = &cobra.Command{
 
 // updateAlertCmd lets the user update an Alert Instance
 var updateAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE",
-	Example: "synopsysctl update alert altnamespace --port 80",
-	Short:   "Describe an instance of Alert",
+	Use:   "alert NAMESPACE",
+	Short: "Describe an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -211,7 +210,7 @@ var updateAlertCmd = &cobra.Command{
 
 		log.Infof("updating Alert %s instance...", alertNamespace)
 
-		// Get Alert
+		// Get the Alert
 		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
 		if err != nil {
 			log.Errorf("error getting an Alert %s instance due to %+v", alertNamespace, err)
@@ -224,14 +223,14 @@ var updateAlertCmd = &cobra.Command{
 		}
 
 		// Check if it can be updated
-		canUpdate, err := updateAlertCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateAlertCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update Alert: %s", err)
 			return nil
 		}
 		if canUpdate {
 			// Make changes to Spec
-			flagset := cmd.Flags()
 			updateAlertCtl.SetChangedFlags(flagset)
 			newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
 			// merge environs
@@ -279,15 +278,20 @@ var updateBlackDuckCmd = &cobra.Command{
 			return nil
 		}
 		// Check if it can be updated
-		canUpdate, err := updateBlackDuckCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateBlackDuckCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update: %s", err)
 			return nil
 		}
 		if canUpdate {
 			// Make changes to Spec
-			flagset := cmd.Flags()
 			updateBlackDuckCtl.SetChangedFlags(flagset)
+			err = updateBlackDuckCtl.CheckSpecFlags(flagset)
+			if err != nil {
+				log.Errorf("invalid spec: %+v", err)
+				return nil
+			}
 			newSpec := updateBlackDuckCtl.GetSpec().(blackduckapi.BlackduckSpec)
 			// merge environs
 			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currBlackDuck.Spec.Environs)
@@ -336,7 +340,8 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			return nil
 		}
 		// Check if it can be updated
-		canUpdate, err := updateBlackDuckCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateBlackDuckCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update: %s", err)
 			return nil
@@ -421,7 +426,8 @@ var updateBlackDuckAddPVCCmd = &cobra.Command{
 			return nil
 		}
 		// Check if it can be updated
-		canUpdate, err := updateBlackDuckCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateBlackDuckCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update: %s", err)
 			return nil
@@ -476,7 +482,8 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 			return nil
 		}
 		// Check if it can be updated
-		canUpdate, err := updateBlackDuckCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateBlackDuckCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update: %s", err)
 			return nil
@@ -526,7 +533,8 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 			return nil
 		}
 		// Check if it can be updated
-		canUpdate, err := updateBlackDuckCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateBlackDuckCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update: %s", err)
 			return nil
@@ -577,7 +585,8 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 			return nil
 		}
 		// Check if it can be updated
-		canUpdate, err := updateBlackDuckCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateBlackDuckCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update: %s", err)
 			return nil
@@ -627,14 +636,14 @@ var updateOpsSightCmd = &cobra.Command{
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
-		canUpdate, err := updateOpsSightCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateOpsSightCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update: %s", err)
 			return nil
 		}
 		if canUpdate {
 			// Make changes to Spec
-			flagset := cmd.Flags()
 			updateOpsSightCtl.SetChangedFlags(flagset)
 			newSpec := updateOpsSightCtl.GetSpec().(opssightapi.OpsSightSpec)
 			// Create new OpsSight CRD
@@ -678,7 +687,8 @@ var updateOpsSightImageCmd = &cobra.Command{
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
-		canUpdate, err := updateOpsSightCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateOpsSightCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update OpsSight: %s", err)
 			return nil
@@ -749,7 +759,8 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
-		canUpdate, err := updateOpsSightCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateOpsSightCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update OpsSight: %s", err)
 			return nil
@@ -805,7 +816,8 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
-		canUpdate, err := updateOpsSightCtl.CanUpdate()
+		flagset := cmd.Flags()
+		canUpdate, err := updateOpsSightCtl.CanUpdate(flagset)
 		if err != nil {
 			log.Errorf("cannot Update OpsSight: %s", err)
 			return nil

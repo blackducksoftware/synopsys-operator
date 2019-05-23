@@ -29,13 +29,13 @@ import (
 // ResourceCtl interface defines functions that other
 // ctl types for resources should define
 type ResourceCtl interface {
-	CheckSpecFlags(*pflag.FlagSet) error // returns an error if a flag format is invalid
-	GetSpec() interface{}                // returns spec for the resource
-	SetSpec(interface{}) error           // sets the spec
-	SwitchSpec(string) error             // change the spec for the resource
-	AddSpecFlags(*cobra.Command, bool)   // Add flags for the resource spec
-	SetChangedFlags(*pflag.FlagSet)      // calls setFlag on each flag in flagset
-	SetFlag(*pflag.Flag)                 // updates the spec value for the flag
-	SpecIsValid() (bool, error)          // verifies the spec has necessary fields to deploy
-	CanUpdate() (bool, error)            // checks if a user has permission to modify based on the spec
+	CheckSpecFlags(*pflag.FlagSet) error    // returns an error if a flag format is invalid
+	GetSpec() interface{}                   // returns spec for the resource
+	SetSpec(interface{}) error              // sets the spec
+	SwitchSpec(string) error                // change the spec for the resource
+	AddSpecFlags(*cobra.Command, bool)      // Add flags for the resource spec
+	SetChangedFlags(*pflag.FlagSet)         // calls setFlag on each flag in flagset
+	SetFlag(*pflag.Flag)                    // updates the spec value for the flag
+	SpecIsValid() (bool, error)             // verifies the spec has necessary fields to deploy
+	CanUpdate(*pflag.FlagSet) (bool, error) // checks if a user has permission to modify based on the spec
 }

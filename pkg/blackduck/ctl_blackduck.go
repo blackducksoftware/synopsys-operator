@@ -384,6 +384,17 @@ func (ctl *Ctl) SpecIsValid() (bool, error) {
 }
 
 // CanUpdate checks if a user has permission to modify based on the spec
-func (ctl *Ctl) CanUpdate() (bool, error) {
+func (ctl *Ctl) CanUpdate(flagset *pflag.FlagSet) (bool, error) {
+	if ctl.Spec.PersistentStorage == true {
+		if flagset.Lookup("persistent-storage").Changed {
+			return false, fmt.Errorf("cannot update persistent storage if it's already enabled")
+		}
+		if flagset.Lookup("pvc-file-path").Changed {
+			return false, fmt.Errorf("cannot update persistent storage if it's already enabled")
+		}
+		if flagset.Lookup("pvc-storage-class").Changed {
+			return false, fmt.Errorf("cannot update persistent storage if it's already enabled")
+		}
+	}
 	return true, nil
 }
