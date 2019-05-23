@@ -35,33 +35,9 @@ func TestNewBlackduckCtl(t *testing.T) {
 	assert := assert.New(t)
 	blackduckCtl := NewBlackduckCtl()
 	assert.Equal(&Ctl{
-		Spec:                                  &blackduckv1.BlackduckSpec{},
-		Size:                                  "",
-		Version:                               "",
-		ExposeService:                         "",
-		DbPrototype:                           "",
-		ExternalPostgresPostgresHost:          "",
-		ExternalPostgresPostgresPort:          0,
-		ExternalPostgresPostgresAdmin:         "",
-		ExternalPostgresPostgresUser:          "",
-		ExternalPostgresPostgresSsl:           false,
-		ExternalPostgresPostgresAdminPassword: "",
-		ExternalPostgresPostgresUserPassword:  "",
-		PvcStorageClass:                       "",
-		LivenessProbes:                        false,
-		PersistentStorage:                     false,
-		PVCFilePath:                           "",
-		CertificateName:                       "",
-		CertificateFilePath:                   "",
-		CertificateKeyFilePath:                "",
-		ProxyCertificateFilePath:              "",
-		AuthCustomCAFilePath:                  "",
-		Type:                                  "",
-		DesiredState:                          "",
-		Environs:                              []string{},
-		ImageRegistries:                       []string{},
-		ImageUIDMapFilePath:                   "",
-		LicenseKey:                            "",
+		Spec:            &blackduckv1.BlackduckSpec{},
+		Environs:        []string{},
+		ImageRegistries: []string{},
 	}, blackduckCtl)
 }
 
@@ -162,6 +138,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
 	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
+	cmd.Flags().StringVar(&ctl.PostgresClaimSize, "postgres-claim-size", ctl.PostgresClaimSize, "Size of the blackduck-postgres PVC")
 	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to a file for the Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to a file for the Black Duck nginx certificate key")
@@ -353,6 +330,36 @@ func TestSetFlag(t *testing.T) {
 				PersistentStorage: true,
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{PersistentStorage: true},
+		},
+		// case: add postgres-claim with size if PVC doesn't exist
+		{
+			flagName:   "postgres-claim-size",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:              &blackduckv1.BlackduckSpec{},
+				PostgresClaimSize: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
+		},
+		// case: append postgres-claim with size if PVC doesn't exist
+		{
+			flagName:   "postgres-claim-size",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:              &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "other-pvc", Size: "other-size"}}},
+				PostgresClaimSize: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "other-pvc", Size: "other-size"}, {Name: "blackduck-postgres", Size: "changed"}}},
+		},
+		// case: update postgres-claim with size if PVC exists
+		{
+			flagName:   "postgres-claim-size",
+			initialCtl: NewBlackduckCtl(),
+			changedCtl: &Ctl{
+				Spec:              &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "blackduck-postgres", Size: "unchanged"}}},
+				PostgresClaimSize: "changed",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
 		},
 		// case
 		{

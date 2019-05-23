@@ -58,6 +58,7 @@ type Ctl struct {
 	LivenessProbes                        bool
 	PersistentStorage                     bool
 	PVCFilePath                           string
+	PostgresClaimSize                     string
 	CertificateName                       string
 	CertificateFilePath                   string
 	CertificateKeyFilePath                string
@@ -90,6 +91,7 @@ func NewBlackduckCtl() *Ctl {
 		LivenessProbes:                        false,
 		PersistentStorage:                     false,
 		PVCFilePath:                           "",
+		PostgresClaimSize:                     "",
 		CertificateName:                       "",
 		CertificateFilePath:                   "",
 		CertificateKeyFilePath:                "",
@@ -206,6 +208,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
 	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
 	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
+	cmd.Flags().StringVar(&ctl.PostgresClaimSize, "postgres-claim-size", ctl.PostgresClaimSize, "Size of the blackduck-postgres PVC")
 	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to a file for the Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to a file for the Black Duck nginx certificate key")
@@ -304,6 +307,14 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			for _, pvc := range pvcStructs.Data {
 				ctl.Spec.PVC = append(ctl.Spec.PVC, pvc)
 			}
+		case "postgres-claim-size":
+			for i := range ctl.Spec.PVC {
+				if ctl.Spec.PVC[i].Name == "blackduck-postgres" { // update claim size and return
+					ctl.Spec.PVC[i].Size = ctl.PostgresClaimSize
+					return
+				}
+			}
+			ctl.Spec.PVC = append(ctl.Spec.PVC, blackduckv1.PVC{Name: "blackduck-postgres", Size: ctl.PostgresClaimSize}) // add postgres PVC if doesn't exist
 		case "certificate-name":
 			ctl.Spec.CertificateName = ctl.CertificateName
 		case "certificate-file-path":
