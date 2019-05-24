@@ -24,28 +24,28 @@ PLATFORM := darwin linux windows
 
 binary: clean ${OUTDIR} 
 	$(foreach p,${PLATFORM}, \
-		echo "creating synopsysctl binary for $(p) platform"; \
+		echo "creating synopsysctl binary for $(p) platform" && \
 		if [[ $(p) = ${WINDOWS} ]]; then \
 			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl.exe; \
 		else \
 			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl; \
-		fi; \
-		echo "completed synopsysctl binary for $(p) platform"; \
+		fi && \
+		echo "completed synopsysctl binary for $(p) platform" \
 	)
 
 package:
 	$(foreach p,${PLATFORM}, \
-		echo "creating synopsysctl package for $(p) platform"; \
-		cd ${OUTDIR}/$(p); \
+		echo "creating synopsysctl package for $(p) platform" && \
+		cd ${OUTDIR}/$(p) && \
 		if [[ $(p) = ${LINUX} ]]; then \
 			tar -zcvf synopsysctl-$(p)-amd64.tar.gz synopsysctl && mv synopsysctl-$(p)-amd64.tar.gz .. && cd .. && $(SHA_SUM_CMD) synopsysctl-$(p)-amd64.tar.gz >> CHECKSUM && rm -rf $(p); \
 		elif [[ $(p) = ${WINDOWS} ]]; then \
 			zip synopsysctl-$(p)-amd64.zip synopsysctl.exe && mv synopsysctl-$(p)-amd64.zip .. && cd .. && $(SHA_SUM_CMD) synopsysctl-$(p)-amd64.zip >> CHECKSUM && rm -rf $(p); \
 		else \
 			zip synopsysctl-$(p)-amd64.zip synopsysctl && mv synopsysctl-$(p)-amd64.zip .. && cd .. && $(SHA_SUM_CMD) synopsysctl-$(p)-amd64.zip >> CHECKSUM && rm -rf $(p); \
-		fi; \
-		echo "completed synopsysctl package for $(p) platform"; \
-		cd ..; \
+		fi && \
+		echo "completed synopsysctl package for $(p) platform" && \
+		cd .. \
 	)
 
 clean:
@@ -54,7 +54,7 @@ clean:
 ${OUTDIR}:
 	mkdir -p ${OUTDIR}
 	$(foreach p,${PLATFORM}, \
-		mkdir -p ${OUTDIR}/$(p); \
+		mkdir -p ${OUTDIR}/$(p) \
 	)
 
 init:
