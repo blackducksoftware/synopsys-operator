@@ -148,6 +148,7 @@ var stopOpssightCmd = &cobra.Command{
 
 func init() {
 	stopCmd.AddCommand(stopBlackduckCmd)
+	stopCmd.AddCommand(stopAlertCmd)
 	stopCmd.AddCommand(stopOpssightCmd)
 	rootCmd.AddCommand(stopCmd)
 }
