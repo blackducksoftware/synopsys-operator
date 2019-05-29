@@ -58,7 +58,7 @@ func (e *Eventstore) GetEventStoreStatefulSet() *components.StatefulSet {
 	containers = append(containers, &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
 			Name:       "eventstore",
-			Image:      "gcr.io/snps-swip-staging/swip_eventstore:0.0.8",
+			Image:      "gcr.io/snps-swip-staging/swip_eventstore:latest",
 			PullPolicy: horizonapi.PullIfNotPresent,
 			MinCPU:     "1000m",
 			MinMem:     "8Gi",
@@ -149,7 +149,7 @@ func (e *Eventstore) GetInitJob() *v1.Job {
 						{
 							Name:            "eventstore-init",
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Image:           "gcr.io/snps-swip-staging/eventstore-util:0.0.14",
+							Image:           "gcr.io/snps-swip-staging/eventstore-util:latest",
 							Command:         []string{"eventstore-init"},
 							Env: []corev1.EnvVar{
 								{

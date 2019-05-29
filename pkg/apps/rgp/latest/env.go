@@ -37,9 +37,14 @@ func (g *SpecConfig) getCommonEnvConfigs() []*horizonapi.EnvConfig {
 }
 
 func (g *SpecConfig) getSwipEnvConfigs() []*horizonapi.EnvConfig {
+	// {{- define "swip.common.environment" }}
 	var envs []*horizonapi.EnvConfig
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ROOT_DOMAIN", KeyOrVal: g.config.IngressHost})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "LOGGING_LEVEL", KeyOrVal: "INFO"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ENVIRONMENT_NAME", KeyOrVal: g.config.Namespace})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_ROOT_DOMAIN", KeyOrVal: g.config.IngressHost})
+	// TODO: This is not required, but we should set it explicitly
+	// envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_SERVICE_NAME", KeyOrVal: g.config.Namespace})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromNamespace, NameOrPrefix: "NAMESPACE"})
 	return envs
 }
 

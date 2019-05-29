@@ -86,7 +86,7 @@ func (c *Creater) Ensure(rgp *rgpapi.Rgp) error {
 	mongo := Mongo{
 		Namespace: rgp.Spec.Namespace,
 		PVCName:   "mongodb",
-		Image:     "gcr.io/snps-swip-staging/swip_mongodb:0.0.6",
+		Image:     "gcr.io/snps-swip-staging/swip_mongodb:latest",
 		MinCPU:    "250m",
 		MinMemory: "8Gi",
 		Port:      27017,

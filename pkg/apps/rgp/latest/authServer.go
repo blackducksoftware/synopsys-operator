@@ -24,7 +24,6 @@ package rgp
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 )
 
@@ -74,7 +73,7 @@ func (g *SpecConfig) getAuthServersPod() *components.Pod {
 func (g *SpecConfig) getAuthServerContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "auth-server",
-		Image:      "gcr.io/snps-swip-staging/swip_auth-server:1.6.1656",
+		Image:      "gcr.io/snps-swip-staging/swip_auth-server:latest",
 		PullPolicy: horizonapi.PullIfNotPresent,
 		MinCPU:     "250m",
 		MinMem:     "2Gi",
@@ -124,6 +123,7 @@ func (g *SpecConfig) GetAuthServerService() *components.Service {
 func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 	var volumes []*components.Volume
 
+	// swip.vault.server.volume
 	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "vault-cacert",
 		MapOrSecretName: "vault-ca-certificate",
@@ -131,7 +131,7 @@ func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 			{
 				Key:  "tls.crt",
 				Path: "vault_cacrt",
-				Mode: util.IntToInt32(420),
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -143,7 +143,7 @@ func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 			{
 				Key:  "tls.key",
 				Path: "vault_server_key",
-				Mode: util.IntToInt32(420),
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -155,7 +155,7 @@ func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 			{
 				Key:  "tls.crt",
 				Path: "vault_server_cert",
-				Mode: util.IntToInt32(420),
+				// Mode: util.IntToInt32(420),
 			},
 		},
 	}))
@@ -164,36 +164,43 @@ func (g *SpecConfig) getAuthServerVolumes() []*components.Volume {
 }
 
 func (g *SpecConfig) getAuthServerVolumeMounts() []*horizonapi.VolumeMountConfig {
+	// swip.vault.server.volumemount
 	var volumeMounts []*horizonapi.VolumeMountConfig
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-cacert", MountPath: "/mnt/vault/ca"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-key", MountPath: "/mnt/vault/key"})
-	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-cert", MountPath: "/mnt/vault/cert"})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-cacert", MountPath: "/mnt/vault/ca", ReadOnly: true})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-key", MountPath: "/mnt/vault/key", ReadOnly: true})
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-server-cert", MountPath: "/mnt/vault/cert", ReadOnly: true})
 
 	return volumeMounts
 }
 
 func (g *SpecConfig) getAuthServerEnvConfigs() []*horizonapi.EnvConfig {
 	var envs []*horizonapi.EnvConfig
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_server_key"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_server_cert"})
 
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "LOGGING_LEVEL", KeyOrVal: "INFO"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromNamespace, NameOrPrefix: "NAMESPACE"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_HOST", KeyOrVal: "mailhost.internal.synopsys.com"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_PORT", KeyOrVal: "25"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_USERNAME", KeyOrVal: ""})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_PASSWORD", KeyOrVal: ""})
-
+	// swip.common.environment
 	envs = append(envs, g.getSwipEnvConfigs()...)
-	envs = append(envs, g.getPostgresEnvConfigs()...)
+
+	// swip.mongodb.root.environment
 	envs = append(envs, g.getMongoEnvConfigs()...)
 
 	envs = append(envs, g.getEventStoreLegacyEnvConfigs()...)
 	envs = append(envs, g.getEventStoreEnvConfigs("admin")...)
 	envs = append(envs, g.getEventStoreEnvConfigs("writer")...)
 	envs = append(envs, g.getEventStoreEnvConfigs("reader")...)
+
+	// swip.vault.server.environment
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SWIP_VAULT_ADDRESS", KeyOrVal: "https://vault:8200"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CACERT", KeyOrVal: "/mnt/vault/ca/vault_cacrt"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_KEY", KeyOrVal: "/mnt/vault/key/vault_server_key"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_server_cert"})
+
+	// smtp stuff
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_HOST", KeyOrVal: "host", FromName: "smtp"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_PORT", KeyOrVal: "port", FromName: "smtp"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_PASSWORD", KeyOrVal: "passwd", FromName: "smtp"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_USERNAME", KeyOrVal: "username", FromName: "smtp"})
+
+	// TODO: this was previously, make sure it is not needed
+	// envs = append(envs, g.getPostgresEnvConfigs()...)
 
 	return envs
 }
