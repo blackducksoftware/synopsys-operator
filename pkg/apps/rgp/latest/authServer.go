@@ -194,10 +194,14 @@ func (g *SpecConfig) getAuthServerEnvConfigs() []*horizonapi.EnvConfig {
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_CLIENT_CERT", KeyOrVal: "/mnt/vault/cert/vault_server_cert"})
 
 	// smtp stuff
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_HOST", KeyOrVal: "host", FromName: "smtp"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_PORT", KeyOrVal: "port", FromName: "smtp"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_PASSWORD", KeyOrVal: "passwd", FromName: "smtp"})
-	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_USERNAME", KeyOrVal: "username", FromName: "smtp"})
+	// envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_HOST", KeyOrVal: "host", FromName: "smtp"})
+	// envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_PORT", KeyOrVal: "port", FromName: "smtp"})
+	// envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_PASSWORD", KeyOrVal: "passwd", FromName: "smtp"})
+	// envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, NameOrPrefix: "SMTP_USERNAME", KeyOrVal: "username", FromName: "smtp"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_HOST", KeyOrVal: "mailhost.internal.synopsys.com"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_PORT", KeyOrVal: "25"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_PASSWORD", KeyOrVal: ""})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "SMTP_USERNAME", KeyOrVal: ""})
 
 	// TODO: this was previously, make sure it is not needed
 	// envs = append(envs, g.getPostgresEnvConfigs()...)
