@@ -40,12 +40,36 @@ type VaultSideCar struct {
 func (v *VaultSideCar) GetConfigmap() *components.ConfigMap {
 	cm := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: v.Namespace, Name: "vault-policies"})
 	cm.AddData(map[string]string{
-		"auth-server.hcl": `path "secret/data/auth/*" {
+		"auth-server.hcl": `path "secret/metadata/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+		path "secret/destroy/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+		path "secret/data/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+		path "secret/delete/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+    path "secret/undelete/auth/*" {
       capabilities = ["create", "read", "update", "delete", "list"]
     }`,
 		"auth-client.hcl": `path "secret/data/auth/public/*" {
       capabilities = ["list", "read"]
+    }
+    path "secret/metadata/auth/*" {
+      capabilities = ["list", "read"]
     }`,
+		"tds-code-analysis.hcl": `path "secret/data/auth/public/*" {
+		  capabilities = ["list", "read"]
+		}
+		path "secret/data/codeanalysis/*" {
+		  capabilities = ["create", "read", "update", "delete", "list"]
+		}
+		path "secret/metadata/auth/*" {
+		  capabilities = ["list", "read"]
+		}`,
 	})
 
 	return cm
@@ -53,10 +77,9 @@ func (v *VaultSideCar) GetConfigmap() *components.ConfigMap {
 
 // GetJob returns the vault job
 func (v *VaultSideCar) GetJob() *v1.Job {
-
 	job := &v1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "vault-init",
+			Name: "vault-tls-init",
 		},
 		Spec: v1.JobSpec{
 			Template: corev1.PodTemplateSpec{
@@ -64,7 +87,7 @@ func (v *VaultSideCar) GetJob() *v1.Job {
 					ServiceAccountName: "vault-init",
 					Containers: []corev1.Container{
 						{
-							Name:            "vault-init",
+							Name:            "vault-tls-init",
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Image:           "gcr.io/snps-swip-staging/vault-util:latest",
 							Command:         []string{"vault-tls-init"},
@@ -79,7 +102,7 @@ func (v *VaultSideCar) GetJob() *v1.Job {
 								},
 								{
 									Name:  "VAULT_CLIENT_CERTIFICATES",
-									Value: "auth-server,auth-client",
+									Value: "auth-server,auth-client,tds-code-analysis",
 								},
 							},
 						},
@@ -158,6 +181,11 @@ func (v *VaultSideCar) getVaultVolumes() []*components.Volume {
 		MapOrSecretName: "auth-client-tls-certificate",
 	}))
 
+	volumes = append(volumes, components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
+		VolumeName:      "tds-code-analysis-tls-certificate",
+		MapOrSecretName: "tds-code-analysis-tls-certificate",
+	}))
+
 	return volumes
 }
 
@@ -168,7 +196,7 @@ func (v *VaultSideCar) getVaultVolumeMounts() []*horizonapi.VolumeMountConfig {
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "auth-server-tls-certificate", MountPath: "/auth-server-tls-certificate"})
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "auth-client-tls-certificate", MountPath: "/auth-client-tls-certificate"})
 	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "vault-policy-configs", MountPath: "/vault/policies"})
-
+	volumeMounts = append(volumeMounts, &horizonapi.VolumeMountConfig{Name: "tds-code-analysis-tls-certificate", MountPath: "/tds-code-analysis-tls-certificate"})
 	return volumeMounts
 }
 
@@ -182,6 +210,7 @@ func (v *VaultSideCar) getVaultEnvConfigs() []*horizonapi.EnvConfig {
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "VAULT_POLICY_CONFIGS", KeyOrVal: "/vault/policies"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "AUTH_SERVER_VAULT_CLIENT_CERTIFICATE", KeyOrVal: "/auth-server-tls-certificate/tls.crt"})
 	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "AUTH_CLIENT_VAULT_CLIENT_CERTIFICATE", KeyOrVal: "/auth-client-tls-certificate/tls.crt"})
+	envs = append(envs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "TDS_CODE_ANALYSIS_VAULT_CLIENT_CERTIFICATE", KeyOrVal: "/tds-code-analysis-tls-certificate/tls.crt"})
 
 	return envs
 }
