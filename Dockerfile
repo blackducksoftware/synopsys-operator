@@ -1,7 +1,5 @@
 FROM gobuffalo/buffalo:v0.14.3 as builder
 
-RUN go get -u github.com/golang/dep/cmd/dep
-
 # Set the environment
 ENV GO111MODULE=on
 ENV BP=$GOPATH/src/github.com/blackducksoftware/synopsys-operator

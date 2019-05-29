@@ -2,11 +2,11 @@ package actions
 
 import (
 	"github.com/gobuffalo/buffalo/render"
-	"github.com/gobuffalo/packr"
+	packr "github.com/gobuffalo/packr/v2"
 )
 
 var r *render.Engine
-var assetsBox = packr.NewBox("../public")
+var assetsBox = packr.New("../public", "../public")
 
 func init() {
 	r = render.New(render.Options{
@@ -14,7 +14,7 @@ func init() {
 		HTMLLayout: "application.html",
 
 		// Box containing all of the templates:
-		TemplatesBox: packr.NewBox("../templates"),
+		TemplatesBox: packr.New("../templates", "../templates"),
 		AssetsBox:    assetsBox,
 
 		// Add template helpers here:
