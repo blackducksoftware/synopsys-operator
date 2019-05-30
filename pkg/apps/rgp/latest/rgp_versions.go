@@ -41,6 +41,7 @@ var imageTags = map[string]map[string]string{
 		"reporting-rp-issue-manager":        "0.0.487",
 		"reporting-rp-portfolio-service":    "0.0.663",
 		"reporting-tools-portfolio-service": "0.0.974",
+		"reporting-clamav":                  "latest",
 	},
 	"2019.03": {
 		"reporting-frontend-service":        "0.0.658",
