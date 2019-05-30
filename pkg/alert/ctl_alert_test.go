@@ -35,8 +35,7 @@ func TestNewAlertCtl(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
 	assert.Equal(&Ctl{
-		Spec:     &alertapi.AlertSpec{},
-		Environs: []string{},
+		Spec: &alertapi.AlertSpec{},
 	}, alertCtl)
 }
 

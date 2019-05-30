@@ -57,8 +57,7 @@ type Ctl struct {
 // NewAlertCtl creates a new AlertCtl struct
 func NewAlertCtl() *Ctl {
 	return &Ctl{
-		Spec:     &alertapi.AlertSpec{},
-		Environs: []string{},
+		Spec: &alertapi.AlertSpec{},
 	}
 }
 

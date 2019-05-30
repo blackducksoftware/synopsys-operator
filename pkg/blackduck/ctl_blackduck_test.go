@@ -36,8 +36,6 @@ func TestNewBlackDuckCtl(t *testing.T) {
 	blackduckCtl := NewBlackDuckCtl()
 	assert.Equal(&Ctl{
 		Spec:            &blackduckv1.BlackduckSpec{},
-		Environs:        []string{},
-		ImageRegistries: []string{},
 	}, blackduckCtl)
 }
 

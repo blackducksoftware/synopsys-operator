@@ -75,9 +75,7 @@ type Ctl struct {
 // NewBlackDuckCtl creates a new Ctl struct
 func NewBlackDuckCtl() *Ctl {
 	return &Ctl{
-		Spec:            &blackduckv1.BlackduckSpec{},
-		Environs:        []string{},
-		ImageRegistries: []string{},
+		Spec: &blackduckv1.BlackduckSpec{},
 	}
 }
 
