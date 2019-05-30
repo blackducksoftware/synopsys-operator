@@ -194,7 +194,7 @@ var createOpsSightCmd = &cobra.Command{
 			}
 			// Create OpsSight with Client
 			log.Debugf("deploying OpsSight in namespace %s", opsSightNamespace)
-			_, err = opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
+			_, err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opssight)
 			if err != nil {
 				log.Errorf("error creating the %s OpsSight instance due to %+v", opsSightNamespace, err)
 				return nil

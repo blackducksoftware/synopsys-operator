@@ -31,17 +31,18 @@ import (
 
 // startCmd starts a resource in the cluster if it's stopped
 var startCmd = &cobra.Command{
-	Use:   "start [resource]",
-	Short: "Start a Synopsys Resource in your cluster",
+	Use:   "start",
+	Short: "Start a Synopsys resource in your cluster",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("Must specify a resource")
+		return fmt.Errorf("must specify a resource")
 	},
 }
 
-// startBlackduckCmd starts a Blackduck in the cluster
-var startBlackduckCmd = &cobra.Command{
-	Use:   "blackduck NAMESPACE",
-	Short: "Start a Blackduck",
+// startBlackDuckCmd starts a Black Duck in the cluster
+var startBlackDuckCmd = &cobra.Command{
+	Use:     "blackduck NAMESPACE",
+	Example: "synopsysctl start blackduck bdnamespace",
+	Short:   "Start a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -49,35 +50,73 @@ var startBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackduckNamespace := args[0]
-		log.Infof("Starting BlackDuck %s...", blackduckNamespace)
+		blackDuckNamespace := args[0]
+		log.Infof("starting Black Duck %s...", blackDuckNamespace)
 
 		// Get the Black Duck
-		currBlackduck, err := util.GetHub(blackduckClient, blackduckNamespace, blackduckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckNamespace)
 		if err != nil {
-			log.Errorf("error getting %s Black Duck instance due to %+v", blackduckNamespace, err)
+			log.Errorf("error getting %s Black Duck instance due to %+v", blackDuckNamespace, err)
 			return nil
 		}
 
 		// Make changes to Spec
-		currBlackduck.Spec.DesiredState = ""
+		currBlackDuck.Spec.DesiredState = ""
 		// Update Blackduck
-		_, err = util.UpdateBlackduck(blackduckClient,
-			currBlackduck.Spec.Namespace, currBlackduck)
+		_, err = util.UpdateBlackduck(blackDuckClient,
+			currBlackDuck.Spec.Namespace, currBlackDuck)
 		if err != nil {
-			log.Errorf("error starting the %s Black Duck instance due to %+v", blackduckNamespace, err)
+			log.Errorf("error starting the %s Black Duck instance due to %+v", blackDuckNamespace, err)
 			return nil
 		}
 
-		log.Infof("successfully started the '%s' Black Duck instance", blackduckNamespace)
+		log.Infof("successfully started the '%s' Black Duck instance", blackDuckNamespace)
+		return nil
+	},
+}
+
+// startOpsSightCmd starts an OpsSight in the cluster
+var startOpsSightCmd = &cobra.Command{
+	Use:     "opssight NAMESPACE",
+	Example: "synopsysctl start opssight opsnamespace",
+	Short:   "Start an OpsSight",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		opsSightNamespace := args[0]
+		log.Infof("starting OpsSight %s...", opsSightNamespace)
+
+		// Get the OpsSight
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
+
+		if err != nil {
+			log.Errorf("error getting %s OpsSight instance due to %+v", opsSightNamespace, err)
+			return nil
+		}
+
+		// Make changes to Spec
+		currOpsSight.Spec.DesiredState = ""
+		// Update OpsSight
+		_, err = util.UpdateOpsSight(opsSightClient, currOpsSight.Spec.Namespace, currOpsSight)
+		if err != nil {
+			log.Errorf("error starting the %s OpsSight instance due to %+v", opsSightNamespace, err)
+			return nil
+		}
+
+		log.Infof("successfully started the '%s' OpsSight instance", opsSightNamespace)
 		return nil
 	},
 }
 
 // startAlertCmd starts an Alert in the cluster
 var startAlertCmd = &cobra.Command{
-	Use:   "alert NAMESPACE",
-	Short: "Start an Alert",
+	Use:     "alert NAMESPACE",
+	Example: "synopsysctl start alert altnamespace",
+	Short:   "Start an Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -86,7 +125,7 @@ var startAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertNamespace := args[0]
-		log.Infof("Starting Alert %s...", alertNamespace)
+		log.Infof("starting Alert %s...", alertNamespace)
 
 		// Get the Alert
 		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
@@ -111,46 +150,9 @@ var startAlertCmd = &cobra.Command{
 	},
 }
 
-// startOpssightCmd starts an Opssight in the cluster
-var startOpssightCmd = &cobra.Command{
-	Use:   "opssight NAMESPACE",
-	Short: "Start an Opssight",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		opssightNamespace := args[0]
-		log.Infof("Starting Opssight %s...", opssightNamespace)
-
-		// Get the Opssight
-		currOpssight, err := util.GetOpsSight(opssightClient, opssightNamespace, opssightNamespace)
-
-		if err != nil {
-			log.Errorf("error getting %s Opssight instance due to %+v", opssightNamespace, err)
-			return nil
-		}
-
-		// Make changes to Spec
-		currOpssight.Spec.DesiredState = ""
-		// Update Opssight
-		_, err = util.UpdateOpsSight(opssightClient,
-			currOpssight.Spec.Namespace, currOpssight)
-		if err != nil {
-			log.Errorf("error starting the %s Opssight instance due to %+v", opssightNamespace, err)
-			return nil
-		}
-
-		log.Infof("successfully started the '%s' Opssight instance", opssightNamespace)
-		return nil
-	},
-}
-
 func init() {
-	startCmd.AddCommand(startBlackduckCmd)
+	startCmd.AddCommand(startBlackDuckCmd)
+	startCmd.AddCommand(startOpsSightCmd)
 	startCmd.AddCommand(startAlertCmd)
-	startCmd.AddCommand(startOpssightCmd)
 	rootCmd.AddCommand(startCmd)
 }

@@ -43,7 +43,7 @@ import (
 var restconfig *rest.Config
 var kubeClient *kubernetes.Clientset
 var blackDuckClient *blackduckclientset.Clientset
-var opssightClient *opssightclientset.Clientset
+var opsSightClient *opssightclientset.Clientset
 var alertClient *alertclientset.Clientset
 
 // These vars used by KubeCmd
@@ -66,7 +66,7 @@ func setResourceClients() error {
 	if err != nil {
 		log.Errorf("error creating Black Duck Clientset: %s", err)
 	}
-	opssightClient, err = opssightclientset.NewForConfig(restconfig)
+	opsSightClient, err = opssightclientset.NewForConfig(restconfig)
 	if err != nil {
 		log.Errorf("error creating OpsSight Clientset: %s", err)
 	}

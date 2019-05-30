@@ -171,7 +171,7 @@ var updateOperatorCmd = &cobra.Command{
 		}
 
 		// update Synopsys Operator
-		err = newOperatorSpec.UpdateSynopsysOperator(restconfig, kubeClient, namespace, blackDuckClient, opssightClient, alertClient, oldOperatorSpec)
+		err = newOperatorSpec.UpdateSynopsysOperator(restconfig, kubeClient, namespace, blackDuckClient, opsSightClient, alertClient, oldOperatorSpec)
 		if err != nil {
 			log.Errorf("unable to update Synopsys Operator because %+v", err)
 			return nil
@@ -584,7 +584,7 @@ var updateOpsSightCmd = &cobra.Command{
 		log.Infof("updating OpsSight %s...", opsSightNamespace)
 
 		// Get the current OpsSight
-		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
 		if err != nil {
 			log.Errorf("error getting OpsSight: %s", err)
 			return nil
@@ -605,7 +605,7 @@ var updateOpsSightCmd = &cobra.Command{
 			newOpsSight := *currOpsSight //make copy
 			newOpsSight.Spec = newSpec
 			// Update OpsSight
-			_, err = operatorutil.UpdateOpsSight(opssightClient, newOpsSight.Spec.Namespace, &newOpsSight)
+			_, err = operatorutil.UpdateOpsSight(opsSightClient, newOpsSight.Spec.Namespace, &newOpsSight)
 			if err != nil {
 				log.Errorf("error updating OpsSight: %s", err)
 				return nil
@@ -635,7 +635,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 		log.Infof("updating OpsSight %s's Image...", opsSightNamespace)
 
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
 		if err != nil {
 			log.Errorf("%s", err)
 			return nil
@@ -666,7 +666,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 				return fmt.Errorf("'%s' is not a valid component", componentName)
 			}
 			// Update OpsSight with New Image
-			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightNamespace, currOpsSight)
+			_, err = operatorutil.UpdateOpsSight(opsSightClient, opsSightNamespace, currOpsSight)
 			if err != nil {
 				log.Errorf("error updating OpsSight: %s", err)
 				return nil
@@ -706,7 +706,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		log.Infof("adding External Host to OpsSight %s...", opsSightNamespace)
 
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
 		if err != nil {
 			log.Errorf("error getting OpsSight: %s", err)
 			return nil
@@ -730,7 +730,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 			}
 			currOpsSight.Spec.Blackduck.ExternalHosts = append(currOpsSight.Spec.Blackduck.ExternalHosts, &newHost)
 			// Update OpsSight with External Host
-			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightNamespace, currOpsSight)
+			_, err = operatorutil.UpdateOpsSight(opsSightClient, opsSightNamespace, currOpsSight)
 			if err != nil {
 				log.Errorf("error updating OpsSight: %s", err)
 				return nil
@@ -762,7 +762,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		log.Infof("adding Internal Registry to OpsSight %s...", opsSightNamespace)
 
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opssightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
 		if err != nil {
 			log.Errorf("error adding Internal Registry while getting OpsSight: %s", err)
 			return nil
@@ -783,7 +783,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 			}
 			currOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries = append(currOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
 			// Update OpsSight with Internal Registry
-			_, err = operatorutil.UpdateOpsSight(opssightClient, opsSightNamespace, currOpsSight)
+			_, err = operatorutil.UpdateOpsSight(opsSightClient, opsSightNamespace, currOpsSight)
 			if err != nil {
 				log.Errorf("error adding Internal Registry with updating OpsSight: %s", err)
 				return nil

@@ -76,7 +76,7 @@ var deleteOpsSightCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, opsSightNamespace := range args {
 			log.Infof("deleting OpsSight %s...", opsSightNamespace)
-			err := opssightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
+			err := opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightNamespace, &metav1.DeleteOptions{})
 			if err != nil {
 				log.Errorf("error deleting OpsSight %s: '%s'", opsSightNamespace, err)
 			}
