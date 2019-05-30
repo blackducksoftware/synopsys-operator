@@ -28,13 +28,18 @@
     </div>
     <%= f.CheckboxTag("externalDbCheckbox", {label: "External Database", onchange: "toggleDbCheckbox(this)"}) %>
     <div id="externalDbId">
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresHost", {value: blackduck.Spec.ExternalPostgres.PostgresHost, label: "PostgreSQL Host"}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresPort", {value: blackduck.Spec.ExternalPostgres.PostgresPort, label: "PostgreSQL Port"}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdmin", {value: blackduck.Spec.ExternalPostgres.PostgresAdmin, label: "PostgreSQL Admin User", placeholder: "blackduck"}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdminPassword", {value: blackduck.Spec.ExternalPostgres.PostgresAdminPassword, label: "PostgreSQL Admin Password"}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresUser", {value: blackduck.Spec.ExternalPostgres.PostgresUser, label: "PostgreSQL User", placeholder: "blackduck_user"}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresUserPassword", {value: blackduck.Spec.ExternalPostgres.PostgresUserPassword, label: "PostgreSQL User Password"}) %>
-      <%= f.CheckboxTag("Spec.ExternalPostgres.PostgresSsl", {value: blackduck.Spec.ExternalPostgres.PostgresSsl, label: "Enable SSL"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresHost", {value: blackduck.Spec.ExternalPostgres.PostgresHost, label: "PostgreSQL Host", required: true}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresPort", {value: blackduck.Spec.ExternalPostgres.PostgresPort, label: "PostgreSQL Port", required: true}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdmin", {value: blackduck.Spec.ExternalPostgres.PostgresAdmin, label: "PostgreSQL Admin User", placeholder: "blackduck", required: true}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdminPassword", {value: blackduck.Spec.ExternalPostgres.PostgresAdminPassword, label: "PostgreSQL Admin Password", required: true}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresUser", {value: blackduck.Spec.ExternalPostgres.PostgresUser, label: "PostgreSQL User", placeholder: "blackduck_user", required: true}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresUserPassword", {value: blackduck.Spec.ExternalPostgres.PostgresUserPassword, label: "PostgreSQL User Password", required: true}) %>
+      <%= f.CheckboxTag("Spec.ExternalPostgres.PostgresSsl", {value: blackduck.Spec.ExternalPostgres.PostgresSsl, label: "Enable SSL", required: true}) %>
+    </div>
+    <div id="internalDbId">
+      <%= f.InputTag("Spec.UserPassword", {value: blackduck.Spec.UserPassword, label: "PostgreSQL User Password", required: true}) %>
+      <%= f.InputTag("Spec.AdminPassword", {value: blackduck.Spec.AdminPassword, label: "PostgreSQL Admin Password", required: true}) %>
+      <%= f.InputTag("Spec.PostgresPassword", {value: blackduck.Spec.PostgresPassword, label: "PostgreSQL Postgres Password", required: true}) %>
     </div>
     <%= f.SelectTag("Spec.CertificateName", {value: blackduck.Spec.CertificateName, options: blackduck.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
     <div id="certificateId">
@@ -110,6 +115,7 @@
     editableFalse();
     checkNginxCertificate();
     loadPVC();
+    document.getElementById("internalDbId").style.display = '';
     document.getElementById("externalDbId").style.display = 'none';
     document.getElementById("customAuthCAId").style.display = 'none';
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
@@ -228,20 +234,23 @@
   }
 
   function toggleDbCheckbox(element) {
+    internalDbId = document.getElementById("internalDbId");
     externalDbId = document.getElementById("externalDbId");
     if (element.checked) {
       externalDbId.style.display = '';
+      internalDbId.style.display = 'none';
     } else {
       externalDbId.style.display = 'none';
+      internalDbId.style.display = '';
     }
   }
 
   function toggleCustomAuthCACheckbox(element) {
-    externalDbId = document.getElementById("customAuthCAId");
+    customAuthCAId = document.getElementById("customAuthCAId");
     if (element.checked) {
-      externalDbId.style.display = '';
+      customAuthCAId.style.display = '';
     } else {
-      externalDbId.style.display = 'none';
+      customAuthCAId.style.display = 'none';
     }
   }
 </script>
