@@ -51,12 +51,12 @@ type Ctl struct {
 	ExternalPostgresPostgresPort          int
 	ExternalPostgresPostgresAdmin         string
 	ExternalPostgresPostgresUser          string
-	ExternalPostgresPostgresSsl           bool
+	ExternalPostgresPostgresSsl           string
 	ExternalPostgresPostgresAdminPassword string
 	ExternalPostgresPostgresUserPassword  string
 	PvcStorageClass                       string
-	LivenessProbes                        bool
-	PersistentStorage                     bool
+	LivenessProbes                        string
+	PersistentStorage                     string
 	PVCFilePath                           string
 	PostgresClaimSize                     string
 	CertificateName                       string
@@ -75,34 +75,9 @@ type Ctl struct {
 // NewBlackDuckCtl creates a new Ctl struct
 func NewBlackDuckCtl() *Ctl {
 	return &Ctl{
-		Spec:                                  &blackduckv1.BlackduckSpec{},
-		Size:                                  "",
-		Version:                               "",
-		ExposeService:                         "",
-		DbPrototype:                           "",
-		ExternalPostgresPostgresHost:          "",
-		ExternalPostgresPostgresPort:          0,
-		ExternalPostgresPostgresAdmin:         "",
-		ExternalPostgresPostgresUser:          "",
-		ExternalPostgresPostgresSsl:           false,
-		ExternalPostgresPostgresAdminPassword: "",
-		ExternalPostgresPostgresUserPassword:  "",
-		PvcStorageClass:                       "",
-		LivenessProbes:                        false,
-		PersistentStorage:                     false,
-		PVCFilePath:                           "",
-		PostgresClaimSize:                     "",
-		CertificateName:                       "",
-		CertificateFilePath:                   "",
-		CertificateKeyFilePath:                "",
-		ProxyCertificateFilePath:              "",
-		AuthCustomCAFilePath:                  "",
-		Type:                                  "",
-		DesiredState:                          "",
-		Environs:                              []string{},
-		ImageRegistries:                       []string{},
-		ImageUIDMapFilePath:                   "",
-		LicenseKey:                            "",
+		Spec:            &blackduckv1.BlackduckSpec{},
+		Environs:        []string{},
+		ImageRegistries: []string{},
 	}
 }
 
@@ -201,12 +176,12 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "Port for Postgres")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresPostgresAdmin, "Name of Admin for Postgres")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUser, "external-postgres-user", ctl.ExternalPostgresPostgresUser, "Username for Postgres")
-	cmd.Flags().BoolVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "If true, Black Duck uses SSL for the Postgres connection")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "If true, Black Duck uses SSL for the Postgres connection [true|false]")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresPostgresAdminPassword, "Password for the Postgres Admin")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "Password for a Postgres User")
 	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
-	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "If true, Black Duck uses liveness probes")
-	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black duck has persistent storage")
+	cmd.Flags().StringVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "If true, Black Duck uses liveness probes [true|false]")
+	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black duck has persistent storage [true|false]")
 	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.PostgresClaimSize, "postgres-claim-size", ctl.PostgresClaimSize, "Size of the blackduck-postgres PVC")
 	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
@@ -278,7 +253,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresSsl = ctl.ExternalPostgresPostgresSsl
+			ctl.Spec.ExternalPostgres.PostgresSsl = strings.ToUpper(ctl.ExternalPostgresPostgresSsl) == "TRUE"
 		case "external-postgres-admin-password":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
@@ -292,9 +267,9 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "pvc-storage-class":
 			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
-			ctl.Spec.LivenessProbes = ctl.LivenessProbes
+			ctl.Spec.LivenessProbes = strings.ToUpper(ctl.LivenessProbes) == "TRUE"
 		case "persistent-storage":
-			ctl.Spec.PersistentStorage = ctl.PersistentStorage
+			ctl.Spec.PersistentStorage = strings.ToUpper(ctl.PersistentStorage) == "TRUE"
 		case "pvc-file-path":
 			data, err := util.ReadFileData(ctl.PVCFilePath)
 			if err != nil {

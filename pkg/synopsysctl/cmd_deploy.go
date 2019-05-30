@@ -40,7 +40,7 @@ var metricsImage string
 var exposeMetrics = ""
 var terminationGracePeriodSeconds int64 = 180
 var operatorTimeBombInSeconds int64 = 315576000
-var dryRun = false
+var dryRun = "false"
 var logLevel = "debug"
 var threadiness = 5
 var postgresRestartInMins int64 = 10
@@ -119,7 +119,7 @@ var deployCmd = &cobra.Command{
 		// Deploy Synopsys Operator
 		log.Debugf("creating Synopsys Operator components")
 		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, adminPassword, postgresPassword,
-			userPassword, blackDuckPassword, secretType, operatorTimeBombInSeconds, dryRun, logLevel, threadiness, postgresRestartInMins,
+			userPassword, blackDuckPassword, secretType, operatorTimeBombInSeconds, strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins,
 			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key)
 
 		err = soperatorSpec.UpdateSOperatorComponents()
@@ -158,7 +158,7 @@ func init() {
 	deployCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")
 	deployCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "Seconds for resyncing custom resources")
 	deployCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "Termination grace period in seconds for shutting down postgres")
-	deployCmd.Flags().BoolVar(&dryRun, "dryRun", dryRun, "If true, Synopsys Operator runs without being connected to a cluster")
+	deployCmd.Flags().StringVar(&dryRun, "dryRun", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
 	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "Log level of Synopsys Operator")
 	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "Number of threads to process the custom resources")
 }

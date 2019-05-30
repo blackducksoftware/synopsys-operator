@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"strings"
 
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -38,13 +39,13 @@ type Ctl struct {
 	Version              string
 	AlertImage           string
 	CfsslImage           string
-	StandAlone           bool
+	StandAlone           string
 	ExposeService        string
 	Port                 int32
 	EncryptionPassword   string
 	EncryptionGlobalSalt string
 	Environs             []string
-	PersistentStorage    bool
+	PersistentStorage    string
 	PVCName              string
 	PVCStorageClass      string
 	PVCSize              string
@@ -56,23 +57,8 @@ type Ctl struct {
 // NewAlertCtl creates a new AlertCtl struct
 func NewAlertCtl() *Ctl {
 	return &Ctl{
-		Spec:                 &alertapi.AlertSpec{},
-		Version:              "",
-		AlertImage:           "",
-		CfsslImage:           "",
-		StandAlone:           false,
-		ExposeService:        "",
-		Port:                 0,
-		EncryptionPassword:   "",
-		EncryptionGlobalSalt: "",
-		Environs:             []string{},
-		PersistentStorage:    false,
-		PVCName:              "",
-		PVCStorageClass:      "",
-		PVCSize:              "",
-		AlertMemory:          "",
-		CfsslMemory:          "",
-		DesiredState:         "",
+		Spec:     &alertapi.AlertSpec{},
+		Environs: []string{},
 	}
 }
 
@@ -131,13 +117,13 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Alert")
 	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "Url of Alert's Image")
 	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "Url of Cfssl's Image")
-	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "If true, Alert runs in stand alone mode")
+	cmd.Flags().StringVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "If true, Alert runs in stand alone mode [true|false]")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port of Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for Alert")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables of Alert")
-	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Alert has persistent storage")
+	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Alert has persistent storage [true|false]")
 	cmd.Flags().StringVar(&ctl.PVCName, "pvc-name", ctl.PVCName, "Name of the persistent volume claim")
 	cmd.Flags().StringVar(&ctl.PVCStorageClass, "pvc-storage-class", ctl.PVCStorageClass, "StorageClass for the persistent volume claim")
 	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation of the persistent volume claim")
@@ -167,7 +153,8 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "cfssl-image":
 			ctl.Spec.CfsslImage = ctl.CfsslImage
 		case "stand-alone":
-			ctl.Spec.StandAlone = &ctl.StandAlone
+			standAloneVal := strings.ToUpper(ctl.StandAlone) == "TRUE"
+			ctl.Spec.StandAlone = &standAloneVal
 		case "expose-ui":
 			ctl.Spec.ExposeService = ctl.ExposeService
 		case "port":
@@ -177,7 +164,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "encryption-global-salt":
 			ctl.Spec.EncryptionGlobalSalt = ctl.EncryptionGlobalSalt
 		case "persistent-storage":
-			ctl.Spec.PersistentStorage = ctl.PersistentStorage
+			ctl.Spec.PersistentStorage = strings.ToUpper(ctl.PersistentStorage) == "TRUE"
 		case "pvc-name":
 			ctl.Spec.PVCName = ctl.PVCName
 		case "pvc-storage-class":

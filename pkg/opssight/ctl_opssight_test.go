@@ -116,8 +116,8 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "image-getter-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account of Image Getter")
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Containers for scanning")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in Scanner's pod where images are stored for scanning")
-	cmd.Flags().BoolVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "If true, Image Processor discovers images for scanning")
-	cmd.Flags().BoolVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning")
+	cmd.Flags().StringVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "If true, Image Processor discovers images for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverImage, "image-processor-image", ctl.PerceiverImagePerceiverImage, "Image of Image Processor")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverImage, "pod-processor-image", ctl.PerceiverPodPerceiverImage, "Image of Pod Processor")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
@@ -128,12 +128,12 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.ScannerCPU, "scanner-cpu", ctl.ScannerCPU, "CPU size of OpsSight's Scanner")
 	cmd.Flags().StringVar(&ctl.ScannerMem, "scanner-memory", ctl.ScannerMem, "Memory size of OpsSight's Scanner")
 	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "Log level of OpsSight")
-	cmd.Flags().BoolVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "If true, OpsSight records Prometheus Metrics")
+	cmd.Flags().StringVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "If true, OpsSight records Prometheus Metrics [true|false]")
 	cmd.Flags().StringVar(&ctl.PrometheusImage, "metrics-image", ctl.PrometheusImage, "Image of OpsSight's Prometheus Metrics")
 	cmd.Flags().IntVar(&ctl.PrometheusPort, "metrics-port", ctl.PrometheusPort, "Port of OpsSight's Prometheus Metrics")
 	cmd.Flags().StringVar(&ctl.PrometheusExpose, "expose-metrics", ctl.PrometheusExpose, "Type of service of OpsSight's Prometheus Metrics [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.BlackduckExternalHostsFilePath, "blackduck-external-hosts-file-path", ctl.BlackduckExternalHostsFilePath, "Absolute path to a file containing a list of Black Duck External Hosts")
-	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "If true, OpsSight performs TLS Verification for Black Duck")
+	cmd.Flags().StringVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "If true, OpsSight performs TLS Verification for Black Duck [true|false]")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
@@ -311,7 +311,17 @@ func TestSetFlag(t *testing.T) {
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                        &opssightapi.OpsSightSpec{},
-				PerceiverEnablePodPerceiver: true,
+				PerceiverEnablePodPerceiver: "false",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{EnablePodPerceiver: false}},
+		},
+		// case
+		{
+			flagName:   "enable-pod-processor",
+			initialCtl: NewOpsSightCtl(),
+			changedCtl: &Ctl{
+				Spec:                        &opssightapi.OpsSightSpec{},
+				PerceiverEnablePodPerceiver: "true",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{EnablePodPerceiver: true}},
 		},
@@ -421,7 +431,17 @@ func TestSetFlag(t *testing.T) {
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:          &opssightapi.OpsSightSpec{},
-				EnableMetrics: true,
+				EnableMetrics: "false",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{EnableMetrics: false},
+		},
+		// case
+		{
+			flagName:   "enable-metrics",
+			initialCtl: NewOpsSightCtl(),
+			changedCtl: &Ctl{
+				Spec:          &opssightapi.OpsSightSpec{},
+				EnableMetrics: "true",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{EnableMetrics: true},
 		},
@@ -461,7 +481,17 @@ func TestSetFlag(t *testing.T) {
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
 				Spec:                     &opssightapi.OpsSightSpec{},
-				BlackduckTLSVerification: true,
+				BlackduckTLSVerification: "false",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{TLSVerification: false}},
+		},
+		// case
+		{
+			flagName:   "blackduck-TLS-verification",
+			initialCtl: NewOpsSightCtl(),
+			changedCtl: &Ctl{
+				Spec:                     &opssightapi.OpsSightSpec{},
+				BlackduckTLSVerification: "true",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{TLSVerification: true}},
 		},

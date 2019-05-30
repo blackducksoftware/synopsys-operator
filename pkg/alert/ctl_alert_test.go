@@ -103,13 +103,13 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Alert")
 	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "Url of Alert's Image")
 	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "Url of Cfssl's Image")
-	cmd.Flags().BoolVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "If true, Alert runs in stand alone mode")
+	cmd.Flags().StringVar(&ctl.StandAlone, "stand-alone", ctl.StandAlone, "If true, Alert runs in stand alone mode [true|false]")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port of Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for Alert")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "Environment variables of Alert")
-	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Alert has persistent storage")
+	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Alert has persistent storage [true|false]")
 	cmd.Flags().StringVar(&ctl.PVCName, "pvc-name", ctl.PVCName, "Name of the persistent volume claim")
 	cmd.Flags().StringVar(&ctl.PVCStorageClass, "pvc-storage-class", ctl.PVCStorageClass, "StorageClass for the persistent volume claim")
 	cmd.Flags().StringVar(&ctl.PVCSize, "pvc-size", ctl.PVCSize, "Memory allocation of the persistent volume claim")
@@ -174,9 +174,17 @@ func TestSetFlag(t *testing.T) {
 		{flagName: "stand-alone",
 			initialCtl: NewAlertCtl(),
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
-				StandAlone: true,
+				StandAlone: "true",
 			},
 			changedSpec: &alertapi.AlertSpec{StandAlone: crddefaults.BoolToPtr(true)},
+		},
+		// case
+		{flagName: "stand-alone",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				StandAlone: "false",
+			},
+			changedSpec: &alertapi.AlertSpec{StandAlone: crddefaults.BoolToPtr(false)},
 		},
 		// case
 		{flagName: "expose-ui",
@@ -222,9 +230,17 @@ func TestSetFlag(t *testing.T) {
 		{flagName: "persistent-storage",
 			initialCtl: NewAlertCtl(),
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
-				PersistentStorage: true,
+				PersistentStorage: "true",
 			},
 			changedSpec: &alertapi.AlertSpec{PersistentStorage: true},
+		},
+		// case
+		{flagName: "persistent-storage",
+			initialCtl: NewAlertCtl(),
+			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+				PersistentStorage: "false",
+			},
+			changedSpec: &alertapi.AlertSpec{PersistentStorage: false},
 		},
 		// case
 		{flagName: "pvc-name",

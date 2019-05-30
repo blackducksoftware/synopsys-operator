@@ -131,12 +131,12 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "Port for Postgres")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresPostgresAdmin, "Name of Admin for Postgres")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUser, "external-postgres-user", ctl.ExternalPostgresPostgresUser, "Username for Postgres")
-	cmd.Flags().BoolVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "If true, Black Duck uses SSL for the Postgres connection")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "If true, Black Duck uses SSL for the Postgres connection [true|false]")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresPostgresAdminPassword, "Password for the Postgres Admin")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "Password for a Postgres User")
 	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
-	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "If true, Black Duck uses liveness probes")
-	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black duck has persistent storage")
+	cmd.Flags().StringVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "If true, Black Duck uses liveness probes [true|false]")
+	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black duck has persistent storage [true|false]")
 	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.PostgresClaimSize, "postgres-claim-size", ctl.PostgresClaimSize, "Size of the blackduck-postgres PVC")
 	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
@@ -265,7 +265,7 @@ func TestSetFlag(t *testing.T) {
 				ExternalPostgresPostgresUser: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{ 
 					PostgresUser: "changed"}},
 		},
 		// case
@@ -274,7 +274,19 @@ func TestSetFlag(t *testing.T) {
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:                        &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresSsl: true,
+				ExternalPostgresPostgresSsl: "false",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{
+				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+					PostgresSsl: false}},
+		},
+		// case
+		{
+			flagName:   "external-postgres-ssl",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                        &blackduckv1.BlackduckSpec{},
+				ExternalPostgresPostgresSsl: "true",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -320,7 +332,17 @@ func TestSetFlag(t *testing.T) {
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:           &blackduckv1.BlackduckSpec{},
-				LivenessProbes: true,
+				LivenessProbes: "false",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{LivenessProbes: false},
+		},
+		// case
+		{
+			flagName:   "liveness-probes",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:           &blackduckv1.BlackduckSpec{},
+				LivenessProbes: "true",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{LivenessProbes: true},
 		},
@@ -330,7 +352,17 @@ func TestSetFlag(t *testing.T) {
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:              &blackduckv1.BlackduckSpec{},
-				PersistentStorage: true,
+				PersistentStorage: "false",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{PersistentStorage: false},
+		},
+		// case
+		{
+			flagName:   "persistent-storage",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:              &blackduckv1.BlackduckSpec{},
+				PersistentStorage: "true",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{PersistentStorage: true},
 		},
