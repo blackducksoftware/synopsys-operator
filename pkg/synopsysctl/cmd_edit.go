@@ -28,20 +28,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// editCmd edits non-synopsys resources
+// editCmd edits non-Synopsys resources
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Allows you to directly edit the API resource",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("Not a Valid Command")
+		return fmt.Errorf("not a valid command")
 	},
 }
 
-// editBlackduckCmd edits a Blackduck by updating the spec
+// editBlackDuckCmd edits a Black Duck by updating the spec
 // or using the kube/oc editor
-var editBlackduckCmd = &cobra.Command{
-	Use:   "blackduck NAMESPACE",
-	Short: "Edit an instance of Blackduck",
+var editBlackDuckCmd = &cobra.Command{
+	Use:     "blackduck NAMESPACE",
+	Example: "synopsysctl edit blackduck bdnamespace",
+	Short:   "Edit a Black Duck instance",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -49,14 +50,14 @@ var editBlackduckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackduckName := args[0]
-		log.Debugf("editing Black Duck %s instance instance...", blackduckName)
-		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackduckName, "-n", blackduckName)
+		blackDuckName := args[0]
+		log.Debugf("editing Black Duck %s instance...", blackDuckName)
+		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackDuckName, "-n", blackDuckName)
 		if err != nil {
-			log.Errorf("error editing the Black Duck: %s", err)
+			log.Errorf("error editing Black Duck: %s", err)
 			return nil
 		}
-		log.Infof("successfully edited Black Duck: '%s'", blackduckName)
+		log.Infof("successfully edited Black Duck: '%s'", blackDuckName)
 		return nil
 	},
 }
@@ -64,8 +65,9 @@ var editBlackduckCmd = &cobra.Command{
 // editOpsSightCmd edits an OpsSight by updating the spec
 // or using the kube/oc editor
 var editOpsSightCmd = &cobra.Command{
-	Use:   "opssight NAMESPACE",
-	Short: "Edit an instance of OpsSight",
+	Use:     "opssight NAMESPACE",
+	Example: "synopsysctl edit opssight opsnamespace",
+	Short:   "Edit an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -74,10 +76,10 @@ var editOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opsSightName := args[0]
-		log.Debugf("Editing OpsSight %s...", opsSightName)
+		log.Debugf("editing OpsSight %s isntance...", opsSightName)
 		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
 		if err != nil {
-			log.Errorf("error Editing the OpsSight: %s", err)
+			log.Errorf("error editing OpsSight: %s", err)
 			return nil
 		}
 		log.Infof("successfully edited OpsSight: '%s'", opsSightName)
@@ -88,8 +90,9 @@ var editOpsSightCmd = &cobra.Command{
 // editAlertCmd edits an Alert by updating the spec
 // or using the kube/oc editor
 var editAlertCmd = &cobra.Command{
-	Use:   "alert NAMESPACE",
-	Short: "Edit an instance of Alert",
+	Use:     "alert NAMESPACE",
+	Example: "synopsysctl edit alert altnamespace",
+	Short:   "Edit an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -101,7 +104,7 @@ var editAlertCmd = &cobra.Command{
 		log.Infof("editing Alert %s instance...", alertName)
 		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
 		if err != nil {
-			log.Errorf("error editing the Alert: %s", err)
+			log.Errorf("error editing Alert: %s", err)
 			return nil
 		}
 		log.Infof("successfully edited Alert: '%s'", alertName)
@@ -111,7 +114,7 @@ var editAlertCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(editCmd)
-	editCmd.AddCommand(editBlackduckCmd)
+	editCmd.AddCommand(editBlackDuckCmd)
 	editCmd.AddCommand(editOpsSightCmd)
 	editCmd.AddCommand(editAlertCmd)
 }

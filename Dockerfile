@@ -47,14 +47,14 @@ COPY --from=builder /bin/help.1 /help.1
 # RUN chmod 777 ./app && chmod 777 ./operator
 
 LABEL name="Synopsys Operator" \
-      vendor="Synopsys" \
-      release.version="$VERSION" \
-      summary="Synopsys Operator" \
-      description="This container is used to deploy the Synopsys Operators." \
-      lastcommit="$LASTCOMMIT" \
-      buildtime="$BUILDTIME" \
-      license="apache" \
-      release="$VERSION" \
-      version="$VERSION"
+    vendor="Synopsys" \
+    release.version="$VERSION" \
+    summary="Synopsys Operator" \
+    description="This container is used to deploy Synopsys Operators." \
+    lastcommit="$LASTCOMMIT" \
+    buildtime="$BUILDTIME" \
+    license="apache" \
+    release="$VERSION" \
+    version="$VERSION"
 
 CMD ./app

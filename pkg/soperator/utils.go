@@ -92,22 +92,22 @@ func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion 
 	return newAlerts, nil
 }
 
-// GetOperatorImage returns the image for the synopsys-operator from
+// GetOperatorImage returns the image for Synopsys Operator from
 // the cluster
 func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (string, error) {
 	currCM, err := operatorutil.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
-		return "", fmt.Errorf("failed to get Synopsys-Operator Image: %s", err)
+		return "", fmt.Errorf("failed to get Synopsys Operator Image: %s", err)
 	}
 	return currCM.Data["image"], nil
 }
 
-// GetOldOperatorSpec returns a spec that respesents the current Synopsys-Operator in the cluster
+// GetOldOperatorSpec returns a spec that respesents the current Synopsys Operator in the cluster
 func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
-	log.Debugf("creating new synopsys operator spec")
+	log.Debugf("creating new Synopsys Operator spec")
 	currCM, err := operatorutil.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Synopsys-Operator ConfigMap: %s", err)
+		return nil, fmt.Errorf("failed to get Synopsys Operator ConfigMap: %s", err)
 	}
 
 	sOperatorSpec := SpecConfig{}
@@ -117,18 +117,18 @@ func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 
 	err = json.Unmarshal([]byte(currCM.Data["config.json"]), &sOperatorSpec)
 	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal synopsys operator configMap data due to %+v", err)
+		return nil, fmt.Errorf("unable to unmarshal Synopsys Operator configMap data due to %+v", err)
 	}
 
 	// Set the secretType and secret data
 	currSecret, err := operatorutil.GetSecret(kubeClient, namespace, "blackduck-secret")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get synopsys operator secret: %s", err)
+		return nil, fmt.Errorf("failed to get Synopsys Operator secret: %s", err)
 	}
 	currKubeSecret := currSecret.Type
 	currHorizonSecretType, err := operatorutil.KubeSecretTypeToHorizon(currKubeSecret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create synopsys operator spec: %s", err)
+		return nil, fmt.Errorf("failed to create Synopsys Operator spec: %s", err)
 	}
 	sOperatorSpec.SecretType = currHorizonSecretType
 	currKubeSecretData := currSecret.Data
@@ -148,7 +148,7 @@ func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 	// Set the secretType and secret data
 	tlsSecret, err := operatorutil.GetSecret(kubeClient, namespace, "synopsys-operator-tls")
 	if err != nil {
-		return nil, fmt.Errorf("unable to get synopsys operator tls secret due to %+v", err)
+		return nil, fmt.Errorf("unable to get Synopsys Operator tls secret due to %+v", err)
 	}
 	certificate := string(tlsSecret.Data["cert.crt"])
 	certificateKey := string(tlsSecret.Data["cert.key"])
@@ -162,7 +162,7 @@ func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 	}
 	sOperatorSpec.Certificate = certificate
 	sOperatorSpec.CertificateKey = certificateKey
-	log.Debugf("got current synopsys operator secret data from Cluster")
+	log.Debugf("got current Synopsys Operator secret data from Cluster")
 
 	return &sOperatorSpec, nil
 }

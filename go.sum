@@ -651,6 +651,7 @@ github.com/koki/json v0.0.0-20180412040528-e521cbda08e3 h1:9t+domN30eqyAq73D7kBk
 github.com/koki/json v0.0.0-20180412040528-e521cbda08e3/go.mod h1:GxoZSBQJ3PAJ3f6MqwA4YHzjqA8AjalvkQEhrBVq094=
 github.com/koki/short v0.0.0-20180525180221-bfbff4b52488 h1:uDsSC6dscP8Rcx8QuSkyab5cQhPMSbgGq9S0hQQPan0=
 github.com/koki/short v0.0.0-20180525180221-bfbff4b52488/go.mod h1:+fOE/2zGvDljKx9c0jCYtD2MNKKXq5fA3Qiyj8tVZEs=
+github.com/koki/short v0.0.0-20190214165759-a835c983a644 h1:ZxbAC7xEF2+i/W6po5QiVn6iKdPDqb8GePtdVEUOFd8=
 github.com/koki/short v0.0.0-20190214165759-a835c983a644/go.mod h1:+fOE/2zGvDljKx9c0jCYtD2MNKKXq5fA3Qiyj8tVZEs=
 github.com/koki/structurederrors v0.0.0-20180506174113-6b997eb5e2ca h1:KmXUVzyPjXzd3kY0feNFsWOGVDYFT4MjjgG8QJx0m6k=
 github.com/koki/structurederrors v0.0.0-20180506174113-6b997eb5e2ca/go.mod h1:9ovSGYUTbfN7zFRU4ouJ0kbVhAs/6qO8EQkqRWQkvO8=

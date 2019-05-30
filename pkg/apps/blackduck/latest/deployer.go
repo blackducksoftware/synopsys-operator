@@ -96,7 +96,7 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	cert, key, _ := hc.getTLSCertKeyOrCreate(blackduck)
 	secret, err := util.GetSecret(hc.KubeClient, hc.Config.Namespace, "blackduck-secret")
 	if err != nil {
-		log.Errorf("unable to find the Synopsys Operator blackduck-secret in %s namespace due to %+v", hc.Config.Namespace, err)
+		log.Errorf("unable to find Synopsys Operator blackduck-secret in %s namespace due to %+v", hc.Config.Namespace, err)
 		return nil, err
 	}
 

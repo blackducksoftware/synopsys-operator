@@ -34,10 +34,11 @@ import (
 // Deploy Command Global Variables
 var secretType horizonapi.SecretType
 
-// destroyCmd removes the Synopsys-Operator from the cluster
+// destroyCmd removes Synopsys Operator from the cluster
 var destroyCmd = &cobra.Command{
-	Use:   "destroy",
-	Short: "Removes the Synopsys-Operator and CRDs from Cluster",
+	Use:     "destroy",
+	Example: "synopsysctl destroy",
+	Short:   "Removes Synopsys Operator and CRDs from Cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) != 0 {
@@ -46,12 +47,12 @@ var destroyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Get the namespace of the Synopsys-Operator
+		// Get the namespace of Synopsys Operator
 		destroyNamespace, err := util.GetOperatorNamespace(kubeClient)
 		if err != nil {
-			log.Warnf("error finding synopsys operator due to %+v", err)
+			log.Warnf("error finding Synopsys Operator due to %+v", err)
 		}
-		log.Infof("destroying the synopsys operator in '%s' namespace...", destroyNamespace)
+		log.Infof("destroying Synopsys Operator in '%s' namespace...", destroyNamespace)
 
 		// delete  namespace
 		log.Debugf("deleting namespace %s", destroyNamespace)
@@ -98,7 +99,7 @@ var destroyCmd = &cobra.Command{
 			log.Warnf("unable to delete the %s cluster role binding because %+v", clusterRoleBinding, err)
 		}
 
-		log.Infof("finished destroying synopsys operator in '%s' namespace", destroyNamespace)
+		log.Infof("finished destroying Synopsys Operator in '%s' namespace", destroyNamespace)
 		return nil
 	},
 }

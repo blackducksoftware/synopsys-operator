@@ -1,3 +1,3 @@
 # synopsysctl
 
-A simple command line tool for the Synopsys Operator.
+A simple command line tool for Synopsys Operator.
