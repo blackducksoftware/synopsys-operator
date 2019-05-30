@@ -46,8 +46,11 @@ type HandlerInterface interface {
 	ObjectUpdated(objOld, objNew interface{})
 }
 
-// State contains the state of the OpsSight
+// State contains the state of the Alert
 type State string
+
+// DesiredState contains the desired state of the Alert
+type DesiredState string
 
 const (
 	// Running is used when the instance is running
@@ -58,6 +61,11 @@ const (
 	Updating State = "Updating"
 	// Error is used when the instance deployment errored out
 	Error State = "Error"
+
+	// Start is used when the instance to be created or updated
+	Start DesiredState = ""
+	// Stop is used when the instance to be stopped
+	Stop DesiredState = "Stop"
 )
 
 // Handler will store the configuration that is required to initiantiate the informers callback
@@ -137,10 +145,20 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		}
 		return
 	}
-	if !strings.EqualFold(alert.Status.State, string(Running)) {
-		_, err = h.updateState(Running, "", alert)
-		if err != nil {
-			log.Errorf("couldn't update Alert state: %v", err)
+
+	if strings.EqualFold(alert.Spec.DesiredState, string(Stop)) {
+		if !strings.EqualFold(alert.Status.State, string(Stopped)) {
+			_, err = h.updateState(Stopped, "", alert)
+			if err != nil {
+				log.Errorf("couldn't update Alert state: %v", err)
+			}
+		}
+	} else {
+		if !strings.EqualFold(alert.Status.State, string(Running)) {
+			_, err = h.updateState(Running, "", alert)
+			if err != nil {
+				log.Errorf("couldn't update Alert state: %v", err)
+			}
 		}
 	}
 }

@@ -61,7 +61,7 @@ const (
 	Error State = "Error"
 
 	// Start is used when OpsSight deployment to be created or updated
-	Start DesiredState = "Start"
+	Start DesiredState = ""
 	// Stop is used when OpsSight deployment to be stopped
 	Stop DesiredState = "Stop"
 )
@@ -187,7 +187,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			log.Error(errors.Annotate(err, "unable to update stopped state"))
 			return
 		}
-	case "START":
+	case "":
 		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
 		err = opssightCreator.UpdateOpsSight(opssight)
 		if err != nil {

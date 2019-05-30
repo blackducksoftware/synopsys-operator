@@ -443,7 +443,7 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
 		ConfigMapName: "opssight",
-		DesiredState:  "START",
+		DesiredState:  "",
 	}
 }
 
@@ -522,7 +522,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
 		ConfigMapName: "opssight",
-		DesiredState:  "START",
+		DesiredState:  "",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,
@@ -610,7 +610,7 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
 		ConfigMapName: "opssight",
-		DesiredState:  "START",
+		DesiredState:  "",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,

@@ -6,7 +6,7 @@
   },
   "spec": {
     "namespace": "opssight-test",
-    "desiredState": "start",
+    "desiredState": "",
     "perceptor": {
       "name": "opssight-core",
       "port": 3001,
