@@ -38,6 +38,43 @@ var stopCmd = &cobra.Command{
 	},
 }
 
+// stopAlertCmd stops an Alert in the cluster
+var stopAlertCmd = &cobra.Command{
+	Use:     "alert NAMESPACE",
+	Example: "synopsysctl stop alert altnamespace",
+	Short:   "Stops an Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alertNamespace := args[0]
+		log.Infof("stopping Alert %s...", alertNamespace)
+
+		// Get the Alert
+		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
+		if err != nil {
+			log.Errorf("error getting %s Alert instance due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		// Make changes to Spec
+		currAlert.Spec.DesiredState = "STOP"
+		// Update Alert
+		_, err = util.UpdateAlert(alertClient,
+			currAlert.Spec.Namespace, currAlert)
+		if err != nil {
+			log.Errorf("error stopping the %s Alert instance due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		log.Infof("successfully stopped the '%s' Alert instance", alertNamespace)
+		return nil
+	},
+}
+
 // stopBlackDuckCmd stops a Black Duck in the cluster
 var stopBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAMESPACE",
@@ -112,46 +149,9 @@ var stopOpsSightCmd = &cobra.Command{
 	},
 }
 
-// stopAlertCmd stops an Alert in the cluster
-var stopAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE",
-	Example: "synopsysctl stop alert altnamespace",
-	Short:   "Stops an Alert",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		alertNamespace := args[0]
-		log.Infof("stopping Alert %s...", alertNamespace)
-
-		// Get the Alert
-		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
-		if err != nil {
-			log.Errorf("error getting %s Alert instance due to %+v", alertNamespace, err)
-			return nil
-		}
-
-		// Make changes to Spec
-		currAlert.Spec.DesiredState = "STOP"
-		// Update Alert
-		_, err = util.UpdateAlert(alertClient,
-			currAlert.Spec.Namespace, currAlert)
-		if err != nil {
-			log.Errorf("error stopping the %s Alert instance due to %+v", alertNamespace, err)
-			return nil
-		}
-
-		log.Infof("successfully stopped the '%s' Alert instance", alertNamespace)
-		return nil
-	},
-}
-
 func init() {
+	stopCmd.AddCommand(stopAlertCmd)
 	stopCmd.AddCommand(stopBlackDuckCmd)
 	stopCmd.AddCommand(stopOpsSightCmd)
-	stopCmd.AddCommand(stopAlertCmd)
 	rootCmd.AddCommand(stopCmd)
 }

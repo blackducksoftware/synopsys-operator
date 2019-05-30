@@ -37,6 +37,31 @@ var editCmd = &cobra.Command{
 	},
 }
 
+// editAlertCmd edits an Alert by updating the spec
+// or using the kube/oc editor
+var editAlertCmd = &cobra.Command{
+	Use:     "alert NAMESPACE",
+	Example: "synopsysctl edit alert altnamespace",
+	Short:   "Edit an instance of Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alertName := args[0]
+		log.Infof("editing Alert %s instance...", alertName)
+		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
+		if err != nil {
+			log.Errorf("error editing Alert: %s", err)
+			return nil
+		}
+		log.Infof("successfully edited Alert: '%s'", alertName)
+		return nil
+	},
+}
+
 // editBlackDuckCmd edits a Black Duck by updating the spec
 // or using the kube/oc editor
 var editBlackDuckCmd = &cobra.Command{
@@ -87,34 +112,9 @@ var editOpsSightCmd = &cobra.Command{
 	},
 }
 
-// editAlertCmd edits an Alert by updating the spec
-// or using the kube/oc editor
-var editAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE",
-	Example: "synopsysctl edit alert altnamespace",
-	Short:   "Edit an instance of Alert",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName := args[0]
-		log.Infof("editing Alert %s instance...", alertName)
-		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
-		if err != nil {
-			log.Errorf("error editing Alert: %s", err)
-			return nil
-		}
-		log.Infof("successfully edited Alert: '%s'", alertName)
-		return nil
-	},
-}
-
 func init() {
 	rootCmd.AddCommand(editCmd)
+	editCmd.AddCommand(editAlertCmd)
 	editCmd.AddCommand(editBlackDuckCmd)
 	editCmd.AddCommand(editOpsSightCmd)
-	editCmd.AddCommand(editAlertCmd)
 }

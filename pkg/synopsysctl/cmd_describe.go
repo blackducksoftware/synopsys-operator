@@ -40,6 +40,35 @@ var describeCmd = &cobra.Command{
 	},
 }
 
+// describeAlertCmd details of one or many Alerts
+var describeAlertCmd = &cobra.Command{
+	Use:     "alert [namespace]...",
+	Example: "synopsysctl describe alerts\nsynopsysctl describe alert altnamespace\nsynopsysctl describe alerts altnamespace1 altnamespace2",
+	Aliases: []string{"alerts"},
+	Short:   "Show details of one or many Alerts",
+	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Debugf("describing an Alert")
+		kubectlCmd := []string{"describe", "alerts"}
+		if len(args) > 0 {
+			kubectlCmd = append(kubectlCmd, args...)
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, describeSelector)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		if err != nil {
+			log.Errorf("error describing Alert: %s - %s", out, err)
+			return nil
+		}
+		fmt.Printf("%+v", out)
+		return nil
+	},
+}
+
 // describeBlackDuckCmd Show details of one or many Black Ducks
 var describeBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck [namespace]...",
@@ -91,35 +120,6 @@ var describeOpsSightCmd = &cobra.Command{
 		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error describing OpsSight: %s - %s", out, err)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
-	},
-}
-
-// describeAlertCmd details of one or many Alerts
-var describeAlertCmd = &cobra.Command{
-	Use:     "alert [namespace]...",
-	Example: "synopsysctl describe alerts\nsynopsysctl describe alert altnamespace\nsynopsysctl describe alerts altnamespace1 altnamespace2",
-	Aliases: []string{"alerts"},
-	Short:   "Show details of one or many Alerts",
-	Args: func(cmd *cobra.Command, args []string) error {
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("describing an Alert")
-		kubectlCmd := []string{"describe", "alerts"}
-		if len(args) > 0 {
-			kubectlCmd = append(kubectlCmd, args...)
-		}
-		if cmd.LocalFlags().Lookup("selector").Changed {
-			kubectlCmd = append(kubectlCmd, "-l")
-			kubectlCmd = append(kubectlCmd, describeSelector)
-		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
-		if err != nil {
-			log.Errorf("error describing Alert: %s - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)

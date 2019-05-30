@@ -34,6 +34,6 @@ const DefaultMetricsImage string = "docker.io/prom/prometheus:v2.1.0"
 const DefaultDeployNamespace string = "synopsys-operator"
 
 // Default Base Specs for Create
+const defaultBaseAlertSpec string = "default"
 const defaultBaseBlackDuckSpec string = "persistentStorageLatest"
 const defaultBaseOpsSightSpec string = "default"
-const defaultBaseAlertSpec string = "default"

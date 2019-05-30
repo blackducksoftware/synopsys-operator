@@ -48,6 +48,39 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// getAlertCmd display one or many Alerts
+var getAlertCmd = &cobra.Command{
+	Use:     "alert [namespace]...",
+	Example: "synopsysctl get alerts\nsynopsysctl get alert altnamespace\nsynopsysctl get alerts altnamespace1 altnamespace2",
+	Aliases: []string{"alerts"},
+	Short:   "Display one or many Alerts",
+	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Debugf("getting Alerts...")
+		kubectlCmd := []string{"get", "alerts"}
+		if len(args) > 0 {
+			kubectlCmd = append(kubectlCmd, args...)
+		}
+		if cmd.LocalFlags().Lookup("output").Changed {
+			kubectlCmd = append(kubectlCmd, "-o")
+			kubectlCmd = append(kubectlCmd, getOutputFormat)
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, getSelector)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		if err != nil {
+			log.Errorf("error getting Alerts due to %+v - %s", out, err)
+			return nil
+		}
+		fmt.Printf("%+v", out)
+		return nil
+	},
+}
+
 // getBlackDuckCmd Display one or many Black Ducks
 var getBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck [namespace]...",
@@ -175,44 +208,15 @@ var getOpsSightCmd = &cobra.Command{
 	},
 }
 
-// getAlertCmd Display one or many Alerts
-var getAlertCmd = &cobra.Command{
-	Use:     "alert [namespace]...",
-	Example: "synopsysctl get alerts\nsynopsysctl get alert altnamespace\nsynopsysctl get alerts altnamespace1 altnamespace2",
-	Aliases: []string{"alerts"},
-	Short:   "Display one or many Alerts",
-	Args: func(cmd *cobra.Command, args []string) error {
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting Alerts...")
-		kubectlCmd := []string{"get", "alerts"}
-		if len(args) > 0 {
-			kubectlCmd = append(kubectlCmd, args...)
-		}
-		if cmd.LocalFlags().Lookup("output").Changed {
-			kubectlCmd = append(kubectlCmd, "-o")
-			kubectlCmd = append(kubectlCmd, getOutputFormat)
-		}
-		if cmd.LocalFlags().Lookup("selector").Changed {
-			kubectlCmd = append(kubectlCmd, "-l")
-			kubectlCmd = append(kubectlCmd, getSelector)
-		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
-		if err != nil {
-			log.Errorf("error getting Alerts due to %+v - %s", out, err)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
-	},
-}
-
 func init() {
 	//(PassCmd) getCmd.DisableFlagParsing = true // lets getCmd pass flags to kube/oc
 	rootCmd.AddCommand(getCmd)
 
 	// Add Commands
+	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
+	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	getCmd.AddCommand(getAlertCmd)
+
 	getBlackDuckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getBlackDuckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
@@ -221,8 +225,4 @@ func init() {
 	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getOpsSightCmd)
-
-	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
-	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-	getCmd.AddCommand(getAlertCmd)
 }

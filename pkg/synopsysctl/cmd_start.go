@@ -38,6 +38,44 @@ var startCmd = &cobra.Command{
 	},
 }
 
+// startAlertCmd starts an Alert in the cluster
+var startAlertCmd = &cobra.Command{
+	Use:     "alert NAMESPACE",
+	Example: "synopsysctl start alert altnamespace",
+	Short:   "Start an Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alertNamespace := args[0]
+		log.Infof("starting Alert %s...", alertNamespace)
+
+		// Get the Alert
+		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
+
+		if err != nil {
+			log.Errorf("error getting %s Alert instance due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		// Make changes to Spec
+		currAlert.Spec.DesiredState = ""
+		// Update Alert
+		_, err = util.UpdateAlert(alertClient,
+			currAlert.Spec.Namespace, currAlert)
+		if err != nil {
+			log.Errorf("error starting the %s Alert instance due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		log.Infof("successfully started the '%s' Alert instance", alertNamespace)
+		return nil
+	},
+}
+
 // startBlackDuckCmd starts a Black Duck in the cluster
 var startBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAMESPACE",
@@ -112,47 +150,9 @@ var startOpsSightCmd = &cobra.Command{
 	},
 }
 
-// startAlertCmd starts an Alert in the cluster
-var startAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE",
-	Example: "synopsysctl start alert altnamespace",
-	Short:   "Start an Alert",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		alertNamespace := args[0]
-		log.Infof("starting Alert %s...", alertNamespace)
-
-		// Get the Alert
-		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
-
-		if err != nil {
-			log.Errorf("error getting %s Alert instance due to %+v", alertNamespace, err)
-			return nil
-		}
-
-		// Make changes to Spec
-		currAlert.Spec.DesiredState = ""
-		// Update Alert
-		_, err = util.UpdateAlert(alertClient,
-			currAlert.Spec.Namespace, currAlert)
-		if err != nil {
-			log.Errorf("error starting the %s Alert instance due to %+v", alertNamespace, err)
-			return nil
-		}
-
-		log.Infof("successfully started the '%s' Alert instance", alertNamespace)
-		return nil
-	},
-}
-
 func init() {
+	startCmd.AddCommand(startAlertCmd)
 	startCmd.AddCommand(startBlackDuckCmd)
 	startCmd.AddCommand(startOpsSightCmd)
-	startCmd.AddCommand(startAlertCmd)
 	rootCmd.AddCommand(startCmd)
 }

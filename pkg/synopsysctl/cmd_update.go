@@ -44,9 +44,9 @@ import (
 )
 
 // Update Command Resource Ctls
+var updateAlertCtl ResourceCtl
 var updateBlackDuckCtl ResourceCtl
 var updateOpsSightCtl ResourceCtl
-var updateAlertCtl ResourceCtl
 
 // Update Comamnd Defaults
 var updateSynopsysOperatorImage = ""
@@ -211,6 +211,62 @@ var updateOperatorCmd = &cobra.Command{
 		}
 
 		log.Infof("successfully updated Synopsys Operator in '%s' namespace", namespace)
+		return nil
+	},
+}
+
+// updateAlertCmd lets the user update an Alert Instance
+var updateAlertCmd = &cobra.Command{
+	Use:     "alert NAMESPACE",
+	Example: "synopsysctl update alert altnamespace --port 80",
+	Short:   "Describe an instance of Alert",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alertNamespace := args[0]
+
+		log.Infof("updating Alert %s instance...", alertNamespace)
+
+		// Get Alert
+		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
+		if err != nil {
+			log.Errorf("error getting an Alert %s instance due to %+v", alertNamespace, err)
+			return nil
+		}
+		err = updateAlertCtl.SetSpec(currAlert.Spec)
+		if err != nil {
+			log.Errorf("cannot set an existing %s Alert instance to spec due to %+v", alertNamespace, err)
+			return nil
+		}
+
+		// Check if it can be updated
+		canUpdate, err := updateAlertCtl.CanUpdate()
+		if err != nil {
+			log.Errorf("cannot Update Alert: %s", err)
+			return nil
+		}
+		if canUpdate {
+			// Make changes to Spec
+			flagset := cmd.Flags()
+			updateAlertCtl.SetChangedFlags(flagset)
+			newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
+			// merge environs
+			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currAlert.Spec.Environs)
+			// Create new Alert CRD
+			newAlert := *currAlert //make copy
+			newAlert.Spec = newSpec
+			// Update Alert
+			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
+			if err != nil {
+				log.Errorf("error updating the %s Alert instance due to %+v", alertNamespace, err)
+				return nil
+			}
+			log.Infof("successfully updated the '%s' Alert instance", alertNamespace)
+		}
 		return nil
 	},
 }
@@ -794,62 +850,6 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 	},
 }
 
-// updateAlertCmd lets the user update an Alert Instance
-var updateAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE",
-	Example: "synopsysctl update alert altnamespace --port 80",
-	Short:   "Describe an instance of Alert",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("this command takes 1 argument")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		alertNamespace := args[0]
-
-		log.Infof("updating Alert %s instance...", alertNamespace)
-
-		// Get Alert
-		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
-		if err != nil {
-			log.Errorf("error getting an Alert %s instance due to %+v", alertNamespace, err)
-			return nil
-		}
-		err = updateAlertCtl.SetSpec(currAlert.Spec)
-		if err != nil {
-			log.Errorf("cannot set an existing %s Alert instance to spec due to %+v", alertNamespace, err)
-			return nil
-		}
-
-		// Check if it can be updated
-		canUpdate, err := updateAlertCtl.CanUpdate()
-		if err != nil {
-			log.Errorf("cannot Update Alert: %s", err)
-			return nil
-		}
-		if canUpdate {
-			// Make changes to Spec
-			flagset := cmd.Flags()
-			updateAlertCtl.SetChangedFlags(flagset)
-			newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
-			// merge environs
-			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currAlert.Spec.Environs)
-			// Create new Alert CRD
-			newAlert := *currAlert //make copy
-			newAlert.Spec = newSpec
-			// Update Alert
-			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
-			if err != nil {
-				log.Errorf("error updating the %s Alert instance due to %+v", alertNamespace, err)
-				return nil
-			}
-			log.Infof("successfully updated the '%s' Alert instance", alertNamespace)
-		}
-		return nil
-	},
-}
-
 func init() {
 	// initialize global resource ctl structs for commands to use
 	updateBlackDuckCtl = blackduck.NewBlackDuckCtl()
@@ -876,6 +876,10 @@ func init() {
 	updateOperatorCmd.Flags().IntVarP(&updateThreadiness, "no-of-threads", "c", updateThreadiness, "Number of threads to process the custom resources")
 	updateCmd.AddCommand(updateOperatorCmd)
 
+	// Add Alert Commands
+	updateAlertCtl.AddSpecFlags(updateAlertCmd, false)
+	updateCmd.AddCommand(updateAlertCmd)
+
 	// Add Bladuck Commands
 	updateBlackDuckCtl.AddSpecFlags(updateBlackDuckCmd, false)
 	updateCmd.AddCommand(updateBlackDuckCmd)
@@ -897,8 +901,4 @@ func init() {
 	updateOpsSightCmd.AddCommand(updateOpsSightImageCmd)
 	updateOpsSightCmd.AddCommand(updateOpsSightExternalHostCmd)
 	updateOpsSightCmd.AddCommand(updateOpsSightAddRegistryCmd)
-
-	// Add Alert Commands
-	updateAlertCtl.AddSpecFlags(updateAlertCmd, false)
-	updateCmd.AddCommand(updateAlertCmd)
 }
