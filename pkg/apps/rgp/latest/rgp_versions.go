@@ -25,6 +25,15 @@ import "fmt"
 
 // imageTags is a map of the Rgp versions to it's images and tags
 var imageTags = map[string]map[string]string{
+	"2019.06": {
+		"reporting-frontend-service":        "0.0.713",
+		"reporting-polaris-service":         "0.0.148",
+		"reporting-report-service":          "0.0.481",
+		"reporting-rp-issue-manager":        "0.0.536",
+		"reporting-rp-portfolio-service":    "0.0.743",
+		"reporting-tools-portfolio-service": "0.0.1027",
+		"reporting-clamav":                  "latest",
+	},
 	"2019.04": {
 		"reporting-frontend-service":        "0.0.673",
 		"reporting-polaris-service":         "0.0.111",

@@ -51,8 +51,8 @@ func (g *SpecConfig) getToolsPortfolioPod() *components.Pod {
 
 	// TODO: HELM CHART HAS serviceAccount: "auth-server"
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name:           "tools-portfolio-service",
-		ServiceAccount: "auth-server",
+		Name: "tools-portfolio-service",
+		// ServiceAccount: "auth-server",
 	})
 
 	container, _ := g.getToolPortfolioContainer()

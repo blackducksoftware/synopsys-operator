@@ -105,7 +105,7 @@ func (g *SpecConfig) getReportContainer() (*components.Container, error) {
 func (g *SpecConfig) getClamavContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:       "clamav",
-		Image:      "gcr.io/snps-swip-staging/reporting-clamav:latest",
+		Image:      GetImageTag(g.config.Version, "reporting-clamav"),
 		PullPolicy: horizonapi.PullIfNotPresent,
 		// TODO: RESTART POLICY: ALWAYS, horizon doesn't have it
 	})

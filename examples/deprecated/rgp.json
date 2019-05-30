@@ -7,7 +7,7 @@
 	},
 	"spec": {
 		"namespace": "rgp-trial",
-		"version": "2019.04",
+		"version": "2019.06",
 		"storageClass": "",
 		"ingressClass": "nginx",
 		"ingressHost": "rgp.yash.com"
