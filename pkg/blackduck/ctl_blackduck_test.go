@@ -35,7 +35,7 @@ func TestNewBlackDuckCtl(t *testing.T) {
 	assert := assert.New(t)
 	blackduckCtl := NewBlackDuckCtl()
 	assert.Equal(&Ctl{
-		Spec:            &blackduckv1.BlackduckSpec{},
+		Spec: &blackduckv1.BlackduckSpec{},
 	}, blackduckCtl)
 }
 
@@ -263,7 +263,7 @@ func TestSetFlag(t *testing.T) {
 				ExternalPostgresPostgresUser: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{ 
+				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
 					PostgresUser: "changed"}},
 		},
 		// case
