@@ -50,7 +50,7 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 	var adminPassword, userPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
 		adminPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
-		userPassword = blackduck.Spec.ExternalPostgres.PostgresAdminPassword
+		userPassword = blackduck.Spec.ExternalPostgres.PostgresUserPassword
 	} else {
 		adminPassword, userPassword, _, err = bdutil.GetDefaultPasswords(hc.KubeClient, hc.Config.Namespace)
 		if err != nil {
@@ -174,15 +174,15 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
 	}
 
-	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
-		// Service account
-		componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
-		clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
-		if err != nil {
-			return nil, err
-		}
-		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
+	// Service account
+	componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
+	clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
+	if err != nil {
+		return nil, err
+	}
+	componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
 
+	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Binary Scanner
 		imageName := containerCreater.GetImageTag("appcheck-worker")
 		if len(imageName) > 0 {
