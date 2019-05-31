@@ -22,10 +22,9 @@ under the License.
 package containers
 
 import (
-	"strings"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -56,21 +55,24 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 	}
 
 	if c.hubSpec.PersistentStorage {
-		for k, v := range defaultPVC {
-			size := v
-			storageClass := ""
-			for _, claim := range c.hubSpec.PVC {
-				if strings.EqualFold(claim.Name, k) {
-					if len(claim.StorageClass) > 0 {
-						storageClass = claim.StorageClass
-					}
-					if len(claim.Size) > 0 {
-						size = claim.StorageClass
-					}
+		pvcMap := make(map[string]blackduckapi.PVC)
+		for _, claim := range c.hubSpec.PVC {
+			pvcMap[claim.Name] = claim
+		}
+
+		for name, defaultSize := range defaultPVC {
+			size := defaultSize
+			storageClass := c.hubSpec.PVCStorageClass
+			if claim, ok := pvcMap[name]; ok {
+				if len(claim.StorageClass) > 0 {
+					storageClass = claim.StorageClass
 				}
-				break
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
 			}
-			pvcs = append(pvcs, c.createPVC(k, size, v, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
+
+			pvcs = append(pvcs, c.createPVC(name, size, defaultSize, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
 		}
 	}
 
@@ -82,8 +84,6 @@ func (c *Creater) createPVC(name string, requestedSize string, defaultSize strin
 	var class *string
 	if len(storageclass) > 0 {
 		class = &storageclass
-	} else if len(c.hubSpec.PVCStorageClass) > 0 {
-		class = &c.hubSpec.PVCStorageClass
 	} else {
 		class = nil
 	}
