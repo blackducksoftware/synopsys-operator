@@ -40,7 +40,7 @@ var metricsImage string
 var exposeMetrics = ""
 var terminationGracePeriodSeconds int64 = 180
 var operatorTimeBombInSeconds int64 = 315576000
-var dryRun = false
+var dryRun = "false"
 var logLevel = "debug"
 var threadiness = 5
 var postgresRestartInMins int64 = 10
@@ -50,12 +50,13 @@ var deploySecretType = "Opaque"
 var adminPassword = "blackduck"
 var postgresPassword = "blackduck"
 var userPassword = "blackduck"
-var blackduckPassword = "blackduck"
+var blackDuckPassword = "blackduck"
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use:   "deploy [NAMESPACE]",
-	Short: "Deploys the synopsys operator onto your cluster",
+	Use:     "deploy [namespace]",
+	Example: "synopsysctl deploy\nsynopsysctl deploy sonamespace\nsynopsysctl deploy --expose-ui LOADBALANCER",
+	Short:   "Deploys Synopsys Operator into your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) > 1 {
@@ -88,16 +89,16 @@ var deployCmd = &cobra.Command{
 		// check if operator is already installed
 		ns, err := operatorutil.GetOperatorNamespace(kubeClient)
 		if err == nil {
-			log.Errorf("synopsys operator is already installed in '%s' namespace", ns)
+			log.Errorf("Synopsys Operator is already installed in '%s' namespace", ns)
 			return nil
 		}
 
-		log.Infof("deploying the synopsys operator in '%s' namespace......", deployNamespace)
+		log.Infof("deploying Synopsys Operator in '%s' namespace......", deployNamespace)
 
 		// if image image tag
 		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
 		if !imageHasTag {
-			log.Errorf("synopsys operator image doesn't have a tag: %s", synopsysOperatorImage)
+			log.Errorf("Synopsys Operator image doesn't have a tag: %s", synopsysOperatorImage)
 			return nil
 		}
 
@@ -115,15 +116,15 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		// Deploy synopsys-operator
-		log.Debugf("creating Synopsys-Operator components")
+		// Deploy Synopsys Operator
+		log.Debugf("creating Synopsys Operator components")
 		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, adminPassword, postgresPassword,
-			userPassword, blackduckPassword, secretType, operatorTimeBombInSeconds, dryRun, logLevel, threadiness, postgresRestartInMins,
+			userPassword, blackDuckPassword, secretType, operatorTimeBombInSeconds, strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins,
 			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key)
 
 		err = soperatorSpec.UpdateSOperatorComponents()
 		if err != nil {
-			log.Errorf("error in deploying the synopsys operator due to %+v", err)
+			log.Errorf("error in deploying Synopsys Operator due to %+v", err)
 			return nil
 		}
 
@@ -136,28 +137,28 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Infof("successfully deployed the synopsys operator")
+		log.Infof("successfully deployed Synopsys Operator")
 		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deployCmd)
-	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "expose the synopsys operator's user interface. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
-	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", DefaultOperatorImage, "synopsys operator image URL")
-	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "m", exposeMetrics, "expose the Synopsys-Operator's metrics application. possible values are [NODEPORT/LOADBALANCER/OPENSHIFT]")
-	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "k", DefaultMetricsImage, "image URL for the Synopsys-Operator's metrics pod")
-	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "type of kubernetes secret to store the postgres and blackduck credentials")
-	deployCmd.Flags().StringVarP(&adminPassword, "admin-password", "a", adminPassword, "postgres admin password")
-	deployCmd.Flags().StringVarP(&postgresPassword, "postgres-password", "p", postgresPassword, "postgres password")
-	deployCmd.Flags().StringVarP(&userPassword, "user-password", "u", userPassword, "postgres user password")
-	deployCmd.Flags().StringVarP(&blackduckPassword, "blackduck-password", "b", blackduckPassword, "blackduck password for 'sysadmin' account")
-	deployCmd.Flags().Int64VarP(&operatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", operatorTimeBombInSeconds, "termination grace period in seconds for shutting down crds")
-	deployCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "n", postgresRestartInMins, "check for postgres restart in minutes")
-	deployCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "wait for pod to be running in seconds")
-	deployCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "custom resources resync time period in seconds")
-	deployCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "termination grace period in seconds for shutting down postgres")
-	deployCmd.Flags().BoolVar(&dryRun, "dryRun", dryRun, "dry run to run the test cases")
-	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "log level of synopsys operator")
-	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "number of threads to process the custom resources")
+	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "Service type to expose Synopsys Operator's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", DefaultOperatorImage, "Image URL of Synopsys Operator")
+	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "m", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "k", DefaultMetricsImage, "Image URL of Synopsys Operator's metrics pod")
+	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "Type of kubernetes secret to store the postgres and Black Duck credentials")
+	deployCmd.Flags().StringVarP(&adminPassword, "admin-password", "a", adminPassword, "Postgres admin password")
+	deployCmd.Flags().StringVarP(&postgresPassword, "postgres-password", "p", postgresPassword, "Postgres password")
+	deployCmd.Flags().StringVarP(&userPassword, "user-password", "u", userPassword, "Postgres user password")
+	deployCmd.Flags().StringVarP(&blackDuckPassword, "blackduck-password", "b", blackDuckPassword, "Black Duck password of 'sysadmin' account")
+	deployCmd.Flags().Int64VarP(&operatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", operatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
+	deployCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "n", postgresRestartInMins, "Minutes to check for restarting postgres")
+	deployCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")
+	deployCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "Seconds for resyncing custom resources")
+	deployCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "Termination grace period in seconds for shutting down postgres")
+	deployCmd.Flags().StringVar(&dryRun, "dryRun", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
+	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "Log level of Synopsys Operator")
+	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "Number of threads to process the custom resources")
 }

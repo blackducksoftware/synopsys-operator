@@ -42,9 +42,9 @@ import (
 // These vars set by setResourceClients() in root command's init()
 var restconfig *rest.Config
 var kubeClient *kubernetes.Clientset
-var blackduckClient *blackduckclientset.Clientset
-var opssightClient *opssightclientset.Clientset
 var alertClient *alertclientset.Clientset
+var blackDuckClient *blackduckclientset.Clientset
+var opsSightClient *opssightclientset.Clientset
 
 // These vars used by KubeCmd
 var openshift bool
@@ -62,17 +62,17 @@ func setResourceClients() error {
 	if err != nil {
 		return err
 	}
-	blackduckClient, err = blackduckclientset.NewForConfig(restconfig)
-	if err != nil {
-		log.Errorf("error creating the Blackduck Clientset: %s", err)
-	}
-	opssightClient, err = opssightclientset.NewForConfig(restconfig)
-	if err != nil {
-		log.Errorf("error creating the OpsSight Clientset: %s", err)
-	}
 	alertClient, err = alertclientset.NewForConfig(restconfig)
 	if err != nil {
-		log.Errorf("error creating the Alert Clientset: %s", err)
+		log.Errorf("error creating Alert Clientset: %s", err)
+	}
+	blackDuckClient, err = blackduckclientset.NewForConfig(restconfig)
+	if err != nil {
+		log.Errorf("error creating Black Duck Clientset: %s", err)
+	}
+	opsSightClient, err = opssightclientset.NewForConfig(restconfig)
+	if err != nil {
+		log.Errorf("error creating OpsSight Clientset: %s", err)
 	}
 	kube, openshift = DetermineClusterClients(restconfig)
 	return nil

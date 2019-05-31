@@ -34,7 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GetOperatorDeployment creates a deployment for the Synopsys-Operaotor
+// GetOperatorDeployment creates a deployment for Synopsys Operaotor
 func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deployment, error) {
 	// Add the Replication Controller to the Deployer
 	var synopsysOperatorReplicas int32 = 1
@@ -150,7 +150,7 @@ func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deploy
 	return synopsysOperator, nil
 }
 
-// GetOperatorService creates a Service Horizon component for the Synopsys-Operaotor
+// GetOperatorService creates a Service Horizon component for Synopsys Operaotor
 func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service {
 
 	services := []*horizoncomponents.Service{}
@@ -199,7 +199,7 @@ func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service 
 			exposedServiceType = horizonapi.ServiceTypeLoadBalancer
 		}
 
-		// Synopsys operator UI exposed service
+		// Synopsys Operator UI exposed service
 		synopsysOperatorExposedService := horizoncomponents.NewService(horizonapi.ServiceConfig{
 			APIVersion: "v1",
 			Name:       "synopsys-operator-exposed",
@@ -220,7 +220,7 @@ func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service 
 	return services
 }
 
-// GetOperatorConfigMap creates a ConfigMap Horizon component for the Synopsys-Operaotor
+// GetOperatorConfigMap creates a ConfigMap Horizon component for Synopsys Operaotor
 func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigMap, error) {
 	// Config Map
 	synopsysOperatorConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
@@ -255,7 +255,7 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 	return synopsysOperatorConfigMap, nil
 }
 
-// GetOperatorServiceAccount creates a ServiceAccount Horizon component for the Synopsys-Operaotor
+// GetOperatorServiceAccount creates a ServiceAccount Horizon component for Synopsys Operaotor
 func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.ServiceAccount {
 	// Service Account
 	synopsysOperatorServiceAccount := horizoncomponents.NewServiceAccount(horizonapi.ServiceAccountConfig{
@@ -268,7 +268,7 @@ func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.Ser
 	return synopsysOperatorServiceAccount
 }
 
-// GetOperatorClusterRoleBinding creates a ClusterRoleBinding Horizon component for the Synopsys-Operaotor
+// GetOperatorClusterRoleBinding creates a ClusterRoleBinding Horizon component for Synopsys Operaotor
 func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
 	// Cluster Role Binding
 	synopsysOperatorClusterRoleBinding := horizoncomponents.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
@@ -291,7 +291,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 	return synopsysOperatorClusterRoleBinding
 }
 
-// GetOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys-Operaotor
+// GetOperatorClusterRole creates a ClusterRole Horizon component for Synopsys Operaotor
 func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.ClusterRole {
 	synopsysOperatorClusterRole := horizoncomponents.NewClusterRole(horizonapi.ClusterRoleConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
@@ -421,7 +421,7 @@ func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secre
 	return tlsSecret
 }
 
-// GetOperatorSecret creates a Secret Horizon component for the Synopsys-Operaotor
+// GetOperatorSecret creates a Secret Horizon component for Synopsys Operaotor
 func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 	// create a secret
 	synopsysOperatorSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
@@ -442,7 +442,7 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 	return synopsysOperatorSecret
 }
 
-// GetOpenShiftRoute creates the OpenShift route component for the synopsys operator
+// GetOpenShiftRoute creates the OpenShift route component for Synopsys Operator
 func (specConfig *SpecConfig) GetOpenShiftRoute() *api.Route {
 	if strings.ToUpper(specConfig.Expose) == util.OPENSHIFT {
 		return &api.Route{

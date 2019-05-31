@@ -40,7 +40,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// UpdateSynopsysOperator updates the Synopsys-Operator's kubernetes componenets and changes
+// UpdateSynopsysOperator updates Synopsys Operator's kubernetes componenets and changes
 // all CRDs to versions that the Operator can use
 func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string,
 	blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset,
@@ -97,11 +97,11 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		log.Debugf("updating %d Alerts", len(oldAlerts))
 	}
 
-	// Update the Synopsys-Operator's Components
-	log.Debugf("updating Synopsys-Operator's Components")
+	// Update Synopsys Operator's Components
+	log.Debugf("updating Synopsys Operator's Components")
 	err = specConfig.UpdateSOperatorComponents()
 	if err != nil {
-		return fmt.Errorf("failed to update Synopsys-Operator components: %s", err)
+		return fmt.Errorf("failed to update Synopsys Operator components: %s", err)
 	}
 
 	// Update the CRDs in the cluster with the new versions
@@ -139,16 +139,16 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 	return nil
 }
 
-// UpdateSOperatorComponents updates kubernetes resources for the Synopsys-Operator
+// UpdateSOperatorComponents updates kubernetes resources for Synopsys Operator
 func (specConfig *SpecConfig) UpdateSOperatorComponents() error {
 	sOperatorComponents, err := specConfig.GetComponents()
 	if err != nil {
-		return fmt.Errorf("failed to get Synopsys-Operator components: %s", err)
+		return fmt.Errorf("failed to get Synopsys Operator components: %s", err)
 	}
 	sOperatorCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, false, specConfig.Namespace, sOperatorComponents, "app=synopsys-operator,component=operator")
 	_, errs := sOperatorCommonConfig.CRUDComponents()
 	if errs != nil {
-		return fmt.Errorf("failed to update Synopsys-Operator components: %+v", errs)
+		return fmt.Errorf("failed to update Synopsys Operator components: %+v", errs)
 	}
 
 	return nil

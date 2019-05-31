@@ -40,7 +40,7 @@ var logLevelCtl = "info"
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "synopsysctl",
-	Short: fmt.Sprintf("[Version %s] Synopsysctl is a Command Line Tool for managing Synopsys Resources", SynopsysctlVersion),
+	Short: fmt.Sprintf("[Version %s] synopsysctl is a command line tool for managing Synopsys resources", SynopsysctlVersion),
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
@@ -64,7 +64,7 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("Not a Valid Command")
+		return fmt.Errorf("not a valid command")
 	},
 }
 
@@ -82,7 +82,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "path to the kubeconfig file to use for CLI requests")
 	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "server's certificate won't be validated. HTTPS will be less secure")
-	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "log level for the Synopsysctl [trace/debug/info/warn/error/fatal/panic]")
+	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "log level for the synopsysctl [trace|debug|info|warn|error|fatal|panic]")
 }
 
 // initConfig reads in config file and ENV variables if set.

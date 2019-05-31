@@ -28,10 +28,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/version"
 	"reflect"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/version"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -1296,7 +1297,7 @@ func IsPodReady(clientset *kubernetes.Clientset, namespace string, labelSelector
 	return true, nil
 }
 
-// GetOperatorNamespace returns the namespace of the synopsys operator based on the labels
+// GetOperatorNamespace returns the namespace of Synopsys Operator based on the labels
 func GetOperatorNamespace(clientset *kubernetes.Clientset) (string, error) {
 	// check if operator is already installed
 	rcs, err := ListReplicationControllers(clientset, metav1.NamespaceAll, "app=synopsys-operator,component=operator")
@@ -1311,40 +1312,40 @@ func GetOperatorNamespace(clientset *kubernetes.Clientset) (string, error) {
 	if err == nil && len(pods.Items) > 0 {
 		return pods.Items[0].Namespace, nil
 	}
-	return "", fmt.Errorf("synopsys operator namespace not found")
+	return "", fmt.Errorf("Synopsys Operator namespace not found")
 }
 
-// GetOperatorClusterRole returns the cluster role of the synopsys operator based on the labels
+// GetOperatorClusterRole returns the cluster role of Synopsys Operator based on the labels
 func GetOperatorClusterRole(clientset *kubernetes.Clientset) (string, error) {
 	crs, err := ListClusterRoles(clientset, "app=synopsys-operator,component=operator")
 
 	if err != nil || len(crs.Items) == 0 {
 		namespace, err := GetOperatorNamespace(clientset)
 		if err != nil {
-			return "", fmt.Errorf("synopsys operator namespace not found")
+			return "", fmt.Errorf("Synopsys Operator namespace not found")
 		}
 
 		crs, err = ListClusterRoles(clientset, fmt.Sprintf("olm.owner.namespace=%s,olm.owner.kind=ClusterServiceVersion", namespace))
 		if err != nil || len(crs.Items) == 0 {
-			return "", fmt.Errorf("synopsys operator cluster role not found")
+			return "", fmt.Errorf("Synopsys Operator cluster role not found")
 		}
 	}
 	return crs.Items[0].Name, nil
 }
 
-// GetOperatorClusterRoleBinding returns the cluster role bindings of the synopsys operator based on the labels
+// GetOperatorClusterRoleBinding returns the cluster role bindings of Synopsys Operator based on the labels
 func GetOperatorClusterRoleBinding(clientset *kubernetes.Clientset) (string, error) {
 	crbs, err := ListClusterRoleBindings(clientset, "app=synopsys-operator,component=operator")
 
 	if err != nil || len(crbs.Items) == 0 {
 		namespace, err := GetOperatorNamespace(clientset)
 		if err != nil {
-			return "", fmt.Errorf("synopsys operator namespace not found")
+			return "", fmt.Errorf("Synopsys Operator namespace not found")
 		}
 
 		crbs, err = ListClusterRoleBindings(clientset, fmt.Sprintf("olm.owner.namespace=%s,olm.owner.kind=ClusterServiceVersion", namespace))
 		if err != nil || len(crbs.Items) == 0 {
-			return "", fmt.Errorf("synopsys operator cluster role binding not found")
+			return "", fmt.Errorf("Synopsys Operator cluster role binding not found")
 		}
 	}
 	return crbs.Items[0].Name, nil

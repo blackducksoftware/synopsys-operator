@@ -31,81 +31,26 @@ import (
 // Describe Command flag for -selector functionality
 var describeSelector string
 
-// describeCmd Show details of a Synopsys Resource from your cluster
+// describeCmd Show details of a Synopsys resource from your cluster
 var describeCmd = &cobra.Command{
 	Use:   "describe",
-	Short: "Show details of a Synopsys Resource from your cluster",
+	Short: "Show details of a Synopsys resource from your cluster",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("Not a Valid Command")
-	},
-}
-
-// describeBlackduckCmd Show details of one or many Black Ducks
-var describeBlackduckCmd = &cobra.Command{
-	Use:     "blackduck [NAME...]",
-	Aliases: []string{"blackducks"},
-	Short:   "Show details of one or many Black Ducks",
-	Args: func(cmd *cobra.Command, args []string) error {
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Describing a Blackduck")
-		kubectlCmd := []string{"describe", "blackducks"}
-		if len(args) > 0 {
-			kubectlCmd = append(kubectlCmd, args...)
-		}
-		if cmd.LocalFlags().Lookup("selector").Changed {
-			kubectlCmd = append(kubectlCmd, "-l")
-			kubectlCmd = append(kubectlCmd, describeSelector)
-		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
-		if err != nil {
-			log.Errorf("error describing the Black Duck: %s - %s", out, err)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
-	},
-}
-
-// describeOpsSightCmd Show details of one or many OpsSights
-var describeOpsSightCmd = &cobra.Command{
-	Use:     "opssight [NAME...]",
-	Aliases: []string{"opssights"},
-	Short:   "Show details of one or many OpsSights",
-	Args: func(cmd *cobra.Command, args []string) error {
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Describing an OpsSight")
-		kubectlCmd := []string{"describe", "opssights"}
-		if len(args) > 0 {
-			kubectlCmd = append(kubectlCmd, args...)
-		}
-		if cmd.LocalFlags().Lookup("selector").Changed {
-			kubectlCmd = append(kubectlCmd, "-l")
-			kubectlCmd = append(kubectlCmd, describeSelector)
-		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
-		if err != nil {
-			log.Errorf("error describing the OpsSight: %s - %s", out, err)
-			return nil
-		}
-		fmt.Printf("%+v", out)
-		return nil
+		return fmt.Errorf("not a valid command")
 	},
 }
 
 // describeAlertCmd details of one or many Alerts
 var describeAlertCmd = &cobra.Command{
-	Use:     "alert [NAME...]",
+	Use:     "alert [namespace]...",
+	Example: "synopsysctl describe alerts\nsynopsysctl describe alert altnamespace\nsynopsysctl describe alerts altnamespace1 altnamespace2",
 	Aliases: []string{"alerts"},
 	Short:   "Show details of one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("Describing an Alert")
+		log.Debugf("describing an Alert")
 		kubectlCmd := []string{"describe", "alerts"}
 		if len(args) > 0 {
 			kubectlCmd = append(kubectlCmd, args...)
@@ -116,7 +61,65 @@ var describeAlertCmd = &cobra.Command{
 		}
 		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
 		if err != nil {
-			log.Errorf("error describing the Alert: %s - %s", out, err)
+			log.Errorf("error describing Alert: %s - %s", out, err)
+			return nil
+		}
+		fmt.Printf("%+v", out)
+		return nil
+	},
+}
+
+// describeBlackDuckCmd Show details of one or many Black Ducks
+var describeBlackDuckCmd = &cobra.Command{
+	Use:     "blackduck [namespace]...",
+	Example: "synopsysctl describe blackducks\nsynopsysctl describe blackduck bdnamespace\nnsynopsysctl describe blackducks bdnamespace1 bdnamespace2",
+	Aliases: []string{"blackducks"},
+	Short:   "Show details of one or many Black Ducks",
+	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Debugf("describing a Blackduck")
+		kubectlCmd := []string{"describe", "blackducks"}
+		if len(args) > 0 {
+			kubectlCmd = append(kubectlCmd, args...)
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, describeSelector)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		if err != nil {
+			log.Errorf("error describing Black Duck: %s - %s", out, err)
+			return nil
+		}
+		fmt.Printf("%+v", out)
+		return nil
+	},
+}
+
+// describeOpsSightCmd Show details of one or many OpsSights
+var describeOpsSightCmd = &cobra.Command{
+	Use:     "opssight [namespace]...",
+	Example: "synopsysctl describe opssights\nsynopsysctl describe opssight opsnamespace\nsynopsysctl describe opssights opsnamespace1 opsnamespace2",
+	Aliases: []string{"opssights"},
+	Short:   "Show details of one or many OpsSights",
+	Args: func(cmd *cobra.Command, args []string) error {
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Debugf("describing an OpsSight")
+		kubectlCmd := []string{"describe", "opssights"}
+		if len(args) > 0 {
+			kubectlCmd = append(kubectlCmd, args...)
+		}
+		if cmd.LocalFlags().Lookup("selector").Changed {
+			kubectlCmd = append(kubectlCmd, "-l")
+			kubectlCmd = append(kubectlCmd, describeSelector)
+		}
+		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		if err != nil {
+			log.Errorf("error describing OpsSight: %s - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -129,8 +132,8 @@ func init() {
 	rootCmd.AddCommand(describeCmd)
 
 	// Add Commands
-	describeBlackduckCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-	describeCmd.AddCommand(describeBlackduckCmd)
+	describeBlackDuckCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	describeCmd.AddCommand(describeBlackDuckCmd)
 
 	describeOpsSightCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeOpsSightCmd)

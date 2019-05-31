@@ -31,39 +31,37 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewBlackduckCtl(t *testing.T) {
+func TestNewBlackDuckCtl(t *testing.T) {
 	assert := assert.New(t)
-	blackduckCtl := NewBlackduckCtl()
+	blackduckCtl := NewBlackDuckCtl()
 	assert.Equal(&Ctl{
-		Spec:            &blackduckv1.BlackduckSpec{},
-		Environs:        []string{},
-		ImageRegistries: []string{},
+		Spec: &blackduckv1.BlackduckSpec{},
 	}, blackduckCtl)
 }
 
 func TestGetSpec(t *testing.T) {
 	assert := assert.New(t)
-	blackduckCtl := NewBlackduckCtl()
-	assert.Equal(blackduckv1.BlackduckSpec{}, blackduckCtl.GetSpec())
+	blackDuckCtl := NewBlackDuckCtl()
+	assert.Equal(blackduckv1.BlackduckSpec{}, blackDuckCtl.GetSpec())
 }
 
 func TestSetSpec(t *testing.T) {
 	assert := assert.New(t)
-	blackduckCtl := NewBlackduckCtl()
+	blackDuckCtl := NewBlackDuckCtl()
 	specToSet := blackduckv1.BlackduckSpec{Namespace: "test"}
-	blackduckCtl.SetSpec(specToSet)
-	assert.Equal(specToSet, blackduckCtl.GetSpec())
+	blackDuckCtl.SetSpec(specToSet)
+	assert.Equal(specToSet, blackDuckCtl.GetSpec())
 
 	// check for error
-	assert.Error(blackduckCtl.SetSpec(""))
+	assert.Error(blackDuckCtl.SetSpec(""))
 }
 
 func TestCheckSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 
 	// default case
-	blackduckCtl := NewBlackduckCtl()
-	assert.Nil(blackduckCtl.CheckSpecFlags())
+	blackDuckCtl := NewBlackDuckCtl()
+	assert.Nil(blackDuckCtl.CheckSpecFlags())
 
 	var tests = []struct {
 		input *Ctl
@@ -86,7 +84,7 @@ func TestCheckSpecFlags(t *testing.T) {
 }
 func TestSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
-	blackduckCtl := NewBlackduckCtl()
+	blackDuckCtl := NewBlackDuckCtl()
 
 	var tests = []struct {
 		input    string
@@ -106,46 +104,46 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: "empty", "persistentStorage", "default"
 	for _, test := range tests {
-		assert.Nil(blackduckCtl.SwitchSpec(test.input))
-		assert.Equal(*test.expected, blackduckCtl.GetSpec())
+		assert.Nil(blackDuckCtl.SwitchSpec(test.input))
+		assert.Equal(*test.expected, blackDuckCtl.GetSpec())
 	}
 
 	// test cases: ""
-	createBlackduckSpecType := ""
-	assert.Error(blackduckCtl.SwitchSpec(createBlackduckSpecType))
+	createBlackDuckSpecType := ""
+	assert.Error(blackDuckCtl.SwitchSpec(createBlackDuckSpecType))
 }
 
 func TestAddSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 
-	ctl := NewBlackduckCtl()
+	ctl := NewBlackDuckCtl()
 	actualCmd := &cobra.Command{}
 	ctl.AddSpecFlags(actualCmd, true)
 
 	cmd := &cobra.Command{}
-	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "size - small, medium, large, x-large")
-	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Black Duck Version")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-service", ctl.ExposeService, "Expose webserver service [LOADBALANCER/NODEPORT/OPENSHIFT]")
+	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "Size of Black Duck [small|medium|large|x-large]")
+	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Black Duck")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck Webserver's user interface [LOADBALANCER|NODEPORT|OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresHost, "external-postgres-host", ctl.ExternalPostgresPostgresHost, "Host for Postgres")
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPostgresPort, "external-postgres-port", ctl.ExternalPostgresPostgresPort, "Port for Postgres")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdmin, "external-postgres-admin", ctl.ExternalPostgresPostgresAdmin, "Name of Admin for Postgres")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUser, "external-postgres-user", ctl.ExternalPostgresPostgresUser, "Username for Postgres")
-	cmd.Flags().BoolVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "Use SSL for Postgres connection")
+	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresSsl, "external-postgres-ssl", ctl.ExternalPostgresPostgresSsl, "If true, Black Duck uses SSL for the Postgres connection [true|false]")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresAdminPassword, "external-postgres-admin-password", ctl.ExternalPostgresPostgresAdminPassword, "Password for the Postgres Admin")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresPostgresUserPassword, "external-postgres-user-password", ctl.ExternalPostgresPostgresUserPassword, "Password for a Postgres User")
 	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
-	cmd.Flags().BoolVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "Enable liveness probes")
-	cmd.Flags().BoolVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "Enable persistent storage")
+	cmd.Flags().StringVar(&ctl.LivenessProbes, "liveness-probes", ctl.LivenessProbes, "If true, Black Duck uses liveness probes [true|false]")
+	cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black duck has persistent storage [true|false]")
 	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.PostgresClaimSize, "postgres-claim-size", ctl.PostgresClaimSize, "Size of the blackduck-postgres PVC")
 	cmd.Flags().StringVar(&ctl.CertificateName, "certificate-name", ctl.CertificateName, "Name of Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateFilePath, "certificate-file-path", ctl.CertificateFilePath, "Absolute path to a file for the Black Duck nginx certificate")
 	cmd.Flags().StringVar(&ctl.CertificateKeyFilePath, "certificate-key-file-path", ctl.CertificateKeyFilePath, "Absolute path to a file for the Black Duck nginx certificate key")
-	cmd.Flags().StringVar(&ctl.ProxyCertificateFilePath, "proxy-certificate-file-path", ctl.ProxyCertificateFilePath, "Absolute path to a file for the Black Duck proxy certificate")
+	cmd.Flags().StringVar(&ctl.ProxyCertificateFilePath, "proxy-certificate-file-path", ctl.ProxyCertificateFilePath, "Absolute path to a file for the Black Duck proxy server’s Certificate Authority (CA)")
 	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
-	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Blackduck")
-	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Blackduck")
+	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Black Duck")
+	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Black Duck")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
@@ -160,12 +158,12 @@ func TestAddSpecFlags(t *testing.T) {
 func TestSetChangedFlags(t *testing.T) {
 	assert := assert.New(t)
 
-	actualCtl := NewBlackduckCtl()
+	actualCtl := NewBlackDuckCtl()
 	cmd := &cobra.Command{}
 	actualCtl.AddSpecFlags(cmd, true)
 	actualCtl.SetChangedFlags(cmd.Flags())
 
-	expCtl := NewBlackduckCtl()
+	expCtl := NewBlackDuckCtl()
 
 	assert.Equal(expCtl.Spec, actualCtl.Spec)
 
@@ -183,7 +181,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "size",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec: &blackduckv1.BlackduckSpec{},
 				Size: "changed",
@@ -193,7 +191,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "version",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:    &blackduckv1.BlackduckSpec{},
 				Version: "changed",
@@ -202,8 +200,8 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "expose-service",
-			initialCtl: NewBlackduckCtl(),
+			flagName:   "expose-ui",
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:          &blackduckv1.BlackduckSpec{},
 				ExposeService: "changed",
@@ -213,7 +211,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "db-prototype",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:        &blackduckv1.BlackduckSpec{},
 				DbPrototype: "changed",
@@ -223,7 +221,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-host",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:                         &blackduckv1.BlackduckSpec{},
 				ExternalPostgresPostgresHost: "changed",
@@ -235,7 +233,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-port",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:                         &blackduckv1.BlackduckSpec{},
 				ExternalPostgresPostgresPort: 10,
@@ -247,7 +245,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-admin",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:                          &blackduckv1.BlackduckSpec{},
 				ExternalPostgresPostgresAdmin: "changed",
@@ -259,7 +257,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-user",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:                         &blackduckv1.BlackduckSpec{},
 				ExternalPostgresPostgresUser: "changed",
@@ -271,10 +269,22 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-ssl",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:                        &blackduckv1.BlackduckSpec{},
-				ExternalPostgresPostgresSsl: true,
+				ExternalPostgresPostgresSsl: "false",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{
+				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+					PostgresSsl: false}},
+		},
+		// case
+		{
+			flagName:   "external-postgres-ssl",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                        &blackduckv1.BlackduckSpec{},
+				ExternalPostgresPostgresSsl: "true",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{
 				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -283,7 +293,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-admin-password",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:                                  &blackduckv1.BlackduckSpec{},
 				ExternalPostgresPostgresAdminPassword: "changed",
@@ -295,7 +305,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-user-password",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:                                 &blackduckv1.BlackduckSpec{},
 				ExternalPostgresPostgresUserPassword: "changed",
@@ -307,7 +317,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "pvc-storage-class",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:            &blackduckv1.BlackduckSpec{},
 				PvcStorageClass: "changed",
@@ -317,27 +327,47 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "liveness-probes",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:           &blackduckv1.BlackduckSpec{},
-				LivenessProbes: true,
+				LivenessProbes: "false",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{LivenessProbes: false},
+		},
+		// case
+		{
+			flagName:   "liveness-probes",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:           &blackduckv1.BlackduckSpec{},
+				LivenessProbes: "true",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{LivenessProbes: true},
 		},
 		// case
 		{
 			flagName:   "persistent-storage",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:              &blackduckv1.BlackduckSpec{},
-				PersistentStorage: true,
+				PersistentStorage: "false",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{PersistentStorage: false},
+		},
+		// case
+		{
+			flagName:   "persistent-storage",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:              &blackduckv1.BlackduckSpec{},
+				PersistentStorage: "true",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{PersistentStorage: true},
 		},
 		// case: add postgres-claim with size if PVC doesn't exist
 		{
 			flagName:   "postgres-claim-size",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:              &blackduckv1.BlackduckSpec{},
 				PostgresClaimSize: "changed",
@@ -347,7 +377,7 @@ func TestSetFlag(t *testing.T) {
 		// case: append postgres-claim with size if PVC doesn't exist
 		{
 			flagName:   "postgres-claim-size",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:              &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "other-pvc", Size: "other-size"}}},
 				PostgresClaimSize: "changed",
@@ -357,7 +387,7 @@ func TestSetFlag(t *testing.T) {
 		// case: update postgres-claim with size if PVC exists
 		{
 			flagName:   "postgres-claim-size",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:              &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "blackduck-postgres", Size: "unchanged"}}},
 				PostgresClaimSize: "changed",
@@ -367,7 +397,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "certificate-name",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:            &blackduckv1.BlackduckSpec{},
 				CertificateName: "changed",
@@ -377,7 +407,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "type",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec: &blackduckv1.BlackduckSpec{},
 				Type: "changed",
@@ -387,7 +417,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "desired-state",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:         &blackduckv1.BlackduckSpec{},
 				DesiredState: "changed",
@@ -398,7 +428,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			// TODO: add a check in environs for correct input string format
 			flagName:   "environs",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:     &blackduckv1.BlackduckSpec{},
 				Environs: []string{"changed"},
@@ -409,7 +439,7 @@ func TestSetFlag(t *testing.T) {
 		{
 			// TODO: add a check for name:Val
 			flagName:   "image-registries",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:            &blackduckv1.BlackduckSpec{},
 				ImageRegistries: []string{"changed"},
@@ -419,7 +449,7 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "license-key",
-			initialCtl: NewBlackduckCtl(),
+			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
 				Spec:       &blackduckv1.BlackduckSpec{},
 				LicenseKey: "changed",
@@ -430,12 +460,12 @@ func TestSetFlag(t *testing.T) {
 
 	// get the Ctl's flags
 	cmd := &cobra.Command{}
-	actualCtl := NewBlackduckCtl()
+	actualCtl := NewBlackDuckCtl()
 	actualCtl.AddSpecFlags(cmd, true)
 	flagset := cmd.Flags()
 
 	for _, test := range tests {
-		actualCtl = NewBlackduckCtl()
+		actualCtl = NewBlackDuckCtl()
 		// check the Flag exists
 		foundFlag := flagset.Lookup(test.flagName)
 		if foundFlag == nil {
@@ -451,7 +481,7 @@ func TestSetFlag(t *testing.T) {
 	}
 
 	// case: nothing set if flag doesn't exist
-	actualCtl = NewBlackduckCtl()
+	actualCtl = NewBlackDuckCtl()
 	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
 	actualCtl.SetFlag(f)
 	assert.Equal(&blackduckv1.BlackduckSpec{}, actualCtl.Spec)

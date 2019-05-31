@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a bug encountered while using synopsys-operator
+about: Report a bug encountered while using Synopsys Operator
 labels: kind/bug
 
 ---

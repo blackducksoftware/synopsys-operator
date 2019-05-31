@@ -33,7 +33,7 @@ import (
 
 // SpecConfig represents the SOperator component
 // Its methods include GetComponents() and any functions
-// that create Kubernetes Resources for the Synopsys-Operator
+// that create Kubernetes Resources for Synopsys Operator
 type SpecConfig struct {
 	Namespace                     string
 	Image                         string
@@ -89,7 +89,7 @@ func NewSOperator(namespace, synopsysOperatorImage, expose, adminPassword, postg
 }
 
 // GetComponents will return a ComponentList representing all
-// Kubernetes Resources for the Synopsys-Operator
+// Kubernetes Resources for Synopsys Operator
 func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	configMap, err := specConfig.GetOperatorConfigMap()
 	if err != nil {

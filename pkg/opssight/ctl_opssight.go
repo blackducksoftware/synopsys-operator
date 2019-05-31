@@ -24,6 +24,7 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -60,8 +61,8 @@ type Ctl struct {
 	ScannerPodImageFacadeServiceAccount             string
 	ScannerPodReplicaCount                          int
 	ScannerPodImageDirectory                        string
-	PerceiverEnableImagePerceiver                   bool
-	PerceiverEnablePodPerceiver                     bool
+	PerceiverEnableImagePerceiver                   string
+	PerceiverEnablePodPerceiver                     string
 	PerceiverImagePerceiverName                     string
 	PerceiverImagePerceiverImage                    string
 	PerceiverPodPerceiverName                       string
@@ -78,14 +79,14 @@ type Ctl struct {
 	ScannerCPU                                      string
 	ScannerMem                                      string
 	LogLevel                                        string
-	EnableMetrics                                   bool
+	EnableMetrics                                   string
 	PrometheusName                                  string
 	PrometheusImage                                 string
 	PrometheusPort                                  int
 	PrometheusExpose                                string
-	EnableSkyfire                                   bool
 	SkyfireName                                     string
 	SkyfireImage                                    string
+	EnableSkyfire                                   string
 	SkyfirePort                                     int
 	SkyfirePrometheusPort                           int
 	SkyfireServiceAccount                           string
@@ -95,7 +96,7 @@ type Ctl struct {
 	SkyfirePerceptorDumpIntervalSeconds             int
 	BlackduckExternalHostsFilePath                  string
 	BlackduckConnectionsEnvironmentVaraiableName    string
-	BlackduckTLSVerification                        bool
+	BlackduckTLSVerification                        string
 	BlackduckPasswordEnvVar                         string
 	BlackduckInitialCount                           int
 	BlackduckMaxCount                               int
@@ -105,68 +106,7 @@ type Ctl struct {
 // NewOpsSightCtl creates a new Ctl struct
 func NewOpsSightCtl() *Ctl {
 	return &Ctl{
-		Spec:                                            &opssightapi.OpsSightSpec{},
-		PerceptorName:                                   "",
-		PerceptorImage:                                  "",
-		PerceptorExpose:                                 "",
-		PerceptorPort:                                   0,
-		PerceptorCheckForStalledScansPauseHours:         0,
-		PerceptorStalledScanClientTimeoutHours:          0,
-		PerceptorModelMetricsPauseSeconds:               0,
-		PerceptorUnknownImagePauseMilliseconds:          0,
-		PerceptorClientTimeoutMilliseconds:              0,
-		ScannerPodName:                                  "",
-		ScannerPodScannerName:                           "",
-		ScannerPodScannerImage:                          "",
-		ScannerPodScannerPort:                           0,
-		ScannerPodScannerClientTimeoutSeconds:           0,
-		ScannerPodImageFacadeName:                       "",
-		ScannerPodImageFacadeImage:                      "",
-		ScannerPodImageFacadePort:                       0,
-		ScannerPodImageFacadeInternalRegistriesFilePath: "",
-		ScannerPodImageFacadeImagePullerType:            "",
-		ScannerPodImageFacadeServiceAccount:             "",
-		ScannerPodReplicaCount:                          0,
-		ScannerPodImageDirectory:                        "",
-		PerceiverEnableImagePerceiver:                   false,
-		PerceiverEnablePodPerceiver:                     false,
-		PerceiverImagePerceiverName:                     "",
-		PerceiverImagePerceiverImage:                    "",
-		PerceiverPodPerceiverName:                       "",
-		PerceiverPodPerceiverImage:                      "",
-		PerceiverPodPerceiverNamespaceFilter:            "",
-		PerceiverAnnotationIntervalSeconds:              0,
-		PerceiverDumpIntervalMinutes:                    0,
-		PerceiverServiceAccount:                         "",
-		PerceiverPort:                                   0,
-		ConfigMapName:                                   "",
-		SecretName:                                      "",
-		DefaultCPU:                                      "",
-		DefaultMem:                                      "",
-		ScannerCPU:                                      "",
-		ScannerMem:                                      "",
-		LogLevel:                                        "",
-		EnableMetrics:                                   false,
-		PrometheusName:                                  "",
-		PrometheusImage:                                 "",
-		PrometheusExpose:                                "",
-		PrometheusPort:                                  0,
-		EnableSkyfire:                                   false,
-		SkyfireName:                                     "",
-		SkyfireImage:                                    "",
-		SkyfirePort:                                     0,
-		SkyfirePrometheusPort:                           0,
-		SkyfireServiceAccount:                           "",
-		SkyfireHubClientTimeoutSeconds:                  0,
-		SkyfireHubDumpPauseSeconds:                      0,
-		SkyfireKubeDumpIntervalSeconds:                  0,
-		SkyfirePerceptorDumpIntervalSeconds:             0,
-		BlackduckExternalHostsFilePath:                  "",
-		BlackduckConnectionsEnvironmentVaraiableName:    "",
-		BlackduckTLSVerification:                        false,
-		BlackduckInitialCount:                           0,
-		BlackduckMaxCount:                               0,
-		BlackduckType:                                   "",
+		Spec: &opssightapi.OpsSightSpec{},
 	}
 }
 
@@ -179,7 +119,7 @@ func (ctl *Ctl) GetSpec() interface{} {
 func (ctl *Ctl) SetSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(opssightapi.OpsSightSpec)
 	if !ok {
-		return fmt.Errorf("Error setting OpsSight Spec")
+		return fmt.Errorf("error setting OpsSight spec")
 	}
 	ctl.Spec = &convertedSpec
 	return nil
@@ -198,7 +138,7 @@ const (
 	DisabledBlackDuckSpec string = "disabledBlackDuck"
 )
 
-// SwitchSpec switches the OpsSight's Spec to a different predefined spec
+// SwitchSpec switches OpsSight's Spec to a different predefined spec
 func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 	switch createOpsSightSpecType {
 	case EmptySpec:
@@ -216,47 +156,47 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 		ctl.Spec.Perceiver.EnablePodPerceiver = true
 		ctl.Spec.EnableMetrics = true
 	default:
-		return fmt.Errorf("OpsSight Spec Type %s is not valid", createOpsSightSpecType)
+		return fmt.Errorf("OpsSight spec type %s is not valid", createOpsSightSpecType)
 	}
 	return nil
 }
 
-// AddSpecFlags adds flags for the OpsSight's Spec to the command
+// AddSpecFlags adds flags for OpsSight's Spec to the command
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
-	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of the OpsSight Core")
-	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Expose the OpsSight Core model. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
-	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours the Percpetor waits between checking for scans")
-	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "opssight-core-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until the OpsSight Core stops checking for scans")
+	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of OpsSight's Core")
+	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Type of service for OpsSight's Core model [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours Perepetor waits between checking for scans")
+	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "opssight-core-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until OpsSight Core stops checking for scans")
 	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "opssight-core-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "Perceptor metrics pause in seconds")
 	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "opssight-core-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "OpsSight Core's unknown image pause in milliseconds")
-	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "opssight-core-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "OpsSight Core's timeout for Black Duck Scan Client in seconds")
-	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scanner-image", ctl.ScannerPodScannerImage, "Scanner Container's image")
-	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Scanner timeout for Black Duck Scan Client in seconds")
+	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "opssight-core-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "Seconds for OpsSight Core's timeout for Black Duck Scan Client")
+	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scanner-image", ctl.ScannerPodScannerImage, "Image URL of Scanner")
+	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Seconds before Scanner times out for Black Duck's Scan Client")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "image-getter-image", ctl.ScannerPodImageFacadeImage, "Image Getter Container's image")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "image-getter-secure-registries-file-path", ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "Absolute path to a file for secure docker registries credentials to pull the images for scan")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "image-getter-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of Image Getter's Image Puller - docker, skopeo")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "image-getter-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account for the Image Getter")
-	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Scan Containers")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in the Scanner Pod where images are stored for scanning")
-	cmd.Flags().BoolVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "Enables the Image Processor to discover images for scanning")
-	cmd.Flags().BoolVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "Enables the Pod Processor to discover Pods for scanning")
-	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverImage, "image-processor-image", ctl.PerceiverImagePerceiverImage, "Image of the Image Processor Container")
-	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverImage, "pod-processor-image", ctl.PerceiverPodPerceiverImage, "Image of the Pod Processor Container")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "image-getter-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of Image Getter's Image Puller [docker|skopeo]")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "image-getter-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account of Image Getter")
+	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Containers for scanning")
+	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in Scanner's pod where images are stored for scanning")
+	cmd.Flags().StringVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "If true, Image Processor discovers images for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning [true|false]")
+	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverImage, "image-processor-image", ctl.PerceiverImagePerceiverImage, "Image of Image Processor")
+	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverImage, "pod-processor-image", ctl.PerceiverPodPerceiverImage, "Image of Pod Processor")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
 	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processor-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
-	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processor-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes the Image Processor and Pod Processor wait between creating dumps of data/metrics")
-	cmd.Flags().StringVar(&ctl.DefaultCPU, "default-cpu", ctl.DefaultCPU, "CPU size for the OpsSight")
-	cmd.Flags().StringVar(&ctl.DefaultMem, "default-memory", ctl.DefaultMem, "Memory size for the OpsSight")
-	cmd.Flags().StringVar(&ctl.ScannerCPU, "scanner-cpu", ctl.ScannerCPU, "CPU size for the OpsSight's Scanner")
-	cmd.Flags().StringVar(&ctl.ScannerMem, "scanner-memory", ctl.ScannerMem, "Memory size for the OpsSight's Scanner")
-	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "Log-level for OpsSight's logs")
-	cmd.Flags().BoolVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "Enable recording of OpsSight's Prometheus Metrics")
-	cmd.Flags().StringVar(&ctl.PrometheusImage, "metrics-image", ctl.PrometheusImage, "Image for OpsSight's Prometheus Metrics")
-	cmd.Flags().IntVar(&ctl.PrometheusPort, "metrics-port", ctl.PrometheusPort, "Port for OpsSight's Prometheus Metrics")
-	cmd.Flags().StringVar(&ctl.PrometheusExpose, "metrics-expose", ctl.PrometheusExpose, "Expose the OpsSight's Prometheus Metrics. Possible values are NODEPORT/LOADBALANCER/OPENSHIFT")
+	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processor-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes Image Processor and Pod Processor wait between creating dumps of data/metrics")
+	cmd.Flags().StringVar(&ctl.DefaultCPU, "default-cpu", ctl.DefaultCPU, "CPU size of OpsSight")
+	cmd.Flags().StringVar(&ctl.DefaultMem, "default-memory", ctl.DefaultMem, "Memory size of OpsSight")
+	cmd.Flags().StringVar(&ctl.ScannerCPU, "scanner-cpu", ctl.ScannerCPU, "CPU size of OpsSight's Scanner")
+	cmd.Flags().StringVar(&ctl.ScannerMem, "scanner-memory", ctl.ScannerMem, "Memory size of OpsSight's Scanner")
+	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "Log level of OpsSight")
+	cmd.Flags().StringVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "If true, OpsSight records Prometheus Metrics [true|false]")
+	cmd.Flags().StringVar(&ctl.PrometheusImage, "metrics-image", ctl.PrometheusImage, "Image of OpsSight's Prometheus Metrics")
+	cmd.Flags().IntVar(&ctl.PrometheusPort, "metrics-port", ctl.PrometheusPort, "Port of OpsSight's Prometheus Metrics")
+	cmd.Flags().StringVar(&ctl.PrometheusExpose, "expose-metrics", ctl.PrometheusExpose, "Type of service of OpsSight's Prometheus Metrics [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.BlackduckExternalHostsFilePath, "blackduck-external-hosts-file-path", ctl.BlackduckExternalHostsFilePath, "Absolute path to a file containing a list of Black Duck External Hosts")
-	cmd.Flags().BoolVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "Perform TLS Verification for Black Duck")
+	cmd.Flags().StringVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "If true, OpsSight performs TLS Verification for Black Duck [true|false]")
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
@@ -281,7 +221,7 @@ type ExternalHostStructs struct {
 // SetFlag sets an OpsSights's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("Flag %s: CHANGED", f.Name)
+		log.Debugf("flag %s: CHANGED", f.Name)
 		switch f.Name {
 		case "opssight-core-image":
 			if ctl.Spec.Perceptor == nil {
@@ -393,12 +333,12 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if ctl.Spec.Perceiver == nil {
 				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
-			ctl.Spec.Perceiver.EnableImagePerceiver = ctl.PerceiverEnableImagePerceiver
+			ctl.Spec.Perceiver.EnableImagePerceiver = strings.ToUpper(ctl.PerceiverEnableImagePerceiver) == "TRUE"
 		case "enable-pod-processor":
 			if ctl.Spec.Perceiver == nil {
 				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
 			}
-			ctl.Spec.Perceiver.EnablePodPerceiver = ctl.PerceiverEnablePodPerceiver
+			ctl.Spec.Perceiver.EnablePodPerceiver = strings.ToUpper(ctl.PerceiverEnablePodPerceiver) == "TRUE"
 		case "image-processor-image":
 			if ctl.Spec.Perceiver == nil {
 				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
@@ -444,7 +384,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "log-level":
 			ctl.Spec.LogLevel = ctl.LogLevel
 		case "enable-metrics":
-			ctl.Spec.EnableMetrics = ctl.EnableMetrics
+			ctl.Spec.EnableMetrics = strings.ToUpper(ctl.EnableMetrics) == "TRUE"
 		case "metrics-image":
 			if ctl.Spec.Prometheus == nil {
 				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
@@ -455,7 +395,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
 			}
 			ctl.Spec.Prometheus.Port = ctl.PrometheusPort
-		case "metrics-expose":
+		case "expose-metrics":
 			if ctl.Spec.Prometheus == nil {
 				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
 			}
@@ -482,7 +422,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
 			}
-			ctl.Spec.Blackduck.TLSVerification = ctl.BlackduckTLSVerification
+			ctl.Spec.Blackduck.TLSVerification = strings.ToUpper(ctl.BlackduckTLSVerification) == "TRUE"
 		case "blackduck-initial-count":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
@@ -502,10 +442,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 			ctl.Spec.Blackduck.BlackduckSpec.Type = ctl.BlackduckType
 		default:
-			log.Debugf("Flag %s: Not Found", f.Name)
+			log.Debugf("flag %s: NOT FOUND", f.Name)
 		}
 	} else {
-		log.Debugf("Flag %s: UNCHANGED", f.Name)
+		log.Debugf("flag %s: UNCHANGED", f.Name)
 	}
 }
 

@@ -39,12 +39,12 @@ func NewApp(config *protoform.Config, kubeConfig *rest.Config) *App {
 	return &App{config: config, kubeConfig: kubeConfig}
 }
 
-// Blackduck will return a Blackduck
-func (a *App) Blackduck() *blackduck.Blackduck {
-	return blackduck.NewBlackduck(a.config, a.kubeConfig)
-}
-
 // Alert will return an Alert
 func (a *App) Alert() *alert.Alert {
 	return alert.NewAlert(a.config, a.kubeConfig)
+}
+
+// Blackduck will return a Blackduck
+func (a *App) Blackduck() *blackduck.Blackduck {
+	return blackduck.NewBlackduck(a.config, a.kubeConfig)
 }
