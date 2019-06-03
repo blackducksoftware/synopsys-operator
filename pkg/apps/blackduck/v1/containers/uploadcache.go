@@ -68,11 +68,12 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "uploadcache", Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
-			Volumes:          c.getUploadCacheVolumes(),
-			Containers:       []*util.Container{uploadCacheContainerConfig},
-			InitContainers:   initContainers,
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("uploadcache"),
+			Volumes:             c.getUploadCacheVolumes(),
+			Containers:          []*util.Container{uploadCacheContainerConfig},
+			InitContainers:      initContainers,
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("uploadcache"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("uploadcache"),
 		}, c.GetLabel("uploadcache"))
 }
 

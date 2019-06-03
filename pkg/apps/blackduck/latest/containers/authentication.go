@@ -74,11 +74,12 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "authentication", Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
-			Volumes:          c.getAuthenticationVolumes(),
-			Containers:       []*util.Container{hubAuthContainerConfig},
-			InitContainers:   initContainers,
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("authentication"),
+			Volumes:             c.getAuthenticationVolumes(),
+			Containers:          []*util.Container{hubAuthContainerConfig},
+			InitContainers:      initContainers,
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("authentication"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("authentication"),
 		}, c.GetLabel("authentication"))
 }
 

@@ -57,10 +57,11 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "documentation", Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
-			Volumes:          []*components.Volume{documentationEmptyDir},
-			Containers:       []*util.Container{documentationContainerConfig},
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("documentation"),
+			Volumes:             []*components.Volume{documentationEmptyDir},
+			Containers:          []*util.Container{documentationContainerConfig},
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("documentation"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("documentation"),
 		}, c.GetLabel("documentation"))
 }
 

@@ -90,10 +90,11 @@ func (c *Creater) GetScanDeployment(imageName string) (*components.ReplicationCo
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "scan", Replicas: c.hubContainerFlavor.ScanReplicas},
 		&util.PodConfig{
-			Volumes:          hubScanVolumes,
-			Containers:       []*util.Container{hubScanContainerConfig},
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("scan"),
+			Volumes:             hubScanVolumes,
+			Containers:          []*util.Container{hubScanContainerConfig},
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("scan"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("scan"),
 		}, c.GetLabel("scan"))
 }
 

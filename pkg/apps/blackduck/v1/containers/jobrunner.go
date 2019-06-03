@@ -74,9 +74,10 @@ func (c *Creater) GetJobRunnerDeployment(imageName string) (*components.Replicat
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "jobrunner", Replicas: c.hubContainerFlavor.JobRunnerReplicas},
 		&util.PodConfig{
-			Volumes:          jobRunnerVolumes,
-			Containers:       []*util.Container{jobRunnerContainerConfig},
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("jobrunner"),
+			Volumes:             jobRunnerVolumes,
+			Containers:          []*util.Container{jobRunnerContainerConfig},
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("jobrunner"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("jobrunner"),
 		}, c.GetLabel("jobrunner"))
 }
