@@ -892,10 +892,22 @@ func getBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
+// Base64Encode will return an encoded string using a URL-compatible base64 format
+func Base64Encode(data []byte) string {
+	return base64.URLEncoding.EncodeToString(data)
+}
+
+// Base64Decode will return a decoded string using a URL-compatible base64 format;
+// decoding may return an error, which you can check if you don’t already know the input to be well-formed.
+func Base64Decode(data string) (string, error) {
+	uDec, err := base64.URLEncoding.DecodeString(data)
+	return string(uDec), err
+}
+
 // RandomString will generate the random string
 func RandomString(n int) (string, error) {
 	b, err := getBytes(n)
-	return base64.URLEncoding.EncodeToString(b), err
+	return Base64Encode(b), err
 }
 
 // CreateServiceAccount creates a service account

@@ -51,10 +51,6 @@ var updateOpsSightCtl ResourceCtl
 // Update Comamnd Defaults
 var updateSynopsysOperatorImage = ""
 var updatePrometheusImage = ""
-var updateSecretAdminPassword = ""
-var updateSecretPostgresPassword = ""
-var updateSecretUserPassword = ""
-var updateSecretBlackduckPassword = ""
 var updateExposeUI = ""
 var updateExposePrometheusMetrics = ""
 var updateTerminationGracePeriodSeconds int64
@@ -113,22 +109,6 @@ var updateOperatorCmd = &cobra.Command{
 				return nil
 			}
 			newOperatorSpec.Image = updateSynopsysOperatorImage
-		}
-		if cmd.Flag("admin-password").Changed {
-			log.Debugf("updating admin password")
-			newOperatorSpec.AdminPassword = updateSecretAdminPassword
-		}
-		if cmd.Flag("postgres-password").Changed {
-			log.Debugf("updating postgres password")
-			newOperatorSpec.PostgresPassword = updateSecretPostgresPassword
-		}
-		if cmd.Flag("user-password").Changed {
-			log.Debugf("updating user password")
-			newOperatorSpec.UserPassword = updateSecretUserPassword
-		}
-		if cmd.Flag("blackduck-password").Changed {
-			log.Debugf("updating Black Duck password")
-			newOperatorSpec.BlackduckPassword = updateSecretBlackduckPassword
 		}
 		if cmd.Flag("expose-ui").Changed {
 			log.Debugf("updating expose ui")
@@ -863,10 +843,6 @@ func init() {
 	updateOperatorCmd.Flags().StringVarP(&updateSynopsysOperatorImage, "synopsys-operator-image", "i", updateSynopsysOperatorImage, "Synopsys Operator image URL")
 	updateOperatorCmd.Flags().StringVarP(&updateExposePrometheusMetrics, "expose-prometheus-metrics", "m", updateExposePrometheusMetrics, "Expose Synopsys Operator's prometheus metrics. possible values are [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "prometheus-image", "k", updatePrometheusImage, "Prometheus image URL")
-	updateOperatorCmd.Flags().StringVarP(&updateSecretAdminPassword, "admin-password", "a", updateSecretAdminPassword, "Postgres admin password")
-	updateOperatorCmd.Flags().StringVarP(&updateSecretPostgresPassword, "postgres-password", "p", updateSecretPostgresPassword, "Postgres password")
-	updateOperatorCmd.Flags().StringVarP(&updateSecretUserPassword, "user-password", "u", updateSecretUserPassword, "Postgres user password")
-	updateOperatorCmd.Flags().StringVarP(&updateSecretBlackduckPassword, "blackduck-password", "b", updateSecretBlackduckPassword, "Black Duck password for 'sysadmin' account")
 	updateOperatorCmd.Flags().Int64VarP(&updateOperatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", updateOperatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
 	updateOperatorCmd.Flags().Int64VarP(&updatePostgresRestartInMins, "postgres-restart-in-minutes", "n", updatePostgresRestartInMins, "Check for postgres restart in minutes")
 	updateOperatorCmd.Flags().Int64VarP(&updatePodWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", updatePodWaitTimeoutSeconds, "Wait for pod to be running in seconds")

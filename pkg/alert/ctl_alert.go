@@ -77,7 +77,7 @@ func (ctl *Ctl) SetSpec(spec interface{}) error {
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags() error {
+func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 	encryptPassLength := len(ctl.EncryptionPassword)
 	if encryptPassLength > 0 && encryptPassLength < 16 {
 		return fmt.Errorf("flag EncryptionPassword is %d characters. Must be 16 or more characters", encryptPassLength)

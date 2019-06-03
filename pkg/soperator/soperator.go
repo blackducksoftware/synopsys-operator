@@ -22,7 +22,6 @@ under the License.
 package soperator
 
 import (
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/juju/errors"
@@ -38,11 +37,6 @@ type SpecConfig struct {
 	Namespace                     string
 	Image                         string
 	Expose                        string
-	SecretType                    horizonapi.SecretType
-	AdminPassword                 string
-	PostgresPassword              string
-	UserPassword                  string
-	BlackduckPassword             string
 	OperatorTimeBombInSeconds     int64
 	DryRun                        bool
 	LogLevel                      string
@@ -59,19 +53,13 @@ type SpecConfig struct {
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, expose, adminPassword, postgresPassword, userPassword, blackduckpassword string,
-	secretType horizonapi.SecretType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
+func NewSOperator(namespace, synopsysOperatorImage, expose string, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
 	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
 	kubeClient *kubernetes.Clientset, certificate string, certificateKey string) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,
 		Expose:                        expose,
-		SecretType:                    secretType,
-		AdminPassword:                 adminPassword,
-		PostgresPassword:              postgresPassword,
-		UserPassword:                  userPassword,
-		BlackduckPassword:             blackduckpassword,
 		OperatorTimeBombInSeconds:     operatorTimeBombInSeconds,
 		DryRun:                        dryRun,
 		LogLevel:                      logLevel,

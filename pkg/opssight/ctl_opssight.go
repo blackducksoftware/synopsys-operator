@@ -97,7 +97,7 @@ type Ctl struct {
 	BlackduckExternalHostsFilePath                  string
 	BlackduckConnectionsEnvironmentVaraiableName    string
 	BlackduckTLSVerification                        string
-	BlackduckPasswordEnvVar                         string
+	BlackduckPassword                               string
 	BlackduckInitialCount                           int
 	BlackduckMaxCount                               int
 	BlackduckType                                   string
@@ -126,11 +126,11 @@ func (ctl *Ctl) SetSpec(spec interface{}) error {
 }
 
 // CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags() error {
+func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 	return nil
 }
 
-// Constants for Default Specs
+// Constants
 const (
 	EmptySpec             string = "empty"
 	UpstreamSpec          string = "upstream"
@@ -200,6 +200,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
+	cmd.Flags().StringVar(&ctl.BlackduckPassword, "blackduck-password", ctl.BlackduckPassword, "Password to use for all internal Blackduck `sysadmin` account")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -441,6 +442,14 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Blackduck.BlackduckSpec = &blackduckapi.BlackduckSpec{}
 			}
 			ctl.Spec.Blackduck.BlackduckSpec.Type = ctl.BlackduckType
+		case "blackduck-password":
+			if ctl.Spec.Blackduck == nil {
+				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
+			}
+			if ctl.Spec.Blackduck.BlackduckSpec == nil {
+				ctl.Spec.Blackduck.BlackduckSpec = &blackduckapi.BlackduckSpec{}
+			}
+			ctl.Spec.Blackduck.BlackduckPassword = crddefaults.Base64Encode([]byte(ctl.BlackduckPassword))
 		default:
 			log.Debugf("flag %s: NOT FOUND", f.Name)
 		}

@@ -46,11 +46,6 @@ var threadiness = 5
 var postgresRestartInMins int64 = 10
 var podWaitTimeoutSeconds int64 = 600
 var resyncIntervalInSeconds int64 = 120
-var deploySecretType = "Opaque"
-var adminPassword = "blackduck"
-var postgresPassword = "blackduck"
-var userPassword = "blackduck"
-var blackDuckPassword = "blackduck"
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
@@ -61,13 +56,6 @@ var deployCmd = &cobra.Command{
 		// Check number of arguments
 		if len(args) > 1 {
 			return fmt.Errorf("this command takes up to 1 argument")
-		}
-		// Check the Secret Type
-		var err error
-		secretType, err = operatorutil.SecretTypeNameToHorizon(deploySecretType)
-		if err != nil {
-			log.Errorf("failed to convert secret type: %s", err)
-			return nil
 		}
 		return nil
 	},
@@ -117,9 +105,9 @@ var deployCmd = &cobra.Command{
 		}
 
 		// Deploy Synopsys Operator
-		log.Debugf("creating Synopsys Operator components")
-		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, adminPassword, postgresPassword,
-			userPassword, blackDuckPassword, secretType, operatorTimeBombInSeconds, strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins,
+		log.Debugf("creating Synopsys-Operator components")
+		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI,
+			operatorTimeBombInSeconds, strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins,
 			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key)
 
 		err = soperatorSpec.UpdateSOperatorComponents()
@@ -148,11 +136,6 @@ func init() {
 	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", DefaultOperatorImage, "Image URL of Synopsys Operator")
 	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "m", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "k", DefaultMetricsImage, "Image URL of Synopsys Operator's metrics pod")
-	deployCmd.Flags().StringVar(&deploySecretType, "secret-type", deploySecretType, "Type of kubernetes secret to store the postgres and Black Duck credentials")
-	deployCmd.Flags().StringVarP(&adminPassword, "admin-password", "a", adminPassword, "Postgres admin password")
-	deployCmd.Flags().StringVarP(&postgresPassword, "postgres-password", "p", postgresPassword, "Postgres password")
-	deployCmd.Flags().StringVarP(&userPassword, "user-password", "u", userPassword, "Postgres user password")
-	deployCmd.Flags().StringVarP(&blackDuckPassword, "blackduck-password", "b", blackDuckPassword, "Black Duck password of 'sysadmin' account")
 	deployCmd.Flags().Int64VarP(&operatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", operatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
 	deployCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "n", postgresRestartInMins, "Minutes to check for restarting postgres")
 	deployCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")

@@ -25,7 +25,6 @@ package opssight
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -187,9 +186,15 @@ func (p *Updater) updateOpsSight(obj interface{}) error {
 // update will list all Black Ducks in the cluster, and send them to opssight as scan targets.
 func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 	hubType := opssight.Spec.Blackduck.BlackduckSpec.Type
-	allHubs := p.getAllHubs(hubType)
 
-	err := p.updateOpsSightCRD(&opssight.Spec, allHubs)
+	blackduckPassword, err := util.Base64Decode(opssight.Spec.Blackduck.BlackduckPassword)
+	if err != nil {
+		return errors.Annotate(err, "unable to decode blackduckPassword")
+	}
+
+	allHubs := p.getAllHubs(hubType, blackduckPassword)
+
+	err = p.updateOpsSightCRD(&opssight.Spec, allHubs)
 	if err != nil {
 		return errors.Annotate(err, "unable to update opssight CRD")
 	}
@@ -197,13 +202,12 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 }
 
 // getAllHubs get only the internal Black Duck instances from the cluster
-func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
+func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssightapi.Host {
 	hosts := []*opssightapi.Host{}
 	hubsList, err := util.ListHubs(p.hubClient, p.config.Namespace)
 	if err != nil {
 		log.Errorf("unable to list blackducks due to %+v", err)
 	}
-	blackduckPassword := p.getDefaultPassword()
 	for _, hub := range hubsList.Items {
 		if strings.EqualFold(hub.Spec.Type, hubType) {
 			var concurrentScanLimit int
@@ -223,23 +227,6 @@ func (p *Updater) getAllHubs(hubType string) []*opssightapi.Host {
 	}
 	log.Debugf("total no of Black Duck's for type %s is %d", hubType, len(hosts))
 	return hosts
-}
-
-// getDefaultPassword get the default password for the hub
-func (p *Updater) getDefaultPassword() string {
-	var hubPassword string
-	var err error
-	for dbInitTry := 0; dbInitTry < math.MaxInt32; dbInitTry++ {
-		// get the secret from the default operator namespace, then copy it into the hub namespace.
-		hubPassword, err = GetDefaultPasswords(p.kubeClient, p.config.Namespace)
-		if err == nil {
-			break
-		} else {
-			log.Infof("wasn't able to get hub password, sleeping 5 seconds.  try = %v", dbInitTry)
-			time.Sleep(5 * time.Second)
-		}
-	}
-	return hubPassword
 }
 
 // updateOpsSightCRD will update the opssight CRD

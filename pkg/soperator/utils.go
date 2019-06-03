@@ -125,17 +125,7 @@ func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Synopsys Operator secret: %s", err)
 	}
-	currKubeSecret := currSecret.Type
-	currHorizonSecretType, err := operatorutil.KubeSecretTypeToHorizon(currKubeSecret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Synopsys Operator spec: %s", err)
-	}
-	sOperatorSpec.SecretType = currHorizonSecretType
 	currKubeSecretData := currSecret.Data
-	sOperatorSpec.AdminPassword = string(currKubeSecretData["ADMIN_PASSWORD"])
-	sOperatorSpec.PostgresPassword = string(currKubeSecretData["POSTGRES_PASSWORD"])
-	sOperatorSpec.UserPassword = string(currKubeSecretData["USER_PASSWORD"])
-	sOperatorSpec.BlackduckPassword = string(currKubeSecretData["HUB_PASSWORD"])
 	sealKey := string(currKubeSecretData["SEAL_KEY"])
 	if len(sealKey) == 0 {
 		sealKey, err = operatorutil.GetRandomString(32)
