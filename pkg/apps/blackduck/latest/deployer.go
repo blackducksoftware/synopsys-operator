@@ -48,7 +48,7 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 
 	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, hubContainerFlavor, false)
 	// Get Db creds
-	var adminPassword, userPassword string
+	var adminPassword, userPassword, postgresPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
 
 		adminPassword, err = util.Base64Decode(blackduck.Spec.ExternalPostgres.PostgresAdminPassword)
@@ -73,6 +73,11 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 			return nil, fmt.Errorf("%v: unable to decode userPassword due to: %+v", blackduck.Spec.Namespace, err)
 		}
 
+		postgresPassword, err = util.Base64Decode(blackduck.Spec.PostgresPassword)
+		if err != nil {
+			return nil, fmt.Errorf("%v: unable to decode postgresPassword due to: %+v", blackduck.Spec.Namespace, err)
+		}
+
 	}
 
 	postgres := containerCreater.GetPostgres()
@@ -85,7 +90,7 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 		componentList.Services = append(componentList.Services, postgres.GetPostgresService())
 	}
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetPostgresConfigmap())
-	componentList.Secrets = append(componentList.Secrets, containerCreater.GetPostgresSecret(adminPassword, userPassword))
+	componentList.Secrets = append(componentList.Secrets, containerCreater.GetPostgresSecret(adminPassword, userPassword, postgresPassword))
 
 	return componentList, nil
 }
