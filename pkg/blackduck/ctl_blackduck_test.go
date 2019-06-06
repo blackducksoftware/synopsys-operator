@@ -152,6 +152,8 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.AdminPassword, "admin-password", ctl.AdminPassword, "'admin' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "'postgres' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.UserPassword, "user-password", ctl.UserPassword, "'user' password of Postgres database")
+	cmd.Flags().BoolVar(&ctl.EnableBinaryAnalysis, "enable-binary-analysis", ctl.EnableBinaryAnalysis, "If true, enable binary analysis")
+	cmd.Flags().BoolVar(&ctl.EnableSourceCodeUpload, "enable-source-code-upload", ctl.EnableSourceCodeUpload, "If true, enable source code upload")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
@@ -168,6 +170,10 @@ func TestSetChangedFlags(t *testing.T) {
 	actualCtl.SetChangedFlags(cmd.Flags())
 
 	expCtl := NewBlackDuckCtl()
+	expCtl.Spec.Environs = []string{
+		"USE_BINARY_UPLOADS:0",
+		"ENABLE_SOURCE_UPLOADS:0",
+	}
 
 	assert.Equal(expCtl.Spec, actualCtl.Spec)
 
@@ -459,6 +465,64 @@ func TestSetFlag(t *testing.T) {
 				LicenseKey: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{LicenseKey: "changed"},
+		},
+		// case : set binary analysis to disabled by default
+		{
+			flagName:   "enable-binary-analysis",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec: &blackduckv1.BlackduckSpec{Environs: []string{}},
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
+		},
+		// case : set binary analysis to enabled
+		{
+			flagName:   "enable-binary-analysis",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                 &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
+				EnableBinaryAnalysis: true,
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
+		},
+		// case : set binary analysis to disabled
+		{
+			flagName:   "enable-binary-analysis",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                 &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
+				EnableBinaryAnalysis: false,
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
+		},
+		// case : set source code upload to disabled by default
+		{
+			flagName:   "enable-source-code-upload",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec: &blackduckv1.BlackduckSpec{Environs: []string{}},
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:0"}},
+		},
+		// case : set source code upload to enabled
+		{
+			flagName:   "enable-source-code-upload",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                   &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:0"}},
+				EnableSourceCodeUpload: true,
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:1"}},
+		},
+		// case : set source code upload to disabled
+		{
+			flagName:   "enable-source-code-upload",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                   &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:1"}},
+				EnableSourceCodeUpload: false,
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:0"}},
 		},
 	}
 

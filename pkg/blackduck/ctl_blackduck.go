@@ -73,6 +73,8 @@ type Ctl struct {
 	AdminPassword                 string
 	PostgresPassword              string
 	UserPassword                  string
+	EnableBinaryAnalysis          bool
+	EnableSourceCodeUpload        bool
 }
 
 // NewBlackDuckCtl creates a new Ctl struct
@@ -217,6 +219,8 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.AdminPassword, "admin-password", ctl.AdminPassword, "'admin' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "'postgres' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.UserPassword, "user-password", ctl.UserPassword, "'user' password of Postgres database")
+	cmd.Flags().BoolVar(&ctl.EnableBinaryAnalysis, "enable-binary-analysis", ctl.EnableBinaryAnalysis, "If true, enable binary analysis")
+	cmd.Flags().BoolVar(&ctl.EnableSourceCodeUpload, "enable-source-code-upload", ctl.EnableSourceCodeUpload, "If true, enable source code upload")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
@@ -225,6 +229,10 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 // SetChangedFlags visits every flag and calls setFlag to update
 // the resource's spec
 func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
+	// Preset Environs
+	ctl.Spec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:0"}, ctl.Spec.Environs)
+	ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:0"}, ctl.Spec.Environs)
+	// Update spec fields with flags
 	flagset.VisitAll(ctl.SetFlag)
 }
 
@@ -372,6 +380,18 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.PostgresPassword = crddefaults.Base64Encode([]byte(ctl.PostgresPassword))
 		case "user-password":
 			ctl.Spec.UserPassword = crddefaults.Base64Encode([]byte(ctl.UserPassword))
+		case "enable-binary-analysis":
+			if ctl.EnableBinaryAnalysis {
+				ctl.Spec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:1"}, ctl.Spec.Environs)
+			} else {
+				ctl.Spec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:0"}, ctl.Spec.Environs)
+			}
+		case "enable-source-code-upload":
+			if ctl.EnableSourceCodeUpload {
+				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:1"}, ctl.Spec.Environs)
+			} else {
+				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:0"}, ctl.Spec.Environs)
+			}
 		default:
 			log.Debugf("flag %s: NOT FOUND", f.Name)
 		}
