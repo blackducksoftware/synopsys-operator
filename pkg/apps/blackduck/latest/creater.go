@@ -30,9 +30,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	bdutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
@@ -41,7 +43,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -133,7 +134,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// Get non postgres components
-		cpList, err := hc.getComponents(blackduck)
+		cpList, err := hc.GetComponents(blackduck)
 		if err != nil {
 			return err
 		}

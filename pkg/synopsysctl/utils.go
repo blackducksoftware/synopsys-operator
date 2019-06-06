@@ -25,11 +25,15 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"reflect"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -210,5 +214,48 @@ func RunKubeEditorCmd(restConfig *rest.Config, kube bool, openshift bool, args .
 		return err
 	}
 	//time.Sleep(1 * time.Second) TODO why did Jay put this here???
+	return nil
+}
+
+func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeMock bool, mockKubeFormat string) error {
+	if mock {
+		log.Debugf("running mock mode")
+		err := PrintResource(resource, mockFormat, false)
+		if err != nil {
+			return fmt.Errorf("failed to print resource: %s", err)
+		}
+	} else if kubeMock {
+		log.Debugf("running kube mock mode")
+		err := PrintResource(resource, mockKubeFormat, true)
+		if err != nil {
+			return fmt.Errorf("failed to print resource: %s", err)
+		}
+	} else {
+		switch reflect.TypeOf(resource) {
+		case reflect.TypeOf(alertapi.Alert{}):
+			alt := resource.(alertapi.Alert)
+			_, err := operatorutil.UpdateAlert(alertClient, alt.Name, &alt)
+			if err != nil {
+				log.Errorf("error updating the %s Alert instance due to %+v", alt.Name, err)
+				return nil
+			}
+		case reflect.TypeOf(blackduckapi.Blackduck{}):
+			bd := resource.(blackduckapi.Blackduck)
+			_, err := operatorutil.UpdateBlackduck(blackDuckClient, bd.Name, &bd)
+			if err != nil {
+				log.Errorf("error updating the %s Black Duck instance due to %+v", bd.Name, err)
+				return nil
+			}
+		case reflect.TypeOf(opssightapi.OpsSight{}):
+			ops := resource.(opssightapi.OpsSight)
+			_, err := operatorutil.UpdateOpsSight(opsSightClient, ops.Name, &ops)
+			if err != nil {
+				log.Errorf("error updating the %s OpsSight instance due to %+v", ops.Name, err)
+				return nil
+			}
+		default:
+			return fmt.Errorf("type %+v is not supported for updating", reflect.TypeOf(resource))
+		}
+	}
 	return nil
 }

@@ -24,15 +24,11 @@ package synopsysctl
 import (
 	"fmt"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 )
-
-// Deploy Command Global Variables
-var secretType horizonapi.SecretType
 
 // destroyCmd removes Synopsys Operator from the cluster
 var destroyCmd = &cobra.Command{

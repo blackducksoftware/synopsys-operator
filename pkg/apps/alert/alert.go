@@ -27,6 +27,7 @@ import (
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	latestalert "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -144,4 +145,13 @@ func (a *Alert) Delete(namespace string) error {
 		time.Sleep(retryWait * time.Second)
 	}
 	return nil
+}
+
+// GetComponents gets the necessary creater and returns the Alert's components
+func (a *Alert) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
+	creater, err := a.getCreater(alert.Spec.Version) // get Creater for the Alert Version
+	if err != nil {
+		return nil, err
+	}
+	return creater.GetComponents(alert)
 }

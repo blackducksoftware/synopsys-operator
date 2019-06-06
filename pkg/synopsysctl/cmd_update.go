@@ -61,6 +61,10 @@ var updatePostgresRestartInMins int64
 var updatePodWaitTimeoutSeconds int64
 var updateResyncIntervalInSeconds int64
 
+// Flags for using mock mode - doesn't deploy
+var updateMockFormat string
+var updateMockKubeFormat string
+
 // updateCmd provides functionality to update/upgrade features of
 // Synopsys resources
 var updateCmd = &cobra.Command{
@@ -93,7 +97,7 @@ var updateOperatorCmd = &cobra.Command{
 		log.Infof("updating Synopsys Operator in '%s' namespace...", namespace)
 
 		// Create new Synopsys Operator SpecConfig
-		oldOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespace)
+		oldOperatorSpec, err := soperator.GetOldOperatorSpec(kubeClient, namespace)
 		if err != nil {
 			log.Errorf("unable to update Synopsys Operator because %+v", err)
 			return nil
@@ -150,56 +154,70 @@ var updateOperatorCmd = &cobra.Command{
 			return nil
 		}
 
-		// update Synopsys Operator
-		err = newOperatorSpec.UpdateSynopsysOperator(restconfig, kubeClient, namespace, blackDuckClient, opsSightClient, alertClient, oldOperatorSpec)
-		if err != nil {
-			log.Errorf("unable to update Synopsys Operator because %+v", err)
-			return nil
-		}
+		if cmd.LocalFlags().Lookup("mock").Changed {
+			log.Debugf("running mock mode")
+			err := PrintResource(newOperatorSpec, updateMockFormat, false)
+			if err != nil {
+				log.Errorf("%s", err)
+			}
+		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+			log.Debugf("running kube mock mode")
+			err := PrintResource(newOperatorSpec, updateMockKubeFormat, true)
+			if err != nil {
+				log.Errorf("%s", err)
+			}
+		} else {
+			sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
+			// update Synopsys Operator
+			err = sOperatorCreater.EnsureSynopsysOperator(namespace, blackDuckClient, opsSightClient, alertClient, oldOperatorSpec, &newOperatorSpec)
+			if err != nil {
+				log.Errorf("unable to update the synopsys operator because %+v", err)
+				return nil
+			}
 
-		log.Debugf("updating Prometheus in namespace %s", namespace)
-		// Create new Prometheus SpecConfig
-		oldPrometheusSpec, err := soperator.GetOldPrometheusSpec(restconfig, kubeClient, namespace)
-		if err != nil {
-			log.Errorf("error in updating the Prometheus because %+v", err)
-			return nil
-		}
+			log.Debugf("updating Prometheus in namespace %s", namespace)
+			// Create new Prometheus SpecConfig
+			oldPrometheusSpec, err := soperator.GetOldPrometheusSpec(restconfig, kubeClient, namespace)
+			if err != nil {
+				log.Errorf("error in updating the prometheus because %+v", err)
+				return nil
+			}
 
-		// check for changes
-		newPrometheusSpec := soperator.PrometheusSpecConfig{}
-		if cmd.Flag("prometheus-image").Changed {
-			log.Debugf("updating PrometheusImage to %s", updatePrometheusImage)
-			newPrometheusSpec.Image = updatePrometheusImage
-		}
-		if cmd.Flag("expose-prometheus-metrics").Changed {
-			log.Debugf("updating expose Prometheus metrics")
-			newPrometheusSpec.Expose = updateExposePrometheusMetrics
-		}
+			// check for changes
+			newPrometheusSpec := soperator.PrometheusSpecConfig{}
+			if cmd.Flag("prometheus-image").Changed {
+				log.Debugf("updating PrometheusImage to %s", updatePrometheusImage)
+				newPrometheusSpec.Image = updatePrometheusImage
+			}
+			if cmd.Flag("expose-prometheus-metrics").Changed {
+				log.Debugf("updating expose prometheus metrics")
+				newPrometheusSpec.Expose = updateExposePrometheusMetrics
+			}
 
-		// merge old and new data
-		err = mergo.Merge(&newPrometheusSpec, oldPrometheusSpec)
-		if err != nil {
-			log.Errorf("unable to merge old and new Prometheus info because %+v", err)
-			return nil
-		}
+			// merge old and new data
+			err = mergo.Merge(&newPrometheusSpec, oldPrometheusSpec)
+			if err != nil {
+				log.Errorf("unable to merge old and new prometheus info because %+v", err)
+				return nil
+			}
 
-		// update Prometheus
-		err = newPrometheusSpec.UpdatePrometheus()
-		if err != nil {
-			log.Errorf("unable to update Prometheus because %+v", err)
-			return nil
-		}
+			// update prometheus
+			err = sOperatorCreater.UpdatePrometheus(&newPrometheusSpec)
+			if err != nil {
+				log.Errorf("unable to update Prometheus because %+v", err)
+				return nil
+			}
 
-		log.Infof("successfully updated Synopsys Operator in '%s' namespace", namespace)
+			log.Infof("successfully updated the synopsys operator in '%s' namespace", namespace)
+		}
 		return nil
 	},
 }
 
 // updateAlertCmd lets the user update an Alert Instance
 var updateAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE",
-	Example: "synopsysctl update alert altnamespace --port 80",
-	Short:   "Describe an instance of Alert",
+	Use:   "alert NAMESPACE",
+	Short: "Describe an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -211,7 +229,7 @@ var updateAlertCmd = &cobra.Command{
 
 		log.Infof("updating Alert %s instance...", alertNamespace)
 
-		// Get Alert
+		// Get the Alert
 		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertNamespace)
 		if err != nil {
 			log.Errorf("error getting an Alert %s instance due to %+v", alertNamespace, err)
@@ -240,9 +258,9 @@ var updateAlertCmd = &cobra.Command{
 			newAlert := *currAlert //make copy
 			newAlert.Spec = newSpec
 			// Update Alert
-			_, err = operatorutil.UpdateAlert(alertClient, newAlert.Spec.Namespace, &newAlert)
+			err = ctlUpdateResource(newAlert, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating the %s Alert instance due to %+v", alertNamespace, err)
+				log.Errorf("failed to update Alert: %s", err)
 				return nil
 			}
 			log.Infof("successfully updated the '%s' Alert instance", alertNamespace)
@@ -295,9 +313,9 @@ var updateBlackDuckCmd = &cobra.Command{
 			newBlackDuck := *currBlackDuck //make copy
 			newBlackDuck.Spec = newSpec
 			// Update Black Duck
-			_, err = operatorutil.UpdateBlackduck(blackDuckClient, newBlackDuck.Spec.Namespace, &newBlackDuck)
+			err = ctlUpdateResource(newBlackDuck, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating the %s Black Duck instance due to %+v", blackDuckNamespace, err)
+				log.Errorf("failed to update Black Duck: %s", err)
 				return nil
 			}
 			log.Infof("successfully updated the '%s' Black Duck instance", blackDuckNamespace)
@@ -377,10 +395,18 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			}
 			secret.Data["SEAL_KEY"] = []byte(newSealKey)
 
-			err = operatorutil.UpdateSecret(kubeClient, operatorNamespace, secret)
-			if err != nil {
-				log.Errorf("unable to update Synopsys Operator blackduck-secret in %s namespace because %+v", operatorNamespace, err)
-				return nil
+			if cmd.LocalFlags().Lookup("mock").Changed {
+				log.Debugf("running mock mode")
+				PrintComponent(secret, updateMockFormat)
+			} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+				log.Debugf("running kube mock mode")
+				PrintComponent(secret, updateMockKubeFormat)
+			} else {
+				err = operatorutil.UpdateSecret(kubeClient, operatorNamespace, secret)
+				if err != nil {
+					log.Errorf("unable to update the Synopsys Operator blackduck-secret in %s namespace because %+v", operatorNamespace, err)
+					return nil
+				}
 			}
 		}
 		log.Infof("successfully updated Black Duck %s's Root Key", blackDuckNamespace)
@@ -435,9 +461,9 @@ var updateBlackDuckAddPVCCmd = &cobra.Command{
 			}
 			currBlackDuck.Spec.PVC = append(currBlackDuck.Spec.PVC, newPVC)
 			// Update Black Duck with PVC
-			_, err = operatorutil.UpdateBlackduck(blackDuckClient, blackDuckNamespace, currBlackDuck)
+			err = ctlUpdateResource(currBlackDuck, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating the %s Black Duck instance due to %+v", blackDuckNamespace, err)
+				log.Errorf("failed to update Black Duck: %s", err)
 				return nil
 			}
 		}
@@ -485,9 +511,9 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 			// Merge Environ to Spec
 			currBlackDuck.Spec.Environs = operatorutil.MergeEnvSlices(strings.Split(environ, ","), currBlackDuck.Spec.Environs)
 			// Update Black Duck with Environ
-			_, err = operatorutil.UpdateBlackduck(blackDuckClient, blackDuckNamespace, currBlackDuck)
+			err = ctlUpdateResource(currBlackDuck, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating the %s Black Duck instance due to %+v", blackDuckNamespace, err)
+				log.Errorf("failed to update Black Duck: %s", err)
 				return nil
 			}
 		}
@@ -535,9 +561,9 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 			// Add Registry to Spec
 			currBlackDuck.Spec.ImageRegistries = append(currBlackDuck.Spec.ImageRegistries, registry)
 			// Update Black Duck with Environ
-			_, err = operatorutil.UpdateBlackduck(blackDuckClient, blackDuckNamespace, currBlackDuck)
+			err = ctlUpdateResource(currBlackDuck, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating the %s Black Duck instance due to %+v", blackDuckNamespace, err)
+				log.Errorf("failed to update Black Duck: %s", err)
 				return nil
 			}
 		}
@@ -593,9 +619,9 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 			}
 			currBlackDuck.Spec.ImageUIDMap[uidKey] = intUIDVal
 			// Update Black Duck with UID mapping
-			_, err = operatorutil.UpdateBlackduck(blackDuckClient, blackDuckNamespace, currBlackDuck)
+			err = ctlUpdateResource(currBlackDuck, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating the %s Black Duck instance due to %+v", blackDuckNamespace, err)
+				log.Errorf("failed to update Black Duck: %s", err)
 				return nil
 			}
 		}
@@ -641,9 +667,9 @@ var updateOpsSightCmd = &cobra.Command{
 			newOpsSight := *currOpsSight //make copy
 			newOpsSight.Spec = newSpec
 			// Update OpsSight
-			_, err = operatorutil.UpdateOpsSight(opsSightClient, newOpsSight.Spec.Namespace, &newOpsSight)
+			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating OpsSight: %s", err)
+				log.Errorf("failed to update OpsSight: %s", err)
 				return nil
 			}
 			log.Infof("successfully updated OpsSight: '%s'", opsSightNamespace)
@@ -684,6 +710,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 			return nil
 		}
 		if canUpdate {
+			newOpsSight := *currOpsSight //make copy
 			// Update the Spec with new Image
 			switch strings.ToUpper(componentName) {
 			case "OPSSIGHTCORE":
@@ -702,9 +729,9 @@ var updateOpsSightImageCmd = &cobra.Command{
 				return fmt.Errorf("'%s' is not a valid component", componentName)
 			}
 			// Update OpsSight with New Image
-			_, err = operatorutil.UpdateOpsSight(opsSightClient, opsSightNamespace, currOpsSight)
+			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating OpsSight: %s", err)
+				log.Errorf("failed to update OpsSight: %s", err)
 				return nil
 			}
 			log.Infof("successfully updated OpsSight %s's Image", opsSightNamespace)
@@ -755,6 +782,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 			return nil
 		}
 		if canUpdate {
+			newOpsSight := *currOpsSight //make copy
 			// Add External Host to Spec
 			newHost := opssightapi.Host{
 				Scheme:              hostScheme,
@@ -764,11 +792,11 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 				Password:            hostPassword,
 				ConcurrentScanLimit: int(hostScanLimit),
 			}
-			currOpsSight.Spec.Blackduck.ExternalHosts = append(currOpsSight.Spec.Blackduck.ExternalHosts, &newHost)
+			newOpsSight.Spec.Blackduck.ExternalHosts = append(newOpsSight.Spec.Blackduck.ExternalHosts, &newHost)
 			// Update OpsSight with External Host
-			_, err = operatorutil.UpdateOpsSight(opsSightClient, opsSightNamespace, currOpsSight)
+			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error updating OpsSight: %s", err)
+				log.Errorf("failed to update OpsSight: %s", err)
 				return nil
 			}
 			log.Infof("successfully updated OpsSight %s's External Host", opsSightNamespace)
@@ -811,17 +839,18 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 			return nil
 		}
 		if canUpdate {
+			newOpsSight := *currOpsSight //make copy
 			// Add Internal Registry to Spec
 			newReg := opssightapi.RegistryAuth{
 				URL:      regURL,
 				User:     regUser,
 				Password: regPass,
 			}
-			currOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries = append(currOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
+			newOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries = append(newOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
 			// Update OpsSight with Internal Registry
-			_, err = operatorutil.UpdateOpsSight(opsSightClient, opsSightNamespace, currOpsSight)
+			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, updateMockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, updateMockKubeFormat)
 			if err != nil {
-				log.Errorf("error adding Internal Registry with updating OpsSight: %s", err)
+				log.Errorf("failed to update OpsSight: %s", err)
 				return nil
 			}
 			log.Infof("successfully updated OpsSight %s's Registry", opsSightNamespace)
@@ -839,24 +868,31 @@ func init() {
 	rootCmd.AddCommand(updateCmd)
 
 	// Add Operator Commands
-	updateOperatorCmd.Flags().StringVarP(&updateExposeUI, "expose-ui", "e", updateExposeUI, "Expose Synopsys Operator's user interface. possible values are [NODEPORT|LOADBALANCER|OPENSHIFT]")
-	updateOperatorCmd.Flags().StringVarP(&updateSynopsysOperatorImage, "synopsys-operator-image", "i", updateSynopsysOperatorImage, "Synopsys Operator image URL")
-	updateOperatorCmd.Flags().StringVarP(&updateExposePrometheusMetrics, "expose-prometheus-metrics", "m", updateExposePrometheusMetrics, "Expose Synopsys Operator's prometheus metrics. possible values are [NODEPORT|LOADBALANCER|OPENSHIFT]")
-	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "prometheus-image", "k", updatePrometheusImage, "Prometheus image URL")
-	updateOperatorCmd.Flags().Int64VarP(&updateOperatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", updateOperatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
-	updateOperatorCmd.Flags().Int64VarP(&updatePostgresRestartInMins, "postgres-restart-in-minutes", "n", updatePostgresRestartInMins, "Check for postgres restart in minutes")
-	updateOperatorCmd.Flags().Int64VarP(&updatePodWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", updatePodWaitTimeoutSeconds, "Wait for pod to be running in seconds")
-	updateOperatorCmd.Flags().Int64VarP(&updateResyncIntervalInSeconds, "resync-interval-in-seconds", "r", updateResyncIntervalInSeconds, "Custom resources resync time period in seconds")
+	updateOperatorCmd.Flags().StringVarP(&updateExposeUI, "expose-ui", "e", updateExposeUI, "Service type to expose Synopsys Operator's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	updateOperatorCmd.Flags().StringVarP(&updateSynopsysOperatorImage, "synopsys-operator-image", "i", updateSynopsysOperatorImage, "Image URL of Synopsys Operator")
+	updateOperatorCmd.Flags().StringVarP(&updateExposePrometheusMetrics, "expose-metrics", "x", updateExposePrometheusMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	updateOperatorCmd.Flags().StringVarP(&updatePrometheusImage, "metrics-image", "m", updatePrometheusImage, "Image URL of Synopsys Operator's metrics pod")
+	updateOperatorCmd.Flags().Int64VarP(&updateOperatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "t", updateOperatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
+	updateOperatorCmd.Flags().Int64VarP(&updatePostgresRestartInMins, "postgres-restart-in-minutes", "n", updatePostgresRestartInMins, "Minutes to check for restarting postgres")
+	updateOperatorCmd.Flags().Int64VarP(&updatePodWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", updatePodWaitTimeoutSeconds, "Seconds to wait for pods to be running")
+	updateOperatorCmd.Flags().Int64VarP(&updateResyncIntervalInSeconds, "resync-interval-in-seconds", "r", updateResyncIntervalInSeconds, "Seconds for resyncing custom resources")
 	updateOperatorCmd.Flags().Int64VarP(&updateTerminationGracePeriodSeconds, "postgres-termination-grace-period", "g", updateTerminationGracePeriodSeconds, "Termination grace period in seconds for shutting down postgres")
 	updateOperatorCmd.Flags().StringVarP(&updateLogLevel, "log-level", "l", updateLogLevel, "Log level of Synopsys Operator")
 	updateOperatorCmd.Flags().IntVarP(&updateThreadiness, "no-of-threads", "c", updateThreadiness, "Number of threads to process the custom resources")
+	updateOperatorCmd.Flags().StringVarP(&updateMockFormat, "mock", "o", updateMockFormat, "Prints the Synopsys Operator spec in the specified format instead of creating it [json|yaml]")
+	updateOperatorCmd.Flags().StringVarP(&updateMockKubeFormat, "mock-kube", "k", updateMockKubeFormat, "Prints the Synopsys Operator's kubernetes resource specs in the specified format instead of creating it [json|yaml]")
+
 	updateCmd.AddCommand(updateOperatorCmd)
 
 	// Add Alert Commands
+	updateAlertCmd.PersistentFlags().StringVarP(&updateMockFormat, "mock", "o", updateMockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
+	updateAlertCmd.PersistentFlags().StringVarP(&updateMockKubeFormat, "mock-kube", "k", updateMockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
 	updateAlertCtl.AddSpecFlags(updateAlertCmd, false)
 	updateCmd.AddCommand(updateAlertCmd)
 
-	// Add Bladuck Commands
+	// Add Black Duck Commands
+	updateBlackDuckCmd.Flags().StringVar(&updateMockFormat, "mock", updateMockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
+	updateBlackDuckCmd.Flags().StringVar(&updateMockKubeFormat, "mock-kube", updateMockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
 	updateBlackDuckCtl.AddSpecFlags(updateBlackDuckCmd, false)
 	updateCmd.AddCommand(updateBlackDuckCmd)
 	updateBlackDuckCmd.AddCommand(updateBlackDuckRootKeyCmd)
@@ -872,6 +908,8 @@ func init() {
 	updateBlackDuckCmd.AddCommand(updateBlackDuckAddUIDCmd)
 
 	// Add OpsSight Commands
+	updateOpsSightCmd.PersistentFlags().StringVarP(&updateMockFormat, "mock", "o", updateMockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
+	updateOpsSightCmd.PersistentFlags().StringVarP(&updateMockKubeFormat, "mock-kube", "k", updateMockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
 	updateOpsSightCtl.AddSpecFlags(updateOpsSightCmd, false)
 	updateCmd.AddCommand(updateOpsSightCmd)
 	updateOpsSightCmd.AddCommand(updateOpsSightImageCmd)

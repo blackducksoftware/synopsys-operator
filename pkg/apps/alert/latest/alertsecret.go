@@ -43,10 +43,9 @@ func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
 	// create a secret
 	alertSecret := components.NewSecret(horizonapi.SecretConfig{
 		APIVersion: "v1",
-		// ClusterName : "cluster",
-		Name:      "alert-secret",
-		Namespace: a.config.Namespace,
-		Type:      horizonapi.SecretTypeOpaque,
+		Name:       "alert-secret",
+		Namespace:  a.config.Namespace,
+		Type:       horizonapi.SecretTypeOpaque,
 	})
 	alertSecret.AddData(map[string][]byte{
 		"ALERT_ENCRYPTION_PASSWORD":    []byte(a.config.EncryptionPassword),

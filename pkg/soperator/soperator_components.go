@@ -37,6 +37,7 @@ type SpecConfig struct {
 	Namespace                     string
 	Image                         string
 	Expose                        string
+	ClusterType                   ClusterType
 	OperatorTimeBombInSeconds     int64
 	DryRun                        bool
 	LogLevel                      string
@@ -46,20 +47,19 @@ type SpecConfig struct {
 	ResyncIntervalInSeconds       int64
 	TerminationGracePeriodSeconds int64
 	SealKey                       string
-	RestConfig                    *rest.Config
-	KubeClient                    *kubernetes.Clientset
 	Certificate                   string
 	CertificateKey                string
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, expose string, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
+func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
 	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
 	kubeClient *kubernetes.Clientset, certificate string, certificateKey string) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,
 		Expose:                        expose,
+		ClusterType:                   clusterType,
 		OperatorTimeBombInSeconds:     operatorTimeBombInSeconds,
 		DryRun:                        dryRun,
 		LogLevel:                      logLevel,
@@ -69,12 +69,19 @@ func NewSOperator(namespace, synopsysOperatorImage, expose string, operatorTimeB
 		ResyncIntervalInSeconds:       resyncIntervalInSeconds,
 		TerminationGracePeriodSeconds: terminationGracePeriodSeconds,
 		SealKey:                       sealKey,
-		RestConfig:                    restConfig,
-		KubeClient:                    kubeClient,
 		Certificate:                   certificate,
 		CertificateKey:                certificateKey,
 	}
 }
+
+// ClusterType represents the cluster type
+type ClusterType string
+
+// Constants for the PrintFormats
+const (
+	KubernetesClusterType ClusterType = "KUBERNETES"
+	OpenshiftClusterType  ClusterType = "OPENSHIFT"
+)
 
 // GetComponents will return a ComponentList representing all
 // Kubernetes Resources for Synopsys Operator

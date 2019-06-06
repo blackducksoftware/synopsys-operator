@@ -4,7 +4,7 @@ Copyright (C) 2019 Synopsys, Inc.
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
 distributed with this work for additional information
-regarding copyright ownershia. The ASF licenses this file
+regarding copyright ownership. The ASF licenses this file
 to you under the Apache License, Version 2.0 (the
 "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
@@ -27,9 +27,10 @@ import (
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
@@ -40,23 +41,44 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// UpdateSynopsysOperator updates Synopsys Operator's kubernetes componenets and changes
+// Creater stores the configuration and clients to create specific versions of Synopsys Operator
+type Creater struct {
+	DryRun     bool
+	KubeConfig *rest.Config
+	KubeClient *kubernetes.Clientset
+}
+
+// NewCreater returns this Alert Creater
+func NewCreater(dryRun bool, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset) *Creater {
+	return &Creater{DryRun: dryRun, KubeConfig: kubeConfig, KubeClient: kubeClient}
+}
+
+// GetComponents returns the resource components for an Alert
+func (sc *Creater) GetComponents(specConfig SpecConfig) (*api.ComponentList, error) {
+	return specConfig.GetComponents()
+}
+
+// Versions is an Interface function that returns the versions supported by this Creater
+func (sc *Creater) Versions() []string {
+	return SOperatorCRDVersionMap.GetVersions()
+}
+
+// EnsureSynopsysOperator updates the Synopsys Operator's kubernetes componenets and changes
 // all CRDs to versions that the Operator can use
-func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string,
-	blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset,
-	oldOperatorSpec *SpecConfig) error {
+func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset,
+	oldOperatorSpec *SpecConfig, newOperatorSpec *SpecConfig) error {
 
 	// Get CRD Version Data
-	newOperatorVersion := strings.Split(specConfig.Image, ":")[1]
+	newOperatorVersion := strings.Split(newOperatorSpec.Image, ":")[1]
 	oldOperatorVersion := strings.Split(oldOperatorSpec.Image, ":")[1]
 	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
 	oldCrdData := SOperatorCRDVersionMap.GetCRDVersions(oldOperatorVersion)
 
 	// Get CRDs that need to be updated (specs have new version set)
 	log.Debugf("Getting CRDs that need new versions")
-	var oldBlackducks = []blackduckv1.Blackduck{}
+	var oldBlackducks = []blackduckapi.Blackduck{}
 
-	apiExtensionClient, err := apiextensionsclient.NewForConfig(restconfig)
+	apiExtensionClient, err := apiextensionsclient.NewForConfig(sc.KubeConfig)
 	if err != nil {
 		return fmt.Errorf("error creating the api extension client due to %+v", err)
 	}
@@ -72,7 +94,7 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		}
 		log.Debugf("updating %d Black Ducks", len(oldBlackducks))
 	}
-	var oldOpsSights = []opssightv1.OpsSight{}
+	var oldOpsSights = []opssightapi.OpsSight{}
 	if newCrdData.OpsSight.APIVersion != oldCrdData.OpsSight.APIVersion {
 		oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion)
 		if err != nil {
@@ -84,7 +106,7 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		}
 		log.Debugf("updating %d OpsSights", len(oldOpsSights))
 	}
-	var oldAlerts = []alertv1.Alert{}
+	var oldAlerts = []alertapi.Alert{}
 	if newCrdData.Alert.APIVersion != oldCrdData.Alert.APIVersion {
 		oldAlerts, err = GetAlertVersionsToRemove(alertClient, newCrdData.Alert.APIVersion)
 		if err != nil {
@@ -97,9 +119,9 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 		log.Debugf("updating %d Alerts", len(oldAlerts))
 	}
 
-	// Update Synopsys Operator's Components
+	// Update the Synopsys Operator's Components
 	log.Debugf("updating Synopsys Operator's Components")
-	err = specConfig.UpdateSOperatorComponents()
+	err = sc.UpdateSOperatorComponents(newOperatorSpec)
 	if err != nil {
 		return fmt.Errorf("failed to update Synopsys Operator components: %s", err)
 	}
@@ -139,13 +161,13 @@ func (specConfig *SpecConfig) UpdateSynopsysOperator(restconfig *rest.Config, ku
 	return nil
 }
 
-// UpdateSOperatorComponents updates kubernetes resources for Synopsys Operator
-func (specConfig *SpecConfig) UpdateSOperatorComponents() error {
+// UpdateSOperatorComponents updates kubernetes resources for the Synopsys Operator
+func (sc *Creater) UpdateSOperatorComponents(specConfig *SpecConfig) error {
 	sOperatorComponents, err := specConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("failed to get Synopsys Operator components: %s", err)
 	}
-	sOperatorCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, false, specConfig.Namespace, sOperatorComponents, "app=synopsys-operator,component=operator")
+	sOperatorCommonConfig := crdupdater.NewCRUDComponents(sc.KubeConfig, sc.KubeClient, false, false, specConfig.Namespace, sOperatorComponents, "app=synopsys-operator,component=operator")
 	_, errs := sOperatorCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Synopsys Operator components: %+v", errs)
@@ -155,12 +177,12 @@ func (specConfig *SpecConfig) UpdateSOperatorComponents() error {
 }
 
 // UpdatePrometheus updates kubernetes resources for Prometheus
-func (specConfig *PrometheusSpecConfig) UpdatePrometheus() error {
+func (sc *Creater) UpdatePrometheus(specConfig *PrometheusSpecConfig) error {
 	prometheusComponents, err := specConfig.GetComponents()
 	if err != nil {
 		return fmt.Errorf("failed to get Prometheus components: %s", err)
 	}
-	prometheusCommonConfig := crdupdater.NewCRUDComponents(specConfig.RestConfig, specConfig.KubeClient, false, false, specConfig.Namespace, prometheusComponents, "app=synopsys-operator,component=prometheus")
+	prometheusCommonConfig := crdupdater.NewCRUDComponents(sc.KubeConfig, sc.KubeClient, false, false, specConfig.Namespace, prometheusComponents, "app=synopsys-operator,component=prometheus")
 	_, errs := prometheusCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Prometheus components: %+v", errs)

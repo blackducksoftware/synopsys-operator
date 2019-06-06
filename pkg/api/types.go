@@ -50,3 +50,36 @@ type ComponentList struct {
 	PersistentVolumeClaims []*components.PersistentVolumeClaim
 	Routes                 []*Route
 }
+
+// GetKubeInterfaces returns a list of kube components as interfaces
+func (clist *ComponentList) GetKubeInterfaces() []interface{} {
+	components := []interface{}{}
+	for _, rc := range clist.ReplicationControllers {
+		components = append(components, rc.ReplicationController)
+	}
+	for _, svc := range clist.Services {
+		components = append(components, svc.Service)
+	}
+	for _, cm := range clist.ConfigMaps {
+		components = append(components, cm.ConfigMap)
+	}
+	for _, sa := range clist.ServiceAccounts {
+		components = append(components, sa.ServiceAccount)
+	}
+	for _, crb := range clist.ClusterRoleBindings {
+		components = append(components, crb.ClusterRoleBinding)
+	}
+	for _, cr := range clist.ClusterRoles {
+		components = append(components, cr.ClusterRole)
+	}
+	for _, d := range clist.Deployments {
+		components = append(components, d.Deployment)
+	}
+	for _, sec := range clist.Secrets {
+		components = append(components, sec.Secret)
+	}
+	for _, pvc := range clist.PersistentVolumeClaims {
+		components = append(components, pvc.PersistentVolumeClaim)
+	}
+	return components
+}

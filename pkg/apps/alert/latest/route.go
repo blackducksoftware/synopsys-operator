@@ -39,7 +39,7 @@ func (a *SpecConfig) GetOpenShiftRoute() *api.Route {
 			Kind:               "Service",
 			ServiceName:        "alert",
 			PortName:           fmt.Sprintf("%d-tcp", *a.config.Port),
-			Labels:             map[string]string{"app": "alert"},
+			Labels:             map[string]string{"app": "alert", "component": "alert"},
 			TLSTerminationType: routev1.TLSTerminationPassthrough,
 		}
 	}

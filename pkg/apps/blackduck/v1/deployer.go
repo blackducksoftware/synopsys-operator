@@ -95,8 +95,8 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 	return componentList, nil
 }
 
-// getComponents returns the components
-func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.ComponentList, error) {
+// GetComponents returns the components
+func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.ComponentList, error) {
 
 	componentList := &api.ComponentList{}
 
@@ -232,11 +232,15 @@ func (hc *Creater) getComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 
 	//Service account
 	componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
-	clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
-	if err != nil {
-		return nil, err
+
+	// Cluster Role Binding
+	if !hc.Config.DryRun {
+		clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
+		if err != nil {
+			return nil, err
+		}
+		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
 	}
-	componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
 
 	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Upload cache
