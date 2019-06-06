@@ -61,7 +61,7 @@ type BlackduckSpec struct {
 	ScanType              string                    `json:"scanType,omitempty"`
 	PersistentStorage     bool                      `json:"persistentStorage"`
 	PVC                   []PVC                     `json:"pvc,omitempty"`
-	NodeAffinities        []NodeAffinity            `json:"nodeAffinities,omitempty"`
+	NodeAffinities        map[string][]NodeAffinity `json:"nodeAffinities,omitempty"`
 	CertificateName       string                    `json:"certificateName"`
 	Certificate           string                    `json:"certificate,omitempty"`
 	CertificateKey        string                    `json:"certificateKey,omitempty"`
@@ -96,7 +96,6 @@ type PVC struct {
 // NodeAffinity will contain the specifications of a node affinity
 // TODO: currently, keeping it simple, but can be modified in the future to take in complex scenarios
 type NodeAffinity struct {
-	PodName      string `json:"podName"`
 	AffinityType string `json:"affinityType"`
 	Key          string `json:"key"`
 	Op           string `json:"op"`

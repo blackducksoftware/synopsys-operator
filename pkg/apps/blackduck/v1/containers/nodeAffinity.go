@@ -23,12 +23,12 @@ package containers
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	log "github.com/sirupsen/logrus"
 )
 
 var affTypeMap = map[string]horizonapi.AffinityType{
-	"AffinityHard": horizonapi.AffinityHard,
-	"AffinitySoft": horizonapi.AffinitySoft,
+	"Hard": horizonapi.AffinityHard,
+	"Soft": horizonapi.AffinitySoft,
 }
 
 var nodeOperatorMap = map[string]horizonapi.NodeOperator{
@@ -40,28 +40,14 @@ var nodeOperatorMap = map[string]horizonapi.NodeOperator{
 	"Lt":           horizonapi.NodeOperatorLt,
 }
 
-var affinityMap = make(map[string][]blackduckapi.NodeAffinity)
-
-// getAffinitiesForSpecificPod iterates once through the user provided NodeAffinities, internally caches them into a map of format "podName":[]blackduckapi.NodeAffinity, and returns []blackduckapi.NodeAffinity for the given "podName"
-func (c *Creater) getAffinitiesForSpecificPod(podName string) []blackduckapi.NodeAffinity {
-	if affinitiesForSpecificPod, ok := affinityMap[podName]; ok {
-		return affinitiesForSpecificPod
-	}
-
-	affinitiesForSpecificPod := []blackduckapi.NodeAffinity{}
-	for _, affinity := range c.hubSpec.NodeAffinities {
-		affinityMap[affinity.PodName] = append(affinitiesForSpecificPod, affinity)
-	}
-	return affinitiesForSpecificPod
-}
-
 // GetNodeAffinityConfigs takes in a podName, and returns all associated []*horizonapi.NodeAffinityConfig based on what the user provided
 func (c *Creater) GetNodeAffinityConfigs(podName string) map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig {
 
 	// make an empty NodeAffinityMap
 	nodeAffinityMap := make(map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig)
 
-	for _, affinity := range c.getAffinitiesForSpecificPod(podName) {
+	for _, affinity := range c.hubSpec.NodeAffinities[podName] {
+		log.Debugf("Adding affinity: %v\n", affinity)
 		nodeAffinityMap[affTypeMap[affinity.AffinityType]] = append(nodeAffinityMap[affTypeMap[affinity.AffinityType]],
 			&horizonapi.NodeAffinityConfig{
 				Expressions: []horizonapi.NodeExpression{

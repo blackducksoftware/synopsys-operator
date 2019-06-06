@@ -1,128 +1,130 @@
-[
-  {
-    "podName": "documentation",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "default"
-  },
-  {
-    "podName": "zookeeper",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "default"
-  },
-  {
-    "podName": "cfssl",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "default"
-  },
-  {
-    "podName": "cfssl",
-    "affinityType": "AffinityHard",
-    "key": "failure-domain.beta.kubernetes.io/zone",
-    "op": "In",
-    "values": "ZoneName"
-  },
-  {
-    "podName": "webserver",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "default"
-  },
-  {
-    "podName": "webserver",
-    "affinityType": "AffinityHard",
-    "key": "failure-domain.beta.kubernetes.io/zone",
-    "op": "In",
-    "values": "ZoneName"
-  },
-  {
-    "podName": "solr",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "default"
-  },
-  {
-    "podName": "solr",
-    "affinityType": "AffinityHard",
-    "key": "failure-domain.beta.kubernetes.io/zone",
-    "op": "In",
-    "values": "ZoneName"
-  },
-  {
-    "podName": "registration",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "default"
-  },
-  {
-    "podName": "registration",
-    "affinityType": "AffinityHard",
-    "key": "failure-domain.beta.kubernetes.io/zone",
-    "op": "In",
-    "values": "ZoneName"
-  },
-  {
-    "podName": "authentication",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "default"
-  },
-  {
-    "podName": "authentication",
-    "affinityType": "AffinityHard",
-    "key": "failure-domain.beta.kubernetes.io/zone",
-    "op": "In",
-    "values": "ZoneName"
-  },
-  {
-    "podName": "webapp-logstash",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "compute"
-  },
-  {
-    "podName": "webapp-logstash",
-    "affinityType": "AffinityHard",
-    "key": "failure-domain.beta.kubernetes.io/zone",
-    "op": "In",
-    "values": "ZoneName"
-  },
-  {
-    "podName": "jobrunner",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "compute"
-  },
-  {
-    "podName": "jobrunner",
-    "affinityType": "AffinityHard",
-    "key": "failure-domain.beta.kubernetes.io/zone",
-    "op": "In",
-    "values": "ZoneName"
-  },
-  {
-    "podName": "scan",
-    "affinityType": "AffinityHard",
-    "key": "synopsys/nodepool",
-    "op": "In",
-    "values": "compute"
-  },
-  {
-    "podName": "scan",
-    "affinityType": "AffinityHard",
-    "key": "failure-domain.beta.kubernetes.io/zone",
-    "op": "In",
-    "values": "ZoneName"
-  }
-]
+{
+  "documentation": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "default"
+    }
+  ],
+  "zookeeper": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "default"
+    }
+  ],
+  "cfssl": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "default"
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "value": "ZoneName"
+    }
+  ],
+  "webserver": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "default"
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "value": "ZoneName"
+    }
+  ],
+  "solr": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "default"
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "value": "ZoneName"
+    }
+  ],
+  "registration": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "default"
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "value": "ZoneName"
+    }
+  ],
+  "authentication": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "default"
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "value": "ZoneName"
+    }
+  ],
+  "webapp-logstash": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "compute"
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "value": "ZoneName"
+    }
+  ],
+  "jobrunner": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "compute"
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "value": "ZoneName"
+    }
+  ],
+  "scan": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "value": "compute"
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "value": "ZoneName"
+    }
+  ]
+}

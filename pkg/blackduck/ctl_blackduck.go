@@ -322,15 +322,21 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if err != nil {
 				log.Errorf("failed to read node affinity file: %s", err)
 			}
-			var nodeAffinities []blackduckv1.NodeAffinity
-			err = json.Unmarshal([]byte(data), &nodeAffinities)
+			var nodeAffinityMap map[string]*json.RawMessage
+			err = json.Unmarshal([]byte(data), &nodeAffinityMap)
 			if err != nil {
-				log.Errorf("failed to unmarshal node affinity structs: %s", err)
+				log.Errorf("failed to unmarshal node affinities: %s", err)
 				return
 			}
-			ctl.Spec.NodeAffinities = []blackduckv1.NodeAffinity{} // clear old values
-			for _, nodeAffinity := range nodeAffinities {
-				ctl.Spec.NodeAffinities = append(ctl.Spec.NodeAffinities, nodeAffinity)
+			ctl.Spec.NodeAffinities = map[string][]blackduckv1.NodeAffinity{} // clear old values
+			for podName, nodeAffinities := range nodeAffinityMap {
+				var podSpecificNodeAffinities []blackduckv1.NodeAffinity
+				err = json.Unmarshal(*nodeAffinities, &podSpecificNodeAffinities)
+				if err != nil {
+					log.Errorf("failed to unmarshal node affinities for pod: %s, %v", err, podName)
+					return
+				}
+				ctl.Spec.NodeAffinities[podName] = podSpecificNodeAffinities
 			}
 		case "postgres-claim-size":
 			for i := range ctl.Spec.PVC {

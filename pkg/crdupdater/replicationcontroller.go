@@ -147,6 +147,7 @@ type replicationControllerComparator struct {
 	MinMem   *resource.Quantity
 	MaxMem   *resource.Quantity
 	EnvFrom  []corev1.EnvFromSource
+	Affinity *corev1.Affinity
 }
 
 // patch patches the replication controller
@@ -177,6 +178,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 						MinMem:   oldContainer.Resources.Requests.Memory(),
 						MaxMem:   oldContainer.Resources.Limits.Memory(),
 						EnvFrom:  oldContainer.EnvFrom,
+						Affinity: r.oldReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Affinity,
 					},
 					replicationControllerComparator{
 						Image:    newContainer.Image,
@@ -186,6 +188,7 @@ func (r *ReplicationController) patch(rc interface{}, isPatched bool) (bool, err
 						MinMem:   newContainer.Resources.Requests.Memory(),
 						MaxMem:   newContainer.Resources.Limits.Memory(),
 						EnvFrom:  newContainer.EnvFrom,
+						Affinity: r.newReplicationControllers[replicationController.GetName()].Spec.Template.Spec.Affinity,
 					}) ||
 					!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) ||
 					!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) ||
