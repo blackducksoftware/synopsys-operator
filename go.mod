@@ -41,7 +41,7 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/ugorji/go v1.1.5-pre // indirect
 	go.opencensus.io v0.22.0 // indirect
-	golang.org/x/net v0.0.0-20190607172144-d5cec3884524 // indirect
+	golang.org/x/net v0.0.0-20190607181551-461777fb6f67 // indirect
 	golang.org/x/sys v0.0.0-20190606203320-7fc4e5ec1444 // indirect
 	google.golang.org/api v0.6.0 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
