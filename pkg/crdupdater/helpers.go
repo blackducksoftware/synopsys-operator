@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -188,4 +189,112 @@ func sortVolumes(volumes []corev1.Volume) []corev1.Volume {
 	}
 	sort.Slice(volumes, func(i, j int) bool { return volumes[i].Name < volumes[j].Name })
 	return volumes
+}
+
+func compareAffinities(oldAffinity *corev1.Affinity, newAffinity *corev1.Affinity) bool {
+	if oldAffinity == nil && newAffinity == nil {
+		return true
+	} else if (oldAffinity == nil && newAffinity != nil) || (oldAffinity != nil && newAffinity == nil) {
+		return false
+	} else {
+		return compareNodeAffinities(oldAffinity.NodeAffinity, newAffinity.NodeAffinity)
+	}
+}
+
+func compareNodeAffinities(oldNodeAffinity *corev1.NodeAffinity, newNodeAffinity *corev1.NodeAffinity) bool {
+	log.Debugf("oldNodeAffinity: %v", oldNodeAffinity)
+	log.Debugf("newNodeAffinity: %v", newNodeAffinity)
+
+	if oldNodeAffinity == nil && newNodeAffinity == nil {
+		return true
+	} else if (oldNodeAffinity == nil && newNodeAffinity != nil) || (oldNodeAffinity != nil && newNodeAffinity == nil) {
+		return false
+	} else {
+		return compareNodeSelector(oldNodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution, newNodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution) && comparePreferredSchedulingTerms(oldNodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution, newNodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution)
+	}
+}
+
+func comparePreferredSchedulingTerms(oldTerms []corev1.PreferredSchedulingTerm, newTerms []corev1.PreferredSchedulingTerm) bool {
+	if len(oldTerms) != len(newTerms) {
+		return false
+	}
+
+	for idx, oldTerm := range oldTerms {
+		newTerm := newTerms[idx]
+		if !reflect.DeepEqual(oldTerm.Weight, newTerm.Weight) && !compareNodeSelectorTerm(&oldTerm.Preference, &newTerm.Preference) {
+			return false
+		}
+	}
+	return true
+}
+
+func compareNodeSelector(oldSelector *corev1.NodeSelector, newSelector *corev1.NodeSelector) bool {
+	if oldSelector == nil && newSelector == nil {
+		return true
+	} else if (oldSelector == nil && newSelector != nil) || (oldSelector != nil && newSelector == nil) {
+		return false
+	} else {
+		return compareNodeSelectorTerms(oldSelector.NodeSelectorTerms, newSelector.NodeSelectorTerms)
+	}
+}
+
+func compareNodeSelectorTerms(oldTerms []corev1.NodeSelectorTerm, newTerms []corev1.NodeSelectorTerm) bool {
+	log.Debugf("oldTerms: %v", oldTerms)
+	log.Debugf("newTerms: %v", newTerms)
+
+	if len(oldTerms) != len(newTerms) {
+		return false
+	}
+	for idx, oldTerm := range oldTerms {
+		if !compareNodeSelectorTerm(&oldTerm, &newTerms[idx]) {
+			return false
+		}
+	}
+	return true
+}
+
+func compareNodeSelectorTerm(oldTerm *corev1.NodeSelectorTerm, newTerm *corev1.NodeSelectorTerm) bool {
+	log.Debugf("oldTerm: %v", oldTerm)
+	log.Debugf("newTerm: %v", newTerm)
+
+	if oldTerm == nil && newTerm == nil {
+		return true
+	} else if (oldTerm == nil && newTerm != nil) || (oldTerm != nil && newTerm == nil) {
+		return false
+	} else {
+		return compareNodeSelectoreRequirements(oldTerm.MatchExpressions, newTerm.MatchExpressions) && compareNodeSelectoreRequirements(oldTerm.MatchFields, newTerm.MatchFields)
+	}
+}
+
+func compareNodeSelectoreRequirements(oldReqmnts []corev1.NodeSelectorRequirement, newReqmnts []corev1.NodeSelectorRequirement) bool {
+	if len(oldReqmnts) != len(newReqmnts) {
+		return false
+	}
+	for idx, req := range oldReqmnts {
+		oldReq := &req
+		newReq := &newReqmnts[idx]
+
+		oldKey := oldReq.Key
+		newKey := newReq.Key
+
+		log.Debugf("oldKey: %v", oldKey)
+		log.Debugf("newKey: %v", newKey)
+
+		oldOperator := oldReq.Operator
+		newOperator := newReq.Operator
+
+		log.Debugf("oldOperator: %v", oldOperator)
+		log.Debugf("newOperator: %v", newOperator)
+
+		oldValues := oldReq.Values
+		newValues := newReq.Values
+
+		log.Debugf("oldValues: %v", oldValues)
+		log.Debugf("newValues: %v", newValues)
+
+		if !reflect.DeepEqual(oldKey, newKey) && !reflect.DeepEqual(oldOperator, newOperator) && !reflect.DeepEqual(oldValues, newValues) {
+			return false
+		}
+	}
+	return true
 }

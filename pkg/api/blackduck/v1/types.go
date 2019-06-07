@@ -96,10 +96,10 @@ type PVC struct {
 // NodeAffinity will contain the specifications of a node affinity
 // TODO: currently, keeping it simple, but can be modified in the future to take in complex scenarios
 type NodeAffinity struct {
-	AffinityType string `json:"affinityType"`
-	Key          string `json:"key"`
-	Op           string `json:"op"`
-	Value        string `json:"value"`
+	AffinityType string   `json:"affinityType"`
+	Key          string   `json:"key"`
+	Op           string   `json:"op"`
+	Values       []string `json:"values"`
 }
 
 // PostgresExternalDBConfig contain the external database configuration

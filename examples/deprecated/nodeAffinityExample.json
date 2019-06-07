@@ -4,7 +4,9 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "default"
+      "values": [
+        "default"
+      ]
     }
   ],
   "zookeeper": [
@@ -12,7 +14,9 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "default"
+      "values": [
+        "default"
+      ]
     }
   ],
   "cfssl": [
@@ -20,13 +24,17 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "default"
+      "values": [
+        "default"
+      ]
     },
     {
       "affinityType": "Hard",
       "key": "failure-domain.beta.kubernetes.io/zone",
       "op": "In",
-      "value": "ZoneName"
+      "values": [
+        "ZoneName"
+      ]
     }
   ],
   "webserver": [
@@ -34,13 +42,17 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "default"
+      "values": [
+        "default"
+      ]
     },
     {
       "affinityType": "Hard",
       "key": "failure-domain.beta.kubernetes.io/zone",
       "op": "In",
-      "value": "ZoneName"
+      "values": [
+        "ZoneName"
+      ]
     }
   ],
   "solr": [
@@ -48,13 +60,17 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "default"
+      "values": [
+        "default"
+      ]
     },
     {
       "affinityType": "Hard",
       "key": "failure-domain.beta.kubernetes.io/zone",
       "op": "In",
-      "value": "ZoneName"
+      "values": [
+        "ZoneName"
+      ]
     }
   ],
   "registration": [
@@ -62,13 +78,17 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "default"
+      "values": [
+        "default"
+      ]
     },
     {
       "affinityType": "Hard",
       "key": "failure-domain.beta.kubernetes.io/zone",
       "op": "In",
-      "value": "ZoneName"
+      "values": [
+        "ZoneName"
+      ]
     }
   ],
   "authentication": [
@@ -76,13 +96,17 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "default"
+      "values": [
+        "default"
+      ]
     },
     {
       "affinityType": "Hard",
       "key": "failure-domain.beta.kubernetes.io/zone",
       "op": "In",
-      "value": "ZoneName"
+      "values": [
+        "ZoneName"
+      ]
     }
   ],
   "webapp-logstash": [
@@ -90,13 +114,17 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "compute"
+      "values": [
+        "compute"
+      ]
     },
     {
       "affinityType": "Hard",
       "key": "failure-domain.beta.kubernetes.io/zone",
       "op": "In",
-      "value": "ZoneName"
+      "values": [
+        "ZoneName"
+      ]
     }
   ],
   "jobrunner": [
@@ -104,13 +132,17 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "compute"
+      "values": [
+        "compute"
+      ]
     },
     {
       "affinityType": "Hard",
       "key": "failure-domain.beta.kubernetes.io/zone",
       "op": "In",
-      "value": "ZoneName"
+      "values": [
+        "ZoneName"
+      ]
     }
   ],
   "scan": [
@@ -118,13 +150,17 @@
       "affinityType": "Hard",
       "key": "synopsys/nodepool",
       "op": "In",
-      "value": "compute"
+      "values": [
+        "compute"
+      ]
     },
     {
       "affinityType": "Hard",
       "key": "failure-domain.beta.kubernetes.io/zone",
       "op": "In",
-      "value": "ZoneName"
+      "values": [
+        "ZoneName"
+      ]
     }
   ]
 }

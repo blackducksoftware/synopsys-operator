@@ -322,22 +322,13 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if err != nil {
 				log.Errorf("failed to read node affinity file: %s", err)
 			}
-			var nodeAffinityMap map[string]*json.RawMessage
-			err = json.Unmarshal([]byte(data), &nodeAffinityMap)
+			nodeAffinities := map[string][]blackduckv1.NodeAffinity{}
+			err = json.Unmarshal([]byte(data), &nodeAffinities)
 			if err != nil {
 				log.Errorf("failed to unmarshal node affinities: %s", err)
 				return
 			}
-			ctl.Spec.NodeAffinities = map[string][]blackduckv1.NodeAffinity{} // clear old values
-			for podName, nodeAffinities := range nodeAffinityMap {
-				var podSpecificNodeAffinities []blackduckv1.NodeAffinity
-				err = json.Unmarshal(*nodeAffinities, &podSpecificNodeAffinities)
-				if err != nil {
-					log.Errorf("failed to unmarshal node affinities for pod: %s, %v", err, podName)
-					return
-				}
-				ctl.Spec.NodeAffinities[podName] = podSpecificNodeAffinities
-			}
+			ctl.Spec.NodeAffinities = nodeAffinities
 		case "postgres-claim-size":
 			for i := range ctl.Spec.PVC {
 				if ctl.Spec.PVC[i].Name == "blackduck-postgres" { // update claim size and return

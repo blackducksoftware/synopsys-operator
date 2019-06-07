@@ -54,7 +54,7 @@ func (c *Creater) GetNodeAffinityConfigs(podName string) map[horizonapi.Affinity
 					{
 						Key:    affinity.Key,
 						Op:     nodeOperatorMap[affinity.Op],
-						Values: []string{affinity.Value},
+						Values: affinity.Values,
 					},
 				},
 			},

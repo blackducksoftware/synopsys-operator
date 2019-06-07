@@ -47,14 +47,14 @@ func (c *Creater) GetNodeAffinityConfigs(podName string) map[horizonapi.Affinity
 	nodeAffinityMap := make(map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig)
 
 	for _, affinity := range c.hubSpec.NodeAffinities[podName] {
-		log.Debugf("Adding affinity: %v\n", affinity)
+		log.Debugf("Adding affinity: %v to pod: %v\n", affinity, podName)
 		nodeAffinityMap[affTypeMap[affinity.AffinityType]] = append(nodeAffinityMap[affTypeMap[affinity.AffinityType]],
 			&horizonapi.NodeAffinityConfig{
 				Expressions: []horizonapi.NodeExpression{
 					{
 						Key:    affinity.Key,
 						Op:     nodeOperatorMap[affinity.Op],
-						Values: []string{affinity.Value},
+						Values: affinity.Values,
 					},
 				},
 			},
