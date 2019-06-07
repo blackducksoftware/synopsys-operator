@@ -22,6 +22,7 @@ under the License.
 package blackduck
 
 import (
+	"sort"
 	"testing"
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -175,6 +176,8 @@ func TestSetChangedFlags(t *testing.T) {
 		"USE_BINARY_UPLOADS:0",
 		"ENABLE_SOURCE_UPLOADS:0",
 	}
+	sort.Strings(expCtl.Spec.Environs)
+	sort.Strings(actualCtl.Spec.Environs)
 
 	assert.Equal(expCtl.Spec, actualCtl.Spec)
 
