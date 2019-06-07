@@ -40,11 +40,7 @@ import (
 func GetBlackDuckTemplate() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Size:              "Small",
-		DbPrototype:       "",
 		CertificateName:   "default",
-		Type:              "",
-		Version:           "2019.4.3",
-		LicenseKey:        "",
 		PersistentStorage: false,
 	}
 }
@@ -55,12 +51,9 @@ func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "blackduck-pvc",
 		Size:              "Small",
-		LicenseKey:        "",
 		CertificateName:   "default",
-		Version:           "2019.4.3",
 		LivenessProbes:    false,
 		PersistentStorage: true,
-		PVCStorageClass:   "",
 		Environs:          []string{},
 		ImageRegistries:   []string{},
 		PVC: []blackduckv1.PVC{
@@ -117,9 +110,7 @@ func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
-		Version:           "2019.4.3",
 		Size:              "small",
-		PVCStorageClass:   "",
 		LivenessProbes:    false,
 		PersistentStorage: true,
 		PVC: []blackduckv1.PVC{
@@ -168,7 +159,6 @@ func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.Blackduck
 		Type:            "Artifacts",
 		Environs:        []string{},
 		ImageRegistries: []string{},
-		LicenseKey:      "",
 	}
 }
 
@@ -177,9 +167,7 @@ func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.Blackduck
 func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
-		Version:           "2019.4.3",
 		Size:              "small",
-		PVCStorageClass:   "",
 		LivenessProbes:    false,
 		PersistentStorage: true,
 		PVC: []blackduckv1.PVC{
@@ -224,7 +212,6 @@ func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 		Type:            "Artifacts",
 		Environs:        []string{},
 		ImageRegistries: []string{},
-		LicenseKey:      "",
 	}
 }
 
@@ -233,9 +220,7 @@ func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultExternalPersistentStorageV1() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "synopsys-operator",
-		Version:           "2019.4.3",
 		Size:              "small",
-		PVCStorageClass:   "",
 		LivenessProbes:    false,
 		PersistentStorage: true,
 		PVC: []blackduckv1.PVC{
@@ -280,9 +265,7 @@ func GetBlackDuckDefaultExternalPersistentStorageV1() *blackduckv1.BlackduckSpec
 func GetBlackDuckDefaultBDBA() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:       "blackduck-bdba",
-		LicenseKey:      "",
 		CertificateName: "default",
-		Version:         "2019.4.3",
 		Environs: []string{
 			"USE_BINARY_UPLOADS:1",
 		},
@@ -296,9 +279,7 @@ func GetBlackDuckDefaultBDBA() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultEphemeral() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "blackduck-ephemeral",
-		LicenseKey:        "",
 		CertificateName:   "default",
-		Version:           "2019.4.3",
 		LivenessProbes:    false,
 		PersistentStorage: false,
 		Size:              "small",
@@ -311,9 +292,7 @@ func GetBlackDuckDefaultEphemeral() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultEphemeralCustomAuthCA() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "blackduck-auth-ca",
-		LicenseKey:        "",
 		CertificateName:   "default",
-		Version:           "2019.4.3",
 		LivenessProbes:    false,
 		PersistentStorage: false,
 		Size:              "Small",
@@ -325,9 +304,7 @@ func GetBlackDuckDefaultEphemeralCustomAuthCA() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultExternalDB() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:         "blackduck-externaldb",
-		LicenseKey:        "",
 		CertificateName:   "default",
-		DbPrototype:       "",
 		Size:              "small",
 		PersistentStorage: false,
 		ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
@@ -339,8 +316,7 @@ func GetBlackDuckDefaultExternalDB() *blackduckv1.BlackduckSpec {
 			PostgresAdminPassword: "<<PASSWORD>>",
 			PostgresUserPassword:  "<<PASSWORD>>",
 		},
-		Type:    "worker",
-		Version: "2019.4.3",
+		Type: "worker",
 	}
 }
 
@@ -348,17 +324,14 @@ func GetBlackDuckDefaultExternalDB() *blackduckv1.BlackduckSpec {
 func GetBlackDuckDefaultIPV6Disabled() *blackduckv1.BlackduckSpec {
 	return &blackduckv1.BlackduckSpec{
 		Namespace:       "blackduck-ipv6disabled",
-		LicenseKey:      "",
 		CertificateName: "default",
 		Environs: []string{
 			"IPV4_ONLY:1",
 			"BLACKDUCK_HUB_SERVER_ADDRESS:0.0.0.0",
 		},
-		DbPrototype:       "",
 		Size:              "small",
 		PersistentStorage: false,
 		Type:              "worker",
-		Version:           "2019.4.3",
 	}
 }
 
@@ -374,7 +347,6 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 			ModelMetricsPauseSeconds:       15,
 			UnknownImagePauseMilliseconds:  15000,
 			ClientTimeoutMilliseconds:      100000,
-			Expose:                         "",
 		},
 		Perceiver: &opssightv1.Perceiver{
 			EnableImagePerceiver: false,
@@ -410,10 +382,9 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 			ImageDirectory: "/var/images",
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:   "prometheus",
-			Image:  "docker.io/prom/prometheus:v2.1.0",
-			Port:   9090,
-			Expose: "",
+			Name:  "prometheus",
+			Image: "docker.io/prom/prometheus:v2.1.0",
+			Port:  9090,
 		},
 		Skyfire: &opssightv1.Skyfire{
 			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
@@ -443,7 +414,6 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "perceptor",
 		ConfigMapName: "opssight",
-		DesiredState:  "",
 	}
 }
 
@@ -460,7 +430,6 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			ModelMetricsPauseSeconds:       15,
 			UnknownImagePauseMilliseconds:  15000,
 			ClientTimeoutMilliseconds:      100000,
-			Expose:                         "",
 		},
 		ScannerPod: &opssightv1.ScannerPod{
 			Name: "opssight-scanner",
@@ -497,10 +466,9 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			DumpIntervalMinutes:       30,
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:   "prometheus",
-			Port:   9090,
-			Image:  "docker.io/prom/prometheus:v2.1.0",
-			Expose: "",
+			Name:  "prometheus",
+			Port:  9090,
+			Image: "docker.io/prom/prometheus:v2.1.0",
 		},
 		EnableSkyfire: false,
 		Skyfire: &opssightv1.Skyfire{
@@ -522,7 +490,6 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
 		ConfigMapName: "opssight",
-		DesiredState:  "",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,
@@ -548,7 +515,6 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			ModelMetricsPauseSeconds:       15,
 			UnknownImagePauseMilliseconds:  15000,
 			ClientTimeoutMilliseconds:      100000,
-			Expose:                         "",
 		},
 		ScannerPod: &opssightv1.ScannerPod{
 			Name: "opssight-scanner",
@@ -585,10 +551,9 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			Port:                      3002,
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:   "prometheus",
-			Port:   9090,
-			Image:  "docker.io/prom/prometheus:v2.1.0",
-			Expose: "",
+			Name:  "prometheus",
+			Port:  9090,
+			Image: "docker.io/prom/prometheus:v2.1.0",
 		},
 		EnableSkyfire: false,
 		Skyfire: &opssightv1.Skyfire{
@@ -610,7 +575,6 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 		LogLevel:      "debug",
 		SecretName:    "blackduck",
 		ConfigMapName: "opssight",
-		DesiredState:  "",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,
@@ -618,17 +582,14 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			TLSVerification:                    false,
 			DeleteBlackduckThresholdPercentage: 50,
 			BlackduckSpec: &blackduckv1.BlackduckSpec{
-				LicenseKey:        "",
 				PersistentStorage: false,
 				CertificateName:   "default",
 				Environs: []string{
 					"IPV4_ONLY:1",
 					"BLACKDUCK_HUB_SERVER_ADDRESS:0.0.0.0",
 				},
-				DbPrototype: "",
-				Size:        "small",
-				Type:        "worker",
-				Version:     "2019.4.3",
+				Size: "small",
+				Type: "worker",
 			},
 		},
 	}
@@ -644,21 +605,18 @@ func GetAlertDefault() *alertv1.AlertSpec {
 	standAlone := false
 
 	return &alertv1.AlertSpec{
-		Namespace:            "alert-test",
-		Version:              "3.1.0",
-		AlertImage:           "docker.io/blackducksoftware/blackduck-alert:3.1.0",
-		CfsslImage:           "docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
-		ExposeService:        "NODEPORT",
-		Port:                 IntToInt32(8443),
-		EncryptionPassword:   "",
-		EncryptionGlobalSalt: "",
-		PersistentStorage:    false,
-		PVCName:              "alert-pvc",
-		StandAlone:           &standAlone,
-		PVCSize:              "5G",
-		PVCStorageClass:      "",
-		AlertMemory:          "2560M",
-		CfsslMemory:          "640M",
+		Namespace:         "alert-test",
+		Version:           "3.1.0",
+		AlertImage:        "docker.io/blackducksoftware/blackduck-alert:3.1.0",
+		CfsslImage:        "docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
+		ExposeService:     "NODEPORT",
+		Port:              IntToInt32(8443),
+		PersistentStorage: false,
+		PVCName:           "alert-pvc",
+		StandAlone:        &standAlone,
+		PVCSize:           "5G",
+		AlertMemory:       "2560M",
+		CfsslMemory:       "640M",
 		Environs: []string{
 			"ALERT_SERVER_PORT:8443",
 			"PUBLIC_HUB_WEBSERVER_HOST:localhost",
