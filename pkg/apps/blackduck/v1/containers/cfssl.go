@@ -65,11 +65,12 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "cfssl", Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
-			Volumes:          c.getCfsslVolumes(),
-			Containers:       []*util.Container{cfsslContainerConfig},
-			InitContainers:   initContainers,
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("cfssl"),
+			Volumes:             c.getCfsslVolumes(),
+			Containers:          []*util.Container{cfsslContainerConfig},
+			InitContainers:      initContainers,
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("cfssl"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("cfssl"),
 		}, c.GetLabel("cfssl"))
 }
 

@@ -75,6 +75,7 @@ type Ctl struct {
 	UserPassword                  string
 	EnableBinaryAnalysis          bool
 	EnableSourceCodeUpload        bool
+	NodeAffinityFilePath          string
 }
 
 // NewBlackDuckCtl creates a new Ctl struct
@@ -221,6 +222,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.UserPassword, "user-password", ctl.UserPassword, "'user' password of Postgres database")
 	cmd.Flags().BoolVar(&ctl.EnableBinaryAnalysis, "enable-binary-analysis", ctl.EnableBinaryAnalysis, "If true, enable binary analysis")
 	cmd.Flags().BoolVar(&ctl.EnableSourceCodeUpload, "enable-source-code-upload", ctl.EnableSourceCodeUpload, "If true, enable source code upload")
+	cmd.Flags().StringVar(&ctl.NodeAffinityFilePath, "node-affinity-file-path", ctl.NodeAffinityFilePath, "Absolute path to a file containing a list of node affinities")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
@@ -315,6 +317,18 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			for _, pvc := range pvcStructs.Data {
 				ctl.Spec.PVC = append(ctl.Spec.PVC, pvc)
 			}
+		case "node-affinity-file-path":
+			data, err := util.ReadFileData(ctl.NodeAffinityFilePath)
+			if err != nil {
+				log.Errorf("failed to read node affinity file: %s", err)
+			}
+			nodeAffinities := map[string][]blackduckv1.NodeAffinity{}
+			err = json.Unmarshal([]byte(data), &nodeAffinities)
+			if err != nil {
+				log.Errorf("failed to unmarshal node affinities: %s", err)
+				return
+			}
+			ctl.Spec.NodeAffinities = nodeAffinities
 		case "postgres-claim-size":
 			for i := range ctl.Spec.PVC {
 				if ctl.Spec.PVC[i].Name == "blackduck-postgres" { // update claim size and return

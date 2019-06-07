@@ -73,11 +73,12 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
-			Volumes:          c.getRegistrationVolumes(),
-			Containers:       []*util.Container{registrationContainerConfig},
-			InitContainers:   initContainers,
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("registration"),
+			Volumes:             c.getRegistrationVolumes(),
+			Containers:          []*util.Container{registrationContainerConfig},
+			InitContainers:      initContainers,
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("registration"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("registration"),
 		}, c.GetLabel("registration"))
 }
 

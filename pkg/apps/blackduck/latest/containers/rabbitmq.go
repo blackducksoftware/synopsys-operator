@@ -54,11 +54,12 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "rabbitmq", Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
-			Volumes:          c.getRabbitmqVolumes(),
-			Containers:       []*util.Container{rabbitmqContainerConfig},
-			InitContainers:   initContainers,
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("rabbitmq"),
+			Volumes:             c.getRabbitmqVolumes(),
+			Containers:          []*util.Container{rabbitmqContainerConfig},
+			InitContainers:      initContainers,
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("rabbitmq"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("rabbitmq"),
 		}, c.GetLabel("rabbitmq"))
 }
 

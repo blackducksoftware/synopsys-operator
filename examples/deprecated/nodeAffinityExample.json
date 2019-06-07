@@ -1,0 +1,166 @@
+{
+  "documentation": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "default"
+      ]
+    }
+  ],
+  "zookeeper": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "default"
+      ]
+    }
+  ],
+  "cfssl": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "default"
+      ]
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "values": [
+        "ZoneName"
+      ]
+    }
+  ],
+  "webserver": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "default"
+      ]
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "values": [
+        "ZoneName"
+      ]
+    }
+  ],
+  "solr": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "default"
+      ]
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "values": [
+        "ZoneName"
+      ]
+    }
+  ],
+  "registration": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "default"
+      ]
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "values": [
+        "ZoneName"
+      ]
+    }
+  ],
+  "authentication": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "default"
+      ]
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "values": [
+        "ZoneName"
+      ]
+    }
+  ],
+  "webapp-logstash": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "compute"
+      ]
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "values": [
+        "ZoneName"
+      ]
+    }
+  ],
+  "jobrunner": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "compute"
+      ]
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "values": [
+        "ZoneName"
+      ]
+    }
+  ],
+  "scan": [
+    {
+      "affinityType": "Hard",
+      "key": "synopsys/nodepool",
+      "op": "In",
+      "values": [
+        "compute"
+      ]
+    },
+    {
+      "affinityType": "Hard",
+      "key": "failure-domain.beta.kubernetes.io/zone",
+      "op": "In",
+      "values": [
+        "ZoneName"
+      ]
+    }
+  ]
+}

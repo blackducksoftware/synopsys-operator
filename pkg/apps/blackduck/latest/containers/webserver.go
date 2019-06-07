@@ -56,10 +56,11 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Replicat
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webserver", Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
-			Volumes:          c.getWebserverVolumes(),
-			Containers:       []*util.Container{webServerContainerConfig},
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("webserver"),
+			Volumes:             c.getWebserverVolumes(),
+			Containers:          []*util.Container{webServerContainerConfig},
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("webserver"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("webserver"),
 		}, c.GetLabel("webserver"))
 }
 

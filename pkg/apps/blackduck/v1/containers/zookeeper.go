@@ -67,11 +67,12 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
-			Volumes:          c.getZookeeperVolumes(),
-			Containers:       []*util.Container{zookeeperContainerConfig},
-			InitContainers:   initContainers,
-			ImagePullSecrets: c.hubSpec.RegistryConfiguration.PullSecrets,
-			Labels:           c.GetVersionLabel("zookeeper"),
+			Volumes:             c.getZookeeperVolumes(),
+			Containers:          []*util.Container{zookeeperContainerConfig},
+			InitContainers:      initContainers,
+			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			Labels:              c.GetVersionLabel("zookeeper"),
+			NodeAffinityConfigs: c.GetNodeAffinityConfigs("zookeeper"),
 		}, c.GetLabel("zookeeper"))
 }
 
