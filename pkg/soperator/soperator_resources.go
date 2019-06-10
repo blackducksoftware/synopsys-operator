@@ -176,7 +176,7 @@ func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deploy
 	synopsysOperatorUIContainer, err := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator-ui",
 		Command:    []string{"./app"},
-		Image:      "gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:master",
+		Image:      specConfig.Image,
 		PullPolicy: horizonapi.PullAlways,
 	})
 	if err != nil {

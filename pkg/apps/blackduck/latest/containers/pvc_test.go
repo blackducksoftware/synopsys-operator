@@ -42,7 +42,7 @@ func TestGetPVCs(t *testing.T) {
 	flavor := GetContainersFlavor("small")
 	// Binary Analysis state for this test
 	ba := false
-	cs := false
+	cs := true
 	// Default PVCs for this test
 	c := NewCreater(&pc, nil, nil, "test", &blackduckapi.BlackduckSpec{PersistentStorage: true}, flavor, cs, ba)
 	defaultPVCs := c.GetPVCs()

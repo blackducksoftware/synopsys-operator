@@ -43,8 +43,6 @@ func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
 
 	// create a secret
 	alertSecret := components.NewSecret(horizonapi.SecretConfig{
-		APIVersion: "v1",
-		// ClusterName : "cluster",
 		Name:      util.GetResourceName(a.name, "alert-secret", a.isClusterScope),
 		Namespace: a.config.Namespace,
 		Type:      horizonapi.SecretTypeOpaque,
