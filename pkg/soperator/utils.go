@@ -83,7 +83,7 @@ func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion 
 	}
 	newAlerts := []alertv1.Alert{}
 	for _, alert := range currAlerts.Items {
-		log.Debugf("Found Alert version '%s': %s", alert.TypeMeta.APIVersion, alert.Name)
+		log.Debugf("found Alert version '%s': %s", alert.TypeMeta.APIVersion, alert.Name)
 		if alert.TypeMeta.APIVersion != newVersion {
 			alert.TypeMeta.APIVersion = newVersion
 			newAlerts = append(newAlerts, alert)
@@ -97,21 +97,23 @@ func GetAlertVersionsToRemove(alertClient *alertclientset.Clientset, newVersion 
 func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (string, error) {
 	currCM, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
-		return "", fmt.Errorf("failed to get Synopsys Operator Image: %s", err)
+		return "", fmt.Errorf("unable to get synopsys operator image due to %s", err)
 	}
 	return currCM.Data["image"], nil
 }
 
 // GetOldOperatorSpec returns a spec that respesents the current Synopsys Operator in the cluster
-func GetOldOperatorSpec(kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
+func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
 	log.Debugf("creating new synopsys operator spec")
 	currCM, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Synopsys Operator ConfigMap: %s", err)
+		return nil, fmt.Errorf("unable to get synopsys operator config map due to %s", err)
 	}
 
 	sOperatorSpec := SpecConfig{}
 	sOperatorSpec.Namespace = namespace
+	sOperatorSpec.RestConfig = restConfig
+	sOperatorSpec.KubeClient = kubeClient
 
 	err = json.Unmarshal([]byte(currCM.Data["config.json"]), &sOperatorSpec)
 	if err != nil {
@@ -121,7 +123,7 @@ func GetOldOperatorSpec(kubeClient *kubernetes.Clientset, namespace string) (*Sp
 	// Set the secretType and secret data
 	currSecret, err := util.GetSecret(kubeClient, namespace, "blackduck-secret")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Synopsys Operator secret: %s", err)
+		return nil, fmt.Errorf("unable to get Synopsys Operator secret due to %+v", err)
 	}
 	currKubeSecretData := currSecret.Data
 	sealKey := string(currKubeSecretData["SEAL_KEY"])
@@ -177,9 +179,9 @@ func GetOldPrometheusSpec(restConfig *rest.Config, kubeClient *kubernetes.Client
 }
 
 // GetClusterType returns the Cluster type
-func GetClusterType(restConfig *rest.Config) ClusterType {
-	routeClient := util.GetRouteClient(restConfig) // kube doesn't have a routeclient
-	if routeClient != nil {                        // openshift: has a routeClient
+func GetClusterType(restConfig *rest.Config, namespace string) ClusterType {
+	routeClient := util.GetRouteClient(restConfig, namespace) // kube doesn't have a routeclient
+	if routeClient != nil {                                   // openshift: has a routeClient
 		return OpenshiftClusterType
 	}
 	return KubernetesClusterType

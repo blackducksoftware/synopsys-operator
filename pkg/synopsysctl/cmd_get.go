@@ -71,7 +71,7 @@ var getAlertCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting Alerts due to %+v - %s", out, err)
 			return nil
@@ -104,7 +104,7 @@ var getBlackDuckCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting Black Ducks due to %+v - %s", out, err)
 			return nil
@@ -131,18 +131,27 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 
 		log.Debugf("getting Black Duck %s Root Key...", namespace)
 
-		_, err := util.GetHub(blackDuckClient, metav1.NamespaceDefault, namespace)
+		_, err := util.GetHub(blackduckClient, namespace, namespace)
 		if err != nil {
 			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
 			return nil
 		}
 
-		log.Debugf("getting Synopsys Operator's Secret")
-		operatorNamespace, err := util.GetOperatorNamespace(kubeClient)
-		if err != nil {
-			log.Errorf("unable to find Synopsys Operator instance due to %+v", err)
+		// check for any CRD cluster scope, if so, use default namespace or use the blackduck namespace to find the operator's namespace
+		operatorNamespace := namespace
+		isClusterScoped := util.GetClusterScope(apiExtensionClient)
+		if isClusterScoped {
+			operatorNamespace = metav1.NamespaceAll
+		}
+
+		log.Debugf("getting synopsys operator's secret")
+		operatorNamespace, err = util.GetOperatorNamespace(kubeClient, operatorNamespace)
+		if err != nil || len(operatorNamespace) == 0 {
+			log.Errorf("unable to find the synopsys operator instance due to %+v", err)
 			return nil
 		}
+
+		// getting the operator secret to retrieve the seal key
 		secret, err := util.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
 		if err != nil {
 			log.Errorf("unable to find Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
@@ -198,7 +207,7 @@ var getOpsSightCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting OpsSights due to %+v - %s", out, err)
 			return nil

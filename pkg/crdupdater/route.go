@@ -42,7 +42,7 @@ type Route struct {
 
 // NewRoute returns the route configuration
 func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
-	routeClient := util.GetRouteClient(config.kubeConfig)
+	routeClient := util.GetRouteClient(config.kubeConfig, config.namespace)
 	if routeClient == nil { // skip if running kubernetes
 		return nil, nil
 	}
@@ -84,7 +84,6 @@ func (c *Route) buildNewAndOldObject() error {
 		newRouteKube := util.GetRouteComponent(c.routeClient, newRoute, c.routes[i].Labels)
 		c.newRoutes[newRoute.Name] = newRouteKube
 	}
-
 	return nil
 }
 
@@ -92,6 +91,7 @@ func (c *Route) buildNewAndOldObject() error {
 func (c *Route) add(isPatched bool) (bool, error) {
 	for _, route := range c.routes {
 		if _, ok := c.oldRoutes[route.Name]; !ok && !c.config.dryRun {
+			log.Infof("creating Route %s", route.Name)
 			_, err := util.CreateRoute(c.routeClient, c.config.namespace, c.newRoutes[route.Name])
 			if err != nil {
 				return false, errors.Annotatef(err, "unable to deploy route in %s", c.config.namespace)

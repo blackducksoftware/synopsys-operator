@@ -39,16 +39,19 @@ type Route struct {
 
 // ComponentList defines the list of components for an app
 type ComponentList struct {
-	ReplicationControllers []*components.ReplicationController
-	Services               []*components.Service
-	ConfigMaps             []*components.ConfigMap
-	ServiceAccounts        []*components.ServiceAccount
-	ClusterRoleBindings    []*components.ClusterRoleBinding
-	ClusterRoles           []*components.ClusterRole
-	Deployments            []*components.Deployment
-	Secrets                []*components.Secret
-	PersistentVolumeClaims []*components.PersistentVolumeClaim
-	Routes                 []*Route
+	ReplicationControllers    []*components.ReplicationController
+	Services                  []*components.Service
+	ConfigMaps                []*components.ConfigMap
+	ServiceAccounts           []*components.ServiceAccount
+	ClusterRoleBindings       []*components.ClusterRoleBinding
+	ClusterRoles              []*components.ClusterRole
+	RoleBindings              []*components.RoleBinding
+	Roles                     []*components.Role
+	Deployments               []*components.Deployment
+	Secrets                   []*components.Secret
+	PersistentVolumeClaims    []*components.PersistentVolumeClaim
+	Routes                    []*Route
+	CustomResourceDefinitions []*components.CustomResourceDefinition
 }
 
 // GetKubeInterfaces returns a list of kube components as interfaces

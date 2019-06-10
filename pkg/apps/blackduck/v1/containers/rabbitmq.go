@@ -52,7 +52,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 	c.PostEditContainer(rabbitmqContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "rabbitmq", Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "rabbitmq", c.isClusterScope), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getRabbitmqVolumes(),
 			Containers:          []*util.Container{rabbitmqContainerConfig},
@@ -68,7 +68,7 @@ func (c *Creater) getRabbitmqVolumes() []*components.Volume {
 	rabbitmqSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-security")
 	var rabbitmqDataEmptyDir *components.Volume
 	if c.hubSpec.PersistentStorage {
-		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", "blackduck-rabbitmq")
+		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", util.GetResourceName(c.name, "blackduck-rabbitmq", c.isClusterScope))
 	} else {
 		rabbitmqDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-data")
 	}
@@ -87,5 +87,5 @@ func (c *Creater) getRabbitmqVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetRabbitmqService will return the rabbitmq service
 func (c *Creater) GetRabbitmqService() *components.Service {
-	return util.CreateService("rabbitmq", c.GetVersionLabel("rabbitmq"), c.hubSpec.Namespace, rabbitmqPort, rabbitmqPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("rabbitmq"))
+	return util.CreateService(util.GetResourceName(c.name, "rabbitmq", c.isClusterScope), c.GetVersionLabel("rabbitmq"), c.hubSpec.Namespace, rabbitmqPort, rabbitmqPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("rabbitmq"))
 }

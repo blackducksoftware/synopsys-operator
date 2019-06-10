@@ -147,6 +147,7 @@ type deploymentComparator struct {
 	MinMem   *resource.Quantity
 	MaxMem   *resource.Quantity
 	EnvFrom  []corev1.EnvFromSource
+	ServiceAccount string
 }
 
 // patch patches the deployment
@@ -177,6 +178,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 						MinMem:   oldContainer.Resources.Requests.Memory(),
 						MaxMem:   oldContainer.Resources.Limits.Memory(),
 						EnvFrom:  oldContainer.EnvFrom,
+						ServiceAccount: d.oldDeployments[deployment.GetName()].Spec.Template.Spec.ServiceAccountName,
 					},
 					deploymentComparator{
 						Image:    newContainer.Image,
@@ -186,6 +188,7 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 						MinMem:   newContainer.Resources.Requests.Memory(),
 						MaxMem:   newContainer.Resources.Limits.Memory(),
 						EnvFrom:  newContainer.EnvFrom,
+						ServiceAccount: d.newDeployments[deployment.GetName()].Spec.Template.Spec.ServiceAccountName,
 					}) ||
 					!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) ||
 					!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) ||

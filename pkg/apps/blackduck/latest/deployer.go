@@ -25,9 +25,7 @@ import (
 	"fmt"
 	"strings"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
@@ -46,7 +44,7 @@ func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*ap
 		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, hubContainerFlavor, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeConfig, hc.KubeClient, blackduck.Name, &blackduck.Spec, hubContainerFlavor, hc.isClusterScope, false)
 	// Get Db creds
 	var adminPassword, userPassword, postgresPassword string
 	if blackduck.Spec.ExternalPostgres != nil {
@@ -105,7 +103,7 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		return nil, err
 	}
 
-	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, flavor, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeConfig, hc.KubeClient, blackduck.Name, &blackduck.Spec, flavor, hc.isClusterScope, false)
 
 	// Configmap
 	componentList.ConfigMaps = append(componentList.ConfigMaps, containerCreater.GetConfigmaps()...)
@@ -246,18 +244,6 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 		componentList.Services = append(componentList.Services, containerCreater.GetUploadCacheService())
 	}
 
-	// Service account
-	componentList.ServiceAccounts = append(componentList.ServiceAccounts, containerCreater.GetServiceAccount())
-
-	// Cluster Role Binding
-	if !hc.Config.DryRun {
-		clusterRoleBinding, err := containerCreater.GetClusterRoleBinding()
-		if err != nil {
-			return nil, err
-		}
-		componentList.ClusterRoleBindings = append(componentList.ClusterRoleBindings, clusterRoleBinding)
-	}
-
 	if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
 		// Binary Scanner
 		imageName := containerCreater.GetImageTag("appcheck-worker")
@@ -287,15 +273,17 @@ func (hc *Creater) GetComponents(blackduck *blackduckapi.Blackduck) (*api.Compon
 	}
 
 	// Add OpenShift routes
-	route := containerCreater.GetOpenShiftRoute()
-	if route != nil {
-		componentList.Routes = []*api.Route{route}
+	if util.OPENSHIFT == strings.ToUpper(blackduck.Spec.ExposeService) {
+		route := containerCreater.GetOpenShiftRoute()
+		if route != nil {
+			componentList.Routes = []*api.Route{route}
+		}
 	}
 	return componentList, nil
 }
 
 func (hc *Creater) getExposeService(bd *blackduckapi.Blackduck) *components.Service {
-	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &bd.Spec, nil, false)
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeConfig, hc.KubeClient, bd.Name, &bd.Spec, nil, hc.isClusterScope, false)
 	var svc *components.Service
 
 	switch strings.ToUpper(bd.Spec.ExposeService) {
@@ -312,7 +300,7 @@ func (hc *Creater) getExposeService(bd *blackduckapi.Blackduck) *components.Serv
 
 // GetPVC returns the PVCs
 func (hc *Creater) GetPVC(blackduck *blackduckapi.Blackduck) []*components.PersistentVolumeClaim {
-	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, &blackduck.Spec, nil, hc.isBinaryAnalysisEnabled(&blackduck.Spec))
+	containerCreater := containers.NewCreater(hc.Config, hc.KubeConfig, hc.KubeClient, blackduck.Name, &blackduck.Spec, nil, hc.isClusterScope, hc.isBinaryAnalysisEnabled(&blackduck.Spec))
 	return containerCreater.GetPVCs()
 }
 
@@ -323,7 +311,7 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 
 	// Cert copy
 	if len(blackduck.Spec.CertificateName) > 0 && !strings.EqualFold(blackduck.Spec.CertificateName, "default") {
-		secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.CertificateName, "blackduck-certificate")
+		secret, err := util.GetSecret(hc.KubeClient, blackduck.Spec.CertificateName, util.GetResourceName(blackduck.Name, "webserver-certificate", hc.isClusterScope))
 		if err == nil {
 			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
 			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
@@ -341,7 +329,7 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
 			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
 			if !certok || !keyok {
-				util.DeleteSecret(hc.KubeClient, blackduck.Spec.Namespace, "blackduck-certificate")
+				util.DeleteSecret(hc.KubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, "webserver-certificate", hc.isClusterScope))
 			} else {
 				return string(cert), string(key), nil
 			}
@@ -350,43 +338,4 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 
 	// Default
 	return CreateSelfSignedCert()
-}
-
-// addAnyUIDToServiceAccount adds the capability to run as 1000 for nginx or other special IDs.  For example, the binaryscanner
-// needs to run as root and we plan to add that into protoform in 2.1 / 3.0.
-func (hc *Creater) addAnyUIDToServiceAccount(createHub *blackduckapi.BlackduckSpec) error {
-	if hc.osSecurityClient != nil {
-		scc, err := util.GetOpenShiftSecurityConstraint(hc.osSecurityClient, "anyuid")
-		if err != nil {
-			return fmt.Errorf("failed to get scc anyuid: %v", err)
-		}
-
-		serviceAccount := createHub.Namespace
-
-		// Only add the service account if it isn't already in the list of users for the privileged scc
-		exists := false
-		for _, user := range scc.Users {
-			if strings.Compare(user, serviceAccount) == 0 {
-				exists = true
-				break
-			}
-		}
-
-		if !exists {
-			log.Debugf("Adding anyuid securitycontextconstraint to the service account %s", createHub.Namespace)
-			scc.Users = append(scc.Users, serviceAccount)
-			_, err = hc.osSecurityClient.SecurityContextConstraints().Update(scc)
-			if err != nil {
-				return fmt.Errorf("failed to update scc anyuid: %v", err)
-			}
-		}
-	}
-	return nil
-}
-
-// AddExposeServices add the nodeport / LB services
-func (hc *Creater) AddExposeServices(deployer *horizon.Deployer, createHub *blackduckapi.BlackduckSpec) {
-	containerCreater := containers.NewCreater(hc.Config, hc.KubeClient, createHub, nil, false)
-	deployer.AddComponent(horizonapi.ServiceComponent, containerCreater.GetWebServerNodePortService())
-	deployer.AddComponent(horizonapi.ServiceComponent, containerCreater.GetWebServerLoadBalancerService())
 }

@@ -63,7 +63,7 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 	c.PostEditContainer(cfsslContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "cfssl", Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "cfssl", c.isClusterScope), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getCfsslVolumes(),
 			Containers:          []*util.Container{cfsslContainerConfig},
@@ -78,7 +78,7 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 func (c *Creater) getCfsslVolumes() []*components.Volume {
 	var cfsslVolume *components.Volume
 	if c.hubSpec.PersistentStorage {
-		cfsslVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-cfssl", "blackduck-cfssl")
+		cfsslVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-cfssl", util.GetResourceName(c.name, "blackduck-cfssl", c.isClusterScope))
 	} else {
 		cfsslVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-cfssl")
 	}
@@ -97,5 +97,5 @@ func (c *Creater) getCfsslolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetCfsslService will return the cfssl service
 func (c *Creater) GetCfsslService() *components.Service {
-	return util.CreateService("cfssl", c.GetLabel("cfssl"), c.hubSpec.Namespace, cfsslPort, cfsslPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("cfssl"))
+	return util.CreateService(util.GetResourceName(c.name, "cfssl", c.isClusterScope), c.GetLabel("cfssl"), c.hubSpec.Namespace, cfsslPort, cfsslPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("cfssl"))
 }

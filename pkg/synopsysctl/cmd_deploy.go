@@ -29,15 +29,17 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //  Deploy Command Defaults
-var deployNamespace string
+var deployNamespace = DefaultDeployNamespace
 var exposeUI = ""
-var synopsysOperatorImage string
-var metricsImage string
+var synopsysOperatorImage = DefaultOperatorImage
+var metricsImage = DefaultMetricsImage
 var exposeMetrics = ""
 var terminationGracePeriodSeconds int64 = 180
 var operatorTimeBombInSeconds int64 = 315576000
@@ -47,6 +49,10 @@ var threadiness = 5
 var postgresRestartInMins int64 = 10
 var podWaitTimeoutSeconds int64 = 600
 var resyncIntervalInSeconds int64 = 120
+var enableAlertScope = ""
+var enableBlackDuckScope = ""
+var enableOpsSightScope = ""
+var enablePrmScope = ""
 
 // Flags for using mock mode - doesn't deploy
 var deployMockFormat string
@@ -58,7 +64,7 @@ var secretType horizonapi.SecretType
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
 	Use:     "deploy [namespace]",
-	Example: "synopsysctl deploy\nsynopsysctl deploy sonamespace\nsynopsysctl deploy --expose-ui LOADBALANCER",
+	Example: "synopsysctl deploy\nsynopsysctl deploy --enable-blackduck-scope CLUSTER\nsynopsysctl deploy sonamespace\nsynopsysctl deploy sonamespace --enable-blackduck-scope NAMESPACED\nsynopsysctl deploy --expose-ui LOADBALANCER",
 	Short:   "Deploys Synopsys Operator into your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
@@ -69,23 +75,20 @@ var deployCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Read Commandline Parameters
-		deployNamespace = DefaultDeployNamespace
 		if len(args) == 1 {
 			deployNamespace = args[0]
 		}
 
-		if !cmd.Flags().Lookup("synopsys-operator-image").Changed {
-			synopsysOperatorImage = DefaultOperatorImage
-		}
-
-		if !cmd.Flags().Lookup("metrics-image").Changed {
-			metricsImage = DefaultMetricsImage
+		operatorNamespace := deployNamespace
+		isClusterScoped := util.GetClusterScope(apiExtensionClient)
+		if isClusterScoped {
+			operatorNamespace = metav1.NamespaceAll
 		}
 
 		// check if operator is already installed
-		ns, err := operatorutil.GetOperatorNamespace(kubeClient)
+		namespace, err := operatorutil.GetOperatorNamespace(kubeClient, operatorNamespace)
 		if err == nil {
-			log.Errorf("Synopsys Operator is already installed in '%s' namespace", ns)
+			log.Errorf("Synopsys Operator is already installed in '%s' namespace", namespace)
 			return nil
 		}
 
@@ -96,14 +99,14 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		// Create a Seal Key for the Operator
+		// generate random string as SEAL key
 		log.Debugf("getting Seal Key")
 		sealKey, err := operatorutil.GetRandomString(32)
 		if err != nil {
 			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
 		}
 
-		// Create Certificate data for the Operator
+		// generate self signed nginx certs
 		cert, key, err := operatorutil.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
 			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", deployNamespace),
 		})
@@ -112,11 +115,56 @@ var deployCmd = &cobra.Command{
 			return nil
 		}
 
-		// Create Spec for the Synopsys Operator
-		log.Debugf("creating Synopsys Operator components")
-		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig),
-			operatorTimeBombInSeconds, strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins,
-			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key)
+		// validate each CRD enable parameter is enabled/disabled and cluster scope are from supported values
+		crds := make(map[string]string)
+		if len(enableAlertScope) > 0 {
+			if isValidCRDScope(operatorutil.AlertCRDName, enableAlertScope) {
+				crds[operatorutil.AlertCRDName] = enableAlertScope
+			} else {
+				log.Error("invalid cluster scope for Alert CRD. supported values are cluster, namespaced or delete")
+				return nil
+			}
+		}
+
+		if len(enableBlackDuckScope) > 0 {
+			if isValidCRDScope(operatorutil.BlackDuckCRDName, enableBlackDuckScope) {
+				crds[operatorutil.BlackDuckCRDName] = enableBlackDuckScope
+			} else {
+				log.Error("invalid cluster scope for Black Duck CRD. supported values are cluster, namespaced or delete")
+				return nil
+			}
+		}
+
+		if len(enableOpsSightScope) > 0 {
+			if isValidCRDScope(operatorutil.OpsSightCRDName, enableOpsSightScope) {
+				crds[operatorutil.OpsSightCRDName] = enableOpsSightScope
+			} else {
+				log.Error("invalid cluster scope for OpsSight CRD. supported values are cluster, namespaced or delete")
+				return nil
+			}
+		}
+
+		if len(enablePrmScope) > 0 {
+			if isValidCRDScope(operatorutil.PrmCRDName, enablePrmScope) {
+				crds[operatorutil.PrmCRDName] = enablePrmScope
+			} else {
+				log.Error("invalid cluster scope for Polaris Report Module CRD. supported values are cluster, namespaced or delete")
+				return nil
+			}
+		}
+
+		for _, scope := range crds {
+			if strings.ToLower(scope) == "cluster" {
+				isClusterScoped = true
+				break
+			}
+		}
+
+		// Deploy Synopsys Operator
+		log.Debugf("creating Synopsys-Operator components")
+		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig, namespace), operatorTimeBombInSeconds,
+			strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds,
+			terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, isClusterScoped, crds)
 
 		if cmd.LocalFlags().Lookup("mock").Changed {
 			log.Debugf("running mock mode")
@@ -148,9 +196,9 @@ var deployCmd = &cobra.Command{
 				log.Errorf("error deploying metrics: %s", err)
 				return nil
 			}
-
-			log.Infof("successfully deployed the Synopsys Operator")
 		}
+
+		log.Infof("successfully deployed the synopsys operator in '%s' namespace", deployNamespace)
 		return nil
 	},
 }
@@ -158,15 +206,19 @@ var deployCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(deployCmd)
 	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "Service type to expose Synopsys Operator's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
-	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", DefaultOperatorImage, "Image URL of Synopsys Operator")
+	deployCmd.Flags().StringVarP(&enableAlertScope, "enable-alert-scope", "a", enableAlertScope, "Enable/Disable Alert Custom Resource Definition (CRD) in your cluster. possible values are [NAMESPACED/CLUSTER/DELETE]")
+	deployCmd.Flags().StringVarP(&enableBlackDuckScope, "enable-blackduck-scope", "b", enableBlackDuckScope, "Enable/Disable Black Duck Custom Resource Definition (CRD) in your cluster. possible values are [NAMESPACED/CLUSTER/DELETE]")
+	deployCmd.Flags().StringVarP(&enableOpsSightScope, "enable-opssight-scope", "s", enableOpsSightScope, "Enable/Disable OpsSight Custom Resource Definition (CRD) in your cluster. possible values are [CLUSTER/DELETE]")
+	deployCmd.Flags().StringVarP(&enablePrmScope, "enable-prm-scope", "p", enablePrmScope, "Enable/Disable Polaris Reporting Module Custom Resource Definition (CRD) in your cluster. possible values are [NAMESPACED/CLUSTER/DELETE]")
+	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "Image URL of Synopsys Operator")
 	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "m", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
-	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "k", DefaultMetricsImage, "Image URL of Synopsys Operator's metrics pod")
-	deployCmd.Flags().Int64VarP(&operatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", operatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
+	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "k", metricsImage, "Image URL of Synopsys Operator's metrics pod")
+	deployCmd.Flags().Int64VarP(&operatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "t", operatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
 	deployCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "n", postgresRestartInMins, "Minutes to check for restarting postgres")
 	deployCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")
 	deployCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "Seconds for resyncing custom resources")
 	deployCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "Termination grace period in seconds for shutting down postgres")
-	deployCmd.Flags().StringVar(&dryRun, "dryRun", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
+	deployCmd.Flags().StringVarP(&dryRun, "dryRun", "d", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
 	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "Log level of Synopsys Operator")
 	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "Number of threads to process the custom resources")
 	deployCmd.Flags().StringVar(&deployMockFormat, "mock", deployMockFormat, "Prints the Synopsys Operator spec in the specified format instead of creating it [json|yaml]")

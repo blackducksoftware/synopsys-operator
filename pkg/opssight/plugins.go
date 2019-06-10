@@ -55,26 +55,28 @@ func init() {
 
 // Updater stores the opssight updater configuration
 type Updater struct {
-	config         *protoform.Config
-	kubeClient     *kubernetes.Clientset
-	hubClient      *hubclient.Clientset
-	opssightClient *opssightclientset.Clientset
+	config                  *protoform.Config
+	kubeClient              *kubernetes.Clientset
+	hubClient               *hubclient.Clientset
+	opssightClient          *opssightclientset.Clientset
+	isBlackDuckClusterScope bool
 }
 
 // NewUpdater returns the opssight updater configuration
-func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *Updater {
+func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset, isBlackDuckClusterScope bool) *Updater {
 	return &Updater{
-		config:         config,
-		kubeClient:     kubeClient,
-		hubClient:      hubClient,
-		opssightClient: opssightClient,
+		config:                  config,
+		kubeClient:              kubeClient,
+		hubClient:               hubClient,
+		opssightClient:          opssightClient,
+		isBlackDuckClusterScope: isBlackDuckClusterScope,
 	}
 }
 
 // Run watches for Black Duck and OpsSight events and update the internal Black Duck hosts in Perceptor secret and
 // then patch the corresponding replication controller
 func (p *Updater) Run(ch <-chan struct{}) {
-	logger.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
+	logger.Infof("Starting controller for blackduck<->opssight-core updates... this blocks, so running in a go func.")
 
 	syncFunc := func() {
 		err := p.updateAllHubs()
@@ -221,7 +223,14 @@ func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssig
 			default:
 				concurrentScanLimit = 2
 			}
-			host := &opssightapi.Host{Domain: fmt.Sprintf("webserver.%s.svc", hub.Name), ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysadmin", Port: 443, Password: blackduckPassword}
+			host := &opssightapi.Host{
+				Domain:              fmt.Sprintf("%s.%s.svc", util.GetResourceName(hub.Name, "webserver", p.isBlackDuckClusterScope), hub.Namespace),
+				ConcurrentScanLimit: concurrentScanLimit,
+				Scheme:              "https",
+				User:                "sysadmin",
+				Port:                443,
+				Password:            blackduckPassword,
+			}
 			hosts = append(hosts, host)
 		}
 	}

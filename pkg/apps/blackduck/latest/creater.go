@@ -44,7 +44,7 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -57,13 +57,14 @@ type Creater struct {
 	BlackduckClient  *blackduckclientset.Clientset
 	osSecurityClient *securityclient.SecurityV1Client
 	routeClient      *routeclient.RouteV1Client
+	isClusterScope   bool
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
-	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
+	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, isClusterScope bool) *Creater {
 	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, BlackduckClient: hubClient, osSecurityClient: osSecurityClient,
-		routeClient: routeClient}
+		routeClient: routeClient, isClusterScope: isClusterScope}
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
@@ -75,7 +76,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
-			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck")
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=blackduck,name=%s", blackduck.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("stop blackduck: %+v", errors)
@@ -83,7 +84,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	} else if strings.EqualFold(blackduck.Spec.DesiredState, "DbMigrate") {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
-			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck")
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=blackduck,name=%s", blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("migrate blackduck: %+v", errors)
@@ -95,7 +96,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return err
 		}
 		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
-			cpPostgresList, "app=blackduck,component=postgres")
+			cpPostgresList, fmt.Sprintf("app=blackduck,name=%s,component=postgres", blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update postgres component: %+v", errors)
@@ -103,7 +104,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	} else {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, false, blackduck.Spec.Namespace,
-			&api.ComponentList{PersistentVolumeClaims: pvcs}, "app=blackduck,component=pvc")
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=blackduck,name=%s,component=pvc", blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update pvc: %+v", errors)
@@ -117,7 +118,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 		// install postgres
 		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
-			cpPostgresList, "app=blackduck,component=postgres")
+			cpPostgresList, fmt.Sprintf("app=blackduck,name=%s,component=postgres", blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update postgres component: %+v", errors)
@@ -127,7 +128,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		// Check postgres and initialize if needed.
 		if blackduck.Spec.ExternalPostgres == nil {
 			// TODO return whether we re-initialized or not
-			err = hc.initPostgres(&blackduck.Spec)
+			err = hc.initPostgres(blackduck.Name, &blackduck.Spec)
 			if err != nil {
 				return err
 			}
@@ -141,7 +142,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 		// install cfssl
 		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
-			cpList, "app=blackduck,component in (configmap,serviceAccount,cfssl)")
+			cpList, fmt.Sprintf("app=blackduck,name=%s,component in (configmap,serviceAccount,cfssl)", blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update cfssl component: %+v", errors)
@@ -151,17 +152,9 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return err
 		}
 
-		// add security context constraint if bdba enabled
-		if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
-			err = hc.addAnyUIDToServiceAccount(&blackduck.Spec)
-			if err != nil {
-				log.Error(err)
-			}
-		}
-
 		// deploy non postgres and uploadcache component
 		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
-			cpList, "app=blackduck,component notin (postgres,cfssl,configmap,serviceAccount,uploadcache)")
+			cpList, fmt.Sprintf("app=blackduck,name=%s,component notin (postgres,cfssl,configmap,serviceAccount,uploadcache,route)", blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update non postgres, cfssl and uploadcache components: %+v", errors)
@@ -170,25 +163,17 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 		// deploy upload cache component
 		commonConfig = crdupdater.NewCRUDComponents(hc.KubeConfig, hc.KubeClient, hc.Config.DryRun, isPatched, blackduck.Spec.Namespace,
-			cpList, "app=blackduck,component=uploadcache")
+			cpList, fmt.Sprintf("app=blackduck,name=%s,component in (uploadcache,route)", blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update upload cache component: %+v", errors)
 		}
 		// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
 
-		// add security context constraint if bdba enabled
-		if hc.isBinaryAnalysisEnabled(&blackduck.Spec) {
-			err = hc.addAnyUIDToServiceAccount(&blackduck.Spec)
-			if err != nil {
-				log.Error(err)
-			}
-		}
-
 		if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
-			newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
+			newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.KubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, "webserver-exposed", hc.isClusterScope))
 		} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
-			newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, "webserver-exposed")
+			newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.KubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, "webserver-exposed", hc.isClusterScope))
 		}
 
 		// Create Route on Openshift
@@ -213,8 +198,8 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 	if blackduck.Spec.PersistentStorage {
 		pvcVolumeNames := map[string]string{}
-		pvcList, err := hc.KubeClient.CoreV1().PersistentVolumeClaims(blackduck.Spec.Namespace).List(v1.ListOptions{
-			LabelSelector: "app=blackduck,component=pvc",
+		pvcList, err := hc.KubeClient.CoreV1().PersistentVolumeClaims(blackduck.Spec.Namespace).List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app=blackduck,name=%s,component=pvc", blackduck.Name),
 		})
 		if err != nil {
 			return err
@@ -254,7 +239,7 @@ func (hc *Creater) getContainersFlavor(bd *blackduckapi.Blackduck) (*containers.
 	return hubContainerFlavor, nil
 }
 
-func (hc *Creater) initPostgres(bdspec *blackduckapi.BlackduckSpec) error {
+func (hc *Creater) initPostgres(name string, bdspec *blackduckapi.BlackduckSpec) error {
 	adminPassword, err := util.Base64Decode(bdspec.AdminPassword)
 	if err != nil {
 		return fmt.Errorf("%v: unable to decode adminPassword due to: %+v", bdspec.Namespace, err)
@@ -268,7 +253,7 @@ func (hc *Creater) initPostgres(bdspec *blackduckapi.BlackduckSpec) error {
 		return fmt.Errorf("%v: unable to decode postgresPassword due to: %+v", bdspec.Namespace, err)
 	}
 
-	ready, err := util.WaitUntilPodsAreReady(hc.KubeClient, bdspec.Namespace, "app=blackduck,component=postgres", hc.Config.PodWaitTimeoutSeconds)
+	ready, err := util.WaitUntilPodsAreReady(hc.KubeClient, bdspec.Namespace, fmt.Sprintf("app=blackduck,name=%s,component=postgres", name), hc.Config.PodWaitTimeoutSeconds)
 	if err != nil {
 		return err
 	}
@@ -278,7 +263,7 @@ func (hc *Creater) initPostgres(bdspec *blackduckapi.BlackduckSpec) error {
 	}
 
 	// Check if initialization is required.
-	db, err := database.NewDatabase(fmt.Sprintf("postgres.%s.svc.cluster.local", bdspec.Namespace), "postgres", "postgres", postgresPassword, "postgres")
+	db, err := database.NewDatabase(fmt.Sprintf("%s.%s.svc.cluster.local", util.GetResourceName(name, "postgres", hc.isClusterScope), bdspec.Namespace), "postgres", "postgres", postgresPassword, "postgres")
 	if err != nil {
 		return err
 	}
@@ -301,7 +286,7 @@ func (hc *Creater) initPostgres(bdspec *blackduckapi.BlackduckSpec) error {
 	if nbRow == 0 {
 		log.Infof("postres instance %s requires to be re-initialized", bdspec.Namespace)
 		if len(bdspec.DbPrototype) == 0 {
-			err := InitDatabase(bdspec, adminPassword, userPassword, postgresPassword)
+			err := InitDatabase(name, bdspec, hc.isClusterScope, adminPassword, userPassword, postgresPassword)
 			if err != nil {
 				log.Errorf("%v: error: %+v", bdspec.Namespace, err)
 				return fmt.Errorf("%v: error: %+v", bdspec.Namespace, err)
@@ -339,7 +324,7 @@ func (hc *Creater) registerIfNeeded(bd *blackduckapi.Blackduck) error {
 		Timeout: time.Second * 10,
 	}
 
-	resp, err := client.Get(fmt.Sprintf("https://webserver.%s.svc:443/api/v1/registrations?summary=true", bd.Spec.Namespace))
+	resp, err := client.Get(fmt.Sprintf("https://%s.%s.svc:443/api/v1/registrations?summary=true", util.GetResourceName(bd.Name, "webserver", hc.isClusterScope), bd.Spec.Namespace))
 	if err != nil {
 		return err
 	}
@@ -363,7 +348,7 @@ func (hc *Creater) registerIfNeeded(bd *blackduckapi.Blackduck) error {
 
 		// We register if the registration is invalid
 		if !r {
-			if err := hc.autoRegisterHub(&bd.Spec); err != nil {
+			if err := hc.autoRegisterHub(bd.Name, &bd.Spec); err != nil {
 				return err
 			}
 		}
@@ -372,9 +357,9 @@ func (hc *Creater) registerIfNeeded(bd *blackduckapi.Blackduck) error {
 	return nil
 }
 
-func (hc *Creater) autoRegisterHub(bdspec *blackduckapi.BlackduckSpec) error {
+func (hc *Creater) autoRegisterHub(name string, bdspec *blackduckapi.BlackduckSpec) error {
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod, err := util.FilterPodByNamePrefixInNamespace(hc.KubeClient, bdspec.Namespace, "registration")
+	registrationPod, err := util.FilterPodByNamePrefixInNamespace(hc.KubeClient, bdspec.Namespace, util.GetResourceName(name, "registration", hc.isClusterScope))
 	if err != nil {
 		return err
 	}

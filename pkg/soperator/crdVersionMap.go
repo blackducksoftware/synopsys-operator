@@ -21,29 +21,17 @@ under the License.
 
 package soperator
 
+import "github.com/blackducksoftware/synopsys-operator/pkg/util"
+
 // SOperatorCRDVersionMap is a global lookup table in the package. It maps versions of the operator
 // to the resource versions it is compatible with
 var SOperatorCRDVersionMap = operatorCRDVersionMap{
 	versionMap: map[string]operatorVersions{
 		"latest": {
-			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
-			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
-			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
-		},
-		"2019.4.0": {
-			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
-			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
-			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
-		},
-		"2019.1.0": {
-			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
-			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
-			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
-		},
-		"2018.12.0": {
-			Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
-			OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
-			Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
+			Blackduck: &crdVersionData{CRDName: util.BlackDuckCRDName, APIVersion: "v1"},
+			OpsSight:  &crdVersionData{CRDName: util.OpsSightCRDName, APIVersion: "v1"},
+			Alert:     &crdVersionData{CRDName: util.AlertCRDName, APIVersion: "v1"},
+			Prm:       &crdVersionData{CRDName: util.PrmCRDName, APIVersion: "v1"},
 		},
 	},
 }
@@ -60,6 +48,7 @@ type operatorVersions struct {
 	Blackduck *crdVersionData
 	OpsSight  *crdVersionData
 	Alert     *crdVersionData
+	Prm       *crdVersionData
 }
 
 // crdVersionData holds the name of the crd and the version

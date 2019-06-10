@@ -22,7 +22,6 @@ under the License.
 package blackduck
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -37,7 +36,6 @@ import (
 	"github.com/juju/errors"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -46,24 +44,25 @@ import (
 
 // CRDInstaller defines the specification for the CRD
 type CRDInstaller struct {
-	config       *protoform.Config
-	kubeConfig   *rest.Config
-	kubeClient   *kubernetes.Clientset
-	defaults     interface{}
-	resyncPeriod time.Duration
-	indexers     cache.Indexers
-	infomer      cache.SharedIndexInformer
-	queue        workqueue.RateLimitingInterface
-	handler      *Handler
-	controller   *Controller
-	hubClient    *hubclientset.Clientset
-	threadiness  int
-	stopCh       <-chan struct{}
+	config         *protoform.Config
+	kubeConfig     *rest.Config
+	kubeClient     *kubernetes.Clientset
+	isClusterScope bool
+	defaults       interface{}
+	resyncPeriod   time.Duration
+	indexers       cache.Indexers
+	infomer        cache.SharedIndexInformer
+	queue          workqueue.RateLimitingInterface
+	handler        *Handler
+	controller     *Controller
+	hubClient      *hubclientset.Clientset
+	threadiness    int
+	stopCh         <-chan struct{}
 }
 
 // NewCRDInstaller will create a CRD installer configuration
-func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
-	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
+func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, isClusterScope bool, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, isClusterScope: isClusterScope, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
 	crdInstaller.resyncPeriod = time.Duration(config.ResyncIntervalInSeconds) * time.Second
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
@@ -86,89 +85,14 @@ func (c *CRDInstaller) Deploy() error {
 		return err
 	}
 
-	// Blackduck CRD
-	apiClientset, err := clientset.NewForConfig(c.kubeConfig)
-	_, err = util.GetCustomResourceDefinition(apiClientset, "blackducks.synopsys.com")
-	if err != nil {
-		deployer.AddComponent(horizonapi.CRDComponent,
-			components.NewCustomResourceDefintion(horizonapi.CRDConfig{
-				APIVersion: "apiextensions.k8s.io/v1beta1",
-				Name:       "blackducks.synopsys.com",
-				Namespace:  c.config.Namespace,
-				Group:      "synopsys.com",
-				CRDVersion: "v1",
-				Kind:       "Blackduck",
-				Plural:     "blackducks",
-				Singular:   "blackduck",
-				Scope:      horizonapi.CRDClusterScoped,
-			}))
-	}
-
-	// // Perceptor configMap
-	// hubFederatorConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.config.Namespace, Name: "federator"})
-
-	// if c.config.HubFederatorConfig.HubConfig == nil {
-	// 	panic("Cant start with nil federator configuration ! Set HubFederatorConfig with Port, User")
-	// }
-
-	// data := map[string]interface{}{
-	// 	"HubConfig": map[string]interface{}{
-	// 		"Port":                         c.config.HubFederatorConfig.HubConfig.Port,
-	// 		"User":                         c.config.HubFederatorConfig.HubConfig.User,
-	// 		"PasswordEnvVar":               c.config.HubFederatorConfig.HubConfig.PasswordEnvVar,
-	// 		"ClientTimeoutMilliseconds":    c.config.HubFederatorConfig.HubConfig.ClientTimeoutMilliseconds,
-	// 		"FetchAllProjectsPauseSeconds": c.config.HubFederatorConfig.HubConfig.FetchAllProjectsPauseSeconds,
-	// 	},
-	// 	"Port":        c.config.HubFederatorConfig.Port,
-	// 	"LogLevel":    c.config.LogLevel,
-	// 	"UseMockMode": c.config.HubFederatorConfig.UseMockMode,
-	// }
-	// bytes, err := json.Marshal(data)
-	// if err != nil {
-	// 	return errors.Trace(err)
-	// }
-	// hubFederatorConfig.AddData(map[string]string{"config.json": string(bytes)})
-	// deployer.AddConfigMap(hubFederatorConfig)
-
-	// // Perceptor service
-	// deployer.AddService(util.CreateService("federator", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeDefault))
-	// deployer.AddService(util.CreateService("federator-np", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeNodePort))
-	// deployer.AddService(util.CreateService("federator-lb", "federator", c.config.Namespace, fmt.Sprint(c.config.HubFederatorConfig.Port), fmt.Sprint(c.config.HubFederatorConfig.Port), horizonapi.ClusterIPServiceTypeLoadBalancer))
-
-	// var hubPassword string
-	// for {
-	// 	blackduckSecret, err := util.GetSecret(c.kubeClient, c.config.Namespace, "blackduck-secret")
-	// 	if err != nil {
-	// 		log.Infof("Aborting: You need to first create a 'blackduck-secret' in the %v namespace with HUB_PASSWORD and retry", c.config.Namespace)
-	// 	} else {
-	// 		hubPassword = string(blackduckSecret.Data["HUB_PASSWORD"])
-	// 		break
-	// 	}
-	// 	time.Sleep(5 * time.Second)
-	// }
-
-	// Blackduck federator deployment
-	// hubFederatorContainerConfig := &util.Container{
-	// 	ContainerConfig: &horizonapi.ContainerConfig{Name: "federator", Image: fmt.Sprintf("%s/%s/%s:%s", c.config.HubFederatorConfig.Registry, c.config.HubFederatorConfig.ImagePath, c.config.HubFederatorConfig.ImageName, c.config.HubFederatorConfig.ImageVersion),
-	// 		PullPolicy: horizonapi.PullAlways, Command: []string{"./federator"}, Args: []string{"/etc/federator/config.json"}},
-	// 	EnvConfigs:   []*horizonapi.EnvConfig{{Type: horizonapi.EnvVal, NameOrPrefix: c.config.HubFederatorConfig.HubConfig.PasswordEnvVar, KeyOrVal: hubPassword}},
-	// 	VolumeMounts: []*horizonapi.VolumeMountConfig{{Name: "federator", MountPath: "/etc/federator"}},
-	// 	PortConfig:   &horizonapi.PortConfig{ContainerPort: fmt.Sprint(c.config.HubFederatorConfig.Port), Protocol: horizonapi.ProtocolTCP},
-	// }
-	// hubFederatorVolume := components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
-	// 	VolumeName:      "federator",
-	// 	MapOrSecretName: "federator",
-	// 	DefaultMode:     util.IntToInt32(420),
-	// })
-	// hubFederator := util.CreateReplicationControllerFromContainer(&horizonapi.ReplicationControllerConfig{Namespace: c.config.Namespace, Name: "federator", Replicas: util.IntToInt32(1)}, "",
-	// 	[]*util.Container{hubFederatorContainerConfig}, []*components.Volume{hubFederatorVolume}, []*util.Container{}, []horizonapi.AffinityConfig{})
-	// deployer.AddReplicationController(hubFederator)
-
+	// creation of default blackduck nginx certificate secret
 	certificate, key := CreateSelfSignedCert()
-
-	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.config.Namespace, Name: "blackduck-certificate", Type: horizonapi.SecretTypeOpaque})
+	certificateSecret := components.NewSecret(horizonapi.SecretConfig{
+		Namespace: c.config.Namespace,
+		Name:      "blackduck-certificate",
+		Type:      horizonapi.SecretTypeOpaque,
+	})
 	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
-
 	deployer.AddComponent(horizonapi.SecretComponent, certificateSecret)
 
 	_, err = util.GetSecret(c.kubeClient, c.config.Namespace, "blackduck-secret")
@@ -177,7 +101,7 @@ func (c *CRDInstaller) Deploy() error {
 		if err != nil {
 			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
 		}
-		// create a secret
+		// creation of blackduck secret to store the seal key
 		operatorSecret := components.NewSecret(horizonapi.SecretConfig{
 			APIVersion: "v1",
 			Name:       "blackduck-secret",
@@ -185,20 +109,18 @@ func (c *CRDInstaller) Deploy() error {
 			Type:       horizonapi.SecretTypeOpaque,
 		})
 		operatorSecret.AddData(map[string][]byte{
-			"ADMIN_PASSWORD":    []byte(""),
-			"POSTGRES_PASSWORD": []byte(""),
-			"USER_PASSWORD":     []byte(""),
-			"HUB_PASSWORD":      []byte(""),
-			"SEAL_KEY":          []byte(sealKey),
+			"SEAL_KEY": []byte(sealKey),
 		})
 
 		operatorSecret.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 		deployer.AddComponent(horizonapi.SecretComponent, operatorSecret)
+	} else {
+		log.Warn("blackduck-secret is already exist")
 	}
 
 	err = deployer.Run()
 	if err != nil {
-		log.Errorf("unable to create the black duck crd due to %+v", err)
+		log.Errorf("unable to create the black duck secrets due to %+v", err)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -276,9 +198,9 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	routeClient := util.GetRouteClient(c.kubeConfig)
+	routeClient := util.GetRouteClient(c.kubeConfig, c.config.Namespace)
 
-	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), fmt.Sprint("http://federator:3016"), make(chan bool, 1), osClient, routeClient)
+	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.isClusterScope, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1), osClient, routeClient)
 }
 
 // CreateController will create a CRD controller
@@ -293,6 +215,4 @@ func (c *CRDInstaller) Run() {
 
 // PostRun will run post CRD controller execution
 func (c *CRDInstaller) PostRun() {
-	//secretReplicator := plugins.NewSecretReplicator(c.kubeClient, c.hubClient, c.config.Namespace, c.resyncPeriod)
-	//go secretReplicator.Run(c.stopCh)
 }

@@ -36,7 +36,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-nginx":          "1.0.7",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.8",
-		"appcheck-worker":          "2019.01",
+		"appcheck-worker":          "2019.03",
 		"rabbitmq":                 "1.0.0",
 	},
 	"2019.4.0": {

@@ -26,9 +26,6 @@ import (
 	"strings"
 	"time"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/horizon/pkg/components"
-	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
@@ -37,7 +34,6 @@ import (
 	"github.com/juju/errors"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -74,45 +70,13 @@ func (c *CRDInstaller) CreateClientSet() error {
 
 // Deploy will deploy the CRD
 func (c *CRDInstaller) Deploy() error {
-	deployer, err := horizon.NewDeployer(c.config.KubeConfig)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	// OpsSight CRD
-	apiClientset, err := clientset.NewForConfig(c.config.KubeConfig)
-	_, err = util.GetCustomResourceDefinition(apiClientset, "opssights.synopsys.com")
-	if err != nil {
-		deployer.AddComponent(horizonapi.CRDComponent,
-			components.NewCustomResourceDefintion(horizonapi.CRDConfig{
-				APIVersion: "apiextensions.k8s.io/v1beta1",
-				Name:       "opssights.synopsys.com",
-				Namespace:  c.config.Config.Namespace,
-				Group:      "synopsys.com",
-				CRDVersion: "v1",
-				Kind:       "OpsSight",
-				Plural:     "opssights",
-				Singular:   "opssight",
-				Scope:      horizonapi.CRDClusterScoped,
-			}))
-	}
-
-	err = deployer.Run()
-	if err != nil {
-		log.Errorf("unable to create the opssight CRD due to %+v", err)
-		// return errors.Trace(err)
-	}
-
-	time.Sleep(5 * time.Second)
-
 	// Any new, pluggable maintainance stuff should go in here...
 	hubClientset, err := hubclient.NewForConfig(c.config.KubeConfig)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	configMapEditor := NewUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet)
-	configMapEditor.Run(c.config.StopCh)
-
+	crdUpdater := NewUpdater(c.config.Config, c.config.KubeClientSet, hubClientset, c.config.customClientSet, c.config.IsBlackDuckClusterScope)
+	crdUpdater.Run(c.config.StopCh)
 	return nil
 }
 
@@ -198,7 +162,7 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	routeClient := util.GetRouteClient(c.config.KubeConfig)
+	routeClient := util.GetRouteClient(c.config.KubeConfig, c.config.Config.Namespace)
 
 	hubClient, err := hubclient.NewForConfig(c.config.KubeConfig)
 	if err != nil {
@@ -207,15 +171,16 @@ func (c *CRDInstaller) CreateHandler() {
 	}
 
 	c.config.handler = &Handler{
-		Config:           c.config.Config,
-		KubeConfig:       c.config.KubeConfig,
-		KubeClient:       c.config.KubeClientSet,
-		OpsSightClient:   c.config.customClientSet,
-		Namespace:        c.config.Config.Namespace,
-		OSSecurityClient: osClient,
-		RouteClient:      routeClient,
-		Defaults:         c.config.Defaults.(*opssightapi.OpsSightSpec),
-		HubClient:        hubClient,
+		Config:                  c.config.Config,
+		KubeConfig:              c.config.KubeConfig,
+		KubeClient:              c.config.KubeClientSet,
+		OpsSightClient:          c.config.customClientSet,
+		IsBlackDuckClusterScope: c.config.IsBlackDuckClusterScope,
+		Namespace:               c.config.Config.Namespace,
+		OSSecurityClient:        osClient,
+		RouteClient:             routeClient,
+		Defaults:                c.config.Defaults.(*opssightapi.OpsSightSpec),
+		HubClient:               hubClient,
 	}
 }
 

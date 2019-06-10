@@ -27,6 +27,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetPostgres will return the postgres object
@@ -35,12 +36,16 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 	if len(postgresImage) == 0 {
 		postgresImage = "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1"
 	}
+
+	name := util.GetResourceName(c.name, "postgres", c.isClusterScope)
+
 	var pvcName string
 	if c.hubSpec.PersistentStorage {
-		pvcName = "blackduck-postgres"
+		pvcName = util.GetResourceName(c.name, "blackduck-postgres", c.isClusterScope)
 	}
 
 	return &postgres.Postgres{
+		Name:                   name,
 		Namespace:              c.hubSpec.Namespace,
 		PVCName:                pvcName,
 		Port:                   PostgresPort,
@@ -51,12 +56,12 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 		MaxMemory:              "",
 		Database:               "blackduck",
 		User:                   "blackduck",
-		PasswordSecretName:     "db-creds",
+		PasswordSecretName:     util.GetResourceName(c.name, "db-creds", c.isClusterScope),
 		UserPasswordSecretKey:  "HUB_POSTGRES_ADMIN_PASSWORD_FILE",
 		AdminPasswordSecretKey: "HUB_POSTGRES_POSTGRES_PASSWORD_FILE",
 		MaxConnections:         300,
 		SharedBufferInMB:       1024,
-		EnvConfigMapRefs:       []string{"blackduck-db-config"},
+		EnvConfigMapRefs:       []string{util.GetResourceName(c.name, "db-config", c.isClusterScope)},
 		Labels:                 c.GetLabel("postgres"),
 	}
 }
@@ -64,7 +69,7 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 // GetPostgresConfigmap will return the postgres configMaps
 func (c *Creater) GetPostgresConfigmap() *components.ConfigMap {
 	// DB
-	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: "blackduck-db-config"})
+	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "db-config", c.isClusterScope)})
 	if c.hubSpec.ExternalPostgres != nil {
 		hubDbConfig.AddData(map[string]string{
 			"HUB_POSTGRES_ADMIN": c.hubSpec.ExternalPostgres.PostgresAdmin,
@@ -77,7 +82,7 @@ func (c *Creater) GetPostgresConfigmap() *components.ConfigMap {
 			"HUB_POSTGRES_ADMIN": "blackduck",
 			"HUB_POSTGRES_USER":  "blackduck_user",
 			"HUB_POSTGRES_PORT":  "5432",
-			"HUB_POSTGRES_HOST":  "postgres",
+			"HUB_POSTGRES_HOST":  util.GetResourceName(c.name, "postgres", c.isClusterScope),
 		})
 	}
 
@@ -96,7 +101,7 @@ func (c *Creater) GetPostgresConfigmap() *components.ConfigMap {
 
 // GetPostgresSecret will return the postgres secret
 func (c *Creater) GetPostgresSecret(adminPassword string, userPassword string, postgresPassword string) *components.Secret {
-	hubSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: "db-creds", Type: horizonapi.SecretTypeOpaque})
+	hubSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "db-creds", c.isClusterScope), Type: horizonapi.SecretTypeOpaque})
 
 	if c.hubSpec.ExternalPostgres != nil {
 		hubSecret.AddData(map[string][]byte{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": []byte(c.hubSpec.ExternalPostgres.PostgresAdminPassword), "HUB_POSTGRES_USER_PASSWORD_FILE": []byte(c.hubSpec.ExternalPostgres.PostgresUserPassword)})

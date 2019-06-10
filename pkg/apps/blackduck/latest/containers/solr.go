@@ -63,7 +63,7 @@ func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationCo
 	c.PostEditContainer(solrContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "solr", Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "solr", c.isClusterScope), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getSolrVolumes(),
 			Containers:          []*util.Container{solrContainerConfig},
@@ -78,7 +78,7 @@ func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationCo
 func (c *Creater) getSolrVolumes() []*components.Volume {
 	var solrVolume *components.Volume
 	if c.hubSpec.PersistentStorage {
-		solrVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-solr", "blackduck-solr")
+		solrVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-solr", util.GetResourceName(c.name, "blackduck-solr", c.isClusterScope))
 	} else {
 		solrVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-solr")
 	}
@@ -97,5 +97,5 @@ func (c *Creater) getSolrVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetSolrService will return the solr service
 func (c *Creater) GetSolrService() *components.Service {
-	return util.CreateService("solr", c.GetLabel("solr"), c.hubSpec.Namespace, solrPort, solrPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("solr"))
+	return util.CreateService(util.GetResourceName(c.name, "solr", c.isClusterScope), c.GetLabel("solr"), c.hubSpec.Namespace, solrPort, solrPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("solr"))
 }

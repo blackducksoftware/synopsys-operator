@@ -24,9 +24,6 @@ package alert
 import (
 	"time"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/horizon/pkg/components"
-	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/alert/v1"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -34,7 +31,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -43,24 +39,25 @@ import (
 
 // CRDInstaller defines the specification for the controller
 type CRDInstaller struct {
-	config       *protoform.Config
-	kubeConfig   *rest.Config
-	kubeClient   *kubernetes.Clientset
-	defaults     interface{}
-	resyncPeriod time.Duration
-	indexers     cache.Indexers
-	infomer      cache.SharedIndexInformer
-	queue        workqueue.RateLimitingInterface
-	handler      *Handler
-	controller   *Controller
-	alertClient  *alertclientset.Clientset
-	threadiness  int
-	stopCh       <-chan struct{}
+	config         *protoform.Config
+	kubeConfig     *rest.Config
+	kubeClient     *kubernetes.Clientset
+	isClusterScope bool
+	defaults       interface{}
+	resyncPeriod   time.Duration
+	indexers       cache.Indexers
+	infomer        cache.SharedIndexInformer
+	queue          workqueue.RateLimitingInterface
+	handler        *Handler
+	controller     *Controller
+	alertClient    *alertclientset.Clientset
+	threadiness    int
+	stopCh         <-chan struct{}
 }
 
 // NewCRDInstaller will create a installer configuration
-func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
-	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
+func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, isClusterScope bool, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, isClusterScope: isClusterScope, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
 	crdInstaller.resyncPeriod = 0
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
@@ -78,36 +75,7 @@ func (c *CRDInstaller) CreateClientSet() error {
 
 // Deploy will deploy the CRD
 func (c *CRDInstaller) Deploy() error {
-	deployer, err := horizon.NewDeployer(c.kubeConfig)
-	if err != nil {
-		return err
-	}
-
-	// Alert CRD
-	apiClientset, err := clientset.NewForConfig(c.kubeConfig)
-	_, err = util.GetCustomResourceDefinition(apiClientset, "alerts.synopsys.com")
-	if err != nil {
-		deployer.AddComponent(horizonapi.CRDComponent, components.NewCustomResourceDefintion(horizonapi.CRDConfig{
-			APIVersion: "apiextensions.k8s.io/v1beta1",
-			Name:       "alerts.synopsys.com",
-			Namespace:  c.config.Namespace,
-			Group:      "synopsys.com",
-			CRDVersion: "v1",
-			Kind:       "Alert",
-			Plural:     "alerts",
-			Singular:   "alert",
-			Scope:      horizonapi.CRDClusterScoped,
-		}))
-	}
-
-	err = deployer.Run()
-	if err != nil {
-		log.Errorf("unable to create the alert CRD due to %+v", err)
-	}
-
-	time.Sleep(5 * time.Second)
-
-	return err
+	return nil
 }
 
 // PostDeploy will initialize before deploying the CRD
@@ -170,15 +138,16 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	routeClient := util.GetRouteClient(c.kubeConfig)
+	routeClient := util.GetRouteClient(c.kubeConfig, c.config.Namespace)
 
 	c.handler = &Handler{
-		config:      c.config,
-		kubeConfig:  c.kubeConfig,
-		kubeClient:  c.kubeClient,
-		alertClient: c.alertClient,
-		defaults:    c.defaults.(*alertapi.AlertSpec),
-		routeClient: routeClient,
+		config:         c.config,
+		kubeConfig:     c.kubeConfig,
+		kubeClient:     c.kubeClient,
+		alertClient:    c.alertClient,
+		defaults:       c.defaults.(*alertapi.AlertSpec),
+		routeClient:    routeClient,
+		isClusterScope: c.isClusterScope,
 	}
 }
 

@@ -37,7 +37,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 			MinCPU: "", MaxCPU: ""},
 		EnvConfigs: []*horizonapi.EnvConfig{
 			c.getHubConfigEnv(),
-			// {NameOrPrefix: "SEAL_KEY", Type: horizonapi.EnvFromSecret, KeyOrVal: "SEAL_KEY", FromName: "upload-cache"},
+			// &horizonapi.EnvConfig{NameOrPrefix: "BLACKDUCK_UPLOAD_CACHE_HOST", Type: horizonapi.EnvVal, KeyOrVal: "0.0.0.0"},
 		},
 		VolumeMounts: volumeMounts,
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: uploadCachePort1, Protocol: horizonapi.ProtocolTCP},
@@ -69,7 +69,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 	c.PostEditContainer(uploadCacheContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "uploadcache", Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "uploadcache", c.isClusterScope), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getUploadCacheVolumes(),
 			Containers:          []*util.Container{uploadCacheContainerConfig},
@@ -83,12 +83,12 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 // getUploadCacheVolumes will return the uploadCache volumes
 func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
-	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", "upload-cache", 0444)
+	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", util.GetResourceName(c.name, "upload-cache", c.isClusterScope), 0444)
 	var uploadCacheDataDir *components.Volume
 	var uploadCacheDataKey *components.Volume
 	if c.hubSpec.PersistentStorage {
-		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", "blackduck-uploadcache-data")
-		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", "blackduck-uploadcache-key")
+		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.name, "blackduck-uploadcache-data", c.isClusterScope))
+		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", util.GetResourceName(c.name, "blackduck-uploadcache-key", c.isClusterScope))
 	} else {
 		uploadCacheDataDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
 		uploadCacheDataKey, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-key")
@@ -110,6 +110,7 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetUploadCacheService will return the uploadCache service
 func (c *Creater) GetUploadCacheService() *components.Service {
+	// TODO: remove GetResourceName method until the HUB-20412 is fixed. once it if fixed, add them back
 	return util.CreateServiceWithMultiplePort("uploadcache", c.GetLabel("uploadcache"), c.hubSpec.Namespace, []int32{uploadCachePort1, uploadCachePort2},
 		horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("uploadcache"))
 }

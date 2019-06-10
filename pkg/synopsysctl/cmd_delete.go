@@ -24,8 +24,10 @@ package synopsysctl
 import (
 	"fmt"
 
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,8 +42,8 @@ var deleteCmd = &cobra.Command{
 
 // deleteAlertCmd deletes an Alert from the cluster
 var deleteAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE...",
-	Example: "synopsysctl delete alert altnamespace\nsynopsysctl delete alert altnamespace1 altnamespace2 altnamespace3",
+	Use:     "alert NAME...",
+	Example: "synopsysctl delete alert altname\nsynopsysctl delete alert altname1 altname2 altname3\nsynopsysctl delete alert altname -n altnamespace\nsynopsysctl delete alert altname1 altname2 altname3 -n altnamespace",
 	Short:   "Delete one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
@@ -50,13 +52,33 @@ var deleteAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		for _, alertNamespace := range args {
-			log.Infof("deleting Alert %s...", alertNamespace)
-			err := alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertNamespace, &metav1.DeleteOptions{})
-			if err != nil {
-				log.Errorf("error deleting Alert %s: %s", alertNamespace, err)
+		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, util.AlertCRDName)
+		if err != nil {
+			return fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", util.AlertCRDName, err)
+		}
+
+		// Check Number of Arguments
+		if crd.Spec.Scope != apiextensions.ClusterScoped && len(namespace) == 0 {
+			return fmt.Errorf("namespace to delete an Alert instance need to be provided")
+		}
+
+		for _, alertName := range args {
+			var operatorNamespace string
+			if crd.Spec.Scope == apiextensions.ClusterScoped {
+				if len(namespace) == 0 {
+					operatorNamespace = alertName
+				} else {
+					operatorNamespace = namespace
+				}
+			} else {
+				operatorNamespace = namespace
 			}
-			log.Infof("successfully deleted Alert: %s", alertNamespace)
+			log.Infof("deleting an Alert '%s' instance in '%s' namespace...", alertName, operatorNamespace)
+			err := alertClient.SynopsysV1().Alerts(operatorNamespace).Delete(alertName, &metav1.DeleteOptions{})
+			if err != nil {
+				log.Errorf("error deleting an Alert %s instance in %s namespace due to %+v", alertName, operatorNamespace, err)
+			}
+			log.Infof("successfully deleted an Alert '%s' instance in '%s' namespace", alertName, operatorNamespace)
 		}
 		return nil
 	},
@@ -64,8 +86,8 @@ var deleteAlertCmd = &cobra.Command{
 
 // deleteBlackDuckCmd deletes a Black Duck from the cluster
 var deleteBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck NAMESPACE...",
-	Example: "synopsysctl delete blackduck bdnamespace\nsynopsysctl delete blackduck bdnamespace1 bdnamespace2 bdnamespace3",
+	Use:     "blackduck NAME...",
+	Example: "synopsysctl delete blackduck bdname\nsynopsysctl delete blackduck bdname1 bdname2 bdname3\nsynopsysctl delete blackduck bdname -n bdnamespace\nsynopsysctl delete blackduck bdname1 bdname2 bdname3 -n bdnamespace",
 	Short:   "Delete one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
@@ -74,13 +96,33 @@ var deleteBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		for _, blackDuckNamespace := range args {
-			log.Infof("deleting Black Duck %s...", blackDuckNamespace)
-			err := blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Delete(blackDuckNamespace, &metav1.DeleteOptions{})
-			if err != nil {
-				log.Errorf("error deleting Black Duck %s: '%s'", blackDuckNamespace, err)
+		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, util.BlackDuckCRDName)
+		if err != nil {
+			return fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", util.BlackDuckCRDName, err)
+		}
+
+		// Check Number of Arguments
+		if crd.Spec.Scope != apiextensions.ClusterScoped && len(namespace) == 0 {
+			return fmt.Errorf("namespace to delete the Black Duck instance need to be provided")
+		}
+
+		for _, blackDuckName := range args {
+			var operatorNamespace string
+			if crd.Spec.Scope == apiextensions.ClusterScoped {
+				if len(namespace) == 0 {
+					operatorNamespace = blackDuckName
+				} else {
+					operatorNamespace = namespace
+				}
+			} else {
+				operatorNamespace = namespace
 			}
-			log.Infof("successfully deleted Black Duck: %s", blackDuckNamespace)
+			log.Infof("deleting Black Duck '%s' instance in '%s' namespace...", blackDuckName, operatorNamespace)
+			err := blackDuckClient.SynopsysV1().Blackducks(operatorNamespace).Delete(blackDuckName, &metav1.DeleteOptions{})
+			if err != nil {
+				log.Errorf("error deleting Black Duck %s instance in %s namespace due to '%s'", blackDuckName, operatorNamespace, err)
+			}
+			log.Infof("successfully deleted Black Duck '%s' in %s namespace", blackDuckName, operatorNamespace)
 		}
 		return nil
 	},
@@ -88,7 +130,7 @@ var deleteBlackDuckCmd = &cobra.Command{
 
 // deleteOpsSightCmd deletes an OpsSight from the cluster
 var deleteOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAMESPACE...",
+	Use:     "opssight NAME...",
 	Example: "synopsysctl delete opssight opsnamespace\nsynopsysctl delete opssight opsnamespace1 opsnamespace2 opsnamespace3",
 	Short:   "Delete one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -115,7 +157,9 @@ func init() {
 	rootCmd.AddCommand(deleteCmd)
 
 	// Add Delete Commands
+	deleteAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to delete the resource(s)")
 	deleteCmd.AddCommand(deleteAlertCmd)
+	deleteBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to delete the resource(s)")
 	deleteCmd.AddCommand(deleteBlackDuckCmd)
 	deleteCmd.AddCommand(deleteOpsSightCmd)
 }

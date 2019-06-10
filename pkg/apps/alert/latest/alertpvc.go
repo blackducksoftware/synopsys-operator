@@ -31,12 +31,12 @@ import (
 
 // getAlertPersistentVolumeClaim returns a new PVC for an Alert
 func (a *SpecConfig) getAlertPersistentVolumeClaim() (*components.PersistentVolumeClaim, error) {
-	name := a.config.PVCName
+	name := operatorutil.GetResourceName(a.name, a.config.PVCName, a.isClusterScope)
 	pvc, err := operatorutil.CreatePersistentVolumeClaim(name, a.config.Namespace, a.config.PVCSize, a.config.PVCStorageClass, horizonapi.ReadWriteOnce)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the PVC %s in namespace %s because %+v", name, a.config.Namespace, err)
 	}
 
-	pvc.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+	pvc.AddLabels(map[string]string{"app": "alert", "name": a.name, "component": "alert"})
 	return pvc, nil
 }

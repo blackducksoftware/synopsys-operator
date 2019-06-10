@@ -63,7 +63,7 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 	pc.SelfSetDefaults()
 	pc.DryRun = true
 	rc := &rest.Config{}
-	app := apps.NewApp(pc, rc)
+	app := apps.NewApp(pc, rc, true)
 
 	switch reflect.TypeOf(crd) {
 	case reflect.TypeOf(soperator.SpecConfig{}):
@@ -89,7 +89,7 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		kubeInterfaces = cList.GetKubeInterfaces()
 	case reflect.TypeOf(opssightapi.OpsSight{}):
 		opsSight := crd.(opssightapi.OpsSight)
-		sc := opssight.NewSpecConfig(pc, kubeClient, opsSightClient, blackDuckClient, &opsSight, true)
+		sc := opssight.NewSpecConfig(pc, kubeClient, opsSightClient, blackDuckClient, &opsSight, true, pc.DryRun)
 		cList, err := sc.GetComponents()
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)

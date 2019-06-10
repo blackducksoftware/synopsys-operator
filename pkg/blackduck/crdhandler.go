@@ -22,9 +22,7 @@ under the License.
 package blackduck
 
 import (
-	"bytes"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -41,8 +39,6 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -86,18 +82,18 @@ type Handler struct {
 	kubeConfig       *rest.Config
 	kubeClient       *kubernetes.Clientset
 	blackduckClient  *blackduckclientset.Clientset
+	isClusterScope   bool
 	defaults         *blackduckv1.BlackduckSpec
-	federatorBaseURL string
 	cmMutex          chan bool
 	osSecurityClient *securityclient.SecurityV1Client
 	routeClient      *routeclient.RouteV1Client
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset, defaults *blackduckv1.BlackduckSpec,
-	federatorBaseURL string, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
-	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient, defaults: defaults,
-		federatorBaseURL: federatorBaseURL, cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset, isClusterScope bool,
+	defaults *blackduckv1.BlackduckSpec, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
+	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient, isClusterScope: isClusterScope, defaults: defaults,
+		cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
 // APISetHubsRequest to set the Black Duck urls for Perceptor
@@ -114,19 +110,9 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete hub events
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
-
-	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
-	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("blackducks.synopsys.com", v1.GetOptions{})
-	if err != nil || crd.DeletionTimestamp != nil {
-		// We do not delete the Black Duck instance if the CRD doesn't exist or that it is in the process of being deleted
-		log.Warnf("ignoring request to delete %s because the CRD doesn't exist or is being deleted", name)
-		return
-	}
-
 	// Voluntary deletion. The CRD still exists but the Black Duck resource has been deleted
-	app := apps.NewApp(h.config, h.kubeConfig)
+	app := apps.NewApp(h.config, h.kubeConfig, h.isClusterScope)
 	app.Blackduck().Delete(name)
-
 }
 
 // ObjectUpdated will be called for update black duck events
@@ -158,7 +144,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("ObjectUpdated: %s", bd.Name)
 
 	// Ensure
-	app := apps.NewApp(h.config, h.kubeConfig)
+	app := apps.NewApp(h.config, h.kubeConfig, h.isClusterScope)
 	err = app.Blackduck().Ensure(bd)
 	if err != nil {
 		log.Error(err)
@@ -186,7 +172,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	} else { // Start, Running, and Error States
 		if !strings.EqualFold(bd.Status.State, string(Running)) {
 			// Verify that we can access the Black Duck
-			hubURL := fmt.Sprintf("webserver.%s.svc", bd.Spec.Namespace)
+			hubURL := fmt.Sprintf("%s.%s.svc", util.GetResourceName(bd.Name, "webserver", h.isClusterScope), bd.Spec.Namespace)
 			status := h.verifyHub(hubURL, bd.Spec.Namespace)
 
 			if status { // Set state to Running if we can access the Black Duck
@@ -197,48 +183,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			}
 		}
 	}
-}
-
-func (h *Handler) callHubFederator() {
-	// IMPORTANT ! This will block.
-	h.cmMutex <- true
-	defer func() {
-		<-h.cmMutex
-	}()
-	hubUrls, err := h.getHubUrls()
-	log.Debugf("blackDuckUrls: %+v", hubUrls)
-	if err != nil {
-		log.Errorf("unable to get the Black Duck urls due to %+v", err)
-		return
-	}
-	err = h.addHubFederatorEvents(fmt.Sprintf("%s/sethubs", h.federatorBaseURL), hubUrls)
-	if err != nil {
-		log.Errorf("unable to update the Black Duck urls in perceptor due to %+v", err)
-		return
-	}
-}
-
-// HubNamespaces will list the hub namespaces
-func (h *Handler) getHubUrls() (*APISetHubsRequest, error) {
-	// 1. get Blackduck CDR list from default ns
-	hubList, err := util.ListHubs(h.blackduckClient, h.config.Namespace)
-	if err != nil {
-		return &APISetHubsRequest{}, err
-	}
-
-	// 2. extract the namespaces
-	hubURLs := []string{}
-	for _, hub := range hubList.Items {
-		if len(hub.Spec.Namespace) > 0 && strings.EqualFold(hub.Spec.DesiredState, "running") {
-			hubURL := fmt.Sprintf("webserver.%s.svc", hub.Spec.Namespace)
-			status := h.verifyHub(hubURL, hub.Spec.Namespace)
-			if status {
-				hubURLs = append(hubURLs, hubURL)
-			}
-		}
-	}
-
-	return &APISetHubsRequest{HubURLs: hubURLs}, nil
 }
 
 func (h *Handler) verifyHub(hubURL string, name string) bool {
@@ -273,29 +217,6 @@ func (h *Handler) verifyHub(hubURL string, name string) bool {
 		time.Sleep(10 * time.Second)
 	}
 	return false
-}
-
-func (h *Handler) addHubFederatorEvents(dest string, obj interface{}) error {
-	jsonBytes, err := json.Marshal(obj)
-	if err != nil {
-		return fmt.Errorf("unable to serialize %v: %v", obj, err)
-	}
-	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPut, dest, bytes.NewBuffer(jsonBytes))
-	log.Debugf("black duck req: %+v", req)
-	if err != nil {
-		return fmt.Errorf("unable to create the request due to %v", err)
-	}
-	resp, err := client.Do(req)
-	log.Debugf("black duck resp: %+v", resp)
-	if err != nil {
-		return fmt.Errorf("unable to POST to %s: %v", dest, err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("http POST request to %s failed with status code %d", dest, resp.StatusCode)
-	}
-	return nil
 }
 
 func (h *Handler) isBinaryAnalysisEnabled(envs []string) bool {

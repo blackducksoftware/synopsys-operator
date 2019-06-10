@@ -45,25 +45,27 @@ import (
 
 // Creater will store the configuration to create OpsSight
 type Creater struct {
-	config           *protoform.Config
-	kubeConfig       *rest.Config
-	kubeClient       *kubernetes.Clientset
-	opssightClient   *opssightclientset.Clientset
-	osSecurityClient *securityclient.SecurityV1Client
-	routeClient      *routeclient.RouteV1Client
-	hubClient        *hubclientset.Clientset
+	config                  *protoform.Config
+	kubeConfig              *rest.Config
+	kubeClient              *kubernetes.Clientset
+	opssightClient          *opssightclientset.Clientset
+	osSecurityClient        *securityclient.SecurityV1Client
+	routeClient             *routeclient.RouteV1Client
+	hubClient               *hubclientset.Clientset
+	isBlackDuckClusterScope bool
 }
 
 // NewCreater will instantiate the Creater
-func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *hubclientset.Clientset) *Creater {
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client, hubClient *hubclientset.Clientset, isBlackDuckClusterScope bool) *Creater {
 	return &Creater{
-		config:           config,
-		kubeConfig:       kubeConfig,
-		kubeClient:       kubeClient,
-		opssightClient:   opssightClient,
-		osSecurityClient: osSecurityClient,
-		routeClient:      routeClient,
-		hubClient:        hubClient,
+		config:                  config,
+		kubeConfig:              kubeConfig,
+		kubeClient:              kubeClient,
+		opssightClient:          opssightClient,
+		osSecurityClient:        osSecurityClient,
+		routeClient:             routeClient,
+		hubClient:               hubClient,
+		isBlackDuckClusterScope: isBlackDuckClusterScope,
 	}
 }
 
@@ -117,18 +119,20 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 	}
 
 	clusterRoleBindings, err := util.ListClusterRoleBindings(ac.kubeClient, "app=opssight")
-	operatorClusterRole, err := util.GetOperatorClusterRole(ac.kubeClient)
+	operatorClusterRoles, _, err := util.GetOperatorRoles(ac.kubeClient, ac.config.Namespace)
 	if err != nil {
 		return err
 	}
 
 	for _, clusterRoleBinding := range clusterRoleBindings.Items {
 		if len(clusterRoleBinding.Subjects) == 1 {
-			if !strings.EqualFold(clusterRoleBinding.RoleRef.Name, operatorClusterRole) {
-				log.Debugf("deleting cluster role %s", clusterRoleBinding.RoleRef.Name)
-				err = util.DeleteClusterRole(ac.kubeClient, clusterRoleBinding.RoleRef.Name)
-				if err != nil {
-					log.Errorf("unable to delete the cluster role for %+v", clusterRoleBinding.RoleRef.Name)
+			for _, operatorClusterRole := range operatorClusterRoles {
+				if !strings.EqualFold(clusterRoleBinding.RoleRef.Name, operatorClusterRole) {
+					log.Debugf("deleting cluster role %s", clusterRoleBinding.RoleRef.Name)
+					err = util.DeleteClusterRole(ac.kubeClient, clusterRoleBinding.RoleRef.Name)
+					if err != nil {
+						log.Errorf("unable to delete the cluster role for %+v", clusterRoleBinding.RoleRef.Name)
+					}
 				}
 			}
 
@@ -169,7 +173,7 @@ func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSight) error {
 		ac.addRegistryAuth(opssightSpec)
 	}
 
-	spec := NewSpecConfig(ac.config, ac.kubeClient, ac.opssightClient, ac.hubClient, opssight, ac.config.DryRun)
+	spec := NewSpecConfig(ac.config, ac.kubeClient, ac.opssightClient, ac.hubClient, opssight, ac.config.DryRun, ac.isBlackDuckClusterScope)
 
 	components, err := spec.GetComponents()
 	if err != nil {
@@ -178,7 +182,7 @@ func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSight) error {
 
 	if !ac.config.DryRun {
 		// call the CRUD updater to create or update opssight
-		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, opssightSpec.Namespace, components, "app=opssight")
+		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, opssightSpec.Namespace, components, "app=opssight", false)
 		_, errs := commonConfig.CRUDComponents()
 
 		if len(errs) > 0 {

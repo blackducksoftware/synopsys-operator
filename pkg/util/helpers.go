@@ -106,3 +106,27 @@ func MergeEnvSlices(source, destination []string) []string {
 	}
 	return mergedValues
 }
+
+// UniqueStringSlice returns a unique subset of the string slice provided.
+func UniqueStringSlice(input []string) []string {
+	output := []string{}
+	m := make(map[string]bool)
+
+	for _, val := range input {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+			output = append(output, val)
+		}
+	}
+
+	return output
+}
+
+// GetResourceName returns the name of the resource based on the cluster scope
+func GetResourceName(name string, defaultName string, isClusterScope bool) string {
+	// TODO: add the default name condition until the HUB-20412 is fixed. once it if fixed, remove this condition
+	if !isClusterScope {
+		return fmt.Sprintf("%s-%s", name, defaultName)
+	}
+	return defaultName
+}

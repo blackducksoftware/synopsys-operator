@@ -31,8 +31,6 @@ import (
 )
 
 const (
-	// postgresName will be Postgres container name
-	postgresName = "postgres"
 	// postgresDataMountPath will be Postgres data mount path
 	postgresDataMountPath = "/var/lib/pgsql/data"
 	// postgresDataVolumeName will be Postgres data volume name
@@ -41,6 +39,7 @@ const (
 
 // Postgres will provide the postgres container configuration
 type Postgres struct {
+	Name                          string
 	Namespace                     string
 	PVCName                       string
 	Port                          int32
@@ -69,7 +68,7 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 
 	postgresExternalContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{
-			Name:       postgresName,
+			Name:       p.Name,
 			Image:      p.Image,
 			PullPolicy: horizonapi.PullIfNotPresent,
 			MinMem:     p.MinMemory,
@@ -111,7 +110,7 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 
 	pod, err := util.CreatePod(
 		&util.PodConfig{
-			Name:           postgresName,
+			Name:           p.Name,
 			Volumes:        postgresVolumes,
 			Containers:     []*util.Container{postgresExternalContainerConfig},
 			InitContainers: initContainers,
@@ -125,14 +124,14 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 	pod.Spec.TerminationGracePeriodSeconds = &p.TerminationGracePeriodSeconds
 
 	postgres := util.CreateReplicationController(&horizonapi.ReplicationControllerConfig{Namespace: p.Namespace,
-		Name: postgresName, Replicas: util.IntToInt32(1)}, pod, p.Labels, p.Labels)
+		Name: p.Name, Replicas: util.IntToInt32(1)}, pod, p.Labels, p.Labels)
 
 	return postgres, nil
 }
 
 // GetPostgresService will return the postgres service
 func (p *Postgres) GetPostgresService() *components.Service {
-	return util.CreateService(postgresName, p.Labels, p.Namespace, p.Port, p.Port, horizonapi.ServiceTypeServiceIP, p.Labels)
+	return util.CreateService(p.Name, p.Labels, p.Namespace, p.Port, p.Port, horizonapi.ServiceTypeServiceIP, p.Labels)
 }
 
 // getPostgresVolumes will return the postgres volumes

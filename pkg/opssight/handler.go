@@ -68,15 +68,16 @@ const (
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	Config           *protoform.Config
-	KubeConfig       *rest.Config
-	KubeClient       *kubernetes.Clientset
-	OpsSightClient   *opssightclientset.Clientset
-	Defaults         *opssightapi.OpsSightSpec
-	Namespace        string
-	OSSecurityClient *securityclient.SecurityV1Client
-	RouteClient      *routeclient.RouteV1Client
-	HubClient        *hubclientset.Clientset
+	Config                  *protoform.Config
+	KubeConfig              *rest.Config
+	KubeClient              *kubernetes.Clientset
+	OpsSightClient          *opssightclientset.Clientset
+	IsBlackDuckClusterScope bool
+	Defaults                *opssightapi.OpsSightSpec
+	Namespace               string
+	OSSecurityClient        *securityclient.SecurityV1Client
+	RouteClient             *routeclient.RouteV1Client
+	HubClient               *hubclientset.Clientset
 }
 
 // ObjectCreated will be called for create opssight events
@@ -135,7 +136,7 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 func (h *Handler) ObjectDeleted(name string) {
 	recordEvent("objectDeleted")
 	log.Debugf("objectDeleted: %+v", name)
-	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
+	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient, h.IsBlackDuckClusterScope)
 	err := opssightCreator.DeleteOpsSight(name)
 	if err != nil {
 		log.Errorf("unable to delete opssight: %v", err)
@@ -172,7 +173,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 
 	switch strings.ToUpper(opssight.Spec.DesiredState) {
 	case "STOP":
-		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
+		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient, h.IsBlackDuckClusterScope)
 		err = opssightCreator.StopOpsSight(&opssight.Spec)
 		if err != nil {
 			recordError("unable to stop opssight")
@@ -188,7 +189,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			return
 		}
 	case "":
-		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
+		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient, h.IsBlackDuckClusterScope)
 		err = opssightCreator.UpdateOpsSight(opssight)
 		if err != nil {
 			recordError("unable to update opssight")

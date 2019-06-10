@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
@@ -38,7 +39,10 @@ import (
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -46,6 +50,9 @@ import (
 // These vars set by setResourceClients() in root command's init()
 var restconfig *rest.Config
 var kubeClient *kubernetes.Clientset
+var apiExtensionClient *apiextensionsclient.Clientset
+var blackduckClient *blackduckclientset.Clientset
+var opssightClient *opssightclientset.Clientset
 var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
 var opsSightClient *opssightclientset.Clientset
@@ -63,6 +70,10 @@ func setResourceClients() error {
 		return err
 	}
 	kubeClient, err = getKubeClient(restconfig)
+	if err != nil {
+		return err
+	}
+	apiExtensionClient, err = apiextensionsclient.NewForConfig(restconfig)
 	if err != nil {
 		return err
 	}
@@ -125,7 +136,7 @@ func DetermineClusterClients(restConfig *rest.Config) (kube, openshift bool) {
 
 	// Add Openshift rules
 	openshiftTest := false
-	routeClient := operatorutil.GetRouteClient(restConfig) // kube doesn't have a route client but openshift does
+	routeClient := operatorutil.GetRouteClient(restConfig, metav1.NamespaceAll) // kube doesn't have a route client but openshift does
 	if routeClient != nil {
 		openshiftTest = true
 	}
@@ -151,7 +162,7 @@ func DetermineClusterClients(restConfig *rest.Config) (kube, openshift bool) {
 
 // RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
 // TODO consider replacing w/ go api but not crucial for now.
-func RunKubeCmd(restConfig *rest.Config, kube bool, openshift bool, args ...string) (string, error) {
+func RunKubeCmd(restConfig *rest.Config, args ...string) (string, error) {
 	var cmd2 *exec.Cmd
 
 	// cluster-info in kube doesnt seem to be in
@@ -217,6 +228,42 @@ func RunKubeEditorCmd(restConfig *rest.Config, kube bool, openshift bool, args .
 	return nil
 }
 
+func isValidCRDScope(name, clusterScope string) bool {
+	switch strings.ToLower(clusterScope) {
+	case "cluster":
+		return true
+	case "namespaced":
+		if name == operatorutil.OpsSightCRDName {
+			return false
+		}
+		return true
+	case "delete":
+		return true
+	}
+	return false
+}
+
+func getOperatorNamespace(namespace string) (string, error) {
+	var err error
+	if len(namespace) == 0 {
+		isClusterScoped := util.GetClusterScope(apiExtensionClient)
+		if isClusterScoped {
+			namespace = metav1.NamespaceAll
+		}
+	}
+
+	log.Debugf("getting synopsys operator's namespace")
+	namespace, err = util.GetOperatorNamespace(kubeClient, namespace)
+	if err != nil {
+		return "", err
+	}
+
+	if len(namespace) == 0 {
+		return "", fmt.Errorf("synopsys operator namespace not found")
+	}
+	return namespace, nil
+}
+
 func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeMock bool, mockKubeFormat string) error {
 	if mock {
 		log.Debugf("running mock mode")
@@ -234,21 +281,21 @@ func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeM
 		switch reflect.TypeOf(resource) {
 		case reflect.TypeOf(alertapi.Alert{}):
 			alt := resource.(alertapi.Alert)
-			_, err := operatorutil.UpdateAlert(alertClient, alt.Name, &alt)
+			_, err := operatorutil.UpdateAlert(alertClient, alt.Spec.Namespace, &alt)
 			if err != nil {
 				log.Errorf("error updating the %s Alert instance due to %+v", alt.Name, err)
 				return nil
 			}
 		case reflect.TypeOf(blackduckapi.Blackduck{}):
 			bd := resource.(blackduckapi.Blackduck)
-			_, err := operatorutil.UpdateBlackduck(blackDuckClient, bd.Name, &bd)
+			_, err := operatorutil.UpdateBlackduck(blackDuckClient, bd.Spec.Namespace, &bd)
 			if err != nil {
 				log.Errorf("error updating the %s Black Duck instance due to %+v", bd.Name, err)
 				return nil
 			}
 		case reflect.TypeOf(opssightapi.OpsSight{}):
 			ops := resource.(opssightapi.OpsSight)
-			_, err := operatorutil.UpdateOpsSight(opsSightClient, ops.Name, &ops)
+			_, err := operatorutil.UpdateOpsSight(opsSightClient, ops.Spec.Namespace, &ops)
 			if err != nil {
 				log.Errorf("error updating the %s OpsSight instance due to %+v", ops.Name, err)
 				return nil

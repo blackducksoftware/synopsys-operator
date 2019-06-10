@@ -107,5 +107,5 @@ func NewController(configPath string) (*Deployer, error) {
 		deployer.Run()
 	}
 
-	return NewDeployer(config, kubeConfig, kubeClientSet), nil
+	return NewDeployer(config, kubeConfig, kubeClientSet)
 }

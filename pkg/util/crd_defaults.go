@@ -28,6 +28,17 @@ import (
 	//samplev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
 )
 
+const (
+	// AlertCRDName is the name of an Alert CRD
+	AlertCRDName = "alerts.synopsys.com"
+	// BlackDuckCRDName is the name of the Black Duck CRD
+	BlackDuckCRDName = "blackducks.synopsys.com"
+	// OpsSightCRDName is the name of an OpsSight CRD
+	OpsSightCRDName = "opssights.synopsys.com"
+	// PrmCRDName is the name of the Polaris Reporting Module CRD
+	PrmCRDName = "prms.synopsys.com"
+)
+
 // GetSampleDefaultValue creates a sample crd configuration object with defaults
 //func GetSampleDefaultValue() *samplev1.SampleSpec {
 //	return &samplev1.SampleSpec{

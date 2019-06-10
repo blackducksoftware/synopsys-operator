@@ -40,17 +40,18 @@ import (
 
 // SpecConfig will contain the specification of OpsSight
 type SpecConfig struct {
-	config         *protoform.Config
-	kubeClient     *kubernetes.Clientset
-	opssightClient *opssightclientset.Clientset
-	hubClient      *hubclientset.Clientset
-	opssight       *opssightapi.OpsSight
-	configMap      *MainOpssightConfigMap
-	dryRun         bool
+	config                  *protoform.Config
+	kubeClient              *kubernetes.Clientset
+	opssightClient          *opssightclientset.Clientset
+	hubClient               *hubclientset.Clientset
+	opssight                *opssightapi.OpsSight
+	configMap               *MainOpssightConfigMap
+	isBlackDuckClusterScope bool
+	dryRun                  bool
 }
 
 // NewSpecConfig will create the OpsSight object
-func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, hubClient *hubclientset.Clientset, opssight *opssightapi.OpsSight, dryRun bool) *SpecConfig {
+func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, hubClient *hubclientset.Clientset, opssight *opssightapi.OpsSight, isBlackDuckClusterScope bool, dryRun bool) *SpecConfig {
 	opssightSpec := &opssight.Spec
 	configMap := &MainOpssightConfigMap{
 		LogLevel: opssightSpec.LogLevel,
@@ -100,7 +101,7 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 			UseInClusterConfig:            true,
 		},
 	}
-	return &SpecConfig{config: config, kubeClient: kubeClient, opssightClient: opssightClient, hubClient: hubClient, opssight: opssight, configMap: configMap, dryRun: dryRun}
+	return &SpecConfig{config: config, kubeClient: kubeClient, opssightClient: opssightClient, hubClient: hubClient, opssight: opssight, configMap: configMap, isBlackDuckClusterScope: isBlackDuckClusterScope, dryRun: dryRun}
 }
 
 func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
@@ -288,7 +289,7 @@ func (p *SpecConfig) addSecretData(secret *components.Secret) error {
 	}
 
 	// adding Internal Black Duck credentials
-	secretEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient)
+	secretEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient, p.isBlackDuckClusterScope)
 	hubType := p.opssight.Spec.Blackduck.BlackduckSpec.Type
 	blackduckPassword, err := util.Base64Decode(p.opssight.Spec.Blackduck.BlackduckPassword)
 	if err != nil {

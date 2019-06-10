@@ -42,8 +42,9 @@ func TestGetPVCs(t *testing.T) {
 	flavor := GetContainersFlavor("small")
 	// Binary Analysis state for this test
 	ba := false
+	cs := false
 	// Default PVCs for this test
-	c := NewCreater(&pc, nil, &blackduckapi.BlackduckSpec{PersistentStorage: true}, flavor, ba)
+	c := NewCreater(&pc, nil, nil, "test", &blackduckapi.BlackduckSpec{PersistentStorage: true}, flavor, cs, ba)
 	defaultPVCs := c.GetPVCs()
 
 	// Case: No PVCs specified - defaults
@@ -52,7 +53,7 @@ func TestGetPVCs(t *testing.T) {
 		PersistentStorage: true,
 		PVC:               specPVCs,
 	}
-	c = NewCreater(&pc, nil, &blackDuckSpec, flavor, ba)
+	c = NewCreater(&pc, nil, nil, "test", &blackDuckSpec, flavor, cs, ba)
 	createdPVCs := c.GetPVCs()
 	err := checkPVCs(defaultPVCs, specPVCs, createdPVCs)
 	if err != nil {
@@ -72,7 +73,7 @@ func TestGetPVCs(t *testing.T) {
 		PVCStorageClass:   "globalStorageClass",
 		PVC:               specPVCs,
 	}
-	c = NewCreater(&pc, nil, &blackDuckSpec, flavor, ba)
+	c = NewCreater(&pc, nil, nil, "test", &blackDuckSpec, flavor, cs, ba)
 	createdPVCs = c.GetPVCs()
 	err = checkPVCs(defaultPVCs, specPVCs, createdPVCs)
 	if err != nil {
@@ -92,7 +93,7 @@ func TestGetPVCs(t *testing.T) {
 		PVCStorageClass:   "globalStorageClass",
 		PVC:               specPVCs,
 	}
-	c = NewCreater(&pc, nil, &blackDuckSpec, flavor, ba)
+	c = NewCreater(&pc, nil, nil, "test", &blackDuckSpec, flavor, cs, ba)
 	createdPVCs = c.GetPVCs()
 	err = checkPVCs(defaultPVCs, []blackduckapi.PVC{}, createdPVCs) // a bad PVC is like it doesn't exist
 	if err != nil {
@@ -117,7 +118,7 @@ func TestGetPVCs(t *testing.T) {
 		PVCStorageClass:   "globalStorageClass",
 		PVC:               specPVCs,
 	}
-	c = NewCreater(&pc, nil, &blackDuckSpec, flavor, ba)
+	c = NewCreater(&pc, nil, nil, "test", &blackDuckSpec, flavor, cs, ba)
 	createdPVCs = c.GetPVCs()
 	err = checkPVCs(defaultPVCs, []blackduckapi.PVC{{Name: defaultPVCs[0].GetName(), Size: "10Gi", StorageClass: "testStorageClass"}}, createdPVCs)
 	if err != nil {

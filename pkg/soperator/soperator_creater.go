@@ -84,39 +84,50 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 	}
 
 	if newCrdData.Blackduck.APIVersion != oldCrdData.Blackduck.APIVersion {
-		oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion)
-		if err != nil {
-			return fmt.Errorf("failed to get Blackduck's to update: %s", err)
+		_, err := operatorutil.GetCustomResourceDefinition(apiExtensionClient, operatorutil.BlackDuckCRDName)
+		if err == nil {
+			oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion)
+			if err != nil {
+				return fmt.Errorf("failed to get Blackduck's to update: %s", err)
+			}
+			err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.Blackduck.CRDName)
+			if err != nil {
+				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.Blackduck.CRDName, err)
+			}
+			log.Debugf("updating %d Black Ducks", len(oldBlackducks))
 		}
-		err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.Blackduck.CRDName)
-		if err != nil {
-			return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.Blackduck.CRDName, err)
-		}
-		log.Debugf("updating %d Black Ducks", len(oldBlackducks))
 	}
+
 	var oldOpsSights = []opssightapi.OpsSight{}
 	if newCrdData.OpsSight.APIVersion != oldCrdData.OpsSight.APIVersion {
-		oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion)
-		if err != nil {
-			return fmt.Errorf("failed to get OpsSights to update: %s", err)
+		_, err := operatorutil.GetCustomResourceDefinition(apiExtensionClient, operatorutil.OpsSightCRDName)
+		if err == nil {
+			oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion)
+			if err != nil {
+				return fmt.Errorf("failed to get OpsSights to update: %s", err)
+			}
+			err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.OpsSight.CRDName)
+			if err != nil {
+				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.OpsSight.CRDName, err)
+			}
+			log.Debugf("updating %d OpsSights", len(oldOpsSights))
 		}
-		err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.OpsSight.CRDName)
-		if err != nil {
-			return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.OpsSight.CRDName, err)
-		}
-		log.Debugf("updating %d OpsSights", len(oldOpsSights))
 	}
+
 	var oldAlerts = []alertapi.Alert{}
 	if newCrdData.Alert.APIVersion != oldCrdData.Alert.APIVersion {
-		oldAlerts, err = GetAlertVersionsToRemove(alertClient, newCrdData.Alert.APIVersion)
-		if err != nil {
-			return fmt.Errorf("failed to get Alerts to update%s", err)
+		_, err := operatorutil.GetCustomResourceDefinition(apiExtensionClient, operatorutil.AlertCRDName)
+		if err == nil {
+			oldAlerts, err = GetAlertVersionsToRemove(alertClient, newCrdData.Alert.APIVersion)
+			if err != nil {
+				return fmt.Errorf("failed to get Alerts to update%s", err)
+			}
+			err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.Alert.CRDName)
+			if err != nil {
+				return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.Alert.CRDName, err)
+			}
+			log.Debugf("updating %d Alerts", len(oldAlerts))
 		}
-		err = operatorutil.DeleteCustomResourceDefinition(apiExtensionClient, oldCrdData.Alert.CRDName)
-		if err != nil {
-			return fmt.Errorf("unable to delete the %s crd because %s", oldCrdData.Alert.CRDName, err)
-		}
-		log.Debugf("updating %d Alerts", len(oldAlerts))
 	}
 
 	// Update the Synopsys Operator's Components
@@ -136,6 +147,7 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 		if i >= 10 {
 			return fmt.Errorf("failed to update Black Ducks: %s", err)
 		}
+		log.Debugf("attempt %d to update Black Ducks", i)
 		time.Sleep(1 * time.Second)
 	}
 	for i := 1; i <= 10; i++ {
@@ -145,6 +157,7 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 		if i >= 10 {
 			return fmt.Errorf("failed to update OpsSights: %s", err)
 		}
+		log.Debugf("attempt %d to update OpsSights", i)
 		time.Sleep(1 * time.Second)
 	}
 	for i := 1; i <= 10; i++ {
@@ -154,7 +167,7 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 		if i >= 10 {
 			return fmt.Errorf("failed to update Alerts: %s", err)
 		}
-		log.Debugf("Attempt %d to update Alerts", i)
+		log.Debugf("attempt %d to update Alerts", i)
 		time.Sleep(1 * time.Second)
 	}
 
@@ -167,7 +180,7 @@ func (sc *Creater) UpdateSOperatorComponents(specConfig *SpecConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to get Synopsys Operator components: %s", err)
 	}
-	sOperatorCommonConfig := crdupdater.NewCRUDComponents(sc.KubeConfig, sc.KubeClient, false, false, specConfig.Namespace, sOperatorComponents, "app=synopsys-operator,component=operator")
+	sOperatorCommonConfig := crdupdater.NewCRUDComponents(sc.KubeConfig, sc.KubeClient, false, false, specConfig.Namespace, sOperatorComponents, "app=synopsys-operator,component=operator", true)
 	_, errs := sOperatorCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Synopsys Operator components: %+v", errs)
@@ -182,7 +195,7 @@ func (sc *Creater) UpdatePrometheus(specConfig *PrometheusSpecConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to get Prometheus components: %s", err)
 	}
-	prometheusCommonConfig := crdupdater.NewCRUDComponents(sc.KubeConfig, sc.KubeClient, false, false, specConfig.Namespace, prometheusComponents, "app=synopsys-operator,component=prometheus")
+	prometheusCommonConfig := crdupdater.NewCRUDComponents(sc.KubeConfig, sc.KubeClient, false, false, specConfig.Namespace, prometheusComponents, "app=synopsys-operator,component=prometheus", true)
 	_, errs := prometheusCommonConfig.CRUDComponents()
 	if errs != nil {
 		return fmt.Errorf("failed to update Prometheus components: %+v", errs)

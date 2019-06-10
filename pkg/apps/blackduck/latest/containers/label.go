@@ -32,6 +32,7 @@ func (c *Creater) GetVersionLabel(name string) map[string]string {
 func (c *Creater) GetLabel(name string) map[string]string {
 	return map[string]string{
 		"app":       "blackduck",
+		"name":      c.name,
 		"component": name,
 	}
 }

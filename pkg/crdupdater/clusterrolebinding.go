@@ -151,7 +151,7 @@ func (c *ClusterRoleBinding) patch(crb interface{}, isPatched bool) (bool, error
 	}
 	// check for subject changes
 	for _, subject := range newClusterRoleBinding.Subjects {
-		if !util.IsClusterRoleBindingSubjectExist(oldclusterRoleBinding.Subjects, subject.Namespace, subject.Name) {
+		if !util.IsSubjectExist(oldclusterRoleBinding.Subjects, subject.Namespace, subject.Name) {
 			oldclusterRoleBinding.Subjects = append(oldclusterRoleBinding.Subjects, rbacv1.Subject{Name: subject.Name, Namespace: subject.Namespace, Kind: "ServiceAccount"})
 			isChanged = true
 		}
