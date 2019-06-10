@@ -31,26 +31,26 @@ import (
 // Describe Command flag for -selector functionality
 var describeSelector string
 
-// describeCmd Show details of a Synopsys resource from your cluster
+// describeCmd shows details of Synopsys resources from your cluster
 var describeCmd = &cobra.Command{
 	Use:   "describe",
-	Short: "Show details of a Synopsys resource from your cluster",
+	Short: "Show details of Synopsys resources from your cluster",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("not a valid command")
+		return fmt.Errorf("must specify a sub-command")
 	},
 }
 
-// describeAlertCmd details of one or many Alerts
+// describeAlertCmd shows details of one or many Alert instances
 var describeAlertCmd = &cobra.Command{
-	Use:     "alert [NAME]...",
+	Use:     "alert [NAME...]",
 	Example: "synopsysctl describe alerts\nsynopsysctl describe alert <name>\nsynopsysctl describe alerts <name1> <name2>\nsynopsysctl describe alerts -n <namespace>\nsynopsysctl describe alert <name> -n <namespace>\nsynopsysctl describe alerts <name1> <name2> -n <namespace>",
 	Aliases: []string{"alerts"},
-	Short:   "Show details of one or many Alerts",
+	Short:   "Show details of one or many Alert instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("describing an Alert")
+		log.Debugf("describing Alert instances")
 		kubectlCmd := []string{"describe", "alerts"}
 		if len(namespace) > 0 {
 			kubectlCmd = append(kubectlCmd, "-n", namespace)
@@ -72,17 +72,17 @@ var describeAlertCmd = &cobra.Command{
 	},
 }
 
-// describeBlackDuckCmd Show details of one or many Black Ducks
+// describeBlackDuckCmd shows details of one or many Black Duck instances
 var describeBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck [NAME]...",
+	Use:     "blackduck [NAME...]",
 	Example: "synopsysctl describe blackducks\nsynopsysctl describe blackduck <name>\nsynopsysctl describe blackducks <name1> <name2>\nsynopsysctl describe blackducks -n <namespace>\nsynopsysctl describe blackduck <name> -n <namespace>\nsynopsysctl describe blackducks <name1> <name2> -n <namespace>",
 	Aliases: []string{"blackducks"},
-	Short:   "Show details of one or many Black Ducks",
+	Short:   "Show details of one or many Black Duck instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("describing a Blackduck")
+		log.Debugf("describing Black Duck instances")
 		kubectlCmd := []string{"describe", "blackducks"}
 		if len(namespace) > 0 {
 			kubectlCmd = append(kubectlCmd, "-n", namespace)
@@ -104,17 +104,17 @@ var describeBlackDuckCmd = &cobra.Command{
 	},
 }
 
-// describeOpsSightCmd Show details of one or many OpsSights
+// describeOpsSightCmd shows details of one or many OpsSight instances
 var describeOpsSightCmd = &cobra.Command{
-	Use:     "opssight [NAME]...",
-	Example: "synopsysctl describe opssights\nsynopsysctl describe opssight <name>\nsynopsysctl describe opssights <name1> <name2>",
+	Use:     "opssight [NAME...]",
+	Example: "synopsysctl describe opssights\nsynopsysctl describe opssight <name>\nsynopsysctl describe opssights <name1> <name2>\nsynopsysctl describe opssights -n <namespace>\nsynopsysctl describe opssight <name> -n <namespace>\nsynopsysctl describe opssights <name1> <name2> -n <namespace>",
 	Aliases: []string{"opssights"},
-	Short:   "Show details of one or many OpsSights",
+	Short:   "Show details of one or many OpsSight instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("describing an OpsSight")
+		log.Debugf("describing OpsSight instances")
 		kubectlCmd := []string{"describe", "opssights"}
 		if len(namespace) > 0 {
 			kubectlCmd = append(kubectlCmd, "-n", namespace)
@@ -141,15 +141,15 @@ func init() {
 	rootCmd.AddCommand(describeCmd)
 
 	// Add Commands
-	describeBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to describe the resource(s)")
+	describeBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	describeBlackDuckCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeBlackDuckCmd)
 
-	describeOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to describe the resource(s)")
+	describeOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	describeOpsSightCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeOpsSightCmd)
 
-	describeAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to describe the resource(s)")
+	describeAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	describeAlertCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeAlertCmd)
 }

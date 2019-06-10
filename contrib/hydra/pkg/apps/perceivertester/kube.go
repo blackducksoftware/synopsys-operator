@@ -32,7 +32,7 @@ type Kube struct {
 	Perceptor    *model.Perceptor
 	PodPerceiver *model.PodPerceiver
 	Prometheus   *model.Prometheus
-	// kubernetes resources
+	// Kubernetes resources
 	ReplicationControllers []*v1.ReplicationController
 	ConfigMaps             []*v1.ConfigMap
 	Services               []*v1.Service

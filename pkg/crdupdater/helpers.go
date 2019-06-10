@@ -37,7 +37,7 @@ type label struct {
 	value    []string
 }
 
-// getLabelsMap convert the label selector string to kubernetes label format
+// getLabelsMap convert the label selector string to kbernetes label format
 func getLabelsMap(labelSelectors string) map[string]label {
 	labelSelectorArr := strings.SplitN(labelSelectors, ",", 3)
 	expectedLabels := make(map[string]label, len(labelSelectorArr))

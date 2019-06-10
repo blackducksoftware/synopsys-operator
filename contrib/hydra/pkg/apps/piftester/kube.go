@@ -23,7 +23,7 @@ package piftester
 
 import (
 	"github.com/blackducksoftware/synopsys-operator/contrib/hydra/pkg/model"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Kube struct {
@@ -33,7 +33,7 @@ type Kube struct {
 	PodPerceiver *model.PodPerceiver
 	ImageFacade  *model.Imagefacade
 	Prometheus   *model.Prometheus
-	// kubernetes resources
+	// Kubernetes resources
 	ReplicationControllers []*v1.ReplicationController
 	ConfigMaps             []*v1.ConfigMap
 	Services               []*v1.Service

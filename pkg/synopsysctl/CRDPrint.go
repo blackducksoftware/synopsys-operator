@@ -96,7 +96,7 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		}
 		kubeInterfaces = cList.GetKubeInterfaces()
 	default:
-		return fmt.Errorf("crd is not supported for printing")
+		return fmt.Errorf("cannot print a resource with the format: %+v", crd)
 	}
 
 	err := PrintComponents(kubeInterfaces, format)
@@ -129,17 +129,17 @@ func PrintComponent(v interface{}, format string) (string, error) {
 	case strings.ToUpper(format) == string(JSON):
 		b, err = json.MarshalIndent(v, "", "  ")
 		if err != nil {
-			return "", fmt.Errorf("failed to convert struct to json. Err: %+v. Struct: %+v", err, v)
+			return "", fmt.Errorf("failed to convert struct to json. err: %+v. struct: %+v", err, v)
 		}
 		fmt.Println(string(b))
 	case strings.ToUpper(format) == string(YAML):
 		b, err = yaml.Marshal(v)
 		if err != nil {
-			return "", fmt.Errorf("failed to convert struct to yaml. Err: %+v. Struct: %+v", err, v)
+			return "", fmt.Errorf("failed to convert struct to yaml. err: %+v. struct: %+v", err, v)
 		}
 		fmt.Println(string(b))
 	default:
-		return "", fmt.Errorf("%s is an invalid format for PrettyPrint", format)
+		return "", fmt.Errorf("'%s' is an invalid format", format)
 	}
 	return string(b), nil
 }

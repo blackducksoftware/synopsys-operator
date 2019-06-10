@@ -57,7 +57,7 @@ func NewController(configPath string) (*Deployer, error) {
 
 	kubeClientSet, err := GetKubeClientSet(kubeConfig)
 	if err != nil {
-		return nil, errors.Annotate(err, "unable to create kubernetes clientset")
+		return nil, errors.Annotate(err, "unable to create Kubernetes clientset")
 	}
 
 	// check for the existence of operator configmap, if not create it

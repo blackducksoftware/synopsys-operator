@@ -55,7 +55,7 @@ var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
 var opsSightClient *opssightclientset.Clientset
 
-// setResourceClients sets the global variables for the kuberentes rest config
+// setResourceClients sets the global variables for the Kuberentes rest config
 // and the resource clients
 func setResourceClients() error {
 	var err error
@@ -165,7 +165,7 @@ func RunKubeCmd(restConfig *rest.Config, args ...string) (string, error) {
 		cmd2 = exec.Command("kubectl", args...)
 		log.Debugf("Command: %+v", cmd2.Args)
 	} else {
-		return "", fmt.Errorf("Could not determine if openshift or kube")
+		return "", fmt.Errorf("couldn't determine if running in Openshift or Kubernetes")
 	}
 	stdoutErr, err := cmd2.CombinedOutput()
 	if err != nil {
@@ -218,14 +218,14 @@ func getOperatorNamespace(namespace string) (string, error) {
 		}
 	}
 
-	log.Debugf("getting synopsys operator's namespace")
+	log.Debugf("getting Synopsys Operator's namespace")
 	namespace, err = util.GetOperatorNamespace(kubeClient, namespace)
 	if err != nil {
 		return "", err
 	}
 
 	if len(namespace) == 0 {
-		return "", fmt.Errorf("synopsys operator namespace not found")
+		return "", fmt.Errorf("Synopsys Operator's namespace not found")
 	}
 	return namespace, nil
 }
@@ -249,25 +249,25 @@ func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeM
 			alt := resource.(alertapi.Alert)
 			_, err := operatorutil.UpdateAlert(alertClient, alt.Spec.Namespace, &alt)
 			if err != nil {
-				log.Errorf("error updating the %s Alert instance due to %+v", alt.Name, err)
+				log.Errorf("error updating Alert '%s' due to %+v", alt.Name, err)
 				return nil
 			}
 		case reflect.TypeOf(blackduckapi.Blackduck{}):
 			bd := resource.(blackduckapi.Blackduck)
 			_, err := operatorutil.UpdateBlackduck(blackDuckClient, bd.Spec.Namespace, &bd)
 			if err != nil {
-				log.Errorf("error updating the %s Black Duck instance due to %+v", bd.Name, err)
+				log.Errorf("error updating Black Duck '%s' due to %+v", bd.Name, err)
 				return nil
 			}
 		case reflect.TypeOf(opssightapi.OpsSight{}):
 			ops := resource.(opssightapi.OpsSight)
 			_, err := operatorutil.UpdateOpsSight(opsSightClient, ops.Spec.Namespace, &ops)
 			if err != nil {
-				log.Errorf("error updating the %s OpsSight instance due to %+v", ops.Name, err)
+				log.Errorf("error updating OpsSight '%s' due to %+v", ops.Name, err)
 				return nil
 			}
 		default:
-			return fmt.Errorf("type %+v is not supported for updating", reflect.TypeOf(resource))
+			return fmt.Errorf("type '%+v' is not supported for updating", reflect.TypeOf(resource))
 		}
 	}
 	return nil
@@ -279,14 +279,14 @@ func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName st
 	if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdType)
 		if err != nil {
-			return "", "", "", fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", crdType, err)
+			return "", "", "", fmt.Errorf("unable to get Custom Resource Definition '%s' in your cluster due to %+v", crdType, err)
 		}
 		crdScope = crd.Spec.Scope
 	}
 
 	// Check Number of Arguments
 	if crdScope != apiextensions.ClusterScoped && len(namespace) == 0 {
-		return "", "", "", fmt.Errorf("namespace to create an %s instance need to be provided", inputNamespace)
+		return "", "", "", fmt.Errorf("namespace to create an '%s' instance needs to be provided", inputNamespace)
 	}
 
 	var namespace string
@@ -295,12 +295,12 @@ func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName st
 			if len(crdName) > 0 {
 				ns, err := util.ListNamespaces(kubeClient, fmt.Sprintf("synopsys.com.%s.%s", crdName, name))
 				if err != nil {
-					return "", "", "", fmt.Errorf("unable to list %s %s instance namespaces %s due to %+v", name, crdName, namespace, err)
+					return "", "", "", fmt.Errorf("unable to list the '%s' instance '%s' in namespace '%s' due to %+v", crdName, name, namespace, err)
 				}
 				if len(ns.Items) > 0 {
 					namespace = ns.Items[0].Name
 				} else {
-					return "", "", "", fmt.Errorf("unable to find %s %s instance namespace", name, crdName)
+					return "", "", "", fmt.Errorf("unable to find the namespace of the '%s' instance '%s'", crdName, name)
 				}
 			}
 			namespace = name

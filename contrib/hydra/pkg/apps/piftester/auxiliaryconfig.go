@@ -28,7 +28,7 @@ import (
 type AuxiliaryConfig struct {
 	Namespace string
 
-	// true -> openshift; false -> kubernetes
+	// true -> openshift; false -> Kubernetes
 	IsOpenshift bool
 
 	DockerPassword           string

@@ -45,21 +45,21 @@ var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Display Synopsys resources from your cluster",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("not a valid command")
+		return fmt.Errorf("must specify a sub-command")
 	},
 }
 
-// getAlertCmd display one or many Alerts
+// getAlertCmd display one or many Alert instances
 var getAlertCmd = &cobra.Command{
-	Use:     "alert [NAME]...",
+	Use:     "alert [NAME...]",
 	Example: "synopsysctl get alerts\nsynopsysctl get alert <name>\nsynopsysctl get alerts <name1> <name2>\nsynopsysctl get alerts -n <namespace>\nsynopsysctl get alert <name> -n <namespace>\nsynopsysctl get alerts <name1> <name2> -n <namespace>",
 	Aliases: []string{"alerts"},
-	Short:   "Display one or many Alerts",
+	Short:   "Display one or many Alert instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting Alerts...")
+		log.Debugf("getting Alert instances...")
 		kubectlCmd := []string{"get", "alerts"}
 		if len(namespace) > 0 {
 			kubectlCmd = append(kubectlCmd, "-n", namespace)
@@ -77,7 +77,7 @@ var getAlertCmd = &cobra.Command{
 		}
 		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
-			log.Errorf("error getting Alerts due to %+v - %s", out, err)
+			log.Errorf("error getting Alert instances due to %+v - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -85,17 +85,17 @@ var getAlertCmd = &cobra.Command{
 	},
 }
 
-// getBlackDuckCmd Display one or many Black Ducks
+// getBlackDuckCmd display one or many Black Duck instances
 var getBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck [NAME]...",
+	Use:     "blackduck [NAME...]",
 	Example: "synopsysctl get blackducks\nsynopsysctl get blackduck <name>\nsynopsysctl get blackducks <name1> <name2>\nsynopsysctl get blackducks -n <namespace>\nsynopsysctl get blackduck <name> -n <namespace>\nsynopsysctl get blackducks <name1> <name2> -n <namespace>",
 	Aliases: []string{"blackducks"},
-	Short:   "Display one or many Black Ducks",
+	Short:   "Display one or many Black Duck instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting Black Ducks...")
+		log.Debugf("getting Black Duck instances...")
 		kubectlCmd := []string{"get", "blackducks"}
 		if len(namespace) > 0 {
 			kubectlCmd = append(kubectlCmd, "-n", namespace)
@@ -113,7 +113,7 @@ var getBlackDuckCmd = &cobra.Command{
 		}
 		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
-			log.Errorf("error getting Black Ducks due to %+v - %s", out, err)
+			log.Errorf("error getting Black Duck instances due to %+v - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -149,18 +149,18 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		}
 
 		filePath := args[1]
-		log.Infof("getting Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
+		log.Infof("getting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		_, err = util.GetHub(blackduckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			log.Errorf("error getting %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
+			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 
 		// getting the operator secret to retrieve the seal key
 		secret, err := util.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
 		if err != nil {
-			log.Errorf("unable to find Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
+			log.Errorf("unable to find Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
 			return nil
 		}
 
@@ -168,41 +168,41 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		// Filter the upload cache pod to get the master key using the seal key
 		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache", crdScope == apiextensions.ClusterScoped))
 		if err != nil {
-			log.Errorf("unable to filter the upload cache pod of %s due to %+v", namespace, err)
+			log.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", namespace, err)
 			return nil
 		}
 
-		// Create the exec into kubernetes pod request
+		// Create the exec into Kubernetes pod request
 		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
 		// TODO: changed the upload cache service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
 		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
 		if err != nil {
-			log.Errorf("unable to exec into upload cache pod in %s because %+v", namespace, err)
+			log.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", namespace, err)
 			return nil
 		}
 
 		fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
 		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
 		if err != nil {
-			log.Errorf("error writing to %s because %+v", fileName, err)
+			log.Errorf("error writing to file '%s' due to %+v", fileName, err)
 			return nil
 		}
-		log.Infof("successfully created the master key in %s for the %s Black Duck instance in %s namespace", fileName, blackDuckName, blackDuckNamespace)
+		log.Infof("successfully created the master key in file '%s' for Black Duck '%s' in namespace '%s'", fileName, blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }
 
-// getOpsSightCmd Display one or many OpsSights
+// getOpsSightCmd display one or many OpsSight instances
 var getOpsSightCmd = &cobra.Command{
-	Use:     "opssight [NAME]...",
+	Use:     "opssight [NAME...]",
 	Example: "synopsysctl get opssights\nsynopsysctl get opssight <name>\nsynopsysctl get opssights <name1> <name2>",
 	Aliases: []string{"opssights"},
-	Short:   "Display one or many OpsSights",
+	Short:   "Display one or many OpsSight instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Debugf("getting OpsSights...")
+		log.Debugf("getting OpsSight instances...")
 		kubectlCmd := []string{"get", "opssights"}
 		if len(namespace) > 0 {
 			kubectlCmd = append(kubectlCmd, "-n", namespace)
@@ -220,7 +220,7 @@ var getOpsSightCmd = &cobra.Command{
 		}
 		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
-			log.Errorf("error getting OpsSights due to %+v - %s", out, err)
+			log.Errorf("error getting OpsSight instances due to %+v - %s", out, err)
 			return nil
 		}
 		fmt.Printf("%+v", out)
@@ -233,20 +233,20 @@ func init() {
 	rootCmd.AddCommand(getCmd)
 
 	// Add Commands
-	getAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
+	getAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getAlertCmd)
 
-	getBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
+	getBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getBlackDuckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getBlackDuckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 
-	getBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
+	getBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
 	getCmd.AddCommand(getBlackDuckCmd)
 
-	getOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
+	getOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getOpsSightCmd)
