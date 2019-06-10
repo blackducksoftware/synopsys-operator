@@ -185,12 +185,12 @@ var updateOperatorCmd = &cobra.Command{
 
 			// check for changes
 			newPrometheusSpec := soperator.PrometheusSpecConfig{}
-			if cmd.Flag("prometheus-image").Changed {
-				log.Debugf("updating PrometheusImage to %s", updatePrometheusImage)
+			if cmd.Flag("metrics-image").Changed {
+				log.Debugf("updating Prometheus image to %s", updatePrometheusImage)
 				newPrometheusSpec.Image = updatePrometheusImage
 			}
-			if cmd.Flag("expose-prometheus-metrics").Changed {
-				log.Debugf("updating expose prometheus metrics")
+			if cmd.Flag("expose-metrics").Changed {
+				log.Debugf("updating expose Prometheus metrics")
 				newPrometheusSpec.Expose = updateExposePrometheusMetrics
 			}
 
