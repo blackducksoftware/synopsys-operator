@@ -59,7 +59,7 @@ var describeAlertCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, describeSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error describing Alert: %s - %s", out, err)
 			return nil
@@ -88,7 +88,7 @@ var describeBlackDuckCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, describeSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error describing Black Duck: %s - %s", out, err)
 			return nil
@@ -117,7 +117,7 @@ var describeOpsSightCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, describeSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error describing OpsSight: %s - %s", out, err)
 			return nil
