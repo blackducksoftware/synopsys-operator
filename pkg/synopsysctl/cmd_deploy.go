@@ -83,28 +83,21 @@ var deployCmd = &cobra.Command{
 			metricsImage = DefaultMetricsImage
 		}
 
-		// check if operator is already installed
+		// check if Synopsys Operator is already installed
 		ns, err := operatorutil.GetOperatorNamespace(kubeClient)
 		if err == nil {
 			log.Errorf("Synopsys Operator is already installed in '%s' namespace", ns)
 			return nil
 		}
 
-		// verify operator image has a tag
-		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
-		if !imageHasTag {
-			log.Errorf("Synopsys Operator image doesn't have a tag: %s", synopsysOperatorImage)
-			return nil
-		}
-
-		// Create a Seal Key for the Operator
+		// Create a Seal Key for the Synopsys Operator
 		log.Debugf("getting Seal Key")
 		sealKey, err := operatorutil.GetRandomString(32)
 		if err != nil {
 			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
 		}
 
-		// Create Certificate data for the Operator
+		// Create Certificate data for the Synopsys Operator
 		cert, key, err := operatorutil.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
 			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", deployNamespace),
 		})
