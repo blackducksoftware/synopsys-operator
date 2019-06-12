@@ -41,7 +41,7 @@ type Config struct {
 	PodWaitTimeoutSeconds         int64
 	ResyncIntervalInSeconds       int64
 	TerminationGracePeriodSeconds int64
-
+	AdmissionWebhookListener      bool
 	// Not recommended production, just for testing, QA, resiliency, and CI/CD.
 	OperatorTimeBombInSeconds int64
 }
@@ -100,6 +100,7 @@ func GetConfig(configPath string) (*Config, error) {
 		viper.BindEnv("ResyncIntervalInSeconds")
 		viper.BindEnv("TerminationGracePeriodSeconds")
 		viper.BindEnv("OperatorTimeBombInSeconds")
+		viper.BindEnv("AdmissionWebhookListener")
 		viper.AutomaticEnv()
 	}
 

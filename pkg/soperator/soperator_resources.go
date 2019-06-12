@@ -242,6 +242,7 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 		"PodWaitTimeoutSeconds":         specConfig.PodWaitTimeoutSeconds,
 		"ResyncIntervalInSeconds":       specConfig.ResyncIntervalInSeconds,
 		"TerminationGracePeriodSeconds": specConfig.TerminationGracePeriodSeconds,
+		"AdmissionWebhookListener":      specConfig.AdmissionWebhookListener,
 	}
 	bytes, err := json.Marshal(configData)
 	if err != nil {
