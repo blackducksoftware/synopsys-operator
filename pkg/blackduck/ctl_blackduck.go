@@ -34,11 +34,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type uid struct {
-	Key   string `json:"key"`
-	Value int64  `json:"value"`
-}
-
 // Ctl type provides functionality for a Black Duck
 // for the Synopsysctl tool
 type Ctl struct {
@@ -238,16 +233,6 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 	flagset.VisitAll(ctl.SetFlag)
 }
 
-// PVCStructs - file format for reading data
-type PVCStructs struct {
-	Data []blackduckv1.PVC
-}
-
-// UIDStructs - file format for reading data
-type UIDStructs struct {
-	Data []uid
-}
-
 // SetFlag sets a Black Duck's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
@@ -307,16 +292,13 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if err != nil {
 				log.Errorf("failed to read pvc file: %s", err)
 			}
-			pvcStructs := PVCStructs{Data: []blackduckv1.PVC{}}
-			err = json.Unmarshal([]byte(data), &pvcStructs)
+			pvcs := []blackduckv1.PVC{}
+			err = json.Unmarshal([]byte(data), &pvcs)
 			if err != nil {
 				log.Errorf("failed to unmarshal pvc structs: %s", err)
 				return
 			}
-			ctl.Spec.PVC = []blackduckv1.PVC{} // clear old values
-			for _, pvc := range pvcStructs.Data {
-				ctl.Spec.PVC = append(ctl.Spec.PVC, pvc)
-			}
+			ctl.Spec.PVC = pvcs
 		case "node-affinity-file-path":
 			data, err := util.ReadFileData(ctl.NodeAffinityFilePath)
 			if err != nil {
@@ -376,16 +358,13 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if err != nil {
 				log.Errorf("failed to read image UID map file: %s", err)
 			}
-			uidStructs := UIDStructs{Data: []uid{}}
-			err = json.Unmarshal([]byte(data), &uidStructs)
+			uidMap := map[string]int64{}
+			err = json.Unmarshal([]byte(data), &uidMap)
 			if err != nil {
 				log.Errorf("failed to unmarshal UID Map structs: %s", err)
 				return
 			}
-			ctl.Spec.ImageUIDMap = make(map[string]int64)
-			for _, mapStruct := range uidStructs.Data {
-				ctl.Spec.ImageUIDMap[mapStruct.Key] = mapStruct.Value
-			}
+			ctl.Spec.ImageUIDMap = uidMap
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
 		case "admin-password":
