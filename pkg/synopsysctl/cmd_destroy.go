@@ -135,11 +135,22 @@ func destroy(namespace string) {
 		log.Errorf("error getting the role or cluster role due to %+v", err)
 	}
 
+	crbs, err := util.ListClusterRoleBindings(kubeClient, "app in (opssight)")
+
 	for _, clusterRole := range clusterRoles {
-		log.Infof("deleting %s cluster role ", clusterRole)
-		err := util.DeleteClusterRole(kubeClient, clusterRole)
-		if err != nil {
-			log.Errorf("unable to delete the %s cluster role because %+v", clusterRole, err)
+		isExist := false
+		// check whether the cluster role is referenced in any cluster role binding
+		for _, crb := range crbs.Items {
+			if util.IsClusterRoleRefExistForOtherNamespace(crb.RoleRef, clusterRole, namespace, crb.Subjects) {
+				isExist = true
+			}
+		}
+		if !isExist {
+			log.Infof("deleting %s cluster role ", clusterRole)
+			err := util.DeleteClusterRole(kubeClient, clusterRole)
+			if err != nil {
+				log.Errorf("unable to delete the %s cluster role because %+v", clusterRole, err)
+			}
 		}
 	}
 
