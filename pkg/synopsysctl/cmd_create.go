@@ -454,7 +454,7 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 
 	// Add Alert Command
-	createAlertCmd.PersistentFlags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags [empty|default]")
+	createAlertCmd.PersistentFlags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags (empty|default)")
 	createAlertCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	addMockFlag(createAlertCmd)
@@ -465,7 +465,7 @@ func init() {
 	createAlertCmd.AddCommand(createAlertNativeCmd)
 
 	// Add Black Duck Command
-	createBlackDuckCmd.PersistentFlags().StringVar(&baseBlackDuckSpec, "template", baseBlackDuckSpec, "Base resource configuration to modify with flags [empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled]")
+	createBlackDuckCmd.PersistentFlags().StringVar(&baseBlackDuckSpec, "template", baseBlackDuckSpec, "Base resource configuration to modify with flags (empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled)")
 	createBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	createBlackDuckCtl.AddSpecFlags(createBlackDuckCmd, true)
 	addMockFlag(createBlackDuckCmd)
@@ -476,7 +476,7 @@ func init() {
 	createBlackDuckCmd.AddCommand(createBlackDuckNativeCmd)
 
 	// Add OpsSight Command
-	createOpsSightCmd.PersistentFlags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags [empty|upstream|default|disabledBlackDuck]")
+	createOpsSightCmd.PersistentFlags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags (empty|upstream|default|disabledBlackDuck)")
 	createOpsSightCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	addMockFlag(createOpsSightCmd)
