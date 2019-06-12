@@ -61,6 +61,7 @@ type Ctl struct {
 	AuthCustomCAFilePath          string
 	Type                          string
 	DesiredState                  string
+	MigrationMode                 bool
 	Environs                      []string
 	ImageRegistries               []string
 	ImageUIDMapFilePath           string
@@ -134,6 +135,12 @@ func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 		cobra.MarkFlagRequired(flagset, "external-postgres-admin-password")
 		cobra.MarkFlagRequired(flagset, "external-postgres-user-password")
 	}
+
+	setStateToDbMigrate := flagset.Lookup("migration-mode").Changed
+	if val, _ := flagset.GetBool("migration-mode"); !val && setStateToDbMigrate {
+		return fmt.Errorf("--migration-mode cannot be set to false")
+	}
+
 	return nil
 }
 
@@ -208,6 +215,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Black Duck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Black Duck")
+	cmd.Flags().BoolVar(&ctl.MigrationMode, "migration-mode", ctl.MigrationMode, "Create Black Duck in the database-migration state")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
@@ -355,6 +363,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.Type = ctl.Type
 		case "desired-state":
 			ctl.Spec.DesiredState = ctl.DesiredState
+		case "migration-mode":
+			if ctl.MigrationMode {
+				ctl.Spec.DesiredState = "DbMigrate"
+			}
 		case "environs":
 			ctl.Spec.Environs = ctl.Environs
 		case "image-registries":
