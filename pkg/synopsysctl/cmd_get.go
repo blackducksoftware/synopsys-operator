@@ -71,7 +71,7 @@ var getAlertCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting Alerts due to %+v - %s", out, err)
 			return nil
@@ -104,7 +104,7 @@ var getBlackDuckCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting Black Ducks due to %+v - %s", out, err)
 			return nil
@@ -198,7 +198,7 @@ var getOpsSightCmd = &cobra.Command{
 			kubectlCmd = append(kubectlCmd, "-l")
 			kubectlCmd = append(kubectlCmd, getSelector)
 		}
-		out, err := RunKubeCmd(restconfig, kube, openshift, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
 			log.Errorf("error getting OpsSights due to %+v - %s", out, err)
 			return nil
