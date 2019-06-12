@@ -47,6 +47,7 @@ var threadiness = 5
 var postgresRestartInMins int64 = 10
 var podWaitTimeoutSeconds int64 = 600
 var resyncIntervalInSeconds int64 = 120
+var admissionWebhookListener = false
 
 // Flags for using mock mode - doesn't deploy
 var deployMockFormat string
@@ -116,7 +117,7 @@ var deployCmd = &cobra.Command{
 		log.Debugf("creating Synopsys Operator components")
 		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig),
 			operatorTimeBombInSeconds, strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins,
-			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key)
+			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, admissionWebhookListener)
 
 		if cmd.LocalFlags().Lookup("mock").Changed {
 			log.Debugf("running mock mode")
