@@ -49,12 +49,13 @@ type SpecConfig struct {
 	SealKey                       string
 	Certificate                   string
 	CertificateKey                string
+	AdmissionWebhookListener      bool
 }
 
 // NewSOperator will create a SOperator type
 func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
 	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
-	kubeClient *kubernetes.Clientset, certificate string, certificateKey string) *SpecConfig {
+	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, admissionWebhookListener bool) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,
@@ -71,6 +72,7 @@ func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType C
 		SealKey:                       sealKey,
 		Certificate:                   certificate,
 		CertificateKey:                certificateKey,
+		AdmissionWebhookListener:      admissionWebhookListener,
 	}
 }
 

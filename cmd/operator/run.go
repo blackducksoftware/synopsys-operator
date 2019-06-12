@@ -108,9 +108,11 @@ func runProtoform(configPath string) {
 		logrus.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
 	}
 
-	go func() {
-		webhook.NewOperatorWebhook(deployer.KubeConfig).Start()
-	}()
+	if deployer.Config.AdmissionWebhookListener {
+		go func() {
+			webhook.NewOperatorWebhook(deployer.KubeConfig).Start()
+		}()
+	}
 
 	// Start the prometheus endpoint
 	protoform.SetupHTTPServer()
