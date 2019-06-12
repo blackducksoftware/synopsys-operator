@@ -43,7 +43,7 @@ type Config struct {
 	TerminationGracePeriodSeconds int64
 	IsClusterScoped               bool
 	AdmissionWebhookListener      bool
- 
+
 	// Not recommended production, just for testing, QA, resiliency, and CI/CD.
 	OperatorTimeBombInSeconds int64
 }
