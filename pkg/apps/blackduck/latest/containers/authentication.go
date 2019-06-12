@@ -72,7 +72,7 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 	c.PostEditContainer(hubAuthContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "authentication", c.isClusterScope), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "authentication", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getAuthenticationVolumes(),
 			Containers:          []*util.Container{hubAuthContainerConfig},
@@ -89,7 +89,7 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 
 	var hubAuthVolume *components.Volume
 	if c.hubSpec.PersistentStorage {
-		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", util.GetResourceName(c.name, "blackduck-authentication", c.isClusterScope))
+		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", util.GetResourceName(c.name, "blackduck-authentication", c.config.IsClusterScoped))
 	} else {
 		hubAuthVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")
 	}
@@ -141,5 +141,5 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 // GetAuthenticationService will return the authentication service
 func (c *Creater) GetAuthenticationService() *components.Service {
 	// TODO: changed the auth service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
-	return util.CreateService("authentication", c.GetLabel("authentication"), c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("authentication"))
+	return util.CreateService(util.GetResourceName(c.name, "authentication", c.config.IsClusterScoped), c.GetLabel("authentication"), c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("authentication"))
 }

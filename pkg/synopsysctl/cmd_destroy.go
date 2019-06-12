@@ -25,71 +25,111 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // destroyCmd removes Synopsys Operator from the cluster
 var destroyCmd = &cobra.Command{
-	Use:     "destroy [NAMESPACES...]",
+	Use:     "destroy [NAMES...]",
+	Example: "synopsysctl destroy\nsynopsysctl destroy <namespace>\nsynopsysctl destroy <namespace1> <namespace2>",
 	Short:   "Removes one or more Synopsys Operator and its associated CRD's on your cluster",
-	Example: "synopsysctl destroy",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		isClusterScoped := util.GetClusterScope(apiExtensionClient)
 		// Read Commandline Parameters
 		if len(args) > 0 {
-			for _, namespace := range args {
-				destroyNamespace(namespace, isClusterScoped)
+			for _, operatorNamespace := range args {
+				destroy(operatorNamespace)
 			}
 		} else {
-			namespace := DefaultDeployNamespace
+			operatorNamespace := DefaultOperatorNamespace
 			var err error
+			isClusterScoped := util.GetClusterScope(apiExtensionClient)
 			if isClusterScoped {
 				namespace, err = util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 				if err != nil {
 					log.Error(err)
 				}
+				if metav1.NamespaceAll != namespace {
+					operatorNamespace = namespace
+				}
 			}
-			destroyNamespace(namespace, isClusterScoped)
+			destroy(operatorNamespace)
 		}
 		return nil
 	},
 }
 
-func destroyNamespace(namespace string, isClusterScoped bool) {
-	if metav1.NamespaceAll != namespace {
-		log.Infof("destroying the synopsys operator in '%s' namespace...", namespace)
-		_, err := util.GetNamespace(kubeClient, namespace)
-		if err != nil {
-			log.Warnf("unable to find the synopsys operator in '%s' namespace due to %+v", namespace, err)
-		} else {
-			// delete namespace
-			isDeleteOperatorNamespace := util.IsDeleteOperatorNamespace(kubeClient, namespace)
-			if isDeleteOperatorNamespace {
-				log.Debugf("deleting namespace %s", namespace)
-				err = util.DeleteNamespace(kubeClient, namespace)
-				if err != nil {
-					log.Errorf("unable to delete the %s namespace because %+v", namespace, err)
-				}
-			} else {
-				log.Warnf("synopsys operator in '%s' namespace will not be deleted because other instances are still running in the namespace", namespace)
+func destroy(namespace string) {
+	log.Infof("destroying the synopsys operator in '%s' namespace...", namespace)
+	_, err := util.GetNamespace(kubeClient, namespace)
+	if err != nil {
+		log.Warnf("unable to find the synopsys operator in '%s' namespace due to %+v", namespace, err)
+	} else {
+		// delete namespace
+		isDeleteOperatorNamespace := util.IsDeleteOperatorNamespace(kubeClient, namespace)
+		if isDeleteOperatorNamespace {
+			log.Debugf("deleting namespace %s", namespace)
+			err = util.DeleteNamespace(kubeClient, namespace)
+			if err != nil {
+				log.Errorf("unable to delete the %s namespace because %+v", namespace, err)
 			}
+		} else {
+			log.Warnf("synopsys operator in '%s' namespace will not be deleted because other instances are still running in the namespace", namespace)
 		}
 	}
 
 	// delete crds
-	crds := []string{util.AlertCRDName, util.BlackDuckCRDName, util.OpsSightCRDName, util.PrmCRDName}
-	for _, crd := range crds {
-		log.Infof("deleting %s custom resource definitions", crd)
-		err := util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
+	deleteCrd([]string{util.AlertCRDName, util.BlackDuckCRDName, util.OpsSightCRDName, util.PrmCRDName})
+
+	// delete cluster role bindings
+	clusterRoleBindings, roleBindings, err := util.GetOperatorRoleBindings(kubeClient, namespace)
+	if err != nil {
+		log.Errorf("error getting the role binding or cluster role binding due to %+v", err)
+	}
+
+	for _, clusterRoleBinding := range clusterRoleBindings {
+		crb, err := util.GetClusterRoleBinding(kubeClient, clusterRoleBinding)
 		if err != nil {
-			log.Errorf("unable to delete the %s custom resource definitions because %+v", crd, err)
+			log.Errorf("unable to get %s cluster role binding due to %+v", clusterRoleBinding, err)
+		}
+		// check whether any subject present for other namespace before deleting them
+		newSubjects := []rbacv1.Subject{}
+		for _, subject := range crb.Subjects {
+			isExist := util.IsSubjectExistForOtherNamespace(subject, namespace)
+			if isExist {
+				newSubjects = append(newSubjects, subject)
+			}
+		}
+		if len(newSubjects) > 0 {
+			crb.Subjects = newSubjects
+			// update the cluster role binding to remove the old cluster role binding subject
+			_, err = util.UpdateClusterRoleBinding(kubeClient, crb)
+			if err != nil {
+				log.Errorf("unable to update %s cluster role binding due to %+v", clusterRoleBinding, err)
+			}
+		} else {
+			log.Infof("deleting %s cluster role binding", clusterRoleBinding)
+			err := util.DeleteClusterRoleBinding(kubeClient, clusterRoleBinding)
+			if err != nil {
+				log.Errorf("unable to delete %s cluster role binding due to %+v", clusterRoleBinding, err)
+			}
 		}
 	}
 
-	// delete cluster roles/ roles
+	// delete role bindings
+	for _, roleBinding := range roleBindings {
+		log.Infof("deleting %s role binding", roleBinding)
+		err = util.DeleteRoleBinding(kubeClient, namespace, roleBinding)
+
+		if err != nil {
+			log.Errorf("unable to delete the %s role binding  because %+v", roleBinding, err)
+		}
+	}
+
+	// delete cluster roles
 	clusterRoles, roles, err := util.GetOperatorRoles(kubeClient, namespace)
 	if err != nil {
 		log.Errorf("error getting the role or cluster role due to %+v", err)
@@ -103,6 +143,7 @@ func destroyNamespace(namespace string, isClusterScoped bool) {
 		}
 	}
 
+	// delete roles
 	for _, role := range roles {
 		log.Infof("deleting %s role ", role)
 		err := util.DeleteRole(kubeClient, namespace, role)
@@ -111,31 +152,58 @@ func destroyNamespace(namespace string, isClusterScoped bool) {
 		}
 	}
 
-	// delete cluster role/role bindings
-	clusterRoleBindings, roleBindings, err := util.GetOperatorRoleBindings(kubeClient, namespace)
-	if err != nil {
-		log.Errorf("error getting the role binding or cluster role binding due to %+v", err)
-	}
+	log.Infof("finished destroying synopsys operator in '%s' namespace", namespace)
+}
 
-	for _, clusterRoleBinding := range clusterRoleBindings {
-		log.Infof("deleting %s cluster role binding", clusterRoleBinding)
-		err := util.DeleteClusterRoleBinding(kubeClient, clusterRoleBinding)
-		if err != nil {
-			log.Errorf("unable to delete the %s cluster role binding because %+v", clusterRoleBinding, err)
+func deleteCrd(crds []string) {
+	for _, crd := range crds {
+		switch crd {
+		case util.AlertCRDName:
+			alerts, err := util.ListAlerts(alertClient, metav1.NamespaceAll)
+			if err != nil {
+				log.Warnf("unable to list an Alert instances due to %+v", err)
+				continue
+			}
+
+			for _, alert := range alerts.Items {
+				if alert.Namespace != namespace {
+					log.Warnf("Alert instances are already exist in other namespaces. Please delete them before deleting the custom resources.")
+					continue
+				}
+			}
+		case util.BlackDuckCRDName:
+			blackducks, err := util.ListHubs(blackDuckClient, metav1.NamespaceAll)
+			if err != nil {
+				log.Warnf("unable to list the Black Duck instances due to %+v", err)
+				continue
+			}
+
+			for _, blackduck := range blackducks.Items {
+				if blackduck.Namespace != namespace {
+					log.Warnf("Black Duck instances are already exist in other namespaces. Please delete them before deleting the custom resources.")
+					continue
+				}
+			}
+		case util.OpsSightCRDName:
+			opssights, err := util.ListOpsSights(opsSightClient, metav1.NamespaceAll)
+			if err != nil {
+				log.Warnf("unable to list an OpsSight instances due to %+v", err)
+				continue
+			}
+
+			for _, opssight := range opssights.Items {
+				if opssight.Namespace != namespace {
+					log.Warnf("OpsSight instances are already exist in other namespaces. Please delete them before deleting the custom resources.")
+					continue
+				}
+			}
 		}
-	}
 
-	for _, roleBinding := range roleBindings {
-		log.Infof("deleting %s role binding", roleBinding)
-		err = util.DeleteRoleBinding(kubeClient, namespace, roleBinding)
-
+		log.Infof("deleting %s custom resource definitions", crd)
+		err := util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
 		if err != nil {
-			log.Errorf("unable to delete the %s role binding  because %+v", roleBinding, err)
+			log.Errorf("unable to delete the %s custom resource definitions because %+v", crd, err)
 		}
-	}
-
-	if metav1.NamespaceAll != namespace {
-		log.Infof("finished destroying synopsys operator in '%s' namespace", namespace)
 	}
 }
 

@@ -69,7 +69,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 	c.PostEditContainer(uploadCacheContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "uploadcache", c.isClusterScope), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "uploadcache", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getUploadCacheVolumes(),
 			Containers:          []*util.Container{uploadCacheContainerConfig},
@@ -83,12 +83,12 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 // getUploadCacheVolumes will return the uploadCache volumes
 func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
-	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", util.GetResourceName(c.name, "upload-cache", c.isClusterScope), 0444)
+	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", util.GetResourceName(c.name, "upload-cache", c.config.IsClusterScoped), 0444)
 	var uploadCacheDataDir *components.Volume
 	var uploadCacheDataKey *components.Volume
 	if c.hubSpec.PersistentStorage {
-		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.name, "blackduck-uploadcache-data", c.isClusterScope))
-		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", util.GetResourceName(c.name, "blackduck-uploadcache-key", c.isClusterScope))
+		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.name, "blackduck-uploadcache-data", c.config.IsClusterScoped))
+		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", util.GetResourceName(c.name, "blackduck-uploadcache-key", c.config.IsClusterScoped))
 	} else {
 		uploadCacheDataDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
 		uploadCacheDataKey, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-key")

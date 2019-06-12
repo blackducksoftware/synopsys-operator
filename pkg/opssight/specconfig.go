@@ -289,7 +289,7 @@ func (p *SpecConfig) addSecretData(secret *components.Secret) error {
 	}
 
 	// adding Internal Black Duck credentials
-	secretEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient, p.isBlackDuckClusterScope)
+	secretEditor := NewUpdater(p.config, p.kubeClient, p.hubClient, p.opssightClient)
 	hubType := p.opssight.Spec.Blackduck.BlackduckSpec.Type
 	blackduckPassword, err := util.Base64Decode(p.opssight.Spec.Blackduck.BlackduckPassword)
 	if err != nil {

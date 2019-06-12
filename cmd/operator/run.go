@@ -24,6 +24,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -71,11 +72,20 @@ func runProtoform(configPath string) {
 
 	stopCh := make(chan struct{})
 
+	var isClusterScoped bool
+	clusterScopeEnv, ok := os.LookupEnv("CLUSTER_SCOPE")
+	if ok && len(clusterScopeEnv) > 0 {
+		clusterScope, err := strconv.ParseBool(clusterScopeEnv)
+		if err != nil {
+			panic("cluster scope environment variable is not set properly. possible values are true/false")
+		}
+		isClusterScoped = clusterScope
+	}
 	crdEnv, ok := os.LookupEnv("CRD_NAMES")
 	if ok && len(crdEnv) > 0 {
 		crds := strings.Split(crdEnv, ",")
 		for _, crd := range crds {
-			startController(configPath, crd, stopCh)
+			startController(configPath, crd, isClusterScoped, stopCh)
 		}
 	} else {
 		log.Errorf("unable to start any CRD controllers. Please set the CRD_NAMES environment variable to start any CRD controllers...")
@@ -104,39 +114,24 @@ func runProtoform(configPath string) {
 }
 
 // addController will start the CRD controller
-func startController(configPath string, name string, stopCh chan struct{}) {
-	crd := strings.SplitN(name, ":", 2)
-	if len(crd) != 2 {
-		panic(fmt.Errorf("CRD_NAMES environment variable are not set properly"))
-	}
-	name = crd[0]
+func startController(configPath string, name string, isClusterScoped bool, stopCh chan struct{}) {
 	// Add controllers to the Operator
 	deployer, err := protoform.NewController(configPath)
 	if err != nil {
 		panic(err)
 	}
+	deployer.Config.IsClusterScoped = isClusterScoped
 
 	switch strings.ToLower(name) {
 	case util.BlackDuckCRDName:
-		hubController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, getClusterScope(crd[1]), util.GetBlackDuckTemplate(), stopCh)
-		deployer.AddController(hubController)
+		blackduckController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetBlackDuckTemplate(), stopCh)
+		deployer.AddController(blackduckController)
 	case util.AlertCRDName:
-		alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, getClusterScope(crd[1]), util.GetAlertTemplate(), stopCh)
+		alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetAlertTemplate(), stopCh)
 		deployer.AddController(alertController)
 	case util.OpsSightCRDName:
-		opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
-			Config:                  deployer.Config,
-			KubeConfig:              deployer.KubeConfig,
-			KubeClientSet:           deployer.KubeClientSet,
-			Defaults:                util.GetOpsSightDefault(),
-			Threadiness:             deployer.Config.Threadiness,
-			StopCh:                  stopCh,
-			IsBlackDuckClusterScope: getClusterScopeByName(util.BlackDuckCRDName),
-		})
-		if err != nil {
-			panic(err)
-		}
-		deployer.AddController(opssSightController)
+		opsSightController := opssight.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetOpsSightDefault(), stopCh)
+		deployer.AddController(opsSightController)
 	case util.PrmCRDName:
 		log.Info("Polaris Reporting Module will be coming soon!!!")
 	default:
@@ -146,32 +141,6 @@ func startController(configPath string, name string, stopCh chan struct{}) {
 		log.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
 	}
 	log.Infof("started %s crd controller", name)
-}
-
-// getClusterScope returns whether the CRD scope is cluster scope
-func getClusterScope(crdScope string) bool {
-	switch strings.ToLower(crdScope) {
-	case "cluster":
-		return true
-	}
-	return false
-}
-
-func getClusterScopeByName(name string) bool {
-	crdEnv, ok := os.LookupEnv("CRD_NAMES")
-	if ok {
-		crdList := strings.Split(crdEnv, ",")
-		for _, crds := range crdList {
-			crd := strings.SplitN(crds, ":", 2)
-			if len(crd) != 2 {
-				panic(fmt.Errorf("CRD_NAMES environment variable are not set properly"))
-			}
-			if name == crd[0] {
-				return getClusterScope(crd[1])
-			}
-		}
-	}
-	return false
 }
 
 func kill(stopCh chan struct{}) {

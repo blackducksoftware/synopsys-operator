@@ -50,7 +50,7 @@ type Alert struct {
 }
 
 // NewAlert will return an Alert type
-func NewAlert(config *protoform.Config, kubeConfig *rest.Config, isClusterScope bool) *Alert {
+func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
 	// Initialiase the clienset
 	kubeclient, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
@@ -68,7 +68,7 @@ func NewAlert(config *protoform.Config, kubeConfig *rest.Config, isClusterScope 
 	}
 	// Initialize creaters for different versions of Alert (each Creater can support differernt versions)
 	creaters := []Creater{
-		latestalert.NewCreater(config, kubeConfig, kubeclient, alertClient, routeClient, isClusterScope),
+		latestalert.NewCreater(config, kubeConfig, kubeclient, alertClient, routeClient),
 	}
 
 	return &Alert{

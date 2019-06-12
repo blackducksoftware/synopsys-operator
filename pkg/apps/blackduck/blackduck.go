@@ -56,7 +56,7 @@ type Blackduck struct {
 }
 
 // NewBlackduck will return a Blackduck
-func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config, isClusterScope bool) *Blackduck {
+func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck {
 	// Initialiase the clienset using kubeConfig
 	kubeclient, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
@@ -81,8 +81,8 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config, isClusterSc
 	routeClient := util.GetRouteClient(kubeConfig, config.Namespace)
 
 	creaters := []Creater{
-		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient, isClusterScope),
-		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient, isClusterScope),
+		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
+		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
 	}
 
 	return &Blackduck{

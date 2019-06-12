@@ -63,7 +63,7 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 	pc.SelfSetDefaults()
 	pc.DryRun = true
 	rc := &rest.Config{}
-	app := apps.NewApp(pc, rc, true)
+	app := apps.NewApp(pc, rc)
 
 	switch reflect.TypeOf(crd) {
 	case reflect.TypeOf(soperator.SpecConfig{}):

@@ -43,7 +43,7 @@ var deleteCmd = &cobra.Command{
 // deleteAlertCmd deletes an Alert from the cluster
 var deleteAlertCmd = &cobra.Command{
 	Use:     "alert NAME...",
-	Example: "synopsysctl delete alert altname\nsynopsysctl delete alert altname1 altname2 altname3\nsynopsysctl delete alert altname -n altnamespace\nsynopsysctl delete alert altname1 altname2 altname3 -n altnamespace",
+	Example: "synopsysctl delete alert <name>\nsynopsysctl delete alert <name1> <name2> <name3>\nsynopsysctl delete alert <name> -n <namespace>\nsynopsysctl delete alert <name1> <name2> <name3> -n <namespace>",
 	Short:   "Delete one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
@@ -87,7 +87,7 @@ var deleteAlertCmd = &cobra.Command{
 // deleteBlackDuckCmd deletes a Black Duck from the cluster
 var deleteBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAME...",
-	Example: "synopsysctl delete blackduck bdname\nsynopsysctl delete blackduck bdname1 bdname2 bdname3\nsynopsysctl delete blackduck bdname -n bdnamespace\nsynopsysctl delete blackduck bdname1 bdname2 bdname3 -n bdnamespace",
+	Example: "synopsysctl delete blackduck <name>\nsynopsysctl delete blackduck <name1> <name2> <name3>\nsynopsysctl delete blackduck <name> -n <namespace>\nsynopsysctl delete blackduck <name1> <name2> <name3> -n <namespace>",
 	Short:   "Delete one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
@@ -131,7 +131,7 @@ var deleteBlackDuckCmd = &cobra.Command{
 // deleteOpsSightCmd deletes an OpsSight from the cluster
 var deleteOpsSightCmd = &cobra.Command{
 	Use:     "opssight NAME...",
-	Example: "synopsysctl delete opssight opsnamespace\nsynopsysctl delete opssight opsnamespace1 opsnamespace2 opsnamespace3",
+	Example: "synopsysctl delete opssight <name>\nsynopsysctl delete opssight <name1> <name2> <name3>",
 	Short:   "Delete one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
@@ -156,10 +156,14 @@ func init() {
 	//(PassCmd) deleteCmd.DisableFlagParsing = true // lets deleteCmd pass flags to kube/oc
 	rootCmd.AddCommand(deleteCmd)
 
-	// Add Delete Commands
+	// Add Delete Alert Command
 	deleteAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to delete the resource(s)")
 	deleteCmd.AddCommand(deleteAlertCmd)
+
+	// Add Delete Black Duck Command
 	deleteBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to delete the resource(s)")
 	deleteCmd.AddCommand(deleteBlackDuckCmd)
+
+	// Add Delete OpsSight Command
 	deleteCmd.AddCommand(deleteOpsSightCmd)
 }

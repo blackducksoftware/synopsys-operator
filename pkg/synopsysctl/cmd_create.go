@@ -89,28 +89,11 @@ var createAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, util.AlertCRDName)
+		alertName, alertNamespace, crdScope, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
 		if err != nil {
-			return fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", util.AlertCRDName, err)
+			return err
 		}
 
-		// Check Number of Arguments
-		if crd.Spec.Scope != apiextensions.ClusterScoped && len(namespace) == 0 {
-			return fmt.Errorf("namespace to create an Alert instance need to be provided")
-		}
-
-		var alertName, alertNamespace string
-		if crd.Spec.Scope == apiextensions.ClusterScoped {
-			alertName = args[0]
-			if len(namespace) == 0 {
-				alertNamespace = args[0]
-			} else {
-				alertNamespace = namespace
-			}
-		} else {
-			alertName = args[0]
-			alertNamespace = namespace
-		}
 		log.Infof("creating Alert '%s' instance in '%s' namespace...", alertName, alertNamespace)
 
 		// Update Spec with user's flags
@@ -146,7 +129,7 @@ var createAlertCmd = &cobra.Command{
 		} else {
 			// Create namespace for Alert
 			var err error
-			if crd.Spec.Scope == apiextensions.ClusterScoped {
+			if crdScope == apiextensions.ClusterScoped {
 				err = DeployCRDNamespace(restconfig, alertName)
 			} else {
 				err = DeployCRDNamespace(restconfig, alertNamespace)
@@ -195,29 +178,11 @@ var createBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, util.BlackDuckCRDName)
+		blackDuckName, blackDuckNamespace, crdScope, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", util.BlackDuckCRDName, err)
+			return err
 		}
-
-		// Check Number of Arguments
-		if crd.Spec.Scope != apiextensions.ClusterScoped && len(namespace) == 0 {
-			return fmt.Errorf("namespace to create the Black Duck instance need to be provided")
-		}
-
-		var blackDuckName, blackduckNamespace string
-		if crd.Spec.Scope == apiextensions.ClusterScoped {
-			blackDuckName = args[0]
-			if len(namespace) == 0 {
-				blackduckNamespace = args[0]
-			} else {
-				blackduckNamespace = namespace
-			}
-		} else {
-			blackDuckName = args[0]
-			blackduckNamespace = namespace
-		}
-		log.Infof("creating Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackduckNamespace)
+		log.Infof("creating Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
 
 		// Update Spec with user's flags
 		log.Debugf("updating Spec with User's Flags")
@@ -225,13 +190,13 @@ var createBlackDuckCmd = &cobra.Command{
 
 		// Set Namespace in Spec
 		blackDuckSpec, _ := createBlackDuckCtl.GetSpec().(blackduckv1.BlackduckSpec)
-		blackDuckSpec.Namespace = blackduckNamespace
+		blackDuckSpec.Namespace = blackDuckNamespace
 
 		// Create and Deploy Black Duck CRD
 		blackDuck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      blackDuckName,
-				Namespace: blackduckNamespace,
+				Namespace: blackDuckNamespace,
 			},
 			Spec: blackDuckSpec,
 		}
@@ -252,23 +217,23 @@ var createBlackDuckCmd = &cobra.Command{
 		} else {
 			// Create namespace for Black Duck
 			var err error
-			if crd.Spec.Scope == apiextensions.ClusterScoped {
+			if crdScope == apiextensions.ClusterScoped {
 				err = DeployCRDNamespace(restconfig, blackDuckName)
 			} else {
-				err = DeployCRDNamespace(restconfig, blackduckNamespace)
+				err = DeployCRDNamespace(restconfig, blackDuckNamespace)
 			}
 			if err != nil {
 				log.Warn(err)
 			}
 
 			// Create Black Duck with Client
-			log.Debugf("deploying Black Duck '%s' instance in '%s' namespace", blackDuckName, blackduckNamespace)
-			_, err = blackDuckClient.SynopsysV1().Blackducks(blackduckNamespace).Create(blackDuck)
+			log.Debugf("deploying Black Duck '%s' instance in '%s' namespace", blackDuckName, blackDuckNamespace)
+			_, err = blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Create(blackDuck)
 			if err != nil {
-				log.Errorf("error creating the %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackduckNamespace, err)
+				log.Errorf("error creating the %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 				return nil
 			}
-			log.Infof("successfully created Black Duck '%s' instance in '%s' namespace", blackDuckName, blackduckNamespace)
+			log.Infof("successfully created Black Duck '%s' instance in '%s' namespace", blackDuckName, blackDuckNamespace)
 		}
 		return nil
 	},

@@ -30,8 +30,8 @@ const DefaultOperatorImage string = "gcr.io/saas-hub-stg/blackducksoftware/synop
 // DefaultMetricsImage is the Metrics image deployed with Synopsys Operator by default
 const DefaultMetricsImage string = "docker.io/prom/prometheus:v2.1.0"
 
-// DefaultDeployNamespace is the default namespace of Synopsys Operator
-const DefaultDeployNamespace string = "synopsys-operator"
+// DefaultOperatorNamespace is the default namespace of Synopsys Operator
+const DefaultOperatorNamespace string = "synopsys-operator"
 
 // Default Base Specs for Create
 const defaultBaseAlertSpec string = "default"

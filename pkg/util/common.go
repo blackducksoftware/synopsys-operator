@@ -990,6 +990,24 @@ func IsClusterRoleBindingSubjectNamespaceExist(subjects []rbacv1.Subject, namesp
 	return false
 }
 
+// IsClusterRoleRefExistForOtherNamespace checks whether the cluster role exist for any cluster role bindings present in other namespace
+func IsClusterRoleRefExistForOtherNamespace(roleRef rbacv1.RoleRef, roleName string, namespace string, subjects []rbacv1.Subject) bool {
+	for _, subject := range subjects {
+		if "clusterrole" == strings.ToLower(roleRef.Kind) && strings.EqualFold(roleRef.Name, roleName) && !strings.EqualFold(namespace, subject.Namespace) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsSubjectExistForOtherNamespace checks whether anyother namespace is exist in the subject of cluster role binding
+func IsSubjectExistForOtherNamespace(subject rbacv1.Subject, namespace string) bool {
+	if !strings.EqualFold(subject.Namespace, namespace) {
+		return true
+	}
+	return false
+}
+
 // IsSubjectExist checks whether the namespace is already exist in the subject of cluster role binding
 func IsSubjectExist(subjects []rbacv1.Subject, namespace string, name string) bool {
 	for _, subject := range subjects {
@@ -1381,7 +1399,7 @@ func GetOperatorNamespace(clientset *kubernetes.Clientset, namespace string) (st
 			return pod.Namespace, nil
 		}
 	}
-	return "", fmt.Errorf("unable to find the synopsys operator namespace due to %+v", err)
+	return metav1.NamespaceAll, fmt.Errorf("unable to find the synopsys operator namespace due to %+v", err)
 }
 
 // IsDeleteOperatorNamespace returns whether the operator namespace can be delete or not

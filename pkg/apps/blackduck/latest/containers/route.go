@@ -37,7 +37,7 @@ func (c *Creater) GetOpenShiftRoute() *api.Route {
 			Name:               fmt.Sprintf("%s-blackduck", c.name),
 			Namespace:          c.hubSpec.Namespace,
 			Kind:               "Service",
-			ServiceName:        util.GetResourceName(c.name, "webserver", c.isClusterScope),
+			ServiceName:        util.GetResourceName(c.name, "webserver", c.config.IsClusterScoped),
 			PortName:           fmt.Sprintf("port-%d", 443),
 			Labels:             map[string]string{"app": "blackduck", "name": c.name, "component": "route"},
 			TLSTerminationType: routev1.TLSTerminationPassthrough,

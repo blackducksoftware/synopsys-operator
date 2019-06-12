@@ -41,18 +41,20 @@ var migrateCmd = &cobra.Command{
 
 // migrateBlackduckCmd migrates a blackduck
 var migrateBlackduckCmd = &cobra.Command{
-	Use:     "blackduck NAMESPACE...",
-	Example: "synopsysctl migrate blackduck [namespace]\nsynopsysctl migrate blackduck [namespace1] [namespace2] [namespace3]",
+	Use:     "blackduck NAME...",
+	Example: "synopsysctl migrate blackduck <name>\nsynopsysctl migrate blackduck <name1> <name2> <name3>\nsynopsysctl migrate blackduck <name> -n <namespace>\nsynopsysctl migrate blackduck <name1> <name2> <name3> -n <namespace>",
+	Aliases: []string{"blackducks"},
 	Short:   "Migrate one or many Blackducks",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return fmt.Errorf("this command takes 1 or more arguments")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		for _, blackDuckNamespace := range args {
-			log.Infof("migrating Black Duck %s...", blackDuckNamespace)
+		blackDuckNamespace := namespace
+		for _, blackDuckName := range args {
+			if len(namespace) == 0 {
+				blackDuckNamespace = blackDuckName
+			}
+			log.Infof("migrating '%s' Black Duck instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
 
 			// ASSUMING ALL PASSWORDS HAVE REMAINED THE SAME, no need to pull from secret
 			defaultPassword := util.Base64Encode([]byte("blackduck"))
@@ -60,11 +62,10 @@ var migrateBlackduckCmd = &cobra.Command{
 			patch := fmt.Sprintf("{\"spec\":{\"adminPassword\":\"%s\",\"userPassword\":\"%s\", \"postgresPassword\":\"%s\"}}", defaultPassword, defaultPassword, defaultPassword)
 			_, err := blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Patch(blackDuckNamespace, types.MergePatchType, []byte(patch))
 			if err != nil {
-				log.Errorf("error migrating Black Duck %s: '%s'", blackDuckNamespace, err)
+				log.Errorf("error migrating %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			}
-			log.Infof("successfully migrated Black Duck: %s", blackDuckNamespace)
+			log.Infof("successfully migrated '%s' Black Duck instance in '%s' namespace", blackDuckName, blackDuckNamespace)
 		}
-
 		return nil
 	},
 }
@@ -73,5 +74,6 @@ func init() {
 	rootCmd.AddCommand(migrateCmd)
 
 	// Add Migrate Commands
+	migrateBlackduckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to describe the resource(s)")
 	migrateCmd.AddCommand(migrateBlackduckCmd)
 }

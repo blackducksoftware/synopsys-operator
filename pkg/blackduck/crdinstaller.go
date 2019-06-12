@@ -44,25 +44,24 @@ import (
 
 // CRDInstaller defines the specification for the CRD
 type CRDInstaller struct {
-	config         *protoform.Config
-	kubeConfig     *rest.Config
-	kubeClient     *kubernetes.Clientset
-	isClusterScope bool
-	defaults       interface{}
-	resyncPeriod   time.Duration
-	indexers       cache.Indexers
-	infomer        cache.SharedIndexInformer
-	queue          workqueue.RateLimitingInterface
-	handler        *Handler
-	controller     *Controller
-	hubClient      *hubclientset.Clientset
-	threadiness    int
-	stopCh         <-chan struct{}
+	config       *protoform.Config
+	kubeConfig   *rest.Config
+	kubeClient   *kubernetes.Clientset
+	defaults     interface{}
+	resyncPeriod time.Duration
+	indexers     cache.Indexers
+	infomer      cache.SharedIndexInformer
+	queue        workqueue.RateLimitingInterface
+	handler      *Handler
+	controller   *Controller
+	hubClient    *hubclientset.Clientset
+	threadiness  int
+	stopCh       <-chan struct{}
 }
 
 // NewCRDInstaller will create a CRD installer configuration
-func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, isClusterScope bool, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
-	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, isClusterScope: isClusterScope, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
+func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
 	crdInstaller.resyncPeriod = time.Duration(config.ResyncIntervalInSeconds) * time.Second
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
@@ -200,7 +199,7 @@ func (c *CRDInstaller) CreateHandler() {
 
 	routeClient := util.GetRouteClient(c.kubeConfig, c.config.Namespace)
 
-	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.isClusterScope, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1), osClient, routeClient)
+	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1), osClient, routeClient)
 }
 
 // CreateController will create a CRD controller

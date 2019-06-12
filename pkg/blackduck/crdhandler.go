@@ -82,7 +82,6 @@ type Handler struct {
 	kubeConfig       *rest.Config
 	kubeClient       *kubernetes.Clientset
 	blackduckClient  *blackduckclientset.Clientset
-	isClusterScope   bool
 	defaults         *blackduckv1.BlackduckSpec
 	cmMutex          chan bool
 	osSecurityClient *securityclient.SecurityV1Client
@@ -90,9 +89,9 @@ type Handler struct {
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset, isClusterScope bool,
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
 	defaults *blackduckv1.BlackduckSpec, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
-	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient, isClusterScope: isClusterScope, defaults: defaults,
+	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient, defaults: defaults,
 		cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
 
@@ -111,7 +110,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 	// Voluntary deletion. The CRD still exists but the Black Duck resource has been deleted
-	app := apps.NewApp(h.config, h.kubeConfig, h.isClusterScope)
+	app := apps.NewApp(h.config, h.kubeConfig)
 	app.Blackduck().Delete(name)
 }
 
@@ -144,7 +143,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("ObjectUpdated: %s", bd.Name)
 
 	// Ensure
-	app := apps.NewApp(h.config, h.kubeConfig, h.isClusterScope)
+	app := apps.NewApp(h.config, h.kubeConfig)
 	err = app.Blackduck().Ensure(bd)
 	if err != nil {
 		log.Error(err)
@@ -172,7 +171,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	} else { // Start, Running, and Error States
 		if !strings.EqualFold(bd.Status.State, string(Running)) {
 			// Verify that we can access the Black Duck
-			hubURL := fmt.Sprintf("%s.%s.svc", util.GetResourceName(bd.Name, "webserver", h.isClusterScope), bd.Spec.Namespace)
+			hubURL := fmt.Sprintf("%s.%s.svc", util.GetResourceName(bd.Name, "webserver", h.config.IsClusterScoped), bd.Spec.Namespace)
 			status := h.verifyHub(hubURL, bd.Spec.Namespace)
 
 			if status { // Set state to Running if we can access the Black Duck

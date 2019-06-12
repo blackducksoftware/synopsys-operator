@@ -68,18 +68,17 @@ const (
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	config         *protoform.Config
-	kubeConfig     *rest.Config
-	kubeClient     *kubernetes.Clientset
-	alertClient    *alertclientset.Clientset
-	isClusterScope bool
-	defaults       *alertapi.AlertSpec
-	routeClient    *routeclient.RouteV1Client
+	config      *protoform.Config
+	kubeConfig  *rest.Config
+	kubeClient  *kubernetes.Clientset
+	alertClient *alertclientset.Clientset
+	defaults    *alertapi.AlertSpec
+	routeClient *routeclient.RouteV1Client
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client, isClusterScope bool, defaults *alertapi.AlertSpec) *Handler {
-	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient, isClusterScope: isClusterScope, defaults: defaults}
+func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client, defaults *alertapi.AlertSpec) *Handler {
+	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient, defaults: defaults}
 }
 
 // ObjectCreated will be called for create alert events
@@ -91,7 +90,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete alert events
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
-	app := apps.NewApp(h.config, h.kubeConfig, h.isClusterScope)
+	app := apps.NewApp(h.config, h.kubeConfig)
 	app.Alert().Delete(name)
 }
 
@@ -125,7 +124,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	}
 
 	// Update the Alert
-	app := apps.NewApp(h.config, h.kubeConfig, h.isClusterScope)
+	app := apps.NewApp(h.config, h.kubeConfig)
 	err = app.Alert().Ensure(alert)
 	if err != nil {
 		log.Errorf("unable to ensure the Alert %s due to %+v", alert.Name, err)

@@ -130,3 +130,13 @@ func GetResourceName(name string, defaultName string, isClusterScope bool) strin
 	}
 	return defaultName
 }
+
+// RemoveFromStringSlice will remove the string from the slice and it will maintain the order
+func RemoveFromStringSlice(slice []string, str string) []string {
+	for index, value := range slice {
+		if value == str {
+			slice = append(slice[:index], slice[index+1:]...)
+		}
+	}
+	return slice
+}

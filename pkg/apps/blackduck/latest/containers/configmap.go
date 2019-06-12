@@ -35,35 +35,37 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 
 	var configMaps []*components.ConfigMap
 
-	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "blackduck-config", c.isClusterScope)})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "blackduck-config", c.config.IsClusterScoped)})
 
 	hubData := map[string]string{
 		"RUN_SECRETS_DIR": "/tmp/secrets",
 		"HUB_VERSION":     c.hubSpec.Version,
 	}
 
-	if !c.isClusterScope {
+	if !c.config.IsClusterScoped {
 		blackduckServiceData := map[string]string{
 			// TODO: commented the below 2 environs until the HUB-20412 is fixed. once it if fixed, uncomment them
-			// "HUB_AUTHENTICATION_HOST":       util.GetResourceName(c.name, "authentication", c.isClusterScope),
-			"CLIENT_CERT_CN":        util.GetResourceName(c.name, "binaryscanner", c.isClusterScope),
-			"CFSSL":                 fmt.Sprintf("%s:8888", util.GetResourceName(c.name, "cfssl", c.isClusterScope)),
-			"HUB_CFSSL_HOST":        util.GetResourceName(c.name, "cfssl", c.isClusterScope),
-			"BLACKDUCK_CFSSL_HOST":  util.GetResourceName(c.name, "cfssl", c.isClusterScope),
-			"HUB_DOC_HOST":          util.GetResourceName(c.name, "documentation", c.isClusterScope),
-			"HUB_JOBRUNNER_HOST":    util.GetResourceName(c.name, "jobrunner", c.isClusterScope),
-			"HUB_LOGSTASH_HOST":     util.GetResourceName(c.name, "logstash", c.isClusterScope),
-			"RABBIT_MQ_HOST":        util.GetResourceName(c.name, "rabbitmq", c.isClusterScope),
-			"BROKER_URL":            fmt.Sprintf("amqps://%s/protecodesc", util.GetResourceName(c.name, "rabbitmq", c.isClusterScope)),
-			"HUB_REGISTRATION_HOST": util.GetResourceName(c.name, "registration", c.isClusterScope),
-			"HUB_SCAN_HOST":         util.GetResourceName(c.name, "scan", c.isClusterScope),
-			"HUB_SOLR_HOST":         util.GetResourceName(c.name, "solr", c.isClusterScope),
+			"HUB_AUTHENTICATION_HOST": util.GetResourceName(c.name, "authentication", c.config.IsClusterScoped),
+			"AUTHENTICATION_HOST":     util.GetResourceName(c.name, "authentication", c.config.IsClusterScoped),
+			"CLIENT_CERT_CN":          util.GetResourceName(c.name, "binaryscanner", c.config.IsClusterScoped),
+			"CFSSL":                   fmt.Sprintf("%s:8888", util.GetResourceName(c.name, "cfssl", c.config.IsClusterScoped)),
+			"HUB_CFSSL_HOST":          util.GetResourceName(c.name, "cfssl", c.config.IsClusterScoped),
+			"BLACKDUCK_CFSSL_HOST":    util.GetResourceName(c.name, "cfssl", c.config.IsClusterScoped),
+			"HUB_DOC_HOST":            util.GetResourceName(c.name, "documentation", c.config.IsClusterScoped),
+			"HUB_JOBRUNNER_HOST":      util.GetResourceName(c.name, "jobrunner", c.config.IsClusterScoped),
+			"HUB_LOGSTASH_HOST":       util.GetResourceName(c.name, "logstash", c.config.IsClusterScoped),
+			"RABBIT_MQ_HOST":          util.GetResourceName(c.name, "rabbitmq", c.config.IsClusterScoped),
+			"BROKER_URL":              fmt.Sprintf("amqps://%s/protecodesc", util.GetResourceName(c.name, "rabbitmq", c.config.IsClusterScoped)),
+			"HUB_REGISTRATION_HOST":   util.GetResourceName(c.name, "registration", c.config.IsClusterScoped),
+			"HUB_SCAN_HOST":           util.GetResourceName(c.name, "scan", c.config.IsClusterScoped),
+			"HUB_SOLR_HOST":           util.GetResourceName(c.name, "solr", c.config.IsClusterScoped),
 			// TODO: commented the below 2 environs until the HUB-20412 is fixed. once it if fixed, uncomment them
-			// "BLACKDUCK_UPLOAD_CACHE_HOST": util.GetResourceName(c.name, "uploadcache", c.isClusterScope),
-			// "HUB_UPLOAD_CACHE_HOST":       util.GetResourceName(c.name, "uploadcache", c.isClusterScope),
-			"HUB_WEBAPP_HOST":    util.GetResourceName(c.name, "webapp", c.isClusterScope),
-			"HUB_WEBSERVER_HOST": util.GetResourceName(c.name, "webserver", c.isClusterScope),
-			"HUB_ZOOKEEPER_HOST": util.GetResourceName(c.name, "zookeeper", c.isClusterScope),
+			// "BLACKDUCK_UPLOAD_CACHE_HOST": util.GetResourceName(c.name, "uploadcache", c.config.IsClusterScoped),
+			// "HUB_UPLOAD_CACHE_HOST":       util.GetResourceName(c.name, "uploadcache", c.config.IsClusterScoped),
+			// TODO: commented the below environs until the HUB-20462 is fixed. once it if fixed, uncomment them
+			// "HUB_WEBAPP_HOST":    util.GetResourceName(c.name, "webapp", c.config.IsClusterScoped),
+			"HUB_WEBSERVER_HOST": util.GetResourceName(c.name, "webserver", c.config.IsClusterScoped),
+			"HUB_ZOOKEEPER_HOST": util.GetResourceName(c.name, "zookeeper", c.config.IsClusterScoped),
 		}
 		hubData = util.MergeEnvMaps(blackduckServiceData, hubData)
 	}

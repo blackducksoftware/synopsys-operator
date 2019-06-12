@@ -50,8 +50,8 @@ var getCmd = &cobra.Command{
 
 // getAlertCmd display one or many Alerts
 var getAlertCmd = &cobra.Command{
-	Use:     "alert [namespace]...",
-	Example: "synopsysctl get alerts\nsynopsysctl get alert altnamespace\nsynopsysctl get alerts altnamespace1 altnamespace2",
+	Use:     "alert [NAME]...",
+	Example: "synopsysctl get alerts\nsynopsysctl get alert <name>\nsynopsysctl get alerts <name1> <name2>\nsynopsysctl get alerts -n <namespace>\nsynopsysctl get alert <name> -n <namespace>\nsynopsysctl get alerts <name1> <name2> -n <namespace>",
 	Aliases: []string{"alerts"},
 	Short:   "Display one or many Alerts",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -60,6 +60,9 @@ var getAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Alerts...")
 		kubectlCmd := []string{"get", "alerts"}
+		if len(namespace) > 0 {
+			kubectlCmd = append(kubectlCmd, "-n", namespace)
+		}
 		if len(args) > 0 {
 			kubectlCmd = append(kubectlCmd, args...)
 		}
@@ -83,8 +86,8 @@ var getAlertCmd = &cobra.Command{
 
 // getBlackDuckCmd Display one or many Black Ducks
 var getBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck [namespace]...",
-	Example: "synopsysctl get blackducks\nsynopsysctl get blackduck bdnamespace\nsynopsysctl get blackducks bdnamespace1 bdnamespace2",
+	Use:     "blackduck [NAME]...",
+	Example: "synopsysctl get blackducks\nsynopsysctl get blackduck <name>\nsynopsysctl get blackducks <name1> <name2>\nsynopsysctl get blackducks -n <namespace>\nsynopsysctl get blackduck <name> -n <namespace>\nsynopsysctl get blackducks <name1> <name2> -n <namespace>",
 	Aliases: []string{"blackducks"},
 	Short:   "Display one or many Black Ducks",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -93,6 +96,9 @@ var getBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Black Ducks...")
 		kubectlCmd := []string{"get", "blackducks"}
+		if len(namespace) > 0 {
+			kubectlCmd = append(kubectlCmd, "-n", namespace)
+		}
 		if len(args) > 0 {
 			kubectlCmd = append(kubectlCmd, args...)
 		}
@@ -186,8 +192,8 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 
 // getOpsSightCmd Display one or many OpsSights
 var getOpsSightCmd = &cobra.Command{
-	Use:     "opssight [namespace]...",
-	Example: "synopsysctl get opssights\nsynopsysctl get opssight opsnamespace\nsynopsysctl get opssights opsnamespace1 opsnamespace2",
+	Use:     "opssight [NAME]...",
+	Example: "synopsysctl get opssights\nsynopsysctl get opssight <name>\nsynopsysctl get opssights <name1> <name2>",
 	Aliases: []string{"opssights"},
 	Short:   "Display one or many OpsSights",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -222,10 +228,12 @@ func init() {
 	rootCmd.AddCommand(getCmd)
 
 	// Add Commands
+	getAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
 	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getAlertCmd)
 
+	getBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
 	getBlackDuckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getBlackDuckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)

@@ -71,7 +71,7 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 	c.PostEditContainer(registrationContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "registration", c.isClusterScope), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "registration", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getRegistrationVolumes(),
 			Containers:          []*util.Container{registrationContainerConfig},
@@ -88,7 +88,7 @@ func (c *Creater) getRegistrationVolumes() []*components.Volume {
 	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
 
 	if c.hubSpec.PersistentStorage {
-		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", util.GetResourceName(c.name, "blackduck-registration", c.isClusterScope))
+		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", util.GetResourceName(c.name, "blackduck-registration", c.config.IsClusterScoped))
 	} else {
 		registrationVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")
 	}
@@ -123,5 +123,5 @@ func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig 
 
 // GetRegistrationService will return the registration service
 func (c *Creater) GetRegistrationService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, "registration", c.isClusterScope), c.GetLabel("registration"), c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("registration"))
+	return util.CreateService(util.GetResourceName(c.name, "registration", c.config.IsClusterScoped), c.GetLabel("registration"), c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("registration"))
 }

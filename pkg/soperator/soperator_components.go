@@ -52,13 +52,13 @@ type SpecConfig struct {
 	Certificate                   string
 	CertificateKey                string
 	IsClusterScoped               bool
-	Crds                          map[string]string
+	Crds                          []string
 }
 
 // NewSOperator will create a SOperator type
 func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
 	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
-	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, isClusterScoped bool, crds map[string]string) *SpecConfig {
+	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, isClusterScoped bool, crds []string) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,

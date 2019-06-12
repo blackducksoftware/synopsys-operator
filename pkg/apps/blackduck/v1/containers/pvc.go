@@ -75,7 +75,7 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 				}
 			}
 
-			pvcs = append(pvcs, c.createPVC(util.GetResourceName(c.name, name, c.isClusterScope), size, defaultSize, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
+			pvcs = append(pvcs, c.createPVC(util.GetResourceName(c.name, name, c.config.IsClusterScoped), size, defaultSize, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
 		}
 	}
 

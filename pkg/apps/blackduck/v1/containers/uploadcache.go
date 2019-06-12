@@ -69,7 +69,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 	c.PostEditContainer(uploadCacheContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "uploadcache", c.isClusterScope), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "uploadcache", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getUploadCacheVolumes(),
 			Containers:          []*util.Container{uploadCacheContainerConfig},
@@ -85,7 +85,7 @@ func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
 	var uploadCacheDataEmptyDir *components.Volume
 	if c.hubSpec.PersistentStorage {
-		uploadCacheDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.name, "blackduck-uploadcache", c.isClusterScope))
+		uploadCacheDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.name, "blackduck-uploadcache", c.config.IsClusterScoped))
 	} else {
 		uploadCacheDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
 	}

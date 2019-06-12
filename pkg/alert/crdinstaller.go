@@ -39,25 +39,24 @@ import (
 
 // CRDInstaller defines the specification for the controller
 type CRDInstaller struct {
-	config         *protoform.Config
-	kubeConfig     *rest.Config
-	kubeClient     *kubernetes.Clientset
-	isClusterScope bool
-	defaults       interface{}
-	resyncPeriod   time.Duration
-	indexers       cache.Indexers
-	infomer        cache.SharedIndexInformer
-	queue          workqueue.RateLimitingInterface
-	handler        *Handler
-	controller     *Controller
-	alertClient    *alertclientset.Clientset
-	threadiness    int
-	stopCh         <-chan struct{}
+	config       *protoform.Config
+	kubeConfig   *rest.Config
+	kubeClient   *kubernetes.Clientset
+	defaults     interface{}
+	resyncPeriod time.Duration
+	indexers     cache.Indexers
+	infomer      cache.SharedIndexInformer
+	queue        workqueue.RateLimitingInterface
+	handler      *Handler
+	controller   *Controller
+	alertClient  *alertclientset.Clientset
+	threadiness  int
+	stopCh       <-chan struct{}
 }
 
 // NewCRDInstaller will create a installer configuration
-func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, isClusterScope bool, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
-	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, isClusterScope: isClusterScope, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
+func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
 	crdInstaller.resyncPeriod = 0
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
@@ -141,13 +140,12 @@ func (c *CRDInstaller) CreateHandler() {
 	routeClient := util.GetRouteClient(c.kubeConfig, c.config.Namespace)
 
 	c.handler = &Handler{
-		config:         c.config,
-		kubeConfig:     c.kubeConfig,
-		kubeClient:     c.kubeClient,
-		alertClient:    c.alertClient,
-		defaults:       c.defaults.(*alertapi.AlertSpec),
-		routeClient:    routeClient,
-		isClusterScope: c.isClusterScope,
+		config:      c.config,
+		kubeConfig:  c.kubeConfig,
+		kubeClient:  c.kubeClient,
+		alertClient: c.alertClient,
+		defaults:    c.defaults.(*alertapi.AlertSpec),
+		routeClient: routeClient,
 	}
 }
 

@@ -41,6 +41,7 @@ type Config struct {
 	PodWaitTimeoutSeconds         int64
 	ResyncIntervalInSeconds       int64
 	TerminationGracePeriodSeconds int64
+	IsClusterScoped               bool
 
 	// Not recommended production, just for testing, QA, resiliency, and CI/CD.
 	OperatorTimeBombInSeconds int64

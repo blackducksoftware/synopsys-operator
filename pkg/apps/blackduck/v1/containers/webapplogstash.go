@@ -105,7 +105,7 @@ func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashIm
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "webapp-logstash", c.isClusterScope), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "webapp-logstash", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getWebappLogtashVolumes(),
 			Containers:          []*util.Container{webappContainerConfig, logstashContainerConfig},
@@ -121,14 +121,14 @@ func (c *Creater) getWebappLogtashVolumes() []*components.Volume {
 	webappSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp-security")
 	var webappVolume *components.Volume
 	if c.hubSpec.PersistentStorage {
-		webappVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-webapp", util.GetResourceName(c.name, "blackduck-webapp", c.isClusterScope))
+		webappVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-webapp", util.GetResourceName(c.name, "blackduck-webapp", c.config.IsClusterScoped))
 	} else {
 		webappVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
 	}
 
 	var logstashVolume *components.Volume
 	if c.hubSpec.PersistentStorage {
-		logstashVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-logstash", util.GetResourceName(c.name, "blackduck-logstash", c.isClusterScope))
+		logstashVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-logstash", util.GetResourceName(c.name, "blackduck-logstash", c.config.IsClusterScoped))
 	} else {
 		logstashVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")
 	}
@@ -174,10 +174,11 @@ func (c *Creater) getWebappVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetWebAppService will return the webapp service
 func (c *Creater) GetWebAppService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, "webapp", c.isClusterScope), c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, webappPort, webappPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
+	// TODO: changed the auth service name to webapp until the HUB-20462 is fixed. once it if fixed, changed the name to use GetResource method
+	return util.CreateService("webapp", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, webappPort, webappPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
 }
 
 // GetLogStashService will return the logstash service
 func (c *Creater) GetLogStashService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, "logstash", c.isClusterScope), c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, logstashPort, logstashPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
+	return util.CreateService(util.GetResourceName(c.name, "logstash", c.config.IsClusterScoped), c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, logstashPort, logstashPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
 }

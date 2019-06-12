@@ -55,21 +55,19 @@ func init() {
 
 // Updater stores the opssight updater configuration
 type Updater struct {
-	config                  *protoform.Config
-	kubeClient              *kubernetes.Clientset
-	hubClient               *hubclient.Clientset
-	opssightClient          *opssightclientset.Clientset
-	isBlackDuckClusterScope bool
+	config         *protoform.Config
+	kubeClient     *kubernetes.Clientset
+	hubClient      *hubclient.Clientset
+	opssightClient *opssightclientset.Clientset
 }
 
 // NewUpdater returns the opssight updater configuration
-func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset, isBlackDuckClusterScope bool) *Updater {
+func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubClient *hubclient.Clientset, opssightClient *opssightclientset.Clientset) *Updater {
 	return &Updater{
-		config:                  config,
-		kubeClient:              kubeClient,
-		hubClient:               hubClient,
-		opssightClient:          opssightClient,
-		isBlackDuckClusterScope: isBlackDuckClusterScope,
+		config:         config,
+		kubeClient:     kubeClient,
+		hubClient:      hubClient,
+		opssightClient: opssightClient,
 	}
 }
 
@@ -224,7 +222,7 @@ func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssig
 				concurrentScanLimit = 2
 			}
 			host := &opssightapi.Host{
-				Domain:              fmt.Sprintf("%s.%s.svc", util.GetResourceName(hub.Name, "webserver", p.isBlackDuckClusterScope), hub.Namespace),
+				Domain:              fmt.Sprintf("%s.%s.svc", util.GetResourceName(hub.Name, "webserver", p.config.IsClusterScoped), hub.Namespace),
 				ConcurrentScanLimit: concurrentScanLimit,
 				Scheme:              "https",
 				User:                "sysadmin",

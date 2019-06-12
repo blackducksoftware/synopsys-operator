@@ -275,7 +275,7 @@ func (p *SpecConfig) ScannerServiceAccount() *components.ServiceAccount {
 
 // ScannerClusterRoleBinding creates a cluster role binding for the perceptor scanner
 func (p *SpecConfig) ScannerClusterRoleBinding() (*components.ClusterRoleBinding, error) {
-	var clusterRole []string
+	clusterRole := []string{"synopsys-operator-admin"}
 	var err error
 	if !p.config.DryRun {
 		clusterRole, _, err = util.GetOperatorRoles(p.kubeClient, p.config.Namespace)

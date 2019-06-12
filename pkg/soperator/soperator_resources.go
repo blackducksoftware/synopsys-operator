@@ -23,7 +23,7 @@ package soperator
 
 import (
 	"encoding/json"
-	"fmt"
+	"strconv"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -38,16 +38,13 @@ import (
 // GetCrds returns the CRD components
 func (specConfig *SpecConfig) GetCrds() []*horizoncomponents.CustomResourceDefinition {
 	crds := []*horizoncomponents.CustomResourceDefinition{}
-	for crd, clusterScope := range specConfig.Crds {
+	for _, crd := range specConfig.Crds {
 		var crdConfig *horizoncomponents.CustomResourceDefinition
 		var crdScope horizonapi.CRDScopeType
-		switch strings.ToLower(clusterScope) {
-		case "cluster":
+		if specConfig.IsClusterScoped {
 			crdScope = horizonapi.CRDClusterScoped
-		case "namespaced":
+		} else {
 			crdScope = horizonapi.CRDNamespaceScoped
-		default:
-			continue
 		}
 
 		switch strings.ToLower(crd) {
@@ -160,23 +157,21 @@ func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deploy
 		KeyOrVal:     "SEAL_KEY",
 		FromName:     "blackduck-secret",
 	})
-
-	var crds []string
-	for name, scope := range specConfig.Crds {
-		if strings.ToLower(scope) != "delete" {
-			crds = append(crds, fmt.Sprintf("%s:%s", name, scope))
-		}
-	}
 	synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "CRD_NAMES",
 		Type:         horizonapi.EnvVal,
-		KeyOrVal:     strings.Join(crds, ","),
+		KeyOrVal:     strings.Join(specConfig.Crds, ","),
+	})
+	synopsysOperatorContainer.AddEnv(horizonapi.EnvConfig{
+		NameOrPrefix: "CLUSTER_SCOPE",
+		Type:         horizonapi.EnvVal,
+		KeyOrVal:     strconv.FormatBool(specConfig.IsClusterScoped),
 	})
 
 	synopsysOperatorUIContainer, err := horizoncomponents.NewContainer(horizonapi.ContainerConfig{
 		Name:       "synopsys-operator-ui",
 		Command:    []string{"./app"},
-		Image:      specConfig.Image,
+		Image:      "gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:master",
 		PullPolicy: horizonapi.PullAlways,
 	})
 	if err != nil {

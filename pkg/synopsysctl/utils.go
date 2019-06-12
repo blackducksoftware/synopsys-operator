@@ -26,7 +26,6 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
@@ -41,6 +40,8 @@ import (
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -228,21 +229,6 @@ func RunKubeEditorCmd(restConfig *rest.Config, kube bool, openshift bool, args .
 	return nil
 }
 
-func isValidCRDScope(name, clusterScope string) bool {
-	switch strings.ToLower(clusterScope) {
-	case "cluster":
-		return true
-	case "namespaced":
-		if name == operatorutil.OpsSightCRDName {
-			return false
-		}
-		return true
-	case "delete":
-		return true
-	}
-	return false
-}
-
 func getOperatorNamespace(namespace string) (string, error) {
 	var err error
 	if len(namespace) == 0 {
@@ -305,4 +291,35 @@ func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeM
 		}
 	}
 	return nil
+}
+
+// getInstanceInfo will provide the name, namespace and crd scope to create each CRD instance
+func getInstanceInfo(cmd *cobra.Command, args []string, crdName string, inputNamespace string) (string, string, apiextensions.ResourceScope, error) {
+	crdScope := apiextensions.ClusterScoped
+	if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdName)
+		if err != nil {
+			return "", "", "", fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", crdName, err)
+		}
+		crdScope = crd.Spec.Scope
+	}
+
+	// Check Number of Arguments
+	if crdScope != apiextensions.ClusterScoped && len(namespace) == 0 {
+		return "", "", "", fmt.Errorf("namespace to create an %s instance need to be provided", inputNamespace)
+	}
+
+	var name, namespace string
+	if crdScope == apiextensions.ClusterScoped {
+		name = args[0]
+		if len(inputNamespace) == 0 {
+			namespace = args[0]
+		} else {
+			namespace = inputNamespace
+		}
+	} else {
+		name = args[0]
+		namespace = inputNamespace
+	}
+	return name, namespace, crdScope, nil
 }

@@ -49,15 +49,14 @@ type Creater struct {
 	name                    string
 	hubSpec                 *blackduckapi.BlackduckSpec
 	hubContainerFlavor      *ContainerFlavor
-	isClusterScope          bool
 	isBinaryAnalysisEnabled bool
 }
 
 // NewCreater will return a creater
 func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, name string, hubSpec *blackduckapi.BlackduckSpec,
-	hubContainerFlavor *ContainerFlavor, isClusterScope bool, isBinaryAnalysisEnabled bool) *Creater {
+	hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
 	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, name: name, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor,
-		isClusterScope: isClusterScope, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
+		isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
 }
 
 // GetFullContainerNameFromImageRegistryConf returns the tag that is specified for a container by trying to look in the custom tags provided,

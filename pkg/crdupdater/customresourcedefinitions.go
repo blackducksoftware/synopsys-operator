@@ -148,7 +148,7 @@ func (c *CustomResourceDefinition) patch(cr interface{}, isPatched bool) (bool, 
 	oldCrd := c.oldCustomResourceDefinitions[crdName]
 	newCrd := c.newCustomResourceDefinitions[crdName]
 	if oldCrd.Spec.Scope != newCrd.Spec.Scope {
-		log.Warnf("custom resource definition patch is not supported... please contact the support team to handle it...")
+		log.Warnf("updating the %s custom resource definition scope is not supported... please contact the support team to handle it...", crdName)
 	}
 	return false, nil
 }
