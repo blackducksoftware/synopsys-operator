@@ -9,6 +9,7 @@
     <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: blackduck.Spec.Size, label: "Size"}) %>
     <%= f.SelectTag("Spec.ExposeService", {options: {"": "","Load Balancer": "LoadBalancer", "Node Port": "NodePort", "Routes for OpenShift": "OpenShift"}, value: blackduck.Spec.ExposeService, label: "Expose Service"}) %>
     <%= f.InputTag("Spec.Type", {value: blackduck.Spec.Type, label: "Black Duck Type (OpsSight specific)"}) %>
+    <%= f.CheckboxTag("Spec.Environs-USE_BINARY_UPLOADS", {value: false, label: "Use Binary Uploads"}) %>
     <%= f.CheckboxTag("Spec.LivenessProbes", {value: blackduck.Spec.LivenessProbes, label: "Liveness Probes"}) %>
     <%= f.CheckboxTag("Spec.PersistentStorage", {value: blackduck.Spec.PersistentStorage, label: "Persistent Storage", onchange: "checkPVC()"}) %>
     <%= f.SelectTag("Spec.DbPrototype", {options: blackduck.View.Clones, value: blackduck.Spec.DbPrototype, label: "Clone DB"}) %>
@@ -118,10 +119,52 @@
     document.getElementById("internalDbId").style.display = '';
     document.getElementById("externalDbId").style.display = 'none';
     document.getElementById("customAuthCAId").style.display = 'none';
+    updateCheckbox("blackduck-Spec.Environs-USE_BINARY_UPLOADS", "USE_BINARY_UPLOADS", false);
+    document.getElementById("environs").addEventListener("input", update_USE_BINARY_UPLOADS_checkbox);
+    document.getElementById("blackduck-Spec.Environs-USE_BINARY_UPLOADS").addEventListener("change", update_USE_BINARY_UPLOADS_environ);
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
     //   document.getElementById("blackduck-Status.ErrorMessage").hidden = false;
     // }
   }
+
+  function updateCheckbox(elementId, environName, defaultState){
+    var updatedState = defaultState;
+    var extractedStates = environListExtract(environName);
+    var finalExtractedValue = extractedStates[extractedStates.length - 1]["value"];
+    var nonDefaultStr = defaultState == true ? "0" : "1";
+    if (finalExtractedValue == nonDefaultStr){updatedState = !defaultState;}
+    document.getElementById(elementId).checked = updatedState;
+  }
+
+  function update_USE_BINARY_UPLOADS_checkbox(){
+    updateCheckbox("blackduck-Spec.Environs-USE_BINARY_UPLOADS", "USE_BINARY_UPLOADS", false);
+  }
+
+  function update_USE_BINARY_UPLOADS_environ(){
+    updateEnviron("USE_BINARY_UPLOADS", document.getElementById("blackduck-Spec.Environs-USE_BINARY_UPLOADS").checked == true ? "1" : "0");
+  }
+
+  function updateEnviron(environName, newStr){
+    var extractedStates = environListExtract(environName);
+    var finalExtractedState = extractedStates[extractedStates.length - 1];
+    document.getElementById("environs").children[finalExtractedState["index"]].innerHTML = environName + ":" + newStr
+  }
+
+  function environListExtract(environName){
+    var searchStr = environName + ":"
+    var results = []
+    for (var i in document.getElementById("environs").children){
+      var envStr = document.getElementById("environs").children[i].innerHTML
+      if (typeof envStr == "string" && envStr.startsWith(searchStr)) {
+        results.push({
+          index: i,
+          value: envStr.slice(searchStr.length)
+        })
+      }
+    }
+    return results
+  }
+
 
   function editableFalse() {
     if (document.getElementById("blackduck-Spec.Namespace") != null && document.getElementById("blackduck-Spec.Namespace").value != "") {
