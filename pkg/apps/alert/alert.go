@@ -123,7 +123,7 @@ func (a *Alert) Delete(name string) error {
 	values := strings.SplitN(name, "/", 2)
 	var namespace string
 	if len(values) == 0 {
-		return fmt.Errorf("unable to find the Black Duck namespace")
+		return fmt.Errorf("unable to find the Alert namespace")
 	} else if len(values) == 1 {
 		name = values[0]
 		namespace = values[0]
@@ -188,7 +188,7 @@ func (a *Alert) Delete(name string) error {
 			}
 		}
 
-		// get only Black Duck related services for the namespace
+		// get only Alert related services for the namespace
 		services, err := util.ListServices(a.kubeClient, namespace, fmt.Sprintf("app=alert,name=%s", name))
 		if err != nil {
 			return errors.Annotatef(err, "unable to list an Alert's service in %s", namespace)
@@ -202,7 +202,7 @@ func (a *Alert) Delete(name string) error {
 			}
 		}
 
-		// get only Black Duck related pvcs for the namespace
+		// get only Alert related pvcs for the namespace
 		pvcs, err := util.ListPVCs(a.kubeClient, namespace, fmt.Sprintf("app=alert,name=%s", name))
 		if err != nil {
 			return errors.Annotatef(err, "unable to list an Alert's pvc in %s", namespace)
@@ -216,7 +216,7 @@ func (a *Alert) Delete(name string) error {
 			}
 		}
 
-		// get only Black Duck related configmaps for the namespace
+		// get only Alert related configmaps for the namespace
 		cms, err := util.ListConfigMaps(a.kubeClient, namespace, fmt.Sprintf("app=alert,name=%s", name))
 		if err != nil {
 			return errors.Annotatef(err, "unable to list the Alert's config map in %s", namespace)
@@ -230,7 +230,7 @@ func (a *Alert) Delete(name string) error {
 			}
 		}
 
-		// get only Black Duck related secrets for the namespace
+		// get only Alert related secrets for the namespace
 		secrets, err := util.ListSecrets(a.kubeClient, name, fmt.Sprintf("app=alert,name=%s", name))
 		if err != nil {
 			return errors.Annotatef(err, "unable to list the Alert's secret in %s", name)

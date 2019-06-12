@@ -37,7 +37,6 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 			MinCPU: "", MaxCPU: ""},
 		EnvConfigs: []*horizonapi.EnvConfig{
 			c.getHubConfigEnv(),
-			// &horizonapi.EnvConfig{NameOrPrefix: "BLACKDUCK_UPLOAD_CACHE_HOST", Type: horizonapi.EnvVal, KeyOrVal: "0.0.0.0"},
 		},
 		VolumeMounts: volumeMounts,
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: uploadCachePort1, Protocol: horizonapi.ProtocolTCP},
