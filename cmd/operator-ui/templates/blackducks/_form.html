@@ -121,6 +121,28 @@
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
     //   document.getElementById("blackduck-Status.ErrorMessage").hidden = false;
     // }
+
+    // Ensure containerTags is always a set of <li>s and always at least one
+    initialContentTagsContent = {}
+    for (let editableList of ["containerTags", "environs"]){
+      initialContentTagsContent[editableList] = document.getElementById(editableList).innerHTML
+      document.getElementById(editableList).addEventListener("input", function(){
+        var children = document.getElementById(editableList).children;
+        var reset = false;
+        if (children.length == 0){
+          reset = true;
+        }else{
+          for (let child of children){
+            if (child.tagName != "LI"){
+              reset = true;
+            }
+          }
+        }
+        if (reset){
+          document.getElementById(editableList).innerHTML = initialContentTagsContent[editableList];
+        }
+      })
+    }
   }
 
   function editableFalse() {
