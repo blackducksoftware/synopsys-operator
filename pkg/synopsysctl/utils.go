@@ -58,15 +58,12 @@ var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
 var opsSightClient *opssightclientset.Clientset
 
-// These vars used by KubeCmd
-var openshift bool
-var kube bool
-
 // setResourceClients sets the global variables for the kuberentes rest config
 // and the resource clients
 func setResourceClients() error {
 	var err error
 	restconfig, err = protoform.GetKubeConfig(kubeconfig, insecureSkipTLSVerify)
+	log.Debugf("rest config: %+v", restconfig)
 	if err != nil {
 		return err
 	}
@@ -90,7 +87,6 @@ func setResourceClients() error {
 	if err != nil {
 		log.Errorf("error creating OpsSight Clientset: %s", err)
 	}
-	kube, openshift = DetermineClusterClients(restconfig)
 	return nil
 }
 
@@ -165,6 +161,7 @@ func DetermineClusterClients(restConfig *rest.Config) (kube, openshift bool) {
 // TODO consider replacing w/ go api but not crucial for now.
 func RunKubeCmd(restConfig *rest.Config, args ...string) (string, error) {
 	var cmd2 *exec.Cmd
+	kube, openshift := DetermineClusterClients(restconfig)
 
 	// cluster-info in kube doesnt seem to be in
 	// some versions of oc, but status is.
@@ -198,8 +195,9 @@ func RunKubeCmd(restConfig *rest.Config, args ...string) (string, error) {
 
 // RunKubeEditorCmd is a wrapper for oc/kubectl but redirects
 // input/output to the user - ex: let user control text editor
-func RunKubeEditorCmd(restConfig *rest.Config, kube bool, openshift bool, args ...string) error {
+func RunKubeEditorCmd(restConfig *rest.Config, args ...string) error {
 	var cmd *exec.Cmd
+	kube, openshift := DetermineClusterClients(restconfig)
 
 	// cluster-info in kube doesnt seem to be in
 	// some versions of oc, but status is.

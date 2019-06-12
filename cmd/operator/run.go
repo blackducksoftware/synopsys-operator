@@ -91,9 +91,11 @@ func runProtoform(configPath string) {
 		log.Errorf("unable to start any CRD controllers. Please set the CRD_NAMES environment variable to start any CRD controllers...")
 	}
 
-	go func() {
-		webhook.NewOperatorWebhook(deployer.KubeConfig).Start()
-	}()
+	if deployer.Config.AdmissionWebhookListener {
+		go func() {
+			webhook.NewOperatorWebhook(deployer.KubeConfig).Start()
+		}()
+	}
 
 	// Start the prometheus endpoint
 	protoform.SetupHTTPServer()

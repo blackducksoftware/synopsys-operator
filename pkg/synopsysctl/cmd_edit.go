@@ -52,7 +52,7 @@ var editAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName := args[0]
 		log.Infof("editing Alert %s instance...", alertName)
-		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "alert", alertName, "-n", alertName)
+		err := RunKubeEditorCmd(restconfig, "edit", "alert", alertName, "-n", alertName)
 		if err != nil {
 			log.Errorf("error editing Alert: %s", err)
 			return nil
@@ -77,7 +77,7 @@ var editBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName := args[0]
 		log.Debugf("editing Black Duck %s instance...", blackDuckName)
-		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "blackduck", blackDuckName, "-n", blackDuckName)
+		err := RunKubeEditorCmd(restconfig, "edit", "blackduck", blackDuckName, "-n", blackDuckName)
 		if err != nil {
 			log.Errorf("error editing Black Duck: %s", err)
 			return nil
@@ -102,7 +102,7 @@ var editOpsSightCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opsSightName := args[0]
 		log.Debugf("editing OpsSight %s isntance...", opsSightName)
-		err := RunKubeEditorCmd(restconfig, kube, openshift, "edit", "opssight", opsSightName, "-n", opsSightName)
+		err := RunKubeEditorCmd(restconfig, "edit", "opssight", opsSightName, "-n", opsSightName)
 		if err != nil {
 			log.Errorf("error editing OpsSight: %s", err)
 			return nil

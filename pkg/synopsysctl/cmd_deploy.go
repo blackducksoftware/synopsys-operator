@@ -53,6 +53,7 @@ var isEnabledBlackDuck bool
 var isEnabledOpsSight bool
 var isEnabledPrm bool
 var isClusterScoped bool
+var admissionWebhookListener = false
 
 // Flags for using mock mode - doesn't deploy
 var mockFormat string
@@ -141,7 +142,7 @@ var deployCmd = &cobra.Command{
 		log.Debugf("creating Synopsys Operator components")
 		soperatorSpec := soperator.NewSOperator(operatorNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig, operatorNamespace), operatorTimeBombInSeconds,
 			strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds,
-			terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, isClusterScoped, crds)
+			terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, isClusterScoped, crds, admissionWebhookListener)
 
 		if cmd.LocalFlags().Lookup("mock").Changed {
 			log.Debugf("running mock mode")

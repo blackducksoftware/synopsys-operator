@@ -53,12 +53,14 @@ type SpecConfig struct {
 	CertificateKey                string
 	IsClusterScoped               bool
 	Crds                          []string
+	AdmissionWebhookListener      bool
 }
 
 // NewSOperator will create a SOperator type
 func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
 	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
-	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, isClusterScoped bool, crds []string) *SpecConfig {
+	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, isClusterScoped bool, crds []string, admissionWebhookListener bool) *SpecConfig {
+	kubeClient *kubernetes.Clientset, certificate string, certificateKey string) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,
@@ -77,6 +79,7 @@ func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType C
 		CertificateKey:                certificateKey,
 		IsClusterScoped:               isClusterScoped,
 		Crds:                          crds,
+		AdmissionWebhookListener:      admissionWebhookListener,
 	}
 }
 
