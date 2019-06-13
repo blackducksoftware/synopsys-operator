@@ -211,8 +211,10 @@ func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *o
 		t.Errorf("secrets length not equal to 1, actual: %d", len(secrets))
 	}
 
+	perceptorSecret, err := opssightSpecConfig.PerceptorSecret()
+	t.Errorf("invalid secret: %s", err)
 	expectedSecrets := map[string]*components.Secret{
-		opssightSpec.SecretName: opssightSpecConfig.PerceptorSecret(),
+		opssightSpec.SecretName: perceptorSecret,
 	}
 
 	for _, secret := range secrets {
