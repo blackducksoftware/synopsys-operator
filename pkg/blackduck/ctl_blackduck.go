@@ -291,6 +291,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.PVCFilePath)
 			if err != nil {
 				log.Errorf("failed to read pvc file: %s", err)
+				return
 			}
 			pvcs := []blackduckv1.PVC{}
 			err = json.Unmarshal([]byte(data), &pvcs)
@@ -303,6 +304,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.NodeAffinityFilePath)
 			if err != nil {
 				log.Errorf("failed to read node affinity file: %s", err)
+				return
 			}
 			nodeAffinities := map[string][]blackduckv1.NodeAffinity{}
 			err = json.Unmarshal([]byte(data), &nodeAffinities)
@@ -325,24 +327,28 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.CertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
+				return
 			}
 			ctl.Spec.Certificate = data
 		case "certificate-key-file-path":
 			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
+				return
 			}
 			ctl.Spec.CertificateKey = data
 		case "proxy-certificate-file-path":
 			data, err := util.ReadFileData(ctl.ProxyCertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
+				return
 			}
 			ctl.Spec.ProxyCertificate = data
 		case "auth-custom-ca-file-path":
 			data, err := util.ReadFileData(ctl.AuthCustomCAFilePath)
 			if err != nil {
 				log.Errorf("failed to read authCustomCA file: %s", err)
+				return
 			}
 			ctl.Spec.AuthCustomCA = data
 		case "type":
@@ -357,6 +363,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.ImageUIDMapFilePath)
 			if err != nil {
 				log.Errorf("failed to read image UID map file: %s", err)
+				return
 			}
 			uidMap := map[string]int64{}
 			err = json.Unmarshal([]byte(data), &uidMap)

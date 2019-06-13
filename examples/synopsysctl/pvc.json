@@ -1,0 +1,12 @@
+[
+    {
+        "name": "name1",
+        "size": "size1",
+        "storageClass": "storageclass1"
+    },
+    {
+        "name": "name2",
+        "size": "size2",
+        "storageClass": "storageclass2"
+    }
+]

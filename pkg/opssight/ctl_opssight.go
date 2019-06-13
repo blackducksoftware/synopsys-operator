@@ -293,17 +293,15 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.ScannerPodImageFacadeInternalRegistriesFilePath)
 			if err != nil {
 				log.Errorf("failed to read internal registries file: %s", err)
-			}
-			registryStructs := InternalRegistryStructs{Data: []opssightapi.RegistryAuth{}}
-			err = json.Unmarshal([]byte(data), &registryStructs)
-			if err != nil {
-				log.Errorf("failed to unmarshal internal registry structs: %s", err)
 				return
 			}
-			ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = []*opssightapi.RegistryAuth{} // clear old values
-			for _, registry := range registryStructs.Data {
-				ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = append(ctl.Spec.ScannerPod.ImageFacade.InternalRegistries, &registry)
+			registryStructs := []*opssightapi.RegistryAuth{}
+			err = json.Unmarshal([]byte(data), &registryStructs)
+			if err != nil {
+				log.Errorf("failed to unmarshal internal registries: %s", err)
+				return
 			}
+			ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = registryStructs
 		case "image-getter-image-puller-type":
 			if ctl.Spec.ScannerPod == nil {
 				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
@@ -408,17 +406,15 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.BlackduckExternalHostsFilePath)
 			if err != nil {
 				log.Errorf("failed to read external hosts file: %s", err)
+				return
 			}
-			hostStructs := ExternalHostStructs{Data: []opssightapi.Host{}}
+			hostStructs := []*opssightapi.Host{}
 			err = json.Unmarshal([]byte(data), &hostStructs)
 			if err != nil {
 				log.Errorf("failed to unmarshal internal registry structs: %s", err)
 				return
 			}
-			ctl.Spec.Blackduck.ExternalHosts = []*opssightapi.Host{} // clear old values
-			for _, host := range hostStructs.Data {
-				ctl.Spec.Blackduck.ExternalHosts = append(ctl.Spec.Blackduck.ExternalHosts, &host)
-			}
+			ctl.Spec.Blackduck.ExternalHosts = hostStructs
 		case "blackduck-TLS-verification":
 			if ctl.Spec.Blackduck == nil {
 				ctl.Spec.Blackduck = &opssightapi.Blackduck{}

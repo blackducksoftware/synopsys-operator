@@ -39,14 +39,14 @@ func TestUpstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
 	opssight := NewSpecConfig(&protoform.Config{DryRun: true}, nil, nil, nil, defaultValues, true)
 
-	components, err := opssight.GetComponents()
-
+	// TODO "components, err := opssight.GetComponents()" [add components back with ginko tests]
+	_, err := opssight.GetComponents()
 	if err != nil {
 		t.Errorf("unable to get the opssight components due to %+v", err)
 	}
 
-	fmt.Printf("TODO: reenable tests for %+v with ginkgo, %+v", components, err)
-	// TODO reenable these with ginkgo
+	fmt.Printf("TODO: reenable tests with ginkgo\n")
+	// TODO reenable these with ginkgo [add components back above]
 	// validateClusterRoleBindings(t, components.ClusterRoleBindings, defaultValues)
 	// validateClusterRoles(t, components.ClusterRoles, defaultValues)
 	// validateConfigMaps(t, components.ConfigMaps, defaultValues)
@@ -63,8 +63,8 @@ func TestDownstreamPerceptor(t *testing.T) {
 
 	opssight := NewSpecConfig(&protoform.Config{DryRun: true}, nil, nil, nil, defaultValues, true)
 
-	components, err := opssight.GetComponents()
-	fmt.Printf("tests of %+v temporarily disabled -- reenable using ginkgo (err: %+v)", components, err)
+	_, err := opssight.GetComponents() // TODO add components back ", err := opssight.GetComponents()"
+	fmt.Printf("TODO tests DownStreamPerceptor Components are temporarily disabled -- reenable using ginkgo\n")
 
 	if err != nil {
 		t.Errorf("unable to get the opssight components due to %+v", err)
