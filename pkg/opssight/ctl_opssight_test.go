@@ -269,6 +269,22 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
+			flagName:   "image-getter-secure-registries-file-path",
+			initialCtl: NewOpsSightCtl(),
+			changedCtl: &Ctl{
+				Spec: &opssightapi.OpsSightSpec{},
+				ScannerPodImageFacadeInternalRegistriesFilePath: "../../examples/synopsysctl/imageGetterSecureRegistries.json",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{InternalRegistries: []*opssightapi.RegistryAuth{
+				{
+					URL:      "url",
+					User:     "user",
+					Password: "password",
+				},
+			}}}},
+		},
+		// case
+		{
 			flagName:   "image-getter-image-puller-type",
 			initialCtl: NewOpsSightCtl(),
 			changedCtl: &Ctl{
@@ -476,6 +492,25 @@ func TestSetFlag(t *testing.T) {
 				PrometheusExpose: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Expose: "changed"}},
+		},
+		// case
+		{
+			flagName:   "blackduck-external-hosts-file-path",
+			initialCtl: NewOpsSightCtl(),
+			changedCtl: &Ctl{
+				Spec:                           &opssightapi.OpsSightSpec{},
+				BlackduckExternalHostsFilePath: "../../examples/synopsysctl/blackduckExternalHosts.json",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{ExternalHosts: []*opssightapi.Host{
+				{
+					Scheme:              "scheme",
+					Domain:              "domain",
+					Port:                99,
+					User:                "user",
+					Password:            "password",
+					ConcurrentScanLimit: 88,
+				},
+			}}},
 		},
 		// case
 		{
