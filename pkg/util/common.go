@@ -1366,6 +1366,15 @@ func IsPodReady(clientset *kubernetes.Clientset, namespace string, labelSelector
 	return true, nil
 }
 
+// GetClusterScopeByName returns whether the CRD is cluster scope
+func GetClusterScopeByName(apiExtensionClient *apiextensionsclient.Clientset, name string) bool {
+	cr, err := GetCustomResourceDefinition(apiExtensionClient, name)
+	if err == nil && strings.EqualFold("CLUSTER", string(cr.Spec.Scope)) {
+		return true
+	}
+	return false
+}
+
 // GetClusterScope returns whether any of the CRD is cluster scope
 func GetClusterScope(apiExtensionClient *apiextensionsclient.Clientset) bool {
 	crds := []string{AlertCRDName, BlackDuckCRDName, OpsSightCRDName, PrmCRDName}

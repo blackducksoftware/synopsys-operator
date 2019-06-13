@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// PostEditContainer ...
+// PostEditContainer will add the UID to the container if it is specified in the Image UID field
 func (c *Creater) PostEditContainer(cc *util.Container) {
 	if c.getUID(cc.ContainerConfig.Name) != nil {
 		cc.ContainerConfig.UID = c.getUID(cc.ContainerConfig.Name)

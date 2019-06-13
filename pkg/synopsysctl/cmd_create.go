@@ -65,7 +65,7 @@ var namespace string
 // createCmd represents the create command for Alert
 var createAlertCmd = &cobra.Command{
 	Use:     "alert NAME",
-	Example: "synopsysctl create alert altname\nsynopsysctl create alert altname -n altnamespace\nsynopsysctl create alt altname --mock json\nsynopsysctl create alt altname altname -n altnamespace --mock json",
+	Example: "synopsysctl create alert name\nsynopsysctl create alert name -n <namespace>\nsynopsysctl create alert <name> --mock json\nsynopsysctl create alert <name> -n <namespace> --mock json",
 	Short:   "Create an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
@@ -153,7 +153,7 @@ var createAlertCmd = &cobra.Command{
 // createBlackDuckCmd represents the create command for Black Duck
 var createBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAME",
-	Example: "synopsysctl create blackduck bdnamespace\nsynopsysctl create blackduck bdname -n bdnamespace\nsynopsysctl create blackduck bdnamespace --mock json\nsynopsysctl create blackduck bdname -n bdnamespace --mock json",
+	Example: "synopsysctl create blackduck <name>\nsynopsysctl create blackduck <name> -n <namespace>\nsynopsysctl create blackduck name --mock json\nsynopsysctl create blackduck name -n <namespace> --mock json",
 	Short:   "Create an instance of a Black Duck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
@@ -183,6 +183,15 @@ var createBlackDuckCmd = &cobra.Command{
 			return err
 		}
 		log.Infof("creating Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
+
+		blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
+		if err != nil {
+			return fmt.Errorf("unable to list Black Duck instances in %s namespace due to %+v", blackDuckNamespace, err)
+		}
+
+		if len(blackducks.Items) > 0 {
+			return fmt.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+		}
 
 		// Update Spec with user's flags
 		log.Debugf("updating Spec with User's Flags")
@@ -241,9 +250,9 @@ var createBlackDuckCmd = &cobra.Command{
 
 // createCmd represents the create command for OpsSight
 var createOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAMESPACE",
+	Use:     "opssight NAME",
 	Short:   "Create an instance of OpsSight",
-	Example: "synopsysctl create opssight opsnamespace\nsynopsysctl create opssight opsnamespace --mock json",
+	Example: "synopsysctl create opssight <name>\nsynopsysctl create opssight <name> --mock json",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
 		if len(args) != 1 {

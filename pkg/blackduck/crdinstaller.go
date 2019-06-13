@@ -114,7 +114,7 @@ func (c *CRDInstaller) Deploy() error {
 		operatorSecret.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 		deployer.AddComponent(horizonapi.SecretComponent, operatorSecret)
 	} else {
-		log.Warn("blackduck-secret is already exist")
+		log.Warn("blackduck-secret already exists")
 	}
 
 	err = deployer.Run()

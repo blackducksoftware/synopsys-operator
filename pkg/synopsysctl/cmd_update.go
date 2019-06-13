@@ -394,8 +394,8 @@ var updateBlackDuckCmd = &cobra.Command{
 
 // updateBlackDuckRootKeyCmd create new Black Duck root key for source code upload in the cluster
 var updateBlackDuckRootKeyCmd = &cobra.Command{
-	Use:     "rootkey NEW_SEAL_KEY MASTER_KEY_FILE_PATH",
-	Example: "synopsysctl update blackduck rootkey <new seal key> <master key file path to store the key>",
+	Use:     "masterkey NEW_SEAL_KEY STORED_MASTER_KEY_FILE_PATH",
+	Example: "synopsysctl update blackduck masterkey <new seal key> <file path of the stored master key>",
 	Short:   "Update the root key to all Black Duck instance for source code upload functionality",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
@@ -444,7 +444,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 		for _, blackduck := range blackducks.Items {
 			blackDuckName := blackduck.Name
 			blackDuckNamespace := blackduck.Namespace
-			log.Infof("updating Black Duck %s Root Key in %s namespace...", blackDuckName, blackDuckNamespace)
+			log.Infof("updating %s Black Duck instance master key in %s namespace...", blackDuckName, blackDuckNamespace)
 
 			fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
 			masterKey, err := ioutil.ReadFile(fileName)
@@ -454,7 +454,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			}
 
 			// Filter the upload cache pod to get the root key using the seal key
-			uploadCachePod, err := operatorutil.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, "uploadcache")
+			uploadCachePod, err := operatorutil.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, "uploadcache", crdScope == apiextensions.ClusterScoped))
 			if err != nil {
 				log.Errorf("unable to filter the upload cache pod of %s because %+v", blackDuckNamespace, err)
 				return nil
@@ -462,13 +462,14 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 
 			// Create the exec into kubernetes pod request
 			req := operatorutil.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
+			// TODO: changed the upload cache service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
 			_, err = operatorutil.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://uploadcache:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(newSealKey)), masterKey)})
 			if err != nil {
 				log.Errorf("unable to exec into upload cache pod in %s because %+v", blackDuckNamespace, err)
 				return nil
 			}
 
-			log.Infof("successfully updated Black Duck %s's Root Key in %s namespace", blackDuckName, operatorNamespace)
+			log.Infof("successfully updated %s Black Duck instance master key in %s namespace", blackDuckName, operatorNamespace)
 		}
 
 		secret.Data["SEAL_KEY"] = []byte(newSealKey)

@@ -72,23 +72,28 @@ func runProtoform(configPath string) {
 
 	stopCh := make(chan struct{})
 
+	// get the operator scope from an environment variable
 	var isClusterScoped bool
 	clusterScopeEnv, ok := os.LookupEnv("CLUSTER_SCOPE")
 	if ok && len(clusterScopeEnv) > 0 {
-		clusterScope, err := strconv.ParseBool(clusterScopeEnv)
+		clusterScope, err := strconv.ParseBool(strings.TrimSpace(clusterScopeEnv))
 		if err != nil {
 			panic("cluster scope environment variable is not set properly. possible values are true/false")
 		}
 		isClusterScoped = clusterScope
 	}
+
+	// get the list of crds from an environment variable
 	crdEnv, ok := os.LookupEnv("CRD_NAMES")
 	if ok && len(crdEnv) > 0 {
 		crds := strings.Split(crdEnv, ",")
 		for _, crd := range crds {
-			startController(configPath, crd, isClusterScoped, stopCh)
+			// start the CRD controller
+			startController(configPath, strings.TrimSpace(crd), isClusterScoped, stopCh)
 		}
 	} else {
 		log.Errorf("unable to start any CRD controllers. Please set the CRD_NAMES environment variable to start any CRD controllers...")
+		os.Exit(1)
 	}
 
 	if deployer.Config.AdmissionWebhookListener {
@@ -103,7 +108,7 @@ func runProtoform(configPath string) {
 	if deployer.Config.OperatorTimeBombInSeconds > 0 {
 		go func() {
 			timeout := time.Duration(deployer.Config.OperatorTimeBombInSeconds) * time.Second
-			log.Warnf("self timeout is enabled to %v seconds", timeout)
+			log.Warnf("timeout to stop all controllers is enabled to %v seconds", timeout)
 			time.Sleep(timeout)
 
 			// trip the stop channel after done sleeping.  wait 20 seconds for debuggability.
@@ -115,7 +120,7 @@ func runProtoform(configPath string) {
 	<-stopCh
 }
 
-// addController will start the CRD controller
+// startController will start the CRD controller
 func startController(configPath string, name string, isClusterScoped bool, stopCh chan struct{}) {
 	// Add controllers to the Operator
 	deployer, err := protoform.NewController(configPath)
@@ -134,13 +139,12 @@ func startController(configPath string, name string, isClusterScoped bool, stopC
 	case util.OpsSightCRDName:
 		opsSightController := opssight.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetOpsSightDefault(), stopCh)
 		deployer.AddController(opsSightController)
-	case util.PrmCRDName:
-		log.Info("Polaris Reporting Module will be coming soon!!!")
 	default:
 		log.Warnf("unable to start the %s custom resource definition controller due to invalid custom resource definition name", name)
 	}
 	if err = deployer.Deploy(); err != nil {
-		log.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
+		log.Errorf("unable to deploy the CRD controllers due to  %+v", err)
+		os.Exit(1)
 	}
 	log.Infof("started %s crd controller", name)
 }

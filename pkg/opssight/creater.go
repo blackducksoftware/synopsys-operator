@@ -131,7 +131,7 @@ func (ac *Creater) DeleteOpsSight(namespace string) error {
 					log.Debugf("deleting cluster role %s", clusterRoleBinding.RoleRef.Name)
 					err = util.DeleteClusterRole(ac.kubeClient, clusterRoleBinding.RoleRef.Name)
 					if err != nil {
-						log.Errorf("unable to delete the cluster role for %+v", clusterRoleBinding.RoleRef.Name)
+						log.Errorf("unable to delete the cluster role for %+v due to %+v", clusterRoleBinding.RoleRef.Name, err)
 					}
 				}
 			}

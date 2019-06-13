@@ -30,6 +30,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -120,11 +121,11 @@ var getBlackDuckCmd = &cobra.Command{
 	},
 }
 
-// getBlackDuckRootKeyCmd get Black Duck root key for source code upload in the cluster
+// getBlackDuckRootKeyCmd get Black Duck master key for source code upload in the cluster
 var getBlackDuckRootKeyCmd = &cobra.Command{
-	Use:     "rootkey NAMESPACE FILE_PATH",
-	Example: "synopsysctl get blackduck rootkey bdnamespace ~/home/tmp/key",
-	Short:   "Get the root key of Black Duck for source code upload",
+	Use:     "masterkey BLACK_DUCK_NAME FILE_PATH_TO_STORE_MASTER_KEY",
+	Example: "synopsysctl get blackduck masterkey <name> <file path to store the master key>\nsynopsysctl get blackduck masterkey <name> <file path to store the master key> -n <namespace>",
+	Short:   "Get the master key of the Black Duck instance that is used for source code upload and store it in the host",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
 			return fmt.Errorf("this command takes 2 arguments")
@@ -132,28 +133,27 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		namespace := args[0]
-		filePath := args[1]
-
-		log.Debugf("getting Black Duck %s Root Key...", namespace)
-
-		_, err := util.GetHub(blackduckClient, namespace, namespace)
+		blackDuckName, blackDuckNamespace, crdScope, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			log.Errorf("unable to find Black Duck %s instance due to %+v", namespace, err)
-			return nil
+			return err
 		}
 
-		// check for any CRD cluster scope, if so, use default namespace or use the blackduck namespace to find the operator's namespace
-		operatorNamespace := namespace
-		isClusterScoped := util.GetClusterScope(apiExtensionClient)
-		if isClusterScoped {
-			operatorNamespace = metav1.NamespaceAll
+		var operatorNamespace string
+		if crdScope == apiextensions.ClusterScoped {
+			operatorNamespace, err = getOperatorNamespace(metav1.NamespaceAll)
+			if err != nil {
+				return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
+			}
+		} else {
+			operatorNamespace = namespace
 		}
 
-		log.Debugf("getting synopsys operator's secret")
-		operatorNamespace, err = util.GetOperatorNamespace(kubeClient, operatorNamespace)
-		if err != nil || len(operatorNamespace) == 0 {
-			log.Errorf("unable to find the synopsys operator instance due to %+v", err)
+		filePath := args[1]
+		log.Infof("getting Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
+
+		_, err = util.GetHub(blackduckClient, blackDuckNamespace, blackDuckName)
+		if err != nil {
+			log.Errorf("error getting %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 
@@ -163,9 +163,10 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 			log.Errorf("unable to find Synopsys Operator blackduck-secret in %s namespace due to %+v", operatorNamespace, err)
 			return nil
 		}
+
 		sealKey := string(secret.Data["SEAL_KEY"])
-		// Filter the upload cache pod to get the root key using the seal key
-		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, "uploadcache")
+		// Filter the upload cache pod to get the master key using the seal key
+		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, util.GetResourceName(blackDuckName, "uploadcache", crdScope == apiextensions.ClusterScoped))
 		if err != nil {
 			log.Errorf("unable to filter the upload cache pod of %s due to %+v", namespace, err)
 			return nil
@@ -173,19 +174,20 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 
 		// Create the exec into kubernetes pod request
 		req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
+		// TODO: changed the upload cache service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
 		stdout, err := util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -f --header "X-SEAL-KEY: %s" https://uploadcache:9444/api/internal/master-key --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(sealKey)))})
 		if err != nil {
 			log.Errorf("unable to exec into upload cache pod in %s because %+v", namespace, err)
 			return nil
 		}
 
-		fileName := filepath.Join(filePath, fmt.Sprintf("%s.key", namespace))
+		fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
 		err = ioutil.WriteFile(fileName, []byte(stdout), 0777)
 		if err != nil {
 			log.Errorf("error writing to %s because %+v", fileName, err)
 			return nil
 		}
-		log.Infof("successfully wrote Root Key to %s", fileName)
+		log.Infof("successfully created the master key in %s for the %s Black Duck instance in %s namespace", fileName, blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }
@@ -236,6 +238,8 @@ func init() {
 	getBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
 	getBlackDuckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getBlackDuckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+
+	getBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
 	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
 	getCmd.AddCommand(getBlackDuckCmd)
 

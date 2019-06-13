@@ -375,7 +375,7 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 	return synopsysOperatorClusterRoleBinding
 }
 
-// GetOperatorRoleBinding creates a RoleBinding Horizon component for Synopsys Operaotor
+// GetOperatorRoleBinding creates a RoleBinding Horizon component for Synopsys Operator
 func (specConfig *SpecConfig) GetOperatorRoleBinding() *horizoncomponents.RoleBinding {
 	// Role Binding
 	synopsysOperatorRoleBinding := horizoncomponents.NewRoleBinding(horizonapi.RoleBindingConfig{
@@ -398,7 +398,7 @@ func (specConfig *SpecConfig) GetOperatorRoleBinding() *horizoncomponents.RoleBi
 	return synopsysOperatorRoleBinding
 }
 
-// GetOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys-Operaotor
+// GetOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys Operator
 func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.ClusterRole {
 	synopsysOperatorClusterRole := horizoncomponents.NewClusterRole(horizonapi.ClusterRoleConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
