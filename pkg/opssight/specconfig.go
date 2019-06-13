@@ -143,7 +143,10 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	if perceptorSvc != nil {
 		components.Services = append(components.Services, perceptorSvc)
 	}
-	secret := p.PerceptorSecret()
+	secret, err := p.PerceptorSecret()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	if !p.dryRun {
 		p.addSecretData(secret)
 	}
