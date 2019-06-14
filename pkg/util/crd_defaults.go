@@ -37,6 +37,17 @@ const (
 	OpsSightCRDName = "opssights.synopsys.com"
 	// PrmCRDName is the name of the Polaris Reporting Module CRD
 	PrmCRDName = "prms.synopsys.com"
+
+	// OperatorName is the name of an Operator
+	OperatorName = "synopsys-operator"
+	// AlertName is the name of an Alert app
+	AlertName = "alert"
+	// BlackDuckName is the name of the Black Duck app
+	BlackDuckName = "blackduck"
+	// OpsSightName is the name of an OpsSight app
+	OpsSightName = "opssight"
+	// PrmName is the name of the Prm app
+	PrmName = "prm"
 )
 
 // GetSampleDefaultValue creates a sample crd configuration object with defaults

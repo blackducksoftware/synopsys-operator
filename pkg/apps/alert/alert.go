@@ -127,53 +127,33 @@ func (a *Alert) Delete(name string) error {
 	} else if len(values) == 1 {
 		name = values[0]
 		namespace = values[0]
+		// check whether an Alert instance exist in the Alert name namespace, if not default to synopsys operator namespace
+		rcs, err := util.ListReplicationControllers(a.kubeClient, namespace, fmt.Sprintf("app=%s,name=%s", util.AlertName, name))
+		if err != nil {
+			log.Errorf("unable to list %s Black Duck instance replication controller in %s due to %+v", name, namespace, err)
+		}
+		if len(rcs.Items) == 0 {
+			namespace = a.config.Namespace
+		}
 	} else {
 		name = values[1]
 		namespace = values[0]
 	}
 
-	if a.config.IsClusterScoped {
-		var err error
-		// Verify whether the namespace exist
-		_, err = util.GetNamespace(a.kubeClient, namespace)
-		if err != nil {
-			return fmt.Errorf("unable to find the namespace %+v due to %+v", namespace, err)
-		}
-
-		// get all replication controller for the namespace
-		rcs, err := util.ListReplicationControllers(a.kubeClient, namespace, fmt.Sprintf("app!=alert,name!=%s", name))
-		if err != nil {
-			return errors.Annotatef(err, "unable to list the replication controller %+v", namespace)
-		}
-
-		// get all deployment for the namespace
-		deployments, err := util.ListDeployments(a.kubeClient, namespace, fmt.Sprintf("app!=alert,name!=%s", name))
-		if err != nil {
-			return errors.Annotatef(err, "unable to list the deployments in %s namespace", namespace)
-		}
-
-		// get only Alert related replication controller for the namespace
-		alertRCs, err := util.ListReplicationControllers(a.kubeClient, namespace, fmt.Sprintf("app=alert,name=%s", name))
-		if err != nil {
-			return errors.Annotatef(err, "unable to list the Alert's replication controller in %s", namespace)
-		}
-
-		// if both the length same, then delete the namespace, if different, delete only the replication controller
-		if (len(rcs.Items) == 0 && len(deployments.Items) == 0) || (len(rcs.Items) == len(alertRCs.Items)) {
-			// Delete the namespace
-			err = util.DeleteNamespace(a.kubeClient, namespace)
-			if err != nil {
-				return errors.Annotatef(err, "unable to delete namespace %s", namespace)
-			}
-		}
-	}
-
 	// delete an Alert instance
 	commonConfig := crdupdater.NewCRUDComponents(a.kubeConfig, a.kubeClient, a.config.DryRun, false, namespace,
-		&api.ComponentList{}, fmt.Sprintf("app=alert,name=%s", name), false)
-	_, errors := commonConfig.CRUDComponents()
-	if len(errors) > 0 {
-		return fmt.Errorf("unable to delete the %s Alert instance in %s namespace due to %+v", name, namespace, errors)
+		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.AlertName, name), false)
+	_, crudErrors := commonConfig.CRUDComponents()
+	if len(crudErrors) > 0 {
+		return fmt.Errorf("unable to delete the %s Alert instance in %s namespace due to %+v", name, namespace, crudErrors)
+	}
+
+	if a.config.IsClusterScoped {
+		err := util.DeleteResourceNamespace(a.kubeConfig, a.kubeClient, a.config.CrdNames, namespace, false)
+
+		if err != nil {
+			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
+		}
 	}
 
 	return nil

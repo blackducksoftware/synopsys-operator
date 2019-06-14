@@ -52,7 +52,8 @@ var stopAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		log.Infof("stopping an Alert '%s' instance in '%s' namespace...", alertName, alertNamespace)
 
@@ -92,7 +93,8 @@ var stopBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		log.Infof("stopping Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
 

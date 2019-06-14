@@ -115,10 +115,6 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 		log.Debugf("updating expose ui")
 		newOperatorSpec.Expose = exposeUI
 	}
-	if cmd.Flag("operator-time-bomb-in-seconds").Changed {
-		log.Debugf("updating operator time bomb in seconds")
-		newOperatorSpec.OperatorTimeBombInSeconds = operatorTimeBombInSeconds
-	}
 	if cmd.Flag("postgres-restart-in-minutes").Changed {
 		log.Debugf("updating postgres restart in minutes")
 		newOperatorSpec.PostgresRestartInMins = postgresRestartInMins
@@ -134,6 +130,10 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 	if cmd.Flag("postgres-termination-grace-period").Changed {
 		log.Debugf("updating postgres termination grace period")
 		newOperatorSpec.TerminationGracePeriodSeconds = terminationGracePeriodSeconds
+	}
+	if cmd.Flag("dry-run").Changed {
+		log.Debugf("updating dry run")
+		newOperatorSpec.DryRun = (strings.ToUpper(dryRun) == "TRUE")
 	}
 	if cmd.Flag("log-level").Changed {
 		log.Debugf("updating log level")
@@ -163,7 +163,7 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 	deleteCrds := []string{}
 	// validate whether Alert CRD enable parameter is enabled/disabled and add/remove them from the cluster
 	if cmd.LocalFlags().Lookup("enable-alert").Changed {
-		log.Debugf("updating enable alert")
+		log.Debugf("updating enable Alert")
 		_, ok := crdMap[operatorutil.AlertCRDName]
 		if ok && isEnabledAlert {
 			log.Errorf("%s custom resource definition already exists...", util.AlertCRDName)
@@ -177,7 +177,7 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 
 	// validate whether Black Duck CRD enable parameter is enabled/disabled and add/remove them from the cluster
 	if cmd.LocalFlags().Lookup("enable-blackduck").Changed {
-		log.Debugf("updating enable blackduck")
+		log.Debugf("updating enable Black Duck")
 		_, ok := crdMap[operatorutil.BlackDuckCRDName]
 		if ok && isEnabledBlackDuck {
 			log.Errorf("%s custom resource definition already exists...", util.BlackDuckCRDName)
@@ -191,7 +191,7 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 
 	// validate whether OpsSight CRD enable parameter is enabled/disabled and add/remove them from the cluster
 	if cmd.LocalFlags().Lookup("enable-opssight").Changed {
-		log.Debugf("updating enable opssight")
+		log.Debugf("updating enable OpsSight")
 		_, ok := crdMap[operatorutil.OpsSightCRDName]
 		if ok && isEnabledOpsSight {
 			log.Errorf("%s custom resource definition already exists...", util.OpsSightCRDName)
@@ -290,7 +290,8 @@ var updateAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		log.Infof("updating Alert '%s' instance in '%s' namespace...", alertName, alertNamespace)
 
@@ -348,7 +349,8 @@ var updateBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		log.Infof("updating Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
 
@@ -407,20 +409,23 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 		var crdScope apiextensions.ResourceScope
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, util.BlackDuckCRDName)
 		if err != nil {
-			return fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", util.BlackDuckCRDName, err)
+			log.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", util.BlackDuckCRDName, err)
+			return nil
 		}
 		crdScope = crd.Spec.Scope
 
 		// Check Number of Arguments
 		if crdScope != apiextensions.ClusterScoped && len(namespace) == 0 {
-			return fmt.Errorf("namespace to update the Black Duck instance need to be provided")
+			log.Errorf("namespace to update the Black Duck instance need to be provided")
+			return nil
 		}
 
 		var operatorNamespace string
 		if crdScope == apiextensions.ClusterScoped {
 			operatorNamespace, err = getOperatorNamespace(metav1.NamespaceAll)
 			if err != nil {
-				return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
+				log.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
+				return nil
 			}
 		} else {
 			operatorNamespace = namespace
@@ -454,7 +459,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			}
 
 			// Filter the upload cache pod to get the root key using the seal key
-			uploadCachePod, err := operatorutil.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, "uploadcache", crdScope == apiextensions.ClusterScoped))
+			uploadCachePod, err := operatorutil.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache", crdScope == apiextensions.ClusterScoped))
 			if err != nil {
 				log.Errorf("unable to filter the upload cache pod of %s because %+v", blackDuckNamespace, err)
 				return nil
@@ -501,7 +506,8 @@ var updateBlackDuckAddPVCCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 
 		pvcName := args[1]
@@ -560,7 +566,8 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		environ := args[1]
 
@@ -613,7 +620,8 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		registry := args[1]
 
@@ -666,7 +674,8 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		uidKey := args[1]
 		uidVal := args[2]
@@ -959,11 +968,11 @@ func init() {
 	updateOperatorCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "Image URL of Synopsys Operator")
 	updateOperatorCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "x", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	updateOperatorCmd.Flags().StringVarP(&metricsImage, "metrics-image", "m", metricsImage, "Image URL of Synopsys Operator's metrics pod")
-	updateOperatorCmd.Flags().Int64VarP(&operatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "y", operatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
 	updateOperatorCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "q", postgresRestartInMins, "Minutes to check for restarting postgres")
 	updateOperatorCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")
 	updateOperatorCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "Seconds for resyncing custom resources")
 	updateOperatorCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "Termination grace period in seconds for shutting down postgres")
+	updateOperatorCmd.Flags().StringVarP(&dryRun, "dry-run", "d", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
 	updateOperatorCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "Log level of Synopsys Operator")
 	updateOperatorCmd.Flags().IntVarP(&threadiness, "no-of-threads", "t", threadiness, "Number of threads to process the custom resources")
 	updateOperatorCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the Synopsys Operator spec in the specified format instead of creating it [json|yaml]")

@@ -85,6 +85,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 	}
 
 	return &Blackduck{
+		config:           config,
 		kubeConfig:       kubeConfig,
 		kubeClient:       kubeclient,
 		blackduckClient:  blackduckClient,
@@ -115,52 +116,33 @@ func (b *Blackduck) Delete(name string) error {
 	} else if len(values) == 1 {
 		name = values[0]
 		namespace = values[0]
+		// check whether the Black Duck instance exist in the Black Duck name namespace, if not default to synopsys operator namespace
+		rcs, err := util.ListReplicationControllers(b.kubeClient, namespace, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, name))
+		if err != nil {
+			log.Errorf("unable to list %s Black Duck instance replication controller in %s due to %+v", name, namespace, err)
+		}
+		if len(rcs.Items) == 0 {
+			namespace = b.config.Namespace
+		}
 	} else {
 		name = values[1]
 		namespace = values[0]
 	}
 
-	if b.config.IsClusterScoped {
-		// Verify whether the namespace exist
-		_, err := util.GetNamespace(b.kubeClient, namespace)
-		if err != nil {
-			return errors.Annotatef(err, "unable to find the namespace %+v", namespace)
-		}
-
-		// get all replication controller for the namespace
-		rcs, err := util.ListReplicationControllers(b.kubeClient, namespace, fmt.Sprintf("app!=blackduck,name!=%s", name))
-		if err != nil {
-			return errors.Annotatef(err, "unable to list the replication controllers in %s namespace", namespace)
-		}
-
-		// get all deployment for the namespace
-		deployments, err := util.ListDeployments(b.kubeClient, namespace, fmt.Sprintf("app!=blackduck,name!=%s", name))
-		if err != nil {
-			return errors.Annotatef(err, "unable to list the deployments in %s namespace", namespace)
-		}
-
-		// get only Black Duck related replication controller for the namespace
-		blackduckRCs, err := util.ListReplicationControllers(b.kubeClient, namespace, fmt.Sprintf("app=blackduck,name=%s", name))
-		if err != nil {
-			return errors.Annotatef(err, "unable to list the Black Duck's replication controller in %s namespace", namespace)
-		}
-
-		// if both the length same, then delete the namespace, if different, delete only the replication controller
-		if (len(rcs.Items) == 0 && len(deployments.Items) == 0) || (len(rcs.Items) == len(blackduckRCs.Items)) {
-			// Delete the namespace
-			err = util.DeleteNamespace(b.kubeClient, namespace)
-			if err != nil {
-				return errors.Annotatef(err, "unable to delete %s namespace", namespace)
-			}
-		}
-	}
-
 	// delete the Black Duck instance
 	commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, namespace,
-		&api.ComponentList{}, fmt.Sprintf("app=blackduck,name=%s", name), false)
-	_, errors := commonConfig.CRUDComponents()
-	if len(errors) > 0 {
-		return fmt.Errorf("unable to delete the %s Black Duck instance in %s namespace due to %+v", name, namespace, errors)
+		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, name), false)
+	_, crudErrors := commonConfig.CRUDComponents()
+	if len(crudErrors) > 0 {
+		return fmt.Errorf("unable to delete the %s Black Duck instance in %s namespace due to %+v", name, namespace, crudErrors)
+	}
+
+	if b.config.IsClusterScoped {
+		err := util.DeleteResourceNamespace(b.kubeConfig, b.kubeClient, b.config.CrdNames, namespace, false)
+
+		if err != nil {
+			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
+		}
 	}
 
 	return nil

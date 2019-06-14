@@ -22,6 +22,8 @@ under the License.
 package synopsysctl
 
 import (
+	"strings"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -64,25 +66,16 @@ var destroyCmd = &cobra.Command{
 
 func destroy(namespace string) {
 	log.Infof("destroying the synopsys operator in '%s' namespace...", namespace)
-	_, err := util.GetNamespace(kubeClient, namespace)
+	crds := []string{util.AlertCRDName, util.BlackDuckCRDName, util.OpsSightCRDName}
+
+	// delete namespace
+	err := util.DeleteResourceNamespace(restconfig, kubeClient, strings.Join(crds, ","), namespace, true)
 	if err != nil {
-		log.Warnf("unable to find the synopsys operator in '%s' namespace due to %+v", namespace, err)
-	} else {
-		// delete namespace
-		isDeleteOperatorNamespace := util.IsDeleteOperatorNamespace(kubeClient, namespace)
-		if isDeleteOperatorNamespace {
-			log.Debugf("deleting namespace %s", namespace)
-			err = util.DeleteNamespace(kubeClient, namespace)
-			if err != nil {
-				log.Errorf("unable to delete the %s namespace because %+v", namespace, err)
-			}
-		} else {
-			log.Warnf("synopsys operator in '%s' namespace will not be deleted because other instances are still running in the namespace", namespace)
-		}
+		log.Warn(err)
 	}
 
 	// delete crds
-	deleteCrd([]string{util.AlertCRDName, util.BlackDuckCRDName, util.OpsSightCRDName, util.PrmCRDName})
+	deleteCrd(crds)
 
 	// delete cluster role bindings
 	clusterRoleBindings, roleBindings, err := util.GetOperatorRoleBindings(kubeClient, namespace)
@@ -168,52 +161,55 @@ func destroy(namespace string) {
 
 func deleteCrd(crds []string) {
 	for _, crd := range crds {
+		isDelete := true
 		switch crd {
 		case util.AlertCRDName:
 			alerts, err := util.ListAlerts(alertClient, metav1.NamespaceAll)
 			if err != nil {
 				log.Warnf("unable to list an Alert instances due to %+v", err)
-				continue
+				isDelete = false
 			}
 
 			for _, alert := range alerts.Items {
 				if alert.Namespace != namespace {
 					log.Warnf("Alert instances are already exist in other namespaces. Please delete them before deleting the custom resources.")
-					continue
+					isDelete = false
 				}
 			}
 		case util.BlackDuckCRDName:
 			blackducks, err := util.ListHubs(blackDuckClient, metav1.NamespaceAll)
 			if err != nil {
 				log.Warnf("unable to list the Black Duck instances due to %+v", err)
-				continue
+				isDelete = false
 			}
 
 			for _, blackduck := range blackducks.Items {
 				if blackduck.Namespace != namespace {
 					log.Warnf("Black Duck instances are already exist in other namespaces. Please delete them before deleting the custom resources.")
-					continue
+					isDelete = false
 				}
 			}
 		case util.OpsSightCRDName:
 			opssights, err := util.ListOpsSights(opsSightClient, metav1.NamespaceAll)
 			if err != nil {
 				log.Warnf("unable to list an OpsSight instances due to %+v", err)
-				continue
+				isDelete = false
 			}
 
 			for _, opssight := range opssights.Items {
 				if opssight.Namespace != namespace {
 					log.Warnf("OpsSight instances are already exist in other namespaces. Please delete them before deleting the custom resources.")
-					continue
+					isDelete = false
 				}
 			}
 		}
 
-		log.Infof("deleting %s custom resource definitions", crd)
-		err := util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
-		if err != nil {
-			log.Errorf("unable to delete the %s custom resource definitions because %+v", crd, err)
+		if isDelete {
+			log.Infof("deleting %s custom resource definitions", crd)
+			err := util.DeleteCustomResourceDefinition(apiExtensionClient, crd)
+			if err != nil {
+				log.Errorf("unable to delete the %s custom resource definitions because %+v", crd, err)
+			}
 		}
 	}
 }

@@ -38,7 +38,6 @@ type SpecConfig struct {
 	Image                         string
 	Expose                        string
 	ClusterType                   ClusterType
-	OperatorTimeBombInSeconds     int64
 	DryRun                        bool
 	LogLevel                      string
 	Threadiness                   int
@@ -57,7 +56,7 @@ type SpecConfig struct {
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
+func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
 	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
 	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, isClusterScoped bool, crds []string, admissionWebhookListener bool) *SpecConfig {
 	return &SpecConfig{
@@ -65,7 +64,6 @@ func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType C
 		Image:                         synopsysOperatorImage,
 		Expose:                        expose,
 		ClusterType:                   clusterType,
-		OperatorTimeBombInSeconds:     operatorTimeBombInSeconds,
 		DryRun:                        dryRun,
 		LogLevel:                      logLevel,
 		Threadiness:                   threadiness,

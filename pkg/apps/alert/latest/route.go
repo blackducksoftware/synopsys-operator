@@ -34,12 +34,12 @@ import (
 func (a *SpecConfig) GetOpenShiftRoute() *api.Route {
 	if strings.ToUpper(a.config.ExposeService) == util.OPENSHIFT {
 		return &api.Route{
-			Name:               fmt.Sprintf("%s-alert", a.name),
+			Name:               util.GetResourceName(a.name, util.AlertName, "", a.isClusterScope),
 			Namespace:          a.config.Namespace,
 			Kind:               "Service",
-			ServiceName:        util.GetResourceName(a.name, "alert", a.isClusterScope),
+			ServiceName:        util.GetResourceName(a.name, util.AlertName, "alert", a.isClusterScope),
 			PortName:           fmt.Sprintf("%d-tcp", *a.config.Port),
-			Labels:             map[string]string{"app": "alert", "name": a.name, "component": "route"},
+			Labels:             map[string]string{"app": util.AlertName, "name": a.name, "component": "route"},
 			TLSTerminationType: routev1.TLSTerminationPassthrough,
 		}
 	}

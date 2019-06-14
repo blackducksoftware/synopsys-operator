@@ -1411,23 +1411,6 @@ func GetOperatorNamespace(clientset *kubernetes.Clientset, namespace string) (st
 	return metav1.NamespaceAll, fmt.Errorf("unable to find the synopsys operator namespace due to %+v", err)
 }
 
-// IsDeleteOperatorNamespace returns whether the operator namespace can be delete or not
-func IsDeleteOperatorNamespace(clientset *kubernetes.Clientset, namespace string) bool {
-	rcs, err := ListReplicationControllers(clientset, namespace, "app!=synopsys-operator")
-	if err == nil && len(rcs.Items) > 0 {
-		return false
-	}
-	deployments, err := ListDeployments(clientset, namespace, "app!=synopsys-operator")
-	if err == nil && len(deployments.Items) > 0 {
-		return false
-	}
-	pods, err := ListPodsWithLabels(clientset, namespace, "app!=synopsys-operator")
-	if err == nil && len(pods.Items) > 0 {
-		return false
-	}
-	return true
-}
-
 // GetOperatorRoles returns the roles or the cluster role of the synopsys operator based on the labels
 func GetOperatorRoles(clientset *kubernetes.Clientset, namespace string) ([]string, []string, error) {
 	clusterRoles := []string{}
@@ -1545,4 +1528,125 @@ func GetOcVersion(clientset *kubernetes.Clientset) (string, error) {
 	}
 
 	return info.GitVersion, err
+}
+
+// isAlertExist returns whether the Alert exist in the namespace or not
+func isAlertExist(restConfig *rest.Config, namespace string) (bool, error) {
+	alertClient, err := alertclientset.NewForConfig(restConfig)
+	if err != nil {
+		return false, fmt.Errorf("unable to create Alert client due to %+v", err)
+	}
+
+	alerts, err := ListAlerts(alertClient, namespace)
+	if err != nil {
+		return false, fmt.Errorf("unable to list Alert instances in %s namespace due to %+v", namespace, err)
+	}
+
+	for _, alert := range alerts.Items {
+		if alert.Namespace == namespace {
+			return true, fmt.Errorf("%s Alert instance is already running in %s namespace... namespace cannot be deleted", alert.Name, namespace)
+		}
+	}
+	return false, nil
+}
+
+// isBlackDuckExist returns whether the Black Duck exist in the namespace or not
+func isBlackDuckExist(restConfig *rest.Config, namespace string) (bool, error) {
+	blackDuckClient, err := hubclientset.NewForConfig(restConfig)
+	if err != nil {
+		return false, fmt.Errorf("unable to create Black Duck client due to %+v", err)
+	}
+
+	blackDucks, err := ListHubs(blackDuckClient, namespace)
+	if err != nil {
+		return false, fmt.Errorf("unable to list Black Duck instances in %s namespace due to %+v", namespace, err)
+	}
+	for _, blackDuck := range blackDucks.Items {
+		if blackDuck.Namespace == namespace {
+			return true, fmt.Errorf("%s Black Duck instance is already running in %s namespace... namespace cannot be deleted", blackDuck.Name, namespace)
+		}
+	}
+	return false, nil
+}
+
+// isOpsSightExist returns whether the OpsSight exist in the namespace or not
+func isOpsSightExist(restConfig *rest.Config, namespace string) (bool, error) {
+	opsSightClient, err := opssightclientset.NewForConfig(restConfig)
+	if err != nil {
+		return false, fmt.Errorf("unable to create OpsSight client due to %+v", err)
+	}
+
+	opsSights, err := ListOpsSights(opsSightClient, namespace)
+	if err != nil {
+		return false, fmt.Errorf("unable to list OpsSight instances in %s namespace due to %+v", namespace, err)
+	}
+	for _, opsSight := range opsSights.Items {
+		if opsSight.Namespace == namespace {
+			return true, fmt.Errorf("%s OpsSight instance is already running in %s namespace... namespace cannot be deleted", opsSight.Name, namespace)
+		}
+	}
+	return false, nil
+}
+
+// isOperatorExist returns whether the operator exist or not
+func isOperatorExist(clientset *kubernetes.Clientset, namespace string) bool {
+	rcs, err := ListReplicationControllers(clientset, namespace, "app=synopsys-operator")
+	if err == nil && len(rcs.Items) > 0 {
+		return true
+	}
+	deployments, err := ListDeployments(clientset, namespace, "app=synopsys-operator")
+	if err == nil && len(deployments.Items) > 0 {
+		return true
+	}
+	pods, err := ListPodsWithLabels(clientset, namespace, "app=synopsys-operator")
+	if err == nil && len(pods.Items) > 0 {
+		return true
+	}
+	return false
+}
+
+// DeleteResourceNamespace deletes the namespace if none of the other resource types are running
+func DeleteResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, crdNames string, namespace string, isOperator bool) error {
+	// verify whether the namespace exist
+	ns, err := GetNamespace(kubeClient, namespace)
+	if err != nil {
+		return fmt.Errorf("unable to find %s namespace due to %+v", namespace, err)
+	}
+
+	if owner, ok := ns.Labels["owner"]; ok && owner == OperatorName {
+		var isExist bool
+		var err error
+		if !isOperator {
+			// check whether the operator already exist in the same namespace as input namespace
+			isExist = isOperatorExist(kubeClient, namespace)
+			if isExist {
+				return fmt.Errorf("synopsys operator is already running in %s namespace... namespace cannot be deleted", namespace)
+			}
+		}
+		for _, crd := range strings.Split(crdNames, ",") {
+			switch crd {
+			case AlertCRDName:
+				// check whether any Alert instance already exists in the same namespace as input namespace
+				isExist, err = isAlertExist(restConfig, namespace)
+			case BlackDuckCRDName:
+				// check whether any Black Duck instance already exists in the same namespace as input namespace
+				isExist, err = isBlackDuckExist(restConfig, namespace)
+			case OpsSightCRDName:
+				// check whether any OpsSight instance already exists in the same namespace as input namespace
+				isExist, err = isOpsSightExist(restConfig, namespace)
+			}
+
+			if isExist {
+				return err
+			}
+		}
+
+		log.Infof("deleting %s namespace", namespace)
+		err = DeleteNamespace(kubeClient, namespace)
+		if err != nil {
+			return fmt.Errorf("unable to delete the %s namespace because %+v", namespace, err)
+		}
+	}
+
+	return nil
 }

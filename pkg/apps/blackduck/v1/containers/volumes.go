@@ -30,7 +30,7 @@ import (
 func (c *Creater) getDBSecretVolume() *components.Volume {
 	return components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "db-passwords",
-		MapOrSecretName: util.GetResourceName(c.name, "db-creds", c.config.IsClusterScoped),
+		MapOrSecretName: util.GetResourceName(c.name, util.BlackDuckName, "db-creds", c.config.IsClusterScoped),
 		Items: []horizonapi.KeyPath{
 			{Key: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", Path: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", Mode: util.IntToInt32(420)},
 			{Key: "HUB_POSTGRES_USER_PASSWORD_FILE", Path: "HUB_POSTGRES_USER_PASSWORD_FILE", Mode: util.IntToInt32(420)},
@@ -42,7 +42,7 @@ func (c *Creater) getDBSecretVolume() *components.Volume {
 func (c *Creater) getProxyVolume() *components.Volume {
 	return components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "proxy-certificate",
-		MapOrSecretName: util.GetResourceName(c.name, "proxy-certificate", c.config.IsClusterScoped),
+		MapOrSecretName: util.GetResourceName(c.name, util.BlackDuckName, "proxy-certificate", c.config.IsClusterScoped),
 		Items: []horizonapi.KeyPath{
 			{Key: "HUB_PROXY_CERT_FILE", Path: "HUB_PROXY_CERT_FILE", Mode: util.IntToInt32(420)},
 		},

@@ -102,10 +102,9 @@ func (c *CRDInstaller) Deploy() error {
 		}
 		// creation of blackduck secret to store the seal key
 		operatorSecret := components.NewSecret(horizonapi.SecretConfig{
-			APIVersion: "v1",
-			Name:       "blackduck-secret",
-			Namespace:  c.config.Namespace,
-			Type:       horizonapi.SecretTypeOpaque,
+			Name:      "blackduck-secret",
+			Namespace: c.config.Namespace,
+			Type:      horizonapi.SecretTypeOpaque,
 		})
 		operatorSecret.AddData(map[string][]byte{
 			"SEAL_KEY": []byte(sealKey),

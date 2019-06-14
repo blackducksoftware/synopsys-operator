@@ -33,7 +33,6 @@ import (
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -89,9 +88,10 @@ var createAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, crdScope, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 
 		log.Infof("creating Alert '%s' instance in '%s' namespace...", alertName, alertNamespace)
@@ -127,13 +127,9 @@ var createAlertCmd = &cobra.Command{
 				log.Errorf("%s", err)
 			}
 		} else {
-			// Create namespace for Alert
-			var err error
-			if crdScope == apiextensions.ClusterScoped {
-				err = DeployCRDNamespace(restconfig, alertName)
-			} else {
-				err = DeployCRDNamespace(restconfig, alertNamespace)
-			}
+			// Create namespace for an Alert instance
+			err := DeployCRDNamespace(restconfig, alertNamespace)
+
 			if err != nil {
 				log.Warn(err)
 			}
@@ -178,19 +174,22 @@ var createBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, crdScope, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		log.Infof("creating Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
 
 		blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
 		if err != nil {
-			return fmt.Errorf("unable to list Black Duck instances in %s namespace due to %+v", blackDuckNamespace, err)
+			log.Errorf("unable to list Black Duck instances in %s namespace due to %+v", blackDuckNamespace, err)
+			return nil
 		}
 
 		if len(blackducks.Items) > 0 {
-			return fmt.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+			log.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+			return nil
 		}
 
 		// Update Spec with user's flags
@@ -224,13 +223,9 @@ var createBlackDuckCmd = &cobra.Command{
 				log.Errorf("%s", err)
 			}
 		} else {
-			// Create namespace for Black Duck
-			var err error
-			if crdScope == apiextensions.ClusterScoped {
-				err = DeployCRDNamespace(restconfig, blackDuckName)
-			} else {
-				err = DeployCRDNamespace(restconfig, blackDuckNamespace)
-			}
+			// Create namespace for the Black Duck instance
+			err := DeployCRDNamespace(restconfig, blackDuckNamespace)
+
 			if err != nil {
 				log.Warn(err)
 			}

@@ -36,7 +36,7 @@ import (
 func (c *Creater) GetSecrets(cert string, key string) []*components.Secret {
 	var secrets []*components.Secret
 
-	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "webserver-certificate", c.config.IsClusterScoped), Type: horizonapi.SecretTypeOpaque})
+	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "webserver-certificate", c.config.IsClusterScoped), Type: horizonapi.SecretTypeOpaque})
 	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(cert), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
 	certificateSecret.AddLabels(c.GetVersionLabel("secret"))
 	secrets = append(secrets, certificateSecret)
@@ -47,7 +47,7 @@ func (c *Creater) GetSecrets(cert string, key string) []*components.Secret {
 			logrus.Warnf("The proxy certificate provided is invalid")
 		} else {
 			logrus.Debugf("Adding Proxy certificate with SN: %x", cert.SerialNumber)
-			proxyCertificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "proxy-certificate", c.config.IsClusterScoped), Type: horizonapi.SecretTypeOpaque})
+			proxyCertificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "proxy-certificate", c.config.IsClusterScoped), Type: horizonapi.SecretTypeOpaque})
 			proxyCertificateSecret.AddData(map[string][]byte{"HUB_PROXY_CERT_FILE": []byte(c.hubSpec.ProxyCertificate)})
 			proxyCertificateSecret.AddLabels(c.GetVersionLabel("secret"))
 			secrets = append(secrets, proxyCertificateSecret)
@@ -60,7 +60,7 @@ func (c *Creater) GetSecrets(cert string, key string) []*components.Secret {
 			logrus.Warnf("The Auth Custom CA provided is invalid")
 		} else {
 			logrus.Debugf("Adding The Auth Custom CA with SN: %x", cert.SerialNumber)
-			authCustomCASecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "auth-custom-ca", c.config.IsClusterScoped), Type: horizonapi.SecretTypeOpaque})
+			authCustomCASecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "auth-custom-ca", c.config.IsClusterScoped), Type: horizonapi.SecretTypeOpaque})
 			authCustomCASecret.AddData(map[string][]byte{"AUTH_CUSTOM_CA": []byte(c.hubSpec.AuthCustomCA)})
 			authCustomCASecret.AddLabels(c.GetVersionLabel("secret"))
 			secrets = append(secrets, authCustomCASecret)

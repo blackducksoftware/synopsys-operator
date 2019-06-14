@@ -222,7 +222,7 @@ func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssig
 				concurrentScanLimit = 2
 			}
 			host := &opssightapi.Host{
-				Domain:              fmt.Sprintf("%s.%s.svc", util.GetResourceName(hub.Name, "webserver", p.config.IsClusterScoped), hub.Namespace),
+				Domain:              fmt.Sprintf("%s.%s.svc", util.GetResourceName(hub.Name, util.BlackDuckName, "webserver", p.config.IsClusterScoped), hub.Namespace),
 				ConcurrentScanLimit: concurrentScanLimit,
 				Scheme:              "https",
 				User:                "sysadmin",

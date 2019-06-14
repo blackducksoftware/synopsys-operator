@@ -22,6 +22,8 @@ under the License.
 package protoform
 
 import (
+	"strings"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
@@ -77,7 +79,8 @@ func NewController(configPath string) (*Deployer, error) {
 			PodWaitTimeoutSeconds:         config.PodWaitTimeoutSeconds,
 			ResyncIntervalInSeconds:       config.ResyncIntervalInSeconds,
 			TerminationGracePeriodSeconds: config.TerminationGracePeriodSeconds,
-			OperatorTimeBombInSeconds:     config.OperatorTimeBombInSeconds,
+			Crds:                          strings.Split(config.CrdNames, ","),
+			IsClusterScoped:               config.IsClusterScoped,
 		}
 		operatorCm, err := operatorConfig.GetOperatorConfigMap()
 		if err != nil {

@@ -30,6 +30,7 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -71,14 +72,14 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	}
 	if strings.EqualFold(alert.Spec.DesiredState, "STOP") {
 		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace,
-			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, fmt.Sprintf("app=alert,name=%s", alert.Name), false)
+			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("unable to stop Alert: %+v", errors)
 		}
 	} else {
 		// Update components in cluster
-		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, cpList, fmt.Sprintf("app=alert,name=%s", alert.Name), false)
+		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, cpList, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("unable to update Alert components due to %+v", errors)

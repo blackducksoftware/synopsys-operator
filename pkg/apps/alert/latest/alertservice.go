@@ -32,7 +32,7 @@ import (
 // getAlertService returns a new cluster Service for an Alert
 func (a *SpecConfig) getAlertService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(a.name, "alert", a.isClusterScope),
+		Name:      util.GetResourceName(a.name, util.AlertName, "alert", a.isClusterScope),
 		Namespace: a.config.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
@@ -44,15 +44,15 @@ func (a *SpecConfig) getAlertService() *components.Service {
 		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
 
-	service.AddSelectors(map[string]string{"app": "alert", "component": "alert"})
-	service.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+	service.AddSelectors(map[string]string{"app": util.AlertName, "component": "alert"})
+	service.AddLabels(map[string]string{"app": util.AlertName, "component": "alert"})
 	return service
 }
 
 // getAlertServiceNodePort returns a new Node Port Service for an Alert
 func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(a.name, "alert-exposed", a.isClusterScope),
+		Name:      util.GetResourceName(a.name, util.AlertName, "exposed", a.isClusterScope),
 		Namespace: a.config.Namespace,
 		Type:      horizonapi.ServiceTypeNodePort,
 	})
@@ -64,15 +64,15 @@ func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
 
-	service.AddSelectors(map[string]string{"app": "alert", "name": a.name, "component": "alert"})
-	service.AddLabels(map[string]string{"app": "alert", "name": a.name, "component": "alert"})
+	service.AddSelectors(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
+	service.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 	return service
 }
 
 // getAlertServiceLoadBalancer returns a new Load Balancer Service for an Alert
 func (a *SpecConfig) getAlertServiceLoadBalancer() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(a.name, "alert-exposed", a.isClusterScope),
+		Name:      util.GetResourceName(a.name, util.AlertName, "exposed", a.isClusterScope),
 		Namespace: a.config.Namespace,
 		Type:      horizonapi.ServiceTypeLoadBalancer,
 	})
@@ -84,7 +84,7 @@ func (a *SpecConfig) getAlertServiceLoadBalancer() *components.Service {
 		Name:       fmt.Sprintf("%d-tcp", *a.config.Port),
 	})
 
-	service.AddSelectors(map[string]string{"app": "alert", "name": a.name, "component": "alert"})
-	service.AddLabels(map[string]string{"app": "alert", "name": a.name, "component": "alert"})
+	service.AddSelectors(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
+	service.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 	return service
 }

@@ -106,6 +106,7 @@ func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
 		Name:      namespace,
 		Namespace: namespace,
 	})
+	ns.AddLabels(map[string]string{"owner": "synopsys-operator"})
 	namespaceDeployer.AddComponent(horizonapi.NamespaceComponent, ns)
 	err = namespaceDeployer.Run()
 	if err != nil {
@@ -313,6 +314,13 @@ func getInstanceInfo(cmd *cobra.Command, args []string, crdName string, inputNam
 		if len(inputNamespace) == 0 {
 			namespace = args[0]
 		} else {
+			operatorNamespace, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+			if err != nil {
+				log.Error(err)
+			}
+			if operatorNamespace != inputNamespace {
+				return "", "", "", fmt.Errorf("%s %s instance can be only created within same namespace or in '%s' operator namespace", name, crdName, operatorNamespace)
+			}
 			namespace = inputNamespace
 		}
 	} else {

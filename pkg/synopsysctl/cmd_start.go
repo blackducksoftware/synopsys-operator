@@ -52,7 +52,8 @@ var startAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		log.Infof("starting an Alert '%s' instance in '%s' namespace...", alertName, alertNamespace)
 
@@ -91,7 +92,8 @@ var startBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
 		if err != nil {
-			return err
+			log.Error(err)
+			return nil
 		}
 		log.Infof("starting Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
 

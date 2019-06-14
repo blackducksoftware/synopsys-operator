@@ -33,7 +33,7 @@ import (
 // getAlertConfigMap returns a new ConfigMap for an Alert
 func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      util.GetResourceName(a.name, "blackduck-alert-config", a.isClusterScope),
+		Name:      util.GetResourceName(a.name, util.AlertName, "blackduck-config", a.isClusterScope),
 		Namespace: a.config.Namespace,
 	})
 
@@ -54,7 +54,7 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 	// Add data to the ConfigMap
 	configMap.AddData(configMapData)
 
-	configMap.AddLabels(map[string]string{"app": "alert", "name": a.name, "component": "alert"})
+	configMap.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 
 	return configMap
 }

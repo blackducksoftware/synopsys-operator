@@ -63,10 +63,16 @@ var deleteAlertCmd = &cobra.Command{
 		}
 
 		for _, alertName := range args {
-			var operatorNamespace string
+			operatorNamespace := alertName
 			if crd.Spec.Scope == apiextensions.ClusterScoped {
 				if len(namespace) == 0 {
-					operatorNamespace = alertName
+					namespace, err = util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+					if err != nil {
+						log.Error(err)
+					}
+					if metav1.NamespaceAll != namespace {
+						operatorNamespace = namespace
+					}
 				} else {
 					operatorNamespace = namespace
 				}
@@ -107,15 +113,19 @@ var deleteBlackDuckCmd = &cobra.Command{
 		}
 
 		for _, blackDuckName := range args {
-			var operatorNamespace string
+			operatorNamespace := blackDuckName
 			if crd.Spec.Scope == apiextensions.ClusterScoped {
 				if len(namespace) == 0 {
-					operatorNamespace = blackDuckName
+					namespace, err = util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+					if err != nil {
+						log.Error(err)
+					}
+					if metav1.NamespaceAll != namespace {
+						operatorNamespace = namespace
+					}
 				} else {
 					operatorNamespace = namespace
 				}
-			} else {
-				operatorNamespace = namespace
 			}
 			log.Infof("deleting Black Duck '%s' instance in '%s' namespace...", blackDuckName, operatorNamespace)
 			err := blackDuckClient.SynopsysV1().Blackducks(operatorNamespace).Delete(blackDuckName, &metav1.DeleteOptions{})

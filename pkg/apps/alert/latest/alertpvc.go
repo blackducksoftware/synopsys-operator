@@ -26,17 +26,18 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // getAlertPersistentVolumeClaim returns a new PVC for an Alert
 func (a *SpecConfig) getAlertPersistentVolumeClaim() (*components.PersistentVolumeClaim, error) {
-	name := operatorutil.GetResourceName(a.name, a.config.PVCName, a.isClusterScope)
+	name := operatorutil.GetResourceName(a.name, operatorutil.AlertName, a.config.PVCName, a.isClusterScope)
 	pvc, err := operatorutil.CreatePersistentVolumeClaim(name, a.config.Namespace, a.config.PVCSize, a.config.PVCStorageClass, horizonapi.ReadWriteOnce)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the PVC %s in namespace %s because %+v", name, a.config.Namespace, err)
 	}
 
-	pvc.AddLabels(map[string]string{"app": "alert", "name": a.name, "component": "alert"})
+	pvc.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 	return pvc, nil
 }

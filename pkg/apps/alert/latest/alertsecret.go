@@ -43,7 +43,7 @@ func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
 
 	// create a secret
 	alertSecret := components.NewSecret(horizonapi.SecretConfig{
-		Name:      util.GetResourceName(a.name, "alert-secret", a.isClusterScope),
+		Name:      util.GetResourceName(a.name, util.AlertName, "secret", a.isClusterScope),
 		Namespace: a.config.Namespace,
 		Type:      horizonapi.SecretTypeOpaque,
 	})
@@ -52,7 +52,7 @@ func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
 		"ALERT_ENCRYPTION_GLOBAL_SALT": []byte(a.config.EncryptionGlobalSalt),
 	})
 
-	alertSecret.AddLabels(map[string]string{"app": "alert", "name": a.name, "component": "alert"})
+	alertSecret.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 	return alertSecret, nil
 
 }

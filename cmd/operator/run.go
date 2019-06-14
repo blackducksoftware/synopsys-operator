@@ -24,9 +24,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
@@ -45,8 +43,7 @@ func main() {
 		fmt.Printf("Config path: %s", configPath)
 		return
 	}
-	fmt.Println("WARNING: Running protoform with defaults, no config file sent.")
-	runProtoform("")
+	panic("config file not provided")
 }
 
 // runProtoform will add CRD controllers to the Protoform Deployer which
@@ -72,27 +69,15 @@ func runProtoform(configPath string) {
 
 	stopCh := make(chan struct{})
 
-	// get the operator scope from an environment variable
-	var isClusterScoped bool
-	clusterScopeEnv, ok := os.LookupEnv("CLUSTER_SCOPE")
-	if ok && len(clusterScopeEnv) > 0 {
-		clusterScope, err := strconv.ParseBool(strings.TrimSpace(clusterScopeEnv))
-		if err != nil {
-			panic("cluster scope environment variable is not set properly. possible values are true/false")
-		}
-		isClusterScoped = clusterScope
-	}
-
 	// get the list of crds from an environment variable
-	crdEnv, ok := os.LookupEnv("CRD_NAMES")
-	if ok && len(crdEnv) > 0 {
-		crds := strings.Split(crdEnv, ",")
+	if len(deployer.Config.CrdNames) > 0 {
+		crds := strings.Split(deployer.Config.CrdNames, ",")
 		for _, crd := range crds {
 			// start the CRD controller
-			startController(configPath, strings.TrimSpace(crd), isClusterScoped, stopCh)
+			startController(deployer, strings.TrimSpace(crd), stopCh)
 		}
 	} else {
-		log.Errorf("unable to start any CRD controllers. Please set the CRD_NAMES environment variable to start any CRD controllers...")
+		log.Errorf("unable to start any CRD controllers. Please set the CrdNames environment variable to start any CRD controllers...")
 		os.Exit(1)
 	}
 
@@ -104,31 +89,12 @@ func runProtoform(configPath string) {
 
 	// Start the prometheus endpoint
 	protoform.SetupHTTPServer()
-
-	if deployer.Config.OperatorTimeBombInSeconds > 0 {
-		go func() {
-			timeout := time.Duration(deployer.Config.OperatorTimeBombInSeconds) * time.Second
-			log.Warnf("timeout to stop all controllers is enabled to %v seconds", timeout)
-			time.Sleep(timeout)
-
-			// trip the stop channel after done sleeping.  wait 20 seconds for debuggability.
-			log.Warn("timeout tripped.  exiting in 20 seconds !")
-			time.Sleep(time.Duration(20) * time.Second)
-			kill(stopCh)
-		}()
-	}
 	<-stopCh
 }
 
 // startController will start the CRD controller
-func startController(configPath string, name string, isClusterScoped bool, stopCh chan struct{}) {
+func startController(deployer *protoform.Deployer, name string, stopCh chan struct{}) {
 	// Add controllers to the Operator
-	deployer, err := protoform.NewController(configPath)
-	if err != nil {
-		panic(err)
-	}
-	deployer.Config.IsClusterScoped = isClusterScoped
-
 	switch strings.ToLower(name) {
 	case util.BlackDuckCRDName:
 		blackduckController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetBlackDuckTemplate(), stopCh)
@@ -142,7 +108,7 @@ func startController(configPath string, name string, isClusterScoped bool, stopC
 	default:
 		log.Warnf("unable to start the %s custom resource definition controller due to invalid custom resource definition name", name)
 	}
-	if err = deployer.Deploy(); err != nil {
+	if err := deployer.Deploy(); err != nil {
 		log.Errorf("unable to deploy the CRD controllers due to  %+v", err)
 		os.Exit(1)
 	}

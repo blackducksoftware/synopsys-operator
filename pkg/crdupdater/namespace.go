@@ -55,7 +55,13 @@ func (n *Namespace) buildNewAndOldObject() error {
 func (n *Namespace) add(isPatched bool) (bool, error) {
 	_, err := n.get(n.config.namespace)
 	if err != nil {
-		n.deployer.Deployer.AddComponent(horizonapi.NamespaceComponent, components.NewNamespace(horizonapi.NamespaceConfig{Name: n.config.namespace}))
+		namespace := components.NewNamespace(
+			horizonapi.NamespaceConfig{
+				Name:      n.config.namespace,
+				Namespace: n.config.namespace,
+			})
+		namespace.AddLabels(map[string]string{"owner": "synopsys-operator"})
+		n.deployer.Deployer.AddComponent(horizonapi.NamespaceComponent, namespace)
 		n.deployer.Deployer.Run()
 	}
 	return false, nil

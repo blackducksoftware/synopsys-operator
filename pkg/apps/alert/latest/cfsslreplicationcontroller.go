@@ -35,10 +35,10 @@ func (a *SpecConfig) getCfsslReplicationController() (*components.ReplicationCon
 	replicas := int32(1)
 	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      util.GetResourceName(a.name, "cfssl", a.isClusterScope),
+		Name:      util.GetResourceName(a.name, util.AlertName, "cfssl", a.isClusterScope),
 		Namespace: a.config.Namespace,
 	})
-	replicationController.AddSelectors(map[string]string{"app": "alert", "name": a.name, "component": "cfssl"})
+	replicationController.AddSelectors(map[string]string{"app": util.AlertName, "name": a.name, "component": "cfssl"})
 
 	pod, err := a.getCfsslPod()
 	if err != nil {
@@ -46,16 +46,16 @@ func (a *SpecConfig) getCfsslReplicationController() (*components.ReplicationCon
 	}
 	replicationController.AddPod(pod)
 
-	replicationController.AddLabels(map[string]string{"app": "alert", "name": a.name, "component": "cfssl"})
+	replicationController.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "cfssl"})
 	return replicationController, nil
 }
 
 // getCfsslPod returns a new Pod for a Cffsl
 func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: util.GetResourceName(a.name, "cfssl", a.isClusterScope),
+		Name: util.GetResourceName(a.name, util.AlertName, "cfssl", a.isClusterScope),
 	})
-	pod.AddLabels(map[string]string{"app": "alert", "name": a.name, "component": "cfssl"})
+	pod.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "cfssl"})
 
 	container, err := a.getCfsslContainer()
 	if err != nil {
@@ -104,7 +104,7 @@ func (a *SpecConfig) getCfsslContainer() (*components.Container, error) {
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromConfigMap,
-		FromName: util.GetResourceName(a.name, "blackduck-alert-config", a.isClusterScope),
+		FromName: util.GetResourceName(a.name, util.AlertName, "blackduck-config", a.isClusterScope),
 	})
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{

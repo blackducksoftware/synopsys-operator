@@ -88,7 +88,7 @@ func (c *Creater) GetScanDeployment(imageName string) (*components.ReplicationCo
 	c.PostEditContainer(hubScanContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "scan", c.config.IsClusterScoped), Replicas: c.hubContainerFlavor.ScanReplicas},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "scan", c.config.IsClusterScoped), Replicas: c.hubContainerFlavor.ScanReplicas},
 		&util.PodConfig{
 			Volumes:             hubScanVolumes,
 			Containers:          []*util.Container{hubScanContainerConfig},
@@ -100,5 +100,5 @@ func (c *Creater) GetScanDeployment(imageName string) (*components.ReplicationCo
 
 // GetScanService will return the scan service
 func (c *Creater) GetScanService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, "scan", c.config.IsClusterScoped), c.GetLabel("scan"), c.hubSpec.Namespace, scannerPort, scannerPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("scan"))
+	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "scan", c.config.IsClusterScoped), c.GetLabel("scan"), c.hubSpec.Namespace, scannerPort, scannerPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("scan"))
 }

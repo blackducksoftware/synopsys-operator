@@ -39,6 +39,8 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -109,6 +111,18 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 // ObjectDeleted will be called for delete hub events
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
+
+	// if cluster scope, then check whether the Black Duck CRD exist. If not exist, then don't delete the instance
+	if h.config.IsClusterScoped {
+		apiClientset, err := clientset.NewForConfig(h.kubeConfig)
+		crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.BlackDuckCRDName, metav1.GetOptions{})
+		if err != nil || crd.DeletionTimestamp != nil {
+			// We do not delete the Alert instance if the CRD doesn't exist or that it is in the process of being deleted
+			log.Warnf("Ignoring request to delete %s because the %s CRD doesn't exist or is being deleted", name, util.BlackDuckCRDName)
+			return
+		}
+	}
+
 	// Voluntary deletion. The CRD still exists but the Black Duck resource has been deleted
 	app := apps.NewApp(h.config, h.kubeConfig)
 	app.Blackduck().Delete(name)
@@ -171,7 +185,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	} else { // Start, Running, and Error States
 		if !strings.EqualFold(bd.Status.State, string(Running)) {
 			// Verify that we can access the Black Duck
-			hubURL := fmt.Sprintf("%s.%s.svc", util.GetResourceName(bd.Name, "webserver", h.config.IsClusterScoped), bd.Spec.Namespace)
+			hubURL := fmt.Sprintf("%s.%s.svc", util.GetResourceName(bd.Name, util.BlackDuckName, "webserver", h.config.IsClusterScoped), bd.Spec.Namespace)
 			status := h.verifyHub(hubURL, bd.Spec.Namespace)
 
 			if status { // Set state to Running if we can access the Black Duck

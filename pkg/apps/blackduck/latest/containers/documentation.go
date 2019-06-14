@@ -55,7 +55,7 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 	c.PostEditContainer(documentationContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "documentation", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "documentation", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             []*components.Volume{documentationEmptyDir},
 			Containers:          []*util.Container{documentationContainerConfig},
@@ -67,5 +67,5 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 
 // GetDocumentationService will return the cfssl service
 func (c *Creater) GetDocumentationService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, "documentation", c.config.IsClusterScoped), c.GetLabel("documentation"), c.hubSpec.Namespace, documentationPort, documentationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("documentation"))
+	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "documentation", c.config.IsClusterScoped), c.GetLabel("documentation"), c.hubSpec.Namespace, documentationPort, documentationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("documentation"))
 }

@@ -73,7 +73,7 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 	c.PostEditContainer(hubAuthContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, "authentication", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "authentication", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getAuthenticationVolumes(),
 			Containers:          []*util.Container{hubAuthContainerConfig},
@@ -90,7 +90,7 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 
 	var hubAuthVolume *components.Volume
 	if c.hubSpec.PersistentStorage {
-		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", util.GetResourceName(c.name, "blackduck-authentication", c.config.IsClusterScoped))
+		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", util.GetResourceName(c.name, util.BlackDuckName, "authentication", c.config.IsClusterScoped))
 	} else {
 		hubAuthVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")
 	}
@@ -104,7 +104,7 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 
 	// Custom CA auth
 	if len(c.hubSpec.AuthCustomCA) > 1 {
-		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", util.GetResourceName(c.name, "auth-custom-ca", c.config.IsClusterScoped), 0444)
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", util.GetResourceName(c.name, util.BlackDuckName, "auth-custom-ca", c.config.IsClusterScoped), 0444)
 		volumes = append(volumes, authCustomCaVolume)
 	}
 	return volumes

@@ -305,7 +305,7 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 
 	// Cert copy
 	if len(blackduck.Spec.CertificateName) > 0 && !strings.EqualFold(blackduck.Spec.CertificateName, "default") {
-		secret, err := util.GetSecret(hc.kubeClient, blackduck.Spec.CertificateName, util.GetResourceName(blackduck.Name, "webserver-certificate", hc.config.IsClusterScoped))
+		secret, err := util.GetSecret(hc.kubeClient, blackduck.Spec.CertificateName, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-certificate", hc.config.IsClusterScoped))
 		if err == nil {
 			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
 			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
@@ -323,7 +323,7 @@ func (hc *Creater) getTLSCertKeyOrCreate(blackduck *blackduckapi.Blackduck) (str
 			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
 			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
 			if !certok || !keyok {
-				util.DeleteSecret(hc.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, "webserver-certificate", hc.config.IsClusterScoped))
+				util.DeleteSecret(hc.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-certificate", hc.config.IsClusterScoped))
 			} else {
 				return string(cert), string(key), nil
 			}
