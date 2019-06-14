@@ -323,6 +323,12 @@ var updateAlertCmd = &cobra.Command{
 			// Create new Alert CRD
 			newAlert := *currAlert //make copy
 			newAlert.Spec = newSpec
+			// update the namespace label if the version of the app got changed
+			_, err := util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alertNamespace, alertName, newSpec.Version, false)
+			if err != nil {
+				log.Error(err)
+				return nil
+			}
 			// Update Alert
 			err = ctlUpdateResource(newAlert, cmd.LocalFlags().Lookup("mock").Changed, mockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
@@ -382,6 +388,12 @@ var updateBlackDuckCmd = &cobra.Command{
 			// Create new Black Duck CRD
 			newBlackDuck := *currBlackDuck //make copy
 			newBlackDuck.Spec = newSpec
+			// update the namespace label if the version of the app got changed
+			_, err := util.CheckAndUpdateNamespace(kubeClient, util.BlackDuckName, blackDuckNamespace, blackDuckName, newSpec.Version, false)
+			if err != nil {
+				log.Error(err)
+				return nil
+			}
 			// Update Black Duck
 			err = ctlUpdateResource(newBlackDuck, cmd.LocalFlags().Lookup("mock").Changed, mockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
@@ -495,7 +507,7 @@ var blackDuckPVCStorageClass = ""
 // updateBlackDuckAddPVCCmd adds a PVC to a Black Duck
 var updateBlackDuckAddPVCCmd = &cobra.Command{
 	Use:     "addpvc BLACK_DUCK_NAME PVC_NAME",
-	Example: "synopsysctl update blackduck addpvc bdname mypvc --size 2Gi --storage-class standard\nsynopsysctl update blackduck addpvc bdname mypvc --size 2Gi --storage-class standard -n bdnamespace",
+	Example: "synopsysctl update blackduck addpvc <name> mypvc --size 2Gi --storage-class standard\nsynopsysctl update blackduck addpvc <name> mypvc --size 2Gi --storage-class standard -n <namespace>",
 	Short:   "Add a Persistent Volume Claim to a Black Duck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -555,7 +567,7 @@ var updateBlackDuckAddPVCCmd = &cobra.Command{
 // updateBlackDuckAddEnvironCmd adds an environ to a Blackduck
 var updateBlackDuckAddEnvironCmd = &cobra.Command{
 	Use:     "addenviron BLACK_DUCK_NAME (ENVIRON_NAME:ENVIRON_VALUE)",
-	Example: "synopsysctl update blackduck addenviron bdnamespace USE_ALERT:1",
+	Example: "synopsysctl update blackduck addenviron <name> USE_ALERT:1\nsynopsysctl update blackduck addenviron <name> USE_ALERT:1 -n <namespace>",
 	Short:   "Add an Environment Variable to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -609,7 +621,7 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 // updateBlackDuckAddRegistryCmd adds an Image Registry to a Blackduck
 var updateBlackDuckAddRegistryCmd = &cobra.Command{
 	Use:     "addregistry BLACK_DUCK_NAME REGISTRY",
-	Example: "synopsysctl update blackduck addregistry bdnamespace docker.io",
+	Example: "synopsysctl update blackduck addregistry <name> docker.io\nsynopsysctl update blackduck addregistry <name> docker.io -n <namespace>",
 	Short:   "Add an Image Registry to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
@@ -663,7 +675,7 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 // updateBlackDuckAddUIDCmd adds a UID mapping to a Blackduck
 var updateBlackDuckAddUIDCmd = &cobra.Command{
 	Use:     "adduid BLACK_DUCK_NAME UID_KEY UID_VALUE",
-	Example: "synopsysctl update blackduck adduid bdnamespace uidname 80",
+	Example: "synopsysctl update blackduck adduid <name> uidname 80\nsynopsysctl update blackduck adduid <name> uidname 80 -n <namespace>",
 	Short:   "Add an Image UID to Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
@@ -724,8 +736,8 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 
 // updateOpsSightCmd lets the user update an OpsSight instance
 var updateOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAMESPACE",
-	Example: "synopsyctl update opssight opsnamespace --blackduck-max-count 2",
+	Use:     "opssight NAME",
+	Example: "synopsyctl update opssight <name> --blackduck-max-count 2\nsynopsyctl update opssight <name> --blackduck-max-count 2 -n <namespace>",
 	Short:   "Update an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -762,6 +774,13 @@ var updateOpsSightCmd = &cobra.Command{
 			// Create new OpsSight CRD
 			newOpsSight := *currOpsSight //make copy
 			newOpsSight.Spec = newSpec
+			// update the namespace label if the version of the app got changed
+			// TODO: when opssight versioning PR is merged, the hard coded 2.2.3 version to be replaced with OpsSight
+			_, err := util.CheckAndUpdateNamespace(kubeClient, util.OpsSightName, opsSightNamespace, opsSightName, "2.2.3", false)
+			if err != nil {
+				log.Error(err)
+				return nil
+			}
 			// Update OpsSight
 			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, mockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
@@ -776,8 +795,8 @@ var updateOpsSightCmd = &cobra.Command{
 
 // updateOpsSightImageCmd lets the user update an image in an OpsSight instance
 var updateOpsSightImageCmd = &cobra.Command{
-	Use:     "image NAMESPACE OPSSIGHTCORE|SCANNER|IMAGEGETTER|IMAGEPROCESSOR|PODPROCESSOR|METRICS IMAGE",
-	Example: "synopsysctl update opssight image opsnamespace SCANNER docker.io/new_scanner_image_url",
+	Use:     "image NAME OPSSIGHTCORE|SCANNER|IMAGEGETTER|IMAGEPROCESSOR|PODPROCESSOR|METRICS IMAGE",
+	Example: "synopsysctl update opssight image <name> SCANNER docker.io/new_scanner_image_url\nsynopsysctl update opssight image <name> SCANNER docker.io/new_scanner_image_url -n <namespace>",
 	Short:   "Update an image of an OpsSight component",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 3 {
@@ -841,8 +860,8 @@ var updateOpsSightImageCmd = &cobra.Command{
 
 // updateOpsSightExternalHostCmd lets the user update an OpsSight with an External Host
 var updateOpsSightExternalHostCmd = &cobra.Command{
-	Use:     "externalhost NAMESPACE SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT",
-	Example: "synopsysctl update opssight externalhost opsnamespace scheme domain 80 user pass 50",
+	Use:     "externalhost NAME SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT",
+	Example: "synopsysctl update opssight externalhost <name> scheme domain 80 user pass 50\nsynopsysctl update opssight externalhost <name> scheme domain 80 user pass 50 -n <namespace>",
 	Short:   "Update an external host for a component of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 7 {
@@ -910,8 +929,8 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 // updateOpsSightAddRegistryCmd lets the user update and OpsSight by
 // adding a registry for the ImageFacade
 var updateOpsSightAddRegistryCmd = &cobra.Command{
-	Use:     "registry NAMESPACE URL USER PASSWORD",
-	Example: "synopsysctl update opssight registry opsnamespace reg_url reg_username reg_password",
+	Use:     "registry NAME URL USER PASSWORD",
+	Example: "synopsysctl update opssight registry <name> reg_url reg_username reg_password\nsynopsysctl update opssight registry <name> reg_url reg_username reg_password -n <namespace>",
 	Short:   "Add an Internal Registry to OpsSight's ImageFacade",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 4 {

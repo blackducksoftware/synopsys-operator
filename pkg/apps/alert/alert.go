@@ -152,10 +152,14 @@ func (a *Alert) Delete(name string) error {
 
 	if a.config.IsClusterScoped {
 		err := util.DeleteResourceNamespace(a.kubeConfig, a.kubeClient, a.config.CrdNames, namespace, false)
-
 		if err != nil {
 			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
 		}
+	}
+
+	// update the namespace label if the version of the app got deleted
+	if isNamespaceExist, err := util.CheckAndUpdateNamespace(a.kubeClient, util.AlertName, namespace, name, "", true); isNamespaceExist {
+		return err
 	}
 
 	return nil

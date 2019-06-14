@@ -128,7 +128,7 @@ var createAlertCmd = &cobra.Command{
 			}
 		} else {
 			// Create namespace for an Alert instance
-			err := DeployCRDNamespace(restconfig, kubeClient, util.AlertName, alertNamespace, alertName, alertSpec.Version)
+			err := util.DeployCRDNamespace(restconfig, kubeClient, util.AlertName, alertNamespace, alertName, alertSpec.Version)
 
 			if err != nil {
 				log.Warn(err)
@@ -224,7 +224,7 @@ var createBlackDuckCmd = &cobra.Command{
 			}
 		} else {
 			// Create namespace for the Black Duck instance
-			err := DeployCRDNamespace(restconfig, kubeClient, util.BlackDuckName, blackDuckNamespace, blackDuckName, blackDuckSpec.Version)
+			err := util.DeployCRDNamespace(restconfig, kubeClient, util.BlackDuckName, blackDuckNamespace, blackDuckName, blackDuckSpec.Version)
 
 			if err != nil {
 				log.Warn(err)
@@ -310,7 +310,7 @@ var createOpsSightCmd = &cobra.Command{
 		} else {
 			// Create namespace for OpsSight
 			// TODO: when opssight versioning PR is merged, the hard coded 2.2.3 version to be replaced with opsSight
-			err := DeployCRDNamespace(restconfig, kubeClient, util.OpsSightName, opsSightNamespace, opsSightNamespace, "2.2.3")
+			err := util.DeployCRDNamespace(restconfig, kubeClient, util.OpsSightName, opsSightNamespace, opsSightName, "2.2.3")
 			if err != nil {
 				log.Errorf("%s", err)
 			}

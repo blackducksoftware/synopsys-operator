@@ -27,9 +27,6 @@ import (
 	"os/exec"
 	"reflect"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
@@ -97,33 +94,6 @@ func getKubeClient(kubeConfig *rest.Config) (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 	return client, nil
-}
-
-// DeployCRDNamespace creates an empty Horizon namespace
-func DeployCRDNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, resourceName string, namespace string, name string, version string) error {
-	kubeNs, err := operatorutil.GetNamespace(kubeClient, namespace)
-	if err == nil {
-		log.Infof("deploying %s %s instance in existing %s namespace", name, resourceName, namespace)
-		kubeNs.Labels[fmt.Sprintf("synopsys.com.%s.%s", resourceName, name)] = version
-		_, err = util.UpdateNamespace(kubeClient, kubeNs)
-		if err != nil {
-			return fmt.Errorf("unable to update the %s namespace due to %+v", namespace, err)
-		}
-		return nil
-	}
-
-	namespaceDeployer, err := deployer.NewDeployer(restConfig)
-	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
-		Name:      namespace,
-		Namespace: namespace,
-	})
-	ns.AddLabels(map[string]string{"owner": "synopsys-operator", fmt.Sprintf("synopsys.com.%s.%s", resourceName, name): version})
-	namespaceDeployer.AddComponent(horizonapi.NamespaceComponent, ns)
-	err = namespaceDeployer.Run()
-	if err != nil {
-		return fmt.Errorf("error in creating the namespace due to %+v", err)
-	}
-	return nil
 }
 
 // DetermineClusterClients returns bool values for which client

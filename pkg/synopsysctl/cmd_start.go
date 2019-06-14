@@ -40,7 +40,7 @@ var startCmd = &cobra.Command{
 
 // startAlertCmd starts an Alert instance
 var startAlertCmd = &cobra.Command{
-	Use:     "alert NAMES",
+	Use:     "alert NAME",
 	Example: "synopsysctl start alert <name>\nsynopsysctl start alert <name> -n <namespace>",
 	Short:   "Start an Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -80,7 +80,7 @@ var startAlertCmd = &cobra.Command{
 
 // startBlackDuckCmd starts a Black Duck instance
 var startBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck NAMESPACE",
+	Use:     "blackduck NAME",
 	Example: "synopsysctl start blackduck <name>\nsynopsysctl start blackduck <name> -n <namespace>",
 	Short:   "Start a Blackduck",
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -120,8 +120,8 @@ var startBlackDuckCmd = &cobra.Command{
 
 // startOpsSightCmd starts an OpsSight instance
 var startOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAMESPACE",
-	Example: "synopsysctl start opssight <name>",
+	Use:     "opssight NAME",
+	Example: "synopsysctl start opssight <name>\nsynopsysctl start opssight <name> -n <namespace>",
 	Short:   "Start an OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -135,7 +135,7 @@ var startOpsSightCmd = &cobra.Command{
 			log.Error(err)
 			return nil
 		}
-		log.Infof("starting OpsSight '%s' instance in '%s' namespace...", opsSightName, opsSightNamespace)
+		log.Infof("starting an OpsSight '%s' instance in '%s' namespace...", opsSightName, opsSightNamespace)
 
 		// Get the OpsSight
 		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
@@ -168,5 +168,6 @@ func init() {
 	startBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to start the resource(s)")
 	startCmd.AddCommand(startBlackDuckCmd)
 
+	startOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to start the resource(s)")
 	startCmd.AddCommand(startOpsSightCmd)
 }
