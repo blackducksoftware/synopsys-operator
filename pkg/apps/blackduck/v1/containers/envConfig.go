@@ -23,12 +23,13 @@ package containers
 
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 func (c *Creater) getHubConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "blackduck-config"}
+	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: util.GetResourceName(c.name, util.BlackDuckName, "config", c.config.IsClusterScoped)}
 }
 
 func (c *Creater) getHubDBConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: "blackduck-db-config"}
+	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: util.GetResourceName(c.name, util.BlackDuckName, "db-config", c.config.IsClusterScoped)}
 }

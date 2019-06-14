@@ -106,3 +106,51 @@ func MergeEnvSlices(source, destination []string) []string {
 	}
 	return mergedValues
 }
+
+// UniqueStringSlice returns a unique subset of the string slice provided.
+func UniqueStringSlice(input []string) []string {
+	output := []string{}
+	m := make(map[string]bool)
+
+	for _, val := range input {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+			output = append(output, val)
+		}
+	}
+
+	return output
+}
+
+// GetResourceName returns the name of the resource based on the cluster scope
+func GetResourceName(name string, appName string, defaultName string, isClusterScope bool) string {
+	if len(appName) == 0 {
+		if !isClusterScope {
+			return fmt.Sprintf("%s-%s", name, defaultName)
+		}
+		return defaultName
+	}
+
+	if len(defaultName) == 0 {
+		if !isClusterScope {
+			return fmt.Sprintf("%s-%s", name, appName)
+		}
+		return appName
+	}
+
+	if !isClusterScope {
+		return fmt.Sprintf("%s-%s-%s", name, appName, defaultName)
+	}
+
+	return fmt.Sprintf("%s-%s", appName, defaultName)
+}
+
+// RemoveFromStringSlice will remove the string from the slice and it will maintain the order
+func RemoveFromStringSlice(slice []string, str string) []string {
+	for index, value := range slice {
+		if value == str {
+			slice = append(slice[:index], slice[index+1:]...)
+		}
+	}
+	return slice
+}

@@ -65,7 +65,7 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 	c.PostEditContainer(zookeeperContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "zookeeper", Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "zookeeper", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getZookeeperVolumes(),
 			Containers:          []*util.Container{zookeeperContainerConfig},
@@ -82,13 +82,13 @@ func (c *Creater) getZookeeperVolumes() []*components.Volume {
 	var zookeeperDatalogVolume *components.Volume
 
 	if c.hubSpec.PersistentStorage {
-		zookeeperDataVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-data", "blackduck-zookeeper-data")
+		zookeeperDataVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-data", util.GetResourceName(c.name, util.BlackDuckName, "zookeeper-data", c.config.IsClusterScoped))
 	} else {
 		zookeeperDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-data")
 	}
 
 	if c.hubSpec.PersistentStorage {
-		zookeeperDatalogVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", "blackduck-zookeeper-datalog")
+		zookeeperDatalogVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", util.GetResourceName(c.name, util.BlackDuckName, "zookeeper-datalog", c.config.IsClusterScoped))
 	} else {
 		zookeeperDatalogVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")
 	}
@@ -108,5 +108,5 @@ func (c *Creater) getZookeeperVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetZookeeperService will return the zookeeper service
 func (c *Creater) GetZookeeperService() *components.Service {
-	return util.CreateService("zookeeper", c.GetLabel("zookeeper"), c.hubSpec.Namespace, zookeeperPort, zookeeperPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("zookeeper"))
+	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "zookeeper", c.config.IsClusterScoped), c.GetLabel("zookeeper"), c.hubSpec.Namespace, zookeeperPort, zookeeperPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("zookeeper"))
 }

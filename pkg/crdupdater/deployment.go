@@ -140,13 +140,14 @@ func (d *Deployment) remove() error {
 
 // deploymentComparator used to compare deployment attributes
 type deploymentComparator struct {
-	Image    string
-	Replicas *int32
-	MinCPU   *resource.Quantity
-	MaxCPU   *resource.Quantity
-	MinMem   *resource.Quantity
-	MaxMem   *resource.Quantity
-	EnvFrom  []corev1.EnvFromSource
+	Image          string
+	Replicas       *int32
+	MinCPU         *resource.Quantity
+	MaxCPU         *resource.Quantity
+	MinMem         *resource.Quantity
+	MaxMem         *resource.Quantity
+	EnvFrom        []corev1.EnvFromSource
+	ServiceAccount string
 }
 
 // patch patches the deployment
@@ -170,22 +171,24 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 			if strings.EqualFold(oldContainer.Name, newContainer.Name) && !d.config.dryRun &&
 				(!reflect.DeepEqual(
 					deploymentComparator{
-						Image:    oldContainer.Image,
-						Replicas: d.oldDeployments[deployment.GetName()].Spec.Replicas,
-						MinCPU:   oldContainer.Resources.Requests.Cpu(),
-						MaxCPU:   oldContainer.Resources.Limits.Cpu(),
-						MinMem:   oldContainer.Resources.Requests.Memory(),
-						MaxMem:   oldContainer.Resources.Limits.Memory(),
-						EnvFrom:  oldContainer.EnvFrom,
+						Image:          oldContainer.Image,
+						Replicas:       d.oldDeployments[deployment.GetName()].Spec.Replicas,
+						MinCPU:         oldContainer.Resources.Requests.Cpu(),
+						MaxCPU:         oldContainer.Resources.Limits.Cpu(),
+						MinMem:         oldContainer.Resources.Requests.Memory(),
+						MaxMem:         oldContainer.Resources.Limits.Memory(),
+						EnvFrom:        oldContainer.EnvFrom,
+						ServiceAccount: d.oldDeployments[deployment.GetName()].Spec.Template.Spec.ServiceAccountName,
 					},
 					deploymentComparator{
-						Image:    newContainer.Image,
-						Replicas: d.newDeployments[deployment.GetName()].Spec.Replicas,
-						MinCPU:   newContainer.Resources.Requests.Cpu(),
-						MaxCPU:   newContainer.Resources.Limits.Cpu(),
-						MinMem:   newContainer.Resources.Requests.Memory(),
-						MaxMem:   newContainer.Resources.Limits.Memory(),
-						EnvFrom:  newContainer.EnvFrom,
+						Image:          newContainer.Image,
+						Replicas:       d.newDeployments[deployment.GetName()].Spec.Replicas,
+						MinCPU:         newContainer.Resources.Requests.Cpu(),
+						MaxCPU:         newContainer.Resources.Limits.Cpu(),
+						MinMem:         newContainer.Resources.Requests.Memory(),
+						MaxMem:         newContainer.Resources.Limits.Memory(),
+						EnvFrom:        newContainer.EnvFrom,
+						ServiceAccount: d.newDeployments[deployment.GetName()].Spec.Template.Spec.ServiceAccountName,
 					}) ||
 					!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) ||
 					!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) ||

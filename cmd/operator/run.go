@@ -24,16 +24,15 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
-
-	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
+	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	bdutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"github.com/sirupsen/logrus"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
+	log "github.com/sirupsen/logrus"
 	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
 )
 
@@ -44,18 +43,8 @@ func main() {
 		fmt.Printf("Config path: %s", configPath)
 		return
 	}
-	fmt.Println("WARNING: Running protoform with defaults, no config file sent.")
+	log.Warn("no config file sent. running operator with environment variable and default settings")
 	runProtoform("")
-}
-
-func kill(stopCh chan struct{}) {
-	// TODO: no idea why this doesnt actually cause the program to exit.  must be another
-	// channel open somewhere....
-	go func() {
-		stopCh <- struct{}{}
-	}()
-	// hard exit b/c of the above comment ^
-	os.Exit(0)
 }
 
 // runProtoform will add CRD controllers to the Protoform Deployer which
@@ -68,44 +57,29 @@ func runProtoform(configPath string) {
 	}
 
 	// Log Kubernetes version
-	kversion, err := bdutil.GetKubernetesVersion(deployer.KubeClientSet)
+	kversion, err := util.GetKubernetesVersion(deployer.KubeClientSet)
 	if err == nil {
-		logrus.Infof("Kubernetes: %s", kversion)
+		log.Infof("Kubernetes: %s", kversion)
 	}
 
 	// Log Openshift version
-	oversion, err := bdutil.GetOcVersion(deployer.KubeClientSet)
+	oversion, err := util.GetOcVersion(deployer.KubeClientSet)
 	if err == nil {
-		logrus.Infof("Openshift: %s", oversion)
+		log.Infof("Openshift: %s", oversion)
 	}
 
 	stopCh := make(chan struct{})
 
-	//sampleController := sample.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetSampleDefaultValue(), stopCh)
-	//deployer.AddController(sampleController)
-
-	alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetAlertTemplate(), stopCh)
-	deployer.AddController(alertController)
-
-	hubController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, bdutil.GetBlackDuckTemplate(), stopCh)
-	deployer.AddController(hubController)
-
-	opssSightController, err := opssight.NewCRDInstaller(&opssight.Config{
-		Config:        deployer.Config,
-		KubeConfig:    deployer.KubeConfig,
-		KubeClientSet: deployer.KubeClientSet,
-		Defaults:      bdutil.GetOpsSightDefault(),
-		Threadiness:   deployer.Config.Threadiness,
-		StopCh:        stopCh,
-	})
-	if err != nil {
-		panic(err)
-	}
-	deployer.AddController(opssSightController)
-
-	logrus.Info("Starting deployer.  All controllers have been added to Protoform.")
-	if err = deployer.Deploy(); err != nil {
-		logrus.Errorf("ran into errors during deployment, but continuing anyway: %s", err.Error())
+	// get the list of crds from an environment variable
+	if len(deployer.Config.CrdNames) > 0 {
+		crds := strings.Split(deployer.Config.CrdNames, ",")
+		for _, crd := range crds {
+			// start the CRD controller
+			startController(deployer, strings.TrimSpace(crd), stopCh)
+		}
+	} else {
+		log.Errorf("unable to start any CRD controllers. Please set the CrdNames environment variable to start any CRD controllers...")
+		os.Exit(1)
 	}
 
 	if deployer.Config.AdmissionWebhookListener {
@@ -116,18 +90,38 @@ func runProtoform(configPath string) {
 
 	// Start the prometheus endpoint
 	protoform.SetupHTTPServer()
-
-	if deployer.Config.OperatorTimeBombInSeconds > 0 {
-		go func() {
-			timeout := time.Duration(deployer.Config.OperatorTimeBombInSeconds) * time.Second
-			logrus.Warnf("Self timeout is enabled to %v seconds", timeout)
-			time.Sleep(timeout)
-
-			// trip the stop channel after done sleeping.  wait 20 seconds for debuggability.
-			logrus.Warn("Timeout tripped.  Exiting In 20 seconds !")
-			time.Sleep(time.Duration(20) * time.Second)
-			kill(stopCh)
-		}()
-	}
 	<-stopCh
+}
+
+// startController will start the CRD controller
+func startController(deployer *protoform.Deployer, name string, stopCh chan struct{}) {
+	// Add controllers to the Operator
+	switch strings.ToLower(name) {
+	case util.BlackDuckCRDName:
+		blackduckController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetBlackDuckTemplate(), stopCh)
+		deployer.AddController(blackduckController)
+	case util.AlertCRDName:
+		alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetAlertTemplate(), stopCh)
+		deployer.AddController(alertController)
+	case util.OpsSightCRDName:
+		opsSightController := opssight.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetOpsSightDefault(), stopCh)
+		deployer.AddController(opsSightController)
+	default:
+		log.Warnf("unable to start the %s custom resource definition controller due to invalid custom resource definition name", name)
+	}
+	if err := deployer.Deploy(); err != nil {
+		log.Errorf("unable to deploy the CRD controllers due to  %+v", err)
+		os.Exit(1)
+	}
+	log.Infof("started %s crd controller", name)
+}
+
+func kill(stopCh chan struct{}) {
+	// TODO: no idea why this doesnt actually cause the program to exit.  must be another
+	// channel open somewhere....
+	go func() {
+		stopCh <- struct{}{}
+	}()
+	// hard exit b/c of the above comment ^
+	os.Exit(0)
 }

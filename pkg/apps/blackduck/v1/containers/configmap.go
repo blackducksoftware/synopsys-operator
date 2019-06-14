@@ -22,6 +22,7 @@ under the License.
 package containers
 
 import (
+	"fmt"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -34,11 +35,39 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 
 	var configMaps []*components.ConfigMap
 
-	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: "blackduck-config"})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "config", c.config.IsClusterScoped)})
+
 	hubData := map[string]string{
 		"RUN_SECRETS_DIR": "/tmp/secrets",
 		"HUB_VERSION":     c.hubSpec.Version,
 	}
+
+	blackduckServiceData := map[string]string{
+		// TODO: commented the below 2 environs until the HUB-20412 is fixed. once it if fixed, uncomment them
+		// "HUB_AUTHENTICATION_HOST": util.GetResourceName(c.name, "authentication", c.config.IsClusterScoped),
+		// "AUTHENTICATION_HOST":     util.GetResourceName(c.name, "authentication", c.config.IsClusterScoped),
+		"CLIENT_CERT_CN":        util.GetResourceName(c.name, util.BlackDuckName, "binaryscanner", c.config.IsClusterScoped),
+		"CFSSL":                 fmt.Sprintf("%s:8888", util.GetResourceName(c.name, util.BlackDuckName, "cfssl", c.config.IsClusterScoped)),
+		"HUB_CFSSL_HOST":        util.GetResourceName(c.name, util.BlackDuckName, "cfssl", c.config.IsClusterScoped),
+		"BLACKDUCK_CFSSL_HOST":  util.GetResourceName(c.name, util.BlackDuckName, "cfssl", c.config.IsClusterScoped),
+		"BLACKDUCK_CFSSL_PORT":  "8888",
+		"HUB_DOC_HOST":          util.GetResourceName(c.name, util.BlackDuckName, "documentation", c.config.IsClusterScoped),
+		"HUB_JOBRUNNER_HOST":    util.GetResourceName(c.name, util.BlackDuckName, "jobrunner", c.config.IsClusterScoped),
+		"HUB_LOGSTASH_HOST":     util.GetResourceName(c.name, util.BlackDuckName, "logstash", c.config.IsClusterScoped),
+		"RABBIT_MQ_HOST":        util.GetResourceName(c.name, util.BlackDuckName, "rabbitmq", c.config.IsClusterScoped),
+		"BROKER_URL":            fmt.Sprintf("amqps://%s/protecodesc", util.GetResourceName(c.name, util.BlackDuckName, "rabbitmq", c.config.IsClusterScoped)),
+		"HUB_REGISTRATION_HOST": util.GetResourceName(c.name, util.BlackDuckName, "registration", c.config.IsClusterScoped),
+		"HUB_SCAN_HOST":         util.GetResourceName(c.name, util.BlackDuckName, "scan", c.config.IsClusterScoped),
+		"HUB_SOLR_HOST":         util.GetResourceName(c.name, util.BlackDuckName, "solr", c.config.IsClusterScoped),
+		// TODO: commented the below 2 environs until the HUB-20412 is fixed. once it if fixed, uncomment them
+		// "BLACKDUCK_UPLOAD_CACHE_HOST": util.GetResourceName(c.name, "uploadcache", c.config.IsClusterScoped),
+		// "HUB_UPLOAD_CACHE_HOST":       util.GetResourceName(c.name, "uploadcache", c.config.IsClusterScoped),
+		// TODO: commented the below environs until the HUB-20462 is fixed. once it if fixed, uncomment them
+		// "HUB_WEBAPP_HOST":    util.GetResourceName(c.name, "webapp", c.config.IsClusterScoped),
+		"HUB_WEBSERVER_HOST": util.GetResourceName(c.name, util.BlackDuckName, "webserver", c.config.IsClusterScoped),
+		"HUB_ZOOKEEPER_HOST": util.GetResourceName(c.name, util.BlackDuckName, "zookeeper", c.config.IsClusterScoped),
+	}
+	hubData = util.MergeEnvMaps(blackduckServiceData, hubData)
 
 	for _, value := range c.hubSpec.Environs {
 		values := strings.SplitN(value, ":", 2)

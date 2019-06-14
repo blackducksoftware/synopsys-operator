@@ -177,10 +177,6 @@ func TestSetChangedFlags(t *testing.T) {
 	actualCtl.SetChangedFlags(cmd.Flags())
 
 	expCtl := NewBlackDuckCtl()
-	expCtl.Spec.Environs = []string{
-		"USE_BINARY_UPLOADS:0",
-		"ENABLE_SOURCE_UPLOADS:0",
-	}
 	sort.Strings(expCtl.Spec.Environs)
 	sort.Strings(actualCtl.Spec.Environs)
 
@@ -566,15 +562,6 @@ func TestSetFlag(t *testing.T) {
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{LicenseKey: "changed"},
 		},
-		// case : set binary analysis to disabled by default
-		{
-			flagName:   "enable-binary-analysis",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec: &blackduckv1.BlackduckSpec{Environs: []string{}},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
-		},
 		// case : set binary analysis to enabled
 		{
 			flagName:   "enable-binary-analysis",
@@ -595,34 +582,25 @@ func TestSetFlag(t *testing.T) {
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
 		},
-		// case : set source code upload to disabled by default
-		{
-			flagName:   "enable-source-code-upload",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec: &blackduckv1.BlackduckSpec{Environs: []string{}},
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:0"}},
-		},
 		// case : set source code upload to enabled
 		{
 			flagName:   "enable-source-code-upload",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                   &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:0"}},
+				Spec:                   &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
 				EnableSourceCodeUpload: true,
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:1"}},
+			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
 		},
 		// case : set source code upload to disabled
 		{
 			flagName:   "enable-source-code-upload",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                   &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:1"}},
+				Spec:                   &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
 				EnableSourceCodeUpload: false,
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:0"}},
+			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
 		},
 	}
 

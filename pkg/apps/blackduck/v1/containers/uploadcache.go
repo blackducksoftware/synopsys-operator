@@ -35,7 +35,9 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.UploadCacheMemoryLimit, MaxMem: c.hubContainerFlavor.UploadCacheMemoryLimit,
 			MinCPU: "", MaxCPU: ""},
-		EnvConfigs:   []*horizonapi.EnvConfig{c.getHubConfigEnv()},
+		EnvConfigs: []*horizonapi.EnvConfig{
+			c.getHubConfigEnv(),
+		},
 		VolumeMounts: volumeMounts,
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: uploadCachePort1, Protocol: horizonapi.ProtocolTCP},
 			{ContainerPort: uploadCachePort2, Protocol: horizonapi.ProtocolTCP}},
@@ -66,7 +68,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 	c.PostEditContainer(uploadCacheContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "uploadcache", Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "uploadcache", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getUploadCacheVolumes(),
 			Containers:          []*util.Container{uploadCacheContainerConfig},
@@ -82,7 +84,7 @@ func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
 	var uploadCacheDataEmptyDir *components.Volume
 	if c.hubSpec.PersistentStorage {
-		uploadCacheDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", "blackduck-uploadcache")
+		uploadCacheDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.name, util.BlackDuckName, "uploadcache", c.config.IsClusterScoped))
 	} else {
 		uploadCacheDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
 	}
@@ -101,6 +103,7 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetUploadCacheService will return the uploadCache service
 func (c *Creater) GetUploadCacheService() *components.Service {
+	// TODO: remove GetResourceName method until the HUB-20412 is fixed. once it if fixed, add them back
 	return util.CreateServiceWithMultiplePort("uploadcache", c.GetLabel("uploadcache"), c.hubSpec.Namespace, []int32{uploadCachePort1, uploadCachePort2},
 		horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("uploadcache"))
 }

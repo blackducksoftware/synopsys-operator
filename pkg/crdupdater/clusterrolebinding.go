@@ -128,10 +128,33 @@ func (c *ClusterRoleBinding) delete(name string) error {
 func (c *ClusterRoleBinding) remove() error {
 	// compare the old and new cluster role binding and delete if needed
 	for _, oldClusterRoleBinding := range c.oldClusterRoleBindings {
-		if _, ok := c.newClusterRoleBindings[oldClusterRoleBinding.GetName()]; !ok {
-			err := c.delete(oldClusterRoleBinding.GetName())
-			if err != nil {
-				return errors.Annotatef(err, "unable to delete cluster role binding %s in namespace %s", oldClusterRoleBinding.GetName(), c.config.namespace)
+		clusterRoleBindingName := oldClusterRoleBinding.GetName()
+		if _, ok := c.newClusterRoleBindings[clusterRoleBindingName]; !ok {
+			// check whether any subject present for other namespace before deleting them
+			newSubjects := []rbacv1.Subject{}
+			for _, subject := range oldClusterRoleBinding.Subjects {
+				isExist := util.IsSubjectExistForOtherNamespace(subject, c.config.namespace)
+				if isExist {
+					newSubjects = append(newSubjects, subject)
+				}
+			}
+			if len(newSubjects) > 0 {
+				getCrb, err := c.get(clusterRoleBindingName)
+				if err != nil {
+					return errors.Annotatef(err, "unable to get the cluster role binding %s for namespace %s", clusterRoleBindingName, c.config.namespace)
+				}
+				oldLatestClusterRoleBinding := getCrb.(*rbacv1.ClusterRoleBinding)
+				oldLatestClusterRoleBinding.Subjects = newSubjects
+				// update the cluster role binding to remove the old cluster role binding subject
+				_, err = util.UpdateClusterRoleBinding(c.config.kubeClient, oldLatestClusterRoleBinding)
+				if err != nil {
+					return errors.Annotate(err, fmt.Sprintf("failed to update %s cluster role binding for namespace %s", clusterRoleBindingName, c.config.namespace))
+				}
+			} else {
+				err := c.delete(clusterRoleBindingName)
+				if err != nil {
+					return errors.Annotatef(err, "unable to delete cluster role binding %s in namespace %s", clusterRoleBindingName, c.config.namespace)
+				}
 			}
 		}
 	}
@@ -151,7 +174,7 @@ func (c *ClusterRoleBinding) patch(crb interface{}, isPatched bool) (bool, error
 	}
 	// check for subject changes
 	for _, subject := range newClusterRoleBinding.Subjects {
-		if !util.IsClusterRoleBindingSubjectExist(oldclusterRoleBinding.Subjects, subject.Namespace, subject.Name) {
+		if !util.IsSubjectExist(oldclusterRoleBinding.Subjects, subject.Namespace, subject.Name) {
 			oldclusterRoleBinding.Subjects = append(oldclusterRoleBinding.Subjects, rbacv1.Subject{Name: subject.Name, Namespace: subject.Namespace, Kind: "ServiceAccount"})
 			isChanged = true
 		}
@@ -167,7 +190,7 @@ func (c *ClusterRoleBinding) patch(crb interface{}, isPatched bool) (bool, error
 		oldLatestClusterRoleBinding.Subjects = oldclusterRoleBinding.Subjects
 		_, err = util.UpdateClusterRoleBinding(c.config.kubeClient, oldLatestClusterRoleBinding)
 		if err != nil {
-			return false, errors.Annotate(err, fmt.Sprintf("failed to update %s cluster role binding for namespace %s", clusterRoleBinding.GetName(), c.config.namespace))
+			return false, errors.Annotate(err, fmt.Sprintf("failed to update %s cluster role binding for namespace %s", clusterRoleBindingName, c.config.namespace))
 		}
 	}
 	return false, nil

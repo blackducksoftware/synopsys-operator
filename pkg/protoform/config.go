@@ -23,7 +23,6 @@ package protoform
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -42,15 +41,14 @@ type Config struct {
 	ResyncIntervalInSeconds       int64
 	TerminationGracePeriodSeconds int64
 	AdmissionWebhookListener      bool
-	// Not recommended production, just for testing, QA, resiliency, and CI/CD.
-	OperatorTimeBombInSeconds int64
+	CrdNames                      string
+	IsClusterScoped               bool
 }
 
 // SelfSetDefaults ...
 func (config *Config) SelfSetDefaults() {
 	config.HubFederatorConfig = &HubFederatorConfig{}
 	config.HubFederatorConfig.HubConfig = &HubConfig{}
-	config.OperatorTimeBombInSeconds = math.MaxInt64
 }
 
 // HubFederatorConfig will have the configuration related to hub federator
@@ -99,8 +97,9 @@ func GetConfig(configPath string) (*Config, error) {
 		viper.BindEnv("PodWaitTimeoutSeconds")
 		viper.BindEnv("ResyncIntervalInSeconds")
 		viper.BindEnv("TerminationGracePeriodSeconds")
-		viper.BindEnv("OperatorTimeBombInSeconds")
 		viper.BindEnv("AdmissionWebhookListener")
+		viper.BindEnv("CrdNames")
+		viper.BindEnv("IsClusterScoped")
 		viper.AutomaticEnv()
 	}
 

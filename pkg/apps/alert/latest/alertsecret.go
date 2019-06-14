@@ -26,6 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetAlertSecret creates a Secret Horizon component for the Alert
@@ -42,17 +43,16 @@ func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
 
 	// create a secret
 	alertSecret := components.NewSecret(horizonapi.SecretConfig{
-		APIVersion: "v1",
-		Name:       "alert-secret",
-		Namespace:  a.config.Namespace,
-		Type:       horizonapi.SecretTypeOpaque,
+		Name:      util.GetResourceName(a.name, util.AlertName, "secret", a.isClusterScope),
+		Namespace: a.config.Namespace,
+		Type:      horizonapi.SecretTypeOpaque,
 	})
 	alertSecret.AddData(map[string][]byte{
 		"ALERT_ENCRYPTION_PASSWORD":    []byte(a.config.EncryptionPassword),
 		"ALERT_ENCRYPTION_GLOBAL_SALT": []byte(a.config.EncryptionGlobalSalt),
 	})
 
-	alertSecret.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+	alertSecret.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 	return alertSecret, nil
 
 }

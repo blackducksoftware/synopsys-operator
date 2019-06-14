@@ -20,14 +20,15 @@ package blackduck
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // InitDatabase will init the database
-func InitDatabase(createHub *v1.BlackduckSpec, adminPassword string, userPassword string, postgresPassword string) error {
-	hostName := fmt.Sprintf("postgres.%s.svc.cluster.local", createHub.Namespace)
+func InitDatabase(name string, createHub *blackduckapi.BlackduckSpec, isClusterScope bool, adminPassword string, userPassword string, postgresPassword string) error {
+	hostName := fmt.Sprintf("%s.%s.svc.cluster.local", util.GetResourceName(name, util.BlackDuckName, "postgres", isClusterScope), createHub.Namespace)
 	// postgres database
 	err := database.ExecDBStatements(hostName, "postgres", "postgres", postgresPassword, "postgres", []string{
 		fmt.Sprintf("ALTER USER blackduck WITH password '%s';", adminPassword),

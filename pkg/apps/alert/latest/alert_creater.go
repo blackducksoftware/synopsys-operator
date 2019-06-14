@@ -30,6 +30,7 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -37,21 +38,22 @@ import (
 
 // Creater stores the configuration and clients to create specific versions of Alerts
 type Creater struct {
-	Config      *protoform.Config
-	KubeConfig  *rest.Config
-	KubeClient  *kubernetes.Clientset
-	AlertClient *alertclientset.Clientset
-	RouteClient *routeclient.RouteV1Client
+	config      *protoform.Config
+	kubeConfig  *rest.Config
+	kubeClient  *kubernetes.Clientset
+	alertClient *alertclientset.Clientset
+	routeClient *routeclient.RouteV1Client
 }
 
 // NewCreater returns this Alert Creater
-func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{Config: config, KubeConfig: kubeConfig, KubeClient: kubeClient, AlertClient: alertClient, RouteClient: routeClient}
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset,
+	routeClient *routeclient.RouteV1Client) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient}
 }
 
 // GetComponents returns the resource components for an Alert
 func (ac *Creater) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
-	specConfig := NewSpecConfig(&alert.Spec)
+	specConfig := NewSpecConfig(alert.Name, &alert.Spec, ac.config.IsClusterScoped)
 	return specConfig.GetComponents()
 }
 
@@ -63,21 +65,21 @@ func (ac *Creater) Versions() []string {
 // Ensure is an Interface function that will make sure the instance is correctly deployed or deploy it if needed
 func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	// Get Kubernetes Components for the Alert
-	specConfig := NewSpecConfig(&alert.Spec)
+	specConfig := NewSpecConfig(alert.Name, &alert.Spec, ac.config.IsClusterScoped)
 	cpList, err := specConfig.GetComponents()
 	if err != nil {
 		return err
 	}
 	if strings.EqualFold(alert.Spec.DesiredState, "STOP") {
-		commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, false, alert.Spec.Namespace,
-			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, "app=alert")
+		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace,
+			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("unable to stop Alert: %+v", errors)
 		}
 	} else {
 		// Update components in cluster
-		commonConfig := crdupdater.NewCRUDComponents(ac.KubeConfig, ac.KubeClient, ac.Config.DryRun, false, alert.Spec.Namespace, cpList, "app=alert")
+		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, cpList, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("unable to update Alert components due to %+v", errors)

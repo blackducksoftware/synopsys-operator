@@ -74,7 +74,7 @@ func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubC
 // Run watches for Black Duck and OpsSight events and update the internal Black Duck hosts in Perceptor secret and
 // then patch the corresponding replication controller
 func (p *Updater) Run(ch <-chan struct{}) {
-	logger.Infof("Starting controller for hub<->perceptor updates... this blocks, so running in a go func.")
+	logger.Infof("Starting controller for blackduck<->opssight-core updates... this blocks, so running in a go func.")
 
 	syncFunc := func() {
 		err := p.updateAllHubs()
@@ -221,7 +221,14 @@ func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssig
 			default:
 				concurrentScanLimit = 2
 			}
-			host := &opssightapi.Host{Domain: fmt.Sprintf("webserver.%s.svc", hub.Name), ConcurrentScanLimit: concurrentScanLimit, Scheme: "https", User: "sysadmin", Port: 443, Password: blackduckPassword}
+			host := &opssightapi.Host{
+				Domain:              fmt.Sprintf("%s.%s.svc", util.GetResourceName(hub.Name, util.BlackDuckName, "webserver", p.config.IsClusterScoped), hub.Namespace),
+				ConcurrentScanLimit: concurrentScanLimit,
+				Scheme:              "https",
+				User:                "sysadmin",
+				Port:                443,
+				Password:            blackduckPassword,
+			}
 			hosts = append(hosts, host)
 		}
 	}

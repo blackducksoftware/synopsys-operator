@@ -71,7 +71,7 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 	c.PostEditContainer(registrationContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "registration", Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "registration", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getRegistrationVolumes(),
 			Containers:          []*util.Container{registrationContainerConfig},
@@ -88,7 +88,7 @@ func (c *Creater) getRegistrationVolumes() []*components.Volume {
 	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
 
 	if c.hubSpec.PersistentStorage {
-		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", "blackduck-registration")
+		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", util.GetResourceName(c.name, util.BlackDuckName, "registration", c.config.IsClusterScoped))
 	} else {
 		registrationVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")
 	}
@@ -112,7 +112,7 @@ func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig 
 	// Mount the HTTPS proxy certificate if provided
 	if len(c.hubSpec.ProxyCertificate) > 0 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
-			Name:      "blackduck-proxy-certificate",
+			Name:      "proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
 			SubPath:   "HUB_PROXY_CERT_FILE",
 		})
@@ -123,5 +123,5 @@ func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig 
 
 // GetRegistrationService will return the registration service
 func (c *Creater) GetRegistrationService() *components.Service {
-	return util.CreateService("registration", c.GetLabel("registration"), c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("registration"))
+	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "registration", c.config.IsClusterScoped), c.GetLabel("registration"), c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("registration"))
 }

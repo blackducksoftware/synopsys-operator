@@ -24,14 +24,15 @@ package alert
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	latestalert "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -82,7 +83,7 @@ func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
 
 // getCreater loops through each Creater and returns the one
 // that supports the specified version
-func (a Alert) getCreater(version string) (Creater, error) {
+func (a *Alert) getCreater(version string) (Creater, error) {
 	for _, c := range a.creaters {
 		for _, v := range c.Versions() {
 			if strings.Compare(v, version) == 0 {
@@ -94,7 +95,7 @@ func (a Alert) getCreater(version string) (Creater, error) {
 }
 
 // Versions returns the versions that the operator supports for Alert
-func (a Alert) Versions() []string {
+func (a *Alert) Versions() []string {
 	var versions []string
 	// Get versions that each Creater supports
 	for _, c := range a.creaters {
@@ -107,7 +108,7 @@ func (a Alert) Versions() []string {
 
 // Ensure will get the necessary Creater and make sure the instance
 // is correctly deployed or deploy it if needed
-func (a Alert) Ensure(alt *alertapi.Alert) error {
+func (a *Alert) Ensure(alt *alertapi.Alert) error {
 	creater, err := a.getCreater(alt.Spec.Version) // get Creater for the Alert Version
 	if err != nil {
 		return err
@@ -117,33 +118,46 @@ func (a Alert) Ensure(alt *alertapi.Alert) error {
 }
 
 // Delete will delete the Alert from the cluster (all Alerts are deleted the same way)
-func (a *Alert) Delete(namespace string) error {
-	log.Debugf("Delete Alert details for %s", namespace)
-	var err error
-	// Verify whether the namespace exist
-	_, err = util.GetNamespace(a.kubeClient, namespace)
-	if err != nil {
-		return fmt.Errorf("unable to find the namespace %+v due to %+v", namespace, err)
-	}
-	// Delete the namespace
-	err = util.DeleteNamespace(a.kubeClient, namespace)
-	if err != nil {
-		return fmt.Errorf("unable to delete the namespace %+v due to %+v", namespace, err)
-	}
-	// Verify whether the namespace deleted
-	var attempts = 30
-	var retryWait time.Duration = 10
-	for i := 0; i <= attempts; i++ {
-		_, err := util.GetNamespace(a.kubeClient, namespace)
+func (a *Alert) Delete(name string) error {
+	log.Debugf("deleting %s Alert instance", name)
+	values := strings.SplitN(name, "/", 2)
+	var namespace string
+	if len(values) == 0 {
+		return fmt.Errorf("invalid name to delete the Alert instance")
+	} else if len(values) == 1 {
+		name = values[0]
+		namespace = values[0]
+		ns, err := util.ListNamespaces(a.kubeClient, fmt.Sprintf("synopsys.com.%s.%s", util.AlertName, name))
 		if err != nil {
-			log.Infof("Deleted the namespace %+v", namespace)
-			break
+			log.Errorf("unable to list %s Alert instance namespaces %s due to %+v", name, namespace, err)
 		}
-		if i >= 10 {
-			return fmt.Errorf("unable to delete the namespace %+v after %f minutes", namespace, float64(attempts)*retryWait.Seconds()/60)
+		if len(ns.Items) > 0 {
+			namespace = ns.Items[0].Name
+		} else {
+			log.Errorf("unable to find %s Alert instance namespace", name)
+			return fmt.Errorf("unable to find %s Alert instance namespace", name)
 		}
-		time.Sleep(retryWait * time.Second)
+	} else {
+		name = values[1]
+		namespace = values[0]
 	}
+
+	// delete an Alert instance
+	commonConfig := crdupdater.NewCRUDComponents(a.kubeConfig, a.kubeClient, a.config.DryRun, false, namespace,
+		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.AlertName, name), false)
+	_, crudErrors := commonConfig.CRUDComponents()
+	if len(crudErrors) > 0 {
+		return fmt.Errorf("unable to delete the %s Alert instance in %s namespace due to %+v", name, namespace, crudErrors)
+	}
+
+	if a.config.IsClusterScoped {
+		err := util.DeleteResourceNamespace(a.kubeConfig, a.kubeClient, a.config.CrdNames, namespace, false)
+
+		if err != nil {
+			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
+		}
+	}
+
 	return nil
 }
 

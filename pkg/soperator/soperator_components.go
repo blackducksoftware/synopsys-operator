@@ -38,7 +38,6 @@ type SpecConfig struct {
 	Image                         string
 	Expose                        string
 	ClusterType                   ClusterType
-	OperatorTimeBombInSeconds     int64
 	DryRun                        bool
 	LogLevel                      string
 	Threadiness                   int
@@ -47,21 +46,24 @@ type SpecConfig struct {
 	ResyncIntervalInSeconds       int64
 	TerminationGracePeriodSeconds int64
 	SealKey                       string
+	RestConfig                    *rest.Config
+	KubeClient                    *kubernetes.Clientset
 	Certificate                   string
 	CertificateKey                string
+	IsClusterScoped               bool
+	Crds                          []string
 	AdmissionWebhookListener      bool
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, operatorTimeBombInSeconds int64, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
+func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
 	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
-	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, admissionWebhookListener bool) *SpecConfig {
+	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, isClusterScoped bool, crds []string, admissionWebhookListener bool) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,
 		Expose:                        expose,
 		ClusterType:                   clusterType,
-		OperatorTimeBombInSeconds:     operatorTimeBombInSeconds,
 		DryRun:                        dryRun,
 		LogLevel:                      logLevel,
 		Threadiness:                   threadiness,
@@ -72,6 +74,8 @@ func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType C
 		SealKey:                       sealKey,
 		Certificate:                   certificate,
 		CertificateKey:                certificateKey,
+		IsClusterScoped:               isClusterScoped,
+		Crds:                          crds,
 		AdmissionWebhookListener:      admissionWebhookListener,
 	}
 }
@@ -98,22 +102,20 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, errors.Trace(err)
 	}
 	components := &api.ComponentList{
-		Deployments: []*components.Deployment{deployment},
-		Services:    specConfig.GetOperatorService(),
-		ConfigMaps:  []*components.ConfigMap{configMap},
-		ServiceAccounts: []*components.ServiceAccount{
-			specConfig.GetOperatorServiceAccount(),
-		},
-		ClusterRoleBindings: []*components.ClusterRoleBinding{
-			specConfig.GetOperatorClusterRoleBinding(),
-		},
-		ClusterRoles: []*components.ClusterRole{
-			specConfig.GetOperatorClusterRole(),
-		},
-		Secrets: []*components.Secret{
-			specConfig.GetOperatorSecret(),
-			specConfig.GetTLSCertificateSecret(),
-		},
+		CustomResourceDefinitions: specConfig.GetCrds(),
+		Deployments:               []*components.Deployment{deployment},
+		Services:                  specConfig.GetOperatorService(),
+		ConfigMaps:                []*components.ConfigMap{configMap},
+		ServiceAccounts:           []*components.ServiceAccount{specConfig.GetOperatorServiceAccount()},
+		Secrets:                   []*components.Secret{specConfig.GetOperatorSecret(), specConfig.GetTLSCertificateSecret()},
+	}
+
+	if specConfig.IsClusterScoped {
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, specConfig.GetOperatorClusterRoleBinding())
+		components.ClusterRoles = append(components.ClusterRoles, specConfig.GetOperatorClusterRole())
+	} else {
+		components.RoleBindings = append(components.RoleBindings, specConfig.GetOperatorRoleBinding())
+		components.Roles = append(components.Roles, specConfig.GetOperatorRole())
 	}
 
 	// Add routes for OpenShift

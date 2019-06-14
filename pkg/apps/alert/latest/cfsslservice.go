@@ -24,12 +24,13 @@ package alert
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // getCfsslService returns a new Service for a Cffsl
 func (a *SpecConfig) getCfsslService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      "cfssl",
+		Name:      util.GetResourceName(a.name, util.AlertName, "cfssl", a.isClusterScope),
 		Namespace: a.config.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
@@ -41,7 +42,7 @@ func (a *SpecConfig) getCfsslService() *components.Service {
 		Name:       "8888-tcp",
 	})
 
-	service.AddSelectors(map[string]string{"app": "alert", "component": "cfssl"})
-	service.AddLabels(map[string]string{"app": "alert", "component": "cfssl"})
+	service.AddSelectors(map[string]string{"app": util.AlertName, "name": a.name, "component": "cfssl"})
+	service.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "cfssl"})
 	return service
 }

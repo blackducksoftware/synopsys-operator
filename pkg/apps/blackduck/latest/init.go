@@ -36,7 +36,7 @@ import (
 
 func (hc *Creater) init(deployer *horizon.Deployer, bdspec *v1.BlackduckSpec, hubContainerFlavor *containers.ContainerFlavor) error {
 	// Create a namespaces
-	_, err := util.GetNamespace(hc.KubeClient, bdspec.Namespace)
+	_, err := util.GetNamespace(hc.kubeClient, bdspec.Namespace)
 	if err != nil {
 		log.Debugf("unable to find the namespace %s", bdspec.Namespace)
 		deployer.AddComponent(horizonapi.NamespaceComponent, components.NewNamespace(horizonapi.NamespaceConfig{Name: bdspec.Namespace}))

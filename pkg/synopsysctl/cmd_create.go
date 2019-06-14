@@ -30,6 +30,7 @@ import (
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,10 +59,12 @@ var createCmd = &cobra.Command{
 	},
 }
 
-// createAlertCmd represents the create command for Alert
+var namespace string
+
+// createCmd represents the create command for Alert
 var createAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE",
-	Example: "synopsysctl create alert altnamespace\nsynopsysctl create alt altnamespace --mock json",
+	Use:     "alert NAME",
+	Example: "synopsysctl create alert name\nsynopsysctl create alert name -n <namespace>\nsynopsysctl create alert <name> --mock json\nsynopsysctl create alert <name> -n <namespace> --mock json",
 	Short:   "Create an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
@@ -85,8 +88,13 @@ var createAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertNamespace := args[0]
-		log.Infof("creating Alert %s instance...", alertNamespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, "", namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+
+		log.Infof("creating Alert '%s' instance in '%s' namespace...", alertName, alertNamespace)
 
 		// Update Spec with user's flags
 		log.Debugf("updating Spec with User's Flags")
@@ -99,7 +107,7 @@ var createAlertCmd = &cobra.Command{
 		// Create and Deploy Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      alertNamespace,
+				Name:      alertName,
 				Namespace: alertNamespace,
 			},
 			Spec: alertSpec,
@@ -119,19 +127,20 @@ var createAlertCmd = &cobra.Command{
 				log.Errorf("%s", err)
 			}
 		} else {
-			// Create namespace for Alert
-			err := DeployCRDNamespace(restconfig, alertNamespace)
+			// Create namespace for an Alert instance
+			err := DeployCRDNamespace(restconfig, kubeClient, util.AlertName, alertNamespace, alertName, alertSpec.Version)
+
 			if err != nil {
-				log.Errorf("%s", err)
+				log.Warn(err)
 			}
 			// Create Alert with Client
-			log.Debugf("deploying Alert in namespace %s", alertNamespace)
+			log.Debugf("deploying Alert '%s' instance in '%s' namespace", alertName, alertNamespace)
 			_, err = alertClient.SynopsysV1().Alerts(alertNamespace).Create(alert)
 			if err != nil {
-				log.Errorf("error creating the %s Alert instance due to %+v", alertNamespace, err)
+				log.Errorf("error creating the Alert %s instance in %s namespace due to %+v", alertName, alertNamespace, err)
 				return nil
 			}
-			log.Infof("successfully created Alert '%s' instance", alertNamespace)
+			log.Infof("successfully created Alert '%s' instance in '%s namespace", alertName, alertNamespace)
 		}
 		return nil
 	},
@@ -139,8 +148,8 @@ var createAlertCmd = &cobra.Command{
 
 // createBlackDuckCmd represents the create command for Black Duck
 var createBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck NAMESPACE",
-	Example: "synopsysctl create blackduck bdnamespace\nsynopsysctl create blackduck bdnamespace --mock json",
+	Use:     "blackduck NAME",
+	Example: "synopsysctl create blackduck <name>\nsynopsysctl create blackduck <name> -n <namespace>\nsynopsysctl create blackduck name --mock json\nsynopsysctl create blackduck name -n <namespace> --mock json",
 	Short:   "Create an instance of a Black Duck",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
@@ -165,8 +174,23 @@ var createBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckNamespace := args[0]
-		log.Infof("creating Black Duck %s instance...", blackDuckNamespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, "", namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+		log.Infof("creating Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
+
+		blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
+		if err != nil {
+			log.Errorf("unable to list Black Duck instances in %s namespace due to %+v", blackDuckNamespace, err)
+			return nil
+		}
+
+		if len(blackducks.Items) > 0 {
+			log.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+			return nil
+		}
 
 		// Update Spec with user's flags
 		log.Debugf("updating Spec with User's Flags")
@@ -179,7 +203,7 @@ var createBlackDuckCmd = &cobra.Command{
 		// Create and Deploy Black Duck CRD
 		blackDuck := &blackduckv1.Blackduck{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      blackDuckNamespace,
+				Name:      blackDuckName,
 				Namespace: blackDuckNamespace,
 			},
 			Spec: blackDuckSpec,
@@ -199,19 +223,21 @@ var createBlackDuckCmd = &cobra.Command{
 				log.Errorf("%s", err)
 			}
 		} else {
-			// Create namespace for Black Duck
-			err := DeployCRDNamespace(restconfig, blackDuckNamespace)
+			// Create namespace for the Black Duck instance
+			err := DeployCRDNamespace(restconfig, kubeClient, util.BlackDuckName, blackDuckNamespace, blackDuckName, blackDuckSpec.Version)
+
 			if err != nil {
-				log.Errorf("%s", err)
+				log.Warn(err)
 			}
+
 			// Create Black Duck with Client
-			log.Debugf("deploying Black Duck in namespace %s", blackDuckNamespace)
+			log.Debugf("deploying Black Duck '%s' instance in '%s' namespace", blackDuckName, blackDuckNamespace)
 			_, err = blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Create(blackDuck)
 			if err != nil {
-				log.Errorf("error creating the %s Black Duck instance due to %+v", blackDuckNamespace, err)
+				log.Errorf("error creating the %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 				return nil
 			}
-			log.Infof("successfully created Black Duck '%s' instance", blackDuckNamespace)
+			log.Infof("successfully created Black Duck '%s' instance in '%s' namespace", blackDuckName, blackDuckNamespace)
 		}
 		return nil
 	},
@@ -219,9 +245,9 @@ var createBlackDuckCmd = &cobra.Command{
 
 // createCmd represents the create command for OpsSight
 var createOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAMESPACE",
+	Use:     "opssight NAME",
 	Short:   "Create an instance of OpsSight",
-	Example: "synopsysctl create opssight opsnamespace\nsynopsysctl create opssight opsnamespace --mock json",
+	Example: "synopsysctl create opssight <name>\nsynopsysctl create opssight <name> --mock json",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check Number of Arguments
 		if len(args) != 1 {
@@ -244,24 +270,28 @@ var createOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightNamespace := args[0]
-		log.Infof("creating OpsSight %s instance...", opsSightNamespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, "", namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+		log.Infof("creating '%s' OpsSight instance in '%s' namespace...", opsSightName, opsSightNamespace)
 
 		// Update Spec with user's flags
 		log.Debugf("updating Spec with User's Flags")
 		createOpsSightCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
-		opssightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
-		opssightSpec.Namespace = opsSightNamespace
+		opsSightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
+		opsSightSpec.Namespace = opsSightNamespace
 
 		// Create and Deploy OpsSight CRD
 		opsSight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      opsSightNamespace,
+				Name:      opsSightName,
 				Namespace: opsSightNamespace,
 			},
-			Spec: opssightSpec,
+			Spec: opsSightSpec,
 		}
 		opsSight.Kind = "OpsSight"
 		opsSight.APIVersion = "synopsys.com/v1"
@@ -279,18 +309,19 @@ var createOpsSightCmd = &cobra.Command{
 			}
 		} else {
 			// Create namespace for OpsSight
-			err := DeployCRDNamespace(restconfig, opsSightNamespace)
+			// TODO: when opssight versioning PR is merged, the hard coded 2.2.3 version to be replaced with opsSight
+			err := DeployCRDNamespace(restconfig, kubeClient, util.OpsSightName, opsSightNamespace, opsSightNamespace, "2.2.3")
 			if err != nil {
 				log.Errorf("%s", err)
 			}
 			// Create OpsSight with Client
-			log.Debugf("deploying OpsSight in namespace %s", opsSightNamespace)
+			log.Debugf("deploying OpsSight '%s' instance in '%s' namespace", opsSightName, opsSightNamespace)
 			_, err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opsSight)
 			if err != nil {
-				log.Errorf("error creating the %s OpsSight instance due to %+v", opsSightNamespace, err)
+				log.Errorf("error creating the %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully created OpsSight '%s' instance", opsSightNamespace)
+			log.Infof("successfully created OpsSight '%s' instance in '%s' namespace", opsSightName, opsSightNamespace)
 		}
 		return nil
 	},
@@ -309,6 +340,7 @@ func init() {
 	createAlertCmd.Flags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags [empty|default]")
 	createAlertCmd.Flags().StringVarP(&createMockFormat, "mock", "o", createMockFormat, "Prints the resource spec in the specified format instead of creating it [json|yaml]")
 	createAlertCmd.Flags().StringVarP(&createMockKubeFormat, "mock-kube", "k", createMockKubeFormat, "Prints the Kubernetes resource specs in the specified format instead of creating it [json|yaml]")
+	createAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to create the resource(s)")
 	createAlertCtl.AddSpecFlags(createAlertCmd, true)
 	createCmd.AddCommand(createAlertCmd)
 
@@ -316,6 +348,7 @@ func init() {
 	createBlackDuckCmd.Flags().StringVar(&baseBlackDuckSpec, "template", baseBlackDuckSpec, "Base resource configuration to modify with flags [empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled]")
 	createBlackDuckCmd.Flags().StringVarP(&createMockFormat, "mock", "o", createMockFormat, "Prints the CRD resource spec in the specified format instead of creating it [json|yaml]")
 	createBlackDuckCmd.Flags().StringVarP(&createMockKubeFormat, "mock-kube", "k", createMockKubeFormat, "Prints the Kubernetes resource specs in the specified format instead of creating it [json|yaml]")
+	createBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to create the resource(s)")
 	createBlackDuckCtl.AddSpecFlags(createBlackDuckCmd, true)
 	createCmd.AddCommand(createBlackDuckCmd)
 
@@ -323,6 +356,7 @@ func init() {
 	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags [empty|upstream|default|disabledBlackDuck]")
 	createOpsSightCmd.Flags().StringVarP(&createMockFormat, "mock", "o", createMockFormat, "Prints the resource spec in the specified format instead of creating it [json|yaml]")
 	createOpsSightCmd.Flags().StringVarP(&createMockKubeFormat, "mock-kube", "k", createMockKubeFormat, "Prints the Kubernetes resource specs in the specified format instead of creating it [json|yaml]")
+	createOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to create the resource(s)")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 }

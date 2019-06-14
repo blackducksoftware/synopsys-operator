@@ -275,13 +275,17 @@ func (p *SpecConfig) ScannerServiceAccount() *components.ServiceAccount {
 
 // ScannerClusterRoleBinding creates a cluster role binding for the perceptor scanner
 func (p *SpecConfig) ScannerClusterRoleBinding() (*components.ClusterRoleBinding, error) {
-	clusterRole := "synopsys-operator-admin"
+	clusterRole := []string{"synopsys-operator-admin"}
 	var err error
 	if !p.config.DryRun {
-		clusterRole, err = util.GetOperatorClusterRole(p.kubeClient)
+		clusterRole, _, err = util.GetOperatorRoles(p.kubeClient, p.config.Namespace)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if len(clusterRole) == 0 {
+		return nil, fmt.Errorf("unable to find the synopsys operator cluster role")
 	}
 
 	scannerCRB := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
@@ -297,7 +301,7 @@ func (p *SpecConfig) ScannerClusterRoleBinding() (*components.ClusterRoleBinding
 	scannerCRB.AddRoleRef(horizonapi.RoleRefConfig{
 		APIGroup: "",
 		Kind:     "ClusterRole",
-		Name:     clusterRole,
+		Name:     clusterRole[0],
 	})
 	scannerCRB.AddLabels(map[string]string{"name": p.opssight.Spec.ScannerPod.Name, "app": "opssight"})
 

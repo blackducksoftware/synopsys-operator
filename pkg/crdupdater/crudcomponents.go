@@ -33,30 +33,33 @@ import (
 
 // CommonConfig stores the common configuration for add, patch or remove the components for update events
 type CommonConfig struct {
-	kubeConfig     *rest.Config
-	kubeClient     *kubernetes.Clientset
-	dryRun         bool
-	isPatched      bool
-	namespace      string
-	components     *api.ComponentList
-	labelSelector  string
-	expectedLabels map[string]label
-	controllers    map[string]horizonapi.DeployerControllerInterface
+	kubeConfig                *rest.Config
+	kubeClient                *kubernetes.Clientset
+	dryRun                    bool
+	isPatched                 bool
+	namespace                 string
+	components                *api.ComponentList
+	labelSelector             string
+	expectedLabels            map[string]label
+	controllers               map[string]horizonapi.DeployerControllerInterface
+	isClusterLevelPermEnabled bool // for synopsysctl, it will be true because user might have cluster admin like privilege to add/delete crd, cluster role and role bindings.
+	// for others, it will be based on the pod's service account
 }
 
 // NewCRUDComponents returns the common configuration which will be used to add, patch or remove the components
 func NewCRUDComponents(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, dryRun bool, isPatched bool,
-	namespace string, components *api.ComponentList, labelSelector string) *CommonConfig {
+	namespace string, components *api.ComponentList, labelSelector string, isClusterLevelPermEnabled bool) *CommonConfig {
 	return &CommonConfig{
-		kubeConfig:     kubeConfig,
-		kubeClient:     kubeClient,
-		dryRun:         dryRun,
-		isPatched:      isPatched,
-		namespace:      namespace,
-		components:     components,
-		labelSelector:  labelSelector,
-		expectedLabels: getLabelsMap(labelSelector),
-		controllers:    make(map[string]horizonapi.DeployerControllerInterface, 0),
+		kubeConfig:                kubeConfig,
+		kubeClient:                kubeClient,
+		dryRun:                    dryRun,
+		isPatched:                 isPatched,
+		namespace:                 namespace,
+		components:                components,
+		labelSelector:             labelSelector,
+		expectedLabels:            getLabelsMap(labelSelector),
+		controllers:               make(map[string]horizonapi.DeployerControllerInterface, 0),
+		isClusterLevelPermEnabled: isClusterLevelPermEnabled,
 	}
 }
 
@@ -88,19 +91,49 @@ func (c *CommonConfig) CRUDComponents() (bool, []error) {
 	}
 
 	// cluster role
-	clusterRoles, err := NewClusterRole(c, c.components.ClusterRoles)
-	if err != nil {
-		errors = append(errors, fmt.Errorf("unable to create new cluster role updater due to %+v", err))
-	} else {
-		updater.AddUpdater(clusterRoles)
+	if c.isClusterLevelPermEnabled || len(c.components.ClusterRoles) > 0 {
+		clusterRoles, err := NewClusterRole(c, c.components.ClusterRoles)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("unable to create new cluster role updater due to %+v", err))
+		} else {
+			updater.AddUpdater(clusterRoles)
+		}
 	}
 
 	// cluster role binding
-	clusterRoleBindings, err := NewClusterRoleBinding(c, c.components.ClusterRoleBindings)
+	if c.isClusterLevelPermEnabled || len(c.components.ClusterRoleBindings) > 0 {
+		clusterRoleBindings, err := NewClusterRoleBinding(c, c.components.ClusterRoleBindings)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("unable to create new cluster role binding updater due to %+v", err))
+		} else {
+			updater.AddUpdater(clusterRoleBindings)
+		}
+	}
+
+	// role
+	roles, err := NewRole(c, c.components.Roles)
 	if err != nil {
-		errors = append(errors, fmt.Errorf("unable to create new cluster role binding updater due to %+v", err))
+		errors = append(errors, fmt.Errorf("unable to create new role updater due to %+v", err))
 	} else {
-		updater.AddUpdater(clusterRoleBindings)
+		updater.AddUpdater(roles)
+	}
+
+	// role binding
+	roleBindings, err := NewRoleBinding(c, c.components.RoleBindings)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("unable to create new role binding updater due to %+v", err))
+	} else {
+		updater.AddUpdater(roleBindings)
+	}
+
+	// custom resource definitions
+	if c.isClusterLevelPermEnabled || len(c.components.CustomResourceDefinitions) > 0 {
+		customResourceDefinitions, err := NewCustomResourceDefinition(c, c.components.CustomResourceDefinitions)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("unable to create new custom resource definitions updater due to %+v", err))
+		} else {
+			updater.AddUpdater(customResourceDefinitions)
+		}
 	}
 
 	// config map

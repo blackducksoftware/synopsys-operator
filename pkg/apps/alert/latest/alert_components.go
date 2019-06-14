@@ -32,12 +32,14 @@ import (
 // SpecConfig will contain the specification to create the
 // components of an Alert
 type SpecConfig struct {
-	config *alertapi.AlertSpec
+	name           string
+	config         *alertapi.AlertSpec
+	isClusterScope bool
 }
 
 // NewSpecConfig will create the Alert SpecConfig
-func NewSpecConfig(config *alertapi.AlertSpec) *SpecConfig {
-	return &SpecConfig{config: config}
+func NewSpecConfig(name string, config *alertapi.AlertSpec, isClusterScope bool) *SpecConfig {
+	return &SpecConfig{name: name, config: config, isClusterScope: isClusterScope}
 }
 
 // GetComponents will return the list of components for alert

@@ -105,7 +105,7 @@ func (c *Creater) GetWebappLogstashDeployment(webAppImageName string, logstashIm
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "webapp-logstash", Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "webapp-logstash", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getWebappLogtashVolumes(),
 			Containers:          []*util.Container{webappContainerConfig, logstashContainerConfig},
@@ -121,14 +121,14 @@ func (c *Creater) getWebappLogtashVolumes() []*components.Volume {
 	webappSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp-security")
 	var webappVolume *components.Volume
 	if c.hubSpec.PersistentStorage {
-		webappVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-webapp", "blackduck-webapp")
+		webappVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-webapp", util.GetResourceName(c.name, util.BlackDuckName, "webapp", c.config.IsClusterScoped))
 	} else {
 		webappVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
 	}
 
 	var logstashVolume *components.Volume
 	if c.hubSpec.PersistentStorage {
-		logstashVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-logstash", "blackduck-logstash")
+		logstashVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-logstash", util.GetResourceName(c.name, util.BlackDuckName, "logstash", c.config.IsClusterScoped))
 	} else {
 		logstashVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")
 	}
@@ -163,7 +163,7 @@ func (c *Creater) getWebappVolumeMounts() []*horizonapi.VolumeMountConfig {
 	// Mount the HTTPS proxy certificate if provided
 	if len(c.hubSpec.ProxyCertificate) > 0 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
-			Name:      "blackduck-proxy-certificate",
+			Name:      "proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
 			SubPath:   "HUB_PROXY_CERT_FILE",
 		})
@@ -174,10 +174,11 @@ func (c *Creater) getWebappVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetWebAppService will return the webapp service
 func (c *Creater) GetWebAppService() *components.Service {
+	// TODO: changed the auth service name to webapp until the HUB-20462 is fixed. once it if fixed, changed the name to use GetResource method
 	return util.CreateService("webapp", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, webappPort, webappPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
 }
 
 // GetLogStashService will return the logstash service
 func (c *Creater) GetLogStashService() *components.Service {
-	return util.CreateService("logstash", c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, logstashPort, logstashPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
+	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "logstash", c.config.IsClusterScoped), c.GetLabel("webapp-logstash"), c.hubSpec.Namespace, logstashPort, logstashPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
 }

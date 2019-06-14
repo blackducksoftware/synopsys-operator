@@ -26,6 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -35,10 +36,10 @@ func (a *SpecConfig) getAlertReplicationController() (*components.ReplicationCon
 	replicas := int32(1)
 	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      "alert",
+		Name:      util.GetResourceName(a.name, util.AlertName, "alert", a.isClusterScope),
 		Namespace: a.config.Namespace,
 	})
-	replicationController.AddSelectors(map[string]string{"app": "alert", "component": "alert"})
+	replicationController.AddSelectors(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 
 	pod, err := a.getAlertPod()
 	if err != nil {
@@ -46,16 +47,16 @@ func (a *SpecConfig) getAlertReplicationController() (*components.ReplicationCon
 	}
 
 	replicationController.AddPod(pod)
-	replicationController.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+	replicationController.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 	return replicationController, nil
 }
 
 // getAlertPod returns a new Pod for an Alert
 func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "alert",
+		Name: util.GetResourceName(a.name, util.AlertName, "alert", a.isClusterScope),
 	})
-	pod.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+	pod.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 
 	container, err := a.getAlertContainer()
 	if err != nil {
@@ -75,7 +76,7 @@ func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 		pod.AddVolume(vol)
 	}
 
-	pod.AddLabels(map[string]string{"app": "alert", "component": "alert"})
+	pod.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
 	return pod, nil
 }
 
@@ -112,12 +113,12 @@ func (a *SpecConfig) getAlertContainer() (*components.Container, error) {
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromConfigMap,
-		FromName: "blackduck-alert-config",
+		FromName: util.GetResourceName(a.name, util.AlertName, "blackduck-config", a.isClusterScope),
 	})
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromSecret,
-		FromName: "alert-secret",
+		FromName: util.GetResourceName(a.name, util.AlertName, "secret", a.isClusterScope),
 	})
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{
@@ -151,7 +152,7 @@ func (a *SpecConfig) getAlertEmptyDirVolume() (*components.Volume, error) {
 func (a *SpecConfig) getAlertPVCVolume() *components.Volume {
 	vol := components.NewPVCVolume(horizonapi.PVCVolumeConfig{
 		VolumeName: "dir-alert",
-		PVCName:    a.config.PVCName,
+		PVCName:    util.GetResourceName(a.name, util.AlertName, a.config.PVCName, a.isClusterScope),
 		ReadOnly:   false,
 	})
 

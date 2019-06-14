@@ -29,9 +29,10 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
-// PostEditContainer ...
+// PostEditContainer will add the UID to the container if it is specified in the Image UID field
 func (c *Creater) PostEditContainer(cc *util.Container) {
 	if c.getUID(cc.ContainerConfig.Name) != nil {
 		cc.ContainerConfig.UID = c.getUID(cc.ContainerConfig.Name)
@@ -42,15 +43,19 @@ func (c *Creater) PostEditContainer(cc *util.Container) {
 // Creater will store the configuration to create the hub containers
 type Creater struct {
 	config                  *protoform.Config
+	kubeConfig              *rest.Config
 	kubeClient              *kubernetes.Clientset
+	name                    string
 	hubSpec                 *blackduckapi.BlackduckSpec
 	hubContainerFlavor      *ContainerFlavor
 	isBinaryAnalysisEnabled bool
 }
 
 // NewCreater will return a creater
-func NewCreater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubSpec *blackduckapi.BlackduckSpec, hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
-	return &Creater{config: config, kubeClient: kubeClient, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor, isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, name string, hubSpec *blackduckapi.BlackduckSpec,
+	hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, name: name, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor,
+		isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
 }
 
 // GetFullContainerNameFromImageRegistryConf returns the tag that is specified for a container by trying to look in the custom tags provided,

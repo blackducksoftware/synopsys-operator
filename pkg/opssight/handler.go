@@ -29,11 +29,14 @@ import (
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -68,15 +71,16 @@ const (
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	Config           *protoform.Config
-	KubeConfig       *rest.Config
-	KubeClient       *kubernetes.Clientset
-	OpsSightClient   *opssightclientset.Clientset
-	Defaults         *opssightapi.OpsSightSpec
-	Namespace        string
-	OSSecurityClient *securityclient.SecurityV1Client
-	RouteClient      *routeclient.RouteV1Client
-	HubClient        *hubclientset.Clientset
+	Config                  *protoform.Config
+	KubeConfig              *rest.Config
+	KubeClient              *kubernetes.Clientset
+	OpsSightClient          *opssightclientset.Clientset
+	IsBlackDuckClusterScope bool
+	Defaults                *opssightapi.OpsSightSpec
+	Namespace               string
+	OSSecurityClient        *securityclient.SecurityV1Client
+	RouteClient             *routeclient.RouteV1Client
+	HubClient               *hubclientset.Clientset
 }
 
 // ObjectCreated will be called for create opssight events
@@ -135,7 +139,19 @@ func (h *Handler) handleObjectCreated(obj interface{}) error {
 func (h *Handler) ObjectDeleted(name string) {
 	recordEvent("objectDeleted")
 	log.Debugf("objectDeleted: %+v", name)
-	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
+
+	// if cluster scope, then check whether the OpsSight CRD exist. If not exist, then don't delete the instance
+	if h.Config.IsClusterScoped {
+		apiClientset, err := clientset.NewForConfig(h.KubeConfig)
+		crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.OpsSightCRDName, metav1.GetOptions{})
+		if err != nil || crd.DeletionTimestamp != nil {
+			// We do not delete the OpsSight instance if the CRD doesn't exist or that it is in the process of being deleted
+			log.Warnf("Ignoring request to delete %s because the %s CRD doesn't exist or is being deleted", name, util.OpsSightCRDName)
+			return
+		}
+	}
+
+	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient, h.IsBlackDuckClusterScope)
 	err := opssightCreator.DeleteOpsSight(name)
 	if err != nil {
 		log.Errorf("unable to delete opssight: %v", err)
@@ -172,7 +188,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 
 	switch strings.ToUpper(opssight.Spec.DesiredState) {
 	case "STOP":
-		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
+		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient, h.IsBlackDuckClusterScope)
 		err = opssightCreator.StopOpsSight(&opssight.Spec)
 		if err != nil {
 			recordError("unable to stop opssight")
@@ -188,7 +204,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			return
 		}
 	case "":
-		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
+		opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient, h.IsBlackDuckClusterScope)
 		err = opssightCreator.UpdateOpsSight(opssight)
 		if err != nil {
 			recordError("unable to update opssight")

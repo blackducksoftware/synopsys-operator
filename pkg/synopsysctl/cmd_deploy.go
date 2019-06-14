@@ -26,108 +26,139 @@ import (
 	"fmt"
 	"strings"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //  Deploy Command Defaults
-var deployNamespace string
+var operatorNamespace = DefaultOperatorNamespace
 var exposeUI = ""
-var synopsysOperatorImage string
-var metricsImage string
+var synopsysOperatorImage = DefaultOperatorImage
+var metricsImage = DefaultMetricsImage
 var exposeMetrics = ""
 var terminationGracePeriodSeconds int64 = 180
-var operatorTimeBombInSeconds int64 = 315576000
 var dryRun = "false"
 var logLevel = "debug"
 var threadiness = 5
 var postgresRestartInMins int64 = 10
 var podWaitTimeoutSeconds int64 = 600
 var resyncIntervalInSeconds int64 = 120
+var isEnabledAlert bool
+var isEnabledBlackDuck bool
+var isEnabledOpsSight bool
+var isEnabledPrm bool
+var isClusterScoped bool
 var admissionWebhookListener = false
 
 // Flags for using mock mode - doesn't deploy
-var deployMockFormat string
-var deployMockKubeFormat string
-
-// Deploy Global Variables
-var secretType horizonapi.SecretType
+var mockFormat string
+var mockKubeFormat string
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use:     "deploy [namespace]",
-	Example: "synopsysctl deploy\nsynopsysctl deploy sonamespace\nsynopsysctl deploy --expose-ui LOADBALANCER",
+	Use:     "deploy",
+	Example: "synopsysctl deploy\nsynopsysctl deploy --enable-blackduck\nsynopsysctl deploy -n <namespace>\nsynopsysctl deploy -n <namespace> --enable-blackduck\nsynopsysctl deploy --expose-ui LOADBALANCER",
 	Short:   "Deploys Synopsys Operator into your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
-		if len(args) > 1 {
-			return fmt.Errorf("this command takes up to 1 argument")
+		if len(args) > 0 {
+			return fmt.Errorf("this command don't take any arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Read Commandline Parameters
-		deployNamespace = DefaultDeployNamespace
-		if len(args) == 1 {
-			deployNamespace = args[0]
+		if len(namespace) > 0 {
+			operatorNamespace = namespace
 		}
 
-		if !cmd.Flags().Lookup("synopsys-operator-image").Changed {
-			synopsysOperatorImage = DefaultOperatorImage
+		var err error
+		if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+			if isClusterScoped && len(operatorNamespace) == 0 {
+				namespace = metav1.NamespaceAll
+			}
+
+			// check if operator is already installed
+			namespace, err = operatorutil.GetOperatorNamespace(kubeClient, namespace)
+			if err == nil {
+				log.Errorf("Synopsys Operator is already installed in '%s' namespace", namespace)
+				return nil
+			}
+
+			if metav1.NamespaceAll != namespace {
+				operatorNamespace = namespace
+			}
 		}
 
-		if !cmd.Flags().Lookup("metrics-image").Changed {
-			metricsImage = DefaultMetricsImage
-		}
-
-		// check if Synopsys Operator is already installed
-		ns, err := operatorutil.GetOperatorNamespace(kubeClient)
-		if err == nil {
-			log.Errorf("Synopsys Operator is already installed in '%s' namespace", ns)
+		// verify operator image has a tag
+		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
+		if !imageHasTag {
+			log.Errorf("Synopsys Operator image doesn't have a tag: %s", synopsysOperatorImage)
 			return nil
 		}
 
-		// Create a Seal Key for the Synopsys Operator
+		// generate random string as SEAL key
 		log.Debugf("getting Seal Key")
 		sealKey, err := operatorutil.GetRandomString(32)
 		if err != nil {
 			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
 		}
 
-		// Create Certificate data for the Synopsys Operator
+		// generate self signed nginx certs
 		cert, key, err := operatorutil.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
-			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", deployNamespace),
+			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", operatorNamespace),
 		})
 		if err != nil {
 			log.Errorf("couldn't generate certificate and key due to %+v", err)
 			return nil
 		}
 
-		// Create Spec for the Synopsys Operator
+		// validate each CRD enable parameter is enabled/disabled and cluster scope are from supported values
+		crds := []string{}
+		if isEnabledAlert {
+			crds = append(crds, util.AlertCRDName)
+		}
+
+		if isEnabledBlackDuck {
+			crds = append(crds, util.BlackDuckCRDName)
+		}
+
+		if isEnabledOpsSight && isClusterScoped {
+			crds = append(crds, util.OpsSightCRDName)
+		} else if isEnabledOpsSight && !isClusterScoped {
+			log.Error("unable to create the opssight custom resource definition (CRD) due to namespaced scope for operator. Please enable the cluster scope to install an opssight CRD")
+		}
+
+		// if isEnabledPrm {
+		// 	crds = append(crds, util.PrmCRDName)
+		// }
+
+		// Deploy Synopsys Operator
 		log.Debugf("creating Synopsys Operator components")
-		soperatorSpec := soperator.NewSOperator(deployNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig),
-			operatorTimeBombInSeconds, strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins,
-			podWaitTimeoutSeconds, resyncIntervalInSeconds, terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, admissionWebhookListener)
+		soperatorSpec := soperator.NewSOperator(operatorNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig, operatorNamespace),
+			strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds,
+			terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, isClusterScoped, crds, admissionWebhookListener)
 
 		if cmd.LocalFlags().Lookup("mock").Changed {
 			log.Debugf("running mock mode")
-			err := PrintResource(*soperatorSpec, deployMockFormat, false)
+			err := PrintResource(*soperatorSpec, mockFormat, false)
 			if err != nil {
 				log.Errorf("%s", err)
 			}
 		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
 			log.Debugf("running kube mock mode")
-			err := PrintResource(*soperatorSpec, deployMockKubeFormat, true)
+			err := PrintResource(*soperatorSpec, mockKubeFormat, true)
 			if err != nil {
 				log.Errorf("%s", err)
 			}
 		} else {
 			sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
 			// Deploy the Synopsys Operator
-			log.Infof("deploying the Synopsys Operator in '%s' namespace......", deployNamespace)
+			log.Infof("deploying the Synopsys Operator in '%s' namespace......", operatorNamespace)
 			err = sOperatorCreater.UpdateSOperatorComponents(soperatorSpec)
 			if err != nil {
 				log.Errorf("error deploying the Synopsys Operator due to %+v", err)
@@ -136,33 +167,38 @@ var deployCmd = &cobra.Command{
 
 			// Deploy Prometheus Metrics Components for the Synopsys Operator
 			log.Debugf("creating Metrics components")
-			promtheusSpec := soperator.NewPrometheus(deployNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
+			promtheusSpec := soperator.NewPrometheus(operatorNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
 			err = sOperatorCreater.UpdatePrometheus(promtheusSpec)
 			if err != nil {
 				log.Errorf("error deploying metrics: %s", err)
 				return nil
 			}
-
-			log.Infof("successfully deployed the Synopsys Operator")
+			log.Infof("successfully deployed the synopsys operator in '%s' namespace", operatorNamespace)
 		}
+
 		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deployCmd)
+	deployCmd.Flags().BoolVarP(&isClusterScoped, "cluster-scoped", "c", isClusterScoped, "Enable/Disable Synopsys operator with cluster scope")
+	deployCmd.Flags().BoolVarP(&isEnabledAlert, "enable-alert", "a", isEnabledAlert, "Enable/Disable Alert Custom Resource Definition (CRD) in your cluster")
+	deployCmd.Flags().BoolVarP(&isEnabledBlackDuck, "enable-blackduck", "b", isEnabledBlackDuck, "Enable/Disable Black Duck Custom Resource Definition (CRD) in your cluster")
+	deployCmd.Flags().BoolVarP(&isEnabledOpsSight, "enable-opssight", "s", isEnabledOpsSight, "Enable/Disable OpsSight Custom Resource Definition (CRD) in your cluster")
+	// deployCmd.Flags().BoolVarP(&isEnabledPrm, "enable-prm", "p", isEnabledPrm, "Enable/Disable Polaris Reporting Module Custom Resource Definition (CRD) in your cluster")
 	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "Service type to expose Synopsys Operator's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
-	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", DefaultOperatorImage, "Image URL of Synopsys Operator")
-	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "m", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
-	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "k", DefaultMetricsImage, "Image URL of Synopsys Operator's metrics pod")
-	deployCmd.Flags().Int64VarP(&operatorTimeBombInSeconds, "operator-time-bomb-in-seconds", "o", operatorTimeBombInSeconds, "Termination grace period in seconds for shutting down crds")
-	deployCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "n", postgresRestartInMins, "Minutes to check for restarting postgres")
+	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "Image URL of Synopsys Operator")
+	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "x", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "m", metricsImage, "Image URL of Synopsys Operator's metrics pod")
+	deployCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "q", postgresRestartInMins, "Minutes to check for restarting postgres")
 	deployCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")
 	deployCmd.Flags().Int64VarP(&resyncIntervalInSeconds, "resync-interval-in-seconds", "r", resyncIntervalInSeconds, "Seconds for resyncing custom resources")
 	deployCmd.Flags().Int64VarP(&terminationGracePeriodSeconds, "postgres-termination-grace-period", "g", terminationGracePeriodSeconds, "Termination grace period in seconds for shutting down postgres")
-	deployCmd.Flags().StringVar(&dryRun, "dryRun", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
+	deployCmd.Flags().StringVarP(&dryRun, "dry-run", "d", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
 	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "Log level of Synopsys Operator")
-	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "c", threadiness, "Number of threads to process the custom resources")
-	deployCmd.Flags().StringVar(&deployMockFormat, "mock", deployMockFormat, "Prints the Synopsys Operator spec in the specified format instead of creating it [json|yaml]")
-	deployCmd.Flags().StringVar(&deployMockKubeFormat, "mock-kube", deployMockKubeFormat, "Prints the Synopsys Operator's kubernetes resource specs in the specified format instead of creating it [json|yaml]")
+	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "t", threadiness, "Number of threads to process the custom resources")
+	deployCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the Synopsys Operator spec in the specified format instead of creating it [json|yaml]")
+	deployCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the Synopsys Operator's kubernetes resource specs in the specified format instead of creating it [json|yaml]")
+	deployCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to create the resource(s)")
 }

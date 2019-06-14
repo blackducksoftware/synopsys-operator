@@ -34,17 +34,18 @@ import (
 
 // Config defines the specification for the controller
 type Config struct {
-	Config          *protoform.Config
-	KubeConfig      *rest.Config
-	KubeClientSet   *kubernetes.Clientset
-	Defaults        interface{}
-	resyncPeriod    time.Duration
-	indexers        cache.Indexers
-	informer        cache.SharedIndexInformer
-	queue           workqueue.RateLimitingInterface
-	handler         *Handler
-	controller      *Controller
-	customClientSet *opssightclientset.Clientset
-	Threadiness     int
-	StopCh          <-chan struct{}
+	Config                  *protoform.Config
+	KubeConfig              *rest.Config
+	KubeClientSet           *kubernetes.Clientset
+	IsBlackDuckClusterScope bool
+	Defaults                interface{}
+	resyncPeriod            time.Duration
+	indexers                cache.Indexers
+	informer                cache.SharedIndexInformer
+	queue                   workqueue.RateLimitingInterface
+	handler                 *Handler
+	controller              *Controller
+	customClientSet         *opssightclientset.Clientset
+	Threadiness             int
+	StopCh                  <-chan struct{}
 }

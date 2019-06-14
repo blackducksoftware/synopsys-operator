@@ -37,7 +37,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 	"2018.12.1": {
@@ -53,7 +53,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 	"2018.12.2": {
@@ -69,7 +69,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 	"2018.12.3": {
@@ -85,7 +85,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 	"2018.12.4": {
@@ -101,7 +101,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 	"2019.2.0": {
@@ -117,7 +117,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 	"2019.2.1": {
@@ -133,7 +133,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 	"2019.2.2": {
@@ -149,7 +149,7 @@ var imageTags = map[string]map[string]string{
 		"blackduck-solr":           "1.0.0",
 		"blackduck-zookeeper":      "1.0.0",
 		"blackduck-upload-cache":   "1.0.3",
-		"appcheck-worker":          "1.0.1",
+		"appcheck-worker":          "2019.01",
 		"rabbitmq":                 "1.0.0",
 	},
 }

@@ -234,9 +234,6 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 // SetChangedFlags visits every flag and calls setFlag to update
 // the resource's spec
 func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
-	// Preset Environs
-	ctl.Spec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:0"}, ctl.Spec.Environs)
-	ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:0"}, ctl.Spec.Environs)
 	// Update spec fields with flags
 	flagset.VisitAll(ctl.SetFlag)
 }
@@ -400,9 +397,9 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 		case "enable-source-code-upload":
 			if ctl.EnableSourceCodeUpload {
-				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:1"}, ctl.Spec.Environs)
+				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:true"}, ctl.Spec.Environs)
 			} else {
-				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:0"}, ctl.Spec.Environs)
+				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:false"}, ctl.Spec.Environs)
 			}
 		default:
 			log.Debugf("flag %s: NOT FOUND", f.Name)

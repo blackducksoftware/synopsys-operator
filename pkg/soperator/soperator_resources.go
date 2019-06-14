@@ -34,6 +34,78 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// GetCrds returns the CRD components
+func (specConfig *SpecConfig) GetCrds() []*horizoncomponents.CustomResourceDefinition {
+	crds := []*horizoncomponents.CustomResourceDefinition{}
+	for _, crd := range specConfig.Crds {
+		var crdConfig *horizoncomponents.CustomResourceDefinition
+		var crdScope horizonapi.CRDScopeType
+		if specConfig.IsClusterScoped {
+			crdScope = horizonapi.CRDClusterScoped
+		} else {
+			crdScope = horizonapi.CRDNamespaceScoped
+		}
+
+		switch strings.ToLower(crd) {
+		case util.BlackDuckCRDName:
+			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       util.BlackDuckCRDName,
+				Namespace:  specConfig.Namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "Blackduck",
+				Plural:     "blackducks",
+				Singular:   "blackduck",
+				ShortNames: []string{"bds", "bd"},
+				Scope:      crdScope,
+			})
+		case util.AlertCRDName:
+			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       util.AlertCRDName,
+				Namespace:  specConfig.Namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "Alert",
+				Plural:     "alerts",
+				Singular:   "alert",
+				Scope:      crdScope,
+			})
+		case util.OpsSightCRDName:
+			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       util.OpsSightCRDName,
+				Namespace:  specConfig.Namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "OpsSight",
+				Plural:     "opssights",
+				Singular:   "opssight",
+				ShortNames: []string{"ops"},
+				Scope:      crdScope,
+			})
+		case util.PrmCRDName:
+			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       util.PrmCRDName,
+				Namespace:  specConfig.Namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "Prm",
+				Plural:     "prms",
+				Singular:   "prm",
+				Scope:      crdScope,
+			})
+		}
+		if crdConfig != nil {
+			crdConfig.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
+			crds = append(crds, crdConfig)
+		}
+	}
+	return crds
+}
+
 // GetOperatorDeployment creates a deployment for Synopsys Operaotor
 func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deployment, error) {
 	// Add the Replication Controller to the Deployer
@@ -234,7 +306,6 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 		"Image":                         specConfig.Image,
 		"Expose":                        specConfig.Expose,
 		"ClusterType":                   specConfig.ClusterType,
-		"OperatorTimeBombInSeconds":     specConfig.OperatorTimeBombInSeconds,
 		"DryRun":                        specConfig.DryRun,
 		"LogLevel":                      specConfig.LogLevel,
 		"Threadiness":                   specConfig.Threadiness,
@@ -243,6 +314,8 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 		"ResyncIntervalInSeconds":       specConfig.ResyncIntervalInSeconds,
 		"TerminationGracePeriodSeconds": specConfig.TerminationGracePeriodSeconds,
 		"AdmissionWebhookListener":      specConfig.AdmissionWebhookListener,
+		"CrdNames":                      strings.Join(specConfig.Crds, ","),
+		"IsClusterScoped":               specConfig.IsClusterScoped,
 	}
 	bytes, err := json.Marshal(configData)
 	if err != nil {
@@ -292,7 +365,30 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 	return synopsysOperatorClusterRoleBinding
 }
 
-// GetOperatorClusterRole creates a ClusterRole Horizon component for Synopsys Operaotor
+// GetOperatorRoleBinding creates a RoleBinding Horizon component for Synopsys Operator
+func (specConfig *SpecConfig) GetOperatorRoleBinding() *horizoncomponents.RoleBinding {
+	// Role Binding
+	synopsysOperatorRoleBinding := horizoncomponents.NewRoleBinding(horizonapi.RoleBindingConfig{
+		APIVersion: "rbac.authorization.k8s.io/v1beta1",
+		Name:       "synopsys-operator-admin",
+		Namespace:  specConfig.Namespace,
+	})
+	synopsysOperatorRoleBinding.AddSubject(horizonapi.SubjectConfig{
+		Kind:      "ServiceAccount",
+		Name:      "synopsys-operator",
+		Namespace: specConfig.Namespace,
+	})
+	synopsysOperatorRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{
+		APIGroup: "",
+		Kind:     "Role",
+		Name:     "synopsys-operator-admin",
+	})
+
+	synopsysOperatorRoleBinding.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
+	return synopsysOperatorRoleBinding
+}
+
+// GetOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys Operator
 func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.ClusterRole {
 	synopsysOperatorClusterRole := horizoncomponents.NewClusterRole(horizonapi.ClusterRoleConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
@@ -301,101 +397,83 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups:       []string{"apiextensions.k8s.io"},
-		Resources:       []string{"customresourcedefinitions"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"get", "list"},
+		APIGroups: []string{"apiextensions.k8s.io"},
+		Resources: []string{"customresourcedefinitions"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups:       []string{"rbac.authorization.k8s.io"},
-		Resources:       []string{"clusterrolebindings", "clusterroles"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"rbac.authorization.k8s.io"},
+		Resources: []string{"clusterrolebindings", "clusterroles"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups:       []string{"batch", "extensions"},
-		Resources:       []string{"jobs", "cronjobs"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"rbac.authorization.k8s.io"},
+		Resources: []string{"rolebindings", "roles"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups:       []string{"extensions", "apps"},
-		Resources:       []string{"deployments", "deployments/scale", "deployments/rollback", "statefulsets", "statefulsets/scale", "replicasets", "replicasets/scale", "daemonsets"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"batch", "extensions"},
+		Resources: []string{"jobs", "cronjobs"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups:       []string{""},
-		Resources:       []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"extensions", "apps"},
+		Resources: []string{"deployments", "deployments/scale", "deployments/rollback", "statefulsets", "statefulsets/scale", "replicasets", "replicasets/scale", "daemonsets"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "update"},
-		APIGroups:       []string{""},
-		Resources:       []string{"pods", "pods/log", "endpoints"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{""},
+		Resources: []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"create"},
-		APIGroups:       []string{""},
-		Resources:       []string{"pods/exec"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"get", "list", "watch", "update"},
+		APIGroups: []string{""},
+		Resources: []string{"pods", "pods/log", "endpoints"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
-		APIGroups:       []string{"synopsys.com"},
-		Resources:       []string{"*"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"create"},
+		APIGroups: []string{""},
+		Resources: []string{"pods/exec"},
 	})
 
 	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-		Verbs:           []string{"get", "list", "watch"},
-		APIGroups:       []string{"storage.k8s.io"},
-		Resources:       []string{"storageclasses", "volumeattachments"},
-		ResourceNames:   []string{},
-		NonResourceURLs: []string{},
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"synopsys.com"},
+		Resources: []string{"*"},
+	})
+
+	synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "watch"},
+		APIGroups: []string{"storage.k8s.io"},
+		Resources: []string{"storageclasses", "volumeattachments"},
 	})
 
 	// Add Openshift rules
 	if specConfig.ClusterType == OpenshiftClusterType {
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:           []string{"get", "update", "patch"},
-			APIGroups:       []string{"security.openshift.io"},
-			Resources:       []string{"securitycontextconstraints"},
-			ResourceNames:   []string{},
-			NonResourceURLs: []string{},
+			Verbs:     []string{"get", "update", "patch"},
+			APIGroups: []string{"security.openshift.io"},
+			Resources: []string{"securitycontextconstraints"},
 		})
 
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:           []string{"get", "list", "create", "delete", "deletecollection"},
-			APIGroups:       []string{"route.openshift.io"},
-			Resources:       []string{"routes"},
-			ResourceNames:   []string{},
-			NonResourceURLs: []string{},
+			Verbs:     []string{"get", "list", "create", "delete", "deletecollection"},
+			APIGroups: []string{"route.openshift.io"},
+			Resources: []string{"routes"},
 		})
 
 		synopsysOperatorClusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
-			Verbs:           []string{"get", "list", "watch", "update"},
-			APIGroups:       []string{"image.openshift.io"},
-			Resources:       []string{"images"},
-			ResourceNames:   []string{},
-			NonResourceURLs: []string{},
+			Verbs:     []string{"get", "list", "watch", "update"},
+			APIGroups: []string{"image.openshift.io"},
+			Resources: []string{"images"},
 		})
 	} else { // Kube or Error
 		log.Debug("Skipping Openshift Cluster Role Rules")
@@ -403,6 +481,79 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 
 	synopsysOperatorClusterRole.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	return synopsysOperatorClusterRole
+}
+
+// GetOperatorRole creates a Role Horizon component for Synopsys Operaotor
+func (specConfig *SpecConfig) GetOperatorRole() *horizoncomponents.Role {
+	synopsysOperatorRole := horizoncomponents.NewRole(horizonapi.RoleConfig{
+		APIVersion: "rbac.authorization.k8s.io/v1beta1",
+		Name:       "synopsys-operator-admin",
+		Namespace:  specConfig.Namespace,
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"rbac.authorization.k8s.io"},
+		Resources: []string{"rolebindings", "roles"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"batch", "extensions"},
+		Resources: []string{"jobs", "cronjobs"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"extensions", "apps"},
+		Resources: []string{"deployments", "deployments/scale", "deployments/rollback", "statefulsets", "statefulsets/scale", "replicasets", "replicasets/scale", "daemonsets"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{""},
+		Resources: []string{"namespaces", "configmaps", "persistentvolumeclaims", "services", "secrets", "replicationcontrollers", "replicationcontrollers/scale", "serviceaccounts"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "watch", "update"},
+		APIGroups: []string{""},
+		Resources: []string{"pods", "pods/log", "endpoints"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"create"},
+		APIGroups: []string{""},
+		Resources: []string{"pods/exec"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"},
+		APIGroups: []string{"synopsys.com"},
+		Resources: []string{"*"},
+	})
+
+	synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+		Verbs:     []string{"get", "list", "watch"},
+		APIGroups: []string{"storage.k8s.io"},
+		Resources: []string{"storageclasses", "volumeattachments"},
+	})
+
+	// Add Openshift rules
+	if specConfig.ClusterType == OpenshiftClusterType {
+
+		synopsysOperatorRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
+			Verbs:     []string{"get", "list", "create", "delete", "deletecollection"},
+			APIGroups: []string{"route.openshift.io"},
+			Resources: []string{"routes"},
+		})
+
+	} else { // Kube or Error
+		log.Debug("Skipping Openshift Cluster Role Rules")
+	}
+
+	synopsysOperatorRole.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
+	return synopsysOperatorRole
 }
 
 // GetTLSCertificateSecret creates a TLS certificate in horizon format

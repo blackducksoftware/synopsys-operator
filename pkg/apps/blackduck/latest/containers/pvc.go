@@ -25,6 +25,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -72,7 +73,7 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 				}
 			}
 
-			pvcs = append(pvcs, c.createPVC(name, size, defaultSize, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
+			pvcs = append(pvcs, c.createPVC(util.GetResourceName(c.name, "", name, c.config.IsClusterScoped), size, defaultSize, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
 		}
 	}
 

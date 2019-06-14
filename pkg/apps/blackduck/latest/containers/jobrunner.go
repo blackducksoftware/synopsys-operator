@@ -64,7 +64,7 @@ func (c *Creater) GetJobRunnerDeployment(imageName string) (*components.Replicat
 	// Mount the HTTPS proxy certificate if provided
 	if len(c.hubSpec.ProxyCertificate) > 0 {
 		jobRunnerContainerConfig.VolumeMounts = append(jobRunnerContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
-			Name:      "blackduck-proxy-certificate",
+			Name:      "proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
 			SubPath:   "HUB_PROXY_CERT_FILE",
 		})
@@ -72,7 +72,7 @@ func (c *Creater) GetJobRunnerDeployment(imageName string) (*components.Replicat
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: "jobrunner", Replicas: c.hubContainerFlavor.JobRunnerReplicas},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "jobrunner", c.config.IsClusterScoped), Replicas: c.hubContainerFlavor.JobRunnerReplicas},
 		&util.PodConfig{
 			Volumes:             jobRunnerVolumes,
 			Containers:          []*util.Container{jobRunnerContainerConfig},

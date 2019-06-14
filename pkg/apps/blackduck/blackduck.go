@@ -26,18 +26,19 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	latestblackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	v1blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -76,7 +77,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 		}
 	}
 
-	routeClient := util.GetRouteClient(kubeConfig)
+	routeClient := util.GetRouteClient(kubeConfig, config.Namespace)
 
 	creaters := []Creater{
 		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
@@ -84,6 +85,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 	}
 
 	return &Blackduck{
+		config:           config,
 		kubeConfig:       kubeConfig,
 		kubeClient:       kubeclient,
 		blackduckClient:  blackduckClient,
@@ -93,7 +95,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 	}
 }
 
-func (b Blackduck) getCreater(version string) (Creater, error) {
+func (b *Blackduck) getCreater(version string) (Creater, error) {
 	for _, c := range b.creaters {
 		for _, v := range c.Versions() {
 			if strings.Compare(v, version) == 0 {
@@ -105,27 +107,51 @@ func (b Blackduck) getCreater(version string) (Creater, error) {
 }
 
 // Delete will be used to delete a blackduck instance
-func (b Blackduck) Delete(name string) {
-	logrus.Infof("deleting %s", name)
-	//err := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, false, name, &api.ComponentList{}, "app=blackduck").CRUDComponents()
-	//if err != nil {
-	//	logrus.Error(err)
-	//}
+func (b *Blackduck) Delete(name string) error {
+	log.Infof("deleting a %s Black Duck instance", name)
+	values := strings.SplitN(name, "/", 2)
+	var namespace string
+	if len(values) == 0 {
+		return fmt.Errorf("invalid name to delete the Black Duck instance")
+	} else if len(values) == 1 {
+		name = values[0]
+		namespace = values[0]
+		ns, err := util.ListNamespaces(b.kubeClient, fmt.Sprintf("synopsys.com.%s.%s", util.BlackDuckName, name))
+		if err != nil {
+			log.Errorf("unable to list %s Black Duck instance namespaces %s due to %+v", name, namespace, err)
+		}
+		if len(ns.Items) > 0 {
+			namespace = ns.Items[0].Name
+		} else {
+			log.Errorf("unable to find %s Black Duck instance namespace", name)
+			return fmt.Errorf("unable to find %s Black Duck instance namespace", name)
+		}
+	} else {
+		name = values[1]
+		namespace = values[0]
+	}
 
-	// Verify whether the namespace exist
-	_, err := util.GetNamespace(b.kubeClient, name)
-	if err != nil {
-		logrus.Errorf("unable to find the namespace %+v due to %+v", name, err)
+	// delete the Black Duck instance
+	commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, namespace,
+		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, name), false)
+	_, crudErrors := commonConfig.CRUDComponents()
+	if len(crudErrors) > 0 {
+		return fmt.Errorf("unable to delete the %s Black Duck instance in %s namespace due to %+v", name, namespace, crudErrors)
 	}
-	// Delete the namespace
-	err = util.DeleteNamespace(b.kubeClient, name)
-	if err != nil {
-		logrus.Errorf("unable to delete the namespace %+v due to %+v", name, err)
+
+	if b.config.IsClusterScoped {
+		err := util.DeleteResourceNamespace(b.kubeConfig, b.kubeClient, b.config.CrdNames, namespace, false)
+
+		if err != nil {
+			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
+		}
 	}
+
+	return nil
 }
 
 // Versions returns the versions that the operator supports
-func (b Blackduck) Versions() []string {
+func (b *Blackduck) Versions() []string {
 	var versions []string
 	for _, c := range b.creaters {
 		for _, v := range c.Versions() {
@@ -136,7 +162,7 @@ func (b Blackduck) Versions() []string {
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
-func (b Blackduck) Ensure(bd *v1.Blackduck) error {
+func (b *Blackduck) Ensure(bd *v1.Blackduck) error {
 	// If the version is not specified then we set it to be the latest.
 	if len(bd.Spec.Version) == 0 {
 		versions := b.Versions()

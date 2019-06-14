@@ -37,7 +37,7 @@ import (
 // TestUpstreamPerceptor will test the upstream deployment
 func TestUpstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
-	opssight := NewSpecConfig(&protoform.Config{DryRun: true}, nil, nil, nil, defaultValues, true)
+	opssight := NewSpecConfig(&protoform.Config{DryRun: true}, nil, nil, nil, defaultValues, true, true)
 
 	// TODO "components, err := opssight.GetComponents()" [add components back with ginko tests]
 	_, err := opssight.GetComponents()
@@ -61,7 +61,7 @@ func TestUpstreamPerceptor(t *testing.T) {
 func TestDownstreamPerceptor(t *testing.T) {
 	defaultValues := getOpsSightDefaultValue()
 
-	opssight := NewSpecConfig(&protoform.Config{DryRun: true}, nil, nil, nil, defaultValues, true)
+	opssight := NewSpecConfig(&protoform.Config{DryRun: true}, nil, nil, nil, defaultValues, true, true)
 
 	_, err := opssight.GetComponents() // TODO add components back ", err := opssight.GetComponents()"
 	fmt.Printf("TODO tests DownStreamPerceptor Components are temporarily disabled -- reenable using ginkgo\n")

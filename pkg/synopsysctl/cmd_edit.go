@@ -114,7 +114,11 @@ var editOpsSightCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(editCmd)
+
+	editAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to edit the resource(s)")
 	editCmd.AddCommand(editAlertCmd)
+
+	editBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to edit the resource(s)")
 	editCmd.AddCommand(editBlackDuckCmd)
 	editCmd.AddCommand(editOpsSightCmd)
 }

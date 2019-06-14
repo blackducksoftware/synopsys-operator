@@ -21,10 +21,12 @@ under the License.
 
 package soperator
 
+import "github.com/blackducksoftware/synopsys-operator/pkg/util"
+
 var defaultCrdVersionData = operatorVersions{
-	Blackduck: &crdVersionData{CRDName: "blackducks.synopsys.com", APIVersion: "v1"},
-	OpsSight:  &crdVersionData{CRDName: "opssights.synopsys.com", APIVersion: "v1"},
-	Alert:     &crdVersionData{CRDName: "alerts.synopsys.com", APIVersion: "v1"},
+	Blackduck: &crdVersionData{CRDName: util.BlackDuckCRDName, APIVersion: "v1"},
+	OpsSight:  &crdVersionData{CRDName: util.OpsSightCRDName, APIVersion: "v1"},
+	Alert:     &crdVersionData{CRDName: util.AlertCRDName, APIVersion: "v1"},
 }
 
 // SOperatorCRDVersionMap is a global lookup table in the package. It maps versions of the operator
@@ -53,6 +55,7 @@ type operatorVersions struct {
 	Blackduck *crdVersionData
 	OpsSight  *crdVersionData
 	Alert     *crdVersionData
+	Prm       *crdVersionData
 }
 
 // crdVersionData holds the name of the crd and the version

@@ -79,7 +79,6 @@ func (c *ConfigMap) buildNewAndOldObject() error {
 	for _, newCm := range c.configMaps {
 		c.newConfigMaps[newCm.GetName()] = newCm.ConfigMap
 	}
-
 	return nil
 }
 

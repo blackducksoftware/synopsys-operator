@@ -30,11 +30,12 @@ import (
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -93,12 +94,15 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
 
-	apiClientset, err := clientset.NewForConfig(h.kubeConfig)
-	crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get("alerts.synopsys.com", v1.GetOptions{})
-	if err != nil || crd.DeletionTimestamp != nil {
-		// We do not delete the Alert instance if the CRD doesn't exist or that it is in the process of being deleted
-		log.Warnf("Ignoring request to delete %s because the CRD doesn't exist or is being deleted", name)
-		return
+	// if cluster scope, then check whether the alert CRD exist. If not exist, then don't delete the instance
+	if h.config.IsClusterScoped {
+		apiClientset, err := clientset.NewForConfig(h.kubeConfig)
+		crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.AlertCRDName, metav1.GetOptions{})
+		if err != nil || crd.DeletionTimestamp != nil {
+			// We do not delete the Alert instance if the CRD doesn't exist or that it is in the process of being deleted
+			log.Warnf("Ignoring request to delete %s because the %s CRD doesn't exist or is being deleted", name, util.AlertCRDName)
+			return
+		}
 	}
 
 	app := apps.NewApp(h.config, h.kubeConfig)

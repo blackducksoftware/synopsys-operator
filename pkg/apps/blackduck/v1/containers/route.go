@@ -34,12 +34,12 @@ import (
 func (c *Creater) GetOpenShiftRoute() *api.Route {
 	if strings.ToUpper(c.hubSpec.ExposeService) == util.OPENSHIFT {
 		return &api.Route{
-			Name:               c.hubSpec.Namespace,
+			Name:               util.GetResourceName(c.name, util.BlackDuckName, "", c.config.IsClusterScoped),
 			Namespace:          c.hubSpec.Namespace,
 			Kind:               "Service",
-			ServiceName:        "webserver",
+			ServiceName:        util.GetResourceName(c.name, util.BlackDuckName, "webserver", c.config.IsClusterScoped),
 			PortName:           fmt.Sprintf("port-%d", 443),
-			Labels:             map[string]string{"app": "blackduck", "component": "webserver"},
+			Labels:             c.GetLabel("route"),
 			TLSTerminationType: routev1.TLSTerminationPassthrough,
 		}
 	}
