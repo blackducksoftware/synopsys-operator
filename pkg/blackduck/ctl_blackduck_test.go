@@ -63,7 +63,11 @@ func TestCheckSpecFlags(t *testing.T) {
 	// default case
 	blackduckCtl := NewBlackDuckCtl()
 	cmd := &cobra.Command{}
-	assert.Nil(blackduckCtl.CheckSpecFlags(cmd.Flags()))
+	blackduckCtl.AddSpecFlags(cmd, true)
+	err := blackduckCtl.CheckSpecFlags(cmd.Flags())
+	if err != nil {
+		t.Errorf("expected nil error, got: %+v", err)
+	}
 
 	var tests = []struct {
 		input *Ctl
@@ -146,6 +150,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Black Duck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Black Duck")
+	cmd.Flags().BoolVar(&ctl.MigrationMode, "migration-mode", ctl.MigrationMode, "Create Black Duck in the database-migration state")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
@@ -507,6 +512,16 @@ func TestSetFlag(t *testing.T) {
 				DesiredState: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{DesiredState: "changed"},
+		},
+		// case
+		{
+			flagName:   "migration-mode",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:          &blackduckv1.BlackduckSpec{},
+				MigrationMode: true,
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{DesiredState: "DbMigrate"},
 		},
 		// case
 		{
