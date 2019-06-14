@@ -447,6 +447,16 @@ func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.Na
 	return clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 }
 
+// ListNamespaces will list the namespace
+func ListNamespaces(clientset *kubernetes.Clientset, labelSelector string) (*corev1.NamespaceList, error) {
+	return clientset.CoreV1().Namespaces().List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// UpdateNamespace updates a namespace
+func UpdateNamespace(clientset *kubernetes.Clientset, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+	return clientset.CoreV1().Namespaces().Update(namespace)
+}
+
 // DeleteNamespace will delete the namespace
 func DeleteNamespace(clientset *kubernetes.Clientset, namespace string) error {
 	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})

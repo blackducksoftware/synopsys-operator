@@ -127,13 +127,15 @@ func (a *Alert) Delete(name string) error {
 	} else if len(values) == 1 {
 		name = values[0]
 		namespace = values[0]
-		// check whether an Alert instance exist in the Alert name namespace, if not default to synopsys operator namespace
-		rcs, err := util.ListReplicationControllers(a.kubeClient, namespace, fmt.Sprintf("app=%s,name=%s", util.AlertName, name))
+		ns, err := util.ListNamespaces(a.kubeClient, fmt.Sprintf("synopsys.com.%s.%s", util.AlertName, name))
 		if err != nil {
-			log.Errorf("unable to list %s Black Duck instance replication controller in %s due to %+v", name, namespace, err)
+			log.Errorf("unable to list %s Alert instance namespaces %s due to %+v", name, namespace, err)
 		}
-		if len(rcs.Items) == 0 {
-			namespace = a.config.Namespace
+		if len(ns.Items) > 0 {
+			namespace = ns.Items[0].Name
+		} else {
+			log.Errorf("unable to find %s Alert instance namespace", name)
+			return fmt.Errorf("unable to find %s Alert instance namespace", name)
 		}
 	} else {
 		name = values[1]

@@ -24,8 +24,8 @@ package opssight
 import (
 	"fmt"
 	"strings"
-	"time"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -37,7 +37,6 @@ import (
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -69,99 +68,38 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 	}
 }
 
-// DeleteOpsSight will delete the Black Duck OpsSight
-func (ac *Creater) DeleteOpsSight(namespace string) error {
-	log.Debugf("delete OpsSight details for %s", namespace)
-	// Verify that the namespace exists
-	_, err := util.GetNamespace(ac.kubeClient, namespace)
+// DeleteOpsSight will delete the OpsSight
+func (ac *Creater) DeleteOpsSight(name string) error {
+	log.Infof("deleting a %s OpsSight instance", name)
+	namespace := name
+	ns, err := util.ListNamespaces(ac.kubeClient, fmt.Sprintf("synopsys.com.%s.%s", util.OpsSightName, name))
 	if err != nil {
-		return errors.Annotatef(err, "unable to find namespace %s", namespace)
+		log.Errorf("unable to list %s OpsSight namespaces %s due to %+v", name, namespace, err)
+	}
+	if len(ns.Items) > 0 {
+		namespace = ns.Items[0].Name
+	} else {
+		log.Errorf("unable to find %s OpsSight instance namespace", name)
+		return fmt.Errorf("unable to find %s OpsSight instance namespace", name)
 	}
 
-	// get all replication controller for the namespace
-	rcs, err := util.ListReplicationControllers(ac.kubeClient, namespace, "")
-	if err != nil {
-		return errors.Annotatef(err, "unable to list the replication controller in %s", namespace)
+	// delete the Black Duck instance
+	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, namespace,
+		&api.ComponentList{}, fmt.Sprintf("app=%s", util.OpsSightName), false)
+	_, crudErrors := commonConfig.CRUDComponents()
+	if len(crudErrors) > 0 {
+		return fmt.Errorf("unable to delete the %s OpsSight instance in %s namespace due to %+v", name, namespace, crudErrors)
 	}
 
-	// get only opssight related replication controller for the namespace
-	opssightRCs, err := util.ListReplicationControllers(ac.kubeClient, namespace, "app=opssight")
-	if err != nil {
-		return errors.Annotatef(err, "unable to list the opssight's replication controller in %s", namespace)
-	}
+	if ac.config.IsClusterScoped {
+		err := util.DeleteResourceNamespace(ac.kubeConfig, ac.kubeClient, ac.config.CrdNames, namespace, false)
 
-	// if both the length same, then delete the namespace, if different, delete only the replication controller
-	if len(rcs.Items) == len(opssightRCs.Items) {
-		// Delete the namespace
-		err = util.DeleteNamespace(ac.kubeClient, namespace)
 		if err != nil {
 			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
-		}
-
-		for {
-			// Verify whether the namespace was deleted
-			ns, err := util.GetNamespace(ac.kubeClient, namespace)
-			log.Infof("namespace: %v, status: %v", namespace, ns.Status)
-			if err != nil {
-				log.Infof("deleted the namespace %+v", namespace)
-				break
-			}
-			time.Sleep(10 * time.Second)
-		}
-	} else {
-		// delete the replication controller
-		for _, opssightRC := range opssightRCs.Items {
-			err = util.DeleteReplicationController(ac.kubeClient, namespace, opssightRC.GetName())
-			if err != nil {
-				return errors.Annotatef(err, "unable to delete the %s replication controller in %s namespace", opssightRC.GetName(), namespace)
-			}
-		}
-	}
-
-	clusterRoleBindings, err := util.ListClusterRoleBindings(ac.kubeClient, "app=opssight")
-	operatorClusterRoles, _, err := util.GetOperatorRoles(ac.kubeClient, ac.config.Namespace)
-	if err != nil {
-		return err
-	}
-
-	for _, clusterRoleBinding := range clusterRoleBindings.Items {
-		if len(clusterRoleBinding.Subjects) == 1 {
-			for _, operatorClusterRole := range operatorClusterRoles {
-				if !strings.EqualFold(clusterRoleBinding.RoleRef.Name, operatorClusterRole) {
-					log.Debugf("deleting cluster role %s", clusterRoleBinding.RoleRef.Name)
-					err = util.DeleteClusterRole(ac.kubeClient, clusterRoleBinding.RoleRef.Name)
-					if err != nil {
-						log.Errorf("unable to delete the cluster role for %+v due to %+v", clusterRoleBinding.RoleRef.Name, err)
-					}
-				}
-			}
-
-			log.Debugf("deleting cluster role binding %s", clusterRoleBinding.GetName())
-			err = util.DeleteClusterRoleBinding(ac.kubeClient, clusterRoleBinding.GetName())
-			if err != nil {
-				log.Errorf("unable to delete the cluster role binding for %+v", clusterRoleBinding.GetName())
-			}
-		} else {
-			log.Debugf("updating cluster role binding %s", clusterRoleBinding.GetName())
-			clusterRoleBinding.Subjects = removeSubjects(clusterRoleBinding.Subjects, namespace)
-			_, err = util.UpdateClusterRoleBinding(ac.kubeClient, &clusterRoleBinding)
-			if err != nil {
-				log.Errorf("unable to update the cluster role binding for %+v", clusterRoleBinding.GetName())
-			}
 		}
 	}
 
 	return nil
-}
-
-func removeSubjects(subjects []rbacv1.Subject, namespace string) []rbacv1.Subject {
-	newSubjects := []rbacv1.Subject{}
-	for _, subject := range subjects {
-		if !strings.EqualFold(subject.Namespace, namespace) {
-			newSubjects = append(newSubjects, subject)
-		}
-	}
-	return newSubjects
 }
 
 // CreateOpsSight will create the Black Duck OpsSight

@@ -88,7 +88,7 @@ var createAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, "", namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -128,7 +128,7 @@ var createAlertCmd = &cobra.Command{
 			}
 		} else {
 			// Create namespace for an Alert instance
-			err := DeployCRDNamespace(restconfig, alertNamespace)
+			err := DeployCRDNamespace(restconfig, kubeClient, util.AlertName, alertNamespace, alertName, alertSpec.Version)
 
 			if err != nil {
 				log.Warn(err)
@@ -174,7 +174,7 @@ var createBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, "", namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -224,7 +224,7 @@ var createBlackDuckCmd = &cobra.Command{
 			}
 		} else {
 			// Create namespace for the Black Duck instance
-			err := DeployCRDNamespace(restconfig, blackDuckNamespace)
+			err := DeployCRDNamespace(restconfig, kubeClient, util.BlackDuckName, blackDuckNamespace, blackDuckName, blackDuckSpec.Version)
 
 			if err != nil {
 				log.Warn(err)
@@ -270,24 +270,28 @@ var createOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightNamespace := args[0]
-		log.Infof("creating OpsSight %s instance...", opsSightNamespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, "", namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+		log.Infof("creating '%s' OpsSight instance in '%s' namespace...", opsSightName, opsSightNamespace)
 
 		// Update Spec with user's flags
 		log.Debugf("updating Spec with User's Flags")
 		createOpsSightCtl.SetChangedFlags(cmd.Flags())
 
 		// Set Namespace in Spec
-		opssightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
-		opssightSpec.Namespace = opsSightNamespace
+		opsSightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
+		opsSightSpec.Namespace = opsSightNamespace
 
 		// Create and Deploy OpsSight CRD
 		opsSight := &opssightv1.OpsSight{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      opsSightNamespace,
+				Name:      opsSightName,
 				Namespace: opsSightNamespace,
 			},
-			Spec: opssightSpec,
+			Spec: opsSightSpec,
 		}
 		opsSight.Kind = "OpsSight"
 		opsSight.APIVersion = "synopsys.com/v1"
@@ -305,18 +309,19 @@ var createOpsSightCmd = &cobra.Command{
 			}
 		} else {
 			// Create namespace for OpsSight
-			err := DeployCRDNamespace(restconfig, opsSightNamespace)
+			// TODO: when opssight versioning PR is merged, the hard coded 2.2.3 version to be replaced with opsSight
+			err := DeployCRDNamespace(restconfig, kubeClient, util.OpsSightName, opsSightNamespace, opsSightNamespace, "2.2.3")
 			if err != nil {
 				log.Errorf("%s", err)
 			}
 			// Create OpsSight with Client
-			log.Debugf("deploying OpsSight in namespace %s", opsSightNamespace)
+			log.Debugf("deploying OpsSight '%s' instance in '%s' namespace", opsSightName, opsSightNamespace)
 			_, err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opsSight)
 			if err != nil {
-				log.Errorf("error creating the %s OpsSight instance due to %+v", opsSightNamespace, err)
+				log.Errorf("error creating the %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully created OpsSight '%s' instance", opsSightNamespace)
+			log.Infof("successfully created OpsSight '%s' instance in '%s' namespace", opsSightName, opsSightNamespace)
 		}
 		return nil
 	},
@@ -351,6 +356,7 @@ func init() {
 	createOpsSightCmd.Flags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags [empty|upstream|default|disabledBlackDuck]")
 	createOpsSightCmd.Flags().StringVarP(&createMockFormat, "mock", "o", createMockFormat, "Prints the resource spec in the specified format instead of creating it [json|yaml]")
 	createOpsSightCmd.Flags().StringVarP(&createMockKubeFormat, "mock-kube", "k", createMockKubeFormat, "Prints the Kubernetes resource specs in the specified format instead of creating it [json|yaml]")
+	createOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to create the resource(s)")
 	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
 	createCmd.AddCommand(createOpsSightCmd)
 }

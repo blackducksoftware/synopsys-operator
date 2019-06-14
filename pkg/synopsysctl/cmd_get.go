@@ -133,7 +133,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, crdScope, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, crdScope, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			return err
 		}
@@ -204,6 +204,9 @@ var getOpsSightCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting OpsSights...")
 		kubectlCmd := []string{"get", "opssights"}
+		if len(namespace) > 0 {
+			kubectlCmd = append(kubectlCmd, "-n", namespace)
+		}
 		if len(args) > 0 {
 			kubectlCmd = append(kubectlCmd, args...)
 		}
@@ -243,6 +246,7 @@ func init() {
 	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
 	getCmd.AddCommand(getBlackDuckCmd)
 
+	getOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to get the resource(s)")
 	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format [json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...]")
 	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	getCmd.AddCommand(getOpsSightCmd)

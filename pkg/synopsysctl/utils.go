@@ -100,13 +100,24 @@ func getKubeClient(kubeConfig *rest.Config) (*kubernetes.Clientset, error) {
 }
 
 // DeployCRDNamespace creates an empty Horizon namespace
-func DeployCRDNamespace(restconfig *rest.Config, namespace string) error {
-	namespaceDeployer, err := deployer.NewDeployer(restconfig)
+func DeployCRDNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, resourceName string, namespace string, name string, version string) error {
+	kubeNs, err := operatorutil.GetNamespace(kubeClient, namespace)
+	if err == nil {
+		log.Infof("deploying %s %s instance in existing %s namespace", name, resourceName, namespace)
+		kubeNs.Labels[fmt.Sprintf("synopsys.com.%s.%s", resourceName, name)] = version
+		_, err = util.UpdateNamespace(kubeClient, kubeNs)
+		if err != nil {
+			return fmt.Errorf("unable to update the %s namespace due to %+v", namespace, err)
+		}
+		return nil
+	}
+
+	namespaceDeployer, err := deployer.NewDeployer(restConfig)
 	ns := horizoncomponents.NewNamespace(horizonapi.NamespaceConfig{
 		Name:      namespace,
 		Namespace: namespace,
 	})
-	ns.AddLabels(map[string]string{"owner": "synopsys-operator"})
+	ns.AddLabels(map[string]string{"owner": "synopsys-operator", fmt.Sprintf("synopsys.com.%s.%s", resourceName, name): version})
 	namespaceDeployer.AddComponent(horizonapi.NamespaceComponent, ns)
 	err = namespaceDeployer.Run()
 	if err != nil {
@@ -293,12 +304,12 @@ func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeM
 }
 
 // getInstanceInfo will provide the name, namespace and crd scope to create each CRD instance
-func getInstanceInfo(cmd *cobra.Command, args []string, crdName string, inputNamespace string) (string, string, apiextensions.ResourceScope, error) {
+func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName string, inputNamespace string) (string, string, apiextensions.ResourceScope, error) {
 	crdScope := apiextensions.ClusterScoped
 	if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
-		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdName)
+		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdType)
 		if err != nil {
-			return "", "", "", fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", crdName, err)
+			return "", "", "", fmt.Errorf("unable to get the %s custom resource definition in your cluster due to %+v", crdType, err)
 		}
 		crdScope = crd.Spec.Scope
 	}
@@ -308,23 +319,24 @@ func getInstanceInfo(cmd *cobra.Command, args []string, crdName string, inputNam
 		return "", "", "", fmt.Errorf("namespace to create an %s instance need to be provided", inputNamespace)
 	}
 
-	var name, namespace string
+	var namespace string
 	if crdScope == apiextensions.ClusterScoped {
-		name = args[0]
 		if len(inputNamespace) == 0 {
-			namespace = args[0]
+			if len(crdName) > 0 {
+				ns, err := util.ListNamespaces(kubeClient, fmt.Sprintf("synopsys.com.%s.%s", crdName, name))
+				if err != nil {
+					return "", "", "", fmt.Errorf("unable to list %s %s instance namespaces %s due to %+v", name, crdName, namespace, err)
+				}
+				if len(ns.Items) > 0 {
+					namespace = ns.Items[0].Name
+				} else {
+					return "", "", "", fmt.Errorf("unable to find %s %s instance namespace", name, crdName)
+				}
+			}
 		} else {
-			operatorNamespace, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
-			if err != nil {
-				log.Error(err)
-			}
-			if operatorNamespace != inputNamespace {
-				return "", "", "", fmt.Errorf("%s %s instance can be only created within same namespace or in '%s' operator namespace", name, crdName, operatorNamespace)
-			}
 			namespace = inputNamespace
 		}
 	} else {
-		name = args[0]
 		namespace = inputNamespace
 	}
 	return name, namespace, crdScope, nil

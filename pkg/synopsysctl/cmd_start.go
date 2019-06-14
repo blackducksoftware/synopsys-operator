@@ -50,7 +50,7 @@ var startAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, util.AlertName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -90,7 +90,7 @@ var startBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -130,14 +130,18 @@ var startOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightNamespace := args[0]
-		log.Infof("starting OpsSight %s...", opsSightNamespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+		log.Infof("starting OpsSight '%s' instance in '%s' namespace...", opsSightName, opsSightNamespace)
 
 		// Get the OpsSight
-		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 
 		if err != nil {
-			log.Errorf("error getting %s OpsSight instance due to %+v", opsSightNamespace, err)
+			log.Errorf("error getting %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 
@@ -146,11 +150,11 @@ var startOpsSightCmd = &cobra.Command{
 		// Update OpsSight
 		_, err = util.UpdateOpsSight(opsSightClient, currOpsSight.Spec.Namespace, currOpsSight)
 		if err != nil {
-			log.Errorf("error updating the %s OpsSight instance due to %+v", opsSightNamespace, err)
+			log.Errorf("error updating the %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 
-		log.Infof("successfully started the '%s' OpsSight instance", opsSightNamespace)
+		log.Infof("successfully started the '%s' OpsSight instance in '%s' namespace", opsSightName, opsSightNamespace)
 		return nil
 	},
 }

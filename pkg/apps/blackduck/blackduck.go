@@ -116,13 +116,15 @@ func (b *Blackduck) Delete(name string) error {
 	} else if len(values) == 1 {
 		name = values[0]
 		namespace = values[0]
-		// check whether the Black Duck instance exist in the Black Duck name namespace, if not default to synopsys operator namespace
-		rcs, err := util.ListReplicationControllers(b.kubeClient, namespace, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, name))
+		ns, err := util.ListNamespaces(b.kubeClient, fmt.Sprintf("synopsys.com.%s.%s", util.BlackDuckName, name))
 		if err != nil {
-			log.Errorf("unable to list %s Black Duck instance replication controller in %s due to %+v", name, namespace, err)
+			log.Errorf("unable to list %s Black Duck instance namespaces %s due to %+v", name, namespace, err)
 		}
-		if len(rcs.Items) == 0 {
-			namespace = b.config.Namespace
+		if len(ns.Items) > 0 {
+			namespace = ns.Items[0].Name
+		} else {
+			log.Errorf("unable to find %s Black Duck instance namespace", name)
+			return fmt.Errorf("unable to find %s Black Duck instance namespace", name)
 		}
 	} else {
 		name = values[1]

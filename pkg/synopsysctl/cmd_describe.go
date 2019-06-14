@@ -116,6 +116,9 @@ var describeOpsSightCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("describing an OpsSight")
 		kubectlCmd := []string{"describe", "opssights"}
+		if len(namespace) > 0 {
+			kubectlCmd = append(kubectlCmd, "-n", namespace)
+		}
 		if len(args) > 0 {
 			kubectlCmd = append(kubectlCmd, args...)
 		}
@@ -142,6 +145,7 @@ func init() {
 	describeBlackDuckCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeBlackDuckCmd)
 
+	describeOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to describe the resource(s)")
 	describeOpsSightCmd.Flags().StringVarP(&describeSelector, "selector", "l", describeSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	describeCmd.AddCommand(describeOpsSightCmd)
 

@@ -288,7 +288,7 @@ var updateAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args, util.AlertCRDName, namespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, util.AlertName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -310,7 +310,7 @@ var updateAlertCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateAlertCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update Alert: %s", err)
+			log.Errorf("cannot Update %s Alert instance in %s namespace due to %+v", alertName, alertNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -347,7 +347,7 @@ var updateBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -369,7 +369,7 @@ var updateBlackDuckCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateBlackDuckCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update: %s", err)
+			log.Errorf("cannot Update %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -504,7 +504,7 @@ var updateBlackDuckAddPVCCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -529,7 +529,7 @@ var updateBlackDuckAddPVCCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateBlackDuckCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update: %s", err)
+			log.Errorf("cannot Update %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -564,7 +564,7 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -588,7 +588,7 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateBlackDuckCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update: %s", err)
+			log.Errorf("cannot Update %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -618,7 +618,7 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -642,7 +642,7 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateBlackDuckCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update: %s", err)
+			log.Errorf("cannot Update %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -672,7 +672,7 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args, util.BlackDuckCRDName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -685,7 +685,7 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 		// Get Black Duck Spec
 		currBlackDuck, err := operatorutil.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error getting %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 		// Set the existing Black Duck to the spec
@@ -697,7 +697,7 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 		// Check if it can be updated
 		canUpdate, err := updateBlackDuckCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update: %s", err)
+			log.Errorf("cannot Update %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -734,20 +734,24 @@ var updateOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightNamespace := args[0]
-		log.Infof("updating OpsSight %s...", opsSightNamespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+		log.Infof("updating OpsSight '%s' instance in '%s' namespace...", opsSightName, opsSightNamespace)
 
 		// Get the current OpsSight
-		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			log.Errorf("error getting OpsSight: %s", err)
+			log.Errorf("error getting an OpsSight %s instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update: %s", err)
+			log.Errorf("cannot Update %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -761,10 +765,10 @@ var updateOpsSightCmd = &cobra.Command{
 			// Update OpsSight
 			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, mockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
-				log.Errorf("failed to update OpsSight: %s", err)
+				log.Errorf("error updating the %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated OpsSight: '%s'", opsSightNamespace)
+			log.Infof("successfully updated the '%s' OpsSight instance in '%s' namespace", opsSightName, opsSightNamespace)
 		}
 		return nil
 	},
@@ -782,23 +786,26 @@ var updateOpsSightImageCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightNamespace := args[0]
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
 		componentName := args[1]
 		componentImage := args[2]
-
-		log.Infof("updating OpsSight %s's Image...", opsSightNamespace)
+		log.Infof("updating OpsSight '%s' instance with image in '%s' namespace...", opsSightName, opsSightNamespace)
 
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("error getting an OpsSight %s instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update OpsSight: %s", err)
+			log.Errorf("cannot Update %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -823,10 +830,10 @@ var updateOpsSightImageCmd = &cobra.Command{
 			// Update OpsSight with New Image
 			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, mockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
-				log.Errorf("failed to update OpsSight: %s", err)
+				log.Errorf("error updating the %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated OpsSight %s's Image", opsSightNamespace)
+			log.Infof("successfully updated '%s' OpsSight with image in '%s' namespace", opsSightName, opsSightNamespace)
 		}
 		return nil
 	},
@@ -844,7 +851,12 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightNamespace := args[0]
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+		log.Infof("updating OpsSight '%s' instance with external host in '%s' namespace...", opsSightName, opsSightNamespace)
 		hostScheme := args[1]
 		hostDomain := args[2]
 		hostPort, err := strconv.ParseInt(args[3], 0, 64)
@@ -858,19 +870,17 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 			log.Errorf("invalid Concurrent Scan Limit: %s", err)
 		}
 
-		log.Infof("adding External Host to OpsSight %s...", opsSightNamespace)
-
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			log.Errorf("error getting OpsSight: %s", err)
+			log.Errorf("error getting an OpsSight %s instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update OpsSight: %s", err)
+			log.Errorf("cannot Update %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -888,10 +898,10 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 			// Update OpsSight with External Host
 			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, mockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
-				log.Errorf("failed to update OpsSight: %s", err)
+				log.Errorf("error updating the %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated OpsSight %s's External Host", opsSightNamespace)
+			log.Infof("successfully updated '%s' OpsSight with external host in %s namespace", opsSightName, opsSightNamespace)
 		}
 		return nil
 	},
@@ -910,24 +920,27 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightNamespace := args[0]
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+		log.Infof("updating OpsSight '%s' instance with internal registry in '%s' namespace...", opsSightName, opsSightNamespace)
 		regURL := args[1]
 		regUser := args[2]
 		regPass := args[3]
 
-		log.Infof("adding Internal Registry to OpsSight %s...", opsSightNamespace)
-
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightNamespace)
+		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			log.Errorf("error adding Internal Registry while getting OpsSight: %s", err)
+			log.Errorf("error getting an OpsSight %s instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 		// Check if it can be updated
 		updateOpsSightCtl.SetSpec(currOpsSight.Spec)
 		canUpdate, err := updateOpsSightCtl.CanUpdate()
 		if err != nil {
-			log.Errorf("cannot Update OpsSight: %s", err)
+			log.Errorf("cannot Update %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
 		}
 		if canUpdate {
@@ -942,10 +955,10 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 			// Update OpsSight with Internal Registry
 			err = ctlUpdateResource(newOpsSight, cmd.LocalFlags().Lookup("mock").Changed, mockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
-				log.Errorf("failed to update OpsSight: %s", err)
+				log.Errorf("error updating the %s OpsSight instance in %s namespace due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated OpsSight %s's Registry", opsSightNamespace)
+			log.Infof("successfully updated '%s' OpsSight with registry in '%s' namespace", opsSightName, opsSightNamespace)
 		}
 		return nil
 	},
@@ -988,34 +1001,31 @@ func init() {
 	updateCmd.AddCommand(updateAlertCmd)
 
 	// Add Black Duck Commands
-	updateBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to update the resource(s)")
+	updateBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to update the resource(s)")
 	updateBlackDuckCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
 	updateBlackDuckCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
 	updateBlackDuckCtl.AddSpecFlags(updateBlackDuckCmd, false)
 	updateCmd.AddCommand(updateBlackDuckCmd)
 
-	updateBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to update the resource(s)")
 	updateBlackDuckCmd.AddCommand(updateBlackDuckRootKeyCmd)
 
-	updateBlackDuckAddPVCCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to update the resource(s)")
 	updateBlackDuckAddPVCCmd.Flags().StringVar(&blackDuckPVCSize, "size", blackDuckPVCSize, "Size of the PVC")
 	updateBlackDuckAddPVCCmd.Flags().StringVar(&blackDuckPVCStorageClass, "storage-class", blackDuckPVCStorageClass, "Storage Class name")
 	updateBlackDuckCmd.AddCommand(updateBlackDuckAddPVCCmd)
 
-	updateBlackDuckAddEnvironCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to update the resource(s)")
 	updateBlackDuckCmd.AddCommand(updateBlackDuckAddEnvironCmd)
 
-	updateBlackDuckAddRegistryCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to update the resource(s)")
 	updateBlackDuckCmd.AddCommand(updateBlackDuckAddRegistryCmd)
 
-	updateBlackDuckAddUIDCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to update the resource(s)")
 	updateBlackDuckCmd.AddCommand(updateBlackDuckAddUIDCmd)
 
 	// Add OpsSight Commands
+	updateOpsSightCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to update the resource(s)")
 	updateOpsSightCmd.PersistentFlags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
 	updateOpsSightCmd.PersistentFlags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
 	updateOpsSightCtl.AddSpecFlags(updateOpsSightCmd, false)
 	updateCmd.AddCommand(updateOpsSightCmd)
+
 	updateOpsSightCmd.AddCommand(updateOpsSightImageCmd)
 	updateOpsSightCmd.AddCommand(updateOpsSightExternalHostCmd)
 	updateOpsSightCmd.AddCommand(updateOpsSightAddRegistryCmd)

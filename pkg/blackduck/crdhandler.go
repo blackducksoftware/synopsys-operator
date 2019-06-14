@@ -117,7 +117,7 @@ func (h *Handler) ObjectDeleted(name string) {
 		apiClientset, err := clientset.NewForConfig(h.kubeConfig)
 		crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.BlackDuckCRDName, metav1.GetOptions{})
 		if err != nil || crd.DeletionTimestamp != nil {
-			// We do not delete the Alert instance if the CRD doesn't exist or that it is in the process of being deleted
+			// We do not delete the Black Duck instance if the CRD doesn't exist or that it is in the process of being deleted
 			log.Warnf("Ignoring request to delete %s because the %s CRD doesn't exist or is being deleted", name, util.BlackDuckCRDName)
 			return
 		}

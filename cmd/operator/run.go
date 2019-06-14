@@ -43,7 +43,8 @@ func main() {
 		fmt.Printf("Config path: %s", configPath)
 		return
 	}
-	panic("config file not provided")
+	log.Warn("no config file sent. running operator with environment variable and default settings")
+	runProtoform("")
 }
 
 // runProtoform will add CRD controllers to the Protoform Deployer which
