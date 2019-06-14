@@ -363,3 +363,28 @@ func (v BlackducksResource) Destroy(c buffalo.Context) error {
 	// Redirect to the blackducks index page
 	return c.Redirect(302, "/blackducks")
 }
+
+// Used to change state of a Blackduck instance
+// POST  /blackducks/{blackduck_id}/state
+func (v BlackducksResource) ChangeState(c buffalo.Context) error {
+	if c.Param("state") == "" {
+		return c.Redirect(400, "/blackducks")
+	}
+
+	blackduck, err := util.GetHub(v.blackduckClient, c.Param("blackduck_id"), c.Param("blackduck_id"))
+	if err != nil {
+		log.Errorf("unable to get %s blackduck instance because %+v", c.Param("blackduck_id"), err)
+		return v.redirect(c, blackduck, err)
+	}
+
+	blackduck.Spec.DesiredState = c.Param("state")
+
+	_, err = v.blackduckClient.SynopsysV1().Blackducks(blackduck.Spec.Namespace).Update(blackduck)
+	if err != nil {
+		log.Errorf("unable to update %s blackduck instance because %+v", blackduck.Name, err)
+		return v.redirect(c, blackduck, err)
+	}
+
+	// Redirect to the blackducks index page
+	return c.Redirect(302, "/blackducks")
+}

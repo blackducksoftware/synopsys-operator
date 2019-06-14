@@ -191,6 +191,21 @@
             <ul class="list-unstyled list-inline">
               <li class="list-inline-item"><a href="<%= blackducksPath() %>" class="btn btn-info">Close</a></li>
               <li class="list-inline-item"><a href="<%= editBlackduckPath({ blackduck_id: blackduck.Spec.Namespace })%>" class="btn btn-warning">Edit</a></li>
+              <li class="list-inline-item">
+                <form action="<%= blackduckStatePath({ blackduck_id: blackduck.Spec.Namespace }) %>" method="post">
+                  <input name="authenticity_token" type="hidden" value="<%= authenticity_token %>">
+                  <%= if (capitalize(blackduck.Spec.DesiredState) ==  "START") { %>
+                  <input type="hidden" id="state" name="state" value="STOP">
+                  <button name="submit" value="submit" class="btn btn-danger">Stop</button>
+                  <% } else if (len(blackduck.Spec.DesiredState) == 0 ) { %>
+                  <input type="hidden" id="state" name="state" value="STOP">
+                  <button name="submit" value="submit" class="btn btn-danger" disabled>Stop</button>
+                  <% } else { %>
+                  <input type="hidden" id="state" name="state" value="START">
+                  <button name="submit" value="submit" class="btn btn-success">Start</button>
+                  <% } %>
+                </form>
+              </li>
               <li class="list-inline-item"><a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace })%>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
             </ul>
         </center>
