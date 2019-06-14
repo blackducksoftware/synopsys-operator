@@ -23,7 +23,6 @@ package soperator
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
@@ -69,10 +68,17 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 	oldOperatorSpec *SpecConfig, newOperatorSpec *SpecConfig) error {
 
 	// Get CRD Version Data
-	newOperatorVersion := strings.Split(newOperatorSpec.Image, ":")[1]
-	oldOperatorVersion := strings.Split(oldOperatorSpec.Image, ":")[1]
-	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorVersion)
-	oldCrdData := SOperatorCRDVersionMap.GetCRDVersions(oldOperatorVersion)
+	newOperatorImageVersion, err := operatorutil.GetImageTag(newOperatorSpec.Image)
+	if err != nil {
+		return fmt.Errorf("failed to get version of the new Synopsys Operator image: %s", err)
+	}
+	oldOperatorImageVersion, err := operatorutil.GetImageTag(oldOperatorSpec.Image)
+	if err != nil {
+		return fmt.Errorf("failed to get version of the old Synopsys Operator image: %s", err)
+	}
+
+	newCrdData := SOperatorCRDVersionMap.GetCRDVersions(newOperatorImageVersion)
+	oldCrdData := SOperatorCRDVersionMap.GetCRDVersions(oldOperatorImageVersion)
 
 	// Get CRDs that need to be updated (specs have new version set)
 	log.Debugf("Getting CRDs that need new versions")

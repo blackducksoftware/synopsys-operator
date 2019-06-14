@@ -10,7 +10,7 @@ require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
-	github.com/evanphx/json-patch v4.4.0+incompatible // indirect
+	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.4.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
@@ -21,7 +21,7 @@ require (
 	github.com/imdario/mergo v0.3.7
 	github.com/juju/errors v0.0.0-20190207033735-e65537c515d7
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
-	github.com/juju/testing v0.0.0-20190429233213-dfc56b8c09fc // indirect
+	github.com/juju/testing v0.0.0-20190613124551-e81189438503 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/lib/pq v1.1.1
 	github.com/magiconair/properties v1.8.1 // indirect
@@ -42,18 +42,19 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/ugorji/go v1.1.5-pre // indirect
 	go.opencensus.io v0.22.0 // indirect
-	golang.org/x/net v0.0.0-20190607181551-461777fb6f67 // indirect
-	golang.org/x/sys v0.0.0-20190610081024-1e42afee0f76 // indirect
+	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8 // indirect
+	golang.org/x/net v0.0.0-20190611141213-3f473d35a33a // indirect
+	golang.org/x/sys v0.0.0-20190613124609-5ed2794edfdc // indirect
 	google.golang.org/appengine v1.6.1 // indirect
-	google.golang.org/genproto v0.0.0-20190605220351-eb0b1bdb6ae6 // indirect
+	google.golang.org/genproto v0.0.0-20190611190212-a7e196e89fd3 // indirect
 	google.golang.org/grpc v1.21.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
-	k8s.io/api v0.0.0-20190602205700-9b8cae951d65
-	k8s.io/apiextensions-apiserver v0.0.0-20190610170453-8677a5df3599
-	k8s.io/apimachinery v0.0.0-20190607205628-5fbcd19f360b
+	k8s.io/api v0.0.0-20190612125737-db0771252981
+	k8s.io/apiextensions-apiserver v0.0.0-20190612130911-80dacc8982f1
+	k8s.io/apimachinery v0.0.0-20190612125636-6a5db36e93ad
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/klog v0.3.2 // indirect
+	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208 // indirect
 	k8s.io/utils v0.0.0-20190607212802-c55fbcfc754a // indirect
 	sigs.k8s.io/yaml v1.1.0

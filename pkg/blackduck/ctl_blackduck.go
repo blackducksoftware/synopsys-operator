@@ -34,11 +34,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type uid struct {
-	Key   string `json:"key"`
-	Value int64  `json:"value"`
-}
-
 // Ctl type provides functionality for a Black Duck
 // for the Synopsysctl tool
 type Ctl struct {
@@ -66,6 +61,7 @@ type Ctl struct {
 	AuthCustomCAFilePath          string
 	Type                          string
 	DesiredState                  string
+	MigrationMode                 bool
 	Environs                      []string
 	ImageRegistries               []string
 	ImageUIDMapFilePath           string
@@ -139,6 +135,12 @@ func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 		cobra.MarkFlagRequired(flagset, "external-postgres-admin-password")
 		cobra.MarkFlagRequired(flagset, "external-postgres-user-password")
 	}
+
+	setStateToDbMigrate := flagset.Lookup("migration-mode").Changed
+	if val, _ := flagset.GetBool("migration-mode"); !val && setStateToDbMigrate {
+		return fmt.Errorf("--migration-mode cannot be set to false")
+	}
+
 	return nil
 }
 
@@ -213,6 +215,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Black Duck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Black Duck")
+	cmd.Flags().BoolVar(&ctl.MigrationMode, "migration-mode", ctl.MigrationMode, "Create Black Duck in the database-migration state")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
@@ -233,16 +236,6 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 	// Update spec fields with flags
 	flagset.VisitAll(ctl.SetFlag)
-}
-
-// PVCStructs - file format for reading data
-type PVCStructs struct {
-	Data []blackduckv1.PVC
-}
-
-// UIDStructs - file format for reading data
-type UIDStructs struct {
-	Data []uid
 }
 
 // SetFlag sets a Black Duck's Spec field if its flag was changed
@@ -303,21 +296,20 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.PVCFilePath)
 			if err != nil {
 				log.Errorf("failed to read pvc file: %s", err)
+				return
 			}
-			pvcStructs := PVCStructs{Data: []blackduckv1.PVC{}}
-			err = json.Unmarshal([]byte(data), &pvcStructs)
+			pvcs := []blackduckv1.PVC{}
+			err = json.Unmarshal([]byte(data), &pvcs)
 			if err != nil {
 				log.Errorf("failed to unmarshal pvc structs: %s", err)
 				return
 			}
-			ctl.Spec.PVC = []blackduckv1.PVC{} // clear old values
-			for _, pvc := range pvcStructs.Data {
-				ctl.Spec.PVC = append(ctl.Spec.PVC, pvc)
-			}
+			ctl.Spec.PVC = pvcs
 		case "node-affinity-file-path":
 			data, err := util.ReadFileData(ctl.NodeAffinityFilePath)
 			if err != nil {
 				log.Errorf("failed to read node affinity file: %s", err)
+				return
 			}
 			nodeAffinities := map[string][]blackduckv1.NodeAffinity{}
 			err = json.Unmarshal([]byte(data), &nodeAffinities)
@@ -340,30 +332,38 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.CertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
+				return
 			}
 			ctl.Spec.Certificate = data
 		case "certificate-key-file-path":
 			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
+				return
 			}
 			ctl.Spec.CertificateKey = data
 		case "proxy-certificate-file-path":
 			data, err := util.ReadFileData(ctl.ProxyCertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %s", err)
+				return
 			}
 			ctl.Spec.ProxyCertificate = data
 		case "auth-custom-ca-file-path":
 			data, err := util.ReadFileData(ctl.AuthCustomCAFilePath)
 			if err != nil {
 				log.Errorf("failed to read authCustomCA file: %s", err)
+				return
 			}
 			ctl.Spec.AuthCustomCA = data
 		case "type":
 			ctl.Spec.Type = ctl.Type
 		case "desired-state":
 			ctl.Spec.DesiredState = ctl.DesiredState
+		case "migration-mode":
+			if ctl.MigrationMode {
+				ctl.Spec.DesiredState = "DbMigrate"
+			}
 		case "environs":
 			ctl.Spec.Environs = ctl.Environs
 		case "image-registries":
@@ -372,17 +372,15 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			data, err := util.ReadFileData(ctl.ImageUIDMapFilePath)
 			if err != nil {
 				log.Errorf("failed to read image UID map file: %s", err)
+				return
 			}
-			uidStructs := UIDStructs{Data: []uid{}}
-			err = json.Unmarshal([]byte(data), &uidStructs)
+			uidMap := map[string]int64{}
+			err = json.Unmarshal([]byte(data), &uidMap)
 			if err != nil {
 				log.Errorf("failed to unmarshal UID Map structs: %s", err)
 				return
 			}
-			ctl.Spec.ImageUIDMap = make(map[string]int64)
-			for _, mapStruct := range uidStructs.Data {
-				ctl.Spec.ImageUIDMap[mapStruct.Key] = mapStruct.Value
-			}
+			ctl.Spec.ImageUIDMap = uidMap
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
 		case "admin-password":

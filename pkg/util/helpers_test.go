@@ -22,42 +22,101 @@ under the License.
 package util
 
 import (
+	"reflect"
 	"sort"
 	"testing"
 )
 
+func TestMergeEnvMaps(t *testing.T) {
+	var tests = []struct {
+		description string
+		source      map[string]string
+		destination map[string]string
+		expected    map[string]string
+	}{
+		// case
+		{
+			description: "nothing is done for empty",
+			source:      map[string]string{},
+			destination: map[string]string{},
+			expected:    map[string]string{},
+		},
+		// case
+		{
+			description: "source value is kept",
+			source:      map[string]string{"key1": "val1"},
+			destination: map[string]string{},
+			expected:    map[string]string{"key1": "val1"},
+		},
+		// case
+		{
+			description: "destination is put into source",
+			source:      map[string]string{},
+			destination: map[string]string{"key1": "val1"},
+			expected:    map[string]string{"key1": "val1"},
+		},
+		// case
+		{
+			description: "source value is given preference",
+			source:      map[string]string{"key1": "valSource"},
+			destination: map[string]string{"key1": "valDest"},
+			expected:    map[string]string{"key1": "valSource"},
+		},
+		// case
+		{
+			description: "source and destination values are merged together",
+			source:      map[string]string{"key3": "val3", "key1": "val1", "key2": "val2"},
+			destination: map[string]string{"key4": "val4", "key6": "val6", "key5": "val5"},
+			expected:    map[string]string{"key1": "val1", "key2": "val2", "key3": "val3", "key4": "val4", "key5": "val5", "key6": "val6"},
+		},
+	}
+
+	for _, test := range tests {
+		observed := MergeEnvMaps(test.source, test.destination)
+		if v := reflect.DeepEqual(test.expected, observed); !v {
+			t.Errorf("failed to merge slices '%s', expected %+v, got %+v", test.description, test.expected, observed)
+		}
+	}
+}
+
 func TestMergeEnvSlices(t *testing.T) {
 	var tests = []struct {
+		description string
 		source      []string
 		destination []string
 		expected    []string
 	}{
-		// case : nothing is done for empty
+		// case
 		{
+			description: "nothing is done for empty",
 			source:      []string{},
 			destination: []string{},
 			expected:    []string{},
 		},
-		// case : source value is kept
+		// case
 		{
+			description: "source value is kept",
 			source:      []string{"key1:val1"},
 			destination: []string{},
 			expected:    []string{"key1:val1"},
 		},
-		// case : destination is put into source
+		// case
 		{
+			description: "destination is put into source",
 			source:      []string{},
 			destination: []string{"key1:val1"},
 			expected:    []string{"key1:val1"},
 		},
-		// case : source value is given preference
+		// case
 		{
+			description: "source value is given preference",
 			source:      []string{"key1:valSource"},
 			destination: []string{"key1:valDest"},
 			expected:    []string{"key1:valSource"},
 		},
-		// case : source and destination values are merged together
+		// case
 		{
+			description: "source and destination values are merged together",
 			source:      []string{"key3:val3", "key1:val1", "key2:val2"},
 			destination: []string{"key4:val4", "key6:val6", "key5:val5"},
 			expected:    []string{"key1:val1", "key2:val2", "key3:val3", "key4:val4", "key5:val5", "key6:val6"},
@@ -68,15 +127,16 @@ func TestMergeEnvSlices(t *testing.T) {
 		observed := MergeEnvSlices(test.source, test.destination)
 		sort.Strings(test.expected)
 		sort.Strings(observed)
-		if v := Equal(test.expected, observed); !v {
-			t.Errorf("failed to merge slices, expected %+v, got %+v", test.expected, observed)
+		if v := SlicesEqual(test.expected, observed); !v {
+			t.Errorf("failed to merge slices '%s', expected %+v, got %+v", test.description, test.expected, observed)
 		}
 	}
 }
 
-// Equal tells whether a and b contain the same elements.
+// SlicesEqual tells whether a and b contain the same elements.
+// Elements must be in the same order.
 // A nil argument is equivalent to an empty slice.
-func Equal(a, b []string) bool {
+func SlicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}

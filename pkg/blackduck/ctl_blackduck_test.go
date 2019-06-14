@@ -63,7 +63,11 @@ func TestCheckSpecFlags(t *testing.T) {
 	// default case
 	blackduckCtl := NewBlackDuckCtl()
 	cmd := &cobra.Command{}
-	assert.Nil(blackduckCtl.CheckSpecFlags(cmd.Flags()))
+	blackduckCtl.AddSpecFlags(cmd, true)
+	err := blackduckCtl.CheckSpecFlags(cmd.Flags())
+	if err != nil {
+		t.Errorf("expected nil error, got: %+v", err)
+	}
 
 	var tests = []struct {
 		input *Ctl
@@ -146,6 +150,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.AuthCustomCAFilePath, "auth-custom-ca-file-path", ctl.AuthCustomCAFilePath, "Absolute path to a file for the Custom Auth CA for Black Duck")
 	cmd.Flags().StringVar(&ctl.Type, "type", ctl.Type, "Type of Black Duck")
 	cmd.Flags().StringVar(&ctl.DesiredState, "desired-state", ctl.DesiredState, "Desired state of Black Duck")
+	cmd.Flags().BoolVar(&ctl.MigrationMode, "migration-mode", ctl.MigrationMode, "Create Black Duck in the database-migration state")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
@@ -374,6 +379,36 @@ func TestSetFlag(t *testing.T) {
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{PersistentStorage: true},
 		},
+		// case
+		{
+			flagName:   "pvc-file-path",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:        &blackduckv1.BlackduckSpec{},
+				PVCFilePath: "../../examples/synopsysctl/pvc.json",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "name1", Size: "size1", StorageClass: "storageclass1"}, {Name: "name2", Size: "size2", StorageClass: "storageclass2"}}},
+		},
+		// case
+		{
+			flagName:   "node-affinity-file-path",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                 &blackduckv1.BlackduckSpec{},
+				NodeAffinityFilePath: "../../examples/synopsysctl/nodeAffinity.json",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{NodeAffinities: map[string][]blackduckv1.NodeAffinity{
+				"affinity1": {
+					{
+						AffinityType: "type1",
+						Key:          "key1",
+						Op:           "op1",
+						Values:       []string{"val1.1", "val1.2"},
+					},
+				},
+			},
+			},
+		},
 		// case: add postgres-claim with size if PVC doesn't exist
 		{
 			flagName:   "postgres-claim-size",
@@ -416,6 +451,46 @@ func TestSetFlag(t *testing.T) {
 		},
 		// case
 		{
+			flagName:   "certificate-file-path",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                &blackduckv1.BlackduckSpec{},
+				CertificateFilePath: "../../examples/synopsysctl/certificate.txt",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{Certificate: "CERTIFICATE"},
+		},
+		// case
+		{
+			flagName:   "certificate-key-file-path",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                   &blackduckv1.BlackduckSpec{},
+				CertificateKeyFilePath: "../../examples/synopsysctl/certificateKey.txt",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{CertificateKey: "CERTIFICATE_KEY=CERTIFICATE_KEY_DATA"},
+		},
+		// case
+		{
+			flagName:   "proxy-certificate-file-path",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                     &blackduckv1.BlackduckSpec{},
+				ProxyCertificateFilePath: "../../examples/synopsysctl/proxyCertificate.txt",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{ProxyCertificate: "PROXY_CERTIFICATE"},
+		},
+		// case
+		{
+			flagName:   "auth-custom-ca-file-path",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                 &blackduckv1.BlackduckSpec{},
+				AuthCustomCAFilePath: "../../examples/synopsysctl/authCustomCA.txt",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{AuthCustomCA: "AUTH_CUSTOM_CA"},
+		},
+		// case
+		{
 			flagName:   "type",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
@@ -433,6 +508,16 @@ func TestSetFlag(t *testing.T) {
 				DesiredState: "changed",
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{DesiredState: "changed"},
+		},
+		// case
+		{
+			flagName:   "migration-mode",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:          &blackduckv1.BlackduckSpec{},
+				MigrationMode: true,
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{DesiredState: "DbMigrate"},
 		},
 		// case
 		{
@@ -455,6 +540,17 @@ func TestSetFlag(t *testing.T) {
 				ImageRegistries: []string{"changed"},
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{ImageRegistries: []string{"changed"}},
+		},
+		// case
+		{
+			// TODO: add a check for name:Val
+			flagName:   "image-uid-map-file-path",
+			initialCtl: NewBlackDuckCtl(),
+			changedCtl: &Ctl{
+				Spec:                &blackduckv1.BlackduckSpec{},
+				ImageUIDMapFilePath: "../../examples/synopsysctl/imageUIDMap.json",
+			},
+			changedSpec: &blackduckv1.BlackduckSpec{ImageUIDMap: map[string]int64{"a": 0, "b": 1, "c": 2}},
 		},
 		// case
 		{

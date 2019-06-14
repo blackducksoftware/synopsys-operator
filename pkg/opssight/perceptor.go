@@ -22,12 +22,14 @@ under the License.
 package opssight
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
@@ -179,15 +181,31 @@ func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error)
 }
 
 // PerceptorSecret create a secret for perceptor
-func (p *SpecConfig) PerceptorSecret() *components.Secret {
+func (p *SpecConfig) PerceptorSecret() (*components.Secret, error) {
 	secretConfig := horizonapi.SecretConfig{
 		Name:      p.opssight.Spec.SecretName,
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.SecretTypeOpaque,
 	}
 	secret := components.NewSecret(secretConfig)
+
+	// empty data fields that will be overwritten
+	emptyHosts := make(map[string]*opssightapi.Host)
+	bytes, err := json.Marshal(emptyHosts)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal OpsSight's Host struct: %+v", err)
+	}
+	secret.AddData(map[string][]byte{p.opssight.Spec.Blackduck.ConnectionsEnvironmentVariableName: bytes})
+
+	emptySecuredRegistries := make(map[string]*opssightapi.RegistryAuth)
+	bytes, err = json.Marshal(emptySecuredRegistries)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal secured registries struct: %+v", err)
+	}
+	secret.AddData(map[string][]byte{"securedRegistries.json": bytes})
+
 	secret.AddLabels(map[string]string{"name": p.opssight.Spec.SecretName, "app": "opssight"})
-	return secret
+	return secret, nil
 }
 
 // GetPerceptorOpenShiftRoute creates the OpenShift route component for the perceptor model

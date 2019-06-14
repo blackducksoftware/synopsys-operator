@@ -23,16 +23,23 @@ package soperator
 
 import "github.com/blackducksoftware/synopsys-operator/pkg/util"
 
+var defaultCrdVersionData = operatorVersions{
+	Blackduck: &crdVersionData{CRDName: util.BlackDuckCRDName, APIVersion: "v1"},
+	OpsSight:  &crdVersionData{CRDName: util.OpsSightCRDName, APIVersion: "v1"},
+	Alert:     &crdVersionData{CRDName: util.AlertCRDName, APIVersion: "v1"},
+}
+
 // SOperatorCRDVersionMap is a global lookup table in the package. It maps versions of the operator
 // to the resource versions it is compatible with
 var SOperatorCRDVersionMap = operatorCRDVersionMap{
 	versionMap: map[string]operatorVersions{
-		"latest": {
-			Blackduck: &crdVersionData{CRDName: util.BlackDuckCRDName, APIVersion: "v1"},
-			OpsSight:  &crdVersionData{CRDName: util.OpsSightCRDName, APIVersion: "v1"},
-			Alert:     &crdVersionData{CRDName: util.AlertCRDName, APIVersion: "v1"},
-			Prm:       &crdVersionData{CRDName: util.PrmCRDName, APIVersion: "v1"},
-		},
+		"master":    defaultCrdVersionData,
+		"latest":    defaultCrdVersionData,
+		"2019.4.2":  defaultCrdVersionData,
+		"2019.4.1":  defaultCrdVersionData,
+		"2019.4.0":  defaultCrdVersionData,
+		"2019.1.0":  defaultCrdVersionData,
+		"2018.12.0": defaultCrdVersionData,
 	},
 }
 
@@ -67,11 +74,11 @@ func (m *operatorCRDVersionMap) GetVersions() []string {
 }
 
 // GetCRDVersions returns CRDVersionData for an Operator's Version. If the Operator's
-// version doesn't exist then it assumes master
+// version doesn't exist then it assumes the defaultCrdVersionData
 func (m *operatorCRDVersionMap) GetCRDVersions(operatorVersion string) operatorVersions {
 	versions, ok := m.versionMap[operatorVersion]
 	if !ok {
-		return m.versionMap["latest"]
+		return defaultCrdVersionData
 	}
 	return versions
 }

@@ -32,13 +32,13 @@ import (
 // stopCmd stops a resource in the cluster
 var stopCmd = &cobra.Command{
 	Use:   "stop",
-	Short: "Stops a Synopsys resource in your cluster",
+	Short: "Stop a Synopsys resource",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("must specify a resource")
 	},
 }
 
-// stopAlertCmd stops an Alert in the cluster
+// stopAlertCmd stops an Alert instance
 var stopAlertCmd = &cobra.Command{
 	Use:     "alert NAME",
 	Example: "synopsysctl stop alert <name>\nsynopsysctl stop alert <name> -n <namespace>",
@@ -60,7 +60,7 @@ var stopAlertCmd = &cobra.Command{
 		// Get the Alert
 		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
 		if err != nil {
-			log.Errorf("error getting %s Alert instance due to %+v", alertNamespace, err)
+			log.Errorf("error stopping Alert '%s' due to %+v", alertNamespace, err)
 			return nil
 		}
 
@@ -79,7 +79,7 @@ var stopAlertCmd = &cobra.Command{
 	},
 }
 
-// stopBlackDuckCmd stops a Black Duck in the cluster
+// stopBlackDuckCmd stops a Black Duck instance
 var stopBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAME",
 	Example: "synopsysctl stop blackduck <name>\nsynopsysctl stop blackduck <name> -n <namespace>",
@@ -119,7 +119,7 @@ var stopBlackDuckCmd = &cobra.Command{
 	},
 }
 
-// stopOpsSightCmd stops an OpsSight in the cluster
+// stopOpsSightCmd stops an OpsSight instance
 var stopOpsSightCmd = &cobra.Command{
 	Use:     "opssight NAME",
 	Example: "synopsysctl stop opssight <name>",

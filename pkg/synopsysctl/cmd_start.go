@@ -29,16 +29,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// startCmd starts a resource in the cluster if it's stopped
+// startCmd starts a resource in the cluster
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start a Synopsys resource in your cluster",
+	Short: "Start a Synopsys resource",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("must specify a resource")
 	},
 }
 
-// startAlertCmd starts an Alert in the cluster
+// startAlertCmd starts an Alert instance
 var startAlertCmd = &cobra.Command{
 	Use:     "alert NAMES",
 	Example: "synopsysctl start alert <name>\nsynopsysctl start alert <name> -n <namespace>",
@@ -78,7 +78,7 @@ var startAlertCmd = &cobra.Command{
 	},
 }
 
-// startBlackDuckCmd starts a Black Duck in the cluster
+// startBlackDuckCmd starts a Black Duck instance
 var startBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAMESPACE",
 	Example: "synopsysctl start blackduck <name>\nsynopsysctl start blackduck <name> -n <namespace>",
@@ -118,7 +118,7 @@ var startBlackDuckCmd = &cobra.Command{
 	},
 }
 
-// startOpsSightCmd starts an OpsSight in the cluster
+// startOpsSightCmd starts an OpsSight instance
 var startOpsSightCmd = &cobra.Command{
 	Use:     "opssight NAMESPACE",
 	Example: "synopsysctl start opssight <name>",
