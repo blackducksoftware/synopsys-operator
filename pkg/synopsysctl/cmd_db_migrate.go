@@ -42,7 +42,7 @@ var dbMigrateCmd = &cobra.Command{
 // dbMigrateBlackDuckCmd puts a Black Duck instance into the cluster
 var dbMigrateBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAME",
-	Example: "synopsysctl db-migrate blackduck <name>",
+	Example: "synopsysctl db-migrate blackduck <name>\nsynopsysctl db-migrate blackduck <name> -n <namespace>",
 	Short:   "Put a Black Duck instance into the database migration mode",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -51,32 +51,37 @@ var dbMigrateBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckNamespace := args[0]
-		log.Infof("putting Black Duck '%s' into database migration mode...", blackDuckNamespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, "", namespace)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+		log.Infof("putting '%s' Black Duck instance in '%s' namespace into database migration mode...", blackDuckName, blackDuckNamespace)
 
 		// Get the Black Duck
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			log.Errorf("error getting Black Duck '%s' instance due to %+v", blackDuckNamespace, err)
+			log.Errorf("unable to get %s Black Duck instance in %s namespace due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 
 		// Make changes to Spec
 		currBlackDuck.Spec.DesiredState = "DbMigrate"
 		// Update Black Duck
-		_, err = util.UpdateBlackduck(blackDuckClient,
-			currBlackDuck.Spec.Namespace, currBlackDuck)
+		_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
 		if err != nil {
-			log.Errorf("error putting Black Duck '%s' into database migration mode due to %+v", blackDuckNamespace, err)
+			log.Errorf("error putting '%s' Black Duck instance in '%s' namespace into database migration mode due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
 
-		log.Infof("successfully put Black Duck '%s' into database migration mode", blackDuckNamespace)
+		log.Infof("successfully put '%s' Black Duck instance in '%s' namespace into database migration mode", blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }
 
 func init() {
-	dbMigrateCmd.AddCommand(dbMigrateBlackDuckCmd)
 	rootCmd.AddCommand(dbMigrateCmd)
+
+	dbMigrateBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to delete the resource(s)")
+	dbMigrateCmd.AddCommand(dbMigrateBlackDuckCmd)
 }

@@ -34,6 +34,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -1658,5 +1659,50 @@ func DeleteResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Cli
 		}
 	}
 
+	return nil
+}
+
+// CheckAndUpdateNamespace will check whether the namespace is exist and if exist, update the version label in namespace of the updated/deleted resource
+func CheckAndUpdateNamespace(kubeClient *kubernetes.Clientset, resourceName string, namespace string, name string, version string, isDelete bool) (bool, error) {
+	ns, err := GetNamespace(kubeClient, namespace)
+	if err == nil {
+		isLabelUpdated := false
+		if isDelete {
+			delete(ns.Labels, fmt.Sprintf("synopsys.com.%s.%s", resourceName, name))
+			isLabelUpdated = true
+		} else {
+			if existingVersion, ok := ns.Labels[fmt.Sprintf("synopsys.com.%s.%s", resourceName, name)]; !isDelete && (!ok || existingVersion != version) {
+				ns.Labels[fmt.Sprintf("synopsys.com.%s.%s", resourceName, name)] = version
+				isLabelUpdated = true
+			}
+		}
+		if isLabelUpdated {
+			_, err = UpdateNamespace(kubeClient, ns)
+			if err != nil {
+				return true, fmt.Errorf("unable to update the %s namespace labels due to %+v", namespace, err)
+			}
+		}
+		return true, nil
+	}
+	return false, fmt.Errorf("unable to get %s namespace due to %+v", namespace, err)
+}
+
+// DeployCRDNamespace creates an empty Horizon namespace
+func DeployCRDNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, resourceName string, namespace string, name string, version string) error {
+	if isNamespaceExist, err := CheckAndUpdateNamespace(kubeClient, resourceName, namespace, name, version, false); isNamespaceExist {
+		return err
+	}
+
+	namespaceDeployer, err := deployer.NewDeployer(restConfig)
+	ns := components.NewNamespace(horizonapi.NamespaceConfig{
+		Name:      namespace,
+		Namespace: namespace,
+	})
+	ns.AddLabels(map[string]string{"owner": "synopsys-operator", fmt.Sprintf("synopsys.com.%s.%s", resourceName, name): version})
+	namespaceDeployer.AddComponent(horizonapi.NamespaceComponent, ns)
+	err = namespaceDeployer.Run()
+	if err != nil {
+		return fmt.Errorf("error in creating the namespace due to %+v", err)
+	}
 	return nil
 }

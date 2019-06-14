@@ -147,6 +147,11 @@ func (b *Blackduck) Delete(name string) error {
 		}
 	}
 
+	// update the namespace label if the version of the app got deleted
+	if isNamespaceExist, err := util.CheckAndUpdateNamespace(b.kubeClient, util.BlackDuckName, namespace, name, "", true); isNamespaceExist {
+		return err
+	}
+
 	return nil
 }
 

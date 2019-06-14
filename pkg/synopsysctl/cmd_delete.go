@@ -61,6 +61,7 @@ var deleteAlertCmd = &cobra.Command{
 			err = alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertName, &metav1.DeleteOptions{})
 			if err != nil {
 				log.Errorf("error deleting an Alert %s instance in %s namespace due to %+v", alertName, alertNamespace, err)
+				return nil
 			}
 			log.Infof("successfully deleted an Alert '%s' instance in '%s' namespace", alertName, alertNamespace)
 		}
@@ -90,6 +91,7 @@ var deleteBlackDuckCmd = &cobra.Command{
 			err = blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Delete(blackDuckName, &metav1.DeleteOptions{})
 			if err != nil {
 				log.Errorf("error deleting Black Duck %s instance in %s namespace due to '%s'", blackDuckName, blackDuckNamespace, err)
+				return nil
 			}
 			log.Infof("successfully deleted Black Duck '%s' in %s namespace", blackDuckName, blackDuckNamespace)
 		}
@@ -119,6 +121,7 @@ var deleteOpsSightCmd = &cobra.Command{
 			err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightName, &metav1.DeleteOptions{})
 			if err != nil {
 				log.Errorf("error deleting OpsSight %s instance in %s namespace due to '%s'", opsSightName, opsSightNamespace, err)
+				return nil
 			}
 			log.Infof("successfully deleted OpsSight '%s' in %s namespace", opsSightName, opsSightNamespace)
 		}

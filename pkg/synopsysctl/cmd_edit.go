@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"fmt"
 
+	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -40,8 +41,8 @@ var editCmd = &cobra.Command{
 // editAlertCmd edits an Alert by updating the spec
 // or using the kube/oc editor
 var editAlertCmd = &cobra.Command{
-	Use:     "alert NAMESPACE",
-	Example: "synopsysctl edit alert altnamespace",
+	Use:     "alert NAME",
+	Example: "synopsysctl edit alert <name>\nsynopsysctl edit alert <name> -n <namespace>",
 	Short:   "Edit an instance of Alert",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -50,14 +51,18 @@ var editAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName := args[0]
-		log.Infof("editing Alert %s instance...", alertName)
-		err := RunKubeEditorCmd(restconfig, "edit", "alert", alertName, "-n", alertName)
+		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, util.AlertName, namespace)
 		if err != nil {
-			log.Errorf("error editing Alert: %s", err)
+			log.Error(err)
 			return nil
 		}
-		log.Infof("successfully edited Alert: '%s'", alertName)
+		log.Infof("editing an Alert '%s' instance in '%s' namespace...", alertName, alertNamespace)
+		err = RunKubeEditorCmd(restconfig, "edit", "alert", alertName, "-n", alertNamespace)
+		if err != nil {
+			log.Errorf("error editing an Alert '%s' instance in '%s' namespace due to %+v", alertName, alertNamespace, err)
+			return nil
+		}
+		log.Infof("successfully edited '%s' Alert instance in '%s' namespace...", alertName, alertNamespace)
 		return nil
 	},
 }
@@ -65,8 +70,8 @@ var editAlertCmd = &cobra.Command{
 // editBlackDuckCmd edits a Black Duck by updating the spec
 // or using the kube/oc editor
 var editBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck NAMESPACE",
-	Example: "synopsysctl edit blackduck bdnamespace",
+	Use:     "blackduck NAME",
+	Example: "synopsysctl edit blackduck <name>\nsynopsysctl edit blackduck <name> -n <namespace>",
 	Short:   "Edit a Black Duck instance",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -75,14 +80,18 @@ var editBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName := args[0]
-		log.Debugf("editing Black Duck %s instance...", blackDuckName)
-		err := RunKubeEditorCmd(restconfig, "edit", "blackduck", blackDuckName, "-n", blackDuckName)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
-			log.Errorf("error editing Black Duck: %s", err)
+			log.Error(err)
 			return nil
 		}
-		log.Infof("successfully edited Black Duck: '%s'", blackDuckName)
+		log.Infof("editing Black Duck '%s' instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
+		err = RunKubeEditorCmd(restconfig, "edit", "blackduck", blackDuckName, "-n", blackDuckNamespace)
+		if err != nil {
+			log.Errorf("error editing Black Duck '%s' instance in '%s' namespace due to %+v", blackDuckName, blackDuckNamespace, err)
+			return nil
+		}
+		log.Infof("successfully edited '%s' Black Duck instance in '%s' namespace...", blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }
@@ -90,8 +99,8 @@ var editBlackDuckCmd = &cobra.Command{
 // editOpsSightCmd edits an OpsSight by updating the spec
 // or using the kube/oc editor
 var editOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAMESPACE",
-	Example: "synopsysctl edit opssight opsnamespace",
+	Use:     "opssight NAME",
+	Example: "synopsysctl edit opssight <name>\nsynopsysctl edit opssight <name> -n <namespace>",
 	Short:   "Edit an instance of OpsSight",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -100,14 +109,18 @@ var editOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName := args[0]
-		log.Debugf("editing OpsSight %s isntance...", opsSightName)
-		err := RunKubeEditorCmd(restconfig, "edit", "opssight", opsSightName, "-n", opsSightName)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
 		if err != nil {
-			log.Errorf("error editing OpsSight: %s", err)
+			log.Error(err)
 			return nil
 		}
-		log.Infof("successfully edited OpsSight: '%s'", opsSightName)
+		log.Infof("editing an OpsSight '%s' instance in '%s' namespace...", opsSightName, opsSightNamespace)
+		err = RunKubeEditorCmd(restconfig, "edit", "opssight", opsSightName, "-n", opsSightNamespace)
+		if err != nil {
+			log.Errorf("error editing OpsSight '%s' instance in '%s' namespace due to %+v", opsSightName, opsSightNamespace, err)
+			return nil
+		}
+		log.Infof("successfully edited '%s' OpsSight instance in '%s' namespace...", opsSightName, opsSightNamespace)
 		return nil
 	},
 }
@@ -120,5 +133,7 @@ func init() {
 
 	editBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to edit the resource(s)")
 	editCmd.AddCommand(editBlackDuckCmd)
+
+	editOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to edit the resource(s)")
 	editCmd.AddCommand(editOpsSightCmd)
 }
