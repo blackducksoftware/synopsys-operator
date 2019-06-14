@@ -228,6 +228,12 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 		return v.redirect(c, blackduck, err)
 	}
 
+	// Ensure that the fields are correctly populated
+	if err := validateBlackduck(blackduck); err != nil {
+		c.Flash().Add("error", err.Error())
+		return v.New(c)
+	}
+
 	log.Infof("create blackduck: %+v", blackduck)
 
 	_, err = util.GetHub(v.blackduckClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
@@ -362,4 +368,23 @@ func (v BlackducksResource) Destroy(c buffalo.Context) error {
 
 	// Redirect to the blackducks index page
 	return c.Redirect(302, "/blackducks")
+}
+
+func validateBlackduck(blackduck *blackduckapi.Blackduck) error {
+	if blackduck.Spec.ExternalPostgres != nil {
+		if len(blackduck.Spec.ExternalPostgres.PostgresAdmin) == 0 ||
+			len(blackduck.Spec.ExternalPostgres.PostgresAdminPassword) == 0 ||
+			len(blackduck.Spec.ExternalPostgres.PostgresHost) == 0 ||
+			blackduck.Spec.ExternalPostgres.PostgresPort == 0 ||
+			len(blackduck.Spec.ExternalPostgres.PostgresUser) == 0 ||
+			len(blackduck.Spec.ExternalPostgres.PostgresUserPassword) == 0 {
+
+			return errors.New("All the external database fields must be populated")
+		}
+	} else {
+		if len(blackduck.Spec.AdminPassword) == 0 || len(blackduck.Spec.PostgresPassword) == 0 || len(blackduck.Spec.UserPassword) == 0 {
+			return errors.New("All the Postgres password fields must be populated")
+		}
+	}
+	return nil
 }
