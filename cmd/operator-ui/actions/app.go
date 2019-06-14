@@ -69,6 +69,7 @@ func App() *buffalo.App {
 			log.Panic(err)
 		}
 		app.Resource("/blackducks", blackDuckResource)
+		app.POST("/blackducks/{blackduck_id}/state", blackDuckResource.ChangeState)
 		app.ServeFiles("/", assetsBox) // serve files from the public directory
 	}
 
