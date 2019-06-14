@@ -29,7 +29,7 @@ import (
 
 func TestParseImageVersion(t *testing.T) {
 	version := "1.0.6"
-	versions, err := ParseImageVersion(version)
+	versions, err := ValidateImageVersion(version)
 	t.Logf("versions: %+v", versions)
 	if err != nil {
 		t.Errorf("unable to parse image version: %+v", err)
@@ -45,19 +45,19 @@ func TestParseImageVersion(t *testing.T) {
 	}
 
 	version = "2019.1.0"
-	_, err = ParseImageVersion(version)
+	_, err = ValidateImageVersion(version)
 	if err != nil {
 		t.Errorf("unable to parse image version: %+v", err)
 	}
 
 	version = "2019.a.b.c"
-	versions, err = ParseImageVersion(version)
+	versions, err = ValidateImageVersion(version)
 	if err == nil {
 		t.Errorf("unable to get image version: %+v", versions)
 	}
 
 	version = "2019.1.0-SNAPSHOT"
-	versions, err = ParseImageVersion(version)
+	versions, err = ValidateImageVersion(version)
 	if err == nil {
 		t.Errorf("unable to get image version: %+v", versions)
 	}
@@ -121,10 +121,68 @@ func TestParseImageString(t *testing.T) {
 		} else {
 			image = tc.repo
 		}
-		length, err := ParseImageString(image)
+		imageSubstringSubmatch, err := ValidateImageString(image)
+		length := len(imageSubstringSubmatch)
 
 		if length != tc.expectedLength {
 			t.Errorf("expected length %d got %d, err %+v", tc.expectedLength, length, err)
 		}
+	}
+}
+
+func TestGetImageVersion(t *testing.T) {
+	type args struct {
+		image string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "base",
+			args: args{
+				image: "docker.io/blackducksoftware/synopsys-operator:2019.4.2",
+			},
+			want:    "2019.4.2",
+			wantErr: false,
+		},
+		{
+			name: "edge",
+			args: args{
+				image: "artifactory.test.lab:8321/blackducksoftware/synopsys-operator:2019.4.2",
+			},
+			want:    "2019.4.2",
+			wantErr: false,
+		},
+		{
+			name: "no version tag fed",
+			args: args{
+				image: "docker.io/blackducksoftware/synopsys-operator",
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "no version tag, but still two or more splits; also testing weird tag",
+			args: args{
+				image: "artifactory.test.lab:8321/blackducksoftware/synopsys-operator",
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetImageTag(tt.args.image)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetImageTag() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetImageTag() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -61,7 +60,7 @@ func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string
 	for _, reg := range c.hubSpec.ImageRegistries {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
-			_, err := hubutils.ParseImageString(reg)
+			_, err := util.ValidateImageString(reg)
 			if err != nil {
 				log.Error(err)
 				break
