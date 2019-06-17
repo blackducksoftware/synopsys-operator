@@ -1,5 +1,6 @@
 <body onload="formLoad()" onsubmit="return validateAndGetValues()">
   <div class="new-container">
+    <%= f.InputTag("Name", {value: blackduck.Name, label: "Name *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
     <%= f.InputTag("Spec.Namespace", {value: blackduck.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
     <%= f.SelectTag("Spec.Version", {options: blackduck.View.SupportedVersions, value: blackduck.Spec.Version, label: "Black Duck Version"}) %>
     <%= f.InputTag("Spec.LicenseKey", {value: blackduck.Spec.LicenseKey, label: "License Key"}) %>
@@ -30,18 +31,18 @@
     </div>
     <%= f.CheckboxTag("externalDbCheckbox", {label: "External Database", onchange: "toggleDbCheckbox(this)"}) %>
     <div id="externalDbId">
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresHost", {value: blackduck.Spec.ExternalPostgres.PostgresHost, label: "PostgreSQL Host", required: true}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresPort", {value: blackduck.Spec.ExternalPostgres.PostgresPort, label: "PostgreSQL Port", required: true}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdmin", {value: blackduck.Spec.ExternalPostgres.PostgresAdmin, label: "PostgreSQL Admin User", placeholder: "blackduck", required: true}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdminPassword", {value: blackduck.Spec.ExternalPostgres.PostgresAdminPassword, label: "PostgreSQL Admin Password", required: true}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresUser", {value: blackduck.Spec.ExternalPostgres.PostgresUser, label: "PostgreSQL User", placeholder: "blackduck_user", required: true}) %>
-      <%= f.InputTag("Spec.ExternalPostgres.PostgresUserPassword", {value: blackduck.Spec.ExternalPostgres.PostgresUserPassword, label: "PostgreSQL User Password", required: true}) %>
-      <%= f.CheckboxTag("Spec.ExternalPostgres.PostgresSsl", {value: blackduck.Spec.ExternalPostgres.PostgresSsl, label: "Enable SSL", required: true}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresHost", {value: blackduck.Spec.ExternalPostgres.PostgresHost, label: "PostgreSQL Host"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresPort", {value: blackduck.Spec.ExternalPostgres.PostgresPort, label: "PostgreSQL Port"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdmin", {value: blackduck.Spec.ExternalPostgres.PostgresAdmin, label: "PostgreSQL Admin User", placeholder: "blackduck"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresAdminPassword", {value: blackduck.Spec.ExternalPostgres.PostgresAdminPassword, label: "PostgreSQL Admin Password", type: "password"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresUser", {value: blackduck.Spec.ExternalPostgres.PostgresUser, label: "PostgreSQL User", placeholder: "blackduck_user"}) %>
+      <%= f.InputTag("Spec.ExternalPostgres.PostgresUserPassword", {value: blackduck.Spec.ExternalPostgres.PostgresUserPassword, label: "PostgreSQL User Password", type: "password"}) %>
+      <%= f.CheckboxTag("Spec.ExternalPostgres.PostgresSsl", {value: blackduck.Spec.ExternalPostgres.PostgresSsl, label: "Enable SSL"}) %>
     </div>
     <div id="internalDbId">
-      <%= f.InputTag("Spec.UserPassword", {value: blackduck.Spec.UserPassword, label: "PostgreSQL User Password", required: true}) %>
-      <%= f.InputTag("Spec.AdminPassword", {value: blackduck.Spec.AdminPassword, label: "PostgreSQL Admin Password", required: true}) %>
-      <%= f.InputTag("Spec.PostgresPassword", {value: blackduck.Spec.PostgresPassword, label: "PostgreSQL Postgres Password", required: true}) %>
+      <%= f.InputTag("Spec.UserPassword", {value: blackduck.Spec.UserPassword, label: "PostgreSQL User Password *", type: "password", required: true}) %>
+      <%= f.InputTag("Spec.AdminPassword", {value: blackduck.Spec.AdminPassword, label: "PostgreSQL Admin Password *", type: "password", required: true}) %>
+      <%= f.InputTag("Spec.PostgresPassword", {value: blackduck.Spec.PostgresPassword, label: "PostgreSQL Postgres Password *", type: "password", required: true}) %>
     </div>
     <%= f.SelectTag("Spec.CertificateName", {value: blackduck.Spec.CertificateName, options: blackduck.View.CertificateNames, label: "Certificate Name", onchange: "checkNginxCertificate()"}) %>
     <div id="certificateId">
@@ -78,21 +79,18 @@
     <br />
   </div>
 </body>
-
 <style>
   ul {
     position: relative;
     /* outline: 0; */
     border: 1px solid #ced4da;
   }
-
   ul li {
     position: relative;
     padding: 10px 5px 5px 30px;
     background: transparent;
     box-shadow: 0 0px #EEE;
   }
-
   ul li:before {
     content: '';
     position: absolute;
@@ -106,12 +104,10 @@
     background: #fff;
     display: block;
   }
-
   ul li:hover {
     background: #FAFAFA;
   }
 </style>
-
 <script>
   // check during form load
   function formLoad() {
@@ -128,7 +124,7 @@
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
     //   document.getElementById("blackduck-Status.ErrorMessage").hidden = false;
     // }
-
+  
     // Ensure containerTags is always a set of <li>s and always at least one
     initialContentTagsContent = {}
     for (let editableList of ["containerTags", "environs"]) {
@@ -151,7 +147,7 @@
       })
     }
   }
-
+  
   function updateCheckbox(elementId, environName, defaultState) {
     var updatedState = defaultState;
     var extractedStates = environListExtract(environName);
@@ -165,7 +161,7 @@
     }
     document.getElementById(elementId).checked = updatedState;
   }
-
+  
   function update_USE_BINARY_UPLOADS_checkbox() {
     updateCheckbox(
       "blackduck-Spec.Environs-USE_BINARY_UPLOADS",
@@ -173,14 +169,14 @@
       false
     );
   }
-
+  
   function updateEnvironFromCB(envStr, boolType, addIfMissing) {
     boolT = boolType == 'int' ? '1' : true;
     boolF = boolType == 'int' ? '0' : false;
     envCB = document.getElementById("blackduck-Spec.Environs-" + envStr);
     updateEnviron(envStr, envCB.checked == true ? boolT : boolF, addIfMissing);
   }
-
+  
   function update_ENABLE_SOURCE_UPLOADS_checkbox() {
     updateCheckbox(
       "blackduck-Spec.Environs-ENABLE_SOURCE_UPLOADS",
@@ -188,7 +184,7 @@
       false
     );
   }
-
+  
   function updateEnviron(environName, newStr, insertIfMissing) {
     var extractedStates = environListExtract(environName);
     var envElement = document.getElementById("environs");
@@ -203,7 +199,7 @@
     var changeIndex = finalExtractedState["index"];
     envElement.children[changeIndex].innerHTML = environName + ":" + newStr;
   }
-
+  
   function environListExtract(environName) {
     var searchStr = environName + ":"
     var results = [];
@@ -218,7 +214,7 @@
     }
     return results;
   }
-
+  
   function environListRemove(environName) {
     var toRemove = environListExtract(environName);
     var envList = document.getElementById("environs");
@@ -226,16 +222,17 @@
       envList.removeChild(envList.children[toRemove.pop()["index"]]);
     }
   }
-
+  
   function environListInsert(environName, newStr) {
     envList = document.getElementById("environs");
     var newEnvLi = document.createElement('li');
     newEnvLi.appendChild(document.createTextNode(environName + ":" + newStr));
     envList.appendChild(newEnvLi);
   }
-
+  
   function editableFalse() {
     if (document.getElementById("blackduck-Spec.Namespace") != null && document.getElementById("blackduck-Spec.Namespace").value != "") {
+      document.getElementById("blackduck-Name").setAttribute("readonly", "readonly")
       document.getElementById("blackduck-Spec.Namespace").setAttribute("readonly", "readonly")
       document.getElementById("blackduck-Spec.DbPrototype").setAttribute("readonly", "readonly")
       if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
@@ -248,13 +245,13 @@
       }
     }
   }
-
+  
   // set empty certificate values if the certificate is not manual
   function certificateEmptyValue() {
     document.getElementById("blackduck-Spec.Certificate").value = "";
     document.getElementById("blackduck-Spec.CertificateKey").value = "";
   }
-
+  
   // check the nginx certificate name, if manual display certificate and certificate key
   function checkNginxCertificate() {
     certificateId = document.getElementById("certificateId");
@@ -271,19 +268,19 @@
     }
     certificateEmptyValue();
   }
-
+  
   // set default pvc values
   function pvcDefaultValue() {
     document.getElementById("blackduck-Spec.PVCStorageClass").value = "";
     document.getElementById("blackduck-Spec.ScanType").value = "Artifacts";
   }
-
+  
   // set empty pvc values if clone or backup is not supported
   function pvcEmptyValue() {
     document.getElementById("blackduck-Spec.PVCStorageClass").value = "";
     document.getElementById("blackduck-Spec.ScanType").value = "";
   }
-
+  
   // load the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
   function loadPVC() {
     pvcId = document.getElementById("pvcId")
@@ -293,7 +290,7 @@
       pvcId.style.display = 'none';
     }
   }
-
+  
   // check the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
   function checkPVC() {
     pvcId = document.getElementById("pvcId")
@@ -305,7 +302,7 @@
       pvcEmptyValue();
     }
   }
-
+  
   // based on the scan type value, populate the default pvc claim size values
   function checkScanType() {
     if (document.getElementById("blackduck-Spec.ScanType").value == "Custom") {
@@ -316,13 +313,13 @@
       document.getElementById("blackduck-postgres").value = "150Gi"
     }
   }
-
+  
   // add or update environs and update the spec
   function validateAndGetValues() {
     // Reinsert removed checkbox lines
     updateEnvironFromCB("USE_BINARY_UPLOADS", 'int', true);
     updateEnviron("ENABLE_SOURCE_UPLOADS", 'bool', true);
-
+  
     var environsList = document.getElementById("environs");
     var environsItems = environsList.getElementsByTagName('li');
     var environs = document.getElementById("blackduck-Spec.Environs")
@@ -334,7 +331,7 @@
       opt.setAttribute("selected", "selected");
       environs.add(opt);
     };
-
+  
     var containersList = document.getElementById("containerTags");
     var containerItems = containersList.getElementsByTagName('li');
     var containerTags = document.getElementById("blackduck-Spec.ImageRegistries")
@@ -346,20 +343,40 @@
       opt.setAttribute("selected", "selected");
       containerTags.add(opt);
     };
-  }
 
+
+  }
+  
   function toggleDbCheckbox(element) {
     internalDbId = document.getElementById("internalDbId");
     externalDbId = document.getElementById("externalDbId");
     if (element.checked) {
       externalDbId.style.display = '';
       internalDbId.style.display = 'none';
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresHost").required = true
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresPort").required = true
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresAdmin").required = true
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresAdminPassword").required = true
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresUser").required = true
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresUserPassword").required = true
+      document.getElementById("blackduck-Spec.UserPassword").required = false
+      document.getElementById("blackduck-Spec.AdminPassword").required = false
+      document.getElementById("blackduck-Spec.PostgresPassword").required = false
     } else {
       externalDbId.style.display = 'none';
       internalDbId.style.display = '';
+      document.getElementById("blackduck-Spec.UserPassword").required = true
+      document.getElementById("blackduck-Spec.AdminPassword").required = true
+      document.getElementById("blackduck-Spec.PostgresPassword").required = true
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresHost").required = false
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresPort").required = false
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresAdmin").required = false
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresAdminPassword").required = false
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresUser").required = false
+      document.getElementById("blackduck-Spec.ExternalPostgres.PostgresUserPassword").required = false
     }
   }
-
+  
   function toggleCustomAuthCACheckbox(element) {
     customAuthCAId = document.getElementById("customAuthCAId");
     if (element.checked) {

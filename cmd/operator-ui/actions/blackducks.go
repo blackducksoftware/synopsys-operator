@@ -34,6 +34,7 @@ import (
 // BlackducksResource is the resource for the Blackduck model
 type BlackducksResource struct {
 	buffalo.Resource
+	kubeConfig      *rest.Config
 	kubeClient      *kubernetes.Clientset
 	blackduckClient *blackduckclientset.Clientset
 }
@@ -48,7 +49,7 @@ func NewBlackduckResource(kubeConfig *rest.Config) (*BlackducksResource, error) 
 	if err != nil {
 		return nil, fmt.Errorf("unable to create hub client due to %+v", err)
 	}
-	return &BlackducksResource{kubeClient: kubeClient, blackduckClient: hubClient}, nil
+	return &BlackducksResource{kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient}, nil
 }
 
 // List gets all Hubs. This function is mapped to the path
@@ -81,6 +82,7 @@ func (v BlackducksResource) New(c buffalo.Context) error {
 	blackduckSpec := util.GetBlackDuckDefaultPersistentStorageLatest()
 	blackduck := &blackduckapi.Blackduck{}
 	blackduck.Spec = *blackduckSpec
+	blackduck.Name = ""
 	blackduck.Spec.Namespace = ""
 	blackduck.Spec.PersistentStorage = true
 	blackduck.Spec.PVCStorageClass = ""
@@ -186,14 +188,9 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 		}
 	}
 
-	kubeconfig, err := protoform.GetKubeConfig("", false)
-	if err != nil {
-		return fmt.Errorf("unable to get the kube configuration")
-	}
-
 	// supported versions
 	if bd.View.SupportedVersions == nil {
-		bd.View.SupportedVersions = apps.NewApp(nil, kubeconfig).Blackduck().Versions()
+		bd.View.SupportedVersions = apps.NewApp(&protoform.Config{}, v.kubeConfig).Blackduck().Versions()
 		sort.Sort(sort.Reverse(sort.StringSlice(bd.View.SupportedVersions)))
 	}
 	return nil
@@ -231,25 +228,20 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 	log.Infof("create blackduck: %+v", blackduck)
 
 	_, err = util.GetHub(v.blackduckClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
-
 	if err == nil {
 		return v.redirect(c, blackduck, fmt.Errorf("blackduck %s already exist", blackduck.Spec.Namespace))
 	}
 
 	_, err = util.GetNamespace(v.kubeClient, blackduck.Spec.Namespace)
-
-	if err == nil {
-		return v.redirect(c, blackduck, fmt.Errorf("namespace %s already exist", blackduck.Spec.Namespace))
-	}
-
-	ns, err := util.CreateNamespace(v.kubeClient, blackduck.Spec.Namespace)
 	if err != nil {
-		return v.redirect(c, blackduck, err)
+		err = util.DeployCRDNamespace(v.kubeConfig, v.kubeClient, util.BlackDuckName, blackduck.Spec.Namespace, blackduck.Name, blackduck.Spec.Version)
+		if err != nil {
+			return v.redirect(c, blackduck, err)
+		}
+		log.Infof("created %s Black Duck instance in %s namespace", blackduck.Name, blackduck.Spec.Namespace)
 	}
-	log.Infof("created namespace for %s is %+v", blackduck.Spec.Namespace, ns)
 
 	_, err = util.CreateHub(v.blackduckClient, blackduck.Spec.Namespace, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackduck.Spec.Namespace}, Spec: blackduck.Spec})
-
 	if err != nil {
 		return v.redirect(c, blackduck, err)
 	}
@@ -296,6 +288,12 @@ func (v BlackducksResource) postSubmit(c buffalo.Context, blackduck *blackduckap
 	if *blackduck.Spec.ExternalPostgres == (blackduckapi.PostgresExternalDBConfig{}) {
 		log.Info("External Database configuration is empty")
 		blackduck.Spec.ExternalPostgres = nil
+		blackduck.Spec.PostgresPassword = util.Base64Encode([]byte(blackduck.Spec.PostgresPassword))
+		blackduck.Spec.AdminPassword = util.Base64Encode([]byte(blackduck.Spec.AdminPassword))
+		blackduck.Spec.UserPassword = util.Base64Encode([]byte(blackduck.Spec.UserPassword))
+	} else {
+		blackduck.Spec.ExternalPostgres.PostgresAdminPassword = util.Base64Encode([]byte(blackduck.Spec.ExternalPostgres.PostgresAdminPassword))
+		blackduck.Spec.ExternalPostgres.PostgresUserPassword = util.Base64Encode([]byte(blackduck.Spec.ExternalPostgres.PostgresUserPassword))
 	}
 	return nil
 }
@@ -364,7 +362,7 @@ func (v BlackducksResource) Destroy(c buffalo.Context) error {
 	return c.Redirect(302, "/blackducks")
 }
 
-// Used to change state of a Blackduck instance
+// ChangeState Used to change state of a Blackduck instance
 // POST  /blackducks/{blackduck_id}/state
 func (v BlackducksResource) ChangeState(c buffalo.Context) error {
 	if c.Param("state") == "" {
