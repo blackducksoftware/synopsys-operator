@@ -182,17 +182,19 @@ var createBlackDuckCmd = &cobra.Command{
 		}
 		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
-		blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
-		if err != nil {
-			log.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackDuckNamespace, err)
-			return nil
-		}
-
-		// When running in cluster scope mode, custom resources do not have a namespace so the above command returns everything and we need to check Spec.Namespace.
-		for _, v := range blackducks.Items {
-			if strings.EqualFold(v.Spec.Namespace, blackDuckNamespace) {
-				log.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+		if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+			blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
+			if err != nil {
+				log.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackDuckNamespace, err)
 				return nil
+			}
+
+			// When running in cluster scope mode, custom resources do not have a namespace so the above command returns everything and we need to check Spec.Namespace.
+			for _, v := range blackducks.Items {
+				if strings.EqualFold(v.Spec.Namespace, blackDuckNamespace) {
+					log.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+					return nil
+				}
 			}
 		}
 

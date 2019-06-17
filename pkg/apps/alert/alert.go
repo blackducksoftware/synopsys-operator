@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
@@ -94,6 +95,24 @@ func (a *Alert) getCreater(version string) (Creater, error) {
 	return nil, fmt.Errorf("version %s is not supported", version)
 }
 
+func (a *Alert) ensureVersion(alt *alertapi.Alert) error {
+	versions := a.Versions()
+	// If the version is not provided, then we set it to be the latest
+	if len(alt.Spec.Version) == 0 {
+		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+		alt.Spec.Version = versions[0]
+	} else {
+		// If the verion is provided, check that it's supported
+		for _, v := range versions {
+			if strings.Compare(v, alt.Spec.Version) == 0 {
+				return nil
+			}
+		}
+		return fmt.Errorf("version '%s' is not supported", alt.Spec.Version)
+	}
+	return nil
+}
+
 // Versions returns the versions that the operator supports for Alert
 func (a *Alert) Versions() []string {
 	var versions []string
@@ -109,6 +128,10 @@ func (a *Alert) Versions() []string {
 // Ensure will get the necessary Creater and make sure the instance
 // is correctly deployed or deploy it if needed
 func (a *Alert) Ensure(alt *alertapi.Alert) error {
+	// If the version is not specified then we set it to be the latest.
+	if err := a.ensureVersion(alt); err != nil {
+		return err
+	}
 	creater, err := a.getCreater(alt.Spec.Version) // get Creater for the Alert Version
 	if err != nil {
 		return err
@@ -166,10 +189,14 @@ func (a *Alert) Delete(name string) error {
 }
 
 // GetComponents gets the necessary creater and returns the Alert's components
-func (a *Alert) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
-	creater, err := a.getCreater(alert.Spec.Version) // get Creater for the Alert Version
+func (a *Alert) GetComponents(alt *alertapi.Alert) (*api.ComponentList, error) {
+	// If the version is not specified then we set it to be the latest.
+	if err := a.ensureVersion(alt); err != nil {
+		return nil, err
+	}
+	creater, err := a.getCreater(alt.Spec.Version) // get Creater for the Alert Version
 	if err != nil {
 		return nil, err
 	}
-	return creater.GetComponents(alert)
+	return creater.GetComponents(alt)
 }
