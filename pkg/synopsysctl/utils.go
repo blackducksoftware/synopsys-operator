@@ -303,6 +303,7 @@ func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName st
 					return "", "", "", fmt.Errorf("unable to find %s %s instance namespace", name, crdName)
 				}
 			}
+			namespace = name
 		} else {
 			namespace = inputNamespace
 		}
