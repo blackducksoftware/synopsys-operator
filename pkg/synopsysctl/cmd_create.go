@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+	"strings"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -187,9 +188,12 @@ var createBlackDuckCmd = &cobra.Command{
 			return nil
 		}
 
-		if len(blackducks.Items) > 0 {
-			log.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
-			return nil
+		// When running in cluster scope mode, custom resources do not have a namespace so the above command returns everything and we need to check Spec.Namespace.
+		for _, v := range blackducks.Items {
+			if strings.EqualFold(v.Spec.Namespace, blackDuckNamespace) {
+				log.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+				return nil
+			}
 		}
 
 		// Update Spec with user's flags
