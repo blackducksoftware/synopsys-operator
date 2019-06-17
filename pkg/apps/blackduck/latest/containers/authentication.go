@@ -63,7 +63,7 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-authentication/ldap"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/hub-authentication/ldap"}},
 			VolumeMounts:    volumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)

@@ -43,7 +43,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/rabbitmq"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /var/lib/rabbitmq"}},
 			VolumeMounts:    volumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
