@@ -54,7 +54,7 @@ func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationCo
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/solr/cores.data"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/solr/cores.data"}},
 			VolumeMounts:    solrVolumeMount,
 		}
 		initContainers = append(initContainers, initContainerConfig)

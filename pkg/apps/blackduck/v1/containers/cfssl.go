@@ -54,7 +54,7 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /etc/cfssl"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /etc/cfssl"}},
 			VolumeMounts:    cfsslVolumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)

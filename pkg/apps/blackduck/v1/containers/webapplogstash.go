@@ -91,14 +91,14 @@ func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashIm
 	var initContainers []*util.Container
 	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-webapp", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /opt/blackduck/hub/hub-webapp/ldap"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-webapp", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/hub-webapp/ldap"}},
 			VolumeMounts:    webappVolumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
 	}
 	if c.hubSpec.PersistentStorage {
 		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-logstash", Image: "alpine", Command: []string{"sh", "-c", "chmod -cR 777 /var/lib/logstash/data"}},
+			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-logstash", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /var/lib/logstash/data"}},
 			VolumeMounts:    logstashVolumeMounts,
 		}
 		initContainers = append(initContainers, initContainerConfig)
