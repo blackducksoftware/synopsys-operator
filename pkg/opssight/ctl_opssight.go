@@ -156,7 +156,7 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 		ctl.Spec.Perceiver.EnablePodPerceiver = true
 		ctl.Spec.EnableMetrics = true
 	default:
-		return fmt.Errorf("OpsSight spec type %s is not valid", createOpsSightSpecType)
+		return fmt.Errorf("OpsSight spec type '%s' is not valid", createOpsSightSpecType)
 	}
 	return nil
 }
@@ -165,10 +165,10 @@ func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of OpsSight's Core")
-	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Type of service for OpsSight's Core model [NODEPORT|LOADBALANCER|OPENSHIFT]")
-	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours Perepetor waits between checking for scans")
-	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "opssight-core-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until OpsSight Core stops checking for scans")
-	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "opssight-core-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "Perceptor metrics pause in seconds")
+	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Type of service for OpsSight's core model [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours OpsSight's Core waits between checking for scans")
+	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "opssight-core-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until OpsSight's Core stops checking for scans")
+	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "opssight-core-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "Core metrics pause in seconds")
 	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "opssight-core-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "OpsSight Core's unknown image pause in milliseconds")
 	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "opssight-core-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "Seconds for OpsSight Core's timeout for Black Duck Scan Client")
 	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scanner-image", ctl.ScannerPodScannerImage, "Image URL of Scanner")
@@ -197,10 +197,10 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.PrometheusExpose, "expose-metrics", ctl.PrometheusExpose, "Type of service of OpsSight's Prometheus Metrics [NODEPORT|LOADBALANCER|OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.BlackduckExternalHostsFilePath, "blackduck-external-hosts-file-path", ctl.BlackduckExternalHostsFilePath, "Absolute path to a file containing a list of Black Duck External Hosts")
 	cmd.Flags().StringVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "If true, OpsSight performs TLS Verification for Black Duck [true|false]")
-	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Ducks to create")
-	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Ducks that can be created")
+	cmd.Flags().IntVar(&ctl.BlackduckInitialCount, "blackduck-initial-count", ctl.BlackduckInitialCount, "Initial number of Black Duck instances to create")
+	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Duck instances that can be created")
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
-	cmd.Flags().StringVar(&ctl.BlackduckPassword, "blackduck-password", ctl.BlackduckPassword, "Password to use for all internal Blackduck `sysadmin` account")
+	cmd.Flags().StringVar(&ctl.BlackduckPassword, "blackduck-password", ctl.BlackduckPassword, "Password to use for all internal Blackduck 'sysadmin' account")
 }
 
 // SetChangedFlags visits every flag and calls setFlag to update
@@ -222,7 +222,7 @@ type ExternalHostStructs struct {
 // SetFlag sets an OpsSights's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("flag %s: CHANGED", f.Name)
+		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "opssight-core-image":
 			if ctl.Spec.Perceptor == nil {
@@ -292,13 +292,13 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 			data, err := util.ReadFileData(ctl.ScannerPodImageFacadeInternalRegistriesFilePath)
 			if err != nil {
-				log.Errorf("failed to read internal registries file: %s", err)
+				log.Errorf("failed to read internal registries file: %+v", err)
 				return
 			}
 			registryStructs := []*opssightapi.RegistryAuth{}
 			err = json.Unmarshal([]byte(data), &registryStructs)
 			if err != nil {
-				log.Errorf("failed to unmarshal internal registries: %s", err)
+				log.Errorf("failed to unmarshal internal registries: %+v", err)
 				return
 			}
 			ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = registryStructs
@@ -405,13 +405,13 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 			data, err := util.ReadFileData(ctl.BlackduckExternalHostsFilePath)
 			if err != nil {
-				log.Errorf("failed to read external hosts file: %s", err)
+				log.Errorf("failed to read external hosts file: %+v", err)
 				return
 			}
 			hostStructs := []*opssightapi.Host{}
 			err = json.Unmarshal([]byte(data), &hostStructs)
 			if err != nil {
-				log.Errorf("failed to unmarshal internal registry structs: %s", err)
+				log.Errorf("failed to unmarshal internal registry structs: %+v", err)
 				return
 			}
 			ctl.Spec.Blackduck.ExternalHosts = hostStructs
@@ -447,10 +447,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			}
 			ctl.Spec.Blackduck.BlackduckPassword = crddefaults.Base64Encode([]byte(ctl.BlackduckPassword))
 		default:
-			log.Debugf("flag %s: NOT FOUND", f.Name)
+			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
 	} else {
-		log.Debugf("flag %s: UNCHANGED", f.Name)
+		log.Debugf("flag '%s': UNCHANGED", f.Name)
 	}
 }
 

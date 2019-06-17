@@ -182,7 +182,7 @@ func (ctl *Ctl) SwitchSpec(createBlackDuckSpecType string) error {
 	case IPV6DisabledSpec:
 		ctl.Spec = crddefaults.GetBlackDuckDefaultIPV6Disabled()
 	default:
-		return fmt.Errorf("Black Duck spec type %s is not valid", createBlackDuckSpecType)
+		return fmt.Errorf("Black Duck spec type '%s' is not valid", createBlackDuckSpecType)
 	}
 	return nil
 }
@@ -192,12 +192,12 @@ func (ctl *Ctl) SwitchSpec(createBlackDuckSpecType string) error {
 func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	if master {
 		cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
-		cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black duck has persistent storage [true|false]")
+		cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black Duck has persistent storage [true|false]")
 		cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	}
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "Size of Black Duck [small|medium|large|x-large]")
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Black Duck")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck Webserver's user interface [LOADBALANCER|NODEPORT|OPENSHIFT]")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck webserver's user interface [LOADBALANCER|NODEPORT|OPENSHIFT]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresHost, "external-postgres-host", ctl.ExternalPostgresHost, "Host of external Postgres")
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPort, "external-postgres-port", ctl.ExternalPostgresPort, "Port of external Postgres")
@@ -241,7 +241,7 @@ func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
 // SetFlag sets a Black Duck's Spec field if its flag was changed
 func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	if f.Changed {
-		log.Debugf("flag %s: CHANGED", f.Name)
+		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "size":
 			ctl.Spec.Size = ctl.Size
@@ -295,26 +295,26 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "pvc-file-path":
 			data, err := util.ReadFileData(ctl.PVCFilePath)
 			if err != nil {
-				log.Errorf("failed to read pvc file: %s", err)
+				log.Errorf("failed to read pvc file: %+v", err)
 				return
 			}
 			pvcs := []blackduckv1.PVC{}
 			err = json.Unmarshal([]byte(data), &pvcs)
 			if err != nil {
-				log.Errorf("failed to unmarshal pvc structs: %s", err)
+				log.Errorf("failed to unmarshal pvc structs: %+v", err)
 				return
 			}
 			ctl.Spec.PVC = pvcs
 		case "node-affinity-file-path":
 			data, err := util.ReadFileData(ctl.NodeAffinityFilePath)
 			if err != nil {
-				log.Errorf("failed to read node affinity file: %s", err)
+				log.Errorf("failed to read node affinity file: %+v", err)
 				return
 			}
 			nodeAffinities := map[string][]blackduckv1.NodeAffinity{}
 			err = json.Unmarshal([]byte(data), &nodeAffinities)
 			if err != nil {
-				log.Errorf("failed to unmarshal node affinities: %s", err)
+				log.Errorf("failed to unmarshal node affinities: %+v", err)
 				return
 			}
 			ctl.Spec.NodeAffinities = nodeAffinities
@@ -331,28 +331,28 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "certificate-file-path":
 			data, err := util.ReadFileData(ctl.CertificateFilePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %s", err)
+				log.Errorf("failed to read certificate file: %+v", err)
 				return
 			}
 			ctl.Spec.Certificate = data
 		case "certificate-key-file-path":
 			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %s", err)
+				log.Errorf("failed to read certificate file: %+v", err)
 				return
 			}
 			ctl.Spec.CertificateKey = data
 		case "proxy-certificate-file-path":
 			data, err := util.ReadFileData(ctl.ProxyCertificateFilePath)
 			if err != nil {
-				log.Errorf("failed to read certificate file: %s", err)
+				log.Errorf("failed to read certificate file: %+v", err)
 				return
 			}
 			ctl.Spec.ProxyCertificate = data
 		case "auth-custom-ca-file-path":
 			data, err := util.ReadFileData(ctl.AuthCustomCAFilePath)
 			if err != nil {
-				log.Errorf("failed to read authCustomCA file: %s", err)
+				log.Errorf("failed to read authCustomCA file: %+v", err)
 				return
 			}
 			ctl.Spec.AuthCustomCA = data
@@ -371,13 +371,13 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "image-uid-map-file-path":
 			data, err := util.ReadFileData(ctl.ImageUIDMapFilePath)
 			if err != nil {
-				log.Errorf("failed to read image UID map file: %s", err)
+				log.Errorf("failed to read image UID map file: %+v", err)
 				return
 			}
 			uidMap := map[string]int64{}
 			err = json.Unmarshal([]byte(data), &uidMap)
 			if err != nil {
-				log.Errorf("failed to unmarshal UID Map structs: %s", err)
+				log.Errorf("failed to unmarshal UID Map structs: %+v", err)
 				return
 			}
 			ctl.Spec.ImageUIDMap = uidMap
@@ -402,10 +402,10 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:false"}, ctl.Spec.Environs)
 			}
 		default:
-			log.Debugf("flag %s: NOT FOUND", f.Name)
+			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
 	} else {
-		log.Debugf("flag %s: UNCHANGED", f.Name)
+		log.Debugf("flag '%s': UNCHANGED", f.Name)
 	}
 }
 

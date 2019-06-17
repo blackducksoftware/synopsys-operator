@@ -58,15 +58,15 @@ var admissionWebhookListener = false
 var mockFormat string
 var mockKubeFormat string
 
-// deployCmd represents the deploy command
+// deployCmd creates a Synopsys Operator instance in the cluster
 var deployCmd = &cobra.Command{
 	Use:     "deploy",
 	Example: "synopsysctl deploy\nsynopsysctl deploy --enable-blackduck\nsynopsysctl deploy -n <namespace>\nsynopsysctl deploy -n <namespace> --enable-blackduck\nsynopsysctl deploy --expose-ui LOADBALANCER",
-	Short:   "Deploys Synopsys Operator into your cluster",
+	Short:   "Deploy Synopsys Operator into your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) > 0 {
-			return fmt.Errorf("this command don't take any arguments")
+			return fmt.Errorf("this command doesn't take any arguments")
 		}
 		return nil
 	},
@@ -85,7 +85,7 @@ var deployCmd = &cobra.Command{
 			// check if operator is already installed
 			namespace, err = operatorutil.GetOperatorNamespace(kubeClient, namespace)
 			if err == nil {
-				log.Errorf("Synopsys Operator is already installed in '%s' namespace", namespace)
+				log.Errorf("Synopsys Operator is already installed in namespace '%s'", namespace)
 				return nil
 			}
 
@@ -94,7 +94,7 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		// verify operator image has a tag
+		// verify Synopsys Operator image has a tag
 		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
 		if !imageHasTag {
 			log.Errorf("Synopsys Operator image doesn't have a tag: %s", synopsysOperatorImage)
@@ -130,7 +130,7 @@ var deployCmd = &cobra.Command{
 		if isEnabledOpsSight && isClusterScoped {
 			crds = append(crds, util.OpsSightCRDName)
 		} else if isEnabledOpsSight && !isClusterScoped {
-			log.Error("unable to create the opssight custom resource definition (CRD) due to namespaced scope for operator. Please enable the cluster scope to install an opssight CRD")
+			log.Error("unable to create the OpsSight Custom Resource Definition (CRD) due to having a namespaced scope for Synopsys Operator. Please enable the cluster scope to install an OpsSight CRD")
 		}
 
 		// if isEnabledPrm {
@@ -157,15 +157,15 @@ var deployCmd = &cobra.Command{
 			}
 		} else {
 			sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
-			// Deploy the Synopsys Operator
-			log.Infof("deploying the Synopsys Operator in '%s' namespace......", operatorNamespace)
+			// Deploy Synopsys Operator
+			log.Infof("deploying Synopsys Operator in namespace '%s'...", operatorNamespace)
 			err = sOperatorCreater.UpdateSOperatorComponents(soperatorSpec)
 			if err != nil {
-				log.Errorf("error deploying the Synopsys Operator due to %+v", err)
+				log.Errorf("error deploying Synopsys Operator due to %+v", err)
 				return nil
 			}
 
-			// Deploy Prometheus Metrics Components for the Synopsys Operator
+			// Deploy Prometheus Metrics Components for Synopsys Operator
 			log.Debugf("creating Metrics components")
 			promtheusSpec := soperator.NewPrometheus(operatorNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
 			err = sOperatorCreater.UpdatePrometheus(promtheusSpec)
@@ -173,7 +173,7 @@ var deployCmd = &cobra.Command{
 				log.Errorf("error deploying metrics: %s", err)
 				return nil
 			}
-			log.Infof("successfully deployed the synopsys operator in '%s' namespace", operatorNamespace)
+			log.Infof("successfully deployed Synopsys Operator in namespace '%s'", operatorNamespace)
 		}
 
 		return nil
@@ -182,7 +182,7 @@ var deployCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(deployCmd)
-	deployCmd.Flags().BoolVarP(&isClusterScoped, "cluster-scoped", "c", isClusterScoped, "Enable/Disable Synopsys operator with cluster scope")
+	deployCmd.Flags().BoolVarP(&isClusterScoped, "cluster-scoped", "c", isClusterScoped, "Enable/Disable Synopsys Operator with cluster scope")
 	deployCmd.Flags().BoolVarP(&isEnabledAlert, "enable-alert", "a", isEnabledAlert, "Enable/Disable Alert Custom Resource Definition (CRD) in your cluster")
 	deployCmd.Flags().BoolVarP(&isEnabledBlackDuck, "enable-blackduck", "b", isEnabledBlackDuck, "Enable/Disable Black Duck Custom Resource Definition (CRD) in your cluster")
 	deployCmd.Flags().BoolVarP(&isEnabledOpsSight, "enable-opssight", "s", isEnabledOpsSight, "Enable/Disable OpsSight Custom Resource Definition (CRD) in your cluster")
@@ -198,7 +198,7 @@ func init() {
 	deployCmd.Flags().StringVarP(&dryRun, "dry-run", "d", dryRun, "If true, Synopsys Operator runs without being connected to a cluster [true|false]")
 	deployCmd.Flags().StringVarP(&logLevel, "log-level", "l", logLevel, "Log level of Synopsys Operator")
 	deployCmd.Flags().IntVarP(&threadiness, "no-of-threads", "t", threadiness, "Number of threads to process the custom resources")
-	deployCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the Synopsys Operator spec in the specified format instead of creating it [json|yaml]")
-	deployCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the Synopsys Operator's kubernetes resource specs in the specified format instead of creating it [json|yaml]")
-	deployCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "namespace of the synopsys operator to create the resource(s)")
+	deployCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints Synopsys Operator's spec in the specified format instead of creating it [json|yaml]")
+	deployCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints Synopsys Operator's Kubernetes resource specs in the specified format instead of creating it [json|yaml]")
+	deployCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the Synopsys Operator instance")
 }

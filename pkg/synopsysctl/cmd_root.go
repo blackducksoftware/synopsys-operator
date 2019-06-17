@@ -64,7 +64,7 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("not a valid command")
+		return fmt.Errorf("must specify sub-command")
 	},
 }
 
@@ -72,7 +72,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Errorf("%s", err)
+		log.Errorf("unable to execute command due to %+v", err)
 		os.Exit(1)
 	}
 }
@@ -82,7 +82,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "Path to the kubeconfig file to use for CLI requests")
 	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "Server's certificate won't be validated. HTTPS will be less secure")
-	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "Log level for the synopsysctl [trace|debug|info|warn|error|fatal|panic]")
+	rootCmd.PersistentFlags().StringVarP(&logLevelCtl, "verbose-level", "v", logLevelCtl, "Log level for synopsysctl [trace|debug|info|warn|error|fatal|panic]")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -94,7 +94,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("unable to find the home directory due to %+v", err)
 			os.Exit(1)
 		}
 
@@ -107,6 +107,6 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Infof("Using config file: %s", viper.ConfigFileUsed())
+		log.Infof("using config file '%s'", viper.ConfigFileUsed())
 	}
 }

@@ -165,7 +165,7 @@ func (c *CRDInstaller) CreateHandler() {
 	} else {
 		_, err := util.GetOpenShiftSecurityConstraint(osClient, "privileged")
 		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("Ignoring scc privileged for kubernetes cluster")
+			log.Debugf("ignoring scc privileged for Kubernetes cluster")
 			osClient = nil
 		}
 	}

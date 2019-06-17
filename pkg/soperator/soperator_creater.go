@@ -62,7 +62,7 @@ func (sc *Creater) Versions() []string {
 	return SOperatorCRDVersionMap.GetVersions()
 }
 
-// EnsureSynopsysOperator updates the Synopsys Operator's kubernetes componenets and changes
+// EnsureSynopsysOperator updates the Synopsys Operator's Kubernetes componenets and changes
 // all CRDs to versions that the Operator can use
 func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *blackduckclientset.Clientset, opssightClient *opssightclientset.Clientset, alertClient *alertclientset.Clientset,
 	oldOperatorSpec *SpecConfig, newOperatorSpec *SpecConfig) error {
@@ -180,7 +180,7 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 	return nil
 }
 
-// UpdateSOperatorComponents updates kubernetes resources for the Synopsys Operator
+// UpdateSOperatorComponents updates Kubernetes resources for the Synopsys Operator
 func (sc *Creater) UpdateSOperatorComponents(specConfig *SpecConfig) error {
 	sOperatorComponents, err := specConfig.GetComponents()
 	if err != nil {
@@ -195,7 +195,7 @@ func (sc *Creater) UpdateSOperatorComponents(specConfig *SpecConfig) error {
 	return nil
 }
 
-// UpdatePrometheus updates kubernetes resources for Prometheus
+// UpdatePrometheus updates Kubernetes resources for Prometheus
 func (sc *Creater) UpdatePrometheus(specConfig *PrometheusSpecConfig) error {
 	prometheusComponents, err := specConfig.GetComponents()
 	if err != nil {
