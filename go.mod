@@ -11,6 +11,7 @@ require (
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/google/go-cmp v0.3.0
 	github.com/googleapis/gnostic v0.3.0 // indirect
+	github.com/gophercloud/gophercloud v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.7
 	github.com/juju/errors v0.0.0-20190207033735-e65537c515d7
 	github.com/juju/testing v0.0.0-20190613124551-e81189438503 // indirect
