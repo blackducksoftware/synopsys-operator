@@ -61,7 +61,7 @@ var mockKubeFormat string
 // deployCmd creates a Synopsys Operator instance in the cluster
 var deployCmd = &cobra.Command{
 	Use:     "deploy",
-	Example: "synopsysctl deploy\nsynopsysctl deploy --enable-blackduck\nsynopsysctl deploy -n <namespace>\nsynopsysctl deploy -n <namespace> --enable-blackduck\nsynopsysctl deploy --expose-ui LOADBALANCER",
+	Example: "synopsysctl deploy --enable-blackduck\nsynopsysctl deploy -n <namespace> --enable-blackduck",
 	Short:   "Deploy Synopsys Operator into your cluster",
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments

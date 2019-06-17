@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -35,9 +36,9 @@ import (
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
-	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -76,8 +77,8 @@ var updateOperatorCmd = &cobra.Command{
 		if len(namespace) > 0 {
 			updateOperator(namespace, cmd)
 		} else {
-			namespace := DefaultOperatorNamespace
 			var err error
+			operatorNamespace := DefaultOperatorNamespace
 			if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
 				isClusterScoped := util.GetClusterScope(apiExtensionClient)
 				if isClusterScoped {
@@ -86,9 +87,15 @@ var updateOperatorCmd = &cobra.Command{
 						log.Error(err)
 						return nil
 					}
+					if metav1.NamespaceAll != namespace {
+						operatorNamespace = namespace
+					}
 				}
 			}
-			updateOperator(namespace, cmd)
+			err = updateOperator(operatorNamespace, cmd)
+			if err != nil {
+				log.Error(err)
+			}
 		}
 		return nil
 	},
@@ -96,21 +103,61 @@ var updateOperatorCmd = &cobra.Command{
 
 func updateOperator(namespace string, cmd *cobra.Command) error {
 	log.Infof("updating the Synopsys Operator instance in namespace '%s'...", namespace)
-	// Create new Synopsys-Operator SpecConfig
+	var isClusterScoped bool
+	crds := []string{}
+	crdMap := make(map[string]string)
+	// check whether the Synopsys Operator namespace exist
+	if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+		cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
+		if err != nil {
+			return fmt.Errorf("unable to find the 'synopsy-operator' config map in namespace '%s' due to %+v", namespace, err)
+		}
+		data := cm.Data["config.json"]
+		var testMap map[string]interface{}
+		err = json.Unmarshal([]byte(data), &testMap)
+		if err != nil {
+			return fmt.Errorf("unable to unmarshall config map data due to %+v", err)
+		}
+		if _, ok := testMap["IsClusterScoped"]; ok {
+			configData := &protoform.Config{}
+			err = json.Unmarshal([]byte(data), &configData)
+			if err != nil {
+				return fmt.Errorf("unable to unmarshall config map data due to %+v", err)
+			}
+			isClusterScoped = configData.IsClusterScoped
+			crds = strings.Split(configData.CrdNames, ",")
+			for _, crd := range crds {
+				crdMap[crd] = crd
+			}
+		} else {
+			isClusterScoped = util.GetClusterScope(apiExtensionClient)
+			// list the existing CRD's and convert them to map with key as name and name as value
+			var crdList *apiextensions.CustomResourceDefinitionList
+			if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+				crdList, err = util.ListCustomResourceDefinitions(apiExtensionClient, "app=synopsys-operator")
+				if err != nil {
+					return fmt.Errorf("unable to list Custom Resource Definitions due to %+v", err)
+				}
+				for _, crd := range crdList.Items {
+					crds = append(crds, crd.Name)
+					crdMap[crd.Name] = crd.Name
+				}
+			}
+		}
+	}
+	// create new Synopsys Operator SpecConfig
 	oldOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespace)
 	if err != nil {
-		log.Errorf("unable to update Synopsys Operator due to %+v", err)
-		return nil
+		return fmt.Errorf("unable to update Synopsys Operator in '%s' namespace due to %+v", namespace, err)
 	}
 	newOperatorSpec := soperator.SpecConfig{}
-	// Update Spec with changed values
+	// update Spec with changed values
 	if cmd.Flag("synopsys-operator-image").Changed {
 		log.Debugf("updating Synopsys Operator's image to '%s'", synopsysOperatorImage)
 		// check image tag
 		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
 		if !imageHasTag {
-			log.Errorf("Synopsys Operator's image does not have a tag: %s", synopsysOperatorImage)
-			return nil
+			return fmt.Errorf("Synopsys Operator's image does not have a tag: %s", synopsysOperatorImage)
 		}
 		newOperatorSpec.Image = synopsysOperatorImage
 	}
@@ -147,74 +194,68 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 		newOperatorSpec.Threadiness = threadiness
 	}
 
-	// list the existing CRD's and convert them to map with key as name and scope as value
-	crds := []string{}
-	crdMap := make(map[string]string)
-	var crdList *apiextensions.CustomResourceDefinitionList
-	if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
-		crdList, err = util.ListCustomResourceDefinitions(apiExtensionClient, "app=synopsys-operator")
-		if err != nil {
-			log.Errorf("unable to list Custom Resource Definitions due to %+v", err)
-			return nil
-		}
-		for _, crd := range crdList.Items {
-			crds = append(crds, crd.Name)
-			crdMap[crd.Name] = crd.Name
-		}
-	}
-
-	deleteCrds := []string{}
 	// validate whether Alert CRD enable parameter is enabled/disabled and add/remove them from the cluster
 	if cmd.LocalFlags().Lookup("enable-alert").Changed {
 		log.Debugf("updating enable Alert")
-		_, ok := crdMap[operatorutil.AlertCRDName]
+		_, ok := crdMap[util.AlertCRDName]
 		if ok && isEnabledAlert {
 			log.Errorf("Custom Resource Definition '%s' already exists...", util.AlertCRDName)
 		} else if !ok && isEnabledAlert {
 			crds = append(crds, util.AlertCRDName)
 		} else {
-			deleteCrds = append(deleteCrds, operatorutil.AlertCRDName)
-			crds = util.RemoveFromStringSlice(crds, util.AlertCRDName)
+			err := isDeleteCrd(util.AlertCRDName)
+			if err != nil {
+				log.Warn(err)
+			} else {
+				crds = util.RemoveFromStringSlice(crds, util.AlertCRDName)
+			}
 		}
 	}
 
 	// validate whether Black Duck CRD enable parameter is enabled/disabled and add/remove them from the cluster
 	if cmd.LocalFlags().Lookup("enable-blackduck").Changed {
 		log.Debugf("updating enable Black Duck")
-		_, ok := crdMap[operatorutil.BlackDuckCRDName]
+		_, ok := crdMap[util.BlackDuckCRDName]
 		if ok && isEnabledBlackDuck {
 			log.Errorf("Custom Resource Definition '%s' already exists...", util.BlackDuckCRDName)
 		} else if !ok && isEnabledBlackDuck {
 			crds = append(crds, util.BlackDuckCRDName)
 		} else {
-			deleteCrds = append(deleteCrds, operatorutil.BlackDuckCRDName)
-			crds = util.RemoveFromStringSlice(crds, util.BlackDuckCRDName)
+			err := isDeleteCrd(util.BlackDuckCRDName)
+			if err != nil {
+				log.Warn(err)
+			} else {
+				crds = util.RemoveFromStringSlice(crds, util.BlackDuckCRDName)
+			}
 		}
 	}
 
 	// validate whether OpsSight CRD enable parameter is enabled/disabled and add/remove them from the cluster
 	if cmd.LocalFlags().Lookup("enable-opssight").Changed {
 		log.Debugf("updating enable OpsSight")
-		_, ok := crdMap[operatorutil.OpsSightCRDName]
+		_, ok := crdMap[util.OpsSightCRDName]
 		if ok && isEnabledOpsSight {
 			log.Errorf("Custom Resource Definition '%s' already exists...", util.OpsSightCRDName)
 		} else if !ok && isEnabledOpsSight {
 			crds = append(crds, util.OpsSightCRDName)
 		} else {
-			deleteCrds = append(deleteCrds, operatorutil.OpsSightCRDName)
-			crds = util.RemoveFromStringSlice(crds, util.OpsSightCRDName)
+			err := isDeleteCrd(util.OpsSightCRDName)
+			if err != nil {
+				log.Warn(err)
+			} else {
+				crds = util.RemoveFromStringSlice(crds, util.OpsSightCRDName)
+			}
 		}
 	}
 
 	newOperatorSpec.Crds = crds
 
-	newOperatorSpec.IsClusterScoped = util.GetClusterScope(apiExtensionClient)
+	newOperatorSpec.IsClusterScoped = isClusterScoped
 
 	// merge old and new data
 	err = mergo.Merge(&newOperatorSpec, oldOperatorSpec)
 	if err != nil {
-		log.Errorf("unable to merge old and new Synopsys Operator's info due to %+v", err)
-		return nil
+		return fmt.Errorf("unable to merge old and new Synopsys Operator's info due to %+v", err)
 	}
 
 	// update Synopsys Operator
@@ -224,29 +265,27 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 		newOperatorSpec.RestConfig = nil
 		err := PrintResource(newOperatorSpec, mockFormat, false)
 		if err != nil {
-			log.Errorf("%s", err)
+			return fmt.Errorf("%s", err)
 		}
 	} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
 		log.Debugf("running kube mock mode")
 		err := PrintResource(newOperatorSpec, mockKubeFormat, true)
 		if err != nil {
-			log.Errorf("%s", err)
+			return fmt.Errorf("%s", err)
 		}
 	} else {
 		sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
 		// update Synopsys Operator
 		err = sOperatorCreater.EnsureSynopsysOperator(namespace, blackDuckClient, opsSightClient, alertClient, oldOperatorSpec, &newOperatorSpec)
 		if err != nil {
-			log.Errorf("unable to update Synopsys Operator due to %+v", err)
-			return nil
+			return fmt.Errorf("unable to update Synopsys Operator due to %+v", err)
 		}
 
 		log.Debugf("updating Prometheus in namespace '%s'", namespace)
 		// Create new Prometheus SpecConfig
 		oldPrometheusSpec, err := soperator.GetOldPrometheusSpec(restconfig, kubeClient, namespace)
 		if err != nil {
-			log.Errorf("error in updating Prometheus due to %+v", err)
-			return nil
+			return fmt.Errorf("error in updating Prometheus due to %+v", err)
 		}
 
 		// check for changes
@@ -263,15 +302,13 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 		// merge old and new data
 		err = mergo.Merge(&newPrometheusSpec, oldPrometheusSpec)
 		if err != nil {
-			log.Errorf("unable to merge old and new Prometheus' info due to %+v", err)
-			return nil
+			return fmt.Errorf("unable to merge old and new Prometheus' info due to %+v", err)
 		}
 
 		// update prometheus
 		err = sOperatorCreater.UpdatePrometheus(&newPrometheusSpec)
 		if err != nil {
-			log.Errorf("unable to update Prometheus due to %+v", err)
-			return nil
+			return fmt.Errorf("unable to update Prometheus due to %+v", err)
 		}
 
 		log.Infof("successfully updated Synopsys Operator in namespace '%s'", namespace)
@@ -299,7 +336,7 @@ var updateAlertCmd = &cobra.Command{
 		log.Infof("updating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 
 		// Get Alert
-		currAlert, err := operatorutil.GetAlert(alertClient, alertNamespace, alertName)
+		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertName)
 		if err != nil {
 			log.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 			return nil
@@ -322,7 +359,7 @@ var updateAlertCmd = &cobra.Command{
 			updateAlertCtl.SetChangedFlags(flagset)
 			newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
 			// merge environs
-			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currAlert.Spec.Environs)
+			newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, currAlert.Spec.Environs)
 			// Create new Alert CRD
 			newAlert := *currAlert //make copy
 			newAlert.Spec = newSpec
@@ -364,7 +401,7 @@ var updateBlackDuckCmd = &cobra.Command{
 		log.Infof("updating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get Black Duck
-		currBlackDuck, err := operatorutil.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
@@ -387,7 +424,7 @@ var updateBlackDuckCmd = &cobra.Command{
 			updateBlackDuckCtl.SetChangedFlags(flagset)
 			newSpec := updateBlackDuckCtl.GetSpec().(blackduckapi.BlackduckSpec)
 			// merge environs
-			newSpec.Environs = operatorutil.MergeEnvSlices(newSpec.Environs, currBlackDuck.Spec.Environs)
+			newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, currBlackDuck.Spec.Environs)
 			// Create new Black Duck CRD
 			newBlackDuck := *currBlackDuck //make copy
 			newBlackDuck.Spec = newSpec
@@ -449,13 +486,13 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 		newSealKey := args[1]
 		filePath := args[2]
 
-		blackducks, err := operatorutil.ListHubs(blackduckClient, operatorNamespace)
+		blackducks, err := util.ListHubs(blackduckClient, operatorNamespace)
 		if err != nil {
 			log.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", operatorNamespace, err)
 			return nil
 		}
 
-		secret, err := operatorutil.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
+		secret, err := util.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
 		if err != nil {
 			log.Errorf("unable to find Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
 			return nil
@@ -474,16 +511,16 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			}
 
 			// Filter the upload cache pod to get the root key using the seal key
-			uploadCachePod, err := operatorutil.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache", crdScope == apiextensions.ClusterScoped))
+			uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache", crdScope == apiextensions.ClusterScoped))
 			if err != nil {
 				log.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", blackDuckNamespace, err)
 				return nil
 			}
 
 			// Create the exec into Kubernetes pod request
-			req := operatorutil.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
+			req := util.CreateExecContainerRequest(kubeClient, uploadCachePod, "/bin/sh")
 			// TODO: changed the upload cache service name to authentication until the HUB-20412 is fixed. once it if fixed, changed the name to use GetResource method
-			_, err = operatorutil.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://uploadcache:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(newSealKey)), masterKey)})
+			_, err = util.ExecContainer(restconfig, req, []string{fmt.Sprintf(`curl -X PUT --header "X-SEAL-KEY:%s" -H "X-MASTER-KEY:%s" https://uploadcache:9444/api/internal/recovery --cert /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.crt --key /opt/blackduck/hub/blackduck-upload-cache/security/blackduck-upload-cache-server.key --cacert /opt/blackduck/hub/blackduck-upload-cache/security/root.crt`, base64.StdEncoding.EncodeToString([]byte(newSealKey)), masterKey)})
 			if err != nil {
 				log.Errorf("unable to exec into upload cache pod in namespace '%s' due to %+v", blackDuckNamespace, err)
 				return nil
@@ -494,7 +531,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 
 		secret.Data["SEAL_KEY"] = []byte(newSealKey)
 
-		err = operatorutil.UpdateSecret(kubeClient, operatorNamespace, secret)
+		err = util.UpdateSecret(kubeClient, operatorNamespace, secret)
 		if err != nil {
 			log.Errorf("unable to update Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
 			return nil
@@ -530,7 +567,7 @@ var updateBlackDuckAddPVCCmd = &cobra.Command{
 		log.Infof("adding PVC to Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get Black Duck Spec
-		currBlackDuck, err := operatorutil.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
@@ -589,7 +626,7 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 		log.Infof("adding environ to Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get Black Duck Spec
-		currBlackDuck, err := operatorutil.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
@@ -608,7 +645,7 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 		}
 		if canUpdate {
 			// Merge Environ to Spec
-			currBlackDuck.Spec.Environs = operatorutil.MergeEnvSlices(strings.Split(environ, ","), currBlackDuck.Spec.Environs)
+			currBlackDuck.Spec.Environs = util.MergeEnvSlices(strings.Split(environ, ","), currBlackDuck.Spec.Environs)
 			// Update Black Duck with Environ
 			err = ctlUpdateResource(currBlackDuck, cmd.LocalFlags().Lookup("mock").Changed, mockFormat, cmd.LocalFlags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
@@ -643,7 +680,7 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 		log.Infof("adding image registry to Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get Black Duck Spec
-		currBlackDuck, err := operatorutil.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
@@ -698,7 +735,7 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 		log.Debugf("adding image UID to Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get Black Duck Spec
-		currBlackDuck, err := operatorutil.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
@@ -757,7 +794,7 @@ var updateOpsSightCmd = &cobra.Command{
 		log.Infof("updating OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 
 		// Get the current OpsSight
-		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
 			log.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
@@ -818,7 +855,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 		log.Infof("updating OpsSight '%s's image in namespace '%s'...", opsSightName, opsSightNamespace)
 
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
 			log.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
@@ -893,7 +930,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		}
 
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
 			log.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
@@ -955,7 +992,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		log.Infof("adding internal registry to OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 
 		// Get OpsSight Spec
-		currOpsSight, err := operatorutil.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
 			log.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 			return nil
