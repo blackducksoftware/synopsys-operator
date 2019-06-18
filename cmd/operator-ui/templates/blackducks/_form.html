@@ -85,12 +85,14 @@
     /* outline: 0; */
     border: 1px solid #ced4da;
   }
+
   ul li {
     position: relative;
     padding: 10px 5px 5px 30px;
     background: transparent;
     box-shadow: 0 0px #EEE;
   }
+
   ul li:before {
     content: '';
     position: absolute;
@@ -104,6 +106,7 @@
     background: #fff;
     display: block;
   }
+
   ul li:hover {
     background: #FAFAFA;
   }
@@ -119,12 +122,10 @@
     document.getElementById("customAuthCAId").style.display = 'none';
     update_USE_BINARY_UPLOADS_checkbox();
     update_ENABLE_SOURCE_UPLOADS_checkbox();
-    environListRemove("USE_BINARY_UPLOADS");
-    environListRemove("ENABLE_SOURCE_UPLOADS");
     // if (document.getElementById("blackduck-Status.ErrorMessage").value.length > 0) {
     //   document.getElementById("blackduck-Status.ErrorMessage").hidden = false;
     // }
-  
+
     // Ensure containerTags is always a set of <li>s and always at least one
     initialContentTagsContent = {}
     for (let editableList of ["containerTags", "environs"]) {
@@ -147,44 +148,48 @@
       })
     }
   }
-  
-  function updateCheckbox(elementId, environName, defaultState) {
+
+  function updateCheckbox(elementId, environName, defaultState, boolType) {
     var updatedState = defaultState;
     var extractedStates = environListExtract(environName);
     if (!extractedStates.length) {
       return;
     }
     var finalValue = extractedStates[extractedStates.length - 1]["value"];
-    var nonDefaultStr = defaultState == true ? "0" : "1";
+    boolT = boolType == 'int' ? '1' : 'true';
+    boolF = boolType == 'int' ? '0' : 'false';
+    var nonDefaultStr = defaultState == true ? boolF : boolT;
     if (finalValue == nonDefaultStr) {
       updatedState = !defaultState;
     }
     document.getElementById(elementId).checked = updatedState;
   }
-  
+
   function update_USE_BINARY_UPLOADS_checkbox() {
     updateCheckbox(
       "blackduck-Spec.Environs-USE_BINARY_UPLOADS",
       "USE_BINARY_UPLOADS",
-      false
+      false,
+      'int'
     );
   }
-  
+
   function updateEnvironFromCB(envStr, boolType, addIfMissing) {
-    boolT = boolType == 'int' ? '1' : true;
-    boolF = boolType == 'int' ? '0' : false;
+    boolT = boolType == 'int' ? '1' : 'true';
+    boolF = boolType == 'int' ? '0' : 'false';
     envCB = document.getElementById("blackduck-Spec.Environs-" + envStr);
     updateEnviron(envStr, envCB.checked == true ? boolT : boolF, addIfMissing);
   }
-  
+
   function update_ENABLE_SOURCE_UPLOADS_checkbox() {
     updateCheckbox(
       "blackduck-Spec.Environs-ENABLE_SOURCE_UPLOADS",
       "ENABLE_SOURCE_UPLOADS",
-      false
+      false,
+      'bool'
     );
   }
-  
+
   function updateEnviron(environName, newStr, insertIfMissing) {
     var extractedStates = environListExtract(environName);
     var envElement = document.getElementById("environs");
@@ -199,7 +204,7 @@
     var changeIndex = finalExtractedState["index"];
     envElement.children[changeIndex].innerHTML = environName + ":" + newStr;
   }
-  
+
   function environListExtract(environName) {
     var searchStr = environName + ":"
     var results = [];
@@ -214,7 +219,7 @@
     }
     return results;
   }
-  
+
   function environListRemove(environName) {
     var toRemove = environListExtract(environName);
     var envList = document.getElementById("environs");
@@ -222,14 +227,14 @@
       envList.removeChild(envList.children[toRemove.pop()["index"]]);
     }
   }
-  
+
   function environListInsert(environName, newStr) {
     envList = document.getElementById("environs");
     var newEnvLi = document.createElement('li');
     newEnvLi.appendChild(document.createTextNode(environName + ":" + newStr));
     envList.appendChild(newEnvLi);
   }
-  
+
   function editableFalse() {
     if (document.getElementById("blackduck-Spec.Namespace") != null && document.getElementById("blackduck-Spec.Namespace").value != "") {
       document.getElementById("blackduck-Name").setAttribute("readonly", "readonly")
@@ -245,13 +250,13 @@
       }
     }
   }
-  
+
   // set empty certificate values if the certificate is not manual
   function certificateEmptyValue() {
     document.getElementById("blackduck-Spec.Certificate").value = "";
     document.getElementById("blackduck-Spec.CertificateKey").value = "";
   }
-  
+
   // check the nginx certificate name, if manual display certificate and certificate key
   function checkNginxCertificate() {
     certificateId = document.getElementById("certificateId");
@@ -268,19 +273,19 @@
     }
     certificateEmptyValue();
   }
-  
+
   // set default pvc values
   function pvcDefaultValue() {
     document.getElementById("blackduck-Spec.PVCStorageClass").value = "";
     document.getElementById("blackduck-Spec.ScanType").value = "Artifacts";
   }
-  
+
   // set empty pvc values if clone or backup is not supported
   function pvcEmptyValue() {
     document.getElementById("blackduck-Spec.PVCStorageClass").value = "";
     document.getElementById("blackduck-Spec.ScanType").value = "";
   }
-  
+
   // load the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
   function loadPVC() {
     pvcId = document.getElementById("pvcId")
@@ -290,7 +295,7 @@
       pvcId.style.display = 'none';
     }
   }
-  
+
   // check the clone DB and backup support, if both are not required, then ignore the PVC storage parameters
   function checkPVC() {
     pvcId = document.getElementById("pvcId")
@@ -302,7 +307,7 @@
       pvcEmptyValue();
     }
   }
-  
+
   // based on the scan type value, populate the default pvc claim size values
   function checkScanType() {
     if (document.getElementById("blackduck-Spec.ScanType").value == "Custom") {
@@ -313,13 +318,13 @@
       document.getElementById("blackduck-postgres").value = "150Gi"
     }
   }
-  
+
   // add or update environs and update the spec
   function validateAndGetValues() {
     // Reinsert removed checkbox lines
     updateEnvironFromCB("USE_BINARY_UPLOADS", 'int', true);
-    updateEnviron("ENABLE_SOURCE_UPLOADS", 'bool', true);
-  
+    updateEnvironFromCB("ENABLE_SOURCE_UPLOADS", 'bool', true);
+
     var environsList = document.getElementById("environs");
     var environsItems = environsList.getElementsByTagName('li');
     var environs = document.getElementById("blackduck-Spec.Environs")
@@ -331,7 +336,7 @@
       opt.setAttribute("selected", "selected");
       environs.add(opt);
     };
-  
+
     var containersList = document.getElementById("containerTags");
     var containerItems = containersList.getElementsByTagName('li');
     var containerTags = document.getElementById("blackduck-Spec.ImageRegistries")
@@ -346,7 +351,7 @@
 
 
   }
-  
+
   function toggleDbCheckbox(element) {
     internalDbId = document.getElementById("internalDbId");
     externalDbId = document.getElementById("externalDbId");
@@ -376,7 +381,7 @@
       document.getElementById("blackduck-Spec.ExternalPostgres.PostgresUserPassword").required = false
     }
   }
-  
+
   function toggleCustomAuthCACheckbox(element) {
     customAuthCAId = document.getElementById("customAuthCAId");
     if (element.checked) {
