@@ -1,7 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/blackducksoftware/synopsys-operator/cmd/operator-ui/actions"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -12,7 +15,19 @@ import (
 // call `app.Serve()`, unless you don't want to start your
 // application that is. :)
 func main() {
-	app := actions.App()
+	var configPath string
+	var ok bool
+	if configPath, ok = os.LookupEnv("CONFIG_FILE_PATH"); ok {
+		log.Infof("Config path: %s", configPath)
+	} else {
+		log.Warn("no config file sent. running operator with environment variable and default settings")
+	}
+
+	config, err := protoform.GetConfig(configPath)
+	if err != nil {
+		log.Panicf("unable to get the configuration due to %+v", err)
+	}
+	app := actions.App(config)
 	if err := app.Serve(); err != nil {
 		log.Fatal(err)
 	}

@@ -9,6 +9,6 @@
 </header>
 <br/>
 
-<%= form_for(blackduck, {action: blackduckPath({ blackduck_id: blackduck.Spec.Namespace }), method: "PUT"}) { %>
+<%= form_for(blackduck, {action: blackduckPath({ blackduck_id: blackduck.Spec.Namespace+":"+blackduck.Name }), method: "PUT"}) { %>
   <%= partial("blackducks/form.html") %>
 <% } %>
