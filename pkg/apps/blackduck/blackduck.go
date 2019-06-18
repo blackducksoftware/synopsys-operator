@@ -106,6 +106,24 @@ func (b *Blackduck) getCreater(version string) (Creater, error) {
 	return nil, fmt.Errorf("version %s is not supported", version)
 }
 
+func (b *Blackduck) ensureVersion(bd *v1.Blackduck) error {
+	versions := b.Versions()
+	// If the version is not provided, then we set it to be the latest
+	if len(bd.Spec.Version) == 0 {
+		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+		bd.Spec.Version = versions[0]
+	} else {
+		// If the verion is provided, check that it's supported
+		for _, v := range versions {
+			if strings.Compare(v, bd.Spec.Version) == 0 {
+				return nil
+			}
+		}
+		return fmt.Errorf("version '%s' is not supported", bd.Spec.Version)
+	}
+	return nil
+}
+
 // Delete will be used to delete a blackduck instance
 func (b *Blackduck) Delete(name string) error {
 	log.Infof("deleting a %s Black Duck instance", name)
@@ -169,12 +187,9 @@ func (b *Blackduck) Versions() []string {
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
 func (b *Blackduck) Ensure(bd *v1.Blackduck) error {
 	// If the version is not specified then we set it to be the latest.
-	if len(bd.Spec.Version) == 0 {
-		versions := b.Versions()
-		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-		bd.Spec.Version = versions[0]
+	if err := b.ensureVersion(bd); err != nil {
+		return err
 	}
-
 	creater, err := b.getCreater(bd.Spec.Version)
 	if err != nil {
 		return err
@@ -185,6 +200,10 @@ func (b *Blackduck) Ensure(bd *v1.Blackduck) error {
 
 // GetComponents gets the BlackDuck's creater and returns the components
 func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck) (*api.ComponentList, error) {
+	// If the version is not specified then we set it to be the latest.
+	if err := b.ensureVersion(bd); err != nil {
+		return nil, err
+	}
 	creater, err := b.getCreater(bd.Spec.Version)
 	if err != nil {
 		return nil, err

@@ -30,6 +30,8 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -65,41 +67,45 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 	rc := &rest.Config{}
 	app := apps.NewApp(pc, rc)
 
+	var cList *api.ComponentList
+	var err error
+
 	switch reflect.TypeOf(crd) {
 	case reflect.TypeOf(soperator.SpecConfig{}):
 		operator := crd.(soperator.SpecConfig)
-		cList, err := operator.GetComponents()
+		cList, err = operator.GetComponents()
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}
-		kubeInterfaces = cList.GetKubeInterfaces()
 	case reflect.TypeOf(alertapi.Alert{}):
 		alert := crd.(alertapi.Alert)
-		cList, err := app.Alert().GetComponents(&alert)
+		cList, err = app.Alert().GetComponents(&alert)
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}
-		kubeInterfaces = cList.GetKubeInterfaces()
 	case reflect.TypeOf(blackduckapi.Blackduck{}):
 		blackDuck := crd.(blackduckapi.Blackduck)
-		cList, err := app.Blackduck().GetComponents(&blackDuck)
+		cList, err = app.Blackduck().GetComponents(&blackDuck)
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}
-		kubeInterfaces = cList.GetKubeInterfaces()
 	case reflect.TypeOf(opssightapi.OpsSight{}):
 		opsSight := crd.(opssightapi.OpsSight)
 		sc := opssight.NewSpecConfig(pc, kubeClient, opsSightClient, blackDuckClient, &opsSight, true, pc.DryRun)
-		cList, err := sc.GetComponents()
+		cList, err = sc.GetComponents()
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}
-		kubeInterfaces = cList.GetKubeInterfaces()
 	default:
 		return fmt.Errorf("cannot print a resource with the format: %+v", crd)
 	}
 
-	err := PrintComponents(kubeInterfaces, format)
+	if cList == nil {
+		return fmt.Errorf("failed to generate a componentList for %+v", crd)
+	}
+	cList.PersistentVolumeClaims = []*components.PersistentVolumeClaim{} // Don't print resources for PVCs
+	kubeInterfaces = cList.GetKubeInterfaces()
+	err = PrintComponents(kubeInterfaces, format)
 	if err != nil {
 		return fmt.Errorf("failed to print components: %s", err)
 	}
