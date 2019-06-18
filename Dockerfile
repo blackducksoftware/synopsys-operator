@@ -2,18 +2,19 @@ FROM gobuffalo/buffalo:v0.14.3 as builder
 
 # Set the environment
 ENV GO111MODULE=on
+ENV BUFFALO_PLUGIN_CACHE=off
 ENV BP=$GOPATH/src/github.com/blackducksoftware/synopsys-operator
 
-# Add the whole directory
+# Add the Synopsys Operator repository
 ADD . $BP
 
-### BUILD THE BINARIES...
+# Setting the work directory
 WORKDIR $BP
 
-# RUN cd cmd/blackduckctl && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/blackduckctl
+### Build the Synopsys Operator binary
 RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/operator
 
-### BUILD THE UI
+### Build the Synopsys Operator UI
 RUN cd cmd/operator-ui && yarn install --no-progress && mkdir -p public/assets && buffalo build --static -o /bin/app
 
 # Container catalog requirements
@@ -39,12 +40,9 @@ ARG LASTCOMMIT
 # ENV ADDR=0.0.0.0
 
 COPY --from=builder /bin/app .
-# COPY --from=builder /bin/blackduckctl .
 COPY --from=builder /bin/operator .
 COPY --from=builder /bin/LICENSE /licenses/
 COPY --from=builder /bin/help.1 /help.1
-
-# RUN chmod 777 ./app && chmod 777 ./operator
 
 LABEL name="Synopsys Operator" \
     vendor="Synopsys" \

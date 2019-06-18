@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/envy"
 	csrf "github.com/gobuffalo/mw-csrf"
@@ -35,7 +36,7 @@ var T *i18n.Translator
 // `ServeFiles` is a CATCH-ALL route, so it should always be
 // placed last in the route declarations, as it will prevent routes
 // declared after it to never be called.
-func App() *buffalo.App {
+func App(config *protoform.Config) *buffalo.App {
 	if app == nil {
 		app = buffalo.New(buffalo.Options{
 			Env:         ENV,
@@ -64,7 +65,7 @@ func App() *buffalo.App {
 			kubeConfig, err = newKubeClientFromOutsideCluster()
 		}
 
-		blackDuckResource, err := NewBlackduckResource(kubeConfig)
+		blackDuckResource, err := NewBlackduckResource(config, kubeConfig)
 		if err != nil {
 			log.Panic(err)
 		}

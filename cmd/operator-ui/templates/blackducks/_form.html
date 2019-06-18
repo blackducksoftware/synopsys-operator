@@ -237,8 +237,10 @@
 
   function editableFalse() {
     if (document.getElementById("blackduck-Spec.Namespace") != null && document.getElementById("blackduck-Spec.Namespace").value != "") {
-      document.getElementById("blackduck-Name").setAttribute("readonly", "readonly")
       document.getElementById("blackduck-Spec.Namespace").setAttribute("readonly", "readonly")
+    }
+    if (document.getElementById("blackduck-Name") != null && document.getElementById("blackduck-Name").value != "") {
+      document.getElementById("blackduck-Name").setAttribute("readonly", "readonly")
       document.getElementById("blackduck-Spec.DbPrototype").setAttribute("readonly", "readonly")
       if (document.getElementById("blackduck-Spec.PersistentStorage").checked == true) {
         document.getElementById("blackduck-Spec.PersistentStorage").setAttribute("readonly", "readonly")

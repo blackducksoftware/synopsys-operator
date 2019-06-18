@@ -11,11 +11,22 @@
 
 <div class="list-container">
   <div class="page-header">
-    <h1><%= blackduck.Spec.Namespace %></h1>
+    <h1><%= blackduck.Name %></h1>
   </div>
 
   <table class="Detail-table">
     <tbody>
+      <tr>
+        <td>
+          <h5>Name</h5>
+        </td>
+        <td>&nbsp;</td>
+        <td><h6>:</h6></td>
+        <td>&nbsp;</td>
+        <td>
+          <h6><%= blackduck.Name %></h6>
+        </td>
+      </tr>
       <tr>
         <td>
           <h5>Namespace</h5>
@@ -190,9 +201,9 @@
           <center>
             <ul class="list-unstyled list-inline">
               <li class="list-inline-item"><a href="<%= blackducksPath() %>" class="btn btn-info">Close</a></li>
-              <li class="list-inline-item"><a href="<%= editBlackduckPath({ blackduck_id: blackduck.Spec.Namespace })%>" class="btn btn-warning">Edit</a></li>
+              <li class="list-inline-item"><a href="<%= editBlackduckPath({ blackduck_id: blackduck.Spec.Namespace+":"+blackduck.Name })%>" class="btn btn-warning">Edit</a></li>
               <li class="list-inline-item">
-                <form action="<%= blackduckStatePath({ blackduck_id: blackduck.Spec.Namespace }) %>" method="post">
+                <form action="<%= blackduckStatePath({ blackduck_id: blackduck.Spec.Namespace+":"+blackduck.Name }) %>" method="post">
                   <input name="authenticity_token" type="hidden" value="<%= authenticity_token %>">
                   <%= if (capitalize(blackduck.Spec.DesiredState) ==  "START") { %>
                   <input type="hidden" id="state" name="state" value="STOP">
@@ -206,7 +217,7 @@
                   <% } %>
                 </form>
               </li>
-              <li class="list-inline-item"><a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace })%>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
+              <li class="list-inline-item"><a href="<%= blackduckPath({ blackduck_id: blackduck.Spec.Namespace+":"+blackduck.Name })%>" data-method="DELETE" data-confirm="Are you sure?" class="btn btn-danger">Delete</a>
             </ul>
         </center>
         </td>

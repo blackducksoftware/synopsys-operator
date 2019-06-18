@@ -169,6 +169,15 @@ func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deploy
 	synopsysOperatorUIContainer.AddPort(horizonapi.PortConfig{
 		ContainerPort: int32(3000),
 	})
+	synopsysOperatorUIContainer.AddVolumeMount(horizonapi.VolumeMountConfig{
+		MountPath: "/etc/synopsys-operator",
+		Name:      "synopsys-operator",
+	})
+	synopsysOperatorUIContainer.AddEnv(horizonapi.EnvConfig{
+		NameOrPrefix: "CONFIG_FILE_PATH",
+		Type:         horizonapi.EnvVal,
+		KeyOrVal:     "/etc/synopsys-operator/config.json",
+	})
 	synopsysOperatorUIContainer.AddEnv(horizonapi.EnvConfig{
 		NameOrPrefix: "ADDR",
 		Type:         horizonapi.EnvVal,
