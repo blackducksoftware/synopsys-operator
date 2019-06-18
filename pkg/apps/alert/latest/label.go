@@ -4,7 +4,7 @@ Copyright (C) 2019 Synopsys, Inc.
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements. See the NOTICE file
 distributed with this work for additional information
-regarding copyright ownershia. The ASF licenses this file
+regarding copyright ownership. The ASF licenses this file
 to you under the Apache License, Version 2.0 (the
 "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
@@ -21,21 +21,22 @@ under the License.
 
 package alert
 
-import (
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-)
+import "github.com/blackducksoftware/synopsys-operator/pkg/util"
 
-// getCfsslService returns a new Service for a Cffsl
-func (a *SpecConfig) getCfsslService() *components.Service {
-	return util.CreateService(
-		util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
-		a.getLabel("cfssl"),
-		a.alert.Spec.Namespace,
-		int32(8888),
-		int32(8888),
-		horizonapi.ServiceTypeServiceIP,
-		a.getLabel("cfssl"),
-	)
+// getVersionLabel will return the label including the version
+// TODO [YASH]: should be used for all resource labels
+func (a *SpecConfig) getVersionLabel(name string) map[string]string {
+	m := a.getLabel(name)
+	m["version"] = a.alert.Spec.Version
+	return m
+}
+
+// getLabel will return the label
+// TODO [YASH]: should be used for all resource selectors (service, rc, pvc)
+func (a *SpecConfig) getLabel(name string) map[string]string {
+	return map[string]string{
+		"app":       util.AlertName,
+		"name":      a.alert.Name,
+		"component": name,
+	}
 }

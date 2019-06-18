@@ -29,8 +29,8 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
-// GetAlertSecret creates a Secret Horizon component for the Alert
-func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
+// getAlertSecret creates a Secret Horizon component for the Alert
+func (a *SpecConfig) getAlertSecret() (*components.Secret, error) {
 	// Check Secret Values
 	encryptPassLength := len(a.alert.Spec.EncryptionPassword)
 	if encryptPassLength > 0 && encryptPassLength < 16 {
