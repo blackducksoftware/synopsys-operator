@@ -34,35 +34,36 @@ func TestMergeEnvMaps(t *testing.T) {
 		destination map[string]string
 		expected    map[string]string
 	}{
-		// case
 		{
 			description: "nothing is done for empty",
 			source:      map[string]string{},
 			destination: map[string]string{},
 			expected:    map[string]string{},
 		},
-		// case
 		{
 			description: "source value is kept",
 			source:      map[string]string{"key1": "val1"},
 			destination: map[string]string{},
 			expected:    map[string]string{"key1": "val1"},
 		},
-		// case
 		{
 			description: "destination is put into source",
 			source:      map[string]string{},
 			destination: map[string]string{"key1": "val1"},
 			expected:    map[string]string{"key1": "val1"},
 		},
-		// case
 		{
 			description: "source value is given preference",
 			source:      map[string]string{"key1": "valSource"},
 			destination: map[string]string{"key1": "valDest"},
 			expected:    map[string]string{"key1": "valSource"},
 		},
-		// case
+		{
+			description: "source value is empty, delete it from destination",
+			source:      map[string]string{"key1": "", "key2": "val2"},
+			destination: map[string]string{"key1": "val1", "key3": "val3"},
+			expected:    map[string]string{"key2": "val2", "key3": "val3"},
+		},
 		{
 			description: "source and destination values are merged together",
 			source:      map[string]string{"key3": "val3", "key1": "val1", "key2": "val2"},
@@ -86,35 +87,36 @@ func TestMergeEnvSlices(t *testing.T) {
 		destination []string
 		expected    []string
 	}{
-		// case
 		{
 			description: "nothing is done for empty",
 			source:      []string{},
 			destination: []string{},
 			expected:    []string{},
 		},
-		// case
 		{
 			description: "source value is kept",
 			source:      []string{"key1:val1"},
 			destination: []string{},
 			expected:    []string{"key1:val1"},
 		},
-		// case
 		{
 			description: "destination is put into source",
 			source:      []string{},
 			destination: []string{"key1:val1"},
 			expected:    []string{"key1:val1"},
 		},
-		// case
 		{
 			description: "source value is given preference",
 			source:      []string{"key1:valSource"},
 			destination: []string{"key1:valDest"},
 			expected:    []string{"key1:valSource"},
 		},
-		// case
+		{
+			description: "source value is empty",
+			source:      []string{"key1:", "key2:val2"},
+			destination: []string{"key1:val1", "key3:val3"},
+			expected:    []string{"key2:val2", "key3:val3"},
+		},
 		{
 			description: "source and destination values are merged together",
 			source:      []string{"key3:val3", "key1:val1", "key2:val2"},
@@ -127,23 +129,102 @@ func TestMergeEnvSlices(t *testing.T) {
 		observed := MergeEnvSlices(test.source, test.destination)
 		sort.Strings(test.expected)
 		sort.Strings(observed)
-		if v := SlicesEqual(test.expected, observed); !v {
+		if v := reflect.DeepEqual(test.expected, observed); !v {
 			t.Errorf("failed to merge slices '%s', expected %+v, got %+v", test.description, test.expected, observed)
 		}
 	}
 }
 
-// SlicesEqual tells whether a and b contain the same elements.
-// Elements must be in the same order.
-// A nil argument is equivalent to an empty slice.
-func SlicesEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
+func TestGetResourceName(t *testing.T) {
+	type args struct {
+		name        string
+		appName     string
+		defaultName string
 	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "no appName",
+			args: args{
+				name:        "name",
+				appName:     "",
+				defaultName: "defaultName",
+			},
+			want: "name-defaultName",
+		},
+		{
+			name: "appName, no defaultName",
+			args: args{
+				name:        "name",
+				appName:     "appName",
+				defaultName: "",
+			},
+			want: "name-appName",
+		},
+		{
+			name: "appName, defaultName",
+			args: args{
+				name:        "name",
+				appName:     "appName",
+				defaultName: "defaultName",
+			},
+			want: "name-appName-defaultName",
+		},
+		// now not covered
+		{
+			name: "no appName, no defaultName",
+			args: args{
+				name:        "name",
+				appName:     "",
+				defaultName: "",
+			},
+			want: "name-",
+		},
+		{
+			name: "all empty",
+			args: args{
+				name:        "",
+				appName:     "",
+				defaultName: "",
+			},
+			want: "-",
+		},
+		{
+			name: "just defaultName",
+			args: args{
+				name:        "",
+				appName:     "",
+				defaultName: "defaultName",
+			},
+			want: "-defaultName",
+		},
+		{
+			name: "just appName",
+			args: args{
+				name:        "",
+				appName:     "appName",
+				defaultName: "",
+			},
+			want: "-appName",
+		},
+		{
+			name: "no name",
+			args: args{
+				name:        "",
+				appName:     "appName",
+				defaultName: "defaultName",
+			},
+			want: "-appName-defaultName",
+		},
 	}
-	return true
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetResourceName(tt.args.name, tt.args.appName, tt.args.defaultName); got != tt.want {
+				t.Errorf("GetResourceName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
