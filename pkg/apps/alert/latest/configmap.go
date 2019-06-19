@@ -33,13 +33,13 @@ import (
 // getAlertConfigMap returns a new ConfigMap for an Alert
 func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      util.GetResourceName(a.name, util.AlertName, "blackduck-config", a.isClusterScope),
-		Namespace: a.config.Namespace,
+		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "blackduck-config"),
+		Namespace: a.alert.Spec.Namespace,
 	})
 
 	// Add Environs
 	configMapData := map[string]string{}
-	for _, environ := range a.config.Environs {
+	for _, environ := range a.alert.Spec.Environs {
 		vals := strings.Split(environ, ":")
 		if len(vals) != 2 {
 			log.Errorf("Could not split environ '%s' on ':'", environ)
@@ -54,7 +54,7 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 	// Add data to the ConfigMap
 	configMap.AddData(configMapData)
 
-	configMap.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
+	configMap.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
 
 	return configMap
 }

@@ -41,7 +41,7 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 		VolumeMounts: volumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: authenticationPort, Protocol: horizonapi.ProtocolTCP}},
 	}
-	if c.hubSpec.LivenessProbes {
+	if c.blackDuck.Spec.LivenessProbes {
 		hubAuthContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Type: horizonapi.ActionTypeCommand,
@@ -61,7 +61,7 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage {
+	if c.blackDuck.Spec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/hub-authentication/ldap"}},
 			VolumeMounts:    volumeMounts,
@@ -72,12 +72,12 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 	c.PostEditContainer(hubAuthContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "authentication", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getAuthenticationVolumes(),
 			Containers:          []*util.Container{hubAuthContainerConfig},
 			InitContainers:      initContainers,
-			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 			Labels:              c.GetVersionLabel("authentication"),
 			NodeAffinityConfigs: c.GetNodeAffinityConfigs("authentication"),
 		}, c.GetLabel("authentication"))
@@ -88,8 +88,8 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 	hubAuthSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication-security")
 
 	var hubAuthVolume *components.Volume
-	if c.hubSpec.PersistentStorage {
-		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", util.GetResourceName(c.name, util.BlackDuckName, "authentication", c.config.IsClusterScoped))
+	if c.blackDuck.Spec.PersistentStorage {
+		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"))
 	} else {
 		hubAuthVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")
 	}
@@ -97,13 +97,13 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 	volumes := []*components.Volume{hubAuthVolume, c.getDBSecretVolume(), hubAuthSecurityEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0 {
+	if len(c.blackDuck.Spec.ProxyCertificate) > 0 {
 		volumes = append(volumes, c.getProxyVolume())
 	}
 
 	// Custom CA auth
-	if len(c.hubSpec.AuthCustomCA) > 1 {
-		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", util.GetResourceName(c.name, util.BlackDuckName, "auth-custom-ca", c.config.IsClusterScoped), 0444)
+	if len(c.blackDuck.Spec.AuthCustomCA) > 1 {
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "auth-custom-ca"), 0444)
 		volumes = append(volumes, authCustomCaVolume)
 	}
 	return volumes
@@ -119,7 +119,7 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 	}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0 {
+	if len(c.blackDuck.Spec.ProxyCertificate) > 0 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
@@ -127,7 +127,7 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 		})
 	}
 
-	if len(c.hubSpec.AuthCustomCA) > 1 {
+	if len(c.blackDuck.Spec.AuthCustomCA) > 1 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "auth-custom-ca",
 			MountPath: "/tmp/secrets/AUTH_CUSTOM_CA",
@@ -140,5 +140,5 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 
 // GetAuthenticationService will return the authentication service
 func (c *Creater) GetAuthenticationService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "authentication", c.config.IsClusterScoped), c.GetLabel("authentication"), c.hubSpec.Namespace, authenticationPort, authenticationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("authentication"))
+	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), c.GetLabel("authentication"), c.blackDuck.Spec.Namespace, authenticationPort, authenticationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("authentication"))
 }

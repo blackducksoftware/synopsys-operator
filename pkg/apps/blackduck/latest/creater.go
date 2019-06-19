@@ -42,28 +42,24 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 // Creater will store the configuration to create the Blackduck
 type Creater struct {
-	config           *protoform.Config
-	kubeConfig       *rest.Config
-	kubeClient       *kubernetes.Clientset
-	blackduckClient  *blackduckclientset.Clientset
-	osSecurityClient *securityclient.SecurityV1Client
-	routeClient      *routeclient.RouteV1Client
+	config          *protoform.Config
+	kubeConfig      *rest.Config
+	kubeClient      *kubernetes.Clientset
+	blackduckClient *blackduckclientset.Clientset
+	routeClient     *routeclient.RouteV1Client
 }
 
 // NewCreater will instantiate the Creater
 func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
-	osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient, osSecurityClient: osSecurityClient,
-		routeClient: routeClient}
+	routeClient *routeclient.RouteV1Client) *Creater {
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient, routeClient: routeClient}
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
@@ -170,14 +166,14 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
 
 		if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
-			newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed", hc.config.IsClusterScoped))
+			newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
 		} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
-			newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed", hc.config.IsClusterScoped))
+			newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
 		}
 
-		// Create Route on Openshift
-		if strings.ToUpper(blackduck.Spec.ExposeService) == util.OPENSHIFT && hc.routeClient != nil {
-			route, _ := util.GetRoute(hc.routeClient, blackduck.Spec.Namespace, blackduck.Spec.Namespace)
+		// get Route on Openshift
+		if strings.ToUpper(blackduck.Spec.ExposeService) == util.OPENSHIFT && hc.routeClient != nil && len(newBlackuck.Status.IP) == 0 {
+			route, _ := util.GetRoute(hc.routeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, ""))
 			if route != nil {
 				newBlackuck.Status.IP = route.Spec.Host
 			}
@@ -195,26 +191,32 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 	}
 
-	if blackduck.Spec.PersistentStorage {
-		pvcVolumeNames := map[string]string{}
-		pvcList, err := hc.kubeClient.CoreV1().PersistentVolumeClaims(blackduck.Spec.Namespace).List(metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name),
-		})
+	// Commented to verify where it is used
+	// if blackduck.Spec.PersistentStorage {
+	// 	pvcVolumeNames := map[string]string{}
+	// 	pvcList, err := hc.kubeClient.CoreV1().PersistentVolumeClaims(blackduck.Spec.Namespace).List(metav1.ListOptions{
+	// 		LabelSelector: fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name),
+	// 	})
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	for _, v := range pvcList.Items {
+	// 		pvName, err := hc.getPVCVolumeName(blackduck.Spec.Namespace, v.Name)
+	// 		if err != nil {
+	// 			continue
+	// 		}
+	// 		pvcVolumeNames[v.Name] = pvName
+	// 	}
+	// 	newBlackuck.Status.PVCVolumeName = pvcVolumeNames
+	// }
+
+	if !reflect.DeepEqual(blackduck.Status, newBlackuck.Status) {
+		bd, err := util.GetHub(hc.blackduckClient, blackduck.Spec.Namespace, blackduck.Name)
 		if err != nil {
 			return err
 		}
-		for _, v := range pvcList.Items {
-			pvName, err := hc.getPVCVolumeName(blackduck.Spec.Namespace, v.Name)
-			if err != nil {
-				continue
-			}
-			pvcVolumeNames[v.Name] = pvName
-		}
-		newBlackuck.Status.PVCVolumeName = pvcVolumeNames
-	}
-
-	if !reflect.DeepEqual(blackduck, newBlackuck) {
-		if _, err := hc.blackduckClient.SynopsysV1().Blackducks(hc.config.Namespace).Update(newBlackuck); err != nil {
+		bd.Status = newBlackuck.Status
+		if _, err := hc.blackduckClient.SynopsysV1().Blackducks(blackduck.Spec.Namespace).Update(bd); err != nil {
 			return err
 		}
 	}
@@ -262,7 +264,7 @@ func (hc *Creater) initPostgres(name string, bdspec *blackduckapi.BlackduckSpec)
 	}
 
 	// Check if initialization is required.
-	db, err := database.NewDatabase(fmt.Sprintf("%s.%s.svc.cluster.local", util.GetResourceName(name, util.BlackDuckName, "postgres", hc.config.IsClusterScoped), bdspec.Namespace), "postgres", "postgres", postgresPassword, "postgres")
+	db, err := database.NewDatabase(fmt.Sprintf("%s.%s.svc.cluster.local", util.GetResourceName(name, util.BlackDuckName, "postgres"), bdspec.Namespace), "postgres", "postgres", postgresPassword, "postgres")
 	if err != nil {
 		return err
 	}
@@ -291,11 +293,16 @@ func (hc *Creater) initPostgres(name string, bdspec *blackduckapi.BlackduckSpec)
 				return fmt.Errorf("%v: error: %+v", bdspec.Namespace, err)
 			}
 		} else {
-			_, fromPw, err := bdutils.GetHubDBPassword(hc.kubeClient, bdspec.DbPrototype)
+			fromNamespaces, err := util.ListNamespaces(hc.kubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.BlackDuckName, bdspec.DbPrototype))
+			if len(fromNamespaces.Items) == 0 {
+				return fmt.Errorf("unable to find the %s Black Duck instance", bdspec.DbPrototype)
+			}
+			fromNamespace := fromNamespaces.Items[0].Name
+			_, fromPw, err := bdutils.GetHubDBPassword(hc.kubeClient, fromNamespace, bdspec.DbPrototype)
 			if err != nil {
 				return err
 			}
-			err = bdutils.CloneJob(hc.kubeClient, hc.config.Namespace, bdspec.DbPrototype, bdspec.Namespace, fromPw)
+			err = bdutils.CloneJob(hc.kubeClient, fromNamespace, bdspec.DbPrototype, bdspec.Namespace, name, fromPw)
 			if err != nil {
 				return err
 			}
@@ -323,7 +330,7 @@ func (hc *Creater) registerIfNeeded(bd *blackduckapi.Blackduck) error {
 		Timeout: time.Second * 10,
 	}
 
-	resp, err := client.Get(fmt.Sprintf("https://%s.%s.svc:443/api/v1/registrations?summary=true", util.GetResourceName(bd.Name, util.BlackDuckName, "webserver", hc.config.IsClusterScoped), bd.Spec.Namespace))
+	resp, err := client.Get(fmt.Sprintf("https://%s.%s.svc:443/api/v1/registrations?summary=true", util.GetResourceName(bd.Name, util.BlackDuckName, "webserver"), bd.Spec.Namespace))
 	if err != nil {
 		return err
 	}
@@ -358,7 +365,7 @@ func (hc *Creater) registerIfNeeded(bd *blackduckapi.Blackduck) error {
 
 func (hc *Creater) autoRegisterHub(name string, bdspec *blackduckapi.BlackduckSpec) error {
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod, err := util.FilterPodByNamePrefixInNamespace(hc.kubeClient, bdspec.Namespace, util.GetResourceName(name, util.BlackDuckName, "registration", hc.config.IsClusterScoped))
+	registrationPod, err := util.FilterPodByNamePrefixInNamespace(hc.kubeClient, bdspec.Namespace, util.GetResourceName(name, util.BlackDuckName, "registration"))
 	if err != nil {
 		return err
 	}

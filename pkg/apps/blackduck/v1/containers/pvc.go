@@ -33,6 +33,9 @@ import (
 func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 	var pvcs []*components.PersistentVolumeClaim
 
+	// get the created by operator version annotation
+	createdBy, ok := c.blackDuck.Annotations["synopsys.com/created.by"]
+
 	defaultPVC := map[string]string{
 		"blackduck-postgres":          "150Gi",
 		"blackduck-authentication":    "2Gi",
@@ -48,7 +51,7 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 		"blackduck-uploadcache-key":   "2Gi",
 	}
 
-	if c.hubSpec.ExternalPostgres != nil {
+	if c.blackDuck.Spec.ExternalPostgres != nil {
 		delete(defaultPVC, "blackduck-postgres")
 	}
 	if !c.isBinaryAnalysisEnabled {
@@ -57,15 +60,15 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 		delete(defaultPVC, "blackduck-uploadcache-key")
 	}
 
-	if c.hubSpec.PersistentStorage {
+	if c.blackDuck.Spec.PersistentStorage {
 		pvcMap := make(map[string]blackduckapi.PVC)
-		for _, claim := range c.hubSpec.PVC {
+		for _, claim := range c.blackDuck.Spec.PVC {
 			pvcMap[claim.Name] = claim
 		}
 
 		for name, defaultSize := range defaultPVC {
 			size := defaultSize
-			storageClass := c.hubSpec.PVCStorageClass
+			storageClass := c.blackDuck.Spec.PVCStorageClass
 			if claim, ok := pvcMap[name]; ok {
 				if len(claim.StorageClass) > 0 {
 					storageClass = claim.StorageClass
@@ -75,7 +78,12 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 				}
 			}
 
-			pvcs = append(pvcs, c.createPVC(util.GetResourceName(c.name, "", name, c.config.IsClusterScoped), size, defaultSize, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
+			pvcName := util.GetResourceName(c.blackDuck.Name, "", name)
+			if ok && createdBy == "pre-2019.6.0" {
+				pvcName = name
+			}
+
+			pvcs = append(pvcs, c.createPVC(pvcName, size, defaultSize, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
 		}
 	}
 
@@ -101,7 +109,7 @@ func (c *Creater) createPVC(name string, requestedSize string, defaultSize strin
 
 	pvc, _ := components.NewPersistentVolumeClaim(horizonapi.PVCConfig{
 		Name:      name,
-		Namespace: c.hubSpec.Namespace,
+		Namespace: c.blackDuck.Spec.Namespace,
 		Size:      size,
 		Class:     class,
 	})

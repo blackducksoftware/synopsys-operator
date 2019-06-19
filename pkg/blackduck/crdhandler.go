@@ -32,7 +32,7 @@ import (
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	hubutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
+	blackduckutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
@@ -130,18 +130,40 @@ func (h *Handler) ObjectDeleted(name string) {
 
 // ObjectUpdated will be called for update black duck events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
+	var err error
 	bd, ok := objNew.(*blackduckv1.Blackduck)
 	if !ok {
 		log.Error("unable to cast Black Duck object")
 		return
 	}
 
+	isUpdate := false
+	if bd.GetAnnotations() == nil {
+		annotations := make(map[string]string)
+		annotations["synopsys.com/created.by"] = h.config.Version
+		bd.Annotations = annotations
+		isUpdate = true
+	} else {
+		if _, ok = bd.GetAnnotations()["synopsys.com/created.by"]; !ok {
+			bd.Annotations["synopsys.com/created.by"] = h.config.Version
+			isUpdate = true
+		}
+	}
+
+	if isUpdate {
+		bd, err = util.UpdateBlackduck(h.blackduckClient, bd.Spec.Namespace, bd)
+		if err != nil {
+			log.Errorf("couldn't update the annotation for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
+			return
+		}
+	}
+
 	newSpec := bd.Spec
-	hubDefaultSpec := h.defaults
-	err := mergo.Merge(&newSpec, hubDefaultSpec)
+	blackDuckDefaultSpec := h.defaults
+	err = mergo.Merge(&newSpec, blackDuckDefaultSpec)
 	if err != nil {
 		log.Errorf("unable to merge the Black Duck structs for %s due to %+v", bd.Name, err)
-		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
+		bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Error), err)
 		if err != nil {
 			log.Errorf("couldn't update the Black Duck state: %v", err)
 		}
@@ -161,44 +183,44 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	err = app.Blackduck().Ensure(bd)
 	if err != nil {
 		log.Error(err)
-		bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Error), err)
+		bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Error), err)
 		if err != nil {
-			log.Errorf("couldn't update the Black Duck state: %v", err)
+			log.Errorf("couldn't update the state for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 		}
 		return
 	}
 
 	if strings.EqualFold(bd.Spec.DesiredState, string(Stop)) { // Stop State
 		if !strings.EqualFold(bd.Status.State, string(Stopped)) {
-			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Stopped), nil)
+			bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Stopped), nil)
 			if err != nil {
-				log.Errorf("couldn't update the Black Duck state: %v", err)
+				log.Errorf("couldn't update the state for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 			}
 		}
 	} else if strings.EqualFold(bd.Spec.DesiredState, string(DbMigrate)) { // DbMigrate State
 		if !strings.EqualFold(bd.Status.State, string(DbMigration)) {
-			bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(DbMigration), nil)
+			bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(DbMigration), nil)
 			if err != nil {
-				log.Errorf("couldn't update the Black Duck state: %v", err)
+				log.Errorf("couldn't update the state for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 			}
 		}
 	} else { // Start, Running, and Error States
 		if !strings.EqualFold(bd.Status.State, string(Running)) {
 			// Verify that we can access the Black Duck
-			hubURL := fmt.Sprintf("%s.%s.svc", util.GetResourceName(bd.Name, util.BlackDuckName, "webserver", h.config.IsClusterScoped), bd.Spec.Namespace)
-			status := h.verifyHub(hubURL, bd.Spec.Namespace)
+			blackDuckURL := fmt.Sprintf("%s.%s.svc", util.GetResourceName(bd.Name, util.BlackDuckName, "webserver"), bd.Spec.Namespace)
+			status := h.verifyHub(blackDuckURL, bd.Spec.Namespace, bd.Name)
 
 			if status { // Set state to Running if we can access the Black Duck
-				bd, err = hubutils.UpdateState(h.blackduckClient, bd.Name, h.config.Namespace, string(Running), nil)
+				bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Running), nil)
 				if err != nil {
-					log.Errorf("couldn't update the Black Duck state: %v", err)
+					log.Errorf("couldn't update the state for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 				}
 			}
 		}
 	}
 }
 
-func (h *Handler) verifyHub(hubURL string, name string) bool {
+func (h *Handler) verifyHub(blackDuckURL string, namespace string, name string) bool {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -209,11 +231,11 @@ func (h *Handler) verifyHub(hubURL string, name string) bool {
 	}
 
 	for i := 0; i < 10; i++ {
-		resp, err := client.Get(fmt.Sprintf("https://%s:443/api/current-version", hubURL))
+		resp, err := client.Get(fmt.Sprintf("https://%s:443/api/current-version", blackDuckURL))
 		if err != nil {
-			log.Debugf("unable to talk with the Black Duck %s", hubURL)
+			log.Debugf("unable to talk with the Black Duck %s", blackDuckURL)
 			time.Sleep(10 * time.Second)
-			_, err := util.GetHub(h.blackduckClient, h.config.Namespace, name)
+			_, err := util.GetHub(h.blackduckClient, namespace, name)
 			if err != nil {
 				return false
 			}
@@ -222,7 +244,7 @@ func (h *Handler) verifyHub(hubURL string, name string) bool {
 
 		_, err = ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		log.Debugf("black duck response status for %s is %v", hubURL, resp.Status)
+		log.Debugf("response status for %s Black Duck instance in %s namespace is %v", name, namespace, resp.Status)
 
 		if resp.StatusCode == 200 {
 			return true

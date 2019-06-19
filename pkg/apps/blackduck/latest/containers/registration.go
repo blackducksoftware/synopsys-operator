@@ -40,7 +40,7 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: registrationPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	if c.hubSpec.LivenessProbes {
+	if c.blackDuck.Spec.LivenessProbes {
 		registrationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Type: horizonapi.ActionTypeCommand,
@@ -60,7 +60,7 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage {
+	if c.blackDuck.Spec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/hub-registration/config"}},
 			VolumeMounts:    volumeMounts,
@@ -71,12 +71,12 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 	c.PostEditContainer(registrationContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "registration", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getRegistrationVolumes(),
 			Containers:          []*util.Container{registrationContainerConfig},
 			InitContainers:      initContainers,
-			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 			Labels:              c.GetVersionLabel("registration"),
 			NodeAffinityConfigs: c.GetNodeAffinityConfigs("registration"),
 		}, c.GetLabel("registration"))
@@ -87,8 +87,8 @@ func (c *Creater) getRegistrationVolumes() []*components.Volume {
 	var registrationVolume *components.Volume
 	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
 
-	if c.hubSpec.PersistentStorage {
-		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", util.GetResourceName(c.name, util.BlackDuckName, "registration", c.config.IsClusterScoped))
+	if c.blackDuck.Spec.PersistentStorage {
+		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"))
 	} else {
 		registrationVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")
 	}
@@ -96,7 +96,7 @@ func (c *Creater) getRegistrationVolumes() []*components.Volume {
 	volumes := []*components.Volume{registrationVolume, registrationSecurityEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0 {
+	if len(c.blackDuck.Spec.ProxyCertificate) > 0 {
 		volumes = append(volumes, c.getProxyVolume())
 	}
 	return volumes
@@ -110,7 +110,7 @@ func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig 
 	}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.hubSpec.ProxyCertificate) > 0 {
+	if len(c.blackDuck.Spec.ProxyCertificate) > 0 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
@@ -123,5 +123,5 @@ func (c *Creater) getRegistrationVolumeMounts() []*horizonapi.VolumeMountConfig 
 
 // GetRegistrationService will return the registration service
 func (c *Creater) GetRegistrationService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "registration", c.config.IsClusterScoped), c.GetLabel("registration"), c.hubSpec.Namespace, registrationPort, registrationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("registration"))
+	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"), c.GetLabel("registration"), c.blackDuck.Spec.Namespace, registrationPort, registrationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("registration"))
 }

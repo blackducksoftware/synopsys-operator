@@ -43,7 +43,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 			{ContainerPort: uploadCachePort2, Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	if c.hubSpec.LivenessProbes {
+	if c.blackDuck.Spec.LivenessProbes {
 		uploadCacheContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Type:    horizonapi.ActionTypeCommand,
@@ -57,7 +57,7 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage {
+	if c.blackDuck.Spec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/blackduck-upload-cache/security /opt/blackduck/hub/blackduck-upload-cache/keys /opt/blackduck/hub/blackduck-upload-cache/uploads"}},
 			VolumeMounts:    volumeMounts,
@@ -68,12 +68,12 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 	c.PostEditContainer(uploadCacheContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "uploadcache", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getUploadCacheVolumes(),
 			Containers:          []*util.Container{uploadCacheContainerConfig},
 			InitContainers:      initContainers,
-			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 			Labels:              c.GetVersionLabel("uploadcache"),
 			NodeAffinityConfigs: c.GetNodeAffinityConfigs("uploadcache"),
 		}, c.GetLabel("uploadcache"))
@@ -82,12 +82,12 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 // getUploadCacheVolumes will return the uploadCache volumes
 func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
-	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", util.GetResourceName(c.name, util.BlackDuckName, "upload-cache", c.config.IsClusterScoped), 0444)
+	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "upload-cache"), 0444)
 	var uploadCacheDataDir *components.Volume
 	var uploadCacheDataKey *components.Volume
-	if c.hubSpec.PersistentStorage {
-		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.name, util.BlackDuckName, "uploadcache-data", c.config.IsClusterScoped))
-		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", util.GetResourceName(c.name, util.BlackDuckName, "uploadcache-key", c.config.IsClusterScoped))
+	if c.blackDuck.Spec.PersistentStorage {
+		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache-data"))
+		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache-key"))
 	} else {
 		uploadCacheDataDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
 		uploadCacheDataKey, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-key")
@@ -110,6 +110,6 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 // GetUploadCacheService will return the uploadCache service
 func (c *Creater) GetUploadCacheService() *components.Service {
 	// TODO: remove GetResourceName method until the HUB-20412 is fixed. once it if fixed, add them back
-	return util.CreateServiceWithMultiplePort("uploadcache", c.GetLabel("uploadcache"), c.hubSpec.Namespace, []int32{uploadCachePort1, uploadCachePort2},
+	return util.CreateServiceWithMultiplePort("uploadcache", c.GetLabel("uploadcache"), c.blackDuck.Spec.Namespace, []int32{uploadCachePort1, uploadCachePort2},
 		horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("uploadcache"))
 }

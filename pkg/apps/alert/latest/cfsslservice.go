@@ -30,8 +30,8 @@ import (
 // getCfsslService returns a new Service for a Cffsl
 func (a *SpecConfig) getCfsslService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(a.name, util.AlertName, "cfssl", a.isClusterScope),
-		Namespace: a.config.Namespace,
+		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
+		Namespace: a.alert.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 
@@ -42,7 +42,7 @@ func (a *SpecConfig) getCfsslService() *components.Service {
 		Name:       "8888-tcp",
 	})
 
-	service.AddSelectors(map[string]string{"app": util.AlertName, "name": a.name, "component": "cfssl"})
-	service.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "cfssl"})
+	service.AddSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
+	service.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
 	return service
 }

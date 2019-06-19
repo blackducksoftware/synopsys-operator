@@ -32,12 +32,12 @@ import (
 
 // GetOpenShiftRoute creates the OpenShift route component for the webserver
 func (c *Creater) GetOpenShiftRoute() *api.Route {
-	if strings.ToUpper(c.hubSpec.ExposeService) == util.OPENSHIFT {
+	if strings.ToUpper(c.blackDuck.Spec.ExposeService) == util.OPENSHIFT {
 		return &api.Route{
-			Name:               util.GetResourceName(c.name, util.BlackDuckName, "", c.config.IsClusterScoped),
-			Namespace:          c.hubSpec.Namespace,
+			Name:               util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, ""),
+			Namespace:          c.blackDuck.Spec.Namespace,
 			Kind:               "Service",
-			ServiceName:        util.GetResourceName(c.name, util.BlackDuckName, "webserver", c.config.IsClusterScoped),
+			ServiceName:        util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"),
 			PortName:           fmt.Sprintf("port-%d", 443),
 			Labels:             c.GetLabel("route"),
 			TLSTerminationType: routev1.TLSTerminationPassthrough,

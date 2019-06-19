@@ -23,14 +23,15 @@ package containers
 
 import (
 	"fmt"
+	"strings"
 	"testing"
-
-	v1 "k8s.io/api/core/v1"
 
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGetPVCs(t *testing.T) {
@@ -44,7 +45,7 @@ func TestGetPVCs(t *testing.T) {
 	// Binary Analysis state for this test
 	ba := false
 	// Default PVCs for this test
-	c := NewCreater(&pc, nil, nil, "test", &blackduckapi.BlackduckSpec{PersistentStorage: true}, flavor, ba)
+	c := NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackduckapi.BlackduckSpec{PersistentStorage: true}}, flavor, ba)
 	defaultPVCs := c.GetPVCs()
 
 	// Case: No PVCs specified - defaults
@@ -53,7 +54,7 @@ func TestGetPVCs(t *testing.T) {
 		PersistentStorage: true,
 		PVC:               specPVCs,
 	}
-	c = NewCreater(&pc, nil, nil, "test", &blackDuckSpec, flavor, ba)
+	c = NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackDuckSpec}, flavor, ba)
 	createdPVCs := c.GetPVCs()
 	err := checkPVCs(defaultPVCs, specPVCs, createdPVCs)
 	if err != nil {
@@ -63,7 +64,7 @@ func TestGetPVCs(t *testing.T) {
 	// Case: PVC name and storage class are changed
 	specPVCs = []blackduckapi.PVC{
 		{
-			Name:         defaultPVCs[0].GetName(),
+			Name:         strings.Split(defaultPVCs[0].GetName(), "test-")[1],
 			Size:         "10Gi",
 			StorageClass: "testStorageClass",
 		},
@@ -73,7 +74,7 @@ func TestGetPVCs(t *testing.T) {
 		PVCStorageClass:   "globalStorageClass",
 		PVC:               specPVCs,
 	}
-	c = NewCreater(&pc, nil, nil, "test", &blackDuckSpec, flavor, ba)
+	c = NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackDuckSpec}, flavor, ba)
 	createdPVCs = c.GetPVCs()
 	err = checkPVCs(defaultPVCs, specPVCs, createdPVCs)
 	if err != nil {
@@ -93,7 +94,7 @@ func TestGetPVCs(t *testing.T) {
 		PVCStorageClass:   "globalStorageClass",
 		PVC:               specPVCs,
 	}
-	c = NewCreater(&pc, nil, nil, "test", &blackDuckSpec, flavor, ba)
+	c = NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackDuckSpec}, flavor, ba)
 	createdPVCs = c.GetPVCs()
 	err = checkPVCs(defaultPVCs, []blackduckapi.PVC{}, createdPVCs) // a bad PVC is like it doesn't exist
 	if err != nil {
@@ -103,7 +104,7 @@ func TestGetPVCs(t *testing.T) {
 	// Case: Bad PVC is ignored and Good PVC is added
 	specPVCs = []blackduckapi.PVC{
 		{
-			Name:         defaultPVCs[0].GetName(),
+			Name:         strings.Split(defaultPVCs[0].GetName(), "test-")[1],
 			Size:         "10Gi",
 			StorageClass: "testStorageClass",
 		},
@@ -118,9 +119,9 @@ func TestGetPVCs(t *testing.T) {
 		PVCStorageClass:   "globalStorageClass",
 		PVC:               specPVCs,
 	}
-	c = NewCreater(&pc, nil, nil, "test", &blackDuckSpec, flavor, ba)
+	c = NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackDuckSpec}, flavor, ba)
 	createdPVCs = c.GetPVCs()
-	err = checkPVCs(defaultPVCs, []blackduckapi.PVC{{Name: defaultPVCs[0].GetName(), Size: "10Gi", StorageClass: "testStorageClass"}}, createdPVCs)
+	err = checkPVCs(defaultPVCs, []blackduckapi.PVC{{Name: strings.Split(defaultPVCs[0].GetName(), "test-")[1], Size: "10Gi", StorageClass: "testStorageClass"}}, createdPVCs)
 	if err != nil {
 		t.Errorf("%s", err)
 	}
@@ -157,15 +158,15 @@ func checkPVCs(defaultPVCs []*horizoncomponents.PersistentVolumeClaim, expectedP
 
 	// Check the expected PVC names are in the observed PVC names
 	for expectedPVCName := range expectedPVCMap {
-		if _, exists := observedPVCMap[expectedPVCName]; !exists {
-			return fmt.Errorf("expected PVC %+v is not in the created PVCs", expectedPVCName)
+		if _, exists := observedPVCMap[fmt.Sprintf("test-%s", expectedPVCName)]; !exists {
+			return fmt.Errorf("expected PVC %+v is not in the created PVCs", fmt.Sprintf("test-%s", expectedPVCName))
 		}
 	}
 
 	// Check the expected PVC values are correctly set in observed PVCs
 	for expectedPVCName, expectedPVC := range expectedPVCMap {
-		observedPVCObj := observedPVCMap[expectedPVCName].PersistentVolumeClaim
-		defaultPVCObj := defaultPVCMap[expectedPVCName].PersistentVolumeClaim
+		observedPVCObj := observedPVCMap[fmt.Sprintf("test-%s", expectedPVCName)].PersistentVolumeClaim
+		defaultPVCObj := defaultPVCMap[fmt.Sprintf("test-%s", expectedPVCName)].PersistentVolumeClaim
 		if len(expectedPVC.Size) > 0 { // use the specified size
 			observedSize := observedPVCObj.Spec.Resources.Requests[v1.ResourceStorage]
 			expectedSize, _ := resource.ParseQuantity(expectedPVC.Size)

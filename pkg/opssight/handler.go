@@ -170,9 +170,27 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
+	var err error
+	isUpdate := false
+	if opssight.GetAnnotations() == nil {
+		annotations := make(map[string]string)
+		annotations["synopsys.com/created.by"] = h.Config.Version
+		opssight.Annotations = annotations
+		isUpdate = true
+	} else {
+		if _, ok = opssight.GetAnnotations()["synopsys.com/created.by"]; !ok {
+			opssight.Annotations["synopsys.com/created.by"] = h.Config.Version
+			isUpdate = true
+		}
+	}
+
+	if isUpdate {
+		opssight, err = util.UpdateOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight)
+	}
+
 	newSpec := opssight.Spec
 	defaultSpec := h.Defaults
-	err := mergo.Merge(&newSpec, defaultSpec)
+	err = mergo.Merge(&newSpec, defaultSpec)
 	if err != nil {
 		recordError("unable to merge default and new objects")
 		h.updateState(Error, err.Error(), opssight)

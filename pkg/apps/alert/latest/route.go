@@ -32,14 +32,14 @@ import (
 
 // GetOpenShiftRoute creates the OpenShift route component for the alert
 func (a *SpecConfig) GetOpenShiftRoute() *api.Route {
-	if strings.ToUpper(a.config.ExposeService) == util.OPENSHIFT {
+	if strings.ToUpper(a.alert.Spec.ExposeService) == util.OPENSHIFT {
 		return &api.Route{
-			Name:               util.GetResourceName(a.name, util.AlertName, "", a.isClusterScope),
-			Namespace:          a.config.Namespace,
+			Name:               util.GetResourceName(a.alert.Name, util.AlertName, ""),
+			Namespace:          a.alert.Spec.Namespace,
 			Kind:               "Service",
-			ServiceName:        util.GetResourceName(a.name, util.AlertName, "alert", a.isClusterScope),
-			PortName:           fmt.Sprintf("%d-tcp", *a.config.Port),
-			Labels:             map[string]string{"app": util.AlertName, "name": a.name, "component": "route"},
+			ServiceName:        util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
+			PortName:           fmt.Sprintf("%d-tcp", *a.alert.Spec.Port),
+			Labels:             map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "route"},
 			TLSTerminationType: routev1.TLSTerminationPassthrough,
 		}
 	}

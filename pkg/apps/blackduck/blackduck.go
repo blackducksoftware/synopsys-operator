@@ -37,7 +37,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -45,13 +44,12 @@ import (
 
 // Blackduck is used for the Blackduck deployment
 type Blackduck struct {
-	config           *protoform.Config
-	kubeConfig       *rest.Config
-	kubeClient       *kubernetes.Clientset
-	blackduckClient  *blackduckclientset.Clientset
-	osSecurityClient *securityclient.SecurityV1Client
-	routeClient      *routeclient.RouteV1Client
-	creaters         []Creater
+	config          *protoform.Config
+	kubeConfig      *rest.Config
+	kubeClient      *kubernetes.Clientset
+	blackduckClient *blackduckclientset.Clientset
+	routeClient     *routeclient.RouteV1Client
+	creaters        []Creater
 }
 
 // NewBlackduck will return a Blackduck
@@ -67,31 +65,20 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 		return nil
 	}
 
-	osClient, err := securityclient.NewForConfig(kubeConfig)
-	if err != nil {
-		osClient = nil
-	} else {
-		_, err := util.GetOpenShiftSecurityConstraint(osClient, "anyuid")
-		if err != nil {
-			osClient = nil
-		}
-	}
-
 	routeClient := util.GetRouteClient(kubeConfig, config.Namespace)
 
 	creaters := []Creater{
-		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
-		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, osClient, routeClient),
+		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
+		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
 	}
 
 	return &Blackduck{
-		config:           config,
-		kubeConfig:       kubeConfig,
-		kubeClient:       kubeclient,
-		blackduckClient:  blackduckClient,
-		osSecurityClient: osClient,
-		routeClient:      routeClient,
-		creaters:         creaters,
+		config:          config,
+		kubeConfig:      kubeConfig,
+		kubeClient:      kubeclient,
+		blackduckClient: blackduckClient,
+		routeClient:     routeClient,
+		creaters:        creaters,
 	}
 }
 
@@ -134,7 +121,7 @@ func (b *Blackduck) Delete(name string) error {
 	} else if len(values) == 1 {
 		name = values[0]
 		namespace = values[0]
-		ns, err := util.ListNamespaces(b.kubeClient, fmt.Sprintf("synopsys.com.%s.%s", util.BlackDuckName, name))
+		ns, err := util.ListNamespaces(b.kubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.BlackDuckName, name))
 		if err != nil {
 			log.Errorf("unable to list %s Black Duck instance namespaces %s due to %+v", name, namespace, err)
 		}

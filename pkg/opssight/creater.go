@@ -72,7 +72,7 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 func (ac *Creater) DeleteOpsSight(name string) error {
 	log.Infof("deleting a %s OpsSight instance", name)
 	namespace := name
-	ns, err := util.ListNamespaces(ac.kubeClient, fmt.Sprintf("synopsys.com.%s.%s", util.OpsSightName, name))
+	ns, err := util.ListNamespaces(ac.kubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.OpsSightName, name))
 	if err != nil {
 		log.Errorf("unable to list %s OpsSight namespaces %s due to %+v", name, namespace, err)
 	}

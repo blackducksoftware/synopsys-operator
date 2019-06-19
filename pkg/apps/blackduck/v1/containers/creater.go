@@ -45,27 +45,26 @@ type Creater struct {
 	config                  *protoform.Config
 	kubeConfig              *rest.Config
 	kubeClient              *kubernetes.Clientset
-	name                    string
-	hubSpec                 *blackduckapi.BlackduckSpec
+	blackDuck               *blackduckapi.Blackduck
 	hubContainerFlavor      *ContainerFlavor
 	isBinaryAnalysisEnabled bool
 }
 
 // NewCreater will return a creater
-func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, name string, hubSpec *blackduckapi.BlackduckSpec,
+func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, blackDuck *blackduckapi.Blackduck,
 	hubContainerFlavor *ContainerFlavor, isBinaryAnalysisEnabled bool) *Creater {
-	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, name: name, hubSpec: hubSpec, hubContainerFlavor: hubContainerFlavor,
+	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackDuck: blackDuck, hubContainerFlavor: hubContainerFlavor,
 		isBinaryAnalysisEnabled: isBinaryAnalysisEnabled}
 }
 
 // GetFullContainerNameFromImageRegistryConf returns the tag that is specified for a container by trying to look in the custom tags provided,
 // if those arent filled, it uses the "HubVersion" as a default, which works for blackduck < 5.1.0.
 func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string) string {
-	//blackduckVersion := hubutils.GetHubVersion(c.hubSpec.Environs)
-	for _, reg := range c.hubSpec.ImageRegistries {
+	//blackduckVersion := hubutils.GetHubVersion(c.blackDuck.Spec.Environs)
+	for _, reg := range c.blackDuck.Spec.ImageRegistries {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
-			log.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, c.hubSpec.ImageRegistries, reg, baseContainer)
+			log.Infof("Image %v found inside of the [ %v ] tag map. Returning %v as the container name for %v.", reg, c.blackDuck.Spec.ImageRegistries, reg, baseContainer)
 			_, err := util.ValidateImageString(reg)
 			if err != nil {
 				log.Error(err)
@@ -96,7 +95,7 @@ func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string
 // getTag returns the tag that is specified for a container by trying to look in the custom tags provided,
 // if those arent filled, it uses the "HubVersion" as a default, which works for blackduck < 5.1.0.
 func (c *Creater) getUID(baseContainer string) *int64 {
-	if tag, ok := c.hubSpec.ImageUIDMap[baseContainer]; ok {
+	if tag, ok := c.blackDuck.Spec.ImageUIDMap[baseContainer]; ok {
 		return &tag
 	}
 	return nil

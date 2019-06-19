@@ -36,22 +36,25 @@ import (
 	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
 )
 
+var version string
+
 func main() {
+	log.Infof("version: %s", version)
 	if len(os.Args) > 1 {
 		configPath := os.Args[1]
-		runProtoform(configPath)
+		runProtoform(configPath, version)
 		fmt.Printf("Config path: %s", configPath)
 		return
 	}
 	log.Warn("no config file sent. running operator with environment variable and default settings")
-	runProtoform("")
+	runProtoform("", version)
 }
 
 // runProtoform will add CRD controllers to the Protoform Deployer which
 // will call each of their Deploy functions
-func runProtoform(configPath string) {
+func runProtoform(configPath string, version string) {
 	// Add controllers to the Protoform Deployer
-	deployer, err := protoform.NewController(configPath)
+	deployer, err := protoform.NewController(configPath, version)
 	if err != nil {
 		panic(err)
 	}

@@ -29,7 +29,7 @@ import (
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -49,18 +49,6 @@ func GetHubVersion(environs []string) string {
 	}
 
 	return ""
-}
-
-// GetIPAddress will provide the IP address of LoadBalancer or NodePort service
-func GetIPAddress(kubeClient *kubernetes.Clientset, namespace string, retryCount int, waitInSeconds int) (string, error) {
-	ipAddress, err := GetLoadBalancerIPAddress(kubeClient, namespace, "webserver-lb")
-	if err != nil {
-		ipAddress, err = GetNodePortIPAddress(kubeClient, namespace, "webserver-np")
-		if err != nil {
-			return "", err
-		}
-	}
-	return ipAddress, nil
 }
 
 // GetLoadBalancerIPAddress will return the load balance service ip address
@@ -102,10 +90,6 @@ func intArrayToStringArray(intArr []int32, delim string) string {
 	return strings.Join(strArr, delim)
 }
 
-func updateHubObject(h *blackduckclient.Clientset, namespace string, obj *blackduckv1.Blackduck) (*blackduckv1.Blackduck, error) {
-	return h.SynopsysV1().Blackducks(namespace).Update(obj)
-}
-
 // UpdateState will be used to update the hub object
 func UpdateState(h *blackduckclient.Clientset, name string, namespace string, statusState string, error error) (*blackduckv1.Blackduck, error) {
 	errorMessage := ""
@@ -118,10 +102,10 @@ func UpdateState(h *blackduckclient.Clientset, name string, namespace string, st
 }
 
 // GetHubDBPassword will retrieve the blackduck and blackduck_user db password
-func GetHubDBPassword(kubeClient *kubernetes.Clientset, namespace string) (string, string, error) {
+func GetHubDBPassword(kubeClient *kubernetes.Clientset, namespace string, name string) (string, string, error) {
 	var userPw, adminPw string
 
-	secret, err := util.GetSecret(kubeClient, namespace, "db-creds")
+	secret, err := util.GetSecret(kubeClient, namespace, util.GetResourceName(name, util.BlackDuckName, "db-creds"))
 	if err != nil {
 		return userPw, adminPw, err
 	}
@@ -141,14 +125,14 @@ func GetHubDBPassword(kubeClient *kubernetes.Clientset, namespace string) (strin
 }
 
 // CloneJob create a Kube job to clone a postgres instance
-func CloneJob(clientset *kubernetes.Clientset, namespace string, from string, to string, password string) error {
-	command := fmt.Sprintf("pg_dumpall -h postgres.%s.svc.cluster.local -U postgres | psql -h postgres.%s.svc.cluster.local -U postgres", from, to)
+func CloneJob(clientset *kubernetes.Clientset, fromNamespace string, from string, toNamespace string, to string, password string) error {
+	command := fmt.Sprintf("pg_dumpall -h %s.%s.svc.cluster.local -U postgres | psql -h %s.%s.svc.cluster.local -U postgres", util.GetResourceName(from, util.BlackDuckName, "postgres"), fromNamespace, util.GetResourceName(to, util.BlackDuckName, "postgres"), toNamespace)
 
-	cloneJob := &v1.Job{
+	cloneJob := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("clone-job-%s", to),
+			Name: util.GetResourceName(to, util.BlackDuckName, "clone-job"),
 		},
-		Spec: v1.JobSpec{
+		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -174,7 +158,7 @@ func CloneJob(clientset *kubernetes.Clientset, namespace string, from string, to
 		},
 	}
 
-	job, err := clientset.BatchV1().Jobs(namespace).Create(cloneJob)
+	job, err := clientset.BatchV1().Jobs(toNamespace).Create(cloneJob)
 	if err != nil {
 		return err
 	}

@@ -26,7 +26,7 @@ import "github.com/blackducksoftware/synopsys-operator/pkg/util"
 // GetVersionLabel will return the label including the version
 func (c *Creater) GetVersionLabel(name string) map[string]string {
 	m := c.GetLabel(name)
-	m["version"] = c.hubSpec.Version
+	m["version"] = c.blackDuck.Spec.Version
 	return m
 }
 
@@ -34,7 +34,7 @@ func (c *Creater) GetVersionLabel(name string) map[string]string {
 func (c *Creater) GetLabel(name string) map[string]string {
 	return map[string]string{
 		"app":       util.BlackDuckName,
-		"name":      c.name,
+		"name":      c.blackDuck.Name,
 		"component": name,
 	}
 }

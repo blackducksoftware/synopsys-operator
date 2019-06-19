@@ -40,7 +40,7 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: documentationPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	if c.hubSpec.LivenessProbes {
+	if c.blackDuck.Spec.LivenessProbes {
 		documentationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Type:    horizonapi.ActionTypeCommand,
@@ -55,11 +55,11 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 	c.PostEditContainer(documentationContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "documentation", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "documentation"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             []*components.Volume{documentationEmptyDir},
 			Containers:          []*util.Container{documentationContainerConfig},
-			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 			Labels:              c.GetVersionLabel("documentation"),
 			NodeAffinityConfigs: c.GetNodeAffinityConfigs("documentation"),
 		}, c.GetLabel("documentation"))
@@ -67,5 +67,5 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 
 // GetDocumentationService will return the cfssl service
 func (c *Creater) GetDocumentationService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "documentation", c.config.IsClusterScoped), c.GetLabel("documentation"), c.hubSpec.Namespace, documentationPort, documentationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("documentation"))
+	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "documentation"), c.GetLabel("documentation"), c.blackDuck.Spec.Namespace, documentationPort, documentationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("documentation"))
 }

@@ -40,7 +40,7 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: zookeeperPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	if c.hubSpec.LivenessProbes {
+	if c.blackDuck.Spec.LivenessProbes {
 		zookeeperContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Type:    horizonapi.ActionTypeCommand,
@@ -54,7 +54,7 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage {
+	if c.blackDuck.Spec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/zookeeper/data && chmod -c 777 /opt/blackduck/zookeeper/datalog"}},
 			VolumeMounts:    volumeMounts,
@@ -65,12 +65,12 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 	c.PostEditContainer(zookeeperContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "zookeeper", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getZookeeperVolumes(),
 			Containers:          []*util.Container{zookeeperContainerConfig},
 			InitContainers:      initContainers,
-			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 			Labels:              c.GetVersionLabel("zookeeper"),
 			NodeAffinityConfigs: c.GetNodeAffinityConfigs("zookeeper"),
 		}, c.GetLabel("zookeeper"))
@@ -81,14 +81,14 @@ func (c *Creater) getZookeeperVolumes() []*components.Volume {
 	var zookeeperDataVolume *components.Volume
 	var zookeeperDatalogVolume *components.Volume
 
-	if c.hubSpec.PersistentStorage {
-		zookeeperDataVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-data", util.GetResourceName(c.name, util.BlackDuckName, "zookeeper-data", c.config.IsClusterScoped))
+	if c.blackDuck.Spec.PersistentStorage {
+		zookeeperDataVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-data", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper-data"))
 	} else {
 		zookeeperDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-data")
 	}
 
-	if c.hubSpec.PersistentStorage {
-		zookeeperDatalogVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", util.GetResourceName(c.name, util.BlackDuckName, "zookeeper-datalog", c.config.IsClusterScoped))
+	if c.blackDuck.Spec.PersistentStorage {
+		zookeeperDatalogVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper-datalog"))
 	} else {
 		zookeeperDatalogVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")
 	}
@@ -108,5 +108,5 @@ func (c *Creater) getZookeeperVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetZookeeperService will return the zookeeper service
 func (c *Creater) GetZookeeperService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "zookeeper", c.config.IsClusterScoped), c.GetLabel("zookeeper"), c.hubSpec.Namespace, zookeeperPort, zookeeperPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("zookeeper"))
+	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"), c.GetLabel("zookeeper"), c.blackDuck.Spec.Namespace, zookeeperPort, zookeeperPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("zookeeper"))
 }
