@@ -191,25 +191,6 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 	}
 
-	// Commented to verify where it is used
-	// if blackduck.Spec.PersistentStorage {
-	// 	pvcVolumeNames := map[string]string{}
-	// 	pvcList, err := hc.kubeClient.CoreV1().PersistentVolumeClaims(blackduck.Spec.Namespace).List(metav1.ListOptions{
-	// 		LabelSelector: fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name),
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	for _, v := range pvcList.Items {
-	// 		pvName, err := hc.getPVCVolumeName(blackduck.Spec.Namespace, v.Name)
-	// 		if err != nil {
-	// 			continue
-	// 		}
-	// 		pvcVolumeNames[v.Name] = pvName
-	// 	}
-	// 	newBlackuck.Status.PVCVolumeName = pvcVolumeNames
-	// }
-
 	if !reflect.DeepEqual(blackduck.Status, newBlackuck.Status) {
 		bd, err := util.GetHub(hc.blackduckClient, blackduck.Spec.Namespace, blackduck.Name)
 		if err != nil {

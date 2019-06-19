@@ -246,7 +246,7 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 	// When running in cluster scope mode, custom resources do not have a namespace so the above command returns everything and we need to check Spec.Namespace.
 	for _, bd := range blackducks.Items {
 		if strings.EqualFold(bd.Spec.Namespace, blackduck.Spec.Namespace) {
-			return fmt.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+			return fmt.Errorf("due to issues with this version of Black Duck, only one instance per namespace is allowed.")
 		}
 	}
 
