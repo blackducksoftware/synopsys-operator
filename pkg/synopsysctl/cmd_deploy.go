@@ -77,7 +77,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		var err error
-		if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+		if !cmd.Flags().Lookup("mock").Changed && !cmd.Flags().Lookup("mock-kube").Changed {
 			if isClusterScoped && len(operatorNamespace) == 0 {
 				namespace = metav1.NamespaceAll
 			}
@@ -143,13 +143,13 @@ var deployCmd = &cobra.Command{
 			strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds,
 			terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, isClusterScoped, crds, admissionWebhookListener)
 
-		if cmd.LocalFlags().Lookup("mock").Changed {
+		if cmd.Flags().Lookup("mock").Changed {
 			log.Debugf("running mock mode")
 			err := PrintResource(*soperatorSpec, mockFormat, false)
 			if err != nil {
 				log.Errorf("%s", err)
 			}
-		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+		} else if cmd.Flags().Lookup("mock-kube").Changed {
 			log.Debugf("running kube mock mode")
 			err := PrintResource(*soperatorSpec, mockKubeFormat, true)
 			if err != nil {

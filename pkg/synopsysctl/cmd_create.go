@@ -115,13 +115,13 @@ var createAlertCmd = &cobra.Command{
 		}
 		alert.Kind = "Alert"
 		alert.APIVersion = "synopsys.com/v1"
-		if cmd.LocalFlags().Lookup("mock").Changed {
+		if cmd.Flags().Lookup("mock").Changed {
 			log.Debugf("running mock mode")
 			err := PrintResource(*alert, createMockFormat, false)
 			if err != nil {
 				log.Errorf("%s", err)
 			}
-		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+		} else if cmd.Flags().Lookup("mock-kube").Changed {
 			log.Debugf("running kube mock mode")
 			err := PrintResource(*alert, createMockKubeFormat, true)
 			if err != nil {
@@ -182,7 +182,7 @@ var createBlackDuckCmd = &cobra.Command{
 		}
 		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
-		if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+		if !cmd.Flags().Lookup("mock").Changed && !cmd.Flags().Lookup("mock-kube").Changed {
 			blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
 			if err != nil {
 				log.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackDuckNamespace, err)
@@ -216,13 +216,13 @@ var createBlackDuckCmd = &cobra.Command{
 		}
 		blackDuck.Kind = "Blackduck"
 		blackDuck.APIVersion = "synopsys.com/v1"
-		if cmd.LocalFlags().Lookup("mock").Changed {
+		if cmd.Flags().Lookup("mock").Changed {
 			log.Debugf("running mock mode")
 			err := PrintResource(*blackDuck, createMockFormat, false)
 			if err != nil {
 				log.Errorf("%s", err)
 			}
-		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+		} else if cmd.Flags().Lookup("mock-kube").Changed {
 			log.Debugf("running kube mock mode")
 			err := PrintResource(*blackDuck, createMockKubeFormat, true)
 			if err != nil {
@@ -301,13 +301,13 @@ var createOpsSightCmd = &cobra.Command{
 		}
 		opsSight.Kind = "OpsSight"
 		opsSight.APIVersion = "synopsys.com/v1"
-		if cmd.LocalFlags().Lookup("mock").Changed {
+		if cmd.Flags().Lookup("mock").Changed {
 			log.Debugf("running mock mode")
 			err := PrintResource(*opsSight, createMockFormat, false)
 			if err != nil {
 				log.Errorf("%s", err)
 			}
-		} else if cmd.LocalFlags().Lookup("mock-kube").Changed {
+		} else if cmd.Flags().Lookup("mock-kube").Changed {
 			log.Debugf("running kube mock mode")
 			err := PrintResource(*opsSight, createMockKubeFormat, true)
 			if err != nil {

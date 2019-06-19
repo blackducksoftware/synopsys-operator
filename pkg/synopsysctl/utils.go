@@ -49,7 +49,6 @@ import (
 var restconfig *rest.Config
 var kubeClient *kubernetes.Clientset
 var apiExtensionClient *apiextensionsclient.Clientset
-var blackduckClient *blackduckclientset.Clientset
 var opssightClient *opssightclientset.Clientset
 var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
@@ -276,7 +275,7 @@ func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeM
 // getInstanceInfo will provide the name, namespace and crd scope to create each CRD instance
 func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName string, inputNamespace string) (string, string, apiextensions.ResourceScope, error) {
 	crdScope := apiextensions.ClusterScoped
-	if cmd.LocalFlags().Lookup("mock") != nil && !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+	if cmd.Flags().Lookup("mock") != nil && !cmd.Flags().Lookup("mock").Changed && !cmd.Flags().Lookup("mock-kube").Changed {
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdType)
 		if err != nil {
 			return "", "", "", fmt.Errorf("unable to get Custom Resource Definition '%s' in your cluster due to %+v", crdType, err)
