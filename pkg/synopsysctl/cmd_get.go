@@ -151,11 +151,12 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		filePath := args[1]
 		log.Infof("getting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
-		_, err = util.GetHub(blackduckClient, blackDuckNamespace, blackDuckName)
+		_, err = util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			return nil
 		}
+		
 
 		// getting the operator secret to retrieve the seal key
 		secret, err := util.GetSecret(kubeClient, operatorNamespace, "blackduck-secret")
