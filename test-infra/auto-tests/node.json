@@ -1,0 +1,12 @@
+{
+    "documentation": [
+        {
+            "affinityType": "Hard",
+            "key": "beta.kubernetes.io/arch",
+            "op": "In",
+            "values": [
+                "amd64"
+            ]
+        }
+    ]
+}
