@@ -17,7 +17,7 @@ WORKDIR $BP
 RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$BINARY_VERSION" -o /bin/operator
 
 ### Build the Synopsys Operator UI
-RUN cd cmd/operator-ui && yarn install --no-progress && mkdir -p public/assets && buffalo build --static -o /bin/app
+RUN cd cmd/operator-ui && yarn install --no-progress && mkdir -p public/assets && buffalo build --ldflags "-X main.version=$BINARY_VERSION" --static -o /bin/app
 
 # Container catalog requirements
 COPY ./LICENSE /bin/LICENSE 

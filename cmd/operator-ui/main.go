@@ -8,6 +8,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var version string
+
 // main is the starting point for your Buffalo application.
 // You can feel free and add to this `main` method, change
 // what it does, etc...
@@ -15,6 +17,7 @@ import (
 // call `app.Serve()`, unless you don't want to start your
 // application that is. :)
 func main() {
+	log.Infof("version: %s", version)
 	var configPath string
 	var ok bool
 	if configPath, ok = os.LookupEnv("CONFIG_FILE_PATH"); ok {
@@ -23,7 +26,7 @@ func main() {
 		log.Warn("no config file sent. running operator with environment variable and default settings")
 	}
 
-	config, err := protoform.GetConfig(configPath)
+	config, err := protoform.GetConfig(configPath, version)
 	if err != nil {
 		log.Panicf("unable to get the configuration due to %+v", err)
 	}
