@@ -328,7 +328,8 @@ var updateAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, util.AlertName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		alertName, alertNamespace, _, err := getInstanceInfo(mockMode, args[0], util.AlertCRDName, util.AlertName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -393,7 +394,8 @@ var updateBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(mockMode, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -556,7 +558,8 @@ var updateBlackDuckAddPVCCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(mockMode, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -616,7 +619,8 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(mockMode, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -670,7 +674,8 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(mockMode, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -724,7 +729,8 @@ var updateBlackDuckAddUIDCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(mockMode, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -786,7 +792,8 @@ var updateOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(mockMode, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -845,7 +852,8 @@ var updateOpsSightImageCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(mockMode, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -910,7 +918,8 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(mockMode, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -979,7 +988,8 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		mockMode := cmd.LocalFlags().Lookup("mock").Changed || cmd.LocalFlags().Lookup("mock-kube").Changed
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(mockMode, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
 		if err != nil {
 			log.Error(err)
 			return nil

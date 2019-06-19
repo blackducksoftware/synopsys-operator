@@ -37,7 +37,6 @@ import (
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -274,9 +273,9 @@ func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeM
 }
 
 // getInstanceInfo will provide the name, namespace and crd scope to create each CRD instance
-func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName string, inputNamespace string) (string, string, apiextensions.ResourceScope, error) {
+func getInstanceInfo(mockMode bool, name string, crdType string, crdName string, inputNamespace string) (string, string, apiextensions.ResourceScope, error) {
 	crdScope := apiextensions.ClusterScoped
-	if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+	if !mockMode {
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdType)
 		if err != nil {
 			return "", "", "", fmt.Errorf("unable to get Custom Resource Definition '%s' in your cluster due to %+v", crdType, err)
