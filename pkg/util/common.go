@@ -642,7 +642,11 @@ func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodLis
 	// Check whether all pods are running
 	for _, podList := range pods.Items {
 		pod, _ := clientset.CoreV1().Pods(podList.Namespace).Get(podList.Name, metav1.GetOptions{})
-		if !strings.EqualFold(string(pod.Status.Phase), "Running") {
+		switch pod.Status.Phase {
+		case "Succeeded":
+		case "Running":
+			continue
+		default:
 			log.Infof("pod %s is in %s status...", pod.Name, string(pod.Status.Phase))
 			return false
 		}
@@ -1554,7 +1558,7 @@ func isAlertExist(restConfig *rest.Config, namespace string) (bool, error) {
 	}
 
 	for _, alert := range alerts.Items {
-		if alert.Namespace == namespace {
+		if alert.Spec.Namespace == namespace {
 			return true, fmt.Errorf("%s Alert instance is already running in %s namespace... namespace cannot be deleted", alert.Name, namespace)
 		}
 	}
@@ -1573,7 +1577,7 @@ func isBlackDuckExist(restConfig *rest.Config, namespace string) (bool, error) {
 		return false, fmt.Errorf("unable to list Black Duck instances in %s namespace due to %+v", namespace, err)
 	}
 	for _, blackDuck := range blackDucks.Items {
-		if blackDuck.Namespace == namespace {
+		if blackDuck.Spec.Namespace == namespace {
 			return true, fmt.Errorf("%s Black Duck instance is already running in %s namespace... namespace cannot be deleted", blackDuck.Name, namespace)
 		}
 	}
@@ -1592,7 +1596,7 @@ func isOpsSightExist(restConfig *rest.Config, namespace string) (bool, error) {
 		return false, fmt.Errorf("unable to list OpsSight instances in %s namespace due to %+v", namespace, err)
 	}
 	for _, opsSight := range opsSights.Items {
-		if opsSight.Namespace == namespace {
+		if opsSight.Spec.Namespace == namespace {
 			return true, fmt.Errorf("%s OpsSight instance is already running in %s namespace... namespace cannot be deleted", opsSight.Name, namespace)
 		}
 	}
@@ -1668,11 +1672,11 @@ func CheckAndUpdateNamespace(kubeClient *kubernetes.Clientset, resourceName stri
 	if err == nil {
 		isLabelUpdated := false
 		if isDelete {
-			delete(ns.Labels, fmt.Sprintf("synopsys.com.%s.%s", resourceName, name))
+			delete(ns.Labels, fmt.Sprintf("synopsys.com/%s.%s", resourceName, name))
 			isLabelUpdated = true
 		} else {
-			if existingVersion, ok := ns.Labels[fmt.Sprintf("synopsys.com.%s.%s", resourceName, name)]; !isDelete && (!ok || existingVersion != version) {
-				ns.Labels[fmt.Sprintf("synopsys.com.%s.%s", resourceName, name)] = version
+			if existingVersion, ok := ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)]; !isDelete && (!ok || existingVersion != version) {
+				ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)] = version
 				isLabelUpdated = true
 			}
 		}
@@ -1698,7 +1702,7 @@ func DeployCRDNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 		Name:      namespace,
 		Namespace: namespace,
 	})
-	ns.AddLabels(map[string]string{"owner": "synopsys-operator", fmt.Sprintf("synopsys.com.%s.%s", resourceName, name): version})
+	ns.AddLabels(map[string]string{"owner": "synopsys-operator", fmt.Sprintf("synopsys.com/%s.%s", resourceName, name): version})
 	namespaceDeployer.AddComponent(horizonapi.NamespaceComponent, ns)
 	err = namespaceDeployer.Run()
 	if err != nil {

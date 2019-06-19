@@ -33,8 +33,8 @@ import (
 )
 
 // NewController will initialize the input config file, create the hub informers, initiantiate all rest api
-func NewController(configPath string) (*Deployer, error) {
-	config, err := GetConfig(configPath)
+func NewController(configPath string, version string) (*Deployer, error) {
+	config, err := GetConfig(configPath, version)
 	if err != nil {
 		return nil, errors.Annotate(err, "Failed to load configuration")
 	}

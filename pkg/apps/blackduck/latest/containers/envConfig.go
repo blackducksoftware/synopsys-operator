@@ -27,9 +27,9 @@ import (
 )
 
 func (c *Creater) getHubConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: util.GetResourceName(c.name, util.BlackDuckName, "config", c.config.IsClusterScoped)}
+	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "config")}
 }
 
 func (c *Creater) getHubDBConfigEnv() *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: util.GetResourceName(c.name, util.BlackDuckName, "db-config", c.config.IsClusterScoped)}
+	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "db-config")}
 }

@@ -41,7 +41,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 	}
 
 	var initContainers []*util.Container
-	if c.hubSpec.PersistentStorage {
+	if c.blackDuck.Spec.PersistentStorage {
 		initContainerConfig := &util.Container{
 			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /var/lib/rabbitmq"}},
 			VolumeMounts:    volumeMounts,
@@ -52,12 +52,12 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 	c.PostEditContainer(rabbitmqContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "rabbitmq", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getRabbitmqVolumes(),
 			Containers:          []*util.Container{rabbitmqContainerConfig},
 			InitContainers:      initContainers,
-			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 			Labels:              c.GetVersionLabel("rabbitmq"),
 			NodeAffinityConfigs: c.GetNodeAffinityConfigs("rabbitmq"),
 		}, c.GetLabel("rabbitmq"))
@@ -67,8 +67,8 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 func (c *Creater) getRabbitmqVolumes() []*components.Volume {
 	rabbitmqSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-security")
 	var rabbitmqDataEmptyDir *components.Volume
-	if c.hubSpec.PersistentStorage {
-		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", util.GetResourceName(c.name, util.BlackDuckName, "rabbitmq", c.config.IsClusterScoped))
+	if c.blackDuck.Spec.PersistentStorage {
+		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"))
 	} else {
 		rabbitmqDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-data")
 	}
@@ -87,5 +87,5 @@ func (c *Creater) getRabbitmqVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetRabbitmqService will return the rabbitmq service
 func (c *Creater) GetRabbitmqService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "rabbitmq", c.config.IsClusterScoped), c.GetVersionLabel("rabbitmq"), c.hubSpec.Namespace, rabbitmqPort, rabbitmqPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("rabbitmq"))
+	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), c.GetVersionLabel("rabbitmq"), c.blackDuck.Spec.Namespace, rabbitmqPort, rabbitmqPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("rabbitmq"))
 }

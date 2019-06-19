@@ -32,14 +32,13 @@ import (
 // SpecConfig will contain the specification to create the
 // components of an Alert
 type SpecConfig struct {
-	name           string
-	config         *alertapi.AlertSpec
+	alert          *alertapi.Alert
 	isClusterScope bool
 }
 
 // NewSpecConfig will create the Alert SpecConfig
-func NewSpecConfig(name string, config *alertapi.AlertSpec, isClusterScope bool) *SpecConfig {
-	return &SpecConfig{name: name, config: config, isClusterScope: isClusterScope}
+func NewSpecConfig(alert *alertapi.Alert, isClusterScope bool) *SpecConfig {
+	return &SpecConfig{alert: alert, isClusterScope: isClusterScope}
 }
 
 // GetComponents will return the list of components for alert
@@ -59,12 +58,12 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	service := a.getAlertService()
 	components.Services = append(components.Services, service)
 
-	switch a.config.ExposeService {
+	switch a.alert.Spec.ExposeService {
 	case "NODEPORT":
-		log.Debugf("case %s: Adding NodePort Service to ComponentList for Alert", a.config.ExposeService)
+		log.Debugf("case %s: Adding NodePort Service to ComponentList for Alert", a.alert.Spec.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceNodePort())
 	case "LOADBALANCER":
-		log.Debugf("case %s: Adding LoadBalancer Service to ComponentList for Alert", a.config.ExposeService)
+		log.Debugf("case %s: Adding LoadBalancer Service to ComponentList for Alert", a.alert.Spec.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceLoadBalancer())
 	default:
 		log.Debugf("not adding a Kubernetes Service to ComponentList for Alert")
@@ -76,7 +75,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.Secrets = append(components.Secrets, sec)
 
-	if a.config.PersistentStorage {
+	if a.alert.Spec.PersistentStorage {
 		pvc, err := a.getAlertPersistentVolumeClaim()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Alert's PVC: %s", err)
@@ -85,7 +84,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	// Add cfssl if running in stand alone mode
-	if *a.config.StandAlone {
+	if *a.alert.Spec.StandAlone {
 		rc, err := a.getCfsslReplicationController()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Cfssl Replication Controller: %v", err)

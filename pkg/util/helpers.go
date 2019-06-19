@@ -122,27 +122,17 @@ func UniqueStringSlice(input []string) []string {
 	return output
 }
 
-// GetResourceName returns the name of the resource based on the cluster scope
-func GetResourceName(name string, appName string, defaultName string, isClusterScope bool) string {
+// GetResourceName returns the name of the resource
+func GetResourceName(name string, appName string, defaultName string) string {
 	if len(appName) == 0 {
-		if !isClusterScope {
-			return fmt.Sprintf("%s-%s", name, defaultName)
-		}
-		return defaultName
+		return fmt.Sprintf("%s-%s", name, defaultName)
 	}
 
 	if len(defaultName) == 0 {
-		if !isClusterScope {
-			return fmt.Sprintf("%s-%s", name, appName)
-		}
-		return appName
+		return fmt.Sprintf("%s-%s", name, appName)
 	}
 
-	if !isClusterScope {
-		return fmt.Sprintf("%s-%s-%s", name, appName, defaultName)
-	}
-
-	return fmt.Sprintf("%s-%s", appName, defaultName)
+	return fmt.Sprintf("%s-%s-%s", name, appName, defaultName)
 }
 
 // RemoveFromStringSlice will remove the string from the slice and it will maintain the order

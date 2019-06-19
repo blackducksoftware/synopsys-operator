@@ -276,7 +276,7 @@ func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeM
 // getInstanceInfo will provide the name, namespace and crd scope to create each CRD instance
 func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName string, inputNamespace string) (string, string, apiextensions.ResourceScope, error) {
 	crdScope := apiextensions.ClusterScoped
-	if !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
+	if cmd.LocalFlags().Lookup("mock") != nil && !cmd.LocalFlags().Lookup("mock").Changed && !cmd.LocalFlags().Lookup("mock-kube").Changed {
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdType)
 		if err != nil {
 			return "", "", "", fmt.Errorf("unable to get Custom Resource Definition '%s' in your cluster due to %+v", crdType, err)
@@ -293,7 +293,7 @@ func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName st
 	if crdScope == apiextensions.ClusterScoped {
 		if len(inputNamespace) == 0 {
 			if len(crdName) > 0 {
-				ns, err := util.ListNamespaces(kubeClient, fmt.Sprintf("synopsys.com.%s.%s", crdName, name))
+				ns, err := util.ListNamespaces(kubeClient, fmt.Sprintf("synopsys.com/%s.%s", crdName, name))
 				if err != nil {
 					return "", "", "", fmt.Errorf("unable to list the '%s' instance '%s' in namespace '%s' due to %+v", crdName, name, namespace, err)
 				}

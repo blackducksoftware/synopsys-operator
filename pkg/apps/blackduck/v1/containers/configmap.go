@@ -35,40 +35,40 @@ func (c *Creater) GetConfigmaps() []*components.ConfigMap {
 
 	var configMaps []*components.ConfigMap
 
-	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "config", c.config.IsClusterScoped)})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "config")})
 
 	hubData := map[string]string{
 		"RUN_SECRETS_DIR": "/tmp/secrets",
-		"HUB_VERSION":     c.hubSpec.Version,
+		"HUB_VERSION":     c.blackDuck.Spec.Version,
 	}
 
 	blackduckServiceData := map[string]string{
-		"HUB_AUTHENTICATION_HOST": util.GetResourceName(c.name, util.BlackDuckName, "authentication", c.config.IsClusterScoped),
-		"AUTHENTICATION_HOST":     fmt.Sprintf("%s:%d", util.GetResourceName(c.name, util.BlackDuckName, "authentication", c.config.IsClusterScoped), authenticationPort),
-		"CLIENT_CERT_CN":          util.GetResourceName(c.name, util.BlackDuckName, "binaryscanner", c.config.IsClusterScoped),
-		"CFSSL":                   fmt.Sprintf("%s:8888", util.GetResourceName(c.name, util.BlackDuckName, "cfssl", c.config.IsClusterScoped)),
-		"HUB_CFSSL_HOST":          util.GetResourceName(c.name, util.BlackDuckName, "cfssl", c.config.IsClusterScoped),
-		"BLACKDUCK_CFSSL_HOST":    util.GetResourceName(c.name, util.BlackDuckName, "cfssl", c.config.IsClusterScoped),
+		"HUB_AUTHENTICATION_HOST": util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"),
+		"AUTHENTICATION_HOST":     fmt.Sprintf("%s:%d", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), authenticationPort),
+		"CLIENT_CERT_CN":          util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "binaryscanner"),
+		"CFSSL":                   fmt.Sprintf("%s:8888", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl")),
+		"HUB_CFSSL_HOST":          util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl"),
+		"BLACKDUCK_CFSSL_HOST":    util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl"),
 		"BLACKDUCK_CFSSL_PORT":    "8888",
-		"HUB_DOC_HOST":            util.GetResourceName(c.name, util.BlackDuckName, "documentation", c.config.IsClusterScoped),
-		"HUB_JOBRUNNER_HOST":      util.GetResourceName(c.name, util.BlackDuckName, "jobrunner", c.config.IsClusterScoped),
-		"HUB_LOGSTASH_HOST":       util.GetResourceName(c.name, util.BlackDuckName, "logstash", c.config.IsClusterScoped),
-		"RABBIT_MQ_HOST":          util.GetResourceName(c.name, util.BlackDuckName, "rabbitmq", c.config.IsClusterScoped),
-		"BROKER_URL":              fmt.Sprintf("amqps://%s/protecodesc", util.GetResourceName(c.name, util.BlackDuckName, "rabbitmq", c.config.IsClusterScoped)),
-		"HUB_REGISTRATION_HOST":   util.GetResourceName(c.name, util.BlackDuckName, "registration", c.config.IsClusterScoped),
-		"HUB_SCAN_HOST":           util.GetResourceName(c.name, util.BlackDuckName, "scan", c.config.IsClusterScoped),
-		"HUB_SOLR_HOST":           util.GetResourceName(c.name, util.BlackDuckName, "solr", c.config.IsClusterScoped),
+		"HUB_DOC_HOST":            util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "documentation"),
+		"HUB_JOBRUNNER_HOST":      util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "jobrunner"),
+		"HUB_LOGSTASH_HOST":       util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "logstash"),
+		"RABBIT_MQ_HOST":          util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"),
+		"BROKER_URL":              fmt.Sprintf("amqps://%s/protecodesc", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq")),
+		"HUB_REGISTRATION_HOST":   util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"),
+		"HUB_SCAN_HOST":           util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "scan"),
+		"HUB_SOLR_HOST":           util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "solr"),
 		// TODO: commented the below 2 environs until the HUB-20412 is fixed. once it if fixed, uncomment them
-		// "BLACKDUCK_UPLOAD_CACHE_HOST": util.GetResourceName(c.name, "uploadcache", c.config.IsClusterScoped),
-		// "HUB_UPLOAD_CACHE_HOST":       util.GetResourceName(c.name, "uploadcache", c.config.IsClusterScoped),
+		// "BLACKDUCK_UPLOAD_CACHE_HOST": util.GetResourceName(c.blackDuck.Name, "uploadcache"),
+		// "HUB_UPLOAD_CACHE_HOST":       util.GetResourceName(c.blackDuck.Name, "uploadcache"),
 		// TODO: commented the below environs until the HUB-20462 is fixed. once it if fixed, uncomment them
-		// "HUB_WEBAPP_HOST":    util.GetResourceName(c.name, "webapp", c.config.IsClusterScoped),
-		"HUB_WEBSERVER_HOST": util.GetResourceName(c.name, util.BlackDuckName, "webserver", c.config.IsClusterScoped),
-		"HUB_ZOOKEEPER_HOST": util.GetResourceName(c.name, util.BlackDuckName, "zookeeper", c.config.IsClusterScoped),
+		// "HUB_WEBAPP_HOST":    util.GetResourceName(c.blackDuck.Name, "webapp"),
+		"HUB_WEBSERVER_HOST": util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"),
+		"HUB_ZOOKEEPER_HOST": util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"),
 	}
 	hubData = util.MergeEnvMaps(blackduckServiceData, hubData)
 
-	for _, value := range c.hubSpec.Environs {
+	for _, value := range c.blackDuck.Spec.Environs {
 		values := strings.SplitN(value, ":", 2)
 		if len(values) == 2 {
 			mapKey := strings.TrimSpace(values[0])

@@ -41,10 +41,10 @@ func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.Repl
 	c.PostEditContainer(binaryScannerContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "binaryscanner", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "binaryscanner"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Containers:          []*util.Container{binaryScannerContainerConfig},
-			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 			Labels:              c.GetVersionLabel("binaryscanner"),
 			NodeAffinityConfigs: c.GetNodeAffinityConfigs("binaryscanner"),
 		}, c.GetLabel("binaryscanner"))

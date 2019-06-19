@@ -32,12 +32,19 @@ import (
 
 // getAlertPersistentVolumeClaim returns a new PVC for an Alert
 func (a *SpecConfig) getAlertPersistentVolumeClaim() (*components.PersistentVolumeClaim, error) {
-	name := operatorutil.GetResourceName(a.name, operatorutil.AlertName, a.config.PVCName, a.isClusterScope)
-	pvc, err := operatorutil.CreatePersistentVolumeClaim(name, a.config.Namespace, a.config.PVCSize, a.config.PVCStorageClass, horizonapi.ReadWriteOnce)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the PVC %s in namespace %s because %+v", name, a.config.Namespace, err)
+	// get the created by operator version annotation
+	createdBy, ok := a.alert.Annotations["synopsys.com/created.by"]
+
+	name := operatorutil.GetResourceName(a.alert.Name, operatorutil.AlertName, a.alert.Spec.PVCName)
+	if ok && createdBy == "pre-2019.6.0" {
+		name = a.alert.Spec.PVCName
 	}
 
-	pvc.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
+	pvc, err := operatorutil.CreatePersistentVolumeClaim(name, a.alert.Spec.Namespace, a.alert.Spec.PVCSize, a.alert.Spec.PVCStorageClass, horizonapi.ReadWriteOnce)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the PVC %s in namespace %s because %+v", name, a.alert.Spec.Namespace, err)
+	}
+
+	pvc.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
 	return pvc, nil
 }

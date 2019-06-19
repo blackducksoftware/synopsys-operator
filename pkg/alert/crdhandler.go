@@ -119,10 +119,28 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
+	var err error
+	isUpdate := false
+	if alert.GetAnnotations() == nil {
+		annotations := make(map[string]string)
+		annotations["synopsys.com/created.by"] = h.config.Version
+		alert.Annotations = annotations
+		isUpdate = true
+	} else {
+		if _, ok = alert.GetAnnotations()["synopsys.com/created.by"]; !ok {
+			alert.Annotations["synopsys.com/created.by"] = h.config.Version
+			isUpdate = true
+		}
+	}
+
+	if isUpdate {
+		alert, err = util.UpdateAlert(h.alertClient, alert.Spec.Namespace, alert)
+	}
+
 	// Get Default fields for Alert
 	newSpec := alert.Spec
 	alertDefaultSpec := h.defaults
-	err := mergo.Merge(&newSpec, alertDefaultSpec)
+	err = mergo.Merge(&newSpec, alertDefaultSpec)
 	if err != nil {
 		log.Errorf("unable to merge the Alert structs for %s due to %+v", alert.Name, err)
 		alert, err = h.updateState(Error, fmt.Sprintf("unable to merge the Alert structs for %s due to %+v", alert.Name, err), alert)

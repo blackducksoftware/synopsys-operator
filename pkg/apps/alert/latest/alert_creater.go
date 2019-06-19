@@ -53,7 +53,7 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 
 // GetComponents returns the resource components for an Alert
 func (ac *Creater) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
-	specConfig := NewSpecConfig(alert.Name, &alert.Spec, ac.config.IsClusterScoped)
+	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
 	return specConfig.GetComponents()
 }
 
@@ -65,7 +65,7 @@ func (ac *Creater) Versions() []string {
 // Ensure is an Interface function that will make sure the instance is correctly deployed or deploy it if needed
 func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	// Get Kubernetes Components for the Alert
-	specConfig := NewSpecConfig(alert.Name, &alert.Spec, ac.config.IsClusterScoped)
+	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
 	cpList, err := specConfig.GetComponents()
 	if err != nil {
 		return err

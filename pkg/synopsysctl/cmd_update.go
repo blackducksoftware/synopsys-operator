@@ -511,7 +511,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			}
 
 			// Filter the upload cache pod to get the root key using the seal key
-			uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache", crdScope == apiextensions.ClusterScoped))
+			uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, blackDuckNamespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache"))
 			if err != nil {
 				log.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", blackDuckNamespace, err)
 				return nil

@@ -22,7 +22,6 @@ under the License.
 package blackduck
 
 import (
-	"strings"
 	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -34,7 +33,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -184,21 +182,8 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-
-	osClient, err := securityclient.NewForConfig(c.kubeConfig)
-	if err != nil {
-		osClient = nil
-	} else {
-		_, err := util.GetOpenShiftSecurityConstraint(osClient, "anyuid")
-		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("ignoring scc privileged for Kubernetes cluster")
-			osClient = nil
-		}
-	}
-
 	routeClient := util.GetRouteClient(c.kubeConfig, c.config.Namespace)
-
-	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1), osClient, routeClient)
+	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1), nil, routeClient)
 }
 
 // CreateController will create a CRD controller

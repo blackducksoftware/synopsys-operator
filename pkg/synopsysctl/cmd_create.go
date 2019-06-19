@@ -192,7 +192,7 @@ var createBlackDuckCmd = &cobra.Command{
 			// When running in cluster scope mode, custom resources do not have a namespace so the above command returns everything and we need to check Spec.Namespace.
 			for _, v := range blackducks.Items {
 				if strings.EqualFold(v.Spec.Namespace, blackDuckNamespace) {
-					log.Errorf("due to known restriction, only one Black Duck instance per namespace is allowed. stay tuned for the updates")
+					log.Errorf("due to issues with this version of Black Duck, only one instance per namespace is allowed.")
 					return nil
 				}
 			}

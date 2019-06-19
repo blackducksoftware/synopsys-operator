@@ -150,7 +150,7 @@ func (a *Alert) Delete(name string) error {
 	} else if len(values) == 1 {
 		name = values[0]
 		namespace = values[0]
-		ns, err := util.ListNamespaces(a.kubeClient, fmt.Sprintf("synopsys.com.%s.%s", util.AlertName, name))
+		ns, err := util.ListNamespaces(a.kubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.AlertName, name))
 		if err != nil {
 			log.Errorf("unable to list %s Alert instance namespaces %s due to %+v", name, namespace, err)
 		}

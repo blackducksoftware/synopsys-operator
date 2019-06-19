@@ -1,5 +1,7 @@
 FROM gobuffalo/buffalo:v0.14.3 as builder
 
+ARG BINARY_VERSION
+
 # Set the environment
 ENV GO111MODULE=on
 ENV BUFFALO_PLUGIN_CACHE=off
@@ -12,7 +14,7 @@ ADD . $BP
 WORKDIR $BP
 
 ### Build the Synopsys Operator binary
-RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/operator
+RUN cd cmd/operator && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$BINARY_VERSION" -o /bin/operator
 
 ### Build the Synopsys Operator UI
 RUN cd cmd/operator-ui && yarn install --no-progress && mkdir -p public/assets && buffalo build --static -o /bin/app

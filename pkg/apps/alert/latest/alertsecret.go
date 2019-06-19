@@ -32,27 +32,27 @@ import (
 // GetAlertSecret creates a Secret Horizon component for the Alert
 func (a *SpecConfig) GetAlertSecret() (*components.Secret, error) {
 	// Check Secret Values
-	encryptPassLength := len(a.config.EncryptionPassword)
+	encryptPassLength := len(a.alert.Spec.EncryptionPassword)
 	if encryptPassLength > 0 && encryptPassLength < 16 {
 		return nil, fmt.Errorf("encryption password is %d characters, it must be 16 or more", encryptPassLength)
 	}
-	encryptGlobalSaltLength := len(a.config.EncryptionGlobalSalt)
+	encryptGlobalSaltLength := len(a.alert.Spec.EncryptionGlobalSalt)
 	if encryptGlobalSaltLength > 0 && encryptGlobalSaltLength < 16 {
 		return nil, fmt.Errorf("encryption global salt is %d characters, it must be 16 or more", encryptGlobalSaltLength)
 	}
 
 	// create a secret
 	alertSecret := components.NewSecret(horizonapi.SecretConfig{
-		Name:      util.GetResourceName(a.name, util.AlertName, "secret", a.isClusterScope),
-		Namespace: a.config.Namespace,
+		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "secret"),
+		Namespace: a.alert.Spec.Namespace,
 		Type:      horizonapi.SecretTypeOpaque,
 	})
 	alertSecret.AddData(map[string][]byte{
-		"ALERT_ENCRYPTION_PASSWORD":    []byte(a.config.EncryptionPassword),
-		"ALERT_ENCRYPTION_GLOBAL_SALT": []byte(a.config.EncryptionGlobalSalt),
+		"ALERT_ENCRYPTION_PASSWORD":    []byte(a.alert.Spec.EncryptionPassword),
+		"ALERT_ENCRYPTION_GLOBAL_SALT": []byte(a.alert.Spec.EncryptionGlobalSalt),
 	})
 
-	alertSecret.AddLabels(map[string]string{"app": util.AlertName, "name": a.name, "component": "alert"})
+	alertSecret.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
 	return alertSecret, nil
 
 }

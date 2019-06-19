@@ -43,6 +43,7 @@ type Config struct {
 	AdmissionWebhookListener      bool
 	CrdNames                      string
 	IsClusterScoped               bool
+	Version                       string
 }
 
 // SelfSetDefaults ...
@@ -77,7 +78,7 @@ func (config *Config) GetLogLevel() (log.Level, error) {
 }
 
 // GetConfig will read the config file and set in the Viper
-func GetConfig(configPath string) (*Config, error) {
+func GetConfig(configPath string, version string) (*Config, error) {
 	var config *Config
 
 	if len(configPath) > 0 {
@@ -107,6 +108,9 @@ func GetConfig(configPath string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
 	}
+
+	// set the operator version
+	config.Version = version
 
 	return config, nil
 }

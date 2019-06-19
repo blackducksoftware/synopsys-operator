@@ -38,7 +38,7 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Replicat
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: webserverPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	if c.hubSpec.LivenessProbes {
+	if c.blackDuck.Spec.LivenessProbes {
 		webServerContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Type:    horizonapi.ActionTypeCommand,
@@ -54,11 +54,11 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Replicat
 	c.PostEditContainer(webServerContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.hubSpec.Namespace, Name: util.GetResourceName(c.name, util.BlackDuckName, "webserver", c.config.IsClusterScoped), Replicas: util.IntToInt32(1)},
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
 			Volumes:             c.getWebserverVolumes(),
 			Containers:          []*util.Container{webServerContainerConfig},
-			ImagePullSecrets:    c.hubSpec.RegistryConfiguration.PullSecrets,
+			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 			Labels:              c.GetVersionLabel("webserver"),
 			NodeAffinityConfigs: c.GetNodeAffinityConfigs("webserver"),
 		}, c.GetLabel("webserver"))
@@ -67,13 +67,13 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Replicat
 // getWebserverVolumes will return the authentication volumes
 func (c *Creater) getWebserverVolumes() []*components.Volume {
 	webServerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
-	webServerSecretVol, _ := util.CreateSecretVolume("certificate", util.GetResourceName(c.name, util.BlackDuckName, "webserver-certificate", c.config.IsClusterScoped), 0444)
+	webServerSecretVol, _ := util.CreateSecretVolume("certificate", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver-certificate"), 0444)
 
 	volumes := []*components.Volume{webServerEmptyDir, webServerSecretVol}
 
 	// Custom CA auth
-	if len(c.hubSpec.AuthCustomCA) > 1 {
-		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", util.GetResourceName(c.name, util.BlackDuckName, "auth-custom-ca", c.config.IsClusterScoped), 0444)
+	if len(c.blackDuck.Spec.AuthCustomCA) > 1 {
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "auth-custom-ca"), 0444)
 		volumes = append(volumes, authCustomCaVolume)
 	}
 	return volumes
@@ -87,7 +87,7 @@ func (c *Creater) getWebserverVolumeMounts() []*horizonapi.VolumeMountConfig {
 		{Name: "certificate", MountPath: "/tmp/secrets/WEBSERVER_CUSTOM_KEY_FILE", SubPath: "WEBSERVER_CUSTOM_KEY_FILE"},
 	}
 
-	if len(c.hubSpec.AuthCustomCA) > 1 {
+	if len(c.blackDuck.Spec.AuthCustomCA) > 1 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "auth-custom-ca",
 			MountPath: "/tmp/secrets/AUTH_CUSTOM_CA",
@@ -100,15 +100,15 @@ func (c *Creater) getWebserverVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetWebServerService will return the webserver service
 func (c *Creater) GetWebServerService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "webserver", c.config.IsClusterScoped), c.GetLabel("webserver"), c.hubSpec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webserver"))
+	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"), c.GetLabel("webserver"), c.blackDuck.Spec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webserver"))
 }
 
 // GetWebServerNodePortService will return the webserver nodeport service
 func (c *Creater) GetWebServerNodePortService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "webserver-exposed", c.config.IsClusterScoped), c.GetLabel("webserver"), c.hubSpec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeNodePort, c.GetLabel("webserver-np"))
+	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver-exposed"), c.GetLabel("webserver"), c.blackDuck.Spec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeNodePort, c.GetLabel("webserver-np"))
 }
 
 // GetWebServerLoadBalancerService will return the webserver loadbalancer service
 func (c *Creater) GetWebServerLoadBalancerService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.name, util.BlackDuckName, "webserver-exposed", c.config.IsClusterScoped), c.GetLabel("webserver"), c.hubSpec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeLoadBalancer, c.GetLabel("webserver-lb"))
+	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver-exposed"), c.GetLabel("webserver"), c.blackDuck.Spec.Namespace, int32(443), webserverPort, horizonapi.ServiceTypeLoadBalancer, c.GetLabel("webserver-lb"))
 }

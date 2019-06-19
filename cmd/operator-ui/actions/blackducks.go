@@ -238,6 +238,18 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 
 	log.Infof("create Black Duck: %+v", blackduck)
 
+	blackducks, err := util.ListHubs(v.blackduckClient, blackduck.Spec.Namespace)
+	if err != nil {
+		return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackduck.Spec.Namespace, err)
+	}
+
+	// When running in cluster scope mode, custom resources do not have a namespace so the above command returns everything and we need to check Spec.Namespace.
+	for _, bd := range blackducks.Items {
+		if strings.EqualFold(bd.Spec.Namespace, blackduck.Spec.Namespace) {
+			return fmt.Errorf("due to issues with this version of Black Duck, only one instance per namespace is allowed.")
+		}
+	}
+
 	_, err = util.GetHub(v.blackduckClient, blackduck.Spec.Namespace, blackduck.Name)
 	if err == nil {
 		return v.redirect(c, blackduck, fmt.Errorf("already '%s' Black Duck instance exist in '%s' namespace", blackduck.Name, blackduck.Spec.Namespace))
@@ -259,7 +271,6 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 	// If there are no errors set a success message
 	c.Flash().Add("success", "Black Duck was created successfully")
 
-	blackducks, _ := util.ListHubs(v.blackduckClient, v.config.Namespace)
 	c.Set("blackducks", blackducks.Items)
 	// and redirect to the blackducks index page
 	return c.Redirect(302, "/blackducks/%s", fmt.Sprintf("%s:%s", blackduck.Spec.Namespace, blackduck.Name))
