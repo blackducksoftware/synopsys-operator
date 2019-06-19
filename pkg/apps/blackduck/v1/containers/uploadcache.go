@@ -65,8 +65,6 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 		initContainers = append(initContainers, initContainerConfig)
 	}
 
-	c.PostEditContainer(uploadCacheContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{

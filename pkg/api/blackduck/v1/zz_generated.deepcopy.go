@@ -109,13 +109,6 @@ func (in *BlackduckSpec) DeepCopyInto(out *BlackduckSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.ImageUIDMap != nil {
-		in, out := &in.ImageUIDMap, &out.ImageUIDMap
-		*out = make(map[string]int64, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
-	}
 	in.RegistryConfiguration.DeepCopyInto(&out.RegistryConfiguration)
 	return
 }

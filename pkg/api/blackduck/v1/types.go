@@ -71,7 +71,6 @@ type BlackduckSpec struct {
 	DesiredState          string                    `json:"desiredState"`
 	Environs              []string                  `json:"environs,omitempty"`
 	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
-	ImageUIDMap           map[string]int64          `json:"imageUidMap,omitempty"`
 	LicenseKey            string                    `json:"licenseKey,omitempty"`
 	RegistryConfiguration RegistryConfiguration     `json:"registryConfiguration,omitempty"`
 	AdminPassword         string                    `json:"adminPassword"`
