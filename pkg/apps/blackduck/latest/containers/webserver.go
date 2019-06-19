@@ -51,8 +51,6 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Replicat
 		}}
 	}
 
-	c.PostEditContainer(webServerContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{

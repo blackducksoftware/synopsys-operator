@@ -32,14 +32,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// PostEditContainer will add the UID to the container if it is specified in the Image UID field
-func (c *Creater) PostEditContainer(cc *util.Container) {
-	if c.getUID(cc.ContainerConfig.Name) != nil {
-		cc.ContainerConfig.UID = c.getUID(cc.ContainerConfig.Name)
-		log.Infof("Image UID %v was tag modded to %v", cc.ContainerConfig.Name, cc.ContainerConfig.UID)
-	}
-}
-
 // Creater will store the configuration to create the hub containers
 type Creater struct {
 	config                  *protoform.Config
@@ -74,13 +66,4 @@ func (c *Creater) GetFullContainerNameFromImageRegistryConf(baseContainer string
 	}
 
 	return ""
-}
-
-// getTag returns the tag that is specified for a container by trying to look in the custom tags provided,
-// if those arent filled, it uses the "HubVersion" as a default, which works for blackduck < 5.1.0.
-func (c *Creater) getUID(baseContainer string) *int64 {
-	if tag, ok := c.blackDuck.Spec.ImageUIDMap[baseContainer]; ok {
-		return &tag
-	}
-	return nil
 }

@@ -153,7 +153,6 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().BoolVar(&ctl.MigrationMode, "migration-mode", ctl.MigrationMode, "Create Black Duck in the database-migration state")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 	cmd.Flags().StringVar(&ctl.AdminPassword, "admin-password", ctl.AdminPassword, "'admin' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "'postgres' password of Postgres database")
@@ -540,17 +539,6 @@ func TestSetFlag(t *testing.T) {
 				ImageRegistries: []string{"changed"},
 			},
 			changedSpec: &blackduckv1.BlackduckSpec{ImageRegistries: []string{"changed"}},
-		},
-		// case
-		{
-			// TODO: add a check for name:Val
-			flagName:   "image-uid-map-file-path",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                &blackduckv1.BlackduckSpec{},
-				ImageUIDMapFilePath: "../../examples/synopsysctl/imageUIDMap.json",
-			},
-			changedSpec: &blackduckv1.BlackduckSpec{ImageUIDMap: map[string]int64{"a": 0, "b": 1, "c": 2}},
 		},
 		// case
 		{

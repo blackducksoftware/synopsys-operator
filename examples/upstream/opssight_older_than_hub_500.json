@@ -101,9 +101,6 @@
         "environs": [
           "HUB_VERSION:4.8.3"
         ],
-        "imageUidMap": {
-          "webserver": 1000
-        }
       }
     }
   }

@@ -61,8 +61,6 @@ func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashIm
 		}}
 	}
 
-	c.PostEditContainer(webappContainerConfig)
-
 	logstashVolumeMounts := c.getLogstashVolumeMounts()
 
 	logstashContainerConfig := &util.Container{
@@ -85,8 +83,6 @@ func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashIm
 			MinCountFailure: 1000,
 		}}
 	}
-
-	c.PostEditContainer(logstashContainerConfig)
 
 	var initContainers []*util.Container
 	if c.blackDuck.Spec.PersistentStorage {

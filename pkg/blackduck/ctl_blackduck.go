@@ -64,7 +64,6 @@ type Ctl struct {
 	MigrationMode                 bool
 	Environs                      []string
 	ImageRegistries               []string
-	ImageUIDMapFilePath           string
 	LicenseKey                    string
 	AdminPassword                 string
 	PostgresPassword              string
@@ -218,7 +217,6 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().BoolVar(&ctl.MigrationMode, "migration-mode", ctl.MigrationMode, "Create Black Duck in the database-migration state")
 	cmd.Flags().StringSliceVar(&ctl.Environs, "environs", ctl.Environs, "List of Environment Variables (NAME:VALUE)")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
-	cmd.Flags().StringVar(&ctl.ImageUIDMapFilePath, "image-uid-map-file-path", ctl.ImageUIDMapFilePath, "Absolute path to a file containing a map of Container UIDs to Tags")
 	cmd.Flags().StringVar(&ctl.LicenseKey, "license-key", ctl.LicenseKey, "License Key of Black Duck")
 	cmd.Flags().StringVar(&ctl.AdminPassword, "admin-password", ctl.AdminPassword, "'admin' password of Postgres database")
 	cmd.Flags().StringVar(&ctl.PostgresPassword, "postgres-password", ctl.PostgresPassword, "'postgres' password of Postgres database")
@@ -368,19 +366,6 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			ctl.Spec.Environs = ctl.Environs
 		case "image-registries":
 			ctl.Spec.ImageRegistries = ctl.ImageRegistries
-		case "image-uid-map-file-path":
-			data, err := util.ReadFileData(ctl.ImageUIDMapFilePath)
-			if err != nil {
-				log.Errorf("failed to read image UID map file: %+v", err)
-				return
-			}
-			uidMap := map[string]int64{}
-			err = json.Unmarshal([]byte(data), &uidMap)
-			if err != nil {
-				log.Errorf("failed to unmarshal UID Map structs: %+v", err)
-				return
-			}
-			ctl.Spec.ImageUIDMap = uidMap
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
 		case "admin-password":

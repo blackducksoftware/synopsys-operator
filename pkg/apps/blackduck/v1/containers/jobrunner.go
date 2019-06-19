@@ -57,8 +57,6 @@ func (c *Creater) GetJobRunnerDeployment(imageName string) (*components.Replicat
 		}}
 	}
 
-	c.PostEditContainer(jobRunnerContainerConfig)
-
 	jobRunnerVolumes := []*components.Volume{c.getDBSecretVolume(), jobRunnerEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided

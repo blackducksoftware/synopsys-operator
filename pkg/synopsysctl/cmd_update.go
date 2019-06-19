@@ -537,69 +537,6 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 	},
 }
 
-var blackDuckPVCSize = "2Gi"
-var blackDuckPVCStorageClass = ""
-
-// updateBlackDuckAddPVCCmd adds a PVC to a Black Duck instance
-var updateBlackDuckAddPVCCmd = &cobra.Command{
-	Use:     "addpvc BLACK_DUCK_NAME PVC_NAME",
-	Example: "synopsysctl update blackduck addpvc <name> mypvc --size 2Gi --storage-class standard\nsynopsysctl update blackduck addpvc <name> mypvc --size 2Gi --storage-class standard -n <namespace>",
-	Short:   "Add a Persistent Volume Claim to a Black Duck instance",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return fmt.Errorf("this command takes 2 arguments")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-
-		pvcName := args[1]
-
-		log.Infof("adding PVC to Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-
-		// Get Black Duck Spec
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
-		if err != nil {
-			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
-		}
-		// Set the existing Black Duck to the spec
-		err = updateBlackDuckCtl.SetSpec(currBlackDuck.Spec)
-		if err != nil {
-			log.Errorf("cannot set existing Black Duck '%s's spec in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
-		}
-		// Check if it can be updated
-		canUpdate, err := updateBlackDuckCtl.CanUpdate()
-		if err != nil {
-			log.Errorf("cannot update Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
-		}
-		if canUpdate {
-			// Add PVC to Spec
-			newPVC := blackduckapi.PVC{
-				Name:         pvcName,
-				Size:         blackDuckPVCSize,
-				StorageClass: blackDuckPVCStorageClass,
-			}
-			currBlackDuck.Spec.PVC = append(currBlackDuck.Spec.PVC, newPVC)
-			// Update Black Duck with PVC
-			err = ctlUpdateResource(*currBlackDuck, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-				return nil
-			}
-		}
-		log.Infof("successfully updated Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
-		return nil
-	},
-}
-
 // updateBlackDuckAddEnvironCmd adds an environ to a Black Duck instance
 var updateBlackDuckAddEnvironCmd = &cobra.Command{
 	Use:     "addenviron BLACK_DUCK_NAME (ENVIRON_NAME:ENVIRON_VALUE)",
@@ -697,68 +634,6 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 			// Add Registry to Spec
 			currBlackDuck.Spec.ImageRegistries = append(currBlackDuck.Spec.ImageRegistries, registry)
 			// Update Black Duck with Environ
-			err = ctlUpdateResource(*currBlackDuck, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-				return nil
-			}
-		}
-		log.Infof("successfully updated Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
-		return nil
-	},
-}
-
-// updateBlackDuckAddUIDCmd adds a UID mapping to a Black Duck instance
-var updateBlackDuckAddUIDCmd = &cobra.Command{
-	Use:     "adduid BLACK_DUCK_NAME UID_KEY UID_VALUE",
-	Example: "synopsysctl update blackduck adduid <name> uidname 80\nsynopsysctl update blackduck adduid <name> uidname 80 -n <namespace>",
-	Short:   "Add an Image UID to a Black Duck instance",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 3 {
-			return fmt.Errorf("this command takes 3 arguments")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-		uidKey := args[1]
-		uidVal := args[2]
-
-		log.Debugf("adding image UID to Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-
-		// Get Black Duck Spec
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
-		if err != nil {
-			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
-		}
-		// Set the existing Black Duck to the spec
-		err = updateBlackDuckCtl.SetSpec(currBlackDuck.Spec)
-		if err != nil {
-			log.Errorf("cannot set existing Black Duck '%s's spec in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
-		}
-		// Check if it can be updated
-		canUpdate, err := updateBlackDuckCtl.CanUpdate()
-		if err != nil {
-			log.Errorf("cannot update Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
-		}
-		if canUpdate {
-			// Add UID Mapping to Spec
-			intUIDVal, err := strconv.ParseInt(uidVal, 0, 64)
-			if err != nil {
-				log.Errorf("couldn't convert UID_VAL to int: %+v", err)
-			}
-			if currBlackDuck.Spec.ImageUIDMap == nil {
-				currBlackDuck.Spec.ImageUIDMap = make(map[string]int64)
-			}
-			currBlackDuck.Spec.ImageUIDMap[uidKey] = intUIDVal
-			// Update Black Duck with UID mapping
 			err = ctlUpdateResource(*currBlackDuck, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
 			if err != nil {
 				log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
@@ -1066,12 +941,6 @@ func init() {
 
 	updateBlackDuckCmd.AddCommand(updateBlackDuckRootKeyCmd)
 
-	updateBlackDuckAddPVCCmd.Flags().StringVar(&blackDuckPVCSize, "size", blackDuckPVCSize, "Size of the PVC")
-	updateBlackDuckAddPVCCmd.Flags().StringVar(&blackDuckPVCStorageClass, "storage-class", blackDuckPVCStorageClass, "Storage class name")
-	updateBlackDuckAddPVCCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
-	updateBlackDuckAddPVCCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
-	updateBlackDuckCmd.AddCommand(updateBlackDuckAddPVCCmd)
-
 	updateBlackDuckAddEnvironCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
 	updateBlackDuckAddEnvironCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
 	updateBlackDuckCmd.AddCommand(updateBlackDuckAddEnvironCmd)
@@ -1079,10 +948,6 @@ func init() {
 	updateBlackDuckAddRegistryCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
 	updateBlackDuckAddRegistryCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
 	updateBlackDuckCmd.AddCommand(updateBlackDuckAddRegistryCmd)
-
-	updateBlackDuckAddUIDCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
-	updateBlackDuckAddUIDCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
-	updateBlackDuckCmd.AddCommand(updateBlackDuckAddUIDCmd)
 
 	// Add OpsSight Commands
 	updateOpsSightCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")

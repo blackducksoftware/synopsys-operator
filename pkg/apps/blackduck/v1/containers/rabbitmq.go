@@ -49,8 +49,6 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 		initContainers = append(initContainers, initContainerConfig)
 	}
 
-	c.PostEditContainer(rabbitmqContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
