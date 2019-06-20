@@ -38,12 +38,18 @@ func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.Repl
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: binaryScannerPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
+	podConfig := &util.PodConfig{
+		Containers:          []*util.Container{binaryScannerContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("binaryscanner"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("binaryscanner"),
+	}
+
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
+	}
+
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "binaryscanner"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Containers:          []*util.Container{binaryScannerContainerConfig},
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("binaryscanner"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("binaryscanner"),
-		}, c.GetLabel("binaryscanner"))
+		podConfig, c.GetLabel("binaryscanner"))
 }

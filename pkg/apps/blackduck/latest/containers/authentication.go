@@ -60,25 +60,21 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 		}}
 	}
 
-	var initContainers []*util.Container
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/hub-authentication/ldap"}},
-			VolumeMounts:    volumeMounts,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	podConfig := &util.PodConfig{
+		Volumes:             c.getAuthenticationVolumes(),
+		Containers:          []*util.Container{hubAuthContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("authentication"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("authentication"),
+	}
+
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
 	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getAuthenticationVolumes(),
-			Containers:          []*util.Container{hubAuthContainerConfig},
-			InitContainers:      initContainers,
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("authentication"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("authentication"),
-		}, c.GetLabel("authentication"))
+		podConfig, c.GetLabel("authentication"))
 }
 
 // getAuthenticationVolumes will return the authentication volumes

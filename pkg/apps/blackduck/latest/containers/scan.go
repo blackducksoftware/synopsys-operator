@@ -86,15 +86,20 @@ func (c *Creater) GetScanDeployment(imageName string) (*components.ReplicationCo
 		hubScanVolumes = append(hubScanVolumes, c.getProxyVolume())
 	}
 
+	podConfig := &util.PodConfig{
+		Volumes:             hubScanVolumes,
+		Containers:          []*util.Container{hubScanContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("scan"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("scan"),
+	}
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
+	}
+
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "scan"), Replicas: c.hubContainerFlavor.ScanReplicas},
-		&util.PodConfig{
-			Volumes:             hubScanVolumes,
-			Containers:          []*util.Container{hubScanContainerConfig},
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("scan"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("scan"),
-		}, c.GetLabel("scan"))
+		podConfig, c.GetLabel("scan"))
 }
 
 // GetScanService will return the scan service
