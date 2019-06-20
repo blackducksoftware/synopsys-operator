@@ -37,10 +37,13 @@ var kubeconfig = ""
 var insecureSkipTLSVerify = false
 var logLevelCtl = "info"
 
+// synopsysctlVersion is the current version of the synopsysctl utility
+var synopsysctlVersion string
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "synopsysctl",
-	Short: fmt.Sprintf("[Version %s] synopsysctl is a command line tool for managing Synopsys resources", SynopsysctlVersion),
+	Short: "synopsysctl is a command line tool for managing Synopsys resources",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
@@ -70,7 +73,10 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute(version string) {
+	rootCmd.Version = version
+	synopsysOperatorImage = fmt.Sprintf("gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:%s", version)
+	initFlags()
 	if err := rootCmd.Execute(); err != nil {
 		log.Errorf("synopsyctl failed: %+v", err)
 		os.Exit(1)

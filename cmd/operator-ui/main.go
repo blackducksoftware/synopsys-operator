@@ -17,7 +17,6 @@ var version string
 // call `app.Serve()`, unless you don't want to start your
 // application that is. :)
 func main() {
-	log.Infof("version: %s", version)
 	var configPath string
 	var ok bool
 	if configPath, ok = os.LookupEnv("CONFIG_FILE_PATH"); ok {
@@ -25,6 +24,15 @@ func main() {
 	} else {
 		log.Warn("no config file sent. running operator with environment variable and default settings")
 	}
+
+	if len(version) == 0 {
+		if version, ok = os.LookupEnv("SYNOPSYS_OPERATOR_VERSION"); !ok {
+			log.Warn("version is not set. please set the version in OPERATOR_VERSION environment variable")
+		}
+	} else {
+		os.Setenv("SYNOPSYS_OPERATOR_VERSION", version)
+	}
+	log.Infof("version: %s", version)
 
 	config, err := protoform.GetConfig(configPath, version)
 	if err != nil {

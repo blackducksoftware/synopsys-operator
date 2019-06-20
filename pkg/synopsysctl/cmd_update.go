@@ -383,6 +383,7 @@ var updateBlackDuckCmd = &cobra.Command{
 	Use:           "blackduck NAME",
 	Example:       "synopsyctl update blackduck <name> --size medium\nsynopsyctl update blackduck <name> -n <namespace> --size medium",
 	Short:         "Update a Black Duck instance",
+	Aliases:       []string{"bds", "bd"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -643,6 +644,7 @@ var updateOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME",
 	Example:       "synopsyctl update opssight <name> --blackduck-max-count 2\nsynopsyctl update opssight <name> --blackduck-max-count 2 -n <namespace>",
 	Short:         "Update an OpsSight instance",
+	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
