@@ -63,7 +63,7 @@ var deleteAlertCmd = &cobra.Command{
 				log.Errorf("error deleting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 				return nil
 			}
-			log.Infof("successfully deleted Alert '%s' in namespace '%s'", alertName, alertNamespace)
+			log.Infof("successfully submitted delete Alert '%s' in namespace '%s'", alertName, alertNamespace)
 		}
 		return nil
 	},
@@ -93,7 +93,7 @@ var deleteBlackDuckCmd = &cobra.Command{
 				log.Errorf("error deleting Black Duck '%s' in namespace '%s' due to '%s'", blackDuckName, blackDuckNamespace, err)
 				return nil
 			}
-			log.Infof("successfully deleted Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+			log.Infof("successfully submitted delete Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		}
 		return nil
 	},
@@ -123,7 +123,7 @@ var deleteOpsSightCmd = &cobra.Command{
 				log.Errorf("error deleting OpsSight '%s' in namespace '%s' due to '%s'", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully deleted OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+			log.Infof("successfully submitted delete OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
 		}
 		return nil
 	},

@@ -74,7 +74,7 @@ var dbMigrateBlackDuckCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Infof("successfully put Black Duck '%s' in namespace '%s' into database migration mode", blackDuckName, blackDuckNamespace)
+		log.Infof("successfully modified Black Duck '%s' in namespace '%s' for database migration mode", blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }
