@@ -311,3 +311,20 @@ func getInstanceInfo(cmd *cobra.Command, name string, crdType string, crdName st
 	}
 	return name, namespace, crdScope, nil
 }
+
+// checkOperatorIsRunning returns true if there is a usable operator for the resource
+// based on the cluster scope
+func checkOperatorIsRunning(clusterScope apiextensions.ResourceScope, resourceNamespace string) error {
+	// Check if Synopsys Operator is running
+	var sOperatorNamespace string
+	if clusterScope == apiextensions.ClusterScoped {
+		sOperatorNamespace = metav1.NamespaceAll
+	} else {
+		sOperatorNamespace = resourceNamespace
+	}
+	var exists bool
+	if exists = util.IsOperatorExist(kubeClient, sOperatorNamespace); !exists {
+		return fmt.Errorf("Synopsys Operator must be running in namespace '%s'", sOperatorNamespace)
+	}
+	return nil
+}
