@@ -52,10 +52,7 @@ clean:
 	rm -rf ${OUTDIR}
 
 ${OUTDIR}:
-	mkdir -p ${OUTDIR}
-	$(foreach p,${PLATFORM}, \
-		mkdir -p ${OUTDIR}/$(p) \
-	)
+	mkdir -p $(foreach p,${PLATFORM}, ${OUTDIR}/$(p))
 
 init:
 	brew install clang
