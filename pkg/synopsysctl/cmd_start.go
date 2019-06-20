@@ -40,11 +40,14 @@ var startCmd = &cobra.Command{
 
 // startAlertCmd starts an Alert instance
 var startAlertCmd = &cobra.Command{
-	Use:     "alert NAME",
-	Example: "synopsysctl start alert <name>\nsynopsysctl start alert <name> -n <namespace>",
-	Short:   "Start an Alert instance",
+	Use:           "alert NAME",
+	Example:       "synopsysctl start alert <name>\nsynopsysctl start alert <name> -n <namespace>",
+	Short:         "Start an Alert instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
@@ -52,16 +55,14 @@ var startAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, util.AlertName, namespace)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return err
 		}
 		log.Infof("starting Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 
 		// Get the Alert
 		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertName)
 		if err != nil {
-			log.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-			return nil
+			return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
 
 		// Make changes to Spec
@@ -69,8 +70,7 @@ var startAlertCmd = &cobra.Command{
 		// Update Alert
 		_, err = util.UpdateAlert(alertClient, currAlert.Spec.Namespace, currAlert)
 		if err != nil {
-			log.Errorf("error updating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-			return nil
+			return fmt.Errorf("error updating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
 
 		log.Infof("successfully submitted start Alert '%s' in namespace '%s'", alertName, alertNamespace)
@@ -80,12 +80,14 @@ var startAlertCmd = &cobra.Command{
 
 // startBlackDuckCmd starts a Black Duck instance
 var startBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck NAME",
-	Example: "synopsysctl start blackduck <name>\nsynopsysctl start blackduck <name> -n <namespace>",
-	Short:   "Start a Black Duck instance",
-	Aliases: []string{"bds", "bd"},
+	Use:           "blackduck NAME",
+	Example:       "synopsysctl start blackduck <name>\nsynopsysctl start blackduck <name> -n <namespace>",
+	Short:         "Start a Black Duck instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
@@ -93,16 +95,14 @@ var startBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return err
 		}
 		log.Infof("starting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get the Black Duck
 		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckNamespace)
 		if err != nil {
-			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 
 		// Make changes to Spec
@@ -110,8 +110,7 @@ var startBlackDuckCmd = &cobra.Command{
 		// Update Blackduck
 		_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
 		if err != nil {
-			log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
+			return fmt.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 
 		log.Infof("successfully submitted start Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
@@ -121,12 +120,14 @@ var startBlackDuckCmd = &cobra.Command{
 
 // startOpsSightCmd starts an OpsSight instance
 var startOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAME",
-	Example: "synopsysctl start opssight <name>\nsynopsysctl start opssight <name> -n <namespace>",
-	Short:   "Start an OpsSight instance",
-	Aliases: []string{"ops"},
+	Use:           "opssight NAME",
+	Example:       "synopsysctl start opssight <name>\nsynopsysctl start opssight <name> -n <namespace>",
+	Short:         "Start an OpsSight instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
@@ -134,8 +135,7 @@ var startOpsSightCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return err
 		}
 		log.Infof("starting OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 
@@ -143,8 +143,7 @@ var startOpsSightCmd = &cobra.Command{
 		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 
 		if err != nil {
-			log.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-			return nil
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 
 		// Make changes to Spec
@@ -152,8 +151,7 @@ var startOpsSightCmd = &cobra.Command{
 		// Update OpsSight
 		_, err = util.UpdateOpsSight(opsSightClient, currOpsSight.Spec.Namespace, currOpsSight)
 		if err != nil {
-			log.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-			return nil
+			return fmt.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 
 		log.Infof("successfully submitted start OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
