@@ -1,4 +1,4 @@
-TAG="latest"
+TAG=$(shell cat build.properties | cut -d'=' -f 2)
 ifdef IMAGE_TAG
 TAG="$(IMAGE_TAG)"
 endif
@@ -26,9 +26,9 @@ binary: clean ${OUTDIR}
 	$(foreach p,${PLATFORM}, \
 		echo "creating synopsysctl binary for $(p) platform" && \
 		if [[ $(p) = ${WINDOWS} ]]; then \
-			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -ldflags "-X main.version=$(shell echo $(TAG) | cut -d- -f 1)" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl.exe; \
+			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl.exe; \
 		else \
-			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -ldflags "-X main.version=$(shell echo $(TAG) | cut -d- -f 1)" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl; \
+			docker run --rm -e CGO_ENABLED=0 -e GOOS=$(p) -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator/cmd/synopsysctl golang:1.12 go build -ldflags "-X main.version=${TAG}" -o /go/src/github.com/blackducksoftware/synopsys-operator/${OUTDIR}/$(p)/synopsysctl; \
 		fi && \
 		echo "completed synopsysctl binary for $(p) platform" \
 	)
@@ -64,10 +64,10 @@ init:
 	brew install npm
 
 container:
-	docker build . --pull -t $(REGISTRY)/synopsys-operator:$(TAG) --build-arg VERSION=$(TAG) --build-arg BINARY_VERSION="$(shell echo $(TAG) | cut -d- -f 1)" --build-arg 'BUILDTIME=$(BUILD_TIME)' --build-arg LASTCOMMIT=$(LAST_COMMIT)
+	docker build . --pull -t $(REGISTRY)/synopsys-operator:$(TAG) --build-arg VERSION=${TAG} --build-arg BINARY_VERSION={TAG} --build-arg 'BUILDTIME=$(BUILD_TIME)' --build-arg LASTCOMMIT=$(LAST_COMMIT)
 
 push: container
-	$(PREFIX_CMD) docker $(DOCKER_OPTS) push $(REGISTRY)/synopsys-operator:$(TAG)
+	$(PREFIX_CMD) docker $(DOCKER_OPTS) push $(REGISTRY)/synopsys-operator:${TAG}
 
 dev:
 	hack/local-up-perceptor.sh
@@ -78,7 +78,7 @@ lint:
 	./hack/verify-govet.sh
 
 build:
-	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.12 go build -ldflags "-X main.version=$(shell echo $(TAG) | cut -d- -f 1)" ./cmd/... ./pkg/...
+	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.12 go build -ldflags "-X main.version=${TAG} ./cmd/... ./pkg/...
 
 test:
-	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.12 go test -ldflags "-X main.version=$(shell echo $(TAG) | cut -d- -f 1)" ./cmd/... ./pkg/...
+	docker run --rm -e CGO_ENABLED=0 -e GOOS=linux -e GOARCH=amd64 -e GO111MODULE=on -v "${CURRENT_DIR}":/go/src/github.com/blackducksoftware/synopsys-operator -w /go/src/github.com/blackducksoftware/synopsys-operator golang:1.12 go test -ldflags "-X main.version=${TAG} | cut -d- -f 1)" ./cmd/... ./pkg/...
