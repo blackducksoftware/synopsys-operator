@@ -173,7 +173,7 @@ var deployCmd = &cobra.Command{
 				log.Errorf("error deploying metrics: %s", err)
 				return nil
 			}
-			log.Infof("successfully deployed Synopsys Operator in namespace '%s'", operatorNamespace)
+			log.Infof("successfully submitted Synopsys Operator into namespace '%s'", operatorNamespace)
 		}
 
 		return nil
