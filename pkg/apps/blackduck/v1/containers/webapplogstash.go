@@ -84,32 +84,20 @@ func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashIm
 		}}
 	}
 
-	var initContainers []*util.Container
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-webapp", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/hub-webapp/ldap"}},
-			VolumeMounts:    webappVolumeMounts,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	podConfig := &util.PodConfig{
+		Volumes:             c.getWebappLogtashVolumes(),
+		Containers:          []*util.Container{webappContainerConfig, logstashContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("webapp-logstash"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("webapp-logstash"),
 	}
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine-logstash", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /var/lib/logstash/data"}},
-			VolumeMounts:    logstashVolumeMounts,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
 	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webapp-logstash"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getWebappLogtashVolumes(),
-			Containers:          []*util.Container{webappContainerConfig, logstashContainerConfig},
-			InitContainers:      initContainers,
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("webapp-logstash"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("webapp-logstash"),
-		}, c.GetLabel("webapp-logstash"))
+		podConfig, c.GetLabel("webapp-logstash"))
 }
 
 // getWebappLogtashVolumes will return the webapp and logstash volumes

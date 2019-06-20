@@ -53,6 +53,7 @@ type PodConfig struct {
 	PodAntiAffinityConfigs map[horizonapi.AffinityType][]*horizonapi.PodAffinityConfig
 	NodeAffinityConfigs    map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig
 	ImagePullSecrets       []string
+	FSGID                  *int64
 }
 
 // MergeEnvMaps will merge the source and destination environs. If the same value exist in both, source environ will given more preference

@@ -71,6 +71,10 @@ func runProtoform(configPath string, version string) {
 		log.Infof("Openshift: %s", oversion)
 	}
 
+	if len(oversion) > 0 {
+		deployer.Config.IsOpenshift = true
+	}
+
 	stopCh := make(chan struct{})
 
 	// get the list of crds from an environment variable

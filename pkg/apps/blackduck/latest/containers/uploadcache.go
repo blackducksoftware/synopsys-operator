@@ -55,26 +55,21 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 			MinCountFailure: 5,
 		}}
 	}
+	podConfig := &util.PodConfig{
+		Volumes:             c.getUploadCacheVolumes(),
+		Containers:          []*util.Container{uploadCacheContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("uploadcache"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("uploadcache"),
+	}
 
-	var initContainers []*util.Container
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/blackduck-upload-cache/security /opt/blackduck/hub/blackduck-upload-cache/keys /opt/blackduck/hub/blackduck-upload-cache/uploads"}},
-			VolumeMounts:    volumeMounts,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
 	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getUploadCacheVolumes(),
-			Containers:          []*util.Container{uploadCacheContainerConfig},
-			InitContainers:      initContainers,
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("uploadcache"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("uploadcache"),
-		}, c.GetLabel("uploadcache"))
+		podConfig, c.GetLabel("uploadcache"))
 }
 
 // getUploadCacheVolumes will return the uploadCache volumes

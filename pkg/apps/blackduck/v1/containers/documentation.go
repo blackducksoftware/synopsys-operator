@@ -53,15 +53,21 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 		}}
 	}
 
+	podConfig := &util.PodConfig{
+		Volumes:             []*components.Volume{documentationEmptyDir},
+		Containers:          []*util.Container{documentationContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("documentation"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("documentation"),
+	}
+
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
+	}
+
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "documentation"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             []*components.Volume{documentationEmptyDir},
-			Containers:          []*util.Container{documentationContainerConfig},
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("documentation"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("documentation"),
-		}, c.GetLabel("documentation"))
+		podConfig, c.GetLabel("documentation"))
 }
 
 // GetDocumentationService will return the cfssl service

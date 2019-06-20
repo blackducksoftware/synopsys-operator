@@ -40,25 +40,20 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: rabbitmqPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	var initContainers []*util.Container
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /var/lib/rabbitmq"}},
-			VolumeMounts:    volumeMounts,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	podConfig := &util.PodConfig{
+		Volumes:             c.getRabbitmqVolumes(),
+		Containers:          []*util.Container{rabbitmqContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("rabbitmq"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("rabbitmq"),
+	}
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
 	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getRabbitmqVolumes(),
-			Containers:          []*util.Container{rabbitmqContainerConfig},
-			InitContainers:      initContainers,
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("rabbitmq"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("rabbitmq"),
-		}, c.GetLabel("rabbitmq"))
+		podConfig, c.GetLabel("rabbitmq"))
 }
 
 // getRabbitmqVolumes will return the rabbitmq volumes
