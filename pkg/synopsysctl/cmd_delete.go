@@ -41,11 +41,14 @@ var deleteCmd = &cobra.Command{
 
 // deleteAlertCmd deletes Alert instances from the cluster
 var deleteAlertCmd = &cobra.Command{
-	Use:     "alert NAME...",
-	Example: "synopsysctl delete alert <name>\nsynopsysctl delete alert <name1> <name2> <name3>\nsynopsysctl delete alert <name> -n <namespace>\nsynopsysctl delete alert <name1> <name2> <name3> -n <namespace>",
-	Short:   "Delete one or many Alert instances",
+	Use:           "alert NAME...",
+	Example:       "synopsysctl delete alert <name>\nsynopsysctl delete alert <name1> <name2> <name3>\nsynopsysctl delete alert <name> -n <namespace>\nsynopsysctl delete alert <name1> <name2> <name3> -n <namespace>",
+	Short:         "Delete one or many Alert instances",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 or more arguments")
 		}
 		return nil
@@ -54,14 +57,12 @@ var deleteAlertCmd = &cobra.Command{
 		for _, alertName := range args {
 			alertName, alertNamespace, _, err := getInstanceInfo(cmd, alertName, util.AlertCRDName, util.AlertName, namespace)
 			if err != nil {
-				log.Error(err)
-				return nil
+				return err
 			}
 			log.Infof("deleting Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 			err = alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertName, &metav1.DeleteOptions{})
 			if err != nil {
-				log.Errorf("error deleting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-				return nil
+				return fmt.Errorf("error deleting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 			}
 			log.Infof("successfully submitted delete Alert '%s' in namespace '%s'", alertName, alertNamespace)
 		}
@@ -71,11 +72,14 @@ var deleteAlertCmd = &cobra.Command{
 
 // deleteBlackDuckCmd deletes Black Duck instances from the cluster
 var deleteBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck NAME...",
-	Example: "synopsysctl delete blackduck <name>\nsynopsysctl delete blackduck <name1> <name2> <name3>\nsynopsysctl delete blackduck <name> -n <namespace>\nsynopsysctl delete blackduck <name1> <name2> <name3> -n <namespace>",
-	Short:   "Delete one or many Black Duck instances",
+	Use:           "blackduck NAME...",
+	Example:       "synopsysctl delete blackduck <name>\nsynopsysctl delete blackduck <name1> <name2> <name3>\nsynopsysctl delete blackduck <name> -n <namespace>\nsynopsysctl delete blackduck <name1> <name2> <name3> -n <namespace>",
+	Short:         "Delete one or many Black Duck instances",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 or more arguments")
 		}
 		return nil
@@ -84,14 +88,12 @@ var deleteBlackDuckCmd = &cobra.Command{
 		for _, blackDuckName := range args {
 			blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, blackDuckName, util.BlackDuckCRDName, util.BlackDuckName, namespace)
 			if err != nil {
-				log.Error(err)
-				return nil
+				return err
 			}
 			log.Infof("deleting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 			err = blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Delete(blackDuckName, &metav1.DeleteOptions{})
 			if err != nil {
-				log.Errorf("error deleting Black Duck '%s' in namespace '%s' due to '%s'", blackDuckName, blackDuckNamespace, err)
-				return nil
+				return fmt.Errorf("error deleting Black Duck '%s' in namespace '%s' due to '%s'", blackDuckName, blackDuckNamespace, err)
 			}
 			log.Infof("successfully submitted delete Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		}
@@ -101,11 +103,14 @@ var deleteBlackDuckCmd = &cobra.Command{
 
 // deleteOpsSightCmd deletes OpsSight instances from the cluster
 var deleteOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAME...",
-	Example: "synopsysctl delete opssight <name>\nsynopsysctl delete opssight <name1> <name2> <name3>\nsynopsysctl delete opssight <name> -n <namespace>\nsynopsysctl delete opssight <name1> <name2> <name3> -n <namespace>",
-	Short:   "Delete one or many OpsSight instances",
+	Use:           "opssight NAME...",
+	Example:       "synopsysctl delete opssight <name>\nsynopsysctl delete opssight <name1> <name2> <name3>\nsynopsysctl delete opssight <name> -n <namespace>\nsynopsysctl delete opssight <name1> <name2> <name3> -n <namespace>",
+	Short:         "Delete one or many OpsSight instances",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 or more arguments")
 		}
 		return nil
@@ -114,14 +119,12 @@ var deleteOpsSightCmd = &cobra.Command{
 		for _, opsSightName := range args {
 			opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, opsSightName, util.OpsSightCRDName, util.OpsSightName, namespace)
 			if err != nil {
-				log.Error(err)
-				return nil
+				return err
 			}
 			log.Infof("deleting OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 			err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightName, &metav1.DeleteOptions{})
 			if err != nil {
-				log.Errorf("error deleting OpsSight '%s' in namespace '%s' due to '%s'", opsSightName, opsSightNamespace, err)
-				return nil
+				return fmt.Errorf("error deleting OpsSight '%s' in namespace '%s' due to '%s'", opsSightName, opsSightNamespace, err)
 			}
 			log.Infof("successfully submitted delete OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
 		}

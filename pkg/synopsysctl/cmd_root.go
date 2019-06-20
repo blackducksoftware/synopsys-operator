@@ -72,13 +72,14 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Errorf("unable to execute command due to %+v", err)
+		log.Errorf("synopsyctl failed: %+v", err)
 		os.Exit(1)
 	}
 }
 
 func init() {
 	//(PassCmd) rootCmd.DisableFlagParsing = true // lets rootCmd pass flags to kube/oc
+
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", kubeconfig, "Path to the kubeconfig file to use for CLI requests")
 	rootCmd.PersistentFlags().BoolVar(&insecureSkipTLSVerify, "insecure-skip-tls-verify", insecureSkipTLSVerify, "Server's certificate won't be validated. HTTPS will be less secure")

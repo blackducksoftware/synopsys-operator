@@ -60,12 +60,15 @@ var mockKubeFormat string
 
 // deployCmd creates a Synopsys Operator instance in the cluster
 var deployCmd = &cobra.Command{
-	Use:     "deploy",
-	Example: "synopsysctl deploy --enable-blackduck\nsynopsysctl deploy -n <namespace> --enable-blackduck",
-	Short:   "Deploy Synopsys Operator into your cluster",
+	Use:           "deploy",
+	Example:       "synopsysctl deploy --enable-blackduck\nsynopsysctl deploy -n <namespace> --enable-blackduck",
+	Short:         "Deploy Synopsys Operator into your cluster",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		// Check number of arguments
 		if len(args) > 0 {
+			cmd.Help()
 			return fmt.Errorf("this command doesn't take any arguments")
 		}
 		return nil
@@ -85,8 +88,7 @@ var deployCmd = &cobra.Command{
 			// check if operator is already installed
 			namespace, err = operatorutil.GetOperatorNamespace(kubeClient, namespace)
 			if err == nil {
-				log.Errorf("Synopsys Operator is already installed in namespace '%s'", namespace)
-				return nil
+				return fmt.Errorf("Synopsys Operator is already installed in namespace '%s'", namespace)
 			}
 
 			if metav1.NamespaceAll != namespace {
@@ -97,8 +99,7 @@ var deployCmd = &cobra.Command{
 		// verify Synopsys Operator image has a tag
 		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
 		if !imageHasTag {
-			log.Errorf("Synopsys Operator image doesn't have a tag: %s", synopsysOperatorImage)
-			return nil
+			return fmt.Errorf("Synopsys Operator image doesn't have a tag: %s", synopsysOperatorImage)
 		}
 
 		// generate random string as SEAL key
@@ -113,8 +114,7 @@ var deployCmd = &cobra.Command{
 			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", operatorNamespace),
 		})
 		if err != nil {
-			log.Errorf("couldn't generate certificate and key due to %+v", err)
-			return nil
+			return fmt.Errorf("couldn't generate certificate and key due to %+v", err)
 		}
 
 		// validate each CRD enable parameter is enabled/disabled and cluster scope are from supported values
@@ -147,13 +147,13 @@ var deployCmd = &cobra.Command{
 			log.Debugf("running mock mode")
 			err := PrintResource(*soperatorSpec, mockFormat, false)
 			if err != nil {
-				log.Errorf("%s", err)
+				return err
 			}
 		} else if cmd.Flags().Lookup("mock-kube").Changed {
 			log.Debugf("running kube mock mode")
 			err := PrintResource(*soperatorSpec, mockKubeFormat, true)
 			if err != nil {
-				log.Errorf("%s", err)
+				return err
 			}
 		} else {
 			sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
@@ -161,8 +161,7 @@ var deployCmd = &cobra.Command{
 			log.Infof("deploying Synopsys Operator in namespace '%s'...", operatorNamespace)
 			err = sOperatorCreater.UpdateSOperatorComponents(soperatorSpec)
 			if err != nil {
-				log.Errorf("error deploying Synopsys Operator due to %+v", err)
-				return nil
+				return fmt.Errorf("error deploying Synopsys Operator due to %+v", err)
 			}
 
 			// Deploy Prometheus Metrics Components for Synopsys Operator
@@ -170,8 +169,7 @@ var deployCmd = &cobra.Command{
 			promtheusSpec := soperator.NewPrometheus(operatorNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
 			err = sOperatorCreater.UpdatePrometheus(promtheusSpec)
 			if err != nil {
-				log.Errorf("error deploying metrics: %s", err)
-				return nil
+				return fmt.Errorf("error deploying metrics: %s", err)
 			}
 			log.Infof("successfully submitted Synopsys Operator into namespace '%s'", operatorNamespace)
 		}
