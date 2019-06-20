@@ -53,25 +53,21 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 		}}
 	}
 
-	var initContainers []*util.Container
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/zookeeper/data && chmod -c 777 /opt/blackduck/zookeeper/datalog"}},
-			VolumeMounts:    volumeMounts,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	podConfig := &util.PodConfig{
+		Volumes:             c.getZookeeperVolumes(),
+		Containers:          []*util.Container{zookeeperContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("zookeeper"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("zookeeper"),
+	}
+
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
 	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getZookeeperVolumes(),
-			Containers:          []*util.Container{zookeeperContainerConfig},
-			InitContainers:      initContainers,
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("zookeeper"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("zookeeper"),
-		}, c.GetLabel("zookeeper"))
+		podConfig, c.GetLabel("zookeeper"))
 }
 
 // getZookeeperVolumes will return the zookeeper volumes

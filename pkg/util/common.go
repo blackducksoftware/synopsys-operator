@@ -177,7 +177,8 @@ func CreatePod(podConfig *PodConfig) (*components.Pod, error) {
 	name := podConfig.Name
 	// create pod config
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: name,
+		Name:  name,
+		FSGID: podConfig.FSGID,
 	})
 
 	// set service account

@@ -51,25 +51,21 @@ func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationCo
 		}}
 	}
 
-	var initContainers []*util.Container
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/solr/cores.data"}},
-			VolumeMounts:    solrVolumeMount,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	podConfig := &util.PodConfig{
+		Volumes:             c.getSolrVolumes(),
+		Containers:          []*util.Container{solrContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("solr"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("solr"),
+	}
+
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
 	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "solr"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getSolrVolumes(),
-			Containers:          []*util.Container{solrContainerConfig},
-			InitContainers:      initContainers,
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("solr"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("solr"),
-		}, c.GetLabel("solr"))
+		podConfig, c.GetLabel("solr"))
 }
 
 // getSolrVolumes will return the solr volumes

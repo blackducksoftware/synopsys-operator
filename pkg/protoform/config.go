@@ -43,6 +43,7 @@ type Config struct {
 	AdmissionWebhookListener      bool
 	CrdNames                      string
 	IsClusterScoped               bool
+	IsOpenshift                   bool
 	Version                       string
 }
 

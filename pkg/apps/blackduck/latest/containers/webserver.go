@@ -51,15 +51,21 @@ func (c *Creater) GetWebserverDeployment(imageName string) (*components.Replicat
 		}}
 	}
 
+	podConfig := &util.PodConfig{
+		Volumes:             c.getWebserverVolumes(),
+		Containers:          []*util.Container{webServerContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("webserver"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("webserver"),
+	}
+
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
+	}
+
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webserver"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getWebserverVolumes(),
-			Containers:          []*util.Container{webServerContainerConfig},
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("webserver"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("webserver"),
-		}, c.GetLabel("webserver"))
+		podConfig, c.GetLabel("webserver"))
 }
 
 // getWebserverVolumes will return the authentication volumes
