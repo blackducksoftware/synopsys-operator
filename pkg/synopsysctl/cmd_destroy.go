@@ -34,9 +34,11 @@ import (
 
 // destroyCmd removes Synopsys Operator from the cluster
 var destroyCmd = &cobra.Command{
-	Use:     "destroy [NAMESPACE...]",
-	Example: "synopsysctl destroy\nsynopsysctl destroy <namespace>\nsynopsysctl destroy <namespace1> <namespace2>",
-	Short:   "Remove one or many Synopsys Operator instances and their associated CRDs",
+	Use:           "destroy [NAMESPACE...]",
+	Example:       "synopsysctl destroy\nsynopsysctl destroy <namespace>\nsynopsysctl destroy <namespace1> <namespace2>",
+	Short:         "Remove one or many Synopsys Operator instances and their associated CRDs",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
@@ -53,8 +55,7 @@ var destroyCmd = &cobra.Command{
 			if isClusterScoped {
 				namespace, err = util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 				if err != nil {
-					log.Error(err)
-					return nil
+					return err
 				}
 				if metav1.NamespaceAll != namespace {
 					operatorNamespace = namespace

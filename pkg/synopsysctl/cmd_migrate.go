@@ -41,11 +41,17 @@ var migrateCmd = &cobra.Command{
 
 // migrateBlackduckCmd migrates one or many Black Duck instances
 var migrateBlackduckCmd = &cobra.Command{
-	Use:     "blackduck NAME...",
-	Example: "synopsysctl migrate blackduck <name>\nsynopsysctl migrate blackduck <name1> <name2> <name3>\nsynopsysctl migrate blackduck <name> -n <namespace>\nsynopsysctl migrate blackduck <name1> <name2> <name3> -n <namespace>",
-	Aliases: []string{"blackducks"},
-	Short:   "Migrate one or many Black Duck instances",
+	Use:           "blackduck NAME...",
+	Example:       "synopsysctl migrate blackduck <name>\nsynopsysctl migrate blackduck <name1> <name2> <name3>\nsynopsysctl migrate blackduck <name> -n <namespace>\nsynopsysctl migrate blackduck <name1> <name2> <name3> -n <namespace>",
+	Aliases:       []string{"blackducks"},
+	Short:         "Migrate one or many Black Duck instances",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 1 or more arguments")
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -62,7 +68,7 @@ var migrateBlackduckCmd = &cobra.Command{
 			patch := fmt.Sprintf("{\"spec\":{\"adminPassword\":\"%s\",\"userPassword\":\"%s\", \"postgresPassword\":\"%s\"}}", defaultPassword, defaultPassword, defaultPassword)
 			_, err := blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Patch(blackDuckNamespace, types.MergePatchType, []byte(patch))
 			if err != nil {
-				log.Errorf("error migrating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
+				return fmt.Errorf("error migrating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			}
 			log.Infof("successfully submitted migrate Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		}
