@@ -1,3 +1,24 @@
+/*
+Copyright (C) 2019 Synopsys, Inc.
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
 package actions
 
 import (
@@ -56,6 +77,7 @@ func NewBlackduckResource(config *protoform.Config, kubeConfig *rest.Config) (*B
 // List gets all Hubs. This function is mapped to the path
 // GET /blackducks
 func (v BlackducksResource) List(c buffalo.Context) error {
+	SetVersion(c)
 	blackducks, err := util.ListHubs(v.blackduckClient, v.config.Namespace)
 	if err != nil {
 		return c.Error(500, err)
@@ -74,6 +96,7 @@ func parseParams(name string) (string, string) {
 // Show gets the data for one Blackduck. This function is mapped to
 // the path GET /blackducks/{blackduck_id}
 func (v BlackducksResource) Show(c buffalo.Context) error {
+	SetVersion(c)
 	namespace, name := parseParams(c.Param("blackduck_id"))
 	blackduck, err := util.GetHub(v.blackduckClient, namespace, name)
 	if err != nil {
@@ -87,6 +110,7 @@ func (v BlackducksResource) Show(c buffalo.Context) error {
 // New renders the form for creating a new Blackduck.
 // This function is mapped to the path GET /blackducks/new
 func (v BlackducksResource) New(c buffalo.Context) error {
+	SetVersion(c)
 	blackduckSpec := util.GetBlackDuckDefaultPersistentStorageLatest()
 	blackduck := &blackduckapi.Blackduck{}
 	blackduck.Spec = *blackduckSpec
@@ -227,6 +251,7 @@ func (v BlackducksResource) redirect(c buffalo.Context, blackduck *blackduckapi.
 // Create adds a Blackduck to the DB. This function is mapped to the
 // path POST /blackducks
 func (v BlackducksResource) Create(c buffalo.Context) error {
+	SetVersion(c)
 	// Allocate an empty Blackduck
 	blackduck := &blackduckapi.Blackduck{}
 
@@ -246,7 +271,7 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 	// When running in cluster scope mode, custom resources do not have a namespace so the above command returns everything and we need to check Spec.Namespace.
 	for _, bd := range blackducks.Items {
 		if strings.EqualFold(bd.Spec.Namespace, blackduck.Spec.Namespace) {
-			return fmt.Errorf("due to issues with this version of Black Duck, only one instance per namespace is allowed.")
+			return fmt.Errorf("due to issues with this version of Black Duck, only one instance per namespace is allowed")
 		}
 	}
 
@@ -279,6 +304,7 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 // Edit renders a edit form for a Blackduck. This function is
 // mapped to the path GET /blackducks/{blackduck_id}/edit
 func (v BlackducksResource) Edit(c buffalo.Context) error {
+	SetVersion(c)
 	namespace, name := parseParams(c.Param("blackduck_id"))
 	blackduck, err := util.GetHub(v.blackduckClient, namespace, name)
 	if err != nil {
@@ -334,6 +360,7 @@ func (v BlackducksResource) postSubmit(c buffalo.Context, blackduck *blackduckap
 // Update changes a Blackduck in the DB. This function is mapped to
 // the path PUT /blackducks/{blackduck_id}
 func (v BlackducksResource) Update(c buffalo.Context) error {
+	SetVersion(c)
 	// Allocate an empty Blackduck
 	blackduck := &blackduckapi.Blackduck{}
 
@@ -368,6 +395,7 @@ func (v BlackducksResource) Update(c buffalo.Context) error {
 // Destroy deletes a Blackduck from the DB. This function is mapped
 // to the path DELETE /blackducks/{blackduck_id}
 func (v BlackducksResource) Destroy(c buffalo.Context) error {
+	SetVersion(c)
 	log.Infof("delete Black Duck request %v", c.Param("blackduck"))
 	namespace, name := parseParams(c.Param("blackduck_id"))
 	_, err := util.GetHub(v.blackduckClient, namespace, name)
@@ -397,6 +425,7 @@ func (v BlackducksResource) Destroy(c buffalo.Context) error {
 // ChangeState Used to change state of a Blackduck instance
 // POST  /blackducks/{blackduck_id}/state
 func (v BlackducksResource) ChangeState(c buffalo.Context) error {
+	SetVersion(c)
 	if c.Param("state") == "" {
 		return c.Redirect(400, "/blackducks")
 	}

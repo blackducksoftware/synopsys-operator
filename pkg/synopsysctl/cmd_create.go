@@ -159,6 +159,7 @@ var createBlackDuckCmd = &cobra.Command{
 	Use:           "blackduck NAME",
 	Example:       "synopsysctl create blackduck <name>\nsynopsysctl create blackduck <name> -n <namespace>\nsynopsysctl create blackduck <name> --mock json\nsynopsysctl create blackduck <name> -n <namespace> --mock json",
 	Short:         "Create a Black Duck instance",
+	Aliases:       []string{"bds", "bd"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -264,6 +265,7 @@ var createOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME",
 	Example:       "synopsysctl create opssight <name>\nsynopsysctl create opssight <name> -n <namespace>\nsynopsysctl create opssight <name> --mock json\nsynopsysctl create opssight <name> -n <namespace> --mock json",
 	Short:         "Create an OpsSight instance",
+	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {

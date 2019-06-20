@@ -21,12 +21,6 @@ under the License.
 
 package synopsysctl
 
-// SynopsysctlVersion is the current version of the synopsysctl utility
-const SynopsysctlVersion string = "2019.4.1"
-
-// DefaultOperatorImage is Synopsys Operator image that is deployed by default
-const DefaultOperatorImage string = "gcr.io/saas-hub-stg/blackducksoftware/synopsys-operator:master"
-
 // DefaultMetricsImage is the Metrics image deployed with Synopsys Operator by default
 const DefaultMetricsImage string = "docker.io/prom/prometheus:v2.1.0"
 

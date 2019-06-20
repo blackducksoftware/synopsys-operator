@@ -75,6 +75,7 @@ var deleteBlackDuckCmd = &cobra.Command{
 	Use:           "blackduck NAME...",
 	Example:       "synopsysctl delete blackduck <name>\nsynopsysctl delete blackduck <name1> <name2> <name3>\nsynopsysctl delete blackduck <name> -n <namespace>\nsynopsysctl delete blackduck <name1> <name2> <name3> -n <namespace>",
 	Short:         "Delete one or many Black Duck instances",
+	Aliases:       []string{"bds", "bd"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -106,6 +107,7 @@ var deleteOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME...",
 	Example:       "synopsysctl delete opssight <name>\nsynopsysctl delete opssight <name1> <name2> <name3>\nsynopsysctl delete opssight <name> -n <namespace>\nsynopsysctl delete opssight <name1> <name2> <name3> -n <namespace>",
 	Short:         "Delete one or many OpsSight instances",
+	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {

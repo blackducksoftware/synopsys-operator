@@ -72,6 +72,7 @@ var editBlackDuckCmd = &cobra.Command{
 	Use:           "blackduck NAME",
 	Example:       "synopsysctl edit blackduck <name>\nsynopsysctl edit blackduck <name> -n <namespace>",
 	Short:         "Edit a Black Duck instance",
+	Aliases:       []string{"bds", "bd"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -101,6 +102,7 @@ var editOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME",
 	Example:       "synopsysctl edit opssight <name>\nsynopsysctl edit opssight <name> -n <namespace>",
 	Short:         "Edit an OpsSight instance",
+	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
