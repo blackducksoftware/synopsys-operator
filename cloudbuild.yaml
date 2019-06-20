@@ -5,5 +5,11 @@ steps:
 #### PUSH ARTIFACTS TO DOCKER HUB / GCS 
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/synopsys-operator:$BRANCH_NAME']
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: 
+  - '-c'
+  - |
+    [[ "$BRANCH_NAME" == "master" ]] && bash cloudbuild.sh "$PROJECT_ID" "$BRANCH_NAME" "$_DOCKER_PROJECT"
 options:
   machineType: 'N1_HIGHCPU_32'
