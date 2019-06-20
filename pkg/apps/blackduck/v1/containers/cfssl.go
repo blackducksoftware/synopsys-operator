@@ -60,8 +60,6 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 		initContainers = append(initContainers, initContainerConfig)
 	}
 
-	c.PostEditContainer(cfsslContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{

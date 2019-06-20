@@ -69,8 +69,6 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 		initContainers = append(initContainers, initContainerConfig)
 	}
 
-	c.PostEditContainer(hubAuthContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{

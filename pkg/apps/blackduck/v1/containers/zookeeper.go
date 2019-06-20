@@ -62,8 +62,6 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 		initContainers = append(initContainers, initContainerConfig)
 	}
 
-	c.PostEditContainer(zookeeperContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "zookeeper"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{

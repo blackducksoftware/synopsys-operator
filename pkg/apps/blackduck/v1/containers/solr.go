@@ -60,8 +60,6 @@ func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationCo
 		initContainers = append(initContainers, initContainerConfig)
 	}
 
-	c.PostEditContainer(solrContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "solr"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{
