@@ -22,12 +22,12 @@ under the License.
 package actions
 
 import (
+	"os"
+
 	"github.com/gobuffalo/buffalo"
 )
 
-// HomeHandler is a default handler to serve up
-// a home page.
-func HomeHandler(c buffalo.Context) error {
-	SetVersion(c)
-	return c.Render(200, r.HTML("index.html"))
+// SetVersion will set the Synopsys Operator version
+func SetVersion(c buffalo.Context) {
+	c.Set("version", os.Getenv("SYNOPSYS_OPERATOR_VERSION"))
 }

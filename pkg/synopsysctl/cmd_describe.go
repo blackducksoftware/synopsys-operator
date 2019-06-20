@@ -76,7 +76,7 @@ var describeAlertCmd = &cobra.Command{
 var describeBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck [NAME...]",
 	Example: "synopsysctl describe blackducks\nsynopsysctl describe blackduck <name>\nsynopsysctl describe blackducks <name1> <name2>\nsynopsysctl describe blackducks -n <namespace>\nsynopsysctl describe blackduck <name> -n <namespace>\nsynopsysctl describe blackducks <name1> <name2> -n <namespace>",
-	Aliases: []string{"blackducks"},
+	Aliases: []string{"blackducks", "bds", "bd"},
 	Short:   "Show details of one or many Black Duck instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
@@ -108,7 +108,7 @@ var describeBlackDuckCmd = &cobra.Command{
 var describeOpsSightCmd = &cobra.Command{
 	Use:     "opssight [NAME...]",
 	Example: "synopsysctl describe opssights\nsynopsysctl describe opssight <name>\nsynopsysctl describe opssights <name1> <name2>\nsynopsysctl describe opssights -n <namespace>\nsynopsysctl describe opssight <name> -n <namespace>\nsynopsysctl describe opssights <name1> <name2> -n <namespace>",
-	Aliases: []string{"opssights"},
+	Aliases: []string{"opssights", "ops"},
 	Short:   "Show details of one or many OpsSight instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil

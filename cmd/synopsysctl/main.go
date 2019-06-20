@@ -23,8 +23,12 @@ package main
 
 import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/synopsysctl"
+	log "github.com/sirupsen/logrus"
 )
 
+var version string
+
 func main() {
-	synopsysctl.Execute()
+	log.Debugf("version: %s", version)
+	synopsysctl.Execute(version)
 }

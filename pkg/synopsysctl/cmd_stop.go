@@ -84,6 +84,7 @@ var stopBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAME",
 	Example: "synopsysctl stop blackduck <name>\nsynopsysctl stop blackduck <name> -n <namespace>",
 	Short:   "Stop a Black Duck instance",
+	Aliases: []string{"bds", "bd"},
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -124,6 +125,7 @@ var stopOpsSightCmd = &cobra.Command{
 	Use:     "opssight NAME",
 	Example: "synopsysctl stop opssight <name>",
 	Short:   "Stop an OpsSight instance",
+	Aliases: []string{"ops"},
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")

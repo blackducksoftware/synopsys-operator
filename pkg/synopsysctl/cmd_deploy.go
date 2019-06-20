@@ -37,7 +37,7 @@ import (
 //  Deploy Command Defaults
 var operatorNamespace = DefaultOperatorNamespace
 var exposeUI = ""
-var synopsysOperatorImage = DefaultOperatorImage
+var synopsysOperatorImage string
 var metricsImage = DefaultMetricsImage
 var exposeMetrics = ""
 var terminationGracePeriodSeconds int64 = 180
@@ -180,7 +180,7 @@ var deployCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func initFlags() {
 	rootCmd.AddCommand(deployCmd)
 	deployCmd.Flags().BoolVarP(&isClusterScoped, "cluster-scoped", "c", isClusterScoped, "Enable/Disable Synopsys Operator with cluster scope")
 	deployCmd.Flags().BoolVarP(&isEnabledAlert, "enable-alert", "a", isEnabledAlert, "Enable/Disable Alert Custom Resource Definition (CRD) in your cluster")

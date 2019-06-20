@@ -317,6 +317,7 @@ var updateAlertCmd = &cobra.Command{
 	Use:     "alert NAME",
 	Example: "synopsysctl update alert <name> --port 80\nsynopsysctl update alert <name> -n <namespace> --port 80",
 	Short:   "Update an Alert instance",
+
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -382,6 +383,7 @@ var updateBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAME",
 	Example: "synopsyctl update blackduck <name> --size medium\nsynopsyctl update blackduck <name> -n <namespace> --size medium",
 	Short:   "Update a Black Duck instance",
+	Aliases: []string{"bds", "bd"},
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return fmt.Errorf("this command takes 1 or more arguments")
@@ -775,6 +777,7 @@ var updateOpsSightCmd = &cobra.Command{
 	Use:     "opssight NAME",
 	Example: "synopsyctl update opssight <name> --blackduck-max-count 2\nsynopsyctl update opssight <name> --blackduck-max-count 2 -n <namespace>",
 	Short:   "Update an OpsSight instance",
+	Aliases: []string{"ops"},
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
