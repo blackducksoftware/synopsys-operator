@@ -73,7 +73,7 @@ var startAlertCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Infof("successfully started Alert '%s' in namespace '%s'", alertName, alertNamespace)
+		log.Infof("successfully submitted start Alert '%s' in namespace '%s'", alertName, alertNamespace)
 		return nil
 	},
 }
@@ -114,7 +114,7 @@ var startBlackDuckCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Infof("successfully started Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+		log.Infof("successfully submitted start Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }
@@ -156,7 +156,7 @@ var startOpsSightCmd = &cobra.Command{
 			return nil
 		}
 
-		log.Infof("successfully started OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+		log.Infof("successfully submitted start OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
 		return nil
 	},
 }

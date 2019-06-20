@@ -145,7 +145,7 @@ var createAlertCmd = &cobra.Command{
 				log.Errorf("error creating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 				return nil
 			}
-			log.Infof("successfully created Alert '%s' in namespace '%s'", alertName, alertNamespace)
+			log.Infof("successfully submitted Alert '%s' into namespace '%s'", alertName, alertNamespace)
 		}
 		return nil
 	},
@@ -253,7 +253,7 @@ var createBlackDuckCmd = &cobra.Command{
 				log.Errorf("error creating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 				return nil
 			}
-			log.Infof("successfully created Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+			log.Infof("successfully submitted Black Duck '%s' into namespace '%s'", blackDuckName, blackDuckNamespace)
 		}
 		return nil
 	},
@@ -343,7 +343,7 @@ var createOpsSightCmd = &cobra.Command{
 				log.Errorf("error creating the OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully created OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+			log.Infof("successfully submitted OpsSight '%s' into namespace '%s'", opsSightName, opsSightNamespace)
 		}
 		return nil
 	},

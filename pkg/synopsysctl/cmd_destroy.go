@@ -158,7 +158,7 @@ func destroy(namespace string) {
 		}
 	}
 
-	log.Infof("finished destroying Synopsys Operator in namespace '%s'", namespace)
+	log.Infof("successfully submitted destroy Synopsys Operator in namespace '%s'", namespace)
 }
 
 func isDeleteCrd(crd string) error {

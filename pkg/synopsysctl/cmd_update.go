@@ -307,7 +307,7 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 			return fmt.Errorf("unable to update Prometheus due to %+v", err)
 		}
 
-		log.Infof("successfully updated Synopsys Operator in namespace '%s'", namespace)
+		log.Infof("successfully submitted updates to Synopsys Operator in namespace '%s'", namespace)
 	}
 	return nil
 }
@@ -372,7 +372,9 @@ var updateAlertCmd = &cobra.Command{
 				log.Errorf("error updating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated Alert '%s' in namespace '%s'", alertName, alertNamespace)
+			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("successfully submitted updates to Alert '%s' in namespace '%s'", alertName, alertNamespace)
+			}
 		}
 		return nil
 	},
@@ -438,7 +440,9 @@ var updateBlackDuckCmd = &cobra.Command{
 				log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+			}
 		}
 		return nil
 	},
@@ -524,7 +528,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 				return nil
 			}
 
-			log.Infof("successfully updated Black Duck '%s's master key in namespace '%s'", blackDuckName, operatorNamespace)
+			log.Infof("successfully submitted updates to Black Duck '%s's master key in namespace '%s'", blackDuckName, operatorNamespace)
 		}
 
 		secret.Data["SEAL_KEY"] = []byte(newSealKey)
@@ -587,8 +591,10 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 				log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 				return nil
 			}
+			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+			}
 		}
-		log.Infof("successfully updated Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		return nil
 	},
 }
@@ -701,7 +707,9 @@ var updateOpsSightCmd = &cobra.Command{
 				log.Errorf("error updating OpsSight '%s in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("successfully submitted updates to OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+			}
 		}
 		return nil
 	},
@@ -766,7 +774,9 @@ var updateOpsSightImageCmd = &cobra.Command{
 				log.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated OpsSight '%s's image in namespace '%s'", opsSightName, opsSightNamespace)
+			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("successfully submitted updates to OpsSight '%s's image in namespace '%s'", opsSightName, opsSightNamespace)
+			}
 		}
 		return nil
 	},
@@ -834,7 +844,9 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 				log.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated OpsSight '%s' with external host in namespace '%s'", opsSightName, opsSightNamespace)
+			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("successfully submitted updates to OpsSight '%s' with external host in namespace '%s'", opsSightName, opsSightNamespace)
+			}
 		}
 		return nil
 	},
@@ -893,7 +905,9 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 				log.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 				return nil
 			}
-			log.Infof("successfully updated OpsSight '%s' with registry in namespace '%s'", opsSightName, opsSightNamespace)
+			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("successfully submitted updates to OpsSight '%s' with registry in namespace '%s'", opsSightName, opsSightNamespace)
+			}
 		}
 		return nil
 	},
