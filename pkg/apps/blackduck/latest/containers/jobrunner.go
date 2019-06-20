@@ -69,13 +69,17 @@ func (c *Creater) GetJobRunnerDeployment(imageName string) (*components.Replicat
 		jobRunnerVolumes = append(jobRunnerVolumes, c.getProxyVolume())
 	}
 
+	podConfig := &util.PodConfig{
+		Volumes:             jobRunnerVolumes,
+		Containers:          []*util.Container{jobRunnerContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("jobrunner"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("jobrunner"),
+	}
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
+	}
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "jobrunner"), Replicas: c.hubContainerFlavor.JobRunnerReplicas},
-		&util.PodConfig{
-			Volumes:             jobRunnerVolumes,
-			Containers:          []*util.Container{jobRunnerContainerConfig},
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("jobrunner"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("jobrunner"),
-		}, c.GetLabel("jobrunner"))
+		podConfig, c.GetLabel("jobrunner"))
 }

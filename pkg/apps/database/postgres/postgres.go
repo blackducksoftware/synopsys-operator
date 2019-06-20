@@ -57,6 +57,7 @@ type Postgres struct {
 	SharedBufferInMB              int
 	EnvConfigMapRefs              []string
 	TerminationGracePeriodSeconds int64
+	IsOpenshift                   bool
 	Labels                        map[string]string
 }
 
@@ -108,14 +109,19 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 		initContainers = append(initContainers, postgresInitContainerConfig)
 	}
 
-	pod, err := util.CreatePod(
-		&util.PodConfig{
-			Name:           p.Name,
-			Volumes:        postgresVolumes,
-			Containers:     []*util.Container{postgresExternalContainerConfig},
-			InitContainers: initContainers,
-			Labels:         p.Labels,
-		})
+	podConfig := &util.PodConfig{
+		Name:           p.Name,
+		Volumes:        postgresVolumes,
+		Containers:     []*util.Container{postgresExternalContainerConfig},
+		InitContainers: initContainers,
+		Labels:         p.Labels,
+	}
+
+	if !p.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
+	}
+
+	pod, err := util.CreatePod(podConfig)
 
 	if err != nil {
 		return nil, fmt.Errorf("%+v", err)

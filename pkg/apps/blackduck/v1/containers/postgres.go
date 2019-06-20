@@ -63,6 +63,7 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 		SharedBufferInMB:       1024,
 		EnvConfigMapRefs:       []string{util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "db-config")},
 		Labels:                 c.GetLabel("postgres"),
+		IsOpenshift:            c.config.IsOpenshift,
 	}
 }
 

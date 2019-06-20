@@ -29,9 +29,6 @@ import (
 
 // GetRegistrationDeployment will return the registration deployment
 func (c *Creater) GetRegistrationDeployment(imageName string) (*components.ReplicationController, error) {
-
-	volumeMounts := c.getRegistrationVolumeMounts()
-
 	registrationContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: imageName,
 			PullPolicy: horizonapi.PullAlways, MinMem: c.hubContainerFlavor.RegistrationMemoryLimit, MaxMem: c.hubContainerFlavor.RegistrationMemoryLimit, MinCPU: registrationMinCPUUsage, MaxCPU: ""},
@@ -59,25 +56,21 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 		}}
 	}
 
-	var initContainers []*util.Container
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /opt/blackduck/hub/hub-registration/config"}},
-			VolumeMounts:    volumeMounts,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	podConfig := &util.PodConfig{
+		Volumes:             c.getRegistrationVolumes(),
+		Containers:          []*util.Container{registrationContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("registration"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("registration"),
+	}
+
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
 	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getRegistrationVolumes(),
-			Containers:          []*util.Container{registrationContainerConfig},
-			InitContainers:      initContainers,
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("registration"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("registration"),
-		}, c.GetLabel("registration"))
+		podConfig, c.GetLabel("registration"))
 }
 
 // getRegistrationVolumes will return the registration volumes

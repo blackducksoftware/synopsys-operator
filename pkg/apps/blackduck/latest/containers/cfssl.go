@@ -51,25 +51,21 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 		}}
 	}
 
-	var initContainers []*util.Container
-	if c.blackDuck.Spec.PersistentStorage {
-		initContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine", Command: []string{"sh", "-c", "chmod -c 777 /etc/cfssl"}},
-			VolumeMounts:    cfsslVolumeMounts,
-		}
-		initContainers = append(initContainers, initContainerConfig)
+	podConfig := &util.PodConfig{
+		Volumes:             c.getCfsslVolumes(),
+		Containers:          []*util.Container{cfsslContainerConfig},
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              c.GetVersionLabel("cfssl"),
+		NodeAffinityConfigs: c.GetNodeAffinityConfigs("cfssl"),
+	}
+
+	if !c.config.IsOpenshift {
+		podConfig.FSGID = util.IntToInt64(0)
 	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl"), Replicas: util.IntToInt32(1)},
-		&util.PodConfig{
-			Volumes:             c.getCfsslVolumes(),
-			Containers:          []*util.Container{cfsslContainerConfig},
-			InitContainers:      initContainers,
-			ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
-			Labels:              c.GetVersionLabel("cfssl"),
-			NodeAffinityConfigs: c.GetNodeAffinityConfigs("cfssl"),
-		}, c.GetLabel("cfssl"))
+		podConfig, c.GetLabel("cfssl"))
 }
 
 // getCfsslVolumes will return the cfssl volumes
