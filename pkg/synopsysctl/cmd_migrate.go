@@ -64,7 +64,7 @@ var migrateBlackduckCmd = &cobra.Command{
 			if err != nil {
 				log.Errorf("error migrating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			}
-			log.Infof("successfully migrated Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+			log.Infof("successfully submitted migrate Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 		}
 		return nil
 	},
