@@ -40,11 +40,14 @@ var stopCmd = &cobra.Command{
 
 // stopAlertCmd stops an Alert instance
 var stopAlertCmd = &cobra.Command{
-	Use:     "alert NAME",
-	Example: "synopsysctl stop alert <name>\nsynopsysctl stop alert <name> -n <namespace>",
-	Short:   "Stop an Alert instance",
+	Use:           "alert NAME",
+	Example:       "synopsysctl stop alert <name>\nsynopsysctl stop alert <name> -n <namespace>",
+	Short:         "Stop an Alert instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
@@ -52,16 +55,14 @@ var stopAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, util.AlertName, namespace)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return err
 		}
 		log.Infof("stopping Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 
 		// Get the Alert
 		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
 		if err != nil {
-			log.Errorf("error stopping Alert '%s' due to %+v", alertNamespace, err)
-			return nil
+			return fmt.Errorf("error stopping Alert '%s' due to %+v", alertNamespace, err)
 		}
 
 		// Make changes to Spec
@@ -70,8 +71,7 @@ var stopAlertCmd = &cobra.Command{
 		_, err = util.UpdateAlert(alertClient,
 			currAlert.Spec.Namespace, currAlert)
 		if err != nil {
-			log.Errorf("error stopping Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-			return nil
+			return fmt.Errorf("error stopping Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
 
 		log.Infof("successfully submitted stop Alert '%s' in namespace '%s'", alertName, alertNamespace)
@@ -81,12 +81,14 @@ var stopAlertCmd = &cobra.Command{
 
 // stopBlackDuckCmd stops a Black Duck instance
 var stopBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck NAME",
-	Example: "synopsysctl stop blackduck <name>\nsynopsysctl stop blackduck <name> -n <namespace>",
-	Short:   "Stop a Black Duck instance",
-	Aliases: []string{"bds", "bd"},
+	Use:           "blackduck NAME",
+	Example:       "synopsysctl stop blackduck <name>\nsynopsysctl stop blackduck <name> -n <namespace>",
+	Short:         "Stop a Black Duck instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
@@ -94,16 +96,14 @@ var stopBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return err
 		}
 		log.Infof("stopping Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get the Black Duck
 		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckNamespace)
 		if err != nil {
-			log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 
 		// Make changes to Spec
@@ -111,8 +111,7 @@ var stopBlackDuckCmd = &cobra.Command{
 		// Update Black Duck
 		_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
 		if err != nil {
-			log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			return nil
+			return fmt.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 
 		log.Infof("successfully submitted stop Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
@@ -122,12 +121,14 @@ var stopBlackDuckCmd = &cobra.Command{
 
 // stopOpsSightCmd stops an OpsSight instance
 var stopOpsSightCmd = &cobra.Command{
-	Use:     "opssight NAME",
-	Example: "synopsysctl stop opssight <name>",
-	Short:   "Stop an OpsSight instance",
-	Aliases: []string{"ops"},
+	Use:           "opssight NAME",
+	Example:       "synopsysctl stop opssight <name>",
+	Short:         "Stop an OpsSight instance",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
+			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
 		return nil
@@ -135,16 +136,14 @@ var stopOpsSightCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return err
 		}
 		log.Infof("stopping OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 
 		// Get the OpsSight
 		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			log.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-			return nil
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 
 		// Make changes to Spec
@@ -153,8 +152,7 @@ var stopOpsSightCmd = &cobra.Command{
 		_, err = util.UpdateOpsSight(opsSightClient,
 			currOpsSight.Spec.Namespace, currOpsSight)
 		if err != nil {
-			log.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-			return nil
+			return fmt.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 
 		log.Infof("successfully submitted stop OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)

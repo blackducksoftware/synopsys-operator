@@ -42,10 +42,12 @@ var describeCmd = &cobra.Command{
 
 // describeAlertCmd shows details of one or many Alert instances
 var describeAlertCmd = &cobra.Command{
-	Use:     "alert [NAME...]",
-	Example: "synopsysctl describe alerts\nsynopsysctl describe alert <name>\nsynopsysctl describe alerts <name1> <name2>\nsynopsysctl describe alerts -n <namespace>\nsynopsysctl describe alert <name> -n <namespace>\nsynopsysctl describe alerts <name1> <name2> -n <namespace>",
-	Aliases: []string{"alerts"},
-	Short:   "Show details of one or many Alert instances",
+	Use:           "alert [NAME...]",
+	Example:       "synopsysctl describe alerts\nsynopsysctl describe alert <name>\nsynopsysctl describe alerts <name1> <name2>\nsynopsysctl describe alerts -n <namespace>\nsynopsysctl describe alert <name> -n <namespace>\nsynopsysctl describe alerts <name1> <name2> -n <namespace>",
+	Aliases:       []string{"alerts"},
+	Short:         "Show details of one or many Alert instances",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
@@ -64,8 +66,7 @@ var describeAlertCmd = &cobra.Command{
 		}
 		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
-			log.Errorf("error describing Alert: %s - %s", out, err)
-			return nil
+			return fmt.Errorf("error describing Alert: %s - %s", out, err)
 		}
 		fmt.Printf("%+v", out)
 		return nil
@@ -74,10 +75,12 @@ var describeAlertCmd = &cobra.Command{
 
 // describeBlackDuckCmd shows details of one or many Black Duck instances
 var describeBlackDuckCmd = &cobra.Command{
-	Use:     "blackduck [NAME...]",
-	Example: "synopsysctl describe blackducks\nsynopsysctl describe blackduck <name>\nsynopsysctl describe blackducks <name1> <name2>\nsynopsysctl describe blackducks -n <namespace>\nsynopsysctl describe blackduck <name> -n <namespace>\nsynopsysctl describe blackducks <name1> <name2> -n <namespace>",
-	Aliases: []string{"blackducks", "bds", "bd"},
-	Short:   "Show details of one or many Black Duck instances",
+	Use:           "blackduck [NAME...]",
+	Example:       "synopsysctl describe blackducks\nsynopsysctl describe blackduck <name>\nsynopsysctl describe blackducks <name1> <name2>\nsynopsysctl describe blackducks -n <namespace>\nsynopsysctl describe blackduck <name> -n <namespace>\nsynopsysctl describe blackducks <name1> <name2> -n <namespace>",
+	Aliases:       []string{"blackducks"},
+	Short:         "Show details of one or many Black Duck instances",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
@@ -96,8 +99,7 @@ var describeBlackDuckCmd = &cobra.Command{
 		}
 		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
-			log.Errorf("error describing Black Duck: %s - %s", out, err)
-			return nil
+			return fmt.Errorf("error describing Black Duck: %s - %s", out, err)
 		}
 		fmt.Printf("%+v", out)
 		return nil
@@ -106,10 +108,12 @@ var describeBlackDuckCmd = &cobra.Command{
 
 // describeOpsSightCmd shows details of one or many OpsSight instances
 var describeOpsSightCmd = &cobra.Command{
-	Use:     "opssight [NAME...]",
-	Example: "synopsysctl describe opssights\nsynopsysctl describe opssight <name>\nsynopsysctl describe opssights <name1> <name2>\nsynopsysctl describe opssights -n <namespace>\nsynopsysctl describe opssight <name> -n <namespace>\nsynopsysctl describe opssights <name1> <name2> -n <namespace>",
-	Aliases: []string{"opssights", "ops"},
-	Short:   "Show details of one or many OpsSight instances",
+	Use:           "opssight [NAME...]",
+	Example:       "synopsysctl describe opssights\nsynopsysctl describe opssight <name>\nsynopsysctl describe opssights <name1> <name2>\nsynopsysctl describe opssights -n <namespace>\nsynopsysctl describe opssight <name> -n <namespace>\nsynopsysctl describe opssights <name1> <name2> -n <namespace>",
+	Aliases:       []string{"opssights"},
+	Short:         "Show details of one or many OpsSight instances",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
@@ -128,8 +132,7 @@ var describeOpsSightCmd = &cobra.Command{
 		}
 		out, err := RunKubeCmd(restconfig, kubectlCmd...)
 		if err != nil {
-			log.Errorf("error describing OpsSight: %s - %s", out, err)
-			return nil
+			return fmt.Errorf("error describing OpsSight: %s - %s", out, err)
 		}
 		fmt.Printf("%+v", out)
 		return nil
