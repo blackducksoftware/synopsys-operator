@@ -38,8 +38,6 @@ func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.Repl
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: binaryScannerPort, Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	c.PostEditContainer(binaryScannerContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "binaryscanner"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{

@@ -52,7 +52,6 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 			MinCountFailure: 10,
 		}}
 	}
-	c.PostEditContainer(documentationContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "documentation"), Replicas: util.IntToInt32(1)},
