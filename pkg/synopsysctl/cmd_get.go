@@ -89,7 +89,7 @@ var getAlertCmd = &cobra.Command{
 var getBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck [NAME...]",
 	Example: "synopsysctl get blackducks\nsynopsysctl get blackduck <name>\nsynopsysctl get blackducks <name1> <name2>\nsynopsysctl get blackducks -n <namespace>\nsynopsysctl get blackduck <name> -n <namespace>\nsynopsysctl get blackducks <name1> <name2> -n <namespace>",
-	Aliases: []string{"blackducks"},
+	Aliases: []string{"blackducks", "bds", "bd"},
 	Short:   "Display one or many Black Duck instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
@@ -196,7 +196,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 var getOpsSightCmd = &cobra.Command{
 	Use:     "opssight [NAME...]",
 	Example: "synopsysctl get opssights\nsynopsysctl get opssight <name>\nsynopsysctl get opssights <name1> <name2>",
-	Aliases: []string{"opssights"},
+	Aliases: []string{"opssights", "ops"},
 	Short:   "Display one or many OpsSight instances",
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil

@@ -21,9 +21,6 @@ under the License.
 
 package synopsysctl
 
-// SynopsysctlVersion is the current version of the synopsysctl utility
-const SynopsysctlVersion string = "2019.6.0"
-
 // DefaultOperatorImage is Synopsys Operator image that is deployed by default
 const DefaultOperatorImage string = "docker.io/blackducksoftware/synopsys-operator:2019.6.0"
 

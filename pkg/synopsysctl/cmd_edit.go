@@ -71,6 +71,7 @@ var editBlackDuckCmd = &cobra.Command{
 	Use:     "blackduck NAME",
 	Example: "synopsysctl edit blackduck <name>\nsynopsysctl edit blackduck <name> -n <namespace>",
 	Short:   "Edit a Black Duck instance",
+	Aliases: []string{"bds", "bd"},
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
@@ -99,6 +100,7 @@ var editOpsSightCmd = &cobra.Command{
 	Use:     "opssight NAME",
 	Example: "synopsysctl edit opssight <name>\nsynopsysctl edit opssight <name> -n <namespace>",
 	Short:   "Edit an OpsSight instance",
+	Aliases: []string{"ops"},
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("this command takes 1 argument")
