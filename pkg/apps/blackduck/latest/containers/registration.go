@@ -68,8 +68,6 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 		initContainers = append(initContainers, initContainerConfig)
 	}
 
-	c.PostEditContainer(registrationContainerConfig)
-
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"), Replicas: util.IntToInt32(1)},
 		&util.PodConfig{

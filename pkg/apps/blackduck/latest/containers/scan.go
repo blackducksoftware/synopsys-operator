@@ -85,7 +85,6 @@ func (c *Creater) GetScanDeployment(imageName string) (*components.ReplicationCo
 		})
 		hubScanVolumes = append(hubScanVolumes, c.getProxyVolume())
 	}
-	c.PostEditContainer(hubScanContainerConfig)
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "scan"), Replicas: c.hubContainerFlavor.ScanReplicas},
