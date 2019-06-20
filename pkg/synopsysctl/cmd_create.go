@@ -89,7 +89,7 @@ var createAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, "", namespace)
+		alertName, alertNamespace, scope, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, "", namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -128,9 +128,13 @@ var createAlertCmd = &cobra.Command{
 				log.Errorf("%s", err)
 			}
 		} else {
+			// Check if Synopsys Operator is running
+			if err := checkOperatorIsRunning(scope, alertNamespace); err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
 			// Create namespace for an Alert instance
 			err := util.DeployCRDNamespace(restconfig, kubeClient, util.AlertName, alertNamespace, alertName, alertSpec.Version)
-
 			if err != nil {
 				log.Warn(err)
 			}
@@ -175,7 +179,7 @@ var createBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, "", namespace)
+		blackDuckName, blackDuckNamespace, scope, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, "", namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -229,6 +233,11 @@ var createBlackDuckCmd = &cobra.Command{
 				log.Errorf("%s", err)
 			}
 		} else {
+			// Check if Synopsys Operator is running
+			if err := checkOperatorIsRunning(scope, blackDuckNamespace); err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
 			// Create namespace for the Black Duck instance
 			err := util.DeployCRDNamespace(restconfig, kubeClient, util.BlackDuckName, blackDuckNamespace, blackDuckName, blackDuckSpec.Version)
 
@@ -276,7 +285,7 @@ var createOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, "", namespace)
+		opsSightName, opsSightNamespace, scope, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, "", namespace)
 		if err != nil {
 			log.Error(err)
 			return nil
@@ -314,6 +323,11 @@ var createOpsSightCmd = &cobra.Command{
 				log.Errorf("%s", err)
 			}
 		} else {
+			// Check if Synopsys Operator is running
+			if err := checkOperatorIsRunning(scope, opsSightNamespace); err != nil {
+				log.Errorf("%s", err)
+				return nil
+			}
 			// Create namespace for OpsSight
 			// TODO: when opssight versioning PR is merged, the hard coded 2.2.3 version to be replaced with opsSight
 			err := util.DeployCRDNamespace(restconfig, kubeClient, util.OpsSightName, opsSightNamespace, opsSightName, "2.2.3")

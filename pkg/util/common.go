@@ -1604,8 +1604,8 @@ func isOpsSightExist(restConfig *rest.Config, namespace string) (bool, error) {
 	return false, nil
 }
 
-// isOperatorExist returns whether the operator exist or not
-func isOperatorExist(clientset *kubernetes.Clientset, namespace string) bool {
+// IsOperatorExist returns whether the operator exist or not
+func IsOperatorExist(clientset *kubernetes.Clientset, namespace string) bool {
 	rcs, err := ListReplicationControllers(clientset, namespace, "app=synopsys-operator")
 	if err == nil && len(rcs.Items) > 0 {
 		return true
@@ -1634,7 +1634,7 @@ func DeleteResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Cli
 		var err error
 		if !isOperator {
 			// check whether the operator already exist in the same namespace as input namespace
-			isExist = isOperatorExist(kubeClient, namespace)
+			isExist = IsOperatorExist(kubeClient, namespace)
 			if isExist {
 				return fmt.Errorf("synopsys operator is already running in %s namespace... namespace cannot be deleted", namespace)
 			}
@@ -1672,16 +1672,19 @@ func CheckAndUpdateNamespace(kubeClient *kubernetes.Clientset, resourceName stri
 	ns, err := GetNamespace(kubeClient, namespace)
 	if err == nil {
 		isLabelUpdated := false
-		if isDelete {
+		if ns.GetLabels() == nil { // ensure labels exists on namespace
+			ns.Labels = make(map[string]string)
+		}
+		if isDelete { // delete from labels
 			delete(ns.Labels, fmt.Sprintf("synopsys.com/%s.%s", resourceName, name))
 			isLabelUpdated = true
-		} else {
+		} else { // add to labels
 			if existingVersion, ok := ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)]; !isDelete && (!ok || existingVersion != version) {
 				ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)] = version
 				isLabelUpdated = true
 			}
 		}
-		if isLabelUpdated {
+		if isLabelUpdated { // update the namespace with labels
 			_, err = UpdateNamespace(kubeClient, ns)
 			if err != nil {
 				return true, fmt.Errorf("unable to update the %s namespace labels due to %+v", namespace, err)
