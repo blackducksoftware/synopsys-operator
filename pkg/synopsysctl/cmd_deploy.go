@@ -91,7 +91,7 @@ var deployCmd = &cobra.Command{
 			// check if operator is already installed
 			namespace, err = util.GetOperatorNamespace(kubeClient, namespace)
 			if err == nil {
-				return fmt.Errorf("Synopsys Operator is already installed in namespace '%s'", namespace)
+				return fmt.Errorf("Synopsys Operator is already deployed in namespace '%s'", namespace)
 			}
 
 			if metav1.NamespaceAll != namespace {
@@ -133,27 +133,21 @@ var deployCmd = &cobra.Command{
 		if isEnabledOpsSight && isClusterScoped {
 			crds = append(crds, util.OpsSightCRDName)
 		} else if isEnabledOpsSight && !isClusterScoped {
-			return fmt.Errorf("unable to create the OpsSight Custom Resource Definition (CRD) due to having a namespaced scope for Synopsys Operator. Please enable the cluster scope to install an OpsSight CRD")
+			return fmt.Errorf("unable to enable OpsSight because Synopsys Operator has namespace scope and OpsSight requires Synopsys Operator with cluster scope (deploy with flag --cluster-scoped)")
 		}
 
 		// Deploy Synopsys Operator
-		log.Debugf("creating Synopsys Operator components")
+		log.Debugf("creating Synopsys Operator's components")
 		soperatorSpec := soperator.NewSOperator(operatorNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig, operatorNamespace),
 			strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds,
 			terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, isClusterScoped, crds, admissionWebhookListener)
 
 		if cmd.Flags().Lookup("mock").Changed {
-			log.Debugf("running mock mode")
-			err := PrintResource(*soperatorSpec, mockFormat, false)
-			if err != nil {
-				return err
-			}
+			log.Debugf("generating Spec for Synopsys Operator in namespace '%s'...", operatorNamespace)
+			return PrintResource(*soperatorSpec, mockFormat, false)
 		} else if cmd.Flags().Lookup("mock-kube").Changed {
-			log.Debugf("running kube mock mode")
-			err := PrintResource(*soperatorSpec, mockKubeFormat, true)
-			if err != nil {
-				return err
-			}
+			log.Debugf("generating Kubernetes resources for Synopsys Operator in namespace '%s'...", operatorNamespace)
+			return PrintResource(*soperatorSpec, mockKubeFormat, true)
 		} else {
 			// Deploy Synopsys Operator
 			log.Infof("deploying Synopsys Operator in namespace '%s'...", operatorNamespace)
