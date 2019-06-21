@@ -626,11 +626,11 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 	},
 }
 
-// updateBlackDuckAddRegistryCmd adds an Image Registry to a Black Duck instance
-var updateBlackDuckAddRegistryCmd = &cobra.Command{
-	Use:           "addregistry BLACK_DUCK_NAME REGISTRY",
-	Example:       "synopsysctl update blackduck addregistry <name> docker.io\nsynopsysctl update blackduck addregistry <name> docker.io -n <namespace>",
-	Short:         "Add an Image Registry to a Black Duck instance",
+// updateBlackDuckSetImageRegistryCmd adds an image to a Black Duck instance
+var updateBlackDuckSetImageRegistryCmd = &cobra.Command{
+	Use:           "setimage BLACK_DUCK_NAME (REGISTRY/IMAGE:TAG)",
+	Example:       "synopsysctl update blackduck setimage <name> docker.io/blackducksoftware/blackduck-cfssl:2019.6.0\nsynopsysctl update blackduck setimage <name> docker.io/blackducksoftware/blackduck-cfssl:2019.6.0 -n <namespace>",
+	Short:         "Set the registry location for an image used by a specific Black Duck instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -645,7 +645,12 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		registry := args[1]
+		imageRegistry := args[1]
+		// Get the name of the container
+		baseContainerName, err := util.GetImageName(imageRegistry)
+		if err != nil {
+			return err
+		}
 
 		// Get Black Duck Spec
 		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
@@ -664,7 +669,21 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 		}
 		if canUpdate {
 			// Add Registry to Spec
-			currBlackDuck.Spec.ImageRegistries = append(currBlackDuck.Spec.ImageRegistries, registry)
+			var found bool
+			for i, imageReg := range currBlackDuck.Spec.ImageRegistries {
+				existingBaseContainerName, err := util.GetImageName(imageReg)
+				if err != nil {
+					return err
+				}
+				found = strings.EqualFold(existingBaseContainerName, baseContainerName)
+				if found {
+					currBlackDuck.Spec.ImageRegistries[i] = imageRegistry // replace existing imageReg
+					break
+				}
+			}
+			if !found { // if didn't already exist, add new imageReg
+				currBlackDuck.Spec.ImageRegistries = append(currBlackDuck.Spec.ImageRegistries, imageRegistry)
+			}
 			// Update Black Duck with Image Registry
 			if cmd.Flags().Lookup("mock").Changed {
 				log.Infof("generating updates to the CRD for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
@@ -673,7 +692,7 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 				log.Infof("generating updates to the Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 				return PrintResource(*currBlackDuck, mockKubeFormat, true)
 			} else {
-				log.Infof("updating Black Duck '%s' with image registry in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				log.Infof("setting image of Black Duck '%s's container '%s' in namespace '%s'...", blackDuckName, baseContainerName, blackDuckNamespace)
 				_, err := util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
 				if err != nil {
 					return fmt.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
@@ -1008,9 +1027,9 @@ func init() {
 	updateBlackDuckAddEnvironCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
 	updateBlackDuckCmd.AddCommand(updateBlackDuckAddEnvironCmd)
 
-	updateBlackDuckAddRegistryCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
-	updateBlackDuckAddRegistryCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
-	updateBlackDuckCmd.AddCommand(updateBlackDuckAddRegistryCmd)
+	updateBlackDuckSetImageRegistryCmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Prints the new CRD resource spec in the specified format instead of editing it [json|yaml]")
+	updateBlackDuckSetImageRegistryCmd.Flags().StringVarP(&mockKubeFormat, "mock-kube", "k", mockKubeFormat, "Prints the new Kubernetes resource specs in the specified format instead of editing them [json|yaml]")
+	updateBlackDuckCmd.AddCommand(updateBlackDuckSetImageRegistryCmd)
 
 	// Add OpsSight Commands
 	updateOpsSightCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
