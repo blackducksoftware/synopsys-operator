@@ -95,7 +95,6 @@ var updateOperatorCmd = &cobra.Command{
 }
 
 func updateOperator(namespace string, cmd *cobra.Command) error {
-	log.Infof("updating the Synopsys Operator instance in namespace '%s'...", namespace)
 	var isClusterScoped bool
 	crds := []string{}
 	newCrds := []string{}
@@ -271,7 +270,7 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 
 	// update Synopsys Operator
 	if cmd.Flags().Lookup("mock").Changed {
-		log.Debugf("running mock mode")
+		log.Debugf("generating the updated Spec for Synopsys Operator in namespace '%s'...", operatorNamespace)
 		// assigning the rest config to nil to run in mock mode. Getting weird issue if it is not nil
 		newOperatorSpec.RestConfig = nil
 		err := PrintResource(newOperatorSpec, mockFormat, false)
@@ -279,12 +278,13 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 			return err
 		}
 	} else if cmd.Flags().Lookup("mock-kube").Changed {
-		log.Debugf("running kube mock mode")
+		log.Debugf("generating the updated Kubernetes resources for Synopsys Operator in namespace '%s'...", operatorNamespace)
 		err := PrintResource(newOperatorSpec, mockKubeFormat, true)
 		if err != nil {
 			return err
 		}
 	} else {
+		log.Infof("updating Synopsys Operator in namespace '%s'...", namespace)
 		// create custom resource definitions
 		err = createCrds(namespace, isClusterScoped, newCrds)
 		if err != nil {
@@ -352,7 +352,6 @@ var updateAlertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Infof("updating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 
 		// Get Alert
 		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertName)
@@ -376,20 +375,25 @@ var updateAlertCmd = &cobra.Command{
 			newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
 			// merge environs
 			newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, currAlert.Spec.Environs)
-			// Create new Alert CRD
-			newAlert := *currAlert //make copy
-			newAlert.Spec = newSpec
+			currAlert.Spec = newSpec
 			// update the namespace label if the version of the app got changed
 			_, err := util.CheckAndUpdateNamespace(kubeClient, util.AlertName, alertNamespace, alertName, newSpec.Version, false)
 			if err != nil {
 				return err
 			}
 			// Update Alert
-			err = ctlUpdateResource(newAlert, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				return fmt.Errorf("error updating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-			}
-			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+			if cmd.Flags().Lookup("mock").Changed {
+				log.Infof("generating updates to the CRD for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+				return PrintResource(*currAlert, mockFormat, false)
+			} else if cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("generating updates to the Kubernetes resources for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+				return PrintResource(*currAlert, mockKubeFormat, true)
+			} else {
+				log.Infof("updating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+				_, err := util.UpdateAlert(alertClient, currAlert.Spec.Namespace, currAlert)
+				if err != nil {
+					return fmt.Errorf("error updating Alert '%s' due to %+v", currAlert.Name, err)
+				}
 				log.Infof("successfully submitted updates to Alert '%s' in namespace '%s'", alertName, alertNamespace)
 			}
 		}
@@ -416,7 +420,6 @@ var updateBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Infof("updating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get Black Duck
 		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
@@ -440,20 +443,25 @@ var updateBlackDuckCmd = &cobra.Command{
 			newSpec := updateBlackDuckCtl.GetSpec().(blackduckapi.BlackduckSpec)
 			// merge environs
 			newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, currBlackDuck.Spec.Environs)
-			// Create new Black Duck CRD
-			newBlackDuck := *currBlackDuck //make copy
-			newBlackDuck.Spec = newSpec
+			currBlackDuck.Spec = newSpec
 			// update the namespace label if the version of the app got changed
 			_, err := util.CheckAndUpdateNamespace(kubeClient, util.BlackDuckName, blackDuckNamespace, blackDuckName, newSpec.Version, false)
 			if err != nil {
 				return err
 			}
 			// Update Black Duck
-			err = ctlUpdateResource(newBlackDuck, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				return fmt.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			}
-			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+			if cmd.Flags().Lookup("mock").Changed {
+				log.Infof("generating updates to the CRD for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				return PrintResource(*currBlackDuck, mockFormat, false)
+			} else if cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("generating updates to the Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				return PrintResource(*currBlackDuck, mockKubeFormat, true)
+			} else {
+				log.Infof("updating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				_, err := util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
+				if err != nil {
+					return fmt.Errorf("error updating Black Duck '%s' due to %+v", currBlackDuck.Name, err)
+				}
 				log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 			}
 		}
@@ -571,8 +579,6 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 		}
 		environ := args[1]
 
-		log.Infof("adding environ to Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-
 		// Get Black Duck Spec
 		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
@@ -592,11 +598,18 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 			// Merge Environ to Spec
 			currBlackDuck.Spec.Environs = util.MergeEnvSlices(strings.Split(environ, ","), currBlackDuck.Spec.Environs)
 			// Update Black Duck with Environ
-			err = ctlUpdateResource(*currBlackDuck, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				return fmt.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			}
-			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+			if cmd.Flags().Lookup("mock").Changed {
+				log.Infof("generating updates to the CRD for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				return PrintResource(*currBlackDuck, mockFormat, false)
+			} else if cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("generating updates to the Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				return PrintResource(*currBlackDuck, mockKubeFormat, true)
+			} else {
+				log.Infof("updating Black Duck '%s' with environ '%s' in namespace '%s'...", blackDuckName, environ, blackDuckNamespace)
+				_, err := util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
+				if err != nil {
+					return fmt.Errorf("error updating Black Duck '%s' due to %+v", currBlackDuck.Name, err)
+				}
 				log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 			}
 		}
@@ -625,8 +638,6 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 		}
 		registry := args[1]
 
-		log.Infof("adding image registry to Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-
 		// Get Black Duck Spec
 		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
@@ -646,11 +657,18 @@ var updateBlackDuckAddRegistryCmd = &cobra.Command{
 			// Add Registry to Spec
 			currBlackDuck.Spec.ImageRegistries = append(currBlackDuck.Spec.ImageRegistries, registry)
 			// Update Black Duck with Environ
-			err = ctlUpdateResource(*currBlackDuck, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				return fmt.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-			}
-			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+			if cmd.Flags().Lookup("mock").Changed {
+				log.Infof("generating updates to the CRD for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				return PrintResource(*currBlackDuck, mockFormat, false)
+			} else if cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("generating updates to the Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				return PrintResource(*currBlackDuck, mockKubeFormat, true)
+			} else {
+				log.Infof("updating Black Duck '%s' with image registry in namespace '%s'...", blackDuckName, blackDuckNamespace)
+				_, err := util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
+				if err != nil {
+					return fmt.Errorf("error updating Black Duck '%s' due to %+v", currBlackDuck.Name, err)
+				}
 				log.Infof("successfully submitted updates to Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
 			}
 		}
@@ -678,7 +696,6 @@ var updateOpsSightCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Infof("updating OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 
 		// Get the current OpsSight
 		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
@@ -696,9 +713,7 @@ var updateOpsSightCmd = &cobra.Command{
 			flagset := cmd.Flags()
 			updateOpsSightCtl.SetChangedFlags(flagset)
 			newSpec := updateOpsSightCtl.GetSpec().(opssightapi.OpsSightSpec)
-			// Create new OpsSight CRD
-			newOpsSight := *currOpsSight //make copy
-			newOpsSight.Spec = newSpec
+			currOpsSight.Spec = newSpec
 			// update the namespace label if the version of the app got changed
 			// TODO: when opssight versioning PR is merged, the hard coded 2.2.3 version to be replaced with OpsSight
 			_, err := util.CheckAndUpdateNamespace(kubeClient, util.OpsSightName, opsSightNamespace, opsSightName, "2.2.3", false)
@@ -706,11 +721,18 @@ var updateOpsSightCmd = &cobra.Command{
 				return err
 			}
 			// Update OpsSight
-			err = ctlUpdateResource(newOpsSight, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				return fmt.Errorf("error updating OpsSight '%s in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-			}
-			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
+			if cmd.Flags().Lookup("mock").Changed {
+				log.Infof("generating updates to the CRD for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				return PrintResource(*currOpsSight, mockFormat, false)
+			} else if cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("generating updates to the Kubernetes resources for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				return PrintResource(*currOpsSight, mockKubeFormat, true)
+			} else {
+				log.Infof("updating OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				_, err := util.UpdateOpsSight(opsSightClient, currOpsSight.Spec.Namespace, currOpsSight)
+				if err != nil {
+					return fmt.Errorf("error updating OpsSight '%s' due to %+v", currOpsSight.Name, err)
+				}
 				log.Infof("successfully submitted updates to OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
 			}
 		}
@@ -739,7 +761,6 @@ var updateOpsSightImageCmd = &cobra.Command{
 		}
 		componentName := args[1]
 		componentImage := args[2]
-		log.Infof("updating OpsSight '%s's image in namespace '%s'...", opsSightName, opsSightNamespace)
 
 		// Get OpsSight Spec
 		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
@@ -753,7 +774,6 @@ var updateOpsSightImageCmd = &cobra.Command{
 			return fmt.Errorf("cannot update OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		if canUpdate {
-			newOpsSight := *currOpsSight //make copy
 			// Update the Spec with new Image
 			switch strings.ToUpper(componentName) {
 			case "OPSSIGHTCORE":
@@ -772,12 +792,19 @@ var updateOpsSightImageCmd = &cobra.Command{
 				return fmt.Errorf("'%s' is not a valid component", componentName)
 			}
 			// Update OpsSight with New Image
-			err = ctlUpdateResource(newOpsSight, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				return fmt.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-			}
-			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
-				log.Infof("successfully submitted updates to OpsSight '%s's image in namespace '%s'", opsSightName, opsSightNamespace)
+			if cmd.Flags().Lookup("mock").Changed {
+				log.Infof("generating updates to the CRD for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				return PrintResource(*currOpsSight, mockFormat, false)
+			} else if cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("generating updates to the Kubernetes resources for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				return PrintResource(*currOpsSight, mockKubeFormat, true)
+			} else {
+				log.Infof("updating OpsSight '%s's image in namespace '%s'...", opsSightName, opsSightNamespace)
+				_, err := util.UpdateOpsSight(opsSightClient, currOpsSight.Spec.Namespace, currOpsSight)
+				if err != nil {
+					return fmt.Errorf("error updating OpsSight '%s' due to %+v", currOpsSight.Name, err)
+				}
+				log.Infof("successfully submitted updates to OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
 			}
 		}
 		return nil
@@ -803,7 +830,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Infof("updating OpsSight '%s' with an external host in namespace '%s'...", opsSightName, opsSightNamespace)
+
 		hostScheme := args[1]
 		hostDomain := args[2]
 		hostPort, err := strconv.ParseInt(args[3], 0, 64)
@@ -829,7 +856,6 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 			return fmt.Errorf("cannot update OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		if canUpdate {
-			newOpsSight := *currOpsSight //make copy
 			// Add External Host to Spec
 			newHost := opssightapi.Host{
 				Scheme:              hostScheme,
@@ -839,14 +865,21 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 				Password:            hostPassword,
 				ConcurrentScanLimit: int(hostScanLimit),
 			}
-			newOpsSight.Spec.Blackduck.ExternalHosts = append(newOpsSight.Spec.Blackduck.ExternalHosts, &newHost)
+			currOpsSight.Spec.Blackduck.ExternalHosts = append(currOpsSight.Spec.Blackduck.ExternalHosts, &newHost)
 			// Update OpsSight with External Host
-			err = ctlUpdateResource(newOpsSight, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				return fmt.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-			}
-			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
-				log.Infof("successfully submitted updates to OpsSight '%s' with external host in namespace '%s'", opsSightName, opsSightNamespace)
+			if cmd.Flags().Lookup("mock").Changed {
+				log.Infof("generating updates to the CRD for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				return PrintResource(*currOpsSight, mockFormat, false)
+			} else if cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("generating updates to the Kubernetes resources for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				return PrintResource(*currOpsSight, mockKubeFormat, true)
+			} else {
+				log.Infof("updating OpsSight '%s' with an external host in namespace '%s'...", opsSightName, opsSightNamespace)
+				_, err := util.UpdateOpsSight(opsSightClient, currOpsSight.Spec.Namespace, currOpsSight)
+				if err != nil {
+					return fmt.Errorf("error updating OpsSight '%s' due to %+v", currOpsSight.Name, err)
+				}
+				log.Infof("successfully submitted updates to OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
 			}
 		}
 		return nil
@@ -873,12 +906,10 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Infof("updating OpsSight '%s' with internal registry in namespace '%s'...", opsSightName, opsSightNamespace)
+
 		regURL := args[1]
 		regUser := args[2]
 		regPass := args[3]
-
-		log.Infof("adding internal registry to OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 
 		// Get OpsSight Spec
 		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
@@ -892,21 +923,27 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 			return fmt.Errorf("cannot update OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		if canUpdate {
-			newOpsSight := *currOpsSight //make copy
 			// Add Internal Registry to Spec
 			newReg := opssightapi.RegistryAuth{
 				URL:      regURL,
 				User:     regUser,
 				Password: regPass,
 			}
-			newOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries = append(newOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
+			currOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries = append(currOpsSight.Spec.ScannerPod.ImageFacade.InternalRegistries, &newReg)
 			// Update OpsSight with Internal Registry
-			err = ctlUpdateResource(newOpsSight, cmd.Flags().Lookup("mock").Changed, mockFormat, cmd.Flags().Lookup("mock-kube").Changed, mockKubeFormat)
-			if err != nil {
-				return fmt.Errorf("error updating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-			}
-			if !cmd.Flags().Lookup("mock").Changed && cmd.Flags().Lookup("mock-kube").Changed {
-				log.Infof("successfully submitted updates to OpsSight '%s' with registry in namespace '%s'", opsSightName, opsSightNamespace)
+			if cmd.Flags().Lookup("mock").Changed {
+				log.Infof("generating updates to the CRD for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				return PrintResource(*currOpsSight, mockFormat, false)
+			} else if cmd.Flags().Lookup("mock-kube").Changed {
+				log.Infof("generating updates to the Kubernetes resources for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+				return PrintResource(*currOpsSight, mockKubeFormat, true)
+			} else {
+				log.Infof("updating OpsSight '%s' with internal registry in namespace '%s'...", opsSightName, opsSightNamespace)
+				_, err := util.UpdateOpsSight(opsSightClient, currOpsSight.Spec.Namespace, currOpsSight)
+				if err != nil {
+					return fmt.Errorf("error updating OpsSight '%s' due to %+v", currOpsSight.Name, err)
+				}
+				log.Infof("successfully submitted updates to OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
 			}
 		}
 		return nil

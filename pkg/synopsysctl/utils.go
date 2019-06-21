@@ -25,12 +25,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"reflect"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -226,49 +222,6 @@ func getOperatorNamespace(namespace string) (string, error) {
 		return "", fmt.Errorf("Synopsys Operator's namespace not found")
 	}
 	return namespace, nil
-}
-
-func ctlUpdateResource(resource interface{}, mock bool, mockFormat string, kubeMock bool, mockKubeFormat string) error {
-	if mock {
-		log.Debugf("running mock mode")
-		err := PrintResource(resource, mockFormat, false)
-		if err != nil {
-			return fmt.Errorf("failed to print resource: %s", err)
-		}
-	} else if kubeMock {
-		log.Debugf("running kube mock mode")
-		err := PrintResource(resource, mockKubeFormat, true)
-		if err != nil {
-			return fmt.Errorf("failed to print resource: %s", err)
-		}
-	} else {
-		switch reflect.TypeOf(resource) {
-		case reflect.TypeOf(alertapi.Alert{}):
-			alt := resource.(alertapi.Alert)
-			_, err := operatorutil.UpdateAlert(alertClient, alt.Spec.Namespace, &alt)
-			if err != nil {
-				log.Errorf("error updating Alert '%s' due to %+v", alt.Name, err)
-				return nil
-			}
-		case reflect.TypeOf(blackduckapi.Blackduck{}):
-			bd := resource.(blackduckapi.Blackduck)
-			_, err := operatorutil.UpdateBlackduck(blackDuckClient, bd.Spec.Namespace, &bd)
-			if err != nil {
-				log.Errorf("error updating Black Duck '%s' due to %+v", bd.Name, err)
-				return nil
-			}
-		case reflect.TypeOf(opssightapi.OpsSight{}):
-			ops := resource.(opssightapi.OpsSight)
-			_, err := operatorutil.UpdateOpsSight(opsSightClient, ops.Spec.Namespace, &ops)
-			if err != nil {
-				log.Errorf("error updating OpsSight '%s' due to %+v", ops.Name, err)
-				return nil
-			}
-		default:
-			return fmt.Errorf("type '%+v' is not supported for updating", reflect.TypeOf(resource))
-		}
-	}
-	return nil
 }
 
 // getInstanceInfo will provide the name, namespace and crd scope to create each CRD instance
