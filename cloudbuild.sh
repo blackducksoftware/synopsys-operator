@@ -22,9 +22,9 @@
 PROJECT_ID=$1
 BRANCH_NAME=$2
 DOCKER_PROJECT=$3
-VERSION=$(cat build.properties | cut -d- -f 1 | cut -d= -f 2)
+VERSION=$(cat build.properties | cut -d'=' -f 2)
 
-if [ "$DOCKER_PROJECT" = "" ];
+if [ "$DOCKER_PROJECT" = "" ] || [ "$BRANCH_NAME" != "master" ];
 then
     echo "skipping......."
 else
