@@ -205,15 +205,15 @@
               <li class="list-inline-item">
                 <form action="<%= blackduckStatePath({ blackduck_id: blackduck.Spec.Namespace+":"+blackduck.Name }) %>" method="post">
                   <input name="authenticity_token" type="hidden" value="<%= authenticity_token %>">
-                  <%= if (capitalize(blackduck.Spec.DesiredState) ==  "START") { %>
-                  <input type="hidden" id="state" name="state" value="STOP">
-                  <button name="submit" value="submit" class="btn btn-danger">Stop</button>
-                  <% } else if (len(blackduck.Spec.DesiredState) == 0 ) { %>
+                  <%= if (len(blackduck.Status.State) == 0) { %>
                   <input type="hidden" id="state" name="state" value="STOP">
                   <button name="submit" value="submit" class="btn btn-danger" disabled>Stop</button>
-                  <% } else { %>
+                  <% } else if (capitalize(blackduck.Spec.DesiredState) ==  "STOP") { %>
                   <input type="hidden" id="state" name="state" value="START">
                   <button name="submit" value="submit" class="btn btn-success">Start</button>
+                  <% } else { %>
+                  <input type="hidden" id="state" name="state" value="STOP">
+                  <button name="submit" value="submit" class="btn btn-danger">Stop</button>
                   <% } %>
                 </form>
               </li>
