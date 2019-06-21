@@ -76,47 +76,65 @@ func NewUpdater(config *protoform.Config, kubeClient *kubernetes.Clientset, hubC
 func (p *Updater) Run(ch <-chan struct{}) {
 	logger.Infof("Starting controller for blackduck<->opssight-core updates... this blocks, so running in a go func.")
 
-	syncFunc := func() {
-		err := p.updateAllHubs()
-		if len(err) > 0 {
-			logger.Errorf("unable to update hubs because %+v", err)
-		}
-	}
-
-	syncFunc()
-
-	hubListWatch := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return p.hubClient.SynopsysV1().Blackducks(p.config.Namespace).List(options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return p.hubClient.SynopsysV1().Blackducks(p.config.Namespace).Watch(options)
-		},
-	}
-	_, hubController := cache.NewInformer(hubListWatch,
-		&blackduckapi.Blackduck{},
-		2*time.Second,
-		cache.ResourceEventHandlerFuncs{
-			// TODO kinda dumb, we just do a complete re-list of all hubs,
-			// every time an event happens... But thats all we need to do, so its good enough.
-			DeleteFunc: func(obj interface{}) {
-				logger.Debugf("secret updater blackduck deleted event ! %v ", obj)
-				syncFunc()
-			},
-
-			AddFunc: func(obj interface{}) {
-				logger.Debugf("secret updater blackduck added event! %v ", obj)
-				running := p.isBlackDuckRunning(obj)
-				if !running {
-					syncFunc()
+	go func() {
+		for {
+			select {
+			case <-ch:
+				// stop
+				return
+			default:
+				syncFunc := func() {
+					err := p.updateAllHubs()
+					if len(err) > 0 {
+						logger.Errorf("unable to update hubs because %+v", err)
+					}
 				}
-			},
-		},
-	)
 
-	// make sure this is called from a go func -- it blocks!
-	go hubController.Run(ch)
-	// go opssightController.Run(ch)
+				// watch for Black Duck events to update an OpsSight internal host only if Black Duck crd is enabled
+				if strings.Contains(p.config.CrdNames, util.BlackDuckCRDName) {
+					log.Debugf("watch for Black Duck events to update an OpsSight internal hosts")
+					syncFunc()
+
+					hubListWatch := &cache.ListWatch{
+						ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+							return p.hubClient.SynopsysV1().Blackducks(p.config.Namespace).List(options)
+						},
+						WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+							return p.hubClient.SynopsysV1().Blackducks(p.config.Namespace).Watch(options)
+						},
+					}
+					_, hubController := cache.NewInformer(hubListWatch,
+						&blackduckapi.Blackduck{},
+						2*time.Second,
+						cache.ResourceEventHandlerFuncs{
+							// TODO kinda dumb, we just do a complete re-list of all hubs,
+							// every time an event happens... But thats all we need to do, so its good enough.
+							DeleteFunc: func(obj interface{}) {
+								logger.Debugf("updater - blackduck deleted event ! %v ", obj)
+								syncFunc()
+							},
+
+							AddFunc: func(obj interface{}) {
+								logger.Debugf("updater - blackduck added event! %v ", obj)
+								running := p.isBlackDuckRunning(obj)
+								if !running {
+									syncFunc()
+								}
+							},
+						},
+					)
+
+					// make sure this is called from a go func -- it blocks!
+					go hubController.Run(ch)
+					<-ch
+				} else {
+					time.Sleep(5 * time.Second)
+				}
+			}
+		}
+
+		// go opssightController.Run(ch)
+	}()
 }
 
 // isBlackDuckRunning return whether the Black Duck instance is in running state

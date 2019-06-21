@@ -76,28 +76,21 @@ var updateOperatorCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Read Commandline Parameters
 		if len(namespace) > 0 {
-			updateOperator(namespace, cmd)
-		} else {
-			var err error
-			operatorNamespace := DefaultOperatorNamespace
-			isClusterScoped := util.GetClusterScope(apiExtensionClient)
-			if isClusterScoped {
-				namespace, err = util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
-				if err != nil {
-					return err
-				}
-				if metav1.NamespaceAll != namespace {
-					operatorNamespace = namespace
-				}
-			}
-			err = updateOperator(operatorNamespace, cmd)
+			return updateOperator(namespace, cmd)
+		}
+		operatorNamespace := DefaultOperatorNamespace
+		isClusterScoped := util.GetClusterScope(apiExtensionClient)
+		if isClusterScoped {
+			namespace, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 			if err != nil {
 				return err
 			}
+			if metav1.NamespaceAll != namespace {
+				operatorNamespace = namespace
+			}
 		}
-		return nil
+		return updateOperator(operatorNamespace, cmd)
 	},
 }
 
@@ -105,9 +98,10 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 	log.Infof("updating the Synopsys Operator instance in namespace '%s'...", namespace)
 	var isClusterScoped bool
 	crds := []string{}
+	newCrds := []string{}
 	crdMap := make(map[string]string)
 
-	// check whether the Synopsys Operator namespace exist
+	// check whether the Synopsys Operator config map exist
 	cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
 		return fmt.Errorf("unable to find the 'synopsy-operator' config map in namespace '%s' due to %+v", namespace, err)
@@ -116,22 +110,22 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 	var testMap map[string]interface{}
 	err = json.Unmarshal([]byte(data), &testMap)
 	if err != nil {
-		return fmt.Errorf("unable to unmarshall config map data due to %+v", err)
+		return fmt.Errorf("unable to unmarshal config map data due to %+v", err)
 	}
 	if _, ok := testMap["IsClusterScoped"]; ok {
 		configData := &protoform.Config{}
 		err = json.Unmarshal([]byte(data), &configData)
 		if err != nil {
-			return fmt.Errorf("unable to unmarshall config map data due to %+v", err)
+			return fmt.Errorf("unable to unmarshal config map data due to %+v", err)
 		}
 		isClusterScoped = configData.IsClusterScoped
 		crds = strings.Split(configData.CrdNames, ",")
 		for _, crd := range crds {
-			crdMap[crd] = crd
+			crdMap[strings.TrimSpace(crd)] = strings.TrimSpace(crd)
 		}
 	} else {
 		isClusterScoped = util.GetClusterScope(apiExtensionClient)
-		// list the existing CRD's and convert them to map with key as name and name as value
+		// list the existing CRD's and convert them to map with both key and value as name
 		var crdList *apiextensions.CustomResourceDefinitionList
 		crdList, err = util.ListCustomResourceDefinitions(apiExtensionClient, "app=synopsys-operator")
 		if err != nil {
@@ -199,14 +193,20 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 		if ok && isEnabledAlert {
 			log.Errorf("Custom Resource Definition '%s' already exists...", util.AlertCRDName)
 		} else if !ok && isEnabledAlert {
+			// create CRD
 			crds = append(crds, util.AlertCRDName)
+			newCrds = append(newCrds, util.AlertCRDName)
 		} else {
-			err := isDeleteCrd(util.AlertCRDName)
+			// check whether the CRD can be deleted
+			err := isDeleteCrd(util.AlertCRDName, namespace)
 			if err != nil {
 				log.Warn(err)
 			} else {
-				crds = util.RemoveFromStringSlice(crds, util.AlertCRDName)
+				// delete CRD
+				deleteCrd(util.AlertCRDName, namespace)
 			}
+			// remove it from crds, so that the CRD controller won't run
+			crds = util.RemoveFromStringSlice(crds, util.AlertCRDName)
 		}
 	}
 
@@ -217,14 +217,20 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 		if ok && isEnabledBlackDuck {
 			log.Errorf("Custom Resource Definition '%s' already exists...", util.BlackDuckCRDName)
 		} else if !ok && isEnabledBlackDuck {
+			// create CRD
 			crds = append(crds, util.BlackDuckCRDName)
+			newCrds = append(newCrds, util.BlackDuckCRDName)
 		} else {
-			err := isDeleteCrd(util.BlackDuckCRDName)
+			// check whether the CRD can be deleted
+			err := isDeleteCrd(util.BlackDuckCRDName, namespace)
 			if err != nil {
 				log.Warn(err)
 			} else {
-				crds = util.RemoveFromStringSlice(crds, util.BlackDuckCRDName)
+				// delete CRD
+				deleteCrd(util.BlackDuckCRDName, namespace)
 			}
+			// remove it from crds, so that the CRD controller won't run
+			crds = util.RemoveFromStringSlice(crds, util.BlackDuckCRDName)
 		}
 	}
 
@@ -234,15 +240,22 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 		_, ok := crdMap[util.OpsSightCRDName]
 		if ok && isEnabledOpsSight {
 			log.Errorf("Custom Resource Definition '%s' already exists...", util.OpsSightCRDName)
+
 		} else if !ok && isEnabledOpsSight {
+			// create CRD
 			crds = append(crds, util.OpsSightCRDName)
+			newCrds = append(newCrds, util.OpsSightCRDName)
 		} else {
-			err := isDeleteCrd(util.OpsSightCRDName)
+			// check whether the CRD can be deleted
+			err := isDeleteCrd(util.OpsSightCRDName, namespace)
 			if err != nil {
 				log.Warn(err)
 			} else {
-				crds = util.RemoveFromStringSlice(crds, util.OpsSightCRDName)
+				// delete CRD
+				deleteCrd(util.OpsSightCRDName, namespace)
 			}
+			// remove it from crds, so that the CRD controller won't run
+			crds = util.RemoveFromStringSlice(crds, util.OpsSightCRDName)
 		}
 	}
 
@@ -272,6 +285,12 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 			return err
 		}
 	} else {
+		// create custom resource definitions
+		err = createCrds(namespace, isClusterScoped, newCrds)
+		if err != nil {
+			return err
+		}
+
 		sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
 		// update Synopsys Operator
 		err = sOperatorCreater.EnsureSynopsysOperator(namespace, blackDuckClient, opsSightClient, alertClient, oldOperatorSpec, &newOperatorSpec)

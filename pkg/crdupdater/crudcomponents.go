@@ -126,16 +126,6 @@ func (c *CommonConfig) CRUDComponents() (bool, []error) {
 		updater.AddUpdater(roleBindings)
 	}
 
-	// custom resource definitions
-	if c.isClusterLevelPermEnabled || len(c.components.CustomResourceDefinitions) > 0 {
-		customResourceDefinitions, err := NewCustomResourceDefinition(c, c.components.CustomResourceDefinitions)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("unable to create new custom resource definitions updater due to %+v", err))
-		} else {
-			updater.AddUpdater(customResourceDefinitions)
-		}
-	}
-
 	// config map
 	configMaps, err := NewConfigMap(c, c.components.ConfigMaps)
 	if err != nil {
