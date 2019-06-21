@@ -1,15 +1,13 @@
-#### BUILD OPERATOR/BLACKDUCKCTL
+#### build Synopsys Operator and its UI
 steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'gcr.io/$PROJECT_ID/blackducksoftware/synopsys-operator:$BRANCH_NAME', '.']
-#### PUSH ARTIFACTS TO DOCKER HUB / GCS 
+#### push artifacts to Docker Hub / GCR
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/blackducksoftware/synopsys-operator:$BRANCH_NAME']
-- name: 'gcr.io/cloud-builders/docker'
-  entrypoint: 'bash'
-  args: 
-  - '-c'
-  - |
-    [[ "$BRANCH_NAME" == "master" ]] && bash cloudbuild.sh "$PROJECT_ID" "$BRANCH_NAME" "$_DOCKER_PROJECT"
+#### if master, tag the version and push to Docker Hub / GCR
+- name: 'ubuntu'
+  args: ['bash', 'cloudbuild.sh', '$PROJECT_ID', '$BRANCH_NAME', '$_DOCKER_PROJECT']
+#### run using high CPU machine
 options:
   machineType: 'N1_HIGHCPU_32'
