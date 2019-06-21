@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -55,10 +56,10 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 	components.ReplicationControllers = append(components.ReplicationControllers, rc)
 
-	service := a.getAlertService()
+	service := a.getAlertClusterService()
 	components.Services = append(components.Services, service)
 
-	switch a.alert.Spec.ExposeService {
+	switch strings.ToUpper(a.alert.Spec.ExposeService) {
 	case "NODEPORT":
 		log.Debugf("case %s: Adding NodePort Service to ComponentList for Alert", a.alert.Spec.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceNodePort())
@@ -69,7 +70,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		log.Debugf("not adding a Kubernetes Service to ComponentList for Alert")
 	}
 
-	sec, err := a.GetAlertSecret()
+	sec, err := a.getAlertSecret()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Alert Secret: %s", err)
 	}
@@ -94,7 +95,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	}
 
 	// Add routes for OpenShift
-	route := a.GetOpenShiftRoute()
+	route := a.getOpenShiftRoute()
 	if route != nil {
 		components.Routes = []*api.Route{route}
 	}
