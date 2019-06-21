@@ -118,6 +118,7 @@ func destroy(namespace string) {
 		if len(newSubjects) > 0 {
 			crb.Subjects = newSubjects
 			// update the cluster role binding to remove the old cluster role binding subject
+			log.Infof("updating cluster role binding '%s'", clusterRoleBinding)
 			_, err = util.UpdateClusterRoleBinding(kubeClient, crb)
 			if err != nil {
 				log.Errorf("unable to update cluster role binding '%s' due to %+v", clusterRoleBinding, err)
@@ -147,7 +148,7 @@ func destroy(namespace string) {
 		log.Errorf("error getting role or cluster role due to %+v", err)
 	}
 
-	crbs, err := util.ListClusterRoleBindings(kubeClient, "app in (opssight)")
+	crbs, err := util.ListClusterRoleBindings(kubeClient, "app in (synopsys-operator,opssight)")
 
 	for _, clusterRole := range clusterRoles {
 		isExist := false
