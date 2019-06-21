@@ -34,80 +34,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GetCrds returns the CRD components
-func (specConfig *SpecConfig) GetCrds() []*horizoncomponents.CustomResourceDefinition {
-	crds := []*horizoncomponents.CustomResourceDefinition{}
-	for _, crd := range specConfig.Crds {
-		var crdConfig *horizoncomponents.CustomResourceDefinition
-		var crdScope horizonapi.CRDScopeType
-		if specConfig.IsClusterScoped {
-			crdScope = horizonapi.CRDClusterScoped
-		} else {
-			crdScope = horizonapi.CRDNamespaceScoped
-		}
-
-		switch strings.ToLower(crd) {
-		case util.BlackDuckCRDName:
-			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
-				APIVersion: "apiextensions.k8s.io/v1beta1",
-				Name:       util.BlackDuckCRDName,
-				Namespace:  specConfig.Namespace,
-				Group:      "synopsys.com",
-				CRDVersion: "v1",
-				Kind:       "Blackduck",
-				Plural:     "blackducks",
-				Singular:   "blackduck",
-				ShortNames: []string{"bds", "bd"},
-				Scope:      crdScope,
-			})
-		case util.AlertCRDName:
-			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
-				APIVersion: "apiextensions.k8s.io/v1beta1",
-				Name:       util.AlertCRDName,
-				Namespace:  specConfig.Namespace,
-				Group:      "synopsys.com",
-				CRDVersion: "v1",
-				Kind:       "Alert",
-				Plural:     "alerts",
-				Singular:   "alert",
-				Scope:      crdScope,
-			})
-		case util.OpsSightCRDName:
-			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
-				APIVersion: "apiextensions.k8s.io/v1beta1",
-				Name:       util.OpsSightCRDName,
-				Namespace:  specConfig.Namespace,
-				Group:      "synopsys.com",
-				CRDVersion: "v1",
-				Kind:       "OpsSight",
-				Plural:     "opssights",
-				Singular:   "opssight",
-				ShortNames: []string{"ops"},
-				Scope:      crdScope,
-			})
-		case util.PrmCRDName:
-			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
-				APIVersion: "apiextensions.k8s.io/v1beta1",
-				Name:       util.PrmCRDName,
-				Namespace:  specConfig.Namespace,
-				Group:      "synopsys.com",
-				CRDVersion: "v1",
-				Kind:       "Prm",
-				Plural:     "prms",
-				Singular:   "prm",
-				Scope:      crdScope,
-			})
-		}
-		if crdConfig != nil {
-			crdConfig.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
-			crds = append(crds, crdConfig)
-		}
-	}
-	return crds
-}
-
-// GetOperatorDeployment creates a deployment for Synopsys Operaotor
-func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deployment, error) {
+// getOperatorDeployment creates a deployment for Synopsys Operaotor
+func (specConfig *SpecConfig) getOperatorDeployment() (*horizoncomponents.Deployment, error) {
 	// Add the Replication Controller to the Deployer
 	var synopsysOperatorReplicas int32 = 1
 	synopsysOperator := horizoncomponents.NewDeployment(horizonapi.DeploymentConfig{
@@ -230,8 +158,8 @@ func (specConfig *SpecConfig) GetOperatorDeployment() (*horizoncomponents.Deploy
 	return synopsysOperator, nil
 }
 
-// GetOperatorService creates a Service Horizon component for Synopsys Operaotor
-func (specConfig *SpecConfig) GetOperatorService() []*horizoncomponents.Service {
+// getOperatorService creates a Service Horizon component for Synopsys Operaotor
+func (specConfig *SpecConfig) getOperatorService() []*horizoncomponents.Service {
 
 	services := []*horizoncomponents.Service{}
 	// Add the Service to the Deployer
@@ -338,8 +266,8 @@ func (specConfig *SpecConfig) GetOperatorConfigMap() (*horizoncomponents.ConfigM
 	return synopsysOperatorConfigMap, nil
 }
 
-// GetOperatorServiceAccount creates a ServiceAccount Horizon component for Synopsys Operaotor
-func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.ServiceAccount {
+// getOperatorServiceAccount creates a ServiceAccount Horizon component for Synopsys Operaotor
+func (specConfig *SpecConfig) getOperatorServiceAccount() *horizoncomponents.ServiceAccount {
 	// Service Account
 	synopsysOperatorServiceAccount := horizoncomponents.NewServiceAccount(horizonapi.ServiceAccountConfig{
 		APIVersion: "v1",
@@ -351,8 +279,8 @@ func (specConfig *SpecConfig) GetOperatorServiceAccount() *horizoncomponents.Ser
 	return synopsysOperatorServiceAccount
 }
 
-// GetOperatorClusterRoleBinding creates a ClusterRoleBinding Horizon component for Synopsys Operaotor
-func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
+// getOperatorClusterRoleBinding creates a ClusterRoleBinding Horizon component for Synopsys Operaotor
+func (specConfig *SpecConfig) getOperatorClusterRoleBinding() *horizoncomponents.ClusterRoleBinding {
 	// Cluster Role Binding
 	synopsysOperatorClusterRoleBinding := horizoncomponents.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
@@ -374,8 +302,8 @@ func (specConfig *SpecConfig) GetOperatorClusterRoleBinding() *horizoncomponents
 	return synopsysOperatorClusterRoleBinding
 }
 
-// GetOperatorRoleBinding creates a RoleBinding Horizon component for Synopsys Operator
-func (specConfig *SpecConfig) GetOperatorRoleBinding() *horizoncomponents.RoleBinding {
+// getOperatorRoleBinding creates a RoleBinding Horizon component for Synopsys Operator
+func (specConfig *SpecConfig) getOperatorRoleBinding() *horizoncomponents.RoleBinding {
 	// Role Binding
 	synopsysOperatorRoleBinding := horizoncomponents.NewRoleBinding(horizonapi.RoleBindingConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
@@ -397,8 +325,8 @@ func (specConfig *SpecConfig) GetOperatorRoleBinding() *horizoncomponents.RoleBi
 	return synopsysOperatorRoleBinding
 }
 
-// GetOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys Operator
-func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.ClusterRole {
+// getOperatorClusterRole creates a ClusterRole Horizon component for the Synopsys Operator
+func (specConfig *SpecConfig) getOperatorClusterRole() *horizoncomponents.ClusterRole {
 	synopsysOperatorClusterRole := horizoncomponents.NewClusterRole(horizonapi.ClusterRoleConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
 		Name:       "synopsys-operator-admin",
@@ -492,8 +420,8 @@ func (specConfig *SpecConfig) GetOperatorClusterRole() *horizoncomponents.Cluste
 	return synopsysOperatorClusterRole
 }
 
-// GetOperatorRole creates a Role Horizon component for Synopsys Operaotor
-func (specConfig *SpecConfig) GetOperatorRole() *horizoncomponents.Role {
+// getOperatorRole creates a Role Horizon component for Synopsys Operaotor
+func (specConfig *SpecConfig) getOperatorRole() *horizoncomponents.Role {
 	synopsysOperatorRole := horizoncomponents.NewRole(horizonapi.RoleConfig{
 		APIVersion: "rbac.authorization.k8s.io/v1beta1",
 		Name:       "synopsys-operator-admin",
@@ -565,8 +493,8 @@ func (specConfig *SpecConfig) GetOperatorRole() *horizoncomponents.Role {
 	return synopsysOperatorRole
 }
 
-// GetTLSCertificateSecret creates a TLS certificate in horizon format
-func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secret {
+// getTLSCertificateSecret creates a TLS certificate in horizon format
+func (specConfig *SpecConfig) getTLSCertificateSecret() *horizoncomponents.Secret {
 	tlsSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 		Name:      "synopsys-operator-tls",
 		Namespace: specConfig.Namespace,
@@ -581,8 +509,8 @@ func (specConfig *SpecConfig) GetTLSCertificateSecret() *horizoncomponents.Secre
 	return tlsSecret
 }
 
-// GetOperatorSecret creates a Secret Horizon component for Synopsys Operaotor
-func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
+// getOperatorSecret creates a Secret Horizon component for Synopsys Operaotor
+func (specConfig *SpecConfig) getOperatorSecret() *horizoncomponents.Secret {
 	// create a secret
 	synopsysOperatorSecret := horizoncomponents.NewSecret(horizonapi.SecretConfig{
 		APIVersion: "v1",
@@ -598,8 +526,8 @@ func (specConfig *SpecConfig) GetOperatorSecret() *horizoncomponents.Secret {
 	return synopsysOperatorSecret
 }
 
-// GetOpenShiftRoute creates the OpenShift route component for Synopsys Operator
-func (specConfig *SpecConfig) GetOpenShiftRoute() *api.Route {
+// getOpenShiftRoute creates the OpenShift route component for Synopsys Operator
+func (specConfig *SpecConfig) getOpenShiftRoute() *api.Route {
 	if strings.ToUpper(specConfig.Expose) == util.OPENSHIFT {
 		return &api.Route{
 			Name:               "synopsys-operator-ui",

@@ -97,29 +97,28 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		return nil, errors.Trace(err)
 	}
 
-	deployment, err := specConfig.GetOperatorDeployment()
+	deployment, err := specConfig.getOperatorDeployment()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	components := &api.ComponentList{
-		CustomResourceDefinitions: specConfig.GetCrds(),
-		Deployments:               []*components.Deployment{deployment},
-		Services:                  specConfig.GetOperatorService(),
-		ConfigMaps:                []*components.ConfigMap{configMap},
-		ServiceAccounts:           []*components.ServiceAccount{specConfig.GetOperatorServiceAccount()},
-		Secrets:                   []*components.Secret{specConfig.GetOperatorSecret(), specConfig.GetTLSCertificateSecret()},
+		Deployments:     []*components.Deployment{deployment},
+		Services:        specConfig.getOperatorService(),
+		ConfigMaps:      []*components.ConfigMap{configMap},
+		ServiceAccounts: []*components.ServiceAccount{specConfig.getOperatorServiceAccount()},
+		Secrets:         []*components.Secret{specConfig.getOperatorSecret(), specConfig.getTLSCertificateSecret()},
 	}
 
 	if specConfig.IsClusterScoped {
-		components.ClusterRoleBindings = append(components.ClusterRoleBindings, specConfig.GetOperatorClusterRoleBinding())
-		components.ClusterRoles = append(components.ClusterRoles, specConfig.GetOperatorClusterRole())
+		components.ClusterRoleBindings = append(components.ClusterRoleBindings, specConfig.getOperatorClusterRoleBinding())
+		components.ClusterRoles = append(components.ClusterRoles, specConfig.getOperatorClusterRole())
 	} else {
-		components.RoleBindings = append(components.RoleBindings, specConfig.GetOperatorRoleBinding())
-		components.Roles = append(components.Roles, specConfig.GetOperatorRole())
+		components.RoleBindings = append(components.RoleBindings, specConfig.getOperatorRoleBinding())
+		components.Roles = append(components.Roles, specConfig.getOperatorRole())
 	}
 
 	// Add routes for OpenShift
-	route := specConfig.GetOpenShiftRoute()
+	route := specConfig.getOpenShiftRoute()
 	log.Debugf("Route: %+v", route)
 	if route != nil {
 		components.Routes = []*api.Route{route}

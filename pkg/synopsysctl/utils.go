@@ -49,7 +49,6 @@ import (
 var restconfig *rest.Config
 var kubeClient *kubernetes.Clientset
 var apiExtensionClient *apiextensionsclient.Clientset
-var opssightClient *opssightclientset.Clientset
 var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
 var opsSightClient *opssightclientset.Clientset
