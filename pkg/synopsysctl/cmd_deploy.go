@@ -26,11 +26,14 @@ import (
 	"fmt"
 	"strings"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
-	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -86,7 +89,7 @@ var deployCmd = &cobra.Command{
 			}
 
 			// check if operator is already installed
-			namespace, err = operatorutil.GetOperatorNamespace(kubeClient, namespace)
+			namespace, err = util.GetOperatorNamespace(kubeClient, namespace)
 			if err == nil {
 				return fmt.Errorf("Synopsys Operator is already installed in namespace '%s'", namespace)
 			}
@@ -104,13 +107,13 @@ var deployCmd = &cobra.Command{
 
 		// generate random string as SEAL key
 		log.Debugf("getting Seal Key")
-		sealKey, err := operatorutil.GetRandomString(32)
+		sealKey, err := util.GetRandomString(32)
 		if err != nil {
 			log.Panicf("unable to generate the random string for SEAL_KEY due to %+v", err)
 		}
 
 		// generate self signed nginx certs
-		cert, key, err := operatorutil.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
+		cert, key, err := util.GeneratePemSelfSignedCertificateAndKey(pkix.Name{
 			CommonName: fmt.Sprintf("synopsys-operator.%s.svc", operatorNamespace),
 		})
 		if err != nil {
@@ -130,12 +133,8 @@ var deployCmd = &cobra.Command{
 		if isEnabledOpsSight && isClusterScoped {
 			crds = append(crds, util.OpsSightCRDName)
 		} else if isEnabledOpsSight && !isClusterScoped {
-			log.Error("unable to create the OpsSight Custom Resource Definition (CRD) due to having a namespaced scope for Synopsys Operator. Please enable the cluster scope to install an OpsSight CRD")
+			return fmt.Errorf("unable to create the OpsSight Custom Resource Definition (CRD) due to having a namespaced scope for Synopsys Operator. Please enable the cluster scope to install an OpsSight CRD")
 		}
-
-		// if isEnabledPrm {
-		// 	crds = append(crds, util.PrmCRDName)
-		// }
 
 		// Deploy Synopsys Operator
 		log.Debugf("creating Synopsys Operator components")
@@ -156,9 +155,16 @@ var deployCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
 			// Deploy Synopsys Operator
 			log.Infof("deploying Synopsys Operator in namespace '%s'...", operatorNamespace)
+
+			// create custom resource definitions
+			err = createCrds(operatorNamespace, isClusterScoped, crds)
+			if err != nil {
+				return err
+			}
+
+			sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
 			err = sOperatorCreater.UpdateSOperatorComponents(soperatorSpec)
 			if err != nil {
 				return fmt.Errorf("error deploying Synopsys Operator due to %+v", err)
@@ -176,6 +182,123 @@ var deployCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func createCrds(namespace string, isClusterScoped bool, crds []string) error {
+	deployer, err := util.NewDeployer(restconfig)
+	if err != nil {
+		return errors.Annotate(err, "unable to create the deployer object to deploy custom resource definitions")
+	}
+
+	var isAdded bool
+	for _, crd := range crds {
+		var crdConfig *horizoncomponents.CustomResourceDefinition
+		var crdScope horizonapi.CRDScopeType
+		var scope apiextensions.ResourceScope
+		if isClusterScoped {
+			crdScope = horizonapi.CRDClusterScoped
+			scope = apiextensions.ClusterScoped
+		} else {
+			crdScope = horizonapi.CRDNamespaceScoped
+			scope = apiextensions.NamespaceScoped
+		}
+
+		isExist, err := checkAndUpdateCustomResource(crd, namespace, scope, isClusterScoped)
+		if isExist && err != nil {
+			return err
+		} else if isExist {
+			continue
+		}
+
+		switch crd {
+		case util.BlackDuckCRDName:
+			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       util.BlackDuckCRDName,
+				Namespace:  namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "Blackduck",
+				Plural:     "blackducks",
+				Singular:   "blackduck",
+				ShortNames: []string{"bds", "bd"},
+				Scope:      crdScope,
+			})
+		case util.AlertCRDName:
+			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       util.AlertCRDName,
+				Namespace:  namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "Alert",
+				Plural:     "alerts",
+				Singular:   "alert",
+				Scope:      crdScope,
+			})
+		case util.OpsSightCRDName:
+			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       util.OpsSightCRDName,
+				Namespace:  namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "OpsSight",
+				Plural:     "opssights",
+				Singular:   "opssight",
+				ShortNames: []string{"ops"},
+				Scope:      crdScope,
+			})
+		}
+		if crdConfig != nil {
+			crdConfig.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator", fmt.Sprintf("synopsys.com/operator.%s", namespace): namespace})
+			deployer.Deployer.AddComponent(horizonapi.CRDComponent, crdConfig)
+			isAdded = true
+		}
+	}
+
+	if isAdded {
+		err := deployer.Deployer.Run()
+		if err != nil {
+			return errors.Annotate(err, "unable to deploy custom resource definition")
+		}
+	}
+
+	return nil
+}
+
+func checkAndUpdateCustomResource(crdType string, namespace string, scope apiextensions.ResourceScope, isClusterScoped bool) (bool, error) {
+	crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdType)
+	if err != nil {
+		return false, fmt.Errorf("unable to get %s custom resource definition due to %+v", crdType, err)
+	}
+
+	// CRD exist with different scope and hence error out
+	if scope != crd.Spec.Scope {
+		return true, fmt.Errorf("already %s custom resource definition exist with %v scope. updating the %s custom resource definition scope is not supported", crd.Name, crd.Spec.Scope, crd.Name)
+	}
+
+	if isClusterScoped {
+		for key, value := range crd.Labels {
+			if strings.HasPrefix(key, "synopsys.com/operator.") {
+				if value != namespace {
+					return true, fmt.Errorf("there is already a Synopsys Operator managing %s in namespace %s. Only one Synopsys Operator may manage %s per namespace", crdType, value, crdType)
+				}
+			}
+		}
+	}
+
+	// CRD exist with same scope and hence continue
+	log.Infof("%s custom resource definition with scope %s already exists", crd.Name, crd.Spec.Scope)
+
+	if _, ok := crd.Labels[fmt.Sprintf("synopsys.com/operator.%s", namespace)]; !ok {
+		crd.Labels[fmt.Sprintf("synopsys.com/operator.%s", namespace)] = namespace
+		_, err = util.UpdateCustomResourceDefinition(apiExtensionClient, crd)
+		if err != nil {
+			return true, fmt.Errorf("unable to update the labels for %s custom resource definition due to %+v", crd.Name, err)
+		}
+	}
+	return true, nil
 }
 
 func initFlags() {
