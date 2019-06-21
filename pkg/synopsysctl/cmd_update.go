@@ -291,9 +291,15 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 	} else {
 		log.Infof("updating Synopsys Operator in namespace '%s'...", namespace)
 		// create custom resource definitions
-		err = createCrds(namespace, isClusterScoped, newCrds)
+		crdConfigs, err := getCrdConfigs(operatorNamespace, isClusterScoped, crds)
 		if err != nil {
 			return err
+		}
+		if len(crdConfigs) > 0 {
+			err = deployCrds(namespace, isClusterScoped, crdConfigs)
+			if err != nil {
+				return err
+			}
 		}
 
 		sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
