@@ -84,7 +84,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// Black Duck should only have the database during the DbMigrate State
-		cpPostgresList, err := hc.getPostgresComponents(blackduck)
+		cpPostgresList, err := hc.GetPostgresComponents(blackduck)
 		if err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// Get postgres components
-		cpPostgresList, err := hc.getPostgresComponents(blackduck)
+		cpPostgresList, err := hc.GetPostgresComponents(blackduck)
 		if err != nil {
 			return err
 		}

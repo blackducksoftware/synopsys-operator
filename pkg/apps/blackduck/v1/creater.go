@@ -82,7 +82,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// Get postgres components
-		cpPostgresList, err := hc.getPostgresComponents(blackduck)
+		cpPostgresList, err := hc.GetPostgresComponents(blackduck)
 		if err != nil {
 			return err
 		}
