@@ -70,22 +70,22 @@ var createAlertCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		// Check Number of Arguments
+		// Check the Number of Arguments
 		if len(args) != 1 {
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		// Check the Arguments
+		// Check the user's flags
 		err := createAlertCtl.CheckSpecFlags(cmd.Flags())
 		if err != nil {
 			cmd.Help()
 			return err
 		}
-		// Check/Set the Spec Type
+		// Set the base spec
 		if !cmd.Flags().Lookup("template").Changed {
 			baseAlertSpec = defaultBaseAlertSpec
 		}
-		log.Debugf("setting Alert template spec %s", baseAlertSpec)
+		log.Debugf("setting Alert's base spec to '%s'", baseAlertSpec)
 		err = createAlertCtl.SwitchSpec(baseAlertSpec)
 		if err != nil {
 			cmd.Help()
@@ -99,8 +99,6 @@ var createAlertCmd = &cobra.Command{
 			return err
 		}
 
-		log.Infof("creating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-
 		// Update Spec with user's flags
 		log.Debugf("updating spec with user's flags")
 		createAlertCtl.SetChangedFlags(cmd.Flags())
@@ -109,7 +107,7 @@ var createAlertCmd = &cobra.Command{
 		alertSpec, _ := createAlertCtl.GetSpec().(alertv1.AlertSpec)
 		alertSpec.Namespace = alertNamespace
 
-		// Create and Deploy Alert CRD
+		// Create Alert CRD
 		alert := &alertv1.Alert{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      alertName,
@@ -120,18 +118,13 @@ var createAlertCmd = &cobra.Command{
 		alert.Kind = "Alert"
 		alert.APIVersion = "synopsys.com/v1"
 		if cmd.Flags().Lookup("mock").Changed {
-			log.Debugf("running mock mode")
-			err := PrintResource(*alert, createMockFormat, false)
-			if err != nil {
-				return err
-			}
+			log.Debugf("generating CRD for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+			return PrintResource(*alert, createMockFormat, false)
 		} else if cmd.Flags().Lookup("mock-kube").Changed {
-			log.Debugf("running kube mock mode")
-			err := PrintResource(*alert, createMockKubeFormat, true)
-			if err != nil {
-				return err
-			}
+			log.Debugf("generating Kubernetes resources for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+			return PrintResource(*alert, createMockKubeFormat, true)
 		} else {
+			log.Infof("creating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 			// Check if Synopsys Operator is running
 			if err := checkOperatorIsRunning(scope, alertNamespace); err != nil {
 				return err
@@ -163,22 +156,22 @@ var createBlackDuckCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		// Check Number of Arguments
+		// Check the Number of Arguments
 		if len(args) != 1 {
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		// Check the Arguments
+		// Check the user's flags
 		err := createBlackDuckCtl.CheckSpecFlags(cmd.Flags())
 		if err != nil {
 			cmd.Help()
 			return err
 		}
-		// Set the Spec Type
+		// Set the base spec
 		if !cmd.Flags().Lookup("template").Changed {
 			baseBlackDuckSpec = defaultBaseBlackDuckSpec
 		}
-		log.Debugf("setting template spec %s", baseBlackDuckSpec)
+		log.Debugf("setting Black Duck's base spec to '%s'", baseBlackDuckSpec)
 		err = createBlackDuckCtl.SwitchSpec(baseBlackDuckSpec)
 		if err != nil {
 			cmd.Help()
@@ -191,7 +184,6 @@ var createBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		if !cmd.Flags().Lookup("mock").Changed && !cmd.Flags().Lookup("mock-kube").Changed {
 			blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
@@ -226,18 +218,13 @@ var createBlackDuckCmd = &cobra.Command{
 		blackDuck.Kind = "Blackduck"
 		blackDuck.APIVersion = "synopsys.com/v1"
 		if cmd.Flags().Lookup("mock").Changed {
-			log.Debugf("running mock mode")
-			err := PrintResource(*blackDuck, createMockFormat, false)
-			if err != nil {
-				return err
-			}
+			log.Debugf("generating CRD for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+			return PrintResource(*blackDuck, createMockFormat, false)
 		} else if cmd.Flags().Lookup("mock-kube").Changed {
-			log.Debugf("running kube mock mode")
-			err := PrintResource(*blackDuck, createMockKubeFormat, true)
-			if err != nil {
-				return err
-			}
+			log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+			return PrintResource(*blackDuck, createMockKubeFormat, true)
 		} else {
+			log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 			// Check if Synopsys Operator is running
 			if err := checkOperatorIsRunning(scope, blackDuckNamespace); err != nil {
 				return err
@@ -269,22 +256,22 @@ var createOpsSightCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		// Check Number of Arguments
+		// Check the Number of Arguments
 		if len(args) != 1 {
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		// Check the Arguments
+		// Check the user's flags
 		err := createOpsSightCtl.CheckSpecFlags(cmd.Flags())
 		if err != nil {
 			cmd.Help()
 			return err
 		}
-		// Set the Spec Type
+		// Set the base spec
 		if !cmd.Flags().Lookup("template").Changed {
 			baseOpsSightSpec = defaultBaseOpsSightSpec
 		}
-		log.Debugf("setting OpsSight template spec %s", baseOpsSightSpec)
+		log.Debugf("setting OpsSight's base spec to '%s'", baseOpsSightSpec)
 		err = createOpsSightCtl.SwitchSpec(baseOpsSightSpec)
 		if err != nil {
 			cmd.Help()
@@ -297,8 +284,6 @@ var createOpsSightCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Infof("creating '%s' OpsSight in namespace '%s'...", opsSightName, opsSightNamespace)
-
 		// Update Spec with user's flags
 		log.Debugf("updating spec with user's flags")
 		createOpsSightCtl.SetChangedFlags(cmd.Flags())
@@ -318,18 +303,13 @@ var createOpsSightCmd = &cobra.Command{
 		opsSight.Kind = "OpsSight"
 		opsSight.APIVersion = "synopsys.com/v1"
 		if cmd.Flags().Lookup("mock").Changed {
-			log.Debugf("running mock mode")
-			err := PrintResource(*opsSight, createMockFormat, false)
-			if err != nil {
-				return err
-			}
+			log.Debugf("generating CRD for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+			return PrintResource(*opsSight, createMockFormat, false)
 		} else if cmd.Flags().Lookup("mock-kube").Changed {
-			log.Debugf("running kube mock mode")
-			err := PrintResource(*opsSight, createMockKubeFormat, true)
-			if err != nil {
-				return err
-			}
+			log.Debugf("generating Kubernetes resources for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
+			return PrintResource(*opsSight, createMockKubeFormat, true)
 		} else {
+			log.Infof("creating OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 			// Check if Synopsys Operator is running
 			if err := checkOperatorIsRunning(scope, opsSightNamespace); err != nil {
 				return err
