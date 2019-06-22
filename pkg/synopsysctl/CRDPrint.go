@@ -64,6 +64,9 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 	pc := &protoform.Config{}
 	pc.SelfSetDefaults()
 	pc.DryRun = true
+	if strings.EqualFold(strings.ToUpper(nativeClusterType), "OPENSHIFT") {
+		pc.IsOpenshift = true
+	}
 	rc := &rest.Config{}
 	app := apps.NewApp(pc, rc)
 
