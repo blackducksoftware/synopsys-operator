@@ -26,6 +26,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -34,10 +36,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var isForceDestroy bool
+
 // destroyCmd removes Synopsys Operator from the cluster
 var destroyCmd = &cobra.Command{
 	Use:           "destroy [NAMESPACE...]",
-	Example:       "synopsysctl destroy\nsynopsysctl destroy <namespace>\nsynopsysctl destroy <namespace1> <namespace2>",
+	Example:       "synopsysctl destroy\nsynopsysctl destroy --force\nsynopsysctl destroy <namespace>\nsynopsysctl destroy <namespace> --force\nsynopsysctl destroy <namespace1> <namespace2>",
 	Short:         "Remove one or many Synopsys Operator instances and their associated CRDs",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -48,7 +52,7 @@ var destroyCmd = &cobra.Command{
 		// Read Commandline Parameters
 		if len(args) > 0 {
 			for _, operatorNamespace := range args {
-				destroy(operatorNamespace)
+				return destroy(operatorNamespace)
 			}
 		} else {
 			operatorNamespace := DefaultOperatorNamespace
@@ -63,13 +67,13 @@ var destroyCmd = &cobra.Command{
 					operatorNamespace = namespace
 				}
 			}
-			destroy(operatorNamespace)
+			return destroy(operatorNamespace)
 		}
 		return nil
 	},
 }
 
-func destroy(namespace string) {
+func destroy(namespace string) error {
 	log.Infof("destroying Synopsys Operator in namespace '%s'...", namespace)
 	crds := []string{}
 	cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
@@ -88,9 +92,26 @@ func destroy(namespace string) {
 	}
 
 	// delete namespace
-	err = util.DeleteResourceNamespace(restconfig, kubeClient, strings.Join(crds, ","), namespace, true)
-	if err != nil {
-		log.Warn(err)
+	checkErr := util.CheckResourceNamespace(restconfig, kubeClient, strings.Join(crds, ","), namespace, true)
+	if err != nil && isForceDestroy {
+		log.Warnf("%s. namespace cannot be deleted", err.Error())
+	} else if err != nil && !isForceDestroy {
+		return fmt.Errorf("%s. It is not recommended to destroy the Synopsys Operator so these resources can continue to be managed. If you are sure you want to delete the Synopsys Operator anyway then you can use the 'force' option which will keep all the instances and delete only the Synopsys Operator", err.Error())
+	}
+
+	log.Infof("deleting the Synopsys Operator in namespace '%s'", namespace)
+	// delete Synopsys Operator instance
+	commonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespace, &api.ComponentList{}, "app=synopsys-operator", false)
+	_, crudErrors := commonConfig.CRUDComponents()
+	if len(crudErrors) > 0 {
+		log.Errorf("unable to delete the Synopsys Operator in namespace '%s' due to %+v", namespace, err)
+	}
+
+	if checkErr == nil {
+		err = util.DeleteNamespace(kubeClient, namespace)
+		if err != nil {
+			log.Errorf("unable to delete the Synopsys Operator namespace due to %+v", err)
+		}
 	}
 
 	// delete crds
@@ -177,6 +198,7 @@ func destroy(namespace string) {
 	}
 
 	log.Infof("successfully submitted destroy Synopsys Operator in namespace '%s'", namespace)
+	return nil
 }
 
 // isOtherNamespaceExistInCRDLabel return whether any other namespace exist in the Synopsys CRD namespace label
@@ -288,4 +310,6 @@ func deleteCrd(crd string, namespace string) {
 
 func init() {
 	rootCmd.AddCommand(destroyCmd)
+
+	destroyCmd.Flags().BoolVarP(&isForceDestroy, "force", "f", isForceDestroy, "Forcefully destroy the Synopsys Operator in your cluster")
 }
