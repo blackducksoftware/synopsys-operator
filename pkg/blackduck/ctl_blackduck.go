@@ -111,7 +111,12 @@ func isValidSize(size string) bool {
 // CheckSpecFlags returns an error if a user input was invalid
 func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 	if !isValidSize(ctl.Size) {
-		return fmt.Errorf("size must be 'small', 'medium', 'large', or 'x-large'")
+		return fmt.Errorf("size must be 'small', 'medium', 'large' or 'x-large'")
+	}
+	fmt.Printf("expose service: %s\n", ctl.ExposeService)
+	isValid := util.IsExposeServiceValid(ctl.ExposeService)
+	if !isValid {
+		return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
 	}
 	for _, environ := range ctl.Environs {
 		if !strings.Contains(environ, ":") {
@@ -196,7 +201,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	}
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "Size of Black Duck [small|medium|large|x-large]")
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Black Duck")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck webserver's user interface [LOADBALANCER|NODEPORT|OPENSHIFT]")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck webserver's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresHost, "external-postgres-host", ctl.ExternalPostgresHost, "Host of external Postgres")
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPort, "external-postgres-port", ctl.ExternalPostgresPort, "Port of external Postgres")

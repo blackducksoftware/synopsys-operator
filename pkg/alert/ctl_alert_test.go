@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -59,16 +59,31 @@ func TestSetSpec(t *testing.T) {
 func TestCheckSpecFlags(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
+	alertCtl.ExposeService = util.NONE
 	cmd := &cobra.Command{}
 	specFlags := alertCtl.CheckSpecFlags(cmd.Flags())
 	assert.Nil(specFlags)
+
+	var tests = []struct {
+		input *Ctl
+	}{
+		// invalid expose case
+		{input: &Ctl{
+			Spec:          &alertapi.AlertSpec{},
+			ExposeService: "",
+		}},
+	}
+
+	for _, test := range tests {
+		assert.Error(test.input.CheckSpecFlags(cmd.Flags()))
+	}
 }
 
 func TestSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	alertCtl := NewAlertCtl()
-	defaultSpec := *crddefaults.GetAlertDefault()
-	defaultSpec.StandAlone = crddefaults.BoolToPtr(true)
+	defaultSpec := *util.GetAlertDefault()
+	defaultSpec.StandAlone = util.BoolToPtr(true)
 	defaultSpec.PersistentStorage = true
 
 	var tests = []struct {
@@ -104,7 +119,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "URL of Alert's Image")
 	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "URL of CFSSL's Image")
 	cmd.Flags().StringVar(&ctl.StandAlone, "standalone", ctl.StandAlone, "If true, Alert runs in standalone mode [true|false]")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port of Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for Alert")
@@ -176,7 +191,7 @@ func TestSetFlag(t *testing.T) {
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				StandAlone: "true",
 			},
-			changedSpec: &alertapi.AlertSpec{StandAlone: crddefaults.BoolToPtr(true)},
+			changedSpec: &alertapi.AlertSpec{StandAlone: util.BoolToPtr(true)},
 		},
 		// case
 		{flagName: "standalone",
@@ -184,7 +199,7 @@ func TestSetFlag(t *testing.T) {
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				StandAlone: "false",
 			},
-			changedSpec: &alertapi.AlertSpec{StandAlone: crddefaults.BoolToPtr(false)},
+			changedSpec: &alertapi.AlertSpec{StandAlone: util.BoolToPtr(false)},
 		},
 		// case
 		{flagName: "expose-ui",
@@ -200,7 +215,7 @@ func TestSetFlag(t *testing.T) {
 			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
 				Port: 1234,
 			},
-			changedSpec: &alertapi.AlertSpec{Port: crddefaults.IntToInt32(1234)},
+			changedSpec: &alertapi.AlertSpec{Port: util.IntToInt32(1234)},
 		},
 		// case
 		{flagName: "encryption-password",

@@ -64,6 +64,7 @@ func GetBlackDuckTemplate() *blackduckv1.BlackduckSpec {
 		Size:              "Small",
 		CertificateName:   "default",
 		PersistentStorage: false,
+		ExposeService:     NONE,
 	}
 }
 
@@ -76,6 +77,7 @@ func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 		CertificateName:   "default",
 		LivenessProbes:    false,
 		PersistentStorage: true,
+		ExposeService:     NONE,
 		Environs:          []string{},
 		ImageRegistries:   []string{},
 		PVC: []blackduckv1.PVC{
@@ -179,6 +181,7 @@ func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.Blackduck
 		},
 		CertificateName: "default",
 		Type:            "Artifacts",
+		ExposeService:   NONE,
 		Environs:        []string{},
 		ImageRegistries: []string{},
 	}
@@ -232,6 +235,7 @@ func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 		},
 		CertificateName: "default",
 		Type:            "Artifacts",
+		ExposeService:   NONE,
 		Environs:        []string{},
 		ImageRegistries: []string{},
 	}
@@ -279,7 +283,8 @@ func GetBlackDuckDefaultExternalPersistentStorageV1() *blackduckv1.BlackduckSpec
 				Size: "2Gi",
 			},
 		},
-		Type: "Artifacts",
+		Type:          "Artifacts",
+		ExposeService: NONE,
 	}
 }
 
@@ -294,6 +299,7 @@ func GetBlackDuckDefaultBDBA() *blackduckv1.BlackduckSpec {
 		LivenessProbes:    false,
 		PersistentStorage: false,
 		Size:              "small",
+		ExposeService:     NONE,
 	}
 }
 
@@ -306,6 +312,7 @@ func GetBlackDuckDefaultEphemeral() *blackduckv1.BlackduckSpec {
 		PersistentStorage: false,
 		Size:              "small",
 		Type:              "worker",
+		ExposeService:     NONE,
 	}
 }
 
@@ -318,6 +325,7 @@ func GetBlackDuckDefaultEphemeralCustomAuthCA() *blackduckv1.BlackduckSpec {
 		LivenessProbes:    false,
 		PersistentStorage: false,
 		Size:              "Small",
+		ExposeService:     NONE,
 		AuthCustomCA:      "-----BEGIN CERTIFICATE-----\r\nMIIE1DCCArwCCQCuw9TgaoBKVDANBgkqhkiG9w0BAQsFADAsMQswCQYDVQQGEwJV\r\nUzELMAkGA1UECgwCYmQxEDAOBgNVBAMMB1JPT1QgQ0EwHhcNMTkwMjA2MDAzMjM3\r\nWhcNMjExMTI2MDAzMjM3WjAsMQswCQYDVQQGEwJVUzELMAkGA1UECgwCYmQxEDAO\r\nBgNVBAMMB1JPT1QgQ0EwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQCr\r\nIctvPVoqRS3Ti38uFRVfJDovyi0p9PIaOmja3tMvkfecCsCVYHMo/vAy/fm9qiJI\r\nKutTwX9aLuiLO0tsDDUNwv0CrbXvuHpWvASOAdKyl6uxiYl0fq0cyBZSdKlsdDGk\r\nivENpN2gKHxDSUgAo74wUskfBrKvfKLhJhOmKCbN/NvxlsGMM5DgPgFGNegmw5r0\r\nZlDTXlWn3J/8C80dfGjT5hLr6Jtl0KTqxSREVTLT0fDk7bt9BHH/TCtNs9UwR1UI\r\nJVjjzW6pgS1DmGZ7Mfg2WBhhdDBuN0gxk/bcoiV2tfI0MLQyeVP+qWmdUXSNn9CT\r\nmpYdKezMfi5ieSy40fy23n+D1C+Xm5pnFErm3BwZYdN9gI633IBPQa0ELo28ZxhI\r\nIclGGyhUubZJ+ybNvGOIrgypTXYrZqvyWMV3qiMZb1EzpKdqAzGfsN1zmF+o4Rc3\r\ntBa2EF/lNSVCClUeFBA2UXvD/K9QA84cbLNJwpBZ9Bc6CZyvRTYGzXtAuZUVvNju\r\nMcWhsqXWzhVkChTyYicOdT8ZB+7/eC3tFyjAKSszIA5xuO8NtuIZBAc2AzRrkoE5\r\nCgHEUxNA3tbRUjYnH5HcgaQveFQtFwBWqIMxPeJixSLk2KYJSsWpTPC1x6s1IBLO\r\nITWhedDbtbs/FT9+cXd9K+/L+6UgR31oHaY/hYai1QIDAQABMA0GCSqGSIb3DQEB\r\nCwUAA4ICAQAz7aK5m9yPE/tTFQJfZRr35ug8ikBuGFvzb5s3fWYlQ1QbKUPBp9Q/\r\n1kUGJF2niOULUp5Gig6urz+E1m3wE5jgYRwZjgTmoEQEmN0/VQWTus72isWhTsZ5\r\nJKDSzcKGRJnHzO91gA3ZP1Cxoin5GX6w8eqEA2vh1hc7+GyKPTOsxu8hYMYI1yId\r\nfWAjqEUobLZZoijf+c3AqBVcf4tOpFMRTy4au3H+v7TNjc/fAeZUeAz7BswfqEV9\r\n0QNNTpezq5IS+pSPShRatL9k/BaE3MaF0Ossfnv3UPV80Yrup+9pRV8Lu6EXrdg5\r\n3L2+KK2Nz9A+iF2u9VqUw9lcJCIjgY+APf6Tf2AKQxNCA/pV1z0I8aQAlSLolgpx\r\nSMLwMecpjAcHPWF5ut3Re+8PfeyLGzeXCVyhZc9Aj9KaTNLRa/kb21KNVbcGGTu/\r\nuiGMEJXq1a1fKzMKTPnARz70XCS7nLJ7qEK3TuvrMhCqEEdFUf/S4yAmmWaEO9Fr\r\nUBk9ACW9UYBFtowqbJkbJm3KEXMMFP5cs33j/HEA1IkKDVT9Hi7NEK2/Y7e9afv7\r\no1UGNrGgU1rK8K+/2htOH9JhlPFWHQkk+wvGL6fFI7p+6TGes0KILN4WioOEKY0t\r\n0V1Zr8bejDW49cu1Awy443SrauhFLOInubZLA8S9ZvwTVIvpmTDjdQ==\r\n-----END CERTIFICATE-----",
 	}
 }
@@ -338,7 +346,8 @@ func GetBlackDuckDefaultExternalDB() *blackduckv1.BlackduckSpec {
 			PostgresAdminPassword: "<<PASSWORD>>",
 			PostgresUserPassword:  "<<PASSWORD>>",
 		},
-		Type: "worker",
+		Type:          "worker",
+		ExposeService: NONE,
 	}
 }
 
@@ -354,6 +363,7 @@ func GetBlackDuckDefaultIPV6Disabled() *blackduckv1.BlackduckSpec {
 		Size:              "small",
 		PersistentStorage: false,
 		Type:              "worker",
+		ExposeService:     NONE,
 	}
 }
 
@@ -369,6 +379,7 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 			ModelMetricsPauseSeconds:       15,
 			UnknownImagePauseMilliseconds:  15000,
 			ClientTimeoutMilliseconds:      100000,
+			Expose:                         NONE,
 		},
 		Perceiver: &opssightv1.Perceiver{
 			EnableImagePerceiver: false,
@@ -404,9 +415,10 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 			ImageDirectory: "/var/images",
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:  "prometheus",
-			Image: "docker.io/prom/prometheus:v2.1.0",
-			Port:  9090,
+			Name:   "prometheus",
+			Image:  "docker.io/prom/prometheus:v2.1.0",
+			Port:   9090,
+			Expose: NONE,
 		},
 		Skyfire: &opssightv1.Skyfire{
 			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
@@ -452,6 +464,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			ModelMetricsPauseSeconds:       15,
 			UnknownImagePauseMilliseconds:  15000,
 			ClientTimeoutMilliseconds:      100000,
+			Expose:                         NONE,
 		},
 		ScannerPod: &opssightv1.ScannerPod{
 			Name: "opssight-scanner",
@@ -488,9 +501,10 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			DumpIntervalMinutes:       30,
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:  "prometheus",
-			Port:  9090,
-			Image: "docker.io/prom/prometheus:v2.1.0",
+			Name:   "prometheus",
+			Port:   9090,
+			Image:  "docker.io/prom/prometheus:v2.1.0",
+			Expose: NONE,
 		},
 		EnableSkyfire: false,
 		Skyfire: &opssightv1.Skyfire{
@@ -537,6 +551,7 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			ModelMetricsPauseSeconds:       15,
 			UnknownImagePauseMilliseconds:  15000,
 			ClientTimeoutMilliseconds:      100000,
+			Expose:                         NONE,
 		},
 		ScannerPod: &opssightv1.ScannerPod{
 			Name: "opssight-scanner",
@@ -573,9 +588,10 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			Port:                      3002,
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:  "prometheus",
-			Port:  9090,
-			Image: "docker.io/prom/prometheus:v2.1.0",
+			Name:   "prometheus",
+			Port:   9090,
+			Image:  "docker.io/prom/prometheus:v2.1.0",
+			Expose: NONE,
 		},
 		EnableSkyfire: false,
 		Skyfire: &opssightv1.Skyfire{
@@ -631,7 +647,7 @@ func GetAlertDefault() *alertv1.AlertSpec {
 		Version:           "3.1.0",
 		AlertImage:        "docker.io/blackducksoftware/blackduck-alert:3.1.0",
 		CfsslImage:        "docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
-		ExposeService:     "NODEPORT",
+		ExposeService:     NONE,
 		Port:              IntToInt32(8443),
 		PersistentStorage: false,
 		PVCName:           "alert-pvc",

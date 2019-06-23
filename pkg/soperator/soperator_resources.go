@@ -198,10 +198,10 @@ func (specConfig *SpecConfig) getOperatorService() []*horizoncomponents.Service 
 	synopsysOperatorService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 	services = append(services, synopsysOperatorService)
 
-	if strings.EqualFold(specConfig.Expose, "NODEPORT") || strings.EqualFold(specConfig.Expose, "LOADBALANCER") {
+	if strings.EqualFold(specConfig.Expose, util.NODEPORT) || strings.EqualFold(specConfig.Expose, util.LOADBALANCER) {
 
 		var exposedServiceType horizonapi.ServiceType
-		if strings.EqualFold(specConfig.Expose, "NODEPORT") {
+		if strings.EqualFold(specConfig.Expose, util.NODEPORT) {
 			exposedServiceType = horizonapi.ServiceTypeNodePort
 		} else {
 			exposedServiceType = horizonapi.ServiceTypeLoadBalancer

@@ -67,6 +67,12 @@ import (
 const (
 	// OPENSHIFT denotes to create an OpenShift routes
 	OPENSHIFT = "OPENSHIFT"
+	// NONE denotes no exposed service
+	NONE = "NONE"
+	// NODEPORT denotes to create a NodePort service
+	NODEPORT = "NODEPORT"
+	// LOADBALANCER denotes to create a LoadBalancer service
+	LOADBALANCER = "LOADBALANCER"
 )
 
 // CreateContainer will create the container
@@ -644,8 +650,7 @@ func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodLis
 	for _, podList := range pods.Items {
 		pod, _ := clientset.CoreV1().Pods(podList.Namespace).Get(podList.Name, metav1.GetOptions{})
 		switch pod.Status.Phase {
-		case "Succeeded":
-		case "Running":
+		case "Succeeded", "Running":
 			continue
 		default:
 			log.Infof("pod %s is in %s status...", pod.Name, string(pod.Status.Phase))
