@@ -25,8 +25,8 @@ import (
 	"sort"
 	"testing"
 
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -36,20 +36,20 @@ func TestNewBlackDuckCtl(t *testing.T) {
 	assert := assert.New(t)
 	blackduckCtl := NewBlackDuckCtl()
 	assert.Equal(&Ctl{
-		Spec: &blackduckv1.BlackduckSpec{},
+		Spec: &blackduckapi.BlackduckSpec{},
 	}, blackduckCtl)
 }
 
 func TestGetSpec(t *testing.T) {
 	assert := assert.New(t)
 	blackDuckCtl := NewBlackDuckCtl()
-	assert.Equal(blackduckv1.BlackduckSpec{}, blackDuckCtl.GetSpec())
+	assert.Equal(blackduckapi.BlackduckSpec{}, blackDuckCtl.GetSpec())
 }
 
 func TestSetSpec(t *testing.T) {
 	assert := assert.New(t)
 	blackDuckCtl := NewBlackDuckCtl()
-	specToSet := blackduckv1.BlackduckSpec{Namespace: "test"}
+	specToSet := blackduckapi.BlackduckSpec{Namespace: "test"}
 	blackDuckCtl.SetSpec(specToSet)
 	assert.Equal(specToSet, blackDuckCtl.GetSpec())
 
@@ -62,6 +62,7 @@ func TestCheckSpecFlags(t *testing.T) {
 
 	// default case
 	blackduckCtl := NewBlackDuckCtl()
+	blackduckCtl.ExposeService = util.NONE
 	cmd := &cobra.Command{}
 	blackduckCtl.AddSpecFlags(cmd, true)
 	err := blackduckCtl.CheckSpecFlags(cmd.Flags())
@@ -74,13 +75,17 @@ func TestCheckSpecFlags(t *testing.T) {
 	}{
 		// case
 		{input: &Ctl{
-			Spec: &blackduckv1.BlackduckSpec{},
+			Spec: &blackduckapi.BlackduckSpec{},
 			Size: "notValid",
 		}},
 		// case
 		{input: &Ctl{
-			Spec:     &blackduckv1.BlackduckSpec{},
+			Spec:     &blackduckapi.BlackduckSpec{},
 			Environs: []string{"invalid"},
+		}},
+		{input: &Ctl{
+			Spec:          &blackduckapi.BlackduckSpec{},
+			ExposeService: "",
 		}},
 	}
 
@@ -91,21 +96,20 @@ func TestCheckSpecFlags(t *testing.T) {
 func TestSwitchSpec(t *testing.T) {
 	assert := assert.New(t)
 	blackDuckCtl := NewBlackDuckCtl()
-
 	var tests = []struct {
 		input    string
-		expected *blackduckv1.BlackduckSpec
+		expected *blackduckapi.BlackduckSpec
 	}{
-		{input: EmptySpec, expected: &blackduckv1.BlackduckSpec{}},
-		{input: PersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageLatest()},
-		{input: PersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultPersistentStorageV1()},
-		{input: ExternalPersistentStorageLatestSpec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()},
-		{input: ExternalPersistentStorageV1Spec, expected: crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()},
-		{input: BDBASpec, expected: crddefaults.GetBlackDuckDefaultBDBA()},
-		{input: EphemeralSpec, expected: crddefaults.GetBlackDuckDefaultEphemeral()},
-		{input: EphemeralCustomAuthCASpec, expected: crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()},
-		{input: ExternalDBSpec, expected: crddefaults.GetBlackDuckDefaultExternalDB()},
-		{input: IPV6DisabledSpec, expected: crddefaults.GetBlackDuckDefaultIPV6Disabled()},
+		{input: EmptySpec, expected: &blackduckapi.BlackduckSpec{}},
+		{input: PersistentStorageLatestSpec, expected: util.GetBlackDuckDefaultPersistentStorageLatest()},
+		{input: PersistentStorageV1Spec, expected: util.GetBlackDuckDefaultPersistentStorageV1()},
+		{input: ExternalPersistentStorageLatestSpec, expected: util.GetBlackDuckDefaultExternalPersistentStorageLatest()},
+		{input: ExternalPersistentStorageV1Spec, expected: util.GetBlackDuckDefaultExternalPersistentStorageV1()},
+		{input: BDBASpec, expected: util.GetBlackDuckDefaultBDBA()},
+		{input: EphemeralSpec, expected: util.GetBlackDuckDefaultEphemeral()},
+		{input: EphemeralCustomAuthCASpec, expected: util.GetBlackDuckDefaultEphemeralCustomAuthCA()},
+		{input: ExternalDBSpec, expected: util.GetBlackDuckDefaultExternalDB()},
+		{input: IPV6DisabledSpec, expected: util.GetBlackDuckDefaultIPV6Disabled()},
 	}
 
 	// test cases: "empty", "persistentStorage", "default"
@@ -132,7 +136,7 @@ func TestAddSpecFlags(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.PVCFilePath, "pvc-file-path", ctl.PVCFilePath, "Absolute path to a file containing a list of PVC json structs")
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "Size of Black Duck [small|medium|large|x-large]")
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Black Duck")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck webserver's user interface [LOADBALANCER|NODEPORT|OPENSHIFT]")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck webserver's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresHost, "external-postgres-host", ctl.ExternalPostgresHost, "Host of external Postgres")
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPort, "external-postgres-port", ctl.ExternalPostgresPort, "Port of external Postgres")
@@ -190,58 +194,58 @@ func TestSetFlag(t *testing.T) {
 		flagName    string
 		initialCtl  *Ctl
 		changedCtl  *Ctl
-		changedSpec *blackduckv1.BlackduckSpec
+		changedSpec *blackduckapi.BlackduckSpec
 	}{
 		// case
 		{
 			flagName:   "size",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec: &blackduckv1.BlackduckSpec{},
+				Spec: &blackduckapi.BlackduckSpec{},
 				Size: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Size: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{Size: "changed"},
 		},
 		// case
 		{
 			flagName:   "version",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:    &blackduckv1.BlackduckSpec{},
+				Spec:    &blackduckapi.BlackduckSpec{},
 				Version: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Version: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{Version: "changed"},
 		},
 		// case
 		{
 			flagName:   "expose-ui",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:          &blackduckv1.BlackduckSpec{},
+				Spec:          &blackduckapi.BlackduckSpec{},
 				ExposeService: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{ExposeService: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{ExposeService: "changed"},
 		},
 		// case
 		{
 			flagName:   "db-prototype",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:        &blackduckv1.BlackduckSpec{},
+				Spec:        &blackduckapi.BlackduckSpec{},
 				DbPrototype: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{DbPrototype: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{DbPrototype: "changed"},
 		},
 		// case
 		{
 			flagName:   "external-postgres-host",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{},
+				Spec:                 &blackduckapi.BlackduckSpec{},
 				ExternalPostgresHost: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+			changedSpec: &blackduckapi.BlackduckSpec{
+				ExternalPostgres: &blackduckapi.PostgresExternalDBConfig{
 					PostgresHost: "changed"}},
 		},
 		// case
@@ -249,11 +253,11 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-port",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{},
+				Spec:                 &blackduckapi.BlackduckSpec{},
 				ExternalPostgresPort: 10,
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+			changedSpec: &blackduckapi.BlackduckSpec{
+				ExternalPostgres: &blackduckapi.PostgresExternalDBConfig{
 					PostgresPort: 10}},
 		},
 		// case
@@ -261,11 +265,11 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-admin",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                  &blackduckv1.BlackduckSpec{},
+				Spec:                  &blackduckapi.BlackduckSpec{},
 				ExternalPostgresAdmin: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+			changedSpec: &blackduckapi.BlackduckSpec{
+				ExternalPostgres: &blackduckapi.PostgresExternalDBConfig{
 					PostgresAdmin: "changed"}},
 		},
 		// case
@@ -273,11 +277,11 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-user",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{},
+				Spec:                 &blackduckapi.BlackduckSpec{},
 				ExternalPostgresUser: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+			changedSpec: &blackduckapi.BlackduckSpec{
+				ExternalPostgres: &blackduckapi.PostgresExternalDBConfig{
 					PostgresUser: "changed"}},
 		},
 		// case
@@ -285,11 +289,11 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-ssl",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                &blackduckv1.BlackduckSpec{},
+				Spec:                &blackduckapi.BlackduckSpec{},
 				ExternalPostgresSsl: "false",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+			changedSpec: &blackduckapi.BlackduckSpec{
+				ExternalPostgres: &blackduckapi.PostgresExternalDBConfig{
 					PostgresSsl: false}},
 		},
 		// case
@@ -297,11 +301,11 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-ssl",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                &blackduckv1.BlackduckSpec{},
+				Spec:                &blackduckapi.BlackduckSpec{},
 				ExternalPostgresSsl: "true",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
+			changedSpec: &blackduckapi.BlackduckSpec{
+				ExternalPostgres: &blackduckapi.PostgresExternalDBConfig{
 					PostgresSsl: true}},
 		},
 		// case
@@ -309,94 +313,94 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "external-postgres-admin-password",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                          &blackduckv1.BlackduckSpec{},
+				Spec:                          &blackduckapi.BlackduckSpec{},
 				ExternalPostgresAdminPassword: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
-					PostgresAdminPassword: crddefaults.Base64Encode([]byte("changed"))}},
+			changedSpec: &blackduckapi.BlackduckSpec{
+				ExternalPostgres: &blackduckapi.PostgresExternalDBConfig{
+					PostgresAdminPassword: util.Base64Encode([]byte("changed"))}},
 		},
 		// case
 		{
 			flagName:   "external-postgres-user-password",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                         &blackduckv1.BlackduckSpec{},
+				Spec:                         &blackduckapi.BlackduckSpec{},
 				ExternalPostgresUserPassword: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{
-				ExternalPostgres: &blackduckv1.PostgresExternalDBConfig{
-					PostgresUserPassword: crddefaults.Base64Encode([]byte("changed"))}},
+			changedSpec: &blackduckapi.BlackduckSpec{
+				ExternalPostgres: &blackduckapi.PostgresExternalDBConfig{
+					PostgresUserPassword: util.Base64Encode([]byte("changed"))}},
 		},
 		// case
 		{
 			flagName:   "pvc-storage-class",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:            &blackduckv1.BlackduckSpec{},
+				Spec:            &blackduckapi.BlackduckSpec{},
 				PvcStorageClass: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{PVCStorageClass: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{PVCStorageClass: "changed"},
 		},
 		// case
 		{
 			flagName:   "liveness-probes",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:           &blackduckv1.BlackduckSpec{},
+				Spec:           &blackduckapi.BlackduckSpec{},
 				LivenessProbes: "false",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{LivenessProbes: false},
+			changedSpec: &blackduckapi.BlackduckSpec{LivenessProbes: false},
 		},
 		// case
 		{
 			flagName:   "liveness-probes",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:           &blackduckv1.BlackduckSpec{},
+				Spec:           &blackduckapi.BlackduckSpec{},
 				LivenessProbes: "true",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{LivenessProbes: true},
+			changedSpec: &blackduckapi.BlackduckSpec{LivenessProbes: true},
 		},
 		// case
 		{
 			flagName:   "persistent-storage",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:              &blackduckv1.BlackduckSpec{},
+				Spec:              &blackduckapi.BlackduckSpec{},
 				PersistentStorage: "false",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{PersistentStorage: false},
+			changedSpec: &blackduckapi.BlackduckSpec{PersistentStorage: false},
 		},
 		// case
 		{
 			flagName:   "persistent-storage",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:              &blackduckv1.BlackduckSpec{},
+				Spec:              &blackduckapi.BlackduckSpec{},
 				PersistentStorage: "true",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{PersistentStorage: true},
+			changedSpec: &blackduckapi.BlackduckSpec{PersistentStorage: true},
 		},
 		// case
 		{
 			flagName:   "pvc-file-path",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:        &blackduckv1.BlackduckSpec{},
+				Spec:        &blackduckapi.BlackduckSpec{},
 				PVCFilePath: "../../examples/synopsysctl/pvc.json",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "name1", Size: "size1", StorageClass: "storageclass1"}, {Name: "name2", Size: "size2", StorageClass: "storageclass2"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "name1", Size: "size1", StorageClass: "storageclass1"}, {Name: "name2", Size: "size2", StorageClass: "storageclass2"}}},
 		},
 		// case
 		{
 			flagName:   "node-affinity-file-path",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{},
+				Spec:                 &blackduckapi.BlackduckSpec{},
 				NodeAffinityFilePath: "../../examples/synopsysctl/nodeAffinity.json",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{NodeAffinities: map[string][]blackduckv1.NodeAffinity{
+			changedSpec: &blackduckapi.BlackduckSpec{NodeAffinities: map[string][]blackduckapi.NodeAffinity{
 				"affinity1": {
 					{
 						AffinityType: "type1",
@@ -413,110 +417,110 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "postgres-claim-size",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:              &blackduckv1.BlackduckSpec{},
+				Spec:              &blackduckapi.BlackduckSpec{},
 				PostgresClaimSize: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
 		},
 		// case: append postgres-claim with size if PVC doesn't exist
 		{
 			flagName:   "postgres-claim-size",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:              &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "other-pvc", Size: "other-size"}}},
+				Spec:              &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "other-pvc", Size: "other-size"}}},
 				PostgresClaimSize: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "other-pvc", Size: "other-size"}, {Name: "blackduck-postgres", Size: "changed"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "other-pvc", Size: "other-size"}, {Name: "blackduck-postgres", Size: "changed"}}},
 		},
 		// case: update postgres-claim with size if PVC exists
 		{
 			flagName:   "postgres-claim-size",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:              &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "blackduck-postgres", Size: "unchanged"}}},
+				Spec:              &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "unchanged"}}},
 				PostgresClaimSize: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{PVC: []blackduckv1.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
 		},
 		// case
 		{
 			flagName:   "certificate-name",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:            &blackduckv1.BlackduckSpec{},
+				Spec:            &blackduckapi.BlackduckSpec{},
 				CertificateName: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{CertificateName: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{CertificateName: "changed"},
 		},
 		// case
 		{
 			flagName:   "certificate-file-path",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                &blackduckv1.BlackduckSpec{},
+				Spec:                &blackduckapi.BlackduckSpec{},
 				CertificateFilePath: "../../examples/synopsysctl/certificate.txt",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Certificate: "CERTIFICATE"},
+			changedSpec: &blackduckapi.BlackduckSpec{Certificate: "CERTIFICATE"},
 		},
 		// case
 		{
 			flagName:   "certificate-key-file-path",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                   &blackduckv1.BlackduckSpec{},
+				Spec:                   &blackduckapi.BlackduckSpec{},
 				CertificateKeyFilePath: "../../examples/synopsysctl/certificateKey.txt",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{CertificateKey: "CERTIFICATE_KEY=CERTIFICATE_KEY_DATA"},
+			changedSpec: &blackduckapi.BlackduckSpec{CertificateKey: "CERTIFICATE_KEY=CERTIFICATE_KEY_DATA"},
 		},
 		// case
 		{
 			flagName:   "proxy-certificate-file-path",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                     &blackduckv1.BlackduckSpec{},
+				Spec:                     &blackduckapi.BlackduckSpec{},
 				ProxyCertificateFilePath: "../../examples/synopsysctl/proxyCertificate.txt",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{ProxyCertificate: "PROXY_CERTIFICATE"},
+			changedSpec: &blackduckapi.BlackduckSpec{ProxyCertificate: "PROXY_CERTIFICATE"},
 		},
 		// case
 		{
 			flagName:   "auth-custom-ca-file-path",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{},
+				Spec:                 &blackduckapi.BlackduckSpec{},
 				AuthCustomCAFilePath: "../../examples/synopsysctl/authCustomCA.txt",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{AuthCustomCA: "AUTH_CUSTOM_CA"},
+			changedSpec: &blackduckapi.BlackduckSpec{AuthCustomCA: "AUTH_CUSTOM_CA"},
 		},
 		// case
 		{
 			flagName:   "type",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec: &blackduckv1.BlackduckSpec{},
+				Spec: &blackduckapi.BlackduckSpec{},
 				Type: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Type: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{Type: "changed"},
 		},
 		// case
 		{
 			flagName:   "desired-state",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:         &blackduckv1.BlackduckSpec{},
+				Spec:         &blackduckapi.BlackduckSpec{},
 				DesiredState: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{DesiredState: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{DesiredState: "changed"},
 		},
 		// case
 		{
 			flagName:   "migration-mode",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:          &blackduckv1.BlackduckSpec{},
+				Spec:          &blackduckapi.BlackduckSpec{},
 				MigrationMode: true,
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{DesiredState: "DbMigrate"},
+			changedSpec: &blackduckapi.BlackduckSpec{DesiredState: "DbMigrate"},
 		},
 		// case
 		{
@@ -524,10 +528,10 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "environs",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:     &blackduckv1.BlackduckSpec{},
+				Spec:     &blackduckapi.BlackduckSpec{},
 				Environs: []string{"changed"},
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"changed"}},
+			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"changed"}},
 		},
 		// case
 		{
@@ -535,60 +539,60 @@ func TestSetFlag(t *testing.T) {
 			flagName:   "image-registries",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:            &blackduckv1.BlackduckSpec{},
+				Spec:            &blackduckapi.BlackduckSpec{},
 				ImageRegistries: []string{"changed"},
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{ImageRegistries: []string{"changed"}},
+			changedSpec: &blackduckapi.BlackduckSpec{ImageRegistries: []string{"changed"}},
 		},
 		// case
 		{
 			flagName:   "license-key",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:       &blackduckv1.BlackduckSpec{},
+				Spec:       &blackduckapi.BlackduckSpec{},
 				LicenseKey: "changed",
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{LicenseKey: "changed"},
+			changedSpec: &blackduckapi.BlackduckSpec{LicenseKey: "changed"},
 		},
 		// case : set binary analysis to enabled
 		{
 			flagName:   "enable-binary-analysis",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
+				Spec:                 &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
 				EnableBinaryAnalysis: true,
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
+			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
 		},
 		// case : set binary analysis to disabled
 		{
 			flagName:   "enable-binary-analysis",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                 &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
+				Spec:                 &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
 				EnableBinaryAnalysis: false,
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
+			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
 		},
 		// case : set source code upload to enabled
 		{
 			flagName:   "enable-source-code-upload",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                   &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
+				Spec:                   &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
 				EnableSourceCodeUpload: true,
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
+			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
 		},
 		// case : set source code upload to disabled
 		{
 			flagName:   "enable-source-code-upload",
 			initialCtl: NewBlackDuckCtl(),
 			changedCtl: &Ctl{
-				Spec:                   &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
+				Spec:                   &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
 				EnableSourceCodeUpload: false,
 			},
-			changedSpec: &blackduckv1.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
+			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
 		},
 	}
 
@@ -618,6 +622,6 @@ func TestSetFlag(t *testing.T) {
 	actualCtl = NewBlackDuckCtl()
 	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
 	actualCtl.SetFlag(f)
-	assert.Equal(&blackduckv1.BlackduckSpec{}, actualCtl.Spec)
+	assert.Equal(&blackduckapi.BlackduckSpec{}, actualCtl.Spec)
 
 }

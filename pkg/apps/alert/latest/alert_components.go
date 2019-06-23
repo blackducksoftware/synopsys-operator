@@ -27,6 +27,7 @@ import (
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -60,10 +61,10 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components.Services = append(components.Services, service)
 
 	switch strings.ToUpper(a.alert.Spec.ExposeService) {
-	case "NODEPORT":
+	case util.NODEPORT:
 		log.Debugf("case %s: Adding NodePort Service to ComponentList for Alert", a.alert.Spec.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceNodePort())
-	case "LOADBALANCER":
+	case util.LOADBALANCER:
 		log.Debugf("case %s: Adding LoadBalancer Service to ComponentList for Alert", a.alert.Spec.ExposeService)
 		components.Services = append(components.Services, a.getAlertServiceLoadBalancer())
 	default:

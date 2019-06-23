@@ -145,3 +145,12 @@ func RemoveFromStringSlice(slice []string, str string) []string {
 	}
 	return slice
 }
+
+// IsExposeServiceValid validates the expose service type
+func IsExposeServiceValid(serviceType string) bool {
+	switch strings.ToUpper(serviceType) {
+	case NONE, NODEPORT, LOADBALANCER, OPENSHIFT:
+		return true
+	}
+	return false
+}

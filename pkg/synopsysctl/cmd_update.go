@@ -64,7 +64,7 @@ var updateCmd = &cobra.Command{
 // updateOperatorCmd lets the user update Synopsys Operator
 var updateOperatorCmd = &cobra.Command{
 	Use:           "operator",
-	Example:       "synopsysctl update operator --synopsys-operator-image docker.io/new_image_url\nsynopsysctl update operator --enable-blackduck\nsynopsysctl update operator --enable-blackduck -n <namespace>\nsynopsysctl update operator --expose-ui OPENSHIFT",
+	Example:       fmt.Sprintf("synopsysctl update operator --synopsys-operator-image docker.io/new_image_url\nsynopsysctl update operator --enable-blackduck\nsynopsysctl update operator --enable-blackduck -n <namespace>\nsynopsysctl update operator --expose-ui %s", util.OPENSHIFT),
 	Short:         "Update Synopsys Operator",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -154,6 +154,11 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 	}
 	if cmd.Flag("expose-ui").Changed {
 		log.Debugf("updating expose ui")
+		isValid := util.IsExposeServiceValid(exposeUI)
+		if !isValid {
+			cmd.Help()
+			return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+		}
 		newOperatorSpec.Expose = exposeUI
 	}
 	if cmd.Flag("postgres-restart-in-minutes").Changed {
@@ -313,6 +318,11 @@ func updateOperator(namespace string, cmd *cobra.Command) error {
 		}
 		if cmd.Flag("expose-metrics").Changed {
 			log.Debugf("updating expose metrics")
+			isValid := util.IsExposeServiceValid(exposeMetrics)
+			if !isValid {
+				cmd.Help()
+				return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+			}
 			newPrometheusSpec.Expose = exposeMetrics
 		}
 

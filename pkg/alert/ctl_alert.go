@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -86,6 +86,10 @@ func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 	if globalSaltLength > 0 && globalSaltLength < 16 {
 		return fmt.Errorf("flag EncryptionGlobalSalt is %d characters. Must be 16 or more characters", globalSaltLength)
 	}
+	isValid := util.IsExposeServiceValid(ctl.ExposeService)
+	if !isValid {
+		return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+	}
 	return nil
 }
 
@@ -101,9 +105,9 @@ func (ctl *Ctl) SwitchSpec(specType string) error {
 	case EmptySpec:
 		ctl.Spec = &alertapi.AlertSpec{}
 	case DefaultSpec:
-		ctl.Spec = crddefaults.GetAlertDefault()
+		ctl.Spec = util.GetAlertDefault()
 		ctl.Spec.PersistentStorage = true
-		ctl.Spec.StandAlone = crddefaults.BoolToPtr(true)
+		ctl.Spec.StandAlone = util.BoolToPtr(true)
 	default:
 		return fmt.Errorf("Alert spec type '%s' is not valid", specType)
 	}
@@ -117,7 +121,7 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "URL of Alert's Image")
 	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "URL of CFSSL's Image")
 	cmd.Flags().StringVar(&ctl.StandAlone, "standalone", ctl.StandAlone, "If true, Alert runs in standalone mode [true|false]")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port of Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionPassword, "encryption-password", ctl.EncryptionPassword, "Encryption Password for Alert")
 	cmd.Flags().StringVar(&ctl.EncryptionGlobalSalt, "encryption-global-salt", ctl.EncryptionGlobalSalt, "Encryption Global Salt for Alert")
