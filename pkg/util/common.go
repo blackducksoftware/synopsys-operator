@@ -1565,7 +1565,7 @@ func isAlertExist(restConfig *rest.Config, namespace string) (bool, error) {
 
 	for _, alert := range alerts.Items {
 		if alert.Spec.Namespace == namespace {
-			return true, fmt.Errorf("%s Alert instance is already running in %s namespace... namespace cannot be deleted", alert.Name, namespace)
+			return true, fmt.Errorf("%s Alert instance is already running in %s namespace", alert.Name, namespace)
 		}
 	}
 	return false, nil
@@ -1584,7 +1584,7 @@ func isBlackDuckExist(restConfig *rest.Config, namespace string) (bool, error) {
 	}
 	for _, blackDuck := range blackDucks.Items {
 		if blackDuck.Spec.Namespace == namespace {
-			return true, fmt.Errorf("%s Black Duck instance is already running in %s namespace... namespace cannot be deleted", blackDuck.Name, namespace)
+			return true, fmt.Errorf("%s Black Duck instance is already running in %s namespace", blackDuck.Name, namespace)
 		}
 	}
 	return false, nil
@@ -1603,7 +1603,7 @@ func isOpsSightExist(restConfig *rest.Config, namespace string) (bool, error) {
 	}
 	for _, opsSight := range opsSights.Items {
 		if opsSight.Spec.Namespace == namespace {
-			return true, fmt.Errorf("%s OpsSight instance is already running in %s namespace... namespace cannot be deleted", opsSight.Name, namespace)
+			return true, fmt.Errorf("%s OpsSight instance is already running in %s namespace", opsSight.Name, namespace)
 		}
 	}
 	return false, nil
@@ -1626,8 +1626,8 @@ func IsOperatorExist(clientset *kubernetes.Clientset, namespace string) bool {
 	return false
 }
 
-// DeleteResourceNamespace deletes the namespace if none of the other resource types are running
-func DeleteResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, crdNames string, namespace string, isOperator bool) error {
+// CheckResourceNamespace checks whether namespace is having any resource types
+func CheckResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, crdNames string, namespace string, isOperator bool) error {
 	// verify whether the namespace exist
 	ns, err := GetNamespace(kubeClient, namespace)
 	if err != nil {
@@ -1661,15 +1661,24 @@ func DeleteResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Cli
 				return err
 			}
 		}
+	} else {
+		return fmt.Errorf("owner label is missing in the namespace and hence the namespace cannot be deleted")
+	}
 
+	return nil
+}
+
+// DeleteResourceNamespace deletes the namespace if none of the other resource types are running
+func DeleteResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, crdNames string, namespace string, isOperator bool) error {
+	err := CheckResourceNamespace(restConfig, kubeClient, crdNames, namespace, isOperator)
+	if err == nil {
 		log.Infof("deleting %s namespace", namespace)
 		err = DeleteNamespace(kubeClient, namespace)
 		if err != nil {
 			return fmt.Errorf("unable to delete the %s namespace because %+v", namespace, err)
 		}
 	}
-
-	return nil
+	return err
 }
 
 // CheckAndUpdateNamespace will check whether the namespace is exist and if exist, update the version label in namespace of the updated/deleted resource
