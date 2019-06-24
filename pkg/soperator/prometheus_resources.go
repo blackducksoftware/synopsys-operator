@@ -53,10 +53,10 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusService() []*horizoncompone
 	prometheusService.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
 	services = append(services, prometheusService)
 
-	if strings.EqualFold(specConfig.Expose, "NODEPORT") || strings.EqualFold(specConfig.Expose, "LOADBALANCER") {
+	if strings.EqualFold(specConfig.Expose, util.NODEPORT) || strings.EqualFold(specConfig.Expose, util.LOADBALANCER) {
 
 		var exposedServiceType horizonapi.ServiceType
-		if strings.EqualFold(specConfig.Expose, "NODEPORT") {
+		if strings.EqualFold(specConfig.Expose, util.NODEPORT) {
 			exposedServiceType = horizonapi.ServiceTypeNodePort
 		} else {
 			exposedServiceType = horizonapi.ServiceTypeLoadBalancer

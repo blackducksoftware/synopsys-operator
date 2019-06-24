@@ -287,10 +287,10 @@ func (hc *Creater) getExposeService(bd *blackduckapi.Blackduck) *components.Serv
 	var svc *components.Service
 
 	switch strings.ToUpper(bd.Spec.ExposeService) {
-	case "NODEPORT":
+	case util.NODEPORT:
 		svc = containerCreater.GetWebServerNodePortService()
 		break
-	case "LOADBALANCER":
+	case util.LOADBALANCER:
 		svc = containerCreater.GetWebServerLoadBalancerService()
 		break
 	default:
