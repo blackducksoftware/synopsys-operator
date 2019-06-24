@@ -258,10 +258,10 @@ func (p *SpecConfig) getPerceptorExposeService() (*components.Service, error) {
 	var svc *components.Service
 	var err error
 	switch strings.ToUpper(p.opssight.Spec.Perceptor.Expose) {
-	case "NODEPORT":
+	case util.NODEPORT:
 		svc, err = p.PerceptorNodePortService()
 		break
-	case "LOADBALANCER":
+	case util.LOADBALANCER:
 		svc, err = p.PerceptorLoadBalancerService()
 		break
 	default:
@@ -273,10 +273,10 @@ func (p *SpecConfig) getPerceptorMetricsExposeService() (*components.Service, er
 	var svc *components.Service
 	var err error
 	switch strings.ToUpper(p.opssight.Spec.Prometheus.Expose) {
-	case "NODEPORT":
+	case util.NODEPORT:
 		svc, err = p.PerceptorMetricsNodePortService()
 		break
-	case "LOADBALANCER":
+	case util.LOADBALANCER:
 		svc, err = p.PerceptorMetricsLoadBalancerService()
 		break
 	default:

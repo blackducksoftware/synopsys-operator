@@ -133,9 +133,9 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 		// log.Debugf("created/updated non postgres and upload cache component for %s", blackduck.Spec.Namespace)
 
-		if strings.ToUpper(blackduck.Spec.ExposeService) == "NODEPORT" {
+		if strings.ToUpper(blackduck.Spec.ExposeService) == util.NODEPORT {
 			newBlackuck.Status.IP, err = bdutils.GetNodePortIPAddress(hc.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
-		} else if strings.ToUpper(blackduck.Spec.ExposeService) == "LOADBALANCER" {
+		} else if strings.ToUpper(blackduck.Spec.ExposeService) == util.LOADBALANCER {
 			newBlackuck.Status.IP, err = bdutils.GetLoadBalancerIPAddress(hc.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
 		}
 

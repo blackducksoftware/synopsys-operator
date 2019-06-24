@@ -39,10 +39,10 @@ import (
 
 //  Deploy Command Defaults
 var operatorNamespace = DefaultOperatorNamespace
-var exposeUI = ""
+var exposeUI = util.NONE
 var synopsysOperatorImage string
 var metricsImage = DefaultMetricsImage
-var exposeMetrics = ""
+var exposeMetrics = util.NONE
 var terminationGracePeriodSeconds int64 = 180
 var dryRun = "false"
 var logLevel = "debug"
@@ -73,6 +73,17 @@ var deployCmd = &cobra.Command{
 		if len(args) > 0 {
 			cmd.Help()
 			return fmt.Errorf("this command doesn't take any arguments")
+		}
+		isValid := util.IsExposeServiceValid(exposeUI)
+		if !isValid {
+			cmd.Help()
+			return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+		}
+
+		isValid = util.IsExposeServiceValid(exposeMetrics)
+		if !isValid {
+			cmd.Help()
+			return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
 		}
 		return nil
 	},
@@ -302,9 +313,9 @@ func initFlags() {
 	deployCmd.Flags().BoolVarP(&isEnabledBlackDuck, "enable-blackduck", "b", isEnabledBlackDuck, "Enable/Disable Black Duck Custom Resource Definition (CRD) in your cluster")
 	deployCmd.Flags().BoolVarP(&isEnabledOpsSight, "enable-opssight", "s", isEnabledOpsSight, "Enable/Disable OpsSight Custom Resource Definition (CRD) in your cluster")
 	// deployCmd.Flags().BoolVarP(&isEnabledPrm, "enable-prm", "p", isEnabledPrm, "Enable/Disable Polaris Reporting Module Custom Resource Definition (CRD) in your cluster")
-	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "Service type to expose Synopsys Operator's user interface [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	deployCmd.Flags().StringVarP(&exposeUI, "expose-ui", "e", exposeUI, "Service type to expose Synopsys Operator's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	deployCmd.Flags().StringVarP(&synopsysOperatorImage, "synopsys-operator-image", "i", synopsysOperatorImage, "Image URL of Synopsys Operator")
-	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "x", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT]")
+	deployCmd.Flags().StringVarP(&exposeMetrics, "expose-metrics", "x", exposeMetrics, "Service type to expose Synopsys Operator's metrics application [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	deployCmd.Flags().StringVarP(&metricsImage, "metrics-image", "m", metricsImage, "Image URL of Synopsys Operator's metrics pod")
 	deployCmd.Flags().Int64VarP(&postgresRestartInMins, "postgres-restart-in-minutes", "q", postgresRestartInMins, "Minutes to check for restarting postgres")
 	deployCmd.Flags().Int64VarP(&podWaitTimeoutSeconds, "pod-wait-timeout-in-seconds", "w", podWaitTimeoutSeconds, "Seconds to wait for pods to be running")
