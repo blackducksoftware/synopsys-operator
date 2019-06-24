@@ -617,49 +617,6 @@ func WaitForServiceEndpointReady(clientset *kubernetes.Clientset, namespace stri
 	return nil
 }
 
-// ValidatePodsAreRunningInNamespace will validate whether the pods are running in a given namespace
-func ValidatePodsAreRunningInNamespace(clientset *kubernetes.Clientset, namespace string, timeoutInSeconds int64) error {
-	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
-	timeout := time.NewTimer(time.Duration(timeoutInSeconds) * time.Second)
-	// ticker starts and execute the task for every n intervals
-	ticker := time.NewTicker(10 * time.Second)
-	for {
-		select {
-		case <-timeout.C:
-			ticker.Stop()
-			return fmt.Errorf("the pods weren't able to start - timing out after %d seconds", timeoutInSeconds)
-		case <-ticker.C:
-			pods, err := ListPods(clientset, namespace)
-			if err != nil {
-				timeout.Stop()
-				ticker.Stop()
-				return fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
-			}
-			if ValidatePodsAreRunning(clientset, pods) {
-				timeout.Stop()
-				ticker.Stop()
-				return nil
-			}
-		}
-	}
-}
-
-// ValidatePodsAreRunning will validate whether the pods are running
-func ValidatePodsAreRunning(clientset *kubernetes.Clientset, pods *corev1.PodList) bool {
-	// Check whether all pods are running
-	for _, podList := range pods.Items {
-		pod, _ := clientset.CoreV1().Pods(podList.Namespace).Get(podList.Name, metav1.GetOptions{})
-		switch pod.Status.Phase {
-		case "Succeeded", "Running":
-			continue
-		default:
-			log.Infof("pod %s is in %s status...", pod.Name, string(pod.Status.Phase))
-			return false
-		}
-	}
-	return true
-}
-
 // FilterPodByNamePrefixInNamespace will filter the pod based on pod name prefix from a list a pods in a given namespace
 func FilterPodByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace string, prefix string) (*corev1.Pod, error) {
 	pods, err := ListPods(clientset, namespace)
@@ -1347,25 +1304,32 @@ func DeleteCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clie
 }
 
 // WaitUntilPodsAreReady will wait for the pods to be ready
-func WaitUntilPodsAreReady(clientset *kubernetes.Clientset, namespace string, labelSelector string, timeoutInSeconds int64) (bool, error) {
-	// timer starts the timer for timeoutInSeconds. If the task doesn't completed, return error
-	timeout := time.NewTimer(time.Duration(timeoutInSeconds) * time.Second)
-	// ticker starts and execute the task for every n intervals
-	ticker := time.NewTicker(10 * time.Second)
-	for {
-		select {
-		case <-timeout.C:
-			ticker.Stop()
-			return false, fmt.Errorf("[NS: %s | Label: %s] the pods weren't ready - timing out after %d seconds", namespace, labelSelector, timeoutInSeconds)
-		case <-ticker.C:
-			ready, err := IsPodReady(clientset, namespace, labelSelector)
-			if err != nil || ready {
-				timeout.Stop()
-				ticker.Stop()
-				return ready, err
-			}
+func WaitUntilPodsAreReady(clientset *kubernetes.Clientset, namespace string, labelSelector string, timeoutInSeconds int64) error {
+	numOfTimesToCheck := 10
+	var duration time.Duration
+	if int(timeoutInSeconds) < numOfTimesToCheck {
+		// if timeoutInSeconds is less than 10 seconds, ticker will tick every timeoutInSeconds for numOfTimesToCheck
+		duration = time.Duration(timeoutInSeconds) * time.Second
+	} else {
+		// otherwise ticker will tick every 10th of timeoutInSeconds for numOfTimesToCheck
+		duration = time.Duration(int(timeoutInSeconds)/numOfTimesToCheck) * time.Second
+	}
+	// log.Debugf("Ticker will tick every %v seconds for %v times", duration, numOfTimesToCheck)
+
+	ticker := time.NewTicker(duration)
+	tickerCounter := 0
+	for ; true; <-ticker.C {
+		tickerCounter++
+		// log.Debugf("Ticker counter %v ticked at: %v", tickerCounter, time.Now())
+		ready, err := IsPodReady(clientset, namespace, labelSelector)
+		if ready {
+			return nil
+		}
+		if tickerCounter >= numOfTimesToCheck {
+			return fmt.Errorf("[NS: %s | Label: %s] the pods weren't ready - timing out after %d seconds: %v", namespace, labelSelector, timeoutInSeconds, err)
 		}
 	}
+	return fmt.Errorf("[NS: %s | Label: %s] the pods weren't ready - timing out after %d seconds", namespace, labelSelector, timeoutInSeconds)
 }
 
 // IsPodReady returns whether the pods are ready or not
