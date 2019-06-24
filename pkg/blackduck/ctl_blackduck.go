@@ -28,7 +28,6 @@ import (
 
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	crddefaults "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -168,23 +167,23 @@ func (ctl *Ctl) SwitchSpec(createBlackDuckSpecType string) error {
 	case EmptySpec:
 		ctl.Spec = &blackduckv1.BlackduckSpec{}
 	case PersistentStorageLatestSpec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageLatest()
+		ctl.Spec = util.GetBlackDuckDefaultPersistentStorageLatest()
 	case PersistentStorageV1Spec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultPersistentStorageV1()
+		ctl.Spec = util.GetBlackDuckDefaultPersistentStorageV1()
 	case ExternalPersistentStorageLatestSpec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageLatest()
+		ctl.Spec = util.GetBlackDuckDefaultExternalPersistentStorageLatest()
 	case ExternalPersistentStorageV1Spec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalPersistentStorageV1()
+		ctl.Spec = util.GetBlackDuckDefaultExternalPersistentStorageV1()
 	case BDBASpec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultBDBA()
+		ctl.Spec = util.GetBlackDuckDefaultBDBA()
 	case EphemeralSpec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeral()
+		ctl.Spec = util.GetBlackDuckDefaultEphemeral()
 	case EphemeralCustomAuthCASpec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultEphemeralCustomAuthCA()
+		ctl.Spec = util.GetBlackDuckDefaultEphemeralCustomAuthCA()
 	case ExternalDBSpec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultExternalDB()
+		ctl.Spec = util.GetBlackDuckDefaultExternalDB()
 	case IPV6DisabledSpec:
-		ctl.Spec = crddefaults.GetBlackDuckDefaultIPV6Disabled()
+		ctl.Spec = util.GetBlackDuckDefaultIPV6Disabled()
 	default:
 		return fmt.Errorf("Black Duck spec type '%s' is not valid", createBlackDuckSpecType)
 	}
@@ -201,7 +200,11 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	}
 	cmd.Flags().StringVar(&ctl.Size, "size", ctl.Size, "Size of Black Duck [small|medium|large|x-large]")
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Black Duck")
-	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck webserver's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	if master {
+		cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", util.NONE, "Service type of Black Duck webserver's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	} else {
+		cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type of Black Duck webserver's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
+	}
 	cmd.Flags().StringVar(&ctl.DbPrototype, "db-prototype", ctl.DbPrototype, "Black Duck name to clone the database")
 	cmd.Flags().StringVar(&ctl.ExternalPostgresHost, "external-postgres-host", ctl.ExternalPostgresHost, "Host of external Postgres")
 	cmd.Flags().IntVar(&ctl.ExternalPostgresPort, "external-postgres-port", ctl.ExternalPostgresPort, "Port of external Postgres")
@@ -283,12 +286,12 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresAdminPassword = crddefaults.Base64Encode([]byte(ctl.ExternalPostgresAdminPassword))
+			ctl.Spec.ExternalPostgres.PostgresAdminPassword = util.Base64Encode([]byte(ctl.ExternalPostgresAdminPassword))
 		case "external-postgres-user-password":
 			if ctl.Spec.ExternalPostgres == nil {
 				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresUserPassword = crddefaults.Base64Encode([]byte(ctl.ExternalPostgresUserPassword))
+			ctl.Spec.ExternalPostgres.PostgresUserPassword = util.Base64Encode([]byte(ctl.ExternalPostgresUserPassword))
 		case "pvc-storage-class":
 			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
@@ -374,11 +377,11 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 		case "license-key":
 			ctl.Spec.LicenseKey = ctl.LicenseKey
 		case "admin-password":
-			ctl.Spec.AdminPassword = crddefaults.Base64Encode([]byte(ctl.AdminPassword))
+			ctl.Spec.AdminPassword = util.Base64Encode([]byte(ctl.AdminPassword))
 		case "postgres-password":
-			ctl.Spec.PostgresPassword = crddefaults.Base64Encode([]byte(ctl.PostgresPassword))
+			ctl.Spec.PostgresPassword = util.Base64Encode([]byte(ctl.PostgresPassword))
 		case "user-password":
-			ctl.Spec.UserPassword = crddefaults.Base64Encode([]byte(ctl.UserPassword))
+			ctl.Spec.UserPassword = util.Base64Encode([]byte(ctl.UserPassword))
 		case "enable-binary-analysis":
 			if ctl.EnableBinaryAnalysis {
 				ctl.Spec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:1"}, ctl.Spec.Environs)
