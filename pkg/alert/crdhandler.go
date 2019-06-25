@@ -106,7 +106,10 @@ func (h *Handler) ObjectDeleted(name string) {
 	}
 
 	app := apps.NewApp(h.config, h.kubeConfig)
-	app.Alert().Delete(name)
+	err := app.Alert().Delete(name)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // ObjectUpdated will be called for update alert events
@@ -120,21 +123,14 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	}
 
 	var err error
-	isUpdate := false
-	if alert.GetAnnotations() == nil {
-		annotations := make(map[string]string)
-		annotations["synopsys.com/created.by"] = h.config.Version
-		alert.Annotations = annotations
-		isUpdate = true
-	} else {
-		if _, ok = alert.GetAnnotations()["synopsys.com/created.by"]; !ok {
-			alert.Annotations["synopsys.com/created.by"] = h.config.Version
-			isUpdate = true
-		}
-	}
-
-	if isUpdate {
+	if _, ok = alert.Annotations["synopsys.com/created.by"]; !ok {
+		alert.Annotations = util.InitAnnotations(alert.Annotations)
+		alert.Annotations["synopsys.com/created.by"] = h.config.Version
 		alert, err = util.UpdateAlert(h.alertClient, alert.Spec.Namespace, alert)
+		if err != nil {
+			log.Errorf("couldn't update the annotation for %s Alert instance in %s namespace due to %+v", alert.Name, alert.Spec.Namespace, err)
+			return
+		}
 	}
 
 	// Get Default fields for Alert

@@ -378,9 +378,8 @@ func ListSecrets(clientset *kubernetes.Clientset, namespace string, labelSelecto
 }
 
 // UpdateSecret updates a secret
-func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *corev1.Secret) error {
-	_, err := clientset.CoreV1().Secrets(namespace).Update(secret)
-	return err
+func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *corev1.Secret) (*corev1.Secret, error) {
+	return clientset.CoreV1().Secrets(namespace).Update(secret)
 }
 
 // DeleteSecret will delete the secret
@@ -405,9 +404,8 @@ func ListConfigMaps(clientset *kubernetes.Clientset, namespace string, labelSele
 }
 
 // UpdateConfigMap updates a config map
-func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *corev1.ConfigMap) error {
-	_, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
-	return err
+func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+	return clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
 }
 
 // DeleteConfigMap will delete the config map
@@ -495,6 +493,11 @@ func ListReplicationControllers(clientset *kubernetes.Clientset, namespace strin
 	return clientset.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
+// UpdateReplicationController updates the replication controller
+func UpdateReplicationController(clientset *kubernetes.Clientset, namespace string, rc *corev1.ReplicationController) (*corev1.ReplicationController, error) {
+	return clientset.CoreV1().ReplicationControllers(namespace).Update(rc)
+}
+
 // DeleteReplicationController will delete the replication controller corresponding to a namespace and name
 func DeleteReplicationController(clientset *kubernetes.Clientset, namespace string, name string) error {
 	propagationPolicy := metav1.DeletePropagationBackground
@@ -511,6 +514,11 @@ func GetDeployment(clientset *kubernetes.Clientset, namespace string, name strin
 // ListDeployments will get all the deployments corresponding to a namespace
 func ListDeployments(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*appsv1.DeploymentList, error) {
 	return clientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// UpdateDeployment updates the deployment
+func UpdateDeployment(clientset *kubernetes.Clientset, namespace string, deployment *appsv1.Deployment) (*appsv1.Deployment, error) {
+	return clientset.AppsV1().Deployments(namespace).Update(deployment)
 }
 
 // DeleteDeployment will delete the deployment corresponding to a namespace and name
@@ -1068,18 +1076,28 @@ func DeleteRoleBinding(clientset *kubernetes.Clientset, namespace string, name s
 
 // GetRouteClient attempts to get a Route Client. It returns nil if it
 // fails due to an error or due to being on kubernetes (doesn't support routes)
-func GetRouteClient(restConfig *rest.Config, namespace string) *routeclient.RouteV1Client {
+func GetRouteClient(restConfig *rest.Config, clientset *kubernetes.Clientset, namespace string) *routeclient.RouteV1Client {
 	routeClient, err := routeclient.NewForConfig(restConfig)
 	if routeClient == nil || err != nil {
 		log.Debugf("unable to get route client")
 		return nil
 	}
-	_, err = ListRoutes(routeClient, namespace, "")
-	if err != nil {
-		log.Debugf("ignoring routes for kubernetes cluster")
-		return nil
+
+	ocVersion, err := GetOcVersion(clientset)
+	if err == nil && len(ocVersion) > 0 {
+		return routeClient
 	}
-	return routeClient
+
+	log.Debugf("unable to get oc version due to %+v", err)
+
+	// if not within container, check using list routes to determine whether it is an OpenShift cluster
+	_, err = ListRoutes(routeClient, namespace, "")
+	if err == nil {
+		return routeClient
+	}
+
+	log.Debugf("unable to list routes and hence ignoring routes due to %+v", err)
+	return nil
 }
 
 // GetRoute gets an OpenShift routes
@@ -1090,6 +1108,11 @@ func GetRoute(routeClient *routeclient.RouteV1Client, namespace string, name str
 // ListRoutes list an OpenShift routes
 func ListRoutes(routeClient *routeclient.RouteV1Client, namespace string, labelSelector string) (*routev1.RouteList, error) {
 	return routeClient.Routes(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+}
+
+// UpdateRoute updates an OpenShift routes
+func UpdateRoute(routeClient *routeclient.RouteV1Client, namespace string, route *routev1.Route) (*routev1.Route, error) {
+	return routeClient.Routes(namespace).Update(route)
 }
 
 // GetRouteComponent returns the route component
@@ -1657,6 +1680,7 @@ func CheckAndUpdateNamespace(kubeClient *kubernetes.Clientset, resourceName stri
 			isLabelUpdated = true
 		} else { // add to labels
 			if existingVersion, ok := ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)]; !isDelete && (!ok || existingVersion != version) {
+				ns.Labels = InitLabels(ns.Labels)
 				ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)] = version
 				isLabelUpdated = true
 			}
@@ -1690,4 +1714,20 @@ func DeployCRDNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 		return fmt.Errorf("error in creating the namespace due to %+v", err)
 	}
 	return nil
+}
+
+// InitLabels initialize the label
+func InitLabels(labels map[string]string) map[string]string {
+	if labels == nil {
+		return make(map[string]string, 0)
+	}
+	return labels
+}
+
+// InitAnnotations initialize the annotation
+func InitAnnotations(annotations map[string]string) map[string]string {
+	if annotations == nil {
+		return make(map[string]string, 0)
+	}
+	return annotations
 }
