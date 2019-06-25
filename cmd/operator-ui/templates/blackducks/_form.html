@@ -4,8 +4,11 @@
     <%= f.InputTag("Spec.Namespace", {value: blackduck.Spec.Namespace, label: "Namespace *", required: true, placeholder: "Lowercase letters, numbers, and hyphens only. Start with a lowercase letter and do not end with a hyphen", pattern: "^[a-z][-a-z0-9]+", title: "Lowercase letter, numbers, and hyphen only. Start with lowercase letter and cannot start or end with hyphen."}) %>
     <%= f.SelectTag("Spec.Version", {options: blackduck.View.SupportedVersions, value: blackduck.Spec.Version, label: "Black Duck Version"}) %>
     <%= f.InputTag("Spec.LicenseKey", {value: blackduck.Spec.LicenseKey, label: "License Key"}) %>
-    <%= if (blackduck.Spec.Namespace!="") { %>
-    <%= f.SelectTag("Spec.DesiredState", {options: {"Start":"", "Stop":"Stop"}, value: blackduck.Spec.DesiredState, label: "Desired State"}) %>
+    <%= if (blackduck.Name!="") { %>
+    <%= f.SelectTag("Spec.DesiredState", {options: {"Start":"", "Stop":"Stop", "DbMigrate":"DbMigrate"}, value: blackduck.Spec.DesiredState, label: "Desired State"}) %>
+    <% } else { %>
+    <div class="form-group"><label><input class="" onclick="var hid = document.getElementById('blackduck-Spec.DesiredState'); if (hid.value == ''){ hid.value = 'DbMigrate' } else { hid.value = '' }" type="checkbox"> DbMigrate</label></div>
+    <input type="hidden" id="blackduck-Spec.DesiredState" name="Spec.DesiredState" value="" />
     <% } %>
     <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: blackduck.Spec.Size, label: "Size"}) %>
     <%= f.SelectTag("Spec.ExposeService", {options: {"None": "NONE","Load Balancer": "LoadBalancer", "Node Port": "NodePort", "Routes for OpenShift": "OpenShift"}, value: blackduck.Spec.ExposeService, label: "Expose Service"}) %>
