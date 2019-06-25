@@ -186,3 +186,60 @@ func TestGetImageVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestGetImageName(t *testing.T) {
+	type args struct {
+		image string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "base",
+			args: args{
+				image: "docker.io/blackducksoftware/synopsys-operator:2019.4.2",
+			},
+			want:    "synopsys-operator",
+			wantErr: false,
+		},
+		{
+			name: "edge",
+			args: args{
+				image: "artifactory.test.lab:8321/blackducksoftware/synopsys-operator:2019.4.2",
+			},
+			want:    "synopsys-operator",
+			wantErr: false,
+		},
+		{
+			name: "no version tag fed",
+			args: args{
+				image: "docker.io/blackducksoftware/synopsys-operator",
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "no version tag, but still two or more splits; also testing weird tag",
+			args: args{
+				image: "artifactory.test.lab:8321/blackducksoftware/synopsys-operator",
+			},
+			want:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetImageName(tt.args.image)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetImageTag() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetImageTag() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
