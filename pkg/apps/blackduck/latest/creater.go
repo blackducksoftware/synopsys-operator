@@ -30,8 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
@@ -143,8 +141,9 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return fmt.Errorf("update cfssl component: %+v", errors)
 		}
 
-		if err := util.ValidatePodsAreRunningInNamespace(hc.kubeClient, blackduck.Spec.Namespace, hc.config.PodWaitTimeoutSeconds); err != nil {
-			return err
+		err = util.WaitUntilPodsAreReady(hc.kubeClient, blackduck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component=cfssl", util.BlackDuckName, blackduck.Name), hc.config.PodWaitTimeoutSeconds)
+		if err != nil {
+			return fmt.Errorf("the cfssl pod is not ready: %v", err)
 		}
 
 		// deploy non postgres and uploadcache component
@@ -179,8 +178,9 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			}
 		}
 
-		if err := util.ValidatePodsAreRunningInNamespace(hc.kubeClient, blackduck.Spec.Namespace, 600); err != nil {
-			return err
+		err = util.WaitUntilPodsAreReady(hc.kubeClient, blackduck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl)", util.BlackDuckName, blackduck.Name), hc.config.PodWaitTimeoutSeconds)
+		if err != nil {
+			return fmt.Errorf("the remaining pods are not ready: %v", err)
 		}
 
 		// TODO wait for webserver to be up before we register
@@ -235,13 +235,9 @@ func (hc *Creater) initPostgres(name string, bdspec *blackduckapi.BlackduckSpec)
 		return fmt.Errorf("%v: unable to decode postgresPassword due to: %+v", bdspec.Namespace, err)
 	}
 
-	ready, err := util.WaitUntilPodsAreReady(hc.kubeClient, bdspec.Namespace, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, name), hc.config.PodWaitTimeoutSeconds)
+	err = util.WaitUntilPodsAreReady(hc.kubeClient, bdspec.Namespace, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, name), hc.config.PodWaitTimeoutSeconds)
 	if err != nil {
-		return err
-	}
-
-	if !ready {
-		return errors.New("the postgres pod is not yet ready")
+		return fmt.Errorf("the postgres pod is not yet ready: %v", err)
 	}
 
 	// Check if initialization is required.
