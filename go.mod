@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	cloud.google.com/go v0.40.0 // indirect
+	github.com/Azure/go-autorest/autorest v0.3.0 // indirect
 	github.com/blackducksoftware/horizon v0.0.0-20190603173136-e141457f7a80
 	github.com/blackducksoftware/synopsys-operator/cmd/operator-ui v0.0.0-20190614224807-8d080a4e981c // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
@@ -45,6 +46,7 @@ require (
 
 replace (
 	cloud.google.com/go => cloud.google.com/go v0.40.0
+	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.3.0
 	github.com/blackducksoftware/horizon => github.com/blackducksoftware/horizon v0.0.0-20190603173136-e141457f7a80
 	github.com/blackducksoftware/synopsys-operator/cmd/operator-ui => github.com/blackducksoftware/synopsys-operator/cmd/operator-ui v0.0.0-20190614224807-8d080a4e981c
 	github.com/evanphx/json-patch => github.com/evanphx/json-patch v4.5.0+incompatible
