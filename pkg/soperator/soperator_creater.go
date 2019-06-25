@@ -138,6 +138,7 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 
 	// Update the Synopsys Operator's Components
 	log.Debugf("updating Synopsys Operator's Components")
+	newOperatorSpec.ClusterType = GetClusterType(sc.KubeConfig, sc.KubeClient, namespace)
 	err = sc.UpdateSOperatorComponents(newOperatorSpec)
 	if err != nil {
 		return fmt.Errorf("failed to update Synopsys Operator components: %s", err)

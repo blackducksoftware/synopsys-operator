@@ -153,7 +153,7 @@ func (s *Secret) patch(i interface{}, isPatched bool) (bool, error) {
 		oldLatestSecret := srt.(*corev1.Secret)
 		oldLatestSecret.Data = newSecret.Data
 		oldLatestSecret.StringData = newSecret.StringData
-		err = util.UpdateSecret(s.config.kubeClient, s.config.namespace, oldLatestSecret)
+		_, err = util.UpdateSecret(s.config.kubeClient, s.config.namespace, oldLatestSecret)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the secret %s in namespace %s", secretName, s.config.namespace)
 		}
