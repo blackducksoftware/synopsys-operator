@@ -7,6 +7,7 @@ import json
 import time
 import requests
 import logging
+import shutil
 
 
 class Terminal:
@@ -24,32 +25,31 @@ class Terminal:
 
 
 class Ctl:
-    def __init__(self, path=""):
-        self.path = path
+    def __init__(self, executable=""):
+        self.executable = executable
         self.terminal = Terminal()
 
     def exec(self, command="", retry=3):
         self.verify()
-        command = "./{} {}".format(self.path, command)
+        command = "{} {}".format(self.executable, command)
         return self.terminal.exec(command=command, retry=retry)
 
     def verify(self):
-        f = open(self.path, 'r')  # exception if binary doesn't exist
-        f.close()
+        assert shutil.which(self.executable) is not None
 
 
 class Synopsysctl(Ctl):
-    def __init__(self, version="latest", path="synopsysctl"):
-        self.path = path
-        self.version = version
+    def __init__(self, executable="synopsysctl", version="latest"):
+        self.executable = executable
         self.terminal = Terminal()
+        self.version = version
 
     def deployDefault(self):
         self.verify()
         command = ""
-        if self.version in ["latest", "2019.4.2]"]:
+        if self.version in ["latest", "2019.6.0"]:
             command = "deploy --cluster-scoped --enable-alert --enable-blackduck --enable-opssight"
-        elif self.version in ["2019.4.1", "2019.4.0"]:
+        elif self.version in ["2019.4.2", "2019.4.1", "2019.4.0"]:
             command = "deploy"
 
         self.exec(command)
@@ -61,12 +61,12 @@ class Synopsysctl(Ctl):
 
 
 class Kubectl(Ctl):
-    def __init__(self, path="kubectl"):
-        self.path = path
+    def __init__(self, executable="kubectl"):
+        self.executable = executable
         self.terminal = Terminal()
 
 
 class Oc(Ctl):
-    def __init__(self, path="oc"):
-        self.path = path
+    def __init__(self, executable="oc"):
+        self.executable = executable
         self.terminal = Terminal()

@@ -18,16 +18,17 @@ except:
 client.rest.logger.setLevel("INFO")
 logging.basicConfig(level=logging.DEBUG)
 
-synopsysctl_path = "../../../../../../../Desktop/ctls/synopsysctl-latest/synopsysctl"
-kubectl_path = "../../../../../../../Desktop/ctls/kubectl/kubectl"
+synopsysctl_path = "synopsysctl"
+kubectl_path = "kubectl"
 
 image = "-i docker.io/blackducksoftware/synopsys-operator:2019.6.0-RC"
+
 
 def test_synopsysctlSmoke():
     logging.info("TEST: test_synopsysctlSmoke")
     # Create clients
     h = Helper(synopsysctl_path=synopsysctl_path, kubectl_path=kubectl_path)
-    synopsysctl = Synopsysctl(path=synopsysctl_path, version="latest")
+    synopsysctl = Synopsysctl(executable=synopsysctl_path, version="latest")
     so = SynopsysOperator(h)
 
     alert = Alert(h)
@@ -161,8 +162,8 @@ def test_mockAlert():
     logging.info("TEST: test_mockAlert")
     # Create clients
     h = Helper(synopsysctl_path=synopsysctl_path, kubectl_path=kubectl_path)
-    synopsysctl = Synopsysctl(path=synopsysctl_path, version="latest")
-    kubectl = Kubectl(path=kubectl_path)
+    synopsysctl = Synopsysctl(executable=synopsysctl_path, version="latest")
+    kubectl = Kubectl(executable=kubectl_path)
     terminal = Terminal()
 
     # Deploy the Synopsys Operator
@@ -245,7 +246,7 @@ def test_namespacedOperations():
     logging.info("TEST: test_namespacedOperations")
     # Create clients
     h = Helper(synopsysctl_path="synopsysctl_path", kubectl_path=kubectl_path)
-    synopsysctl = Synopsysctl(path=synopsysctl_path, version="latest")
+    synopsysctl = Synopsysctl(executable=synopsysctl_path, version="latest")
     so = SynopsysOperator(h)
     alt = Alert(h)
     bd = BlackDuck(h)
@@ -289,8 +290,8 @@ def test_namespacedOperations():
 def test_nodeAffinity():
     logging.info("TEST: test_nodeAffinity")
     # Create Helpers
-    h = Helper(synopsysctl_path="synopsysctl_path", kubectl_path=kubectl_path)
-    synopsysctl = Synopsysctl(path=synopsysctl_path, version="latest")
+    h = Helper(synopsysctl_path=synopsysctl_path, kubectl_path=kubectl_path)
+    synopsysctl = Synopsysctl(executable=synopsysctl_path, version="latest")
     bd = BlackDuck(h)
 
     # Deploy Synopsys Operator
@@ -302,21 +303,17 @@ def test_nodeAffinity():
     # Create Black Duck with Node Affinity
     bd.waitForCRD()
     synopsysctl.exec(
-        "create blackduck bd --node-affinity-file-path node.json --admin-password a --postgres-password p --user-password u --persistent-storage false")
+        "create blackduck bd --node-affinity-file-path ~/gocode/src/github.com/blackducksoftware/synopsys-operator/test-infra/e2e-tests/node.json --admin-password a --postgres-password p --user-password u --persistent-storage false")
     bd.waitUntilRunning("bd")
 
     # Check if Documentation pod was configured correctly
-    pods = h.v1.list_namespaced_pod("bd").items
-    documentationPod = None
-    for pod in pods:
-        if "documentation" in pod.metadata.name:
-            documentationPod = pod
-            break
+    documentationPod = h.v1.list_namespaced_pod(
+        namespace="bd", label_selector='component=documentation').items[0]
     docPodNodeAffinity = documentationPod.spec.affinity.node_affinity
     docPodNodeTerms = docPodNodeAffinity.required_during_scheduling_ignored_during_execution.node_selector_terms
     found = False
     for term in docPodNodeTerms:
-        for match in term.match_experssions:
+        for match in term.match_expressions:
             foundKey = match.key == "beta.kubernetes.io/arch"
             foundOperator = match.operator == "In"
             foundVal = match.values == ["amd64"]
@@ -327,6 +324,11 @@ def test_nodeAffinity():
             break
     if not found:
         raise Exception("couldn't determine Node Affinity")
+
+    # cleanup
+    synopsysctl.exec("delete blackduck bd")
+    bd.waitUntilDeleted(namespace="bd")
+    synopsysctl.exec("destroy")
 
 
 @pytest.mark.v2019_4_0

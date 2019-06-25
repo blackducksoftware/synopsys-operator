@@ -16,7 +16,7 @@ class Helper():
         self.synopsysctl = None
         if self.synopsysctl_path != None:
             self.synopsysctl = Synopsysctl(
-                version=self.synopsysctl_version, path=self.synopsysctl_path)
+                version=self.synopsysctl_version, executable=self.synopsysctl_path)
 
         self.kubectl_path = kubectl_path
         self.kubectl = None
@@ -29,16 +29,15 @@ class Helper():
             self.oc = Oc(self.oc_path)
 
         self.terminal = Terminal()
-
         self.v1 = client.CoreV1Api()
 
-    def clusterLogIn(self, cluster_ip, username, password):
-        command = "login {} --username={} --password={} --insecure-skip-tls-verify=true".format(
-            cluster_ip, username, password)
-        out, err = self.kubectl.exec(command)
-        if err != None:
-            logging.error(str(err))
-            sys.exit(1)
+    # def clusterLogIn(self, cluster_ip, username, password):
+    #     command = "login {} --username={} --password={} --insecure-skip-tls-verify=true".format(
+    #         cluster_ip, username, password)
+    #     out, err = self.kubectl.exec(command)
+    #     if err != None:
+    #         logging.error(str(err))
+    #         sys.exit(1)
 
     def waitForPodsRunning(self, namespace, label="", retry=10):
         """INPUTS
@@ -87,6 +86,20 @@ class Helper():
             if namespace not in nsList.items:
                 return None
         return "namespace failed to delete"
+
+    def checkIfCrdExists(self, CRD):
+        api_instance = client.CustomObjectsApi()
+        group = "alerts.synopsys.com"
+        version = ""
+        plural = ""
+        name = ""
+        try:
+            api_response = api_instance.get_cluster_custom_object(
+                group, version, plural, name)
+            return True
+        except:
+            print(
+                "Exception when calling CustomObjectsApi->get_cluster_custom_object: %s\n" % e)
 
     def checkResourceExists(self, resource, resource_name):
         command = "get {} --no-headers".format(resource)
