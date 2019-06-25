@@ -55,7 +55,7 @@ var deleteAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, alertName := range args {
-			alertName, alertNamespace, _, err := getInstanceInfo(cmd, alertName, util.AlertCRDName, util.AlertName, namespace)
+			alertName, alertNamespace, _, err := getInstanceInfo(false, alertName, util.AlertCRDName, util.AlertName, namespace)
 			if err != nil {
 				return err
 			}
@@ -86,7 +86,7 @@ var deleteBlackDuckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, blackDuckName := range args {
-			blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, blackDuckName, util.BlackDuckCRDName, util.BlackDuckName, namespace)
+			blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, blackDuckName, util.BlackDuckCRDName, util.BlackDuckName, namespace)
 			if err != nil {
 				return err
 			}
@@ -117,7 +117,7 @@ var deleteOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, opsSightName := range args {
-			opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, opsSightName, util.OpsSightCRDName, util.OpsSightName, namespace)
+			opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, opsSightName, util.OpsSightCRDName, util.OpsSightName, namespace)
 			if err != nil {
 				return err
 			}

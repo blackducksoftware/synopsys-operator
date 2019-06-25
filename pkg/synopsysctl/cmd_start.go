@@ -53,7 +53,7 @@ var startAlertCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, _, err := getInstanceInfo(cmd, args[0], util.AlertCRDName, util.AlertName, namespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(false, args[0], util.AlertCRDName, util.AlertName, namespace)
 		if err != nil {
 			return err
 		}
@@ -93,7 +93,7 @@ var startBlackDuckCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(cmd, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
 		if err != nil {
 			return err
 		}
@@ -133,7 +133,7 @@ var startOpsSightCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(cmd, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
 		if err != nil {
 			return err
 		}
