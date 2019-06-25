@@ -137,7 +137,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	routeClient := util.GetRouteClient(c.kubeConfig, c.config.Namespace)
+	routeClient := util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
 
 	c.handler = &Handler{
 		config:      c.config,

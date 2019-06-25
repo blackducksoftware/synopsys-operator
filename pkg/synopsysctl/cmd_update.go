@@ -559,7 +559,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 
 		secret.Data["SEAL_KEY"] = []byte(newSealKey)
 
-		err = util.UpdateSecret(kubeClient, operatorNamespace, secret)
+		_, err = util.UpdateSecret(kubeClient, operatorNamespace, secret)
 		if err != nil {
 			return fmt.Errorf("unable to update Synopsys Operator's blackduck-secret in namespace '%s' due to %+v", operatorNamespace, err)
 		}

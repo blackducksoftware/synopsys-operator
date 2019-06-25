@@ -171,21 +171,14 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	}
 
 	var err error
-	isUpdate := false
-	if opssight.GetAnnotations() == nil {
-		annotations := make(map[string]string)
-		annotations["synopsys.com/created.by"] = h.Config.Version
-		opssight.Annotations = annotations
-		isUpdate = true
-	} else {
-		if _, ok = opssight.GetAnnotations()["synopsys.com/created.by"]; !ok {
-			opssight.Annotations["synopsys.com/created.by"] = h.Config.Version
-			isUpdate = true
-		}
-	}
-
-	if isUpdate {
+	if _, ok = opssight.Annotations["synopsys.com/created.by"]; !ok {
+		opssight.Annotations = util.InitAnnotations(opssight.Annotations)
+		opssight.Annotations["synopsys.com/created.by"] = h.Config.Version
 		opssight, err = util.UpdateOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight)
+		if err != nil {
+			log.Errorf("couldn't update the annotation for %s OpsSight instance in %s namespace due to %+v", opssight.Name, opssight.Spec.Namespace, err)
+			return
+		}
 	}
 
 	newSpec := opssight.Spec

@@ -125,7 +125,10 @@ func (h *Handler) ObjectDeleted(name string) {
 
 	// Voluntary deletion. The CRD still exists but the Black Duck resource has been deleted
 	app := apps.NewApp(h.config, h.kubeConfig)
-	app.Blackduck().Delete(name)
+	err := app.Blackduck().Delete(name)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // ObjectUpdated will be called for update black duck events
@@ -137,20 +140,9 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		return
 	}
 
-	isUpdate := false
-	if bd.GetAnnotations() == nil {
-		annotations := make(map[string]string)
-		annotations["synopsys.com/created.by"] = h.config.Version
-		bd.Annotations = annotations
-		isUpdate = true
-	} else {
-		if _, ok = bd.GetAnnotations()["synopsys.com/created.by"]; !ok {
-			bd.Annotations["synopsys.com/created.by"] = h.config.Version
-			isUpdate = true
-		}
-	}
-
-	if isUpdate {
+	if _, ok = bd.Annotations["synopsys.com/created.by"]; !ok {
+		bd.Annotations = util.InitAnnotations(bd.Annotations)
+		bd.Annotations["synopsys.com/created.by"] = h.config.Version
 		bd, err = util.UpdateBlackduck(h.blackduckClient, bd.Spec.Namespace, bd)
 		if err != nil {
 			log.Errorf("couldn't update the annotation for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)

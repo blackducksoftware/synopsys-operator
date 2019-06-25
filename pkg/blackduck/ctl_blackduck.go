@@ -112,7 +112,6 @@ func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 	if !isValidSize(ctl.Size) {
 		return fmt.Errorf("size must be 'small', 'medium', 'large' or 'x-large'")
 	}
-	fmt.Printf("expose service: %s\n", ctl.ExposeService)
 	isValid := util.IsExposeServiceValid(ctl.ExposeService)
 	if !isValid {
 		return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)

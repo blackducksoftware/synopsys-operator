@@ -182,7 +182,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	routeClient := util.GetRouteClient(c.kubeConfig, c.config.Namespace)
+	routeClient := util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
 	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1), nil, routeClient)
 }
 
