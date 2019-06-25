@@ -60,3 +60,13 @@ func GetImageTag(image string) (string, error) {
 	tag := imageSubstringSubmatch[len(imageSubstringSubmatch)-1]
 	return tag, nil
 }
+
+// GetImageName takes a docker image string and returns the name
+func GetImageName(image string) (string, error) {
+	imageSubstringSubmatch, err := ValidateImageString(image)
+	if err != nil {
+		return "", err
+	}
+	name := imageSubstringSubmatch[len(imageSubstringSubmatch)-2]
+	return name, nil
+}
