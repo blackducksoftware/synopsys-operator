@@ -147,6 +147,15 @@ var deployCmd = &cobra.Command{
 			return fmt.Errorf("unable to enable OpsSight because Synopsys Operator has namespace scope and OpsSight requires Synopsys Operator with cluster scope (deploy with flag --cluster-scoped)")
 		}
 
+		// Get CRD configs
+		crdConfigs, err := getCrdConfigs(operatorNamespace, isClusterScoped, crds)
+		if err != nil {
+			return err
+		}
+		if len(crdConfigs) == 0 {
+			return fmt.Errorf("no resources are enabled [include flag(s): --enable-alert --enable-blackduck --enable-opssight ]")
+		}
+
 		// Deploy Synopsys Operator
 		log.Debugf("creating Synopsys Operator's components")
 		soperatorSpec := soperator.NewSOperator(operatorNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig, kubeClient, operatorNamespace),
@@ -158,13 +167,20 @@ var deployCmd = &cobra.Command{
 			return PrintResource(*soperatorSpec, mockFormat, false)
 		} else if cmd.Flags().Lookup("mock-kube").Changed {
 			log.Debugf("generating Kubernetes resources for Synopsys Operator in namespace '%s'...", operatorNamespace)
-			return PrintResource(*soperatorSpec, mockKubeFormat, true)
+			if err := PrintResource(*soperatorSpec, mockKubeFormat, true); err != nil {
+				return err
+			}
+			for _, crdConfig := range crdConfigs {
+				if _, err := PrintComponent(*crdConfig.CustomResourceDefinition, mockKubeFormat); err != nil {
+					return err
+				}
+			}
 		} else {
 			// Deploy Synopsys Operator
 			log.Infof("deploying Synopsys Operator in namespace '%s'...", operatorNamespace)
 
 			// create custom resource definitions
-			err = createCrds(operatorNamespace, isClusterScoped, crds)
+			err = deployCrds(operatorNamespace, isClusterScoped, crdConfigs)
 			if err != nil {
 				return err
 			}
@@ -189,30 +205,49 @@ var deployCmd = &cobra.Command{
 	},
 }
 
-func createCrds(namespace string, isClusterScoped bool, crds []string) error {
+func deployCrds(namespace string, isClusterScoped bool, crdConfigs []*horizoncomponents.CustomResourceDefinition) error {
+	// Create a Deployer
 	deployer, err := util.NewDeployer(restconfig)
 	if err != nil {
 		return errors.Annotate(err, "unable to create the deployer object to deploy custom resource definitions")
 	}
 
-	var isAdded bool
-	for _, crd := range crds {
-		var crdConfig *horizoncomponents.CustomResourceDefinition
-		var crdScope horizonapi.CRDScopeType
+	// Add CRDs to the Deployer
+	for _, crdConfig := range crdConfigs {
 		var scope apiextensions.ResourceScope
 		if isClusterScoped {
-			crdScope = horizonapi.CRDClusterScoped
 			scope = apiextensions.ClusterScoped
 		} else {
-			crdScope = horizonapi.CRDNamespaceScoped
 			scope = apiextensions.NamespaceScoped
 		}
-
-		isExist, err := checkAndUpdateCustomResource(crd, namespace, scope, isClusterScoped)
+		isExist, err := checkAndUpdateCustomResource(crdConfig.GetName(), namespace, scope, isClusterScoped)
 		if isExist && err != nil {
 			return err
 		} else if isExist {
 			continue
+		}
+
+		deployer.Deployer.AddComponent(horizonapi.CRDComponent, crdConfig)
+	}
+	// Deploy CRDs into the cluster
+	err = deployer.Deployer.Run()
+	if err != nil {
+		return errors.Annotate(err, "unable to deploy custom resource definition")
+	}
+
+	return nil
+}
+
+func getCrdConfigs(namespace string, isClusterScoped bool, crds []string) ([]*horizoncomponents.CustomResourceDefinition, error) {
+	crdConfigs := []*horizoncomponents.CustomResourceDefinition{}
+
+	for _, crd := range crds {
+		var crdConfig *horizoncomponents.CustomResourceDefinition
+		var crdScope horizonapi.CRDScopeType
+		if isClusterScoped {
+			crdScope = horizonapi.CRDClusterScoped
+		} else {
+			crdScope = horizonapi.CRDNamespaceScoped
 		}
 
 		switch crd {
@@ -257,19 +292,10 @@ func createCrds(namespace string, isClusterScoped bool, crds []string) error {
 		}
 		if crdConfig != nil {
 			crdConfig.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator", fmt.Sprintf("synopsys.com/operator.%s", namespace): namespace})
-			deployer.Deployer.AddComponent(horizonapi.CRDComponent, crdConfig)
-			isAdded = true
+			crdConfigs = append(crdConfigs, crdConfig)
 		}
 	}
-
-	if isAdded {
-		err := deployer.Deployer.Run()
-		if err != nil {
-			return errors.Annotate(err, "unable to deploy custom resource definition")
-		}
-	}
-
-	return nil
+	return crdConfigs, nil
 }
 
 func checkAndUpdateCustomResource(crdType string, namespace string, scope apiextensions.ResourceScope, isClusterScoped bool) (bool, error) {
