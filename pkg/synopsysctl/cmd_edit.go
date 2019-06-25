@@ -58,7 +58,7 @@ var editAlertCmd = &cobra.Command{
 			return err
 		}
 		log.Infof("editing Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		err = RunKubeEditorCmd(restconfig, "edit", "alert", alertName, "-n", alertNamespace)
+		err = RunKubeEditorCmd(restconfig, kubeClient, "edit", "alert", alertName, "-n", alertNamespace)
 		if err != nil {
 			return fmt.Errorf("error editing Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
@@ -87,7 +87,7 @@ var editBlackDuckCmd = &cobra.Command{
 			return err
 		}
 		log.Infof("editing Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		err = RunKubeEditorCmd(restconfig, "edit", "blackduck", blackDuckName, "-n", blackDuckNamespace)
+		err = RunKubeEditorCmd(restconfig, kubeClient, "edit", "blackduck", blackDuckName, "-n", blackDuckNamespace)
 		if err != nil {
 			return fmt.Errorf("error editing Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
@@ -116,7 +116,7 @@ var editOpsSightCmd = &cobra.Command{
 			return err
 		}
 		log.Infof("editing OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-		err = RunKubeEditorCmd(restconfig, "edit", "opssight", opsSightName, "-n", opsSightNamespace)
+		err = RunKubeEditorCmd(restconfig, kubeClient, "edit", "opssight", opsSightName, "-n", opsSightNamespace)
 		if err != nil {
 			return fmt.Errorf("error editing OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}

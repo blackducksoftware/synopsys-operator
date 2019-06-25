@@ -154,7 +154,7 @@ func (c *ConfigMap) patch(cm interface{}, isPatched bool) (bool, error) {
 		oldLatestConfigMap := getCm.(*corev1.ConfigMap)
 		oldLatestConfigMap.Data = newConfigMap.Data
 		oldLatestConfigMap.BinaryData = newConfigMap.BinaryData
-		err = util.UpdateConfigMap(c.config.kubeClient, c.config.namespace, oldLatestConfigMap)
+		_, err = util.UpdateConfigMap(c.config.kubeClient, c.config.namespace, oldLatestConfigMap)
 		if err != nil {
 			return false, errors.Annotatef(err, "unable to update the config map %s in namespace %s", configMapName, c.config.namespace)
 		}

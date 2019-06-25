@@ -92,7 +92,7 @@ func getKubeClient(kubeConfig *rest.Config) (*kubernetes.Clientset, error) {
 
 // DetermineClusterClients returns bool values for which client
 // to use. They will never both be true
-func DetermineClusterClients(restConfig *rest.Config) (kube, openshift bool) {
+func DetermineClusterClients(restConfig *rest.Config, kubeClient *kubernetes.Clientset) (kube, openshift bool) {
 	openshift = false
 	kube = false
 
@@ -109,7 +109,7 @@ func DetermineClusterClients(restConfig *rest.Config) (kube, openshift bool) {
 
 	// Add Openshift rules
 	openshiftTest := false
-	routeClient := operatorutil.GetRouteClient(restConfig, metav1.NamespaceAll) // kube doesn't have a route client but openshift does
+	routeClient := operatorutil.GetRouteClient(restConfig, kubeClient, metav1.NamespaceAll) // kube doesn't have a route client but openshift does
 	if routeClient != nil {
 		openshiftTest = true
 	}
@@ -135,9 +135,9 @@ func DetermineClusterClients(restConfig *rest.Config) (kube, openshift bool) {
 
 // RunKubeCmd is a simple wrapper to oc/kubectl exec that captures output.
 // TODO consider replacing w/ go api but not crucial for now.
-func RunKubeCmd(restConfig *rest.Config, args ...string) (string, error) {
+func RunKubeCmd(restconfig *rest.Config, kubeClient *kubernetes.Clientset, args ...string) (string, error) {
 	var cmd2 *exec.Cmd
-	kube, openshift := DetermineClusterClients(restconfig)
+	kube, openshift := DetermineClusterClients(restconfig, kubeClient)
 
 	// cluster-info in kube doesnt seem to be in
 	// some versions of oc, but status is.
@@ -171,9 +171,9 @@ func RunKubeCmd(restConfig *rest.Config, args ...string) (string, error) {
 
 // RunKubeEditorCmd is a wrapper for oc/kubectl but redirects
 // input/output to the user - ex: let user control text editor
-func RunKubeEditorCmd(restConfig *rest.Config, args ...string) error {
+func RunKubeEditorCmd(restConfig *rest.Config, kubeClient *kubernetes.Clientset, args ...string) error {
 	var cmd *exec.Cmd
-	kube, openshift := DetermineClusterClients(restconfig)
+	kube, openshift := DetermineClusterClients(restconfig, kubeClient)
 
 	// cluster-info in kube doesnt seem to be in
 	// some versions of oc, but status is.

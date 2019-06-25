@@ -149,7 +149,7 @@ var deployCmd = &cobra.Command{
 
 		// Deploy Synopsys Operator
 		log.Debugf("creating Synopsys Operator's components")
-		soperatorSpec := soperator.NewSOperator(operatorNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig, operatorNamespace),
+		soperatorSpec := soperator.NewSOperator(operatorNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig, kubeClient, operatorNamespace),
 			strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds,
 			terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, isClusterScoped, crds, admissionWebhookListener)
 
@@ -297,6 +297,7 @@ func checkAndUpdateCustomResource(crdType string, namespace string, scope apiext
 	log.Infof("%s custom resource definition with scope %s already exists", crd.Name, crd.Spec.Scope)
 
 	if _, ok := crd.Labels[fmt.Sprintf("synopsys.com/operator.%s", namespace)]; !ok {
+		crd.Labels = util.InitLabels(crd.Labels)
 		crd.Labels[fmt.Sprintf("synopsys.com/operator.%s", namespace)] = namespace
 		_, err = util.UpdateCustomResourceDefinition(apiExtensionClient, crd)
 		if err != nil {
