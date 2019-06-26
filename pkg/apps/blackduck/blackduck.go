@@ -42,6 +42,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Constants for each unit of a deployment of Black Duck
+const (
+	CRDResources      = "BLACKDUCK"
+	DatabaseResources = "DATABASE"
+	PVCResources      = "PVC"
+)
+
 // Blackduck is used for the Blackduck deployment
 type Blackduck struct {
 	config          *protoform.Config
@@ -185,13 +192,6 @@ func (b *Blackduck) Ensure(bd *v1.Blackduck) error {
 	return creater.Ensure(bd)
 }
 
-// Constants for each unit of a deployment of Black Duck
-const (
-	CRDResources      = "BLACKDUCK"
-	DatabaseResources = "DATABASE"
-	PVCResources      = "PVC"
-)
-
 // GetComponents gets the Black Duck's creater and returns the components
 func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*api.ComponentList, error) {
 	// If the version is not specified then we set it to be the latest.
@@ -203,11 +203,11 @@ func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*
 		return nil, err
 	}
 	switch strings.ToUpper(compType) {
-	case string(CRDResources):
+	case CRDResources:
 		return creater.GetComponents(bd)
-	case string(DatabaseResources):
+	case DatabaseResources:
 		return creater.GetPostgresComponents(bd)
-	case string(PVCResources):
+	case PVCResources:
 		pvcs := creater.GetPVC(bd)
 		return &api.ComponentList{PersistentVolumeClaims: pvcs}, nil
 	}
