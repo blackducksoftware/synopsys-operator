@@ -30,6 +30,7 @@ import (
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	blackduckapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -52,11 +53,6 @@ var baseOpsSightSpec string
 var namespace string
 var blackDuckNativeDatabase bool
 var blackDuckNativePVC bool
-
-const (
-	blackDuckStageDatabase = "DATABASE"
-	blackDuckStagePVC      = "PVC"
-)
 
 // createCmd creates a Synopsys resource in the cluster
 var createCmd = &cobra.Command{
@@ -364,9 +360,9 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		case !blackDuckNativeDatabase && !blackDuckNativePVC:
 			return PrintResource(*blackDuck, nativeFormat, true)
 		case blackDuckNativeDatabase:
-			cList, err = app.Blackduck().GetComponents(blackDuck, blackDuckStageDatabase)
+			cList, err = app.Blackduck().GetComponents(blackDuck, blackduckapp.DatabaseResources)
 		case blackDuckNativePVC:
-			cList, err = app.Blackduck().GetComponents(blackDuck, blackDuckStagePVC)
+			cList, err = app.Blackduck().GetComponents(blackDuck, blackduckapp.PVCResources)
 		}
 		if err != nil {
 			return fmt.Errorf("failed to generate Black Duck components due to %+v", err)
