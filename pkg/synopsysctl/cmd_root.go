@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
@@ -48,23 +49,17 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Set the Log Level
-		lvl, err := log.ParseLevel(logLevelCtl)
-		if err != nil {
-			log.Errorf("ctl-log-Level '%s' is not a valid level: %s", logLevelCtl, err)
+		mockModeFlagExists := cmd.Flags().Lookup("mock")
+		mockMode := false
+		if mockModeFlagExists != nil && mockModeFlagExists.Changed {
+			mockMode = true
 		}
-		log.SetLevel(lvl)
-		if !cmd.Flags().Lookup("kubeconfig").Changed { // if kubeconfig wasn't set, check the environ
-			if kubeconfigEnvVal, exists := os.LookupEnv("KUBECONFIG"); exists { // set kubeconfig if environ is set
-				kubeconfig = kubeconfigEnvVal
-			}
+		nativeMode := strings.Contains(cmd.CommandPath(), "native")
+		// only set resource clients if we are not in mock mode and we are not in native mode
+		if !mockMode && !nativeMode {
+			callSetResourceClients()
 		}
-		// Sets kubeconfig and initializes resource client libraries
-		if err := setResourceClients(); err != nil {
-			log.Error(err)
-			os.Exit(1)
-		}
-		return nil
+		return parseLogLevelAndKubeConfig(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("must specify sub-command")
