@@ -47,10 +47,10 @@ func verifyClusterType(cType string) error {
 }
 
 func addNativeFormatFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&nativeFormat, "format", "o", nativeFormat, "Output format (json|yaml)")
+	cmd.Flags().StringVarP(&nativeFormat, "format", "f", nativeFormat, "Output format (json|yaml)")
 	cmd.Flags().StringVar(&nativeClusterType, "target", nativeClusterType, "Type of cluster to generate the resources for (KUBERNETES|OPENSHIFT)")
 }
 
 func addMockFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&mockFormat, "mock", mockFormat, "Print the resource spec in the specified format instead of creating it (json|yaml)")
+	cmd.Flags().StringVarP(&mockFormat, "mock", "o", mockFormat, "Print the resource spec in the specified format instead of creating it (json|yaml)")
 }

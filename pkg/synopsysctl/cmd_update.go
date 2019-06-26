@@ -69,26 +69,27 @@ Update Operator Commands
 */
 
 // getOperatorToUpdate creates a SpecConfig that represents the Synopsys Operator running in the cluster
-func getOperatorToUpdate(namespace string, cmd *cobra.Command) (*soperator.SpecConfig, map[string]string, []string, error) {
+func getOperatorToUpdate(namespace string, cmd *cobra.Command) (*soperator.SpecConfig, map[string]string, []string, bool, error) {
 	crds := []string{}
 	crdMap := make(map[string]string)
-
+	var isClusterScoped bool
 	// check whether the Synopsys Operator config map exist
 	cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("unable to find the 'synopsy-operator' config map in namespace '%s' due to %+v", namespace, err)
+		return nil, nil, nil, isClusterScoped, fmt.Errorf("unable to find the 'synopsy-operator' config map in namespace '%s' due to %+v", namespace, err)
 	}
 	data := cm.Data["config.json"]
 	var testMap map[string]interface{}
 	err = json.Unmarshal([]byte(data), &testMap)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("unable to unmarshal config map data due to %+v", err)
+		return nil, nil, nil, isClusterScoped, fmt.Errorf("unable to unmarshal config map data due to %+v", err)
 	}
+
 	if _, ok := testMap["IsClusterScoped"]; ok {
 		configData := &protoform.Config{}
 		err = json.Unmarshal([]byte(data), &configData)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("unable to unmarshal config map data due to %+v", err)
+			return nil, nil, nil, isClusterScoped, fmt.Errorf("unable to unmarshal config map data due to %+v", err)
 		}
 		isClusterScoped = configData.IsClusterScoped
 		crds = strings.Split(configData.CrdNames, ",")
@@ -101,7 +102,7 @@ func getOperatorToUpdate(namespace string, cmd *cobra.Command) (*soperator.SpecC
 		var crdList *apiextensions.CustomResourceDefinitionList
 		crdList, err = util.ListCustomResourceDefinitions(apiExtensionClient, "app=synopsys-operator")
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("unable to list Custom Resource Definitions due to %+v", err)
+			return nil, nil, nil, isClusterScoped, fmt.Errorf("unable to list Custom Resource Definitions due to %+v", err)
 		}
 		for _, crd := range crdList.Items {
 			crds = append(crds, crd.Name)
@@ -111,9 +112,9 @@ func getOperatorToUpdate(namespace string, cmd *cobra.Command) (*soperator.SpecC
 	// create new Synopsys Operator SpecConfig
 	oldOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespace)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("unable to update Synopsys Operator in '%s' namespace due to %+v", namespace, err)
+		return nil, nil, nil, isClusterScoped, fmt.Errorf("unable to update Synopsys Operator in '%s' namespace due to %+v", namespace, err)
 	}
-	return oldOperatorSpec, crdMap, crds, nil
+	return oldOperatorSpec, crdMap, crds, isClusterScoped, nil
 }
 
 // getUpdatedOperator returns a SpecConfig for Synopsys Operator with the updates provided by the user
@@ -288,7 +289,7 @@ var updateOperatorCmd = &cobra.Command{
 				namespace = DefaultOperatorNamespace
 			}
 		}
-		oldOperatorSpec, crdMap, crds, err := getOperatorToUpdate(namespace, cmd)
+		oldOperatorSpec, crdMap, crds, isClusterScoped, err := getOperatorToUpdate(namespace, cmd)
 		if err != nil {
 			return err
 		}
@@ -391,7 +392,7 @@ var updateOperatorNativeCmd = &cobra.Command{
 				namespace = DefaultOperatorNamespace
 			}
 		}
-		oldOperatorSpec, crdMap, crds, err := getOperatorToUpdate(namespace, cmd)
+		oldOperatorSpec, crdMap, crds, isClusterScoped, err := getOperatorToUpdate(namespace, cmd)
 		if err != nil {
 			return err
 		}
