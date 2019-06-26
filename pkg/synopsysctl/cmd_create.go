@@ -35,6 +35,7 @@ import (
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -194,9 +195,34 @@ var createAlertNativeCmd = &cobra.Command{
 Create Black Duck Commands
 */
 
+func checkPasswords(flagset *pflag.FlagSet) {
+	if flagset.Lookup("external-postgres-host").Changed ||
+		flagset.Lookup("external-postgres-port").Changed ||
+		flagset.Lookup("external-postgres-admin").Changed ||
+		flagset.Lookup("external-postgres-user").Changed ||
+		flagset.Lookup("external-postgres-ssl").Changed ||
+		flagset.Lookup("external-postgres-admin-password").Changed ||
+		flagset.Lookup("external-postgres-user-password").Changed {
+		// require all external-postgres parameters
+		cobra.MarkFlagRequired(flagset, "external-postgres-host")
+		cobra.MarkFlagRequired(flagset, "external-postgres-port")
+		cobra.MarkFlagRequired(flagset, "external-postgres-admin")
+		cobra.MarkFlagRequired(flagset, "external-postgres-user")
+		cobra.MarkFlagRequired(flagset, "external-postgres-ssl")
+		cobra.MarkFlagRequired(flagset, "external-postgres-admin-password")
+		cobra.MarkFlagRequired(flagset, "external-postgres-user-password")
+	} else {
+		// user is explicitly required to set the postgres passwords for: 'admin', 'postgres', and 'user'
+		cobra.MarkFlagRequired(flagset, "admin-password")
+		cobra.MarkFlagRequired(flagset, "postgres-password")
+		cobra.MarkFlagRequired(flagset, "user-password")
+	}
+}
+
 var createBlackDuckPreRun = func(cmd *cobra.Command, args []string) error {
 	// Check the user's flags
 	err := createBlackDuckCtl.CheckSpecFlags(cmd.Flags())
+
 	if err != nil {
 		cmd.Help()
 		return err
@@ -249,6 +275,7 @@ var createBlackDuckCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkPasswords(cmd.Flags())
 		return nil
 	},
 	PreRunE: createBlackDuckPreRun,
@@ -312,6 +339,9 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		}
 		if blackDuckNativeDatabase && blackDuckNativePVC {
 			return fmt.Errorf("cannot enable --output-database and --output-pvc, please only specify one")
+		}
+		if blackDuckNativeDatabase {
+			checkPasswords(cmd.Flags())
 		}
 		return nil
 	},
