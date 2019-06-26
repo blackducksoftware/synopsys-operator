@@ -22,13 +22,29 @@ under the License.
 package synopsysctl
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/spf13/cobra"
 )
 
 // Flags for using mock mode - doesn't deploy
 var mockFormat string
 var nativeFormat = "json"
-var nativeClusterType = "KUBERNETES"
+
+const (
+	clusterTypeKubernetes = "KUBERNETES"
+	clusterTypeOpenshift  = "OPENSHIFT"
+)
+
+var nativeClusterType = clusterTypeKubernetes
+
+func verifyClusterType(cType string) error {
+	if strings.EqualFold(strings.ToUpper(cType), clusterTypeKubernetes) || strings.EqualFold(strings.ToUpper(cType), clusterTypeOpenshift) {
+		return nil
+	}
+	return fmt.Errorf("invalid cluster type '%s'", cType)
+}
 
 func addNativeFormatFlag(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&nativeFormat, "format", "o", nativeFormat, "Output format [json|yaml]")
