@@ -130,7 +130,7 @@ var createAlertCmd = &cobra.Command{
 	PreRunE: createAlertPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		alertName, alertNamespace, scope, err := getInstanceInfo(false, args[0], util.AlertCRDName, "", namespace)
+		alertName, alertNamespace, scope, err := getInstanceInfo(mockMode, args[0], util.AlertCRDName, "", namespace)
 		if err != nil {
 			return err
 		}
@@ -255,7 +255,7 @@ var createBlackDuckCmd = &cobra.Command{
 	PreRunE: createBlackDuckPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		blackDuckName, blackDuckNamespace, scope, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, "", namespace)
+		blackDuckName, blackDuckNamespace, scope, err := getInstanceInfo(mockMode, args[0], util.BlackDuckCRDName, "", namespace)
 		if err != nil {
 			return err
 		}
@@ -414,7 +414,7 @@ var createOpsSightCmd = &cobra.Command{
 	PreRunE: createOpsSightPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		opsSightName, opsSightNamespace, scope, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, "", namespace)
+		opsSightName, opsSightNamespace, scope, err := getInstanceInfo(mockMode, args[0], util.OpsSightCRDName, "", namespace)
 		if err != nil {
 			return err
 		}
