@@ -122,22 +122,6 @@ func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
 		}
 	}
 
-	if ctl.ExternalPostgresHost == "" {
-		// user is explicitly required to set the postgres passwords for: 'admin', 'postgres', and 'user'
-		cobra.MarkFlagRequired(flagset, "admin-password")
-		cobra.MarkFlagRequired(flagset, "postgres-password")
-		cobra.MarkFlagRequired(flagset, "user-password")
-	} else {
-		// require all external-postgres parameters
-		cobra.MarkFlagRequired(flagset, "external-postgres-host")
-		cobra.MarkFlagRequired(flagset, "external-postgres-port")
-		cobra.MarkFlagRequired(flagset, "external-postgres-admin")
-		cobra.MarkFlagRequired(flagset, "external-postgres-user")
-		cobra.MarkFlagRequired(flagset, "external-postgres-ssl")
-		cobra.MarkFlagRequired(flagset, "external-postgres-admin-password")
-		cobra.MarkFlagRequired(flagset, "external-postgres-user-password")
-	}
-
 	setStateToDbMigrate := flagset.Lookup("migration-mode").Changed
 	if val, _ := flagset.GetBool("migration-mode"); !val && setStateToDbMigrate {
 		return fmt.Errorf("--migration-mode cannot be set to false")
