@@ -126,7 +126,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	if _, ok = alert.Annotations["synopsys.com/created.by"]; !ok {
 		alert.Annotations = util.InitAnnotations(alert.Annotations)
 		alert.Annotations["synopsys.com/created.by"] = h.config.Version
-		alert, err = util.UpdateAlert(h.alertClient, alert.Spec.Namespace, alert)
+		alert, err = util.UpdateAlert(h.alertClient, h.config.Namespace, alert)
 		if err != nil {
 			log.Errorf("couldn't update the annotation for %s Alert instance in %s namespace due to %+v", alert.Name, alert.Spec.Namespace, err)
 			return

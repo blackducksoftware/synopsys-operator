@@ -86,7 +86,7 @@ func (p *Updater) Run(ch <-chan struct{}) {
 				syncFunc := func() {
 					err := p.updateAllHubs()
 					if len(err) > 0 {
-						logger.Errorf("unable to update hubs because %+v", err)
+						logger.Errorf("unable to update Black Ducks because %+v", err)
 					}
 				}
 
@@ -132,8 +132,6 @@ func (p *Updater) Run(ch <-chan struct{}) {
 				}
 			}
 		}
-
-		// go opssightController.Run(ch)
 	}()
 }
 
@@ -146,20 +144,11 @@ func (p *Updater) isBlackDuckRunning(obj interface{}) bool {
 	return false
 }
 
-// isOpsSightRunning return whether the OpsSight is in running state
-func (p *Updater) isOpsSightRunning(obj interface{}) bool {
-	opssight, _ := obj.(*opssightapi.OpsSight)
-	if strings.EqualFold(opssight.Status.State, "Running") {
-		return true
-	}
-	return false
-}
-
 // updateAllHubs will update the Black Duck instances in opssight resources
 func (p *Updater) updateAllHubs() []error {
-	opssights, err := util.GetOpsSights(p.opssightClient)
+	opssights, err := util.ListOpsSights(p.opssightClient, p.config.Namespace)
 	if err != nil {
-		return []error{errors.Annotate(err, "unable to get opssights")}
+		return []error{errors.Annotatef(err, "unable to list opssight in namespace %s", p.config.Namespace)}
 	}
 
 	if len(opssights.Items) == 0 {
@@ -170,18 +159,14 @@ func (p *Updater) updateAllHubs() []error {
 	for _, opssight := range opssights.Items {
 		err = p.updateOpsSight(&opssight)
 		if err != nil {
-			errList = append(errList, errors.Annotate(err, "unable to update perceptor"))
+			errList = append(errList, errors.Annotate(err, "unable to update opssight"))
 		}
 	}
 	return errList
 }
 
 // updateOpsSight will update the opssight resource with latest Black Duck instances
-func (p *Updater) updateOpsSight(obj interface{}) error {
-	opssight, ok := obj.(*opssightapi.OpsSight)
-	if !ok {
-		return errors.Errorf("unable to cast object")
-	}
+func (p *Updater) updateOpsSight(opssight *opssightapi.OpsSight) error {
 	var err error
 	if !strings.EqualFold(opssight.Status.State, "stopped") && !strings.EqualFold(opssight.Status.State, "error") {
 		for j := 0; j < 20; j++ {
@@ -212,7 +197,7 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 
 	allHubs := p.getAllHubs(hubType, blackduckPassword)
 
-	err = p.updateOpsSightCRD(&opssight.Spec, allHubs)
+	err = p.updateOpsSightCRD(opssight, allHubs)
 	if err != nil {
 		return errors.Annotate(err, "unable to update opssight CRD")
 	}
@@ -255,19 +240,20 @@ func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssig
 }
 
 // updateOpsSightCRD will update the opssight CRD
-func (p *Updater) updateOpsSightCRD(opsSightSpec *opssightapi.OpsSightSpec, hubs []*opssightapi.Host) error {
-	opssightName := opsSightSpec.Namespace
+func (p *Updater) updateOpsSightCRD(opsSight *opssightapi.OpsSight, hubs []*opssightapi.Host) error {
+	opssightName := opsSight.Name
+	opsSightNamespace := opsSight.Spec.Namespace
 	logger.WithField("opssight", opssightName).Info("update opssight: looking for opssight")
 	opssight, err := p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Get(opssightName, metav1.GetOptions{})
 	if err != nil {
-		return errors.Annotatef(err, "unable to get opssight %s in %s namespace", opssightName, opsSightSpec.Namespace)
+		return errors.Annotatef(err, "unable to get opssight %s in %s namespace", opssightName, opsSightNamespace)
 	}
 
 	opssight.Status.InternalHosts = p.appendBlackDuckHosts(opssight.Status.InternalHosts, hubs)
 
 	_, err = p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Update(opssight)
 	if err != nil {
-		return errors.Annotatef(err, "unable to update opssight %s in %s", opssightName, opsSightSpec.Namespace)
+		return errors.Annotatef(err, "unable to update opssight %s in %s", opssightName, opsSightNamespace)
 	}
 	return nil
 }

@@ -33,7 +33,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"github.com/juju/errors"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -157,7 +156,6 @@ func (a *Alert) Delete(name string) error {
 		if len(ns.Items) > 0 {
 			namespace = ns.Items[0].Name
 		} else {
-			log.Errorf("unable to find %s Alert instance namespace", name)
 			return fmt.Errorf("unable to find %s Alert instance namespace", name)
 		}
 	} else {
@@ -166,22 +164,22 @@ func (a *Alert) Delete(name string) error {
 	}
 
 	// delete an Alert instance
-	commonConfig := crdupdater.NewCRUDComponents(a.kubeConfig, a.kubeClient, a.config.DryRun, false, namespace,
+	commonConfig := crdupdater.NewCRUDComponents(a.kubeConfig, a.kubeClient, a.config.DryRun, false, namespace, "",
 		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.AlertName, name), false)
 	_, crudErrors := commonConfig.CRUDComponents()
 	if len(crudErrors) > 0 {
 		return fmt.Errorf("unable to delete the %s Alert instance in %s namespace due to %+v", name, namespace, crudErrors)
 	}
 
+	var err error
+	// if cluster scope, if no other instance running in Synopsys Operator namespace, delete the namespace or delete the Synopsys labels in the namespace
 	if a.config.IsClusterScoped {
-		err := util.DeleteResourceNamespace(a.kubeConfig, a.kubeClient, a.config.CrdNames, namespace, false)
-		if err != nil {
-			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
-		}
+		err = util.DeleteResourceNamespace(a.kubeClient, util.AlertName, namespace, name, false)
+	} else {
+		// if namespace scope, delete the label from the namespace
+		_, err = util.CheckAndUpdateNamespace(a.kubeClient, util.AlertName, namespace, name, "", true)
 	}
-
-	// update the namespace label if the version of the app got deleted
-	if isNamespaceExist, err := util.CheckAndUpdateNamespace(a.kubeClient, util.AlertName, namespace, name, "", true); isNamespaceExist {
+	if err != nil {
 		return err
 	}
 

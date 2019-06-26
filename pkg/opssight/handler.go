@@ -23,6 +23,7 @@ package opssight
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -92,46 +93,7 @@ func (h *Handler) ObjectCreated(obj interface{}) {
 
 func (h *Handler) handleObjectCreated(obj interface{}) error {
 	recordEvent("objectCreated")
-	// log.Debugf("objectCreated: %+v", obj)
-	// opssight, ok := obj.(*opssightapi.OpsSight)
-	// if !ok {
-	// 	recordError("unable to cast opssight object")
-	// 	return errors.Errorf("unable to cast opssight object")
-	// }
-
-	// if strings.EqualFold(opssight.Spec.DesiredState, string(Start)) && strings.EqualFold(opssight.Status.State, "") {
-	// 	log.Debugf("inside creation event of opssight %s", opssight.Spec.Namespace)
-	// 	newSpec := opssight.Spec
-	// 	defaultSpec := h.Defaults
-	// 	err := mergo.Merge(&newSpec, defaultSpec)
-	// 	if err != nil {
-	// 		recordError("unable to merge default and new objects")
-	// 		h.updateState(Error, err.Error(), opssight)
-	// 		return errors.Annotate(err, "unable to merge default and new objects")
-	// 	}
-
-	// 	bytes, err := json.Marshal(newSpec)
-	// 	log.Debugf("merged opssight details: %+v", newSpec)
-	// 	log.Debugf("opssight json (%+v): %s", err, string(bytes))
-
-	// 	opssight.Spec = newSpec
-	// 	// opssight, err = h.updateState(Creating, "", opssight)
-	// 	// if err != nil {
-	// 	// 	recordError("unable to update state")
-	// 	// 	return errors.Annotate(err, "unable to update state")
-	// 	// }
-
-	// 	opssightCreator := NewCreater(h.Config, h.KubeConfig, h.KubeClient, h.OpsSightClient, h.OSSecurityClient, h.RouteClient, h.HubClient)
-	// 	err = opssightCreator.CreateOpsSight(opssight)
-	// 	if err != nil {
-	// 		recordError("unable to create opssight")
-	// 		h.updateState(Error, err.Error(), opssight)
-	// 		return errors.Annotatef(err, "create opssight %s", opssight.Name)
-	// 	}
-	// 	h.updateState(Running, "", opssight)
-	// } else {
 	h.ObjectUpdated(nil, obj)
-	// }
 	return nil
 }
 
@@ -174,7 +136,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	if _, ok = opssight.Annotations["synopsys.com/created.by"]; !ok {
 		opssight.Annotations = util.InitAnnotations(opssight.Annotations)
 		opssight.Annotations["synopsys.com/created.by"] = h.Config.Version
-		opssight, err = util.UpdateOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight)
+		opssight, err = util.UpdateOpsSight(h.OpsSightClient, h.Config.Namespace, opssight)
 		if err != nil {
 			log.Errorf("couldn't update the annotation for %s OpsSight instance in %s namespace due to %+v", opssight.Name, opssight.Spec.Namespace, err)
 			return
@@ -190,10 +152,6 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		log.Errorf("unable to merge default and new objects due to %+v", err)
 		return
 	}
-
-	// bytes, err := json.Marshal(newSpec)
-	// log.Debugf("merged opssight details: %+v", newSpec)
-	// log.Debugf("opssight json (%+v): %s", err, string(bytes))
 
 	opssight.Spec = newSpec
 
@@ -240,13 +198,21 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 }
 
 func (h *Handler) updateState(state State, errorMessage string, opssight *opssightapi.OpsSight) (*opssightapi.OpsSight, error) {
-	opssight.Status.State = string(state)
-	opssight.Status.ErrorMessage = errorMessage
-	opssight, err := h.updateOpsSightObject(opssight)
+	newOpssight, err := util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Name)
 	if err != nil {
-		return nil, errors.Annotate(err, "unable to update the state of opssight object")
+		return nil, errors.Annotate(err, "unable to get the opssigh to update the state of opssight object")
 	}
-	return opssight, nil
+
+	if !reflect.DeepEqual(newOpssight.Status.State, opssight.Status.State) || !reflect.DeepEqual(newOpssight.Status.ErrorMessage, opssight.Status.ErrorMessage) {
+		newOpssight.Spec = opssight.Spec
+		newOpssight.Status.State = string(state)
+		newOpssight.Status.ErrorMessage = errorMessage
+		newOpssight, err = h.updateOpsSightObject(newOpssight)
+		if err != nil {
+			return nil, errors.Annotate(err, "unable to update the state of opssight object")
+		}
+	}
+	return newOpssight, nil
 }
 
 func (h *Handler) updateOpsSightObject(obj *opssightapi.OpsSight) (*opssightapi.OpsSight, error) {

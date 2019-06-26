@@ -143,7 +143,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	if _, ok = bd.Annotations["synopsys.com/created.by"]; !ok {
 		bd.Annotations = util.InitAnnotations(bd.Annotations)
 		bd.Annotations["synopsys.com/created.by"] = h.config.Version
-		bd, err = util.UpdateBlackduck(h.blackduckClient, bd.Spec.Namespace, bd)
+		bd, err = util.UpdateBlackduck(h.blackduckClient, h.config.Namespace, bd)
 		if err != nil {
 			log.Errorf("couldn't update the annotation for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 			return
