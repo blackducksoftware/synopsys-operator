@@ -33,6 +33,7 @@ import (
 	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,6 +48,30 @@ var apiExtensionClient *apiextensionsclient.Clientset
 var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
 var opsSightClient *opssightclientset.Clientset
+
+func parseLogLevelAndKubeConfig(cmd *cobra.Command) error {
+	// Set the Log Level
+	lvl, err := log.ParseLevel(logLevelCtl)
+	if err != nil {
+		log.Errorf("ctl-log-Level '%s' is not a valid level: %s", logLevelCtl, err)
+		return err
+	}
+	log.SetLevel(lvl)
+	if !cmd.Flags().Lookup("kubeconfig").Changed { // if kubeconfig wasn't set, check the environ
+		if kubeconfigEnvVal, exists := os.LookupEnv("KUBECONFIG"); exists { // set kubeconfig if environ is set
+			kubeconfig = kubeconfigEnvVal
+		}
+	}
+	return nil
+}
+
+func callSetResourceClients() {
+	// Sets kubeconfig and initializes resource client libraries
+	if err := setResourceClients(); err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
+}
 
 // setResourceClients sets the global variables for the Kuberentes rest config
 // and the resource clients
