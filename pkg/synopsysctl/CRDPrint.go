@@ -50,15 +50,19 @@ const (
 	YAML PrintFormat = "YAML"
 )
 
-func getDefaultApp() *apps.App {
+func getDefaultApp(cType string) (*apps.App, error) {
 	pc := &protoform.Config{}
 	pc.SelfSetDefaults()
 	pc.DryRun = true
-	if strings.EqualFold(strings.ToUpper(nativeClusterType), "OPENSHIFT") {
+	err := verifyClusterType(cType)
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(strings.ToUpper(cType), clusterTypeOpenshift) {
 		pc.IsOpenshift = true
 	}
 	rc := &rest.Config{}
-	return apps.NewApp(pc, rc)
+	return apps.NewApp(pc, rc), nil
 }
 
 // PrintResource prints a Resource as yaml or json. printKubeComponents allows printing the kuberentes
@@ -69,10 +73,12 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		return PrintComponents([]interface{}{crd}, format)
 	}
 
-	app := getDefaultApp()
+	app, err := getDefaultApp(nativeClusterType)
+	if err != nil {
+		return err
+	}
 
 	var cList *api.ComponentList
-	var err error
 
 	switch reflect.TypeOf(crd) {
 	case reflect.TypeOf(soperator.SpecConfig{}):
