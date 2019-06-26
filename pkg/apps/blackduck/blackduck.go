@@ -185,8 +185,15 @@ func (b *Blackduck) Ensure(bd *v1.Blackduck) error {
 	return creater.Ensure(bd)
 }
 
-// GetComponents gets the BlackDuck's creater and returns the components
-func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck) (*api.ComponentList, error) {
+// Constants for each unit of a deployment of Black Duck
+const (
+	CRDResources      = "BLACKDUCK"
+	DatabaseResources = "DATABASE"
+	PVCResources      = "PVC"
+)
+
+// GetComponents gets the Black Duck's creater and returns the components
+func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*api.ComponentList, error) {
 	// If the version is not specified then we set it to be the latest.
 	if err := b.ensureVersion(bd); err != nil {
 		return nil, err
@@ -195,5 +202,14 @@ func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck) (*api.ComponentList
 	if err != nil {
 		return nil, err
 	}
-	return creater.GetComponents(bd)
+	switch strings.ToUpper(compType) {
+	case string(CRDResources):
+		return creater.GetComponents(bd)
+	case string(DatabaseResources):
+		return creater.GetPostgresComponents(bd)
+	case string(PVCResources):
+		pvcs := creater.GetPVC(bd)
+		return &api.ComponentList{PersistentVolumeClaims: pvcs}, nil
+	}
+	return nil, fmt.Errorf("invalid components type '%s'", compType)
 }

@@ -33,8 +33,8 @@ import (
 	"github.com/juju/errors"
 )
 
-// getPostgresComponents returns the blackduck postgres component list
-func (hc *Creater) getPostgresComponents(blackduck *blackduckapi.Blackduck) (*api.ComponentList, error) {
+// GetPostgresComponents returns the blackduck postgres component list
+func (hc *Creater) GetPostgresComponents(blackduck *blackduckapi.Blackduck) (*api.ComponentList, error) {
 	componentList := &api.ComponentList{}
 
 	// Get Containers Flavor

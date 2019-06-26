@@ -50,6 +50,17 @@ const (
 	YAML PrintFormat = "YAML"
 )
 
+func getDefaultApp() *apps.App {
+	pc := &protoform.Config{}
+	pc.SelfSetDefaults()
+	pc.DryRun = true
+	if strings.EqualFold(strings.ToUpper(nativeClusterType), "OPENSHIFT") {
+		pc.IsOpenshift = true
+	}
+	rc := &rest.Config{}
+	return apps.NewApp(pc, rc)
+}
+
 // PrintResource prints a Resource as yaml or json. printKubeComponents allows printing the kuberentes
 // resources instead
 func PrintResource(crd interface{}, format string, printKubeComponents bool) error {
@@ -58,17 +69,7 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		return PrintComponents([]interface{}{crd}, format)
 	}
 
-	// print the Kube Components
-	var kubeInterfaces []interface{}
-
-	pc := &protoform.Config{}
-	pc.SelfSetDefaults()
-	pc.DryRun = true
-	if strings.EqualFold(strings.ToUpper(nativeClusterType), "OPENSHIFT") {
-		pc.IsOpenshift = true
-	}
-	rc := &rest.Config{}
-	app := apps.NewApp(pc, rc)
+	app := getDefaultApp()
 
 	var cList *api.ComponentList
 	var err error
@@ -88,11 +89,14 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		}
 	case reflect.TypeOf(blackduckapi.Blackduck{}):
 		blackDuck := crd.(blackduckapi.Blackduck)
-		cList, err = app.Blackduck().GetComponents(&blackDuck)
+		cList, err = app.Blackduck().GetComponents(&blackDuck, "BLACKDUCK")
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}
 	case reflect.TypeOf(opssightapi.OpsSight{}):
+		pc := &protoform.Config{}
+		pc.SelfSetDefaults()
+		pc.DryRun = true
 		opsSight := crd.(opssightapi.OpsSight)
 		sc := opssight.NewSpecConfig(pc, kubeClient, opsSightClient, blackDuckClient, &opsSight, true, pc.DryRun)
 		cList, err = sc.GetComponents()
@@ -104,16 +108,16 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 	}
 
 	if cList == nil {
-		return fmt.Errorf("failed to generate a componentList for %+v", crd)
+		return fmt.Errorf("failed to generate a componentLists for %+v", crd)
 	}
 	cList.PersistentVolumeClaims = []*components.PersistentVolumeClaim{} // Don't print resources for PVCs
-	kubeInterfaces = cList.GetKubeInterfaces()
-	err = PrintComponents(kubeInterfaces, format)
-	if err != nil {
-		return fmt.Errorf("failed to print components: %s", err)
-	}
+	return PrintComponentListKube(cList, format)
+}
 
-	return nil
+// PrintComponentListKube does
+func PrintComponentListKube(cList *api.ComponentList, format string) error {
+	kubeInterfaces := cList.GetKubeInterfaces()
+	return PrintComponents(kubeInterfaces, format)
 }
 
 // PrintComponents outputs components for a CRD in the correct format for 'kubectl create -f <file>'
@@ -121,7 +125,7 @@ func PrintComponents(objs []interface{}, format string) error {
 	for i, obj := range objs {
 		_, err := PrintComponent(obj, format)
 		if err != nil {
-			return fmt.Errorf("failed to print in mock mode: %s", err)
+			return fmt.Errorf("failed to print components: %s", err)
 		}
 		if i != len(objs)-1 && format == "yaml" {
 			fmt.Printf("---\n")
