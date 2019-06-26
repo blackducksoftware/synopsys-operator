@@ -34,7 +34,6 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/horizon/pkg/deployer"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -1384,7 +1383,7 @@ func GetClusterScopeByName(apiExtensionClient *apiextensionsclient.Clientset, na
 
 // GetClusterScope returns whether any of the CRD is cluster scope
 func GetClusterScope(apiExtensionClient *apiextensionsclient.Clientset) bool {
-	crds := []string{AlertCRDName, BlackDuckCRDName, OpsSightCRDName, PrmCRDName}
+	crds := []string{AlertCRDName, BlackDuckCRDName, OpsSightCRDName}
 	for _, crd := range crds {
 		cr, err := GetCustomResourceDefinition(apiExtensionClient, crd)
 		if err == nil && strings.EqualFold("CLUSTER", string(cr.Spec.Scope)) {
@@ -1395,27 +1394,55 @@ func GetClusterScope(apiExtensionClient *apiextensionsclient.Clientset) bool {
 }
 
 // GetOperatorNamespace returns the namespace of the synopsys operator based on the labels
-func GetOperatorNamespace(clientset *kubernetes.Clientset, namespace string) (string, error) {
+func GetOperatorNamespace(clientset *kubernetes.Clientset, namespace string) ([]string, error) {
+	namespaces := make(map[string]string, 0)
 	// check if operator is already installed
 	rcs, err := ListReplicationControllers(clientset, namespace, "app=synopsys-operator,component=operator")
 	if err == nil && len(rcs.Items) > 0 {
 		for _, rc := range rcs.Items {
-			return rc.Namespace, nil
+			if metav1.NamespaceAll != namespace {
+				return []string{rc.Namespace}, nil
+			}
+			if _, ok := namespaces[rc.Namespace]; !ok {
+				namespaces[rc.Namespace] = rc.Namespace
+			}
 		}
 	}
 	deployments, err := ListDeployments(clientset, namespace, "app=synopsys-operator,component=operator")
 	if err == nil && len(deployments.Items) > 0 {
 		for _, deployment := range deployments.Items {
-			return deployment.Namespace, nil
+			if metav1.NamespaceAll != namespace {
+				return []string{deployment.Namespace}, nil
+			}
+			if _, ok := namespaces[deployment.Namespace]; !ok {
+				namespaces[deployment.Namespace] = deployment.Namespace
+			}
 		}
 	}
 	pods, err := ListPodsWithLabels(clientset, namespace, "app=synopsys-operator,component=operator")
 	if err == nil && len(pods.Items) > 0 {
 		for _, pod := range pods.Items {
-			return pod.Namespace, nil
+			if metav1.NamespaceAll != namespace {
+				return []string{pod.Namespace}, nil
+			}
+			if _, ok := namespaces[pod.Namespace]; !ok {
+				namespaces[pod.Namespace] = pod.Namespace
+			}
 		}
 	}
-	return metav1.NamespaceAll, fmt.Errorf("unable to find the synopsys operator namespace due to %+v", err)
+	if len(namespaces) > 0 {
+		return MapKeyToStringArray(namespaces), nil
+	}
+	return nil, fmt.Errorf("unable to find the synopsys operator namespace due to %+v", err)
+}
+
+// MapKeyToStringArray will return map keys
+func MapKeyToStringArray(maps map[string]string) []string {
+	keys := make([]string, 0)
+	for key := range maps {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 // GetOperatorRoles returns the roles or the cluster role of the synopsys operator based on the labels
@@ -1537,64 +1564,6 @@ func GetOcVersion(clientset *kubernetes.Clientset) (string, error) {
 	return info.GitVersion, err
 }
 
-// isAlertExist returns whether the Alert exist in the namespace or not
-func isAlertExist(restConfig *rest.Config, namespace string) (bool, error) {
-	alertClient, err := alertclientset.NewForConfig(restConfig)
-	if err != nil {
-		return false, fmt.Errorf("unable to create Alert client due to %+v", err)
-	}
-
-	alerts, err := ListAlerts(alertClient, namespace)
-	if err != nil {
-		return false, fmt.Errorf("unable to list Alert instances in %s namespace due to %+v", namespace, err)
-	}
-
-	for _, alert := range alerts.Items {
-		if alert.Spec.Namespace == namespace {
-			return true, fmt.Errorf("%s Alert instance is already running in %s namespace", alert.Name, namespace)
-		}
-	}
-	return false, nil
-}
-
-// isBlackDuckExist returns whether the Black Duck exist in the namespace or not
-func isBlackDuckExist(restConfig *rest.Config, namespace string) (bool, error) {
-	blackDuckClient, err := hubclientset.NewForConfig(restConfig)
-	if err != nil {
-		return false, fmt.Errorf("unable to create Black Duck client due to %+v", err)
-	}
-
-	blackDucks, err := ListHubs(blackDuckClient, namespace)
-	if err != nil {
-		return false, fmt.Errorf("unable to list Black Duck instances in %s namespace due to %+v", namespace, err)
-	}
-	for _, blackDuck := range blackDucks.Items {
-		if blackDuck.Spec.Namespace == namespace {
-			return true, fmt.Errorf("%s Black Duck instance is already running in %s namespace", blackDuck.Name, namespace)
-		}
-	}
-	return false, nil
-}
-
-// isOpsSightExist returns whether the OpsSight exist in the namespace or not
-func isOpsSightExist(restConfig *rest.Config, namespace string) (bool, error) {
-	opsSightClient, err := opssightclientset.NewForConfig(restConfig)
-	if err != nil {
-		return false, fmt.Errorf("unable to create OpsSight client due to %+v", err)
-	}
-
-	opsSights, err := ListOpsSights(opsSightClient, namespace)
-	if err != nil {
-		return false, fmt.Errorf("unable to list OpsSight instances in %s namespace due to %+v", namespace, err)
-	}
-	for _, opsSight := range opsSights.Items {
-		if opsSight.Spec.Namespace == namespace {
-			return true, fmt.Errorf("%s OpsSight instance is already running in %s namespace", opsSight.Name, namespace)
-		}
-	}
-	return false, nil
-}
-
 // IsOperatorExist returns whether the operator exist or not
 func IsOperatorExist(clientset *kubernetes.Clientset, namespace string) bool {
 	rcs, err := ListReplicationControllers(clientset, namespace, "app=synopsys-operator")
@@ -1612,56 +1581,66 @@ func IsOperatorExist(clientset *kubernetes.Clientset, namespace string) bool {
 	return false
 }
 
+// isSynopsysResourceExist returns whether any Synopsys resources like Alert, Black Duck or OpsSight etc. exist in the namespace
+func isSynopsysResourceExist(namespace, label string) error {
+	crdNames := []string{AlertName, BlackDuckName, OpsSightName}
+	for _, crdName := range crdNames {
+		if strings.HasPrefix(label, fmt.Sprintf("synopsys.com/%s", crdName)) {
+			name := label[len(fmt.Sprintf("synopsys.com/%s", crdName))+1:]
+			return fmt.Errorf("%s %s instance is already running in %s namespace", name, crdName, namespace)
+		}
+	}
+	return nil
+}
+
 // CheckResourceNamespace checks whether namespace is having any resource types
-func CheckResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, crdNames string, namespace string, isOperator bool) error {
+func CheckResourceNamespace(kubeClient *kubernetes.Clientset, namespace string, label string, isOperator bool) (bool, error) {
 	// verify whether the namespace exist
 	ns, err := GetNamespace(kubeClient, namespace)
 	if err != nil {
-		return fmt.Errorf("unable to find %s namespace due to %+v", namespace, err)
+		return false, fmt.Errorf("error getting namespace due to %+v", err)
 	}
 
 	if owner, ok := ns.Labels["owner"]; ok && owner == OperatorName {
 		var isExist bool
-		var err error
 		if !isOperator {
-			// check whether the operator already exist in the same namespace as input namespace
+			// check whether the operator already exist in the namespace
 			isExist = IsOperatorExist(kubeClient, namespace)
 			if isExist {
-				return fmt.Errorf("synopsys operator is already running in %s namespace... namespace cannot be deleted", namespace)
+				return true, fmt.Errorf("synopsys operator is already running in %s namespace... namespace cannot be deleted", namespace)
 			}
 		}
-		for _, crd := range strings.Split(crdNames, ",") {
-			switch crd {
-			case AlertCRDName:
-				// check whether any Alert instance already exists in the same namespace as input namespace
-				isExist, err = isAlertExist(restConfig, namespace)
-			case BlackDuckCRDName:
-				// check whether any Black Duck instance already exists in the same namespace as input namespace
-				isExist, err = isBlackDuckExist(restConfig, namespace)
-			case OpsSightCRDName:
-				// check whether any OpsSight instance already exists in the same namespace as input namespace
-				isExist, err = isOpsSightExist(restConfig, namespace)
-			}
 
-			if isExist {
-				return err
+		// iterate over each label and verify whether any Synopsys resources like Alert, Black Duck or OpsSight etc. exist in the namespace
+		for synopsysLabel := range ns.Labels {
+			if synopsysLabel != label {
+				err := isSynopsysResourceExist(namespace, synopsysLabel)
+				if err != nil {
+					return true, err
+				}
 			}
 		}
 	} else {
-		return fmt.Errorf("owner label is missing in the namespace and hence the namespace cannot be deleted")
+		return true, fmt.Errorf("owner label is missing in the namespace and hence the namespace cannot be deleted")
 	}
-
-	return nil
+	return true, nil
 }
 
 // DeleteResourceNamespace deletes the namespace if none of the other resource types are running
-func DeleteResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, crdNames string, namespace string, isOperator bool) error {
-	err := CheckResourceNamespace(restConfig, kubeClient, crdNames, namespace, isOperator)
-	if err == nil {
+func DeleteResourceNamespace(kubeClient *kubernetes.Clientset, resourceName string, namespace string, name string, isOperator bool) error {
+	isExist, err := CheckResourceNamespace(kubeClient, namespace, fmt.Sprintf("synopsys.com/%s.%s", resourceName, name), isOperator)
+	if !isExist {
+		return err
+	} else if isExist && err == nil {
 		log.Infof("deleting %s namespace", namespace)
 		err = DeleteNamespace(kubeClient, namespace)
 		if err != nil {
 			return fmt.Errorf("unable to delete the %s namespace because %+v", namespace, err)
+		}
+	} else {
+		_, checkErr := CheckAndUpdateNamespace(kubeClient, resourceName, namespace, name, "", true)
+		if checkErr != nil {
+			return fmt.Errorf("%+v and hence deleting the Synopsys label from the namespace. %+v", err, checkErr)
 		}
 	}
 	return err
@@ -1671,49 +1650,87 @@ func DeleteResourceNamespace(restConfig *rest.Config, kubeClient *kubernetes.Cli
 func CheckAndUpdateNamespace(kubeClient *kubernetes.Clientset, resourceName string, namespace string, name string, version string, isDelete bool) (bool, error) {
 	ns, err := GetNamespace(kubeClient, namespace)
 	if err == nil {
-		isLabelUpdated := false
-		if ns.GetLabels() == nil { // ensure labels exists on namespace
-			ns.Labels = make(map[string]string)
-		}
-		if isDelete { // delete from labels
-			delete(ns.Labels, fmt.Sprintf("synopsys.com/%s.%s", resourceName, name))
-			isLabelUpdated = true
-		} else { // add to labels
-			if existingVersion, ok := ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)]; !isDelete && (!ok || existingVersion != version) {
-				ns.Labels = InitLabels(ns.Labels)
-				ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)] = version
-				isLabelUpdated = true
-			}
-		}
-		if isLabelUpdated { // update the namespace with labels
-			_, err = UpdateNamespace(kubeClient, ns)
-			if err != nil {
-				return true, fmt.Errorf("unable to update the %s namespace labels due to %+v", namespace, err)
-			}
+		err = updateLabelsInNamespace(kubeClient, ns, resourceName, namespace, name, version, isDelete)
+		if err != nil {
+			return true, err
 		}
 		return true, nil
 	}
 	return false, fmt.Errorf("unable to get %s namespace due to %+v", namespace, err)
 }
 
-// DeployCRDNamespace creates an empty Horizon namespace
-func DeployCRDNamespace(restConfig *rest.Config, kubeClient *kubernetes.Clientset, resourceName string, namespace string, name string, version string) error {
-	if isNamespaceExist, err := CheckAndUpdateNamespace(kubeClient, resourceName, namespace, name, version, false); isNamespaceExist {
-		return err
+// updateLabelsInNamespace will update the labels in the namespace
+func updateLabelsInNamespace(kubeClient *kubernetes.Clientset, ns *corev1.Namespace, resourceName string, namespace string, name string, version string, isDelete bool) error {
+	isLabelUpdated := false
+	ns.Labels = InitLabels(ns.Labels)
+	if isDelete {
+		// delete from labels
+		delete(ns.Labels, fmt.Sprintf("synopsys.com/%s.%s", resourceName, name))
+		isLabelUpdated = true
+	} else {
+		// add or update the label
+		if existingVersion, ok := ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)]; !ok || existingVersion != version {
+			ns.Labels = InitLabels(ns.Labels)
+			ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", resourceName, name)] = version
+			isLabelUpdated = true
+		}
 	}
-
-	namespaceDeployer, err := deployer.NewDeployer(restConfig)
-	ns := components.NewNamespace(horizonapi.NamespaceConfig{
-		Name:      namespace,
-		Namespace: namespace,
-	})
-	ns.AddLabels(map[string]string{"owner": "synopsys-operator", fmt.Sprintf("synopsys.com/%s.%s", resourceName, name): version})
-	namespaceDeployer.AddComponent(horizonapi.NamespaceComponent, ns)
-	err = namespaceDeployer.Run()
-	if err != nil {
-		return fmt.Errorf("error in creating the namespace due to %+v", err)
+	if isLabelUpdated {
+		// update the namespace with labels updated
+		_, err := UpdateNamespace(kubeClient, ns)
+		if err != nil {
+			return fmt.Errorf("unable to update the %s namespace labels due to %+v", namespace, err)
+		}
 	}
 	return nil
+}
+
+// GetOperatorNamespaceByCRDScope get the operator namespace by CRD scope
+func GetOperatorNamespaceByCRDScope(kubeClient *kubernetes.Clientset, crdName string, scope apiextensions.ResourceScope, namespace string) (string, error) {
+	operatorNamespace := namespace
+	if scope == apiextensions.ClusterScoped {
+		operatorNamespace = metav1.NamespaceAll
+	}
+
+	// Get all Synopsys Operator running namespaces
+	namespaces, err := GetOperatorNamespace(kubeClient, operatorNamespace)
+	if err != nil {
+		return "", err
+	}
+
+	// For each namespace, get the CRD names and see if the CRD name is belong to input CRD name
+	for _, namespace := range namespaces {
+		crdNames, err := GetCRDNamesFromConfigMap(kubeClient, namespace)
+		if err != nil {
+			continue
+		}
+		crds := strings.Split(crdNames, ",")
+		for _, crd := range crds {
+			if crd == crdName {
+				return namespace, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("%s is not enabled in any of the Synopsys Operator", crdName)
+}
+
+// GetCRDNamesFromConfigMap get CRD names from the Synopsys Operator config map
+func GetCRDNamesFromConfigMap(kubeClient *kubernetes.Clientset, namespace string) (string, error) {
+	cm, err := GetConfigMap(kubeClient, namespace, "synopsys-operator")
+	if err != nil {
+		return "", fmt.Errorf("error getting the Synopsys Operator config map due to %+v", err)
+	}
+	data := cm.Data["config.json"]
+	var cmData map[string]interface{}
+	err = json.Unmarshal([]byte(data), &cmData)
+	if err != nil {
+		log.Errorf("unable to unmarshal config map data due to %+v", err)
+	}
+	if crdNames, ok := cmData["CrdNames"]; ok {
+		return crdNames.(string), nil
+	}
+	return "", fmt.Errorf("unable to find CRD names in the Synopsys Operator config map")
 }
 
 // InitLabels initialize the label

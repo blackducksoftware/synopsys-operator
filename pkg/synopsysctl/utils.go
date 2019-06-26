@@ -202,80 +202,39 @@ func RunKubeEditorCmd(restConfig *rest.Config, kubeClient *kubernetes.Clientset,
 	return nil
 }
 
-func getOperatorNamespace(namespace string) (string, error) {
-	var err error
-	if len(namespace) == 0 {
-		isClusterScoped := util.GetClusterScope(apiExtensionClient)
-		if isClusterScoped {
-			namespace = metav1.NamespaceAll
-		}
-	}
-
-	log.Debugf("getting Synopsys Operator's namespace")
-	namespace, err = util.GetOperatorNamespace(kubeClient, namespace)
-	if err != nil {
-		return "", err
-	}
-
-	if len(namespace) == 0 {
-		return "", fmt.Errorf("Synopsys Operator's namespace not found")
-	}
-	return namespace, nil
-}
-
-// getInstanceInfo will provide the name, namespace and crd scope to create each CRD instance
-func getInstanceInfo(mock bool, name string, crdType string, crdName string, inputNamespace string) (string, string, apiextensions.ResourceScope, error) {
+// getInstanceInfo provides the name, namespace and crd scope of the request custom resource instance
+func getInstanceInfo(mock bool, crdName string, appName string, namespace string, name string) (string, string, apiextensions.ResourceScope, error) {
 	crdScope := apiextensions.ClusterScoped
 	if !mock {
-		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdType)
+		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdName)
 		if err != nil {
-			return "", "", "", fmt.Errorf("unable to get Custom Resource Definition '%s' in your cluster due to %+v", crdType, err)
+			return "", "", "", fmt.Errorf("unable to get Custom Resource Definition '%s' in your cluster due to %+v", crdName, err)
 		}
 		crdScope = crd.Spec.Scope
 	}
 
-	// Check Number of Arguments
+	// if the CRD scope is namespaced scope, then the user need to provide the namespace
 	if crdScope != apiextensions.ClusterScoped && len(namespace) == 0 {
-		return "", "", "", fmt.Errorf("namespace to create an '%s' instance needs to be provided", inputNamespace)
+		return "", "", "", fmt.Errorf("namespace needs to be provided. please use the 'namespace' option to set it")
 	}
 
-	var namespace string
 	if crdScope == apiextensions.ClusterScoped {
-		if len(inputNamespace) == 0 {
-			if len(crdName) > 0 {
-				ns, err := util.ListNamespaces(kubeClient, fmt.Sprintf("synopsys.com/%s.%s", crdName, name))
+		if len(namespace) == 0 {
+			namespace = name
+			// update scenrio to find out the namespace in case of cluster scope
+			if len(appName) > 0 {
+				ns, err := util.ListNamespaces(kubeClient, fmt.Sprintf("synopsys.com/%s.%s", appName, name))
 				if err != nil {
-					return "", "", "", fmt.Errorf("unable to list the '%s' instance '%s' in namespace '%s' due to %+v", crdName, name, namespace, err)
+					return "", "", "", fmt.Errorf("unable to list the '%s' instance '%s' in namespace '%s' due to %+v", appName, name, namespace, err)
 				}
 				if len(ns.Items) > 0 {
 					namespace = ns.Items[0].Name
 				} else {
-					return "", "", "", fmt.Errorf("unable to find the namespace of the '%s' instance '%s'", crdName, name)
+					return "", "", "", fmt.Errorf("unable to find the namespace of the '%s' instance '%s'", appName, name)
 				}
 			}
-			namespace = name
-		} else {
-			namespace = inputNamespace
 		}
-	} else {
-		namespace = inputNamespace
 	}
-	return name, namespace, crdScope, nil
-}
 
-// checkOperatorIsRunning returns true if there is a usable operator for the resource
-// based on the cluster scope
-func checkOperatorIsRunning(clusterScope apiextensions.ResourceScope, resourceNamespace string) error {
-	// Check if Synopsys Operator is running
-	var sOperatorNamespace string
-	if clusterScope == apiextensions.ClusterScoped {
-		sOperatorNamespace = metav1.NamespaceAll
-	} else {
-		sOperatorNamespace = resourceNamespace
-	}
-	var exists bool
-	if exists = util.IsOperatorExist(kubeClient, sOperatorNamespace); !exists {
-		return fmt.Errorf("Synopsys Operator must be running in namespace '%s'", sOperatorNamespace)
-	}
-	return nil
+	return name, namespace, crdScope, nil
 }

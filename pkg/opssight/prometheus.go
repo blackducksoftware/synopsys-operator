@@ -39,11 +39,11 @@ func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error
 	replicas := int32(1)
 	deployment := components.NewDeployment(horizonapi.DeploymentConfig{
 		Replicas:  &replicas,
-		Name:      "prometheus",
+		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, "prometheus"),
 		Namespace: p.opssight.Spec.Namespace,
 	})
-	deployment.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
-	deployment.AddMatchLabelsSelectors(map[string]string{"app": "opssight"})
+	deployment.AddLabels(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
+	deployment.AddMatchLabelsSelectors(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
 
 	pod, err := p.perceptorMetricsPod()
 	if err != nil {
@@ -56,9 +56,9 @@ func (p *SpecConfig) PerceptorMetricsDeployment() (*components.Deployment, error
 
 func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: "prometheus",
+		Name: util.GetResourceName(p.opssight.Name, util.OpsSightName, "prometheus"),
 	})
-	pod.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
+	pod.AddLabels(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
 	container, err := p.perceptorMetricsContainer()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -114,7 +114,7 @@ func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 	vols := []*components.Volume{}
 	vols = append(vols, components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "prometheus",
-		MapOrSecretName: "prometheus",
+		MapOrSecretName: util.GetResourceName(p.opssight.Name, util.OpsSightName, "prometheus"),
 		DefaultMode:     util.IntToInt32(420),
 	}))
 
@@ -133,7 +133,7 @@ func (p *SpecConfig) perceptorMetricsVolumes() ([]*components.Volume, error) {
 // PerceptorMetricsService creates a service for perceptor metrics
 func (p *SpecConfig) PerceptorMetricsService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      "prometheus",
+		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, "prometheus"),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
@@ -146,8 +146,8 @@ func (p *SpecConfig) PerceptorMetricsService() (*components.Service, error) {
 	})
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	service.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": "prometheus", "app": "opssight"})
+	service.AddLabels(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
+	service.AddSelectors(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
 
 	return service, err
 }
@@ -155,7 +155,7 @@ func (p *SpecConfig) PerceptorMetricsService() (*components.Service, error) {
 // PerceptorMetricsNodePortService creates a nodeport service for perceptor metrics
 func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      "prometheus-exposed",
+		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, "prometheus-exposed"),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeNodePort,
 	})
@@ -168,8 +168,8 @@ func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, err
 	})
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	service.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": "prometheus", "app": "opssight"})
+	service.AddLabels(map[string]string{"component": "prometheus-exposed", "app": "opssight", "name": p.opssight.Name})
+	service.AddSelectors(map[string]string{"component": "prometheus-exposed", "app": "opssight", "name": p.opssight.Name})
 
 	return service, err
 }
@@ -177,7 +177,7 @@ func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, err
 // PerceptorMetricsLoadBalancerService creates a loadbalancer service for perceptor metrics
 func (p *SpecConfig) PerceptorMetricsLoadBalancerService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      "prometheus-exposed",
+		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, "prometheus-exposed"),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeLoadBalancer,
 	})
@@ -190,8 +190,8 @@ func (p *SpecConfig) PerceptorMetricsLoadBalancerService() (*components.Service,
 	})
 
 	service.AddAnnotations(map[string]string{"prometheus.io/scrape": "true"})
-	service.AddLabels(map[string]string{"name": "prometheus", "app": "opssight"})
-	service.AddSelectors(map[string]string{"name": "prometheus", "app": "opssight"})
+	service.AddLabels(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
+	service.AddSelectors(map[string]string{"component": "prometheus", "app": "opssight", "name": p.opssight.Name})
 
 	return service, err
 }
@@ -199,7 +199,7 @@ func (p *SpecConfig) PerceptorMetricsLoadBalancerService() (*components.Service,
 // PerceptorMetricsConfigMap creates a config map for perceptor metrics
 func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      "prometheus",
+		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, "prometheus"),
 		Namespace: p.opssight.Spec.Namespace,
 	})
 
@@ -229,18 +229,18 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 		}
 	*/
 	targets := []string{
-		fmt.Sprintf("%s:%d", p.opssight.Spec.Perceptor.Name, p.opssight.Spec.Perceptor.Port),
-		fmt.Sprintf("%s:%d", p.opssight.Spec.ScannerPod.Scanner.Name, p.opssight.Spec.ScannerPod.Scanner.Port),
-		fmt.Sprintf("%s:%d", p.opssight.Spec.ScannerPod.ImageFacade.Name, p.opssight.Spec.ScannerPod.ImageFacade.Port),
+		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name), p.opssight.Spec.Perceptor.Port),
+		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ScannerPod.Scanner.Name), p.opssight.Spec.ScannerPod.Scanner.Port),
+		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ScannerPod.ImageFacade.Name), p.opssight.Spec.ScannerPod.ImageFacade.Port),
 	}
 	if p.opssight.Spec.Perceiver.EnableImagePerceiver {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.opssight.Spec.Perceiver.ImagePerceiver.Name, p.opssight.Spec.Perceiver.Port))
+		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceiver.ImagePerceiver.Name), p.opssight.Spec.Perceiver.Port))
 	}
 	if p.opssight.Spec.Perceiver.EnablePodPerceiver {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.opssight.Spec.Perceiver.PodPerceiver.Name, p.opssight.Spec.Perceiver.Port))
+		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceiver.PodPerceiver.Name), p.opssight.Spec.Perceiver.Port))
 	}
 	if p.opssight.Spec.EnableSkyfire {
-		targets = append(targets, fmt.Sprintf("%s:%d", p.opssight.Spec.Skyfire.Name, p.opssight.Spec.Skyfire.PrometheusPort))
+		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name), p.opssight.Spec.Skyfire.PrometheusPort))
 	}
 	data := map[string]interface{}{
 		"global": map[string]interface{}{
@@ -262,7 +262,7 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	configMap.AddLabels(map[string]string{"app": "opssight"})
+	configMap.AddLabels(map[string]string{"app": "opssight", "name": p.opssight.Name, "component": "prometheus"})
 	configMap.AddData(map[string]string{"prometheus.yml": string(bytes)})
 
 	return configMap, nil
@@ -273,12 +273,12 @@ func (p *SpecConfig) GetPrometheusOpenShiftRoute() *api.Route {
 	namespace := p.opssight.Spec.Namespace
 	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
 		return &api.Route{
-			Name:               fmt.Sprintf("%s-%s", p.opssight.Spec.Prometheus.Name, namespace),
+			Name:               util.GetResourceName(p.opssight.Name, util.OpsSightName, fmt.Sprintf("%s-metrics", p.opssight.Spec.Prometheus.Name)),
 			Namespace:          namespace,
 			Kind:               "Service",
-			ServiceName:        p.opssight.Spec.Prometheus.Name,
+			ServiceName:        util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Prometheus.Name),
 			PortName:           fmt.Sprintf("port-%s", p.opssight.Spec.Prometheus.Name),
-			Labels:             map[string]string{"app": "opssight"},
+			Labels:             map[string]string{"app": "opssight", "name": p.opssight.Name, "component": "prometheus-metrics"},
 			TLSTerminationType: routev1.TLSTerminationEdge,
 		}
 	}

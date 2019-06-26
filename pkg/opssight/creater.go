@@ -71,37 +71,46 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 // DeleteOpsSight will delete the OpsSight
 func (ac *Creater) DeleteOpsSight(name string) error {
 	log.Infof("deleting a %s OpsSight instance", name)
-	namespace := name
-	ns, err := util.ListNamespaces(ac.kubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.OpsSightName, name))
-	if err != nil {
-		log.Errorf("unable to list %s OpsSight namespaces %s due to %+v", name, namespace, err)
-	}
-	if len(ns.Items) > 0 {
-		namespace = ns.Items[0].Name
+	values := strings.SplitN(name, "/", 2)
+	var namespace string
+	if len(values) == 0 {
+		return fmt.Errorf("invalid name to delete the OpsSight instance")
+	} else if len(values) == 1 {
+		name = values[0]
+		namespace = values[0]
+		ns, err := util.ListNamespaces(ac.kubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.OpsSightName, name))
+		if err != nil {
+			log.Errorf("unable to list %s OpsSight instance namespaces %s due to %+v", name, namespace, err)
+		}
+		if len(ns.Items) > 0 {
+			namespace = ns.Items[0].Name
+		} else {
+			return fmt.Errorf("unable to find %s OpsSight instance namespace", name)
+		}
 	} else {
-		log.Errorf("unable to find %s OpsSight instance namespace", name)
-		return fmt.Errorf("unable to find %s OpsSight instance namespace", name)
+		name = values[1]
+		namespace = values[0]
 	}
 
 	// delete the Black Duck instance
-	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, namespace,
-		&api.ComponentList{}, fmt.Sprintf("app=%s", util.OpsSightName), true)
+	commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, namespace, "",
+		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.OpsSightName, name), true)
 	_, crudErrors := commonConfig.CRUDComponents()
 	if len(crudErrors) > 0 {
 		return fmt.Errorf("unable to delete the %s OpsSight instance in %s namespace due to %+v", name, namespace, crudErrors)
 	}
 
+	// delete namespace and if other apps are running, remove the Synopsys app label from the namespace
+	var delErr error
+	// if cluster scope, if no other instance running in Synopsys Operator namespace, delete the namespace or delete the Synopsys labels in the namespace
 	if ac.config.IsClusterScoped {
-		err := util.DeleteResourceNamespace(ac.kubeConfig, ac.kubeClient, ac.config.CrdNames, namespace, false)
-
-		if err != nil {
-			return errors.Annotatef(err, "unable to delete namespace %s", namespace)
-		}
+		delErr = util.DeleteResourceNamespace(ac.kubeClient, util.OpsSightName, namespace, name, false)
+	} else {
+		// if namespace scope, delete the label from the namespace
+		_, delErr = util.CheckAndUpdateNamespace(ac.kubeClient, util.OpsSightName, namespace, name, "", true)
 	}
-
-	// update the namespace label if the version of the app got deleted
-	if isNamespaceExist, err := util.CheckAndUpdateNamespace(ac.kubeClient, util.OpsSightName, namespace, name, "", true); isNamespaceExist {
-		return err
+	if delErr != nil {
+		return delErr
 	}
 
 	return nil
@@ -125,7 +134,8 @@ func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSight) error {
 
 	if !ac.config.DryRun {
 		// call the CRUD updater to create or update opssight
-		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, opssightSpec.Namespace, components, "app=opssight", false)
+		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, opssightSpec.Namespace, "2.2.3",
+			components, fmt.Sprintf("app=%s,name=%s", util.OpsSightName, opssight.Name), false)
 		_, errs := commonConfig.CRUDComponents()
 
 		if len(errs) > 0 {

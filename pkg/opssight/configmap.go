@@ -123,7 +123,7 @@ func (cm *MainOpssightConfigMap) horizonConfigMap(name string, namespace string,
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	configMap.AddLabels(map[string]string{"name": name, "app": "opssight"})
+	configMap.AddLabels(map[string]string{"component": name, "app": "opssight"})
 	configMap.AddData(map[string]string{filename: configMapString})
 
 	return configMap, nil
