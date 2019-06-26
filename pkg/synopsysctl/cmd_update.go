@@ -117,8 +117,7 @@ func getOperatorToUpdate(namespace string, cmd *cobra.Command) (*soperator.SpecC
 }
 
 // getUpdatedOperator returns a SpecConfig for Synopsys Operator with the updates provided by the user
-func getUpdatedOperator(oldOperatorSpec *soperator.SpecConfig, crdMap map[string]string, crds []string, namespace string, cmd *cobra.Command) (*soperator.SpecConfig, []string, error) {
-	var isClusterScoped bool
+func getUpdatedOperator(oldOperatorSpec *soperator.SpecConfig, isClusterScoped bool, crdMap map[string]string, crds []string, namespace string, cmd *cobra.Command) (*soperator.SpecConfig, []string, error) {
 	newCrds := []string{}
 
 	newOperatorSpec := soperator.SpecConfig{}
@@ -272,10 +271,11 @@ var updateOperatorCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
+		var isClusterScoped bool
 		// Set namespace if one wasn't provided
 		if !cmd.Flags().Lookup("namespace").Changed {
 			// set existing Synopsys Operator namespace else use default
-			isClusterScoped := util.GetClusterScope(apiExtensionClient)
+			isClusterScoped = util.GetClusterScope(apiExtensionClient)
 			if isClusterScoped {
 				ns, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 				if err != nil {
@@ -292,7 +292,7 @@ var updateOperatorCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		newOperatorSpec, newCrds, err := getUpdatedOperator(oldOperatorSpec, crdMap, crds, namespace, cmd)
+		newOperatorSpec, newCrds, err := getUpdatedOperator(oldOperatorSpec, isClusterScoped, crdMap, crds, namespace, cmd)
 		if err != nil {
 			return err
 		}
@@ -374,10 +374,11 @@ var updateOperatorNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var isClusterScoped bool
 		// Set namespace if one wasn't provided
 		if !cmd.Flags().Lookup("namespace").Changed {
 			// set existing Synopsys Operator namespace else use default
-			isClusterScoped := util.GetClusterScope(apiExtensionClient)
+			isClusterScoped = util.GetClusterScope(apiExtensionClient)
 			if isClusterScoped {
 				ns, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 				if err != nil {
@@ -394,7 +395,7 @@ var updateOperatorNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		newOperatorSpec, _, err := getUpdatedOperator(oldOperatorSpec, crdMap, crds, namespace, cmd)
+		newOperatorSpec, _, err := getUpdatedOperator(oldOperatorSpec, isClusterScoped, crdMap, crds, namespace, cmd)
 		if err != nil {
 			return err
 		}
