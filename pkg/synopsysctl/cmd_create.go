@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -48,6 +49,13 @@ var baseBlackDuckSpec string
 var baseOpsSightSpec string
 
 var namespace string
+var blackDuckNativeDatabase bool
+var blackDuckNativePVC bool
+
+const (
+	blackDuckStageDatabase = "DATABASE"
+	blackDuckStagePVC      = "PVC"
+)
 
 // createCmd creates a Synopsys resource in the cluster
 var createCmd = &cobra.Command{
@@ -302,6 +310,9 @@ var createBlackDuckNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 arguments")
 		}
+		if blackDuckNativeDatabase && blackDuckNativePVC {
+			return fmt.Errorf("cannot enable --output-database and --output-pvc, please only specify one")
+		}
 		return nil
 	},
 	PreRunE: createBlackDuckPreRun,
@@ -313,7 +324,24 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		blackDuck := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
 
 		log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		return PrintResource(*blackDuck, nativeFormat, true)
+		app := getDefaultApp()
+		var cList *api.ComponentList
+		blackDuck.Spec.LivenessProbes = true // enable LivenessProbes when generating Kubernetes resources for customers
+		switch {
+		case !blackDuckNativeDatabase && !blackDuckNativePVC:
+			return PrintResource(*blackDuck, nativeFormat, true)
+		case blackDuckNativeDatabase:
+			cList, err = app.Blackduck().GetComponents(blackDuck, blackDuckStageDatabase)
+		case blackDuckNativePVC:
+			cList, err = app.Blackduck().GetComponents(blackDuck, blackDuckStagePVC)
+		}
+		if err != nil {
+			return fmt.Errorf("failed to generate Black Duck components due to %+v", err)
+		}
+		if cList == nil {
+			return fmt.Errorf("unable to genreate Black Duck components")
+		}
+		return PrintComponentListKube(cList, nativeFormat)
 	},
 }
 
@@ -471,6 +499,8 @@ func init() {
 
 	createBlackDuckCtl.AddSpecFlags(createBlackDuckNativeCmd, true)
 	addNativeFormatFlag(createBlackDuckNativeCmd)
+	createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativeDatabase, "output-database", blackDuckNativeDatabase, "If true, output resources for only Black Duck's database")
+	createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativePVC, "output-pvc", blackDuckNativePVC, "If true, output resources for only Black Duck's persistent volume claims")
 	createBlackDuckCmd.AddCommand(createBlackDuckNativeCmd)
 
 	// Add OpsSight Command
