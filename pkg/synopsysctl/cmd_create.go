@@ -325,7 +325,10 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		blackDuck := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
 
 		log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		app := getDefaultApp()
+		app, err := getDefaultApp(nativeClusterType)
+		if err != nil {
+			return err
+		}
 		var cList *api.ComponentList
 		blackDuck.Spec.LivenessProbes = true // enable LivenessProbes when generating Kubernetes resources for customers
 		switch {
