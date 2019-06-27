@@ -297,7 +297,7 @@ func (p *SpecConfig) ScannerClusterRoleBinding() (*components.ClusterRoleBinding
 	}
 
 	scannerCRB := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
-		Name:       p.opssight.Spec.ScannerPod.Name,
+		Name:       util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ScannerPod.Name),
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 

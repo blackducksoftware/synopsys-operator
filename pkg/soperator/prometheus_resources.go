@@ -22,6 +22,7 @@ under the License.
 package soperator
 
 import (
+	"encoding/json"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -153,7 +154,7 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusDeployment() (*horizoncompo
 }
 
 // GetPrometheusConfigMap creates a Horizon ConfigMap component for Prometheus
-func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncomponents.ConfigMap {
+func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() (*horizoncomponents.ConfigMap, error) {
 	// Add prometheus config map
 	prometheusConfigMap := horizoncomponents.NewConfigMap(horizonapi.ConfigMapConfig{
 		APIVersion: "v1",
@@ -161,14 +162,36 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() *horizoncompone
 		Namespace:  specConfig.Namespace,
 	})
 
+	data := map[string]interface{}{
+		"global": map[string]interface{}{
+			"scrape_interval": "5s",
+		},
+		"scrape_configs": []interface{}{
+			map[string]interface{}{
+				"job_name":        "synopsys-operator-scrape",
+				"scrape_interval": "5s",
+				"static_configs": []interface{}{
+					map[string]interface{}{
+						"targets": []string{"synopsys-operator:8080"},
+					},
+				},
+			},
+		},
+	}
+
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	cmData := map[string]string{}
-	cmData["prometheus.yml"] = "{'global':{'scrape_interval':'5s'},'scrape_configs':[{'job_name':'synopsys-operator-scrape','scrape_interval':'5s','static_configs':[{'targets':['synopsys-operator:8080']}]}]}"
+	cmData["prometheus.yml"] = string(bytes)
 	cmData["Image"] = specConfig.Image
 	cmData["Expose"] = specConfig.Expose
 	prometheusConfigMap.AddData(cmData)
 
 	prometheusConfigMap.AddLabels(map[string]string{"app": "synopsys-operator", "component": "prometheus"})
-	return prometheusConfigMap
+	return prometheusConfigMap, nil
 }
 
 // GetOpenShiftRoute creates the OpenShift route component for the prometheus
