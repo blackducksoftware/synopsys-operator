@@ -1433,7 +1433,7 @@ func GetOperatorNamespace(clientset *kubernetes.Clientset, namespace string) ([]
 	if len(namespaces) > 0 {
 		return MapKeyToStringArray(namespaces), nil
 	}
-	return nil, fmt.Errorf("unable to find the synopsys operator namespace due to %+v", err)
+	return nil, fmt.Errorf("unable to find the synopsys operator namespace")
 }
 
 // MapKeyToStringArray will return map keys
