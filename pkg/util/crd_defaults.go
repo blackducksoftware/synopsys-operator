@@ -456,7 +456,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Namespace: "opssight-test",
 		Perceptor: &opssightv1.Perceptor{
-			Name:                           "opssight-core",
+			Name:                           "core",
 			Port:                           3001,
 			Image:                          "docker.io/blackducksoftware/opssight-core:2.2.3",
 			CheckForStalledScansPauseHours: 999999,
@@ -467,19 +467,19 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			Expose:                         NONE,
 		},
 		ScannerPod: &opssightv1.ScannerPod{
-			Name: "opssight-scanner",
+			Name: "scanner",
 			Scanner: &opssightv1.Scanner{
-				Name:                 "opssight-scanner",
+				Name:                 "scanner",
 				Port:                 3003,
 				Image:                "docker.io/blackducksoftware/opssight-scanner:2.2.3",
 				ClientTimeoutSeconds: 600,
 			},
 			ImageFacade: &opssightv1.ImageFacade{
-				Name:               "opssight-image-getter",
+				Name:               "image-getter",
 				Port:               3004,
 				InternalRegistries: []*opssightv1.RegistryAuth{},
 				Image:              "docker.io/blackducksoftware/opssight-image-getter:2.2.3",
-				ServiceAccount:     "opssight-scanner",
+				ServiceAccount:     "scanner",
 				ImagePullerType:    "skopeo",
 			},
 			ReplicaCount: 1,
@@ -489,14 +489,14 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			EnablePodPerceiver:   false,
 			Port:                 3002,
 			ImagePerceiver: &opssightv1.ImagePerceiver{
-				Name:  "opssight-image-processor",
+				Name:  "image-processor",
 				Image: "docker.io/blackducksoftware/opssight-image-processor:2.2.3",
 			},
 			PodPerceiver: &opssightv1.PodPerceiver{
-				Name:  "opssight-pod-processor",
+				Name:  "pod-processor",
 				Image: "docker.io/blackducksoftware/opssight-pod-processor:2.2.3",
 			},
-			ServiceAccount:            "opssight-processor",
+			ServiceAccount:            "processor",
 			AnnotationIntervalSeconds: 30,
 			DumpIntervalMinutes:       30,
 		},
@@ -543,7 +543,7 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Namespace: "opssight-test",
 		Perceptor: &opssightv1.Perceptor{
-			Name:                           "opssight-core",
+			Name:                           "core",
 			Port:                           3001,
 			Image:                          "docker.io/blackducksoftware/opssight-core:2.2.3",
 			CheckForStalledScansPauseHours: 999999,
@@ -554,19 +554,19 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			Expose:                         NONE,
 		},
 		ScannerPod: &opssightv1.ScannerPod{
-			Name: "opssight-scanner",
+			Name: "scanner",
 			Scanner: &opssightv1.Scanner{
-				Name:                 "opssight-scanner",
+				Name:                 "scanner",
 				Port:                 3003,
 				Image:                "docker.io/blackducksoftware/opssight-scanner:2.2.3",
 				ClientTimeoutSeconds: 600,
 			},
 			ImageFacade: &opssightv1.ImageFacade{
-				Name:               "opssight-image-getter",
+				Name:               "image-getter",
 				Port:               3004,
 				InternalRegistries: []*opssightv1.RegistryAuth{},
 				Image:              "docker.io/blackducksoftware/opssight-image-getter:2.2.3",
-				ServiceAccount:     "opssight-scanner",
+				ServiceAccount:     "scanner",
 				ImagePullerType:    "skopeo",
 			},
 			ReplicaCount: 1,
@@ -575,11 +575,11 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			EnableImagePerceiver: false,
 			EnablePodPerceiver:   true,
 			ImagePerceiver: &opssightv1.ImagePerceiver{
-				Name:  "opssight-image-processor",
+				Name:  "image-processor",
 				Image: "docker.io/blackducksoftware/opssight-image-processor:2.2.3",
 			},
 			PodPerceiver: &opssightv1.PodPerceiver{
-				Name:  "opssight-pod-processor",
+				Name:  "pod-processor",
 				Image: "docker.io/blackducksoftware/opssight-pod-processor:2.2.3",
 			},
 			ServiceAccount:            "opssight-processor",

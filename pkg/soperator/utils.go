@@ -25,6 +25,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -107,7 +108,7 @@ func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 	log.Debugf("creating new synopsys operator spec")
 	currCM, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
-		return nil, fmt.Errorf("unable to get synopsys operator config map due to %s", err)
+		return nil, fmt.Errorf("unable to get synopsys operator config map in namespace %s due to %+v", namespace, err)
 	}
 
 	sOperatorSpec := SpecConfig{}
@@ -115,9 +116,19 @@ func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 	sOperatorSpec.RestConfig = restConfig
 	sOperatorSpec.KubeClient = kubeClient
 
-	err = json.Unmarshal([]byte(currCM.Data["config.json"]), &sOperatorSpec)
+	data := currCM.Data["config.json"]
+	err = json.Unmarshal([]byte(data), &sOperatorSpec)
 	if err != nil {
 		return nil, fmt.Errorf("unable to unmarshal Synopsys Operator configMap data due to %+v", err)
+	}
+
+	var cmData map[string]interface{}
+	err = json.Unmarshal([]byte(data), &cmData)
+	if err != nil {
+		log.Errorf("unable to unmarshal config map data due to %+v", err)
+	}
+	if crdNames, ok := cmData["CrdNames"]; ok {
+		sOperatorSpec.Crds = strings.Split(crdNames.(string), ",")
 	}
 
 	// Set the secretType and secret data

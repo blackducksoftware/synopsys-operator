@@ -84,6 +84,10 @@ func runProtoform(configPath string, version string) {
 			// start the CRD controller
 			startController(deployer, strings.TrimSpace(crd), stopCh)
 		}
+		if err := deployer.Deploy(); err != nil {
+			log.Errorf("unable to deploy the CRD controllers due to  %+v", err)
+			os.Exit(1)
+		}
 	} else {
 		log.Errorf("unable to start any CRD controllers. Please set the CrdNames environment variable to start any CRD controllers...")
 		os.Exit(1)
@@ -116,11 +120,7 @@ func startController(deployer *protoform.Deployer, name string, stopCh chan stru
 	default:
 		log.Warnf("unable to start the %s custom resource definition controller due to invalid custom resource definition name", name)
 	}
-	if err := deployer.Deploy(); err != nil {
-		log.Errorf("unable to deploy the CRD controllers due to  %+v", err)
-		os.Exit(1)
-	}
-	log.Infof("started %s crd controller", name)
+	log.Infof("added %s crd controller", name)
 }
 
 func kill(stopCh chan struct{}) {

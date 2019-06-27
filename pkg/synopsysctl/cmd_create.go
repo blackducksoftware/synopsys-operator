@@ -33,7 +33,7 @@ import (
 	blackduckapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -127,7 +127,7 @@ var createAlertCmd = &cobra.Command{
 	PreRunE: createAlertPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		alertName, alertNamespace, scope, err := getInstanceInfo(mockMode, args[0], util.AlertCRDName, "", namespace)
+		alertName, alertNamespace, scope, err := getInstanceInfo(mockMode, util.AlertCRDName, "", namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -140,17 +140,15 @@ var createAlertCmd = &cobra.Command{
 		}
 
 		log.Infof("creating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		// Check if Synopsys Operator is running
-		if err := checkOperatorIsRunning(scope, alertNamespace); err != nil {
+
+		// Get the Synopsys Operator namespace by CRD scope
+		operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, util.AlertCRDName, scope, alertNamespace)
+		if err != nil {
 			return err
 		}
-		// Create namespace for an Alert instance
-		err = util.DeployCRDNamespace(restconfig, kubeClient, util.AlertName, alertNamespace, alertName, alert.Spec.Version)
-		if err != nil {
-			log.Warn(err)
-		}
+
 		// Deploy the Alert instance
-		_, err = alertClient.SynopsysV1().Alerts(alertNamespace).Create(alert)
+		_, err = alertClient.SynopsysV1().Alerts(operatorNamespace).Create(alert)
 		if err != nil {
 			return fmt.Errorf("error creating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
@@ -176,7 +174,7 @@ var createAlertNativeCmd = &cobra.Command{
 	},
 	PreRunE: createAlertPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, _, err := getInstanceInfo(true, args[0], util.AlertCRDName, "", namespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(true, util.AlertCRDName, "", namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -278,7 +276,7 @@ var createBlackDuckCmd = &cobra.Command{
 	PreRunE: createBlackDuckPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		blackDuckName, blackDuckNamespace, scope, err := getInstanceInfo(mockMode, args[0], util.BlackDuckCRDName, "", namespace)
+		blackDuckName, blackDuckNamespace, scope, err := getInstanceInfo(mockMode, util.BlackDuckCRDName, "", namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -291,10 +289,7 @@ var createBlackDuckCmd = &cobra.Command{
 		}
 
 		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-		// Check if Synopsys Operator is running
-		if err := checkOperatorIsRunning(scope, blackDuckNamespace); err != nil {
-			return err
-		}
+
 		// Verifying only one Black Duck instance per namespace
 		blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
 		if err != nil {
@@ -305,14 +300,16 @@ var createBlackDuckCmd = &cobra.Command{
 				return fmt.Errorf("due to issues with this version of Black Duck, only one instance per namespace is allowed")
 			}
 		}
-		// Create namespace for the Black Duck instance
-		err = util.DeployCRDNamespace(restconfig, kubeClient, util.BlackDuckName, blackDuckNamespace, blackDuckName, blackDuck.Spec.Version)
+
+		// Get the Synopsys Operator namespace by CRD scope
+		operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, util.BlackDuckCRDName, scope, blackDuckNamespace)
 		if err != nil {
-			log.Warn(err)
+			return err
 		}
+
 		// Deploy the Black Duck instance
 		log.Debugf("deploying Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
-		_, err = blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Create(blackDuck)
+		_, err = blackDuckClient.SynopsysV1().Blackducks(operatorNamespace).Create(blackDuck)
 		if err != nil {
 			return fmt.Errorf("error creating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
@@ -344,7 +341,7 @@ var createBlackDuckNativeCmd = &cobra.Command{
 	},
 	PreRunE: createBlackDuckPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(true, args[0], util.BlackDuckCRDName, "", namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(true, util.BlackDuckCRDName, "", namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -440,7 +437,7 @@ var createOpsSightCmd = &cobra.Command{
 	PreRunE: createOpsSightPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		opsSightName, opsSightNamespace, scope, err := getInstanceInfo(mockMode, args[0], util.OpsSightCRDName, "", namespace)
+		opsSightName, opsSightNamespace, scope, err := getInstanceInfo(mockMode, util.OpsSightCRDName, "", namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -453,18 +450,15 @@ var createOpsSightCmd = &cobra.Command{
 		}
 
 		log.Infof("creating OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-		// Check if Synopsys Operator is running
-		if err := checkOperatorIsRunning(scope, opsSightNamespace); err != nil {
+
+		// Get the Synopsys Operator namespace by CRD scope
+		operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, util.OpsSightCRDName, scope, opsSightNamespace)
+		if err != nil {
 			return err
 		}
-		// Create namespace for OpsSight
-		// TODO: when opssight versioning PR is merged, the hard coded 2.2.3 version to be replaced with opsSight
-		err = util.DeployCRDNamespace(restconfig, kubeClient, util.OpsSightName, opsSightNamespace, opsSightName, "2.2.3")
-		if err != nil {
-			log.Warnf("%s", err)
-		}
+
 		// Deploy the OpsSight instance
-		_, err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Create(opsSight)
+		_, err = opsSightClient.SynopsysV1().OpsSights(operatorNamespace).Create(opsSight)
 		if err != nil {
 			return fmt.Errorf("error creating the OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
@@ -478,7 +472,6 @@ var createOpsSightNativeCmd = &cobra.Command{
 	Use:           "native NAME",
 	Example:       "synopsysctl create opssight native <name>\nsynopsysctl create opssight native <name> -n <namespace>\nsynopsysctl create opssight native <name> -o yaml",
 	Short:         "Print the Kubernetes resources for creating an OpsSight instance",
-	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -491,7 +484,7 @@ var createOpsSightNativeCmd = &cobra.Command{
 	},
 	PreRunE: createOpsSightPreRun,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(true, args[0], util.OpsSightCRDName, "", namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(true, util.OpsSightCRDName, "", namespace, args[0])
 		if err != nil {
 			return err
 		}
