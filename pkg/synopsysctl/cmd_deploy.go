@@ -292,6 +292,14 @@ var deployCmd = &cobra.Command{
 			return PrintResource(*soperatorSpec, mockFormat, false)
 		}
 
+		// check if namespace exist in namespace scope, if not throw an error
+		if !isClusterScoped {
+			_, err = util.GetNamespace(kubeClient, operatorNamespace)
+			if err != nil {
+				return fmt.Errorf("please create the namespace %s to deploy the Synopsys Operator in namespace scoped", operatorNamespace)
+			}
+		}
+
 		// check if operator is already installed
 		_, err = util.GetOperatorNamespace(kubeClient, operatorNamespace)
 		if err == nil {

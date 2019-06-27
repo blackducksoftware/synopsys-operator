@@ -22,11 +22,14 @@ under the License.
 package synopsysctl
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -74,10 +77,62 @@ func migrate(namespace string) error {
 	if err != nil {
 		return err
 	}
+	err = migrateOperator(namespace)
+	if err != nil {
+		return err
+	}
 	err = migrateCR(namespace)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// migrateOperator adds CRDNames and IsClusterScope parameter to Synopsys Operator config map
+func migrateOperator(namespace string) error {
+	log.Infof("migrating Synopsys Operator resources in namespace '%s'", namespace)
+
+	isClusterScoped = util.GetClusterScope(apiExtensionClient)
+	// list the existing CRD's and convert them to map with both key and value as name
+	var crdList *apiextensions.CustomResourceDefinitionList
+	crdList, err := util.ListCustomResourceDefinitions(apiExtensionClient, "app=synopsys-operator")
+	if err != nil {
+		return fmt.Errorf("unable to list Custom Resource Definitions due to %+v", err)
+	}
+
+	cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
+	if err != nil {
+		return fmt.Errorf("error getting the Synopsys Operator config map in namespace %s due to %+v", namespace, err)
+	}
+	data := cm.Data["config.json"]
+	var cmData map[string]interface{}
+	err = json.Unmarshal([]byte(data), &cmData)
+	if err != nil {
+		log.Errorf("unable to unmarshal config map data due to %+v", err)
+	}
+	crds := make([]string, 0)
+	if _, ok := cmData["CrdNames"]; !ok {
+		for _, crd := range crdList.Items {
+			crds = append(crds, crd.Name)
+		}
+		cmData["CrdNames"] = strings.Join(crds, ",")
+		cmData["IsClusterScoped"] = isClusterScoped
+	}
+
+	bytes, err := json.Marshal(cmData)
+	if err != nil {
+		return fmt.Errorf("unable to marshal config map data due to %+v", err)
+	}
+
+	cm.Data["config.json"] = string(bytes)
+
+	_, err = util.UpdateConfigMap(kubeClient, namespace, cm)
+	if err != nil {
+		return fmt.Errorf("unable to update the Synopsys Operator config map in namespace %s due to %+v", namespace, err)
+	}
+
+	log.Infof("successfully migrated Synopsys Operator resources in namespace '%s'", namespace)
+
 	return nil
 }
 

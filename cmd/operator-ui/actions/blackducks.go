@@ -35,6 +35,7 @@ import (
 	"github.com/gobuffalo/buffalo"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -280,16 +281,18 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 		return v.redirect(c, blackduck, fmt.Errorf("already '%s' Black Duck instance exist in '%s' namespace", blackduck.Name, blackduck.Spec.Namespace))
 	}
 
-	_, err = util.GetNamespace(v.kubeClient, blackduck.Spec.Namespace)
-	if err != nil {
-		err = util.DeployCRDNamespace(v.kubeConfig, v.kubeClient, util.BlackDuckName, blackduck.Spec.Namespace, blackduck.Name, blackduck.Spec.Version)
-		if err != nil {
-			return v.redirect(c, blackduck, err)
-		}
-		log.Infof("created namespace '%s' for Black Duck instance '%s'", blackduck.Spec.Namespace, blackduck.Name)
+	// Get the Synopsys Operator namespace by CRD scope
+	scope := apiextensions.NamespaceScoped
+	if v.config.IsClusterScoped {
+		scope = apiextensions.ClusterScoped
 	}
 
-	_, err = util.CreateHub(v.blackduckClient, blackduck.Spec.Namespace, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackduck.Name}, Spec: blackduck.Spec})
+	operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(v.kubeClient, util.BlackDuckCRDName, scope, blackduck.Spec.Namespace)
+	if err != nil {
+		return v.redirect(c, blackduck, err)
+	}
+
+	_, err = util.CreateHub(v.blackduckClient, operatorNamespace, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackduck.Name}, Spec: blackduck.Spec})
 	if err != nil {
 		return v.redirect(c, blackduck, err)
 	}
