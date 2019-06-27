@@ -60,7 +60,7 @@ func TestSpecConfig_getAlertServiceLoadBalancer(t *testing.T) {
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      util.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "exposed"),
-					Namespace: tt.altSpecConfig.alert.Namespace,
+					Namespace: tt.altSpecConfig.alert.Spec.Namespace,
 					Labels:    map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},
 				Spec: v1.ServiceSpec{
@@ -108,7 +108,7 @@ func TestSpecConfig_getAlertServiceNodePort(t *testing.T) {
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      util.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "exposed"),
-					Namespace: tt.altSpecConfig.alert.Namespace,
+					Namespace: tt.altSpecConfig.alert.Spec.Namespace,
 					Labels:    map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},
 				Spec: v1.ServiceSpec{
@@ -156,7 +156,7 @@ func TestSpecConfig_getAlertService(t *testing.T) {
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      util.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "alert"),
-					Namespace: tt.altSpecConfig.alert.Namespace,
+					Namespace: tt.altSpecConfig.alert.Spec.Namespace,
 					Labels:    map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},
 				Spec: v1.ServiceSpec{
