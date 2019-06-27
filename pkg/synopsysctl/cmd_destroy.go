@@ -52,20 +52,28 @@ var destroyCmd = &cobra.Command{
 		// Read Commandline Parameters
 		if len(args) > 0 {
 			for _, operatorNamespace := range args {
+				log.Infof("destroying Synopsys Operator in namespace '%s'...", operatorNamespace)
 				return destroy(operatorNamespace)
 			}
 		} else {
 			operatorNamespace := DefaultOperatorNamespace
-			var err error
 			isClusterScoped := util.GetClusterScope(apiExtensionClient)
 			if isClusterScoped {
-				namespace, err = util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+				namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 				if err != nil {
 					return err
 				}
-				if metav1.NamespaceAll != namespace {
-					operatorNamespace = namespace
+				if len(namespaces) > 1 {
+					return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to destroy")
 				}
+				if metav1.NamespaceAll != namespaces[0] {
+					operatorNamespace = namespaces[0]
+					log.Infof("destroying Synopsys Operator in namespace '%s'...", operatorNamespace)
+				} else {
+					log.Infof("destroy Synopsys Operator defaulting to namespace '%s'...", operatorNamespace)
+				}
+			} else {
+				return fmt.Errorf("please provide the namespace of the Synopsys Operator that you want to destroy")
 			}
 			return destroy(operatorNamespace)
 		}
@@ -74,51 +82,64 @@ var destroyCmd = &cobra.Command{
 }
 
 func destroy(namespace string) error {
-	log.Infof("destroying Synopsys Operator in namespace '%s'...", namespace)
-	crds := []string{}
-	cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
-	if err != nil {
-		log.Errorf("unable to find the 'synopsy-operator' config map in namespace '%s' due to %+v", namespace, err)
-	} else {
-		data := cm.Data["config.json"]
-		var cmData map[string]interface{}
-		err = json.Unmarshal([]byte(data), &cmData)
-		if err != nil {
-			log.Errorf("unable to unmarshal config map data due to %+v", err)
-		}
-		if crdNames, ok := cmData["CrdNames"]; ok {
-			crds = strings.Split(crdNames.(string), ",")
-		}
-	}
-
 	// delete namespace
-	checkErr := util.CheckResourceNamespace(restconfig, kubeClient, strings.Join(crds, ","), namespace, true)
-	if err != nil && isForceDestroy {
-		log.Warnf("%s. namespace cannot be deleted", err.Error())
-	} else if err != nil && !isForceDestroy {
-		return fmt.Errorf("%s. It is not recommended to destroy the Synopsys Operator so these resources can continue to be managed. If you are sure you want to delete the Synopsys Operator anyway then you can use the 'force' option which will keep all the instances and delete only the Synopsys Operator", err.Error())
-	}
-
-	log.Infof("deleting the Synopsys Operator in namespace '%s'", namespace)
-	// delete Synopsys Operator instance
-	commonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespace, &api.ComponentList{}, "app=synopsys-operator", false)
-	_, crudErrors := commonConfig.CRUDComponents()
-	if len(crudErrors) > 0 {
-		log.Errorf("unable to delete the Synopsys Operator in namespace '%s' due to %+v", namespace, err)
-	}
-
-	if checkErr == nil {
-		err = util.DeleteNamespace(kubeClient, namespace)
+	isNamespaceExist, err := util.CheckResourceNamespace(kubeClient, namespace, "", true)
+	if isNamespaceExist {
 		if err != nil {
-			log.Errorf("unable to delete the Synopsys Operator namespace due to %+v", err)
+			if isForceDestroy {
+				log.Warnf("%s. namespace cannot be deleted", err.Error())
+			} else {
+				return fmt.Errorf("%s. It is not recommended to destroy the Synopsys Operator so these resources can continue to be managed. If you are sure you want to delete the Synopsys Operator anyway then you can use the 'force' option which will keep all the instances and delete only the Synopsys Operator", err.Error())
+			}
 		}
-	}
 
-	// delete crds
-	deleteCrds(crds, namespace)
+		// get the synopsys operator configmap to get the crd names and cluster scope
+		crds := make([]string, 0)
+		var isClusterScoped bool
+		cm, cmErr := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
+		if cmErr != nil {
+			log.Errorf("error getting the config map in namespace '%s' due to %+v", namespace, cmErr)
+		} else {
+			data := cm.Data["config.json"]
+			var cmData map[string]interface{}
+			cmErr = json.Unmarshal([]byte(data), &cmData)
+			if cmErr != nil {
+				log.Errorf("unable to unmarshal config map data due to %+v", cmErr)
+			}
+			if crdNames, ok := cmData["CrdNames"]; ok {
+				crds = strings.Split(crdNames.(string), ",")
+			}
+			if value, ok := cmData["IsClusterScoped"]; ok {
+				isClusterScoped = value.(bool)
+			}
+		}
+
+		log.Infof("deleting the Synopsys Operator resources in namespace '%s'", namespace)
+		if isClusterScoped && err == nil {
+			err = util.DeleteNamespace(kubeClient, namespace)
+			if err != nil {
+				log.Errorf("unable to delete the Synopsys Operator namespace due to %+v", err)
+			} else {
+				log.Infof("successfully destroyed Synopsys Operator in namespace '%s'", namespace)
+			}
+		} else {
+			commonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespace, "", &api.ComponentList{}, "app=synopsys-operator", false)
+			_, crudErrors := commonConfig.CRUDComponents()
+			if len(crudErrors) > 0 {
+				log.Errorf("unable to delete the Synopsys Operator resources in namespace '%s' due to %+v", namespace, crudErrors)
+			} else {
+				log.Infof("successfully destroyed Synopsys Operator in namespace '%s'", namespace)
+			}
+		}
+
+		// delete crds
+		deleteCrds(crds, namespace)
+	} else {
+		log.Error(err)
+	}
 
 	// delete cluster role bindings
-	clusterRoleBindings, roleBindings, err := util.GetOperatorRoleBindings(kubeClient, namespace)
+	clusterRoleBindings, _, err := util.GetOperatorRoleBindings(kubeClient, namespace)
 	if err != nil {
 		log.Errorf("error getting role binding or cluster role binding due to %+v", err)
 	}
@@ -153,18 +174,8 @@ func destroy(namespace string) error {
 		}
 	}
 
-	// delete role bindings
-	for _, roleBinding := range roleBindings {
-		log.Infof("deleting role binding '%s'", roleBinding)
-		err = util.DeleteRoleBinding(kubeClient, namespace, roleBinding)
-
-		if err != nil {
-			log.Errorf("unable to delete role binding '%s' due to %+v", roleBinding, err)
-		}
-	}
-
 	// delete cluster roles
-	clusterRoles, roles, err := util.GetOperatorRoles(kubeClient, namespace)
+	clusterRoles, _, err := util.GetOperatorRoles(kubeClient, namespace)
 	if err != nil {
 		log.Errorf("error getting role or cluster role due to %+v", err)
 	}
@@ -188,16 +199,6 @@ func destroy(namespace string) error {
 		}
 	}
 
-	// delete roles
-	for _, role := range roles {
-		log.Infof("deleting role '%s'", role)
-		err := util.DeleteRole(kubeClient, namespace, role)
-		if err != nil {
-			log.Errorf("unable to delete role '%s' due to %+v", role, err)
-		}
-	}
-
-	log.Infof("successfully submitted destroy Synopsys Operator in namespace '%s'", namespace)
 	return nil
 }
 

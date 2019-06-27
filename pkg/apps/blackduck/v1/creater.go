@@ -67,14 +67,14 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	pvcs := hc.GetPVC(blackduck)
 
 	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
-		commonConfig := crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, false, blackduck.Spec.Namespace,
+		commonConfig := crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("stop blackduck: %+v", errors)
 		}
 	} else {
-		commonConfig := crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, false, blackduck.Spec.Namespace,
+		commonConfig := crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
@@ -88,7 +88,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// install postgres
-		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace,
+		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			cpPostgresList, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
@@ -112,7 +112,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 		}
 
 		// install cfssl
-		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace,
+		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			cpList, fmt.Sprintf("app=%s,name=%s,component in (configmap,serviceAccount,cfssl)", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
@@ -124,7 +124,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return fmt.Errorf("the cfssl pod is not ready: %v", err)
 		}
 		// deploy non postgres and uploadcache component
-		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace,
+		commonConfig = crdupdater.NewCRUDComponents(hc.kubeConfig, hc.kubeClient, hc.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
 			cpList, fmt.Sprintf("app=%s,name=%s,component notin (postgres,configmap,serviceAccount,cfssl)", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {

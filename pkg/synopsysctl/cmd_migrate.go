@@ -53,15 +53,19 @@ var migrateCmd = &cobra.Command{
 		// get operator namespace
 		isClusterScoped := util.GetClusterScope(apiExtensionClient)
 		if isClusterScoped {
-			namespace, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+			namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 			if err != nil {
 				return err
 			}
-			if metav1.NamespaceAll != namespace {
-				operatorNamespace = namespace
+
+			if len(namespaces) > 1 {
+				return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to migrate")
 			}
+			return migrate(namespaces[0])
 		}
-		return migrate(operatorNamespace)
+
+		log.Errorf("namespace of the Synopsys Operator need to be provided")
+		return nil
 	},
 }
 
@@ -149,7 +153,7 @@ func migrateAlert(namespace string) error {
 		}
 
 		// add synopsys labels to namespace
-		err = addNamespaceLabels(alertNamespace, alert.Name, util.AlertName, alert.Spec.Version)
+		err = addNamespaceLabels(alertNamespace, alertName, util.AlertName, alert.Spec.Version)
 		if err != nil {
 			return err
 		}
@@ -193,7 +197,7 @@ func migrateBlackDuck(namespace string) error {
 		}
 
 		// add synopsys labels to namespace
-		err = addNamespaceLabels(blackDuckNamespace, blackDuck.Name, util.BlackDuckName, blackDuck.Spec.Version)
+		err = addNamespaceLabels(blackDuckNamespace, blackDuckName, util.BlackDuckName, blackDuck.Spec.Version)
 		if err != nil {
 			return err
 		}
@@ -240,11 +244,16 @@ func migrateOpsSight(namespace string) error {
 		}
 
 		// add synopsys labels to namespace
-		err = addNamespaceLabels(opsSightNamespace, opsSight.Name, util.OpsSightName, "2.2.3")
+		err = addNamespaceLabels(opsSightNamespace, opsSightName, util.OpsSightName, "2.2.3")
 		if err != nil {
 			return err
 		}
 
+		// include name in all resources
+		err = addNameLabels(opsSightNamespace, opsSightName, util.BlackDuckName)
+		if err != nil {
+			return err
+		}
 		log.Infof("successfully migrated OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
 	}
 	return nil
@@ -260,6 +269,7 @@ func addNamespaceLabels(namespace string, name string, appName string, version s
 	// update labels in namespace
 	if _, ok := ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", appName, name)]; !ok {
 		ns.Labels = util.InitLabels(ns.Labels)
+		ns.Labels["owner"] = util.OperatorName
 		ns.Labels[fmt.Sprintf("synopsys.com/%s.%s", appName, name)] = version
 		_, err = util.UpdateNamespace(kubeClient, ns)
 		if err != nil {

@@ -34,7 +34,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //  Deploy Command Defaults
@@ -271,7 +270,7 @@ var deployCmd = &cobra.Command{
 		// validate each CRD enable parameter is enabled/disabled and cluster scope are from supported values
 		crds, err := getEnabledCrds()
 		if err != nil {
-			return nil
+			return err
 		}
 		// Get CRD configs
 		crdConfigs, err := getCrdConfigs(operatorNamespace, isClusterScoped, crds)
@@ -293,34 +292,34 @@ var deployCmd = &cobra.Command{
 			return PrintResource(*soperatorSpec, mockFormat, false)
 		}
 
-		log.Infof("deploying Synopsys Operator in namespace '%s'...", operatorNamespace)
-		if isClusterScoped && len(operatorNamespace) == 0 {
-			namespace = metav1.NamespaceAll
-		}
 		// check if operator is already installed
-		namespace, err = util.GetOperatorNamespace(kubeClient, namespace)
+		_, err = util.GetOperatorNamespace(kubeClient, operatorNamespace)
 		if err == nil {
 			return fmt.Errorf("the Synopsys Operator instance is already deployed in namespace '%s'", namespace)
 		}
-		if metav1.NamespaceAll != namespace {
-			operatorNamespace = namespace
-		}
-		// create custom resource definitions
+
+		log.Infof("deploying Synopsys Operator in namespace '%s'...", operatorNamespace)
+
+		log.Debugf("creating custom resource definitions")
 		err = deployCrds(operatorNamespace, isClusterScoped, crdConfigs)
 		if err != nil {
 			return err
 		}
+
+		log.Debugf("creating Synopsys Operator components")
 		sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
 		err = sOperatorCreater.UpdateSOperatorComponents(soperatorSpec)
 		if err != nil {
 			return fmt.Errorf("error deploying Synopsys Operator due to %+v", err)
 		}
+
 		log.Debugf("creating Metrics components")
 		promtheusSpec := soperator.NewPrometheus(operatorNamespace, metricsImage, exposeMetrics, restconfig, kubeClient)
 		err = sOperatorCreater.UpdatePrometheus(promtheusSpec)
 		if err != nil {
 			return fmt.Errorf("error deploying metrics due to %s", err)
 		}
+
 		log.Infof("successfully submitted Synopsys Operator into namespace '%s'", operatorNamespace)
 		return nil
 	},
@@ -417,5 +416,4 @@ func initFlags() {
 	addOperatorDeployFlags(deployNativeCmd)
 	addNativeFormatFlag(deployNativeCmd)
 	deployCmd.AddCommand(deployNativeCmd)
-
 }

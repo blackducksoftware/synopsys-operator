@@ -38,6 +38,7 @@ type CommonConfig struct {
 	dryRun                    bool
 	isPatched                 bool
 	namespace                 string
+	version                   string
 	components                *api.ComponentList
 	labelSelector             string
 	expectedLabels            map[string]label
@@ -47,14 +48,15 @@ type CommonConfig struct {
 }
 
 // NewCRUDComponents returns the common configuration which will be used to add, patch or remove the components
-func NewCRUDComponents(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, dryRun bool, isPatched bool,
-	namespace string, components *api.ComponentList, labelSelector string, isClusterLevelPermEnabled bool) *CommonConfig {
+func NewCRUDComponents(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, dryRun bool, isPatched bool, namespace string,
+	version string, components *api.ComponentList, labelSelector string, isClusterLevelPermEnabled bool) *CommonConfig {
 	return &CommonConfig{
 		kubeConfig:                kubeConfig,
 		kubeClient:                kubeClient,
 		dryRun:                    dryRun,
 		isPatched:                 isPatched,
 		namespace:                 namespace,
+		version:                   version,
 		components:                components,
 		labelSelector:             labelSelector,
 		expectedLabels:            getLabelsMap(labelSelector),

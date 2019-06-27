@@ -30,8 +30,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Get Command flag for -output functionality
@@ -138,19 +136,14 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, crdScope, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		blackDuckName, blackDuckNamespace, crdScope, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
 		if err != nil {
 			return err
 		}
 
-		var operatorNamespace string
-		if crdScope == apiextensions.ClusterScoped {
-			operatorNamespace, err = getOperatorNamespace(metav1.NamespaceAll)
-			if err != nil {
-				return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
-			}
-		} else {
-			operatorNamespace = namespace
+		operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, util.BlackDuckCRDName, crdScope, blackDuckNamespace)
+		if err != nil {
+			return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
 		}
 
 		filePath := args[1]

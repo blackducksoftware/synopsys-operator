@@ -84,7 +84,7 @@ func (c *CRDInstaller) Deploy() error {
 		return errors.Trace(err)
 	}
 	crdUpdater := NewUpdater(c.config, c.kubeClient, blackDuckClient, c.opssightclient)
-	crdUpdater.Run(c.stopCh)
+	go crdUpdater.Run(c.stopCh)
 	return nil
 }
 
@@ -112,7 +112,6 @@ func (c *CRDInstaller) CreateQueue() {
 
 // AddInformerEventHandler will add the event handlers for the informers
 func (c *CRDInstaller) AddInformerEventHandler() {
-	log.Debugf("adding informer event handler for opssight")
 	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			// convert the resource object into a key (in this case

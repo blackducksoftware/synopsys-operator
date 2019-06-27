@@ -23,7 +23,6 @@ package synopsysctl
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -36,7 +35,6 @@ import (
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
@@ -68,57 +66,19 @@ var updateCmd = &cobra.Command{
 Update Operator Commands
 */
 
-// getOperatorToUpdate creates a SpecConfig that represents the Synopsys Operator running in the cluster
-func getOperatorToUpdate(namespace string, cmd *cobra.Command) (*soperator.SpecConfig, map[string]string, []string, error) {
-	crds := []string{}
-	crdMap := make(map[string]string)
-
-	// check whether the Synopsys Operator config map exist
-	cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("unable to find the 'synopsy-operator' config map in namespace '%s' due to %+v", namespace, err)
-	}
-	data := cm.Data["config.json"]
-	var testMap map[string]interface{}
-	err = json.Unmarshal([]byte(data), &testMap)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("unable to unmarshal config map data due to %+v", err)
-	}
-	if _, ok := testMap["IsClusterScoped"]; ok {
-		configData := &protoform.Config{}
-		err = json.Unmarshal([]byte(data), &configData)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("unable to unmarshal config map data due to %+v", err)
-		}
-		isClusterScoped = configData.IsClusterScoped
-		crds = strings.Split(configData.CrdNames, ",")
-		for _, crd := range crds {
-			crdMap[strings.TrimSpace(crd)] = strings.TrimSpace(crd)
-		}
-	} else {
-		isClusterScoped = util.GetClusterScope(apiExtensionClient)
-		// list the existing CRD's and convert them to map with both key and value as name
-		var crdList *apiextensions.CustomResourceDefinitionList
-		crdList, err = util.ListCustomResourceDefinitions(apiExtensionClient, "app=synopsys-operator")
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("unable to list Custom Resource Definitions due to %+v", err)
-		}
-		for _, crd := range crdList.Items {
-			crds = append(crds, crd.Name)
-			crdMap[crd.Name] = crd.Name
-		}
-	}
-	// create new Synopsys Operator SpecConfig
-	oldOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespace)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("unable to update Synopsys Operator in '%s' namespace due to %+v", namespace, err)
-	}
-	return oldOperatorSpec, crdMap, crds, nil
-}
-
 // getUpdatedOperator returns a SpecConfig for Synopsys Operator with the updates provided by the user
-func getUpdatedOperator(oldOperatorSpec *soperator.SpecConfig, isClusterScoped bool, crdMap map[string]string, crds []string, namespace string, cmd *cobra.Command) (*soperator.SpecConfig, []string, error) {
+func getUpdatedOperator(currOperatorSpec *soperator.SpecConfig, cmd *cobra.Command) (*soperator.SpecConfig, []string, error) {
+
 	newCrds := []string{}
+	namespace := currOperatorSpec.Namespace
+
+	// convert crds to CRD map for easy comparison
+	crdMap := make(map[string]string, 0)
+	for _, crd := range currOperatorSpec.Crds {
+		crdMap[strings.TrimSpace(crd)] = strings.TrimSpace(crd)
+	}
+
+	crds := currOperatorSpec.Crds
 
 	newOperatorSpec := soperator.SpecConfig{}
 
@@ -224,7 +184,6 @@ func getUpdatedOperator(oldOperatorSpec *soperator.SpecConfig, isClusterScoped b
 		_, ok := crdMap[util.OpsSightCRDName]
 		if ok && isEnabledOpsSight {
 			log.Errorf("Custom Resource Definition '%s' already exists...", util.OpsSightCRDName)
-
 		} else if !ok && isEnabledOpsSight {
 			// create CRD
 			crds = append(crds, util.OpsSightCRDName)
@@ -244,10 +203,14 @@ func getUpdatedOperator(oldOperatorSpec *soperator.SpecConfig, isClusterScoped b
 	}
 
 	newOperatorSpec.Crds = crds
-	newOperatorSpec.IsClusterScoped = isClusterScoped
+	// HACK because of mergo merge issue
+	if len(newOperatorSpec.Crds) == 0 {
+		currOperatorSpec.Crds = newOperatorSpec.Crds
+	}
+	newOperatorSpec.IsClusterScoped = currOperatorSpec.IsClusterScoped
 
 	// merge old and new data
-	err := mergo.Merge(&newOperatorSpec, oldOperatorSpec)
+	err := mergo.Merge(&newOperatorSpec, currOperatorSpec)
 	if err != nil {
 		return nil, newCrds, fmt.Errorf("unable to merge old and new Synopsys Operator's info due to %+v", err)
 	}
@@ -277,22 +240,25 @@ var updateOperatorCmd = &cobra.Command{
 			// set existing Synopsys Operator namespace else use default
 			isClusterScoped = util.GetClusterScope(apiExtensionClient)
 			if isClusterScoped {
-				ns, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+				namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 				if err != nil {
 					return err
 				}
-				if metav1.NamespaceAll != ns {
-					namespace = ns
+				if len(namespaces) > 1 {
+					return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to update")
 				}
+				namespace = namespaces[0]
 			} else {
 				namespace = DefaultOperatorNamespace
 			}
 		}
-		oldOperatorSpec, crdMap, crds, err := getOperatorToUpdate(namespace, cmd)
+
+		currOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespace)
 		if err != nil {
 			return err
 		}
-		newOperatorSpec, newCrds, err := getUpdatedOperator(oldOperatorSpec, isClusterScoped, crdMap, crds, namespace, cmd)
+
+		newOperatorSpec, newCrds, err := getUpdatedOperator(currOperatorSpec, cmd)
 		if err != nil {
 			return err
 		}
@@ -306,7 +272,8 @@ var updateOperatorCmd = &cobra.Command{
 
 		log.Infof("updating Synopsys Operator in namespace '%s'...", namespace)
 		// create custom resource definitions
-		crdConfigs, err := getCrdConfigs(operatorNamespace, isClusterScoped, newCrds)
+		isClusterScoped = newOperatorSpec.IsClusterScoped
+		crdConfigs, err := getCrdConfigs(namespace, isClusterScoped, newCrds)
 		if err != nil {
 			return err
 		}
@@ -319,13 +286,13 @@ var updateOperatorCmd = &cobra.Command{
 
 		sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
 		// update Synopsys Operator
-		err = sOperatorCreater.EnsureSynopsysOperator(namespace, blackDuckClient, opsSightClient, alertClient, oldOperatorSpec, newOperatorSpec)
+		err = sOperatorCreater.EnsureSynopsysOperator(namespace, blackDuckClient, opsSightClient, alertClient, currOperatorSpec, newOperatorSpec)
 		if err != nil {
 			return fmt.Errorf("unable to update Synopsys Operator due to %+v", err)
 		}
 		log.Debugf("updating Prometheus in namespace '%s'", namespace)
 		// Create new Prometheus SpecConfig
-		oldPrometheusSpec, err := soperator.GetOldPrometheusSpec(restconfig, kubeClient, namespace)
+		currPrometheusSpec, err := soperator.GetOldPrometheusSpec(restconfig, kubeClient, namespace)
 		if err != nil {
 			return fmt.Errorf("error in updating Prometheus due to %+v", err)
 		}
@@ -345,7 +312,7 @@ var updateOperatorCmd = &cobra.Command{
 			newPrometheusSpec.Expose = exposeMetrics
 		}
 		// merge old and new data
-		err = mergo.Merge(&newPrometheusSpec, oldPrometheusSpec)
+		err = mergo.Merge(&newPrometheusSpec, currPrometheusSpec)
 		if err != nil {
 			return fmt.Errorf("unable to merge old and new Prometheus' info due to %+v", err)
 		}
@@ -380,22 +347,25 @@ var updateOperatorNativeCmd = &cobra.Command{
 			// set existing Synopsys Operator namespace else use default
 			isClusterScoped = util.GetClusterScope(apiExtensionClient)
 			if isClusterScoped {
-				ns, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+				namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
 				if err != nil {
 					return err
 				}
-				if metav1.NamespaceAll != ns {
-					namespace = ns
+				if len(namespaces) > 1 {
+					return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to update")
 				}
+				namespace = namespaces[0]
 			} else {
 				namespace = DefaultOperatorNamespace
 			}
 		}
-		oldOperatorSpec, crdMap, crds, err := getOperatorToUpdate(namespace, cmd)
+
+		currOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespace)
 		if err != nil {
 			return err
 		}
-		newOperatorSpec, _, err := getUpdatedOperator(oldOperatorSpec, isClusterScoped, crdMap, crds, namespace, cmd)
+
+		newOperatorSpec, _, err := getUpdatedOperator(currOperatorSpec, cmd)
 		if err != nil {
 			return err
 		}
@@ -456,7 +426,7 @@ var updateAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		alertName, alertNamespace, _, err := getInstanceInfo(false, args[0], util.AlertCRDName, util.AlertName, namespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -506,7 +476,7 @@ var updateAlertNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alertName, alertNamespace, _, err := getInstanceInfo(false, args[0], util.AlertCRDName, util.AlertName, namespace)
+		alertName, alertNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -575,7 +545,7 @@ var updateBlackDuckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -615,7 +585,6 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 	Use:           "native NAME",
 	Example:       "synopsyctl update blackduck native <name> --size medium\nsynopsyctl update blackduck native <name> -n <namespace> --size medium\nsynopsyctl update blackduck native <name> --size medium -o yaml",
 	Short:         "Print the Kubernetes resources with updates to a Black Duck instance",
-	Aliases:       []string{"bds", "bd"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -625,7 +594,7 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -670,14 +639,9 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 			return fmt.Errorf("must provide a namespace to update the Black Duck instance")
 		}
 
-		var operatorNamespace string
-		if crdScope == apiextensions.ClusterScoped {
-			operatorNamespace, err = getOperatorNamespace(metav1.NamespaceAll)
-			if err != nil {
-				return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
-			}
-		} else {
-			operatorNamespace = namespace
+		operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, util.BlackDuckCRDName, crdScope, namespace)
+		if err != nil {
+			return fmt.Errorf("unable to find the Synopsys Operator instance due to %+v", err)
 		}
 
 		newSealKey := args[0]
@@ -753,7 +717,7 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -797,7 +761,7 @@ var updateBlackDuckAddEnvironNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -856,7 +820,7 @@ var updateBlackDuckSetImageRegistryCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -900,7 +864,7 @@ var updateBlackDuckSetImageRegistryNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, args[0], util.BlackDuckCRDName, util.BlackDuckName, namespace)
+		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -965,7 +929,7 @@ var updateOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -1006,7 +970,6 @@ var updateOpsSightNativeCmd = &cobra.Command{
 	Use:           "native NAME",
 	Example:       "synopsyctl update opssight native <name> --blackduck-max-count 2\nsynopsyctl update opssight native <name> --blackduck-max-count 2 -n <namespace>\nsynopsyctl update opssight native <name> --blackduck-max-count 2 -o yaml",
 	Short:         "Print the Kubernetes resources with updates to an OpsSight instance",
-	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -1017,7 +980,7 @@ var updateOpsSightNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -1071,7 +1034,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -1115,7 +1078,7 @@ var updateOpsSightImageNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -1180,7 +1143,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -1234,7 +1197,7 @@ var updateOpsSightExternalHostNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -1278,7 +1241,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mockMode := cmd.Flags().Lookup("mock").Changed
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
 		if err != nil {
 			return err
 		}
@@ -1322,7 +1285,7 @@ var updateOpsSightAddRegistryNativeCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, args[0], util.OpsSightCRDName, util.OpsSightName, namespace)
+		opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
 		if err != nil {
 			return err
 		}

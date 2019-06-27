@@ -71,7 +71,7 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 		return err
 	}
 	if strings.EqualFold(alert.Spec.DesiredState, "STOP") {
-		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace,
+		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
 			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
@@ -79,7 +79,8 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 		}
 	} else {
 		// Update components in cluster
-		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, cpList, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
+		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
+			cpList, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("unable to update Alert components due to %+v", errors)
