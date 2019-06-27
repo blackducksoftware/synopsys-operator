@@ -1,13 +1,7 @@
-from kubernetes import client, config
-import os
-import sys
-import subprocess
-import yaml
-import json
-import time
-import requests
 import logging
 import shutil
+import subprocess
+import time
 
 
 class Terminal:
@@ -51,21 +45,11 @@ class Synopsysctl(Ctl):
             command = "deploy --cluster-scoped --enable-alert --enable-blackduck --enable-opssight"
         elif self.version in ["2019.4.2", "2019.4.1", "2019.4.0"]:
             command = "deploy"
-        return self.exec(command)
+        _, err = self.exec(command=command)
+        return err
 
     def destroyDefault(self):
         self.verify()
         command = "destroy"
-        return self.exec(command)
-
-
-class Kubectl(Ctl):
-    def __init__(self, executable="kubectl"):
-        self.executable = executable
-        self.terminal = Terminal()
-
-
-class Oc(Ctl):
-    def __init__(self, executable="oc"):
-        self.executable = executable
-        self.terminal = Terminal()
+        _, err = self.exec(command=command)
+        return err

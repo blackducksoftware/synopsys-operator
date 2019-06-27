@@ -1,12 +1,13 @@
-from kubernetes import client, config
-from synopsysresources import *
-from ctl import *
-import sys
-import subprocess
-import yaml
 import json
+import subprocess
+import sys
 import time
+
 import requests
+import yaml
+from kubernetes import client, config
+
+from synopsysresources import Helper, OpsSight
 
 client.rest.logger.setLevel("INFO")
 
@@ -66,7 +67,7 @@ def skyfireTest():
     # curl to start skyfire tests
     print("Starting Skyfire Tests...")
     print("Route: %s", skyfire_route)
-    for i in range(10):
+    for _ in range(10):
         try:
             url = "http://{}/starttest".format(skyfire_route.decode("utf-8"))
             r = requests.post(url, data={'nothing': 'nothing'}, verify=False)
@@ -81,7 +82,7 @@ def skyfireTest():
     print("Getting Skyfire Results...")
     results = None
     try:
-        for i in range(100):
+        for _ in range(100):
             url = "http://{}/testsuite".format(skyfire_route.decode("utf-8"))
             r = requests.get(url, verify=False)
             results = r.json()
@@ -104,7 +105,7 @@ def skyfireTest():
     command = "kubectl delete ns opssight-test"
     print("Command: {}".format(command))
     r = subprocess.call(command, shell=True, stdout=subprocess.PIPE)
-    t.waitForNamespaceDelete("opssight-test")
+    t.isNamespaceDeleted("opssight-test")
 
     # print out the results
     return results['summary']

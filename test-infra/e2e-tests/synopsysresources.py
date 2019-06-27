@@ -1,12 +1,12 @@
-from kubernetes import client, config
-import sys
-import subprocess
-import yaml
 import json
-import time
-import requests
-from ctl import *
 import logging
+import subprocess
+import time
+
+import yaml
+from kubernetes import client, config
+
+from ctl import Synopsysctl, Terminal
 
 
 class Helper():
@@ -14,17 +14,18 @@ class Helper():
         self.synopsysctl_version = synopsysctl_version
         self.synopsysctl_path = synopsysctl_path
         self.synopsysctl = None
-        if self.synopsysctl_path != None:
+        if self.synopsysctl_path is not None:
             self.synopsysctl = Synopsysctl(
-                version=self.synopsysctl_version, executable=self.synopsysctl_path)
+                version=self.synopsysctl_version,
+                executable=self.synopsysctl_path)
 
-        self.customObjectsApi = client.CustomObjectsApi()
-        self.apiextensionsV1beta1Api = client.ApiextensionsV1beta1Api()
-
-        self.terminal = Terminal()
-        self.corev1Api = client.CoreV1Api()
-
+        # kubernetes-python apiClient
         self.apiClient = client.api_client.ApiClient()
+
+        # k8s apis
+        self.corev1Api = client.CoreV1Api()
+        self.apiextensionsV1beta1Api = client.ApiextensionsV1beta1Api()
+        self.customObjectsApi = client.CustomObjectsApi()
 
     # def clusterLogIn(self, cluster_ip, username, password):
     #     command = "login {} --username={} --password={} --insecure-skip-tls-verify=true".format(
@@ -34,7 +35,7 @@ class Helper():
     #         logging.error(str(err))
     #         sys.exit(1)
 
-    def waitForPodsRunning(self, namespace, label="", retry=10):
+    def arePodsRunning(self, namespace, label="", retry=10):
         """INPUTS
         - namespace: namespace of pods
         - label: label to identify pods
@@ -54,7 +55,7 @@ class Helper():
                 return True
         return False
 
-    def waitForPodsDeleted(self, namespace, label="", retry=10):
+    def arePodsDeleted(self, namespace, label="", retry=10):
         """INPUTS
         - namespace: namespace of pods
         - label: label to identify pods
@@ -72,7 +73,7 @@ class Helper():
                 return True
         return False
 
-    def waitForNamespaceDelete(self, namespace, retry=10):
+    def isNamespaceDeleted(self, namespace, retry=10):
         logging.debug(
             "waiting for namespace '{}' to terminate".format(namespace))
         for i in range(retry):
@@ -82,34 +83,34 @@ class Helper():
                 return True
         return False
 
-    def checkIfCrdExists(self, name):
+    def doesCrdExist(self, name):
         api_response = self.apiextensionsV1beta1Api.read_custom_resource_definition(
             name)
         return True if api_response is not None else False
 
-    def checkIfCustomResourceExists(self, group, version, plural, name):
+    def doesCrExist(self, group, version, plural, name):
         api_response = self.customObjectsApi.get_cluster_custom_object(
             group, version, plural, name)
         return True if api_response is not None else False
 
 
 class SynopsysResource:
-    def __init__(self, helper):
+    def __init__(self, helper=Helper()):
         self.testHelper = helper
         self.label = ""
 
-    def waitUntilRunning(self, namespace):
-        return self.testHelper.waitForPodsRunning(namespace, self.label)
+    def arePodsRunning(self, namespace):
+        return self.testHelper.arePodsRunning(namespace, self.label)
 
-    def waitUntilDeleted(self, namespace):
-        return self.testHelper.waitForPodsDeleted(namespace, self.label)
+    def arePodsDeleted(self, namespace):
+        return self.testHelper.arePodsDeleted(namespace, self.label)
 
-    def CRDExists(self, CRDName):
-        return self.testHelper.checkIfCrdExists(CRDName)
+    def doesCrdExist(self, CRDName):
+        return self.testHelper.doesCrdExist(CRDName)
 
 
 class SynopsysOperator(SynopsysResource):
-    def __init__(self, helper):
+    def __init__(self, helper=Helper()):
         self.testHelper = helper
         self.label = "app=synopsys-operator"
 
@@ -117,7 +118,7 @@ class SynopsysOperator(SynopsysResource):
         if self.testHelper.synopsysctl != None:
             return self.testHelper.synopsysctl.deploySynopsysOperatorDefault()
         else:
-            return None, "cannot deploy cause testHelper.synopsysctl is None"
+            return "cannot deploy cause testHelper.synopsysctl is None"
 
     # def deploy_old(self, namespace, reg_key, synopsys_operator_url):
     #     # Download Synopsys Operator - https://github.com/blackducksoftware/synopsys-operator/archive/2018.12.0.tar.gz
@@ -136,14 +137,14 @@ class SynopsysOperator(SynopsysResource):
     #     logging.debug("Command: {}".format(command))
     #     subprocess.call(command, cwd="synopsys-operator-2018.12.0/install/openshift",
     #                     shell=True, stdout=subprocess.PIPE)
-    #     self.testHelper.waitForNamespaceDelete(namespace)
+    #     self.testHelper.isNamespaceDeleted(namespace)
     #     # Install the operator
     #     command = "./install.sh --blackduck-registration-key tmpkey"
     #     logging.debug("Command: {}".format(command))
     #     p = subprocess.Popen(command, cwd="synopsys-operator-2018.12.0/install/openshift",
     #                          shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     #     p.communicate(input=b'\n\n')
-    #     self.testHelper.waitForPodsRunning(namespace)
+    #     self.testHelper.arePodsRunning(namespace)
     #     # Clean up Operator Tar File
     #     command = "rm 2018.12.0.tar"
     #     logging.debug("Command: {}".format(command))
@@ -157,7 +158,7 @@ class SynopsysOperator(SynopsysResource):
         if self.testHelper.synopsysctl != None:
             return self.testHelper.synopsysctl.destroyDefault()
         else:
-            return None, "no clients to remove Synopsys Operator"
+            return "no clients to remove Synopsys Operator"
 
     def didCrdsComeUp(self):
         a = Alert(self.testHelper)
@@ -174,23 +175,22 @@ class Alert(SynopsysResource):
     def deploy(self, namespace, version="4.0.0"):
         if self.testHelper.synopsysctl != None:
             if version in ["4.0.0", "3.1.0"]:
-                return self.testHelper.synopsysctl.exec(
-                    "create alert {}".format(namespace))
+                return self.testHelper.synopsysctl.exec(f"create alert {namespace}")
             else:
-                return None, "Not a valid alert version"
+                return "Not a valid alert version"
         else:
-            return None, "Yo dog you missing that synopsysctl, call er up"
+            return "Yo dog you missing that synopsysctl, call er up"
 
     def didCrdComeUp(self, retry=10):
         logging.debug("verifying Alert CRD exists...")
         for i in range(retry):
             retryDelay(i, retry)
-            if self.CRDExists():
+            if self.doesCrdExist():
                 return True
         return False
 
-    def CRDExists(self):
-        return super(Alert, self).CRDExists("alerts.synopsys.com")
+    def doesCrdExist(self):
+        return super(Alert, self).doesCrdExist("alerts.synopsys.com")
 
 
 class BlackDuck(SynopsysResource):
@@ -205,18 +205,18 @@ class BlackDuck(SynopsysResource):
                     f"create blackduck {namespace} --admin-password a --postgres-password p --user-password u")
             else:
                 return self.testHelper.synopsysctl.exec(f"create blackduck {namespace}")
-        return None, "failed to create Black Duck"
+        return "failed to create Black Duck"
 
     def didCrdComeUp(self, retry=10):
         logging.debug("verifying Black Duck CRD exists...")
         for i in range(retry):
             retryDelay(i, retry)
-            if self.CRDExists():
+            if self.doesCrdExist():
                 return True
         return False
 
-    def CRDExists(self):
-        return super(BlackDuck, self).CRDExists("blackducks.synopsys.com")
+    def doesCrdExist(self):
+        return super(BlackDuck, self).doesCrdExist("blackducks.synopsys.com")
 
 
 class OpsSight(SynopsysResource):
@@ -228,22 +228,22 @@ class OpsSight(SynopsysResource):
         if self.testHelper.synopsysctl != None:
             return self.testHelper.synopsysctl.exec("create opssight opssight-test")
         else:
-            return None, "no synopsysctl"
+            return "no synopsysctl"
         # else:
         #     self.testHelper.deploy_old(namespace)
 
     # def deploy_old(self, namespace):
     #     # Delete opssight instance if already exists
-    #     if self.testHelper.checkIfCustomResourceExists("opssights", namespace):
+    #     if self.testHelper.doesCrExist("opssights", namespace):
     #         command = "kubectl delete opssights opssight-test"
     #         logging.debug("Command: {}".format(command))
     #         r = subprocess.call(command, shell=True, stdout=subprocess.PIPE)
     #     # Delete opssight namespace if already exists
-    #     if self.testHelper.checkIfCustomResourceExists("ns", namespace):
+    #     if self.testHelper.doesCrExist("ns", namespace):
     #         command = "kubectl delete ns opssight-test"
     #         logging.debug("Command: {}".format(command))
     #         r = subprocess.call(command, shell=True, stdout=subprocess.PIPE)
-    #         self.testHelper.waitForNamespaceDelete("opssight-test")
+    #         self.testHelper.isNamespaceDeleted("opssight-test")
     #     # Get Opssight yaml
     #     command = "wget https://raw.githubusercontent.com/blackducksoftware/opssight-connector/release-2.2.x/examples/opssight.json"
     #     logging.debug("Command: {}".format(command))
@@ -253,7 +253,7 @@ class OpsSight(SynopsysResource):
     #     command = "kubectl create -f opssight.json"
     #     logging.debug("Command: {}".format(command))
     #     r = subprocess.call(command, shell=True, stdout=subprocess.PIPE)
-    #     self.testHelper.waitForPodsRunning("opssight-test")
+    #     self.testHelper.arePodsRunning("opssight-test")
     #     # Clean up Opssight yaml
     #     command = "rm opssight.json"
     #     logging.debug("Command: {}".format(command))
@@ -263,12 +263,12 @@ class OpsSight(SynopsysResource):
         logging.debug("verifying OpsSight CRD exists...")
         for i in range(retry):
             retryDelay(i, retry)
-            if self.CRDExists():
+            if self.doesCrdExist():
                 return True
         return False
 
-    def CRDExists(self):
-        return super(OpsSight, self).CRDExists("opssights.synopsys.com")
+    def doesCrdExist(self):
+        return super(OpsSight, self).doesCrdExist("opssights.synopsys.com")
 
     # def addHubToConfig(self, v1, namespace, hub_host):
     #     try:
@@ -301,7 +301,7 @@ class OpsSight(SynopsysResource):
     #         logging.debug(
     #             "Exception when editing Skyfire Replication Controller: %s\n" % e)
     #         sys.exit(1)
-    #     return self.testHelper.waitForPodsRunning(namespace)
+    #     return self.testHelper.arePodsRunning(namespace)
 
     # def getSkyfireRoute(self, namespace):
     #     skyfire_route = ""
