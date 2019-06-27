@@ -22,6 +22,7 @@ under the License.
 package alert
 
 import (
+	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 )
@@ -33,4 +34,5 @@ type Creater interface {
 	Versions() []string
 	Ensure(alert *alertapi.Alert) error
 	GetComponents(alert *alertapi.Alert) (*api.ComponentList, error)
+	GetPVC(alert *alertapi.Alert) ([]*components.PersistentVolumeClaim, error)
 }

@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blackducksoftware/horizon/pkg/components"
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -55,6 +56,13 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 func (ac *Creater) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
 	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
 	return specConfig.GetComponents()
+}
+
+// GetPVC returns the Persistent Volume Claims for an Alert
+func (ac *Creater) GetPVC(alert *alertapi.Alert) ([]*components.PersistentVolumeClaim, error) {
+	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
+	pvc, err := specConfig.getAlertPersistentVolumeClaim()
+	return []*components.PersistentVolumeClaim{pvc}, err
 }
 
 // Versions is an Interface function that returns the versions supported by this Creater
