@@ -643,10 +643,6 @@ func GetAlertDefault() *alertv1.AlertSpec {
 	standAlone := false
 
 	return &alertv1.AlertSpec{
-		Namespace:         "alert-test",
-		Version:           "3.1.0",
-		AlertImage:        "docker.io/blackducksoftware/blackduck-alert:3.1.0",
-		CfsslImage:        "docker.io/blackducksoftware/blackduck-cfssl:1.0.0",
 		ExposeService:     NONE,
 		Port:              IntToInt32(8443),
 		PersistentStorage: false,
