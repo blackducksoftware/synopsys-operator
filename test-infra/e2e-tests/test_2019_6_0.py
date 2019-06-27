@@ -1,4 +1,4 @@
-from kubernetes import client, config
+from kubernetes import client, config, utils
 from synopsysresources import *
 from ctl import *
 import sys
@@ -19,15 +19,16 @@ client.rest.logger.setLevel("INFO")
 logging.basicConfig(level=logging.DEBUG)
 
 synopsysctl_path = "synopsysctl"
-kubectl_path = "kubectl"
 
 image = "-i docker.io/blackducksoftware/synopsys-operator:2019.6.0-RC"
 
 
+@pytest.mark.smoke
 def test_synopsysctlSmoke():
     logging.info("TEST: test_synopsysctlSmoke")
+    return
     # Create clients
-    h = Helper(synopsysctl_path=synopsysctl_path, kubectl_path=kubectl_path)
+    h = Helper(synopsysctl_path=synopsysctl_path)
     synopsysctl = Synopsysctl(executable=synopsysctl_path, version="latest")
     so = SynopsysOperator(h)
 
@@ -37,118 +38,90 @@ def test_synopsysctlSmoke():
 
     # Deploy Synopsys Operator
     out, err = synopsysctl.exec(
-        "deploy --cluster-scoped --enable-alert --enable-blackduck --enable-opssight")
+        f"deploy {image} --cluster-scoped --enable-alert --enable-blackduck --enable-opssight")
     if err != None:
-        assert err
+        raise Exception(err)
     so.waitUntilRunning("synopsys-operator")
-    err = alert.waitForCRD()
-    if err != None:
-        assert err
-    err = blackDuck.waitForCRD()
-    if err != None:
-        assert err
-    err = opsSight.waitForCRD()
-    if err != None:
-        assert err
+    if not alert.didCrdComeUp():
+        raise Exception("Alert CRD failed to come up")
+    if not blackDuck.didCrdComeUp():
+        raise Exception("Black Duck CRD failed to come up")
+    if not opsSight.didCrdComeUp():
+        raise Exception("OpsSight CRD failed to come up")
 
     # Create each Synopsys resource
-    out, err = synopsysctl.exec("create alert alt")
+    out, err = synopsysctl.exec("create alert alt --persistent-storage=false")
     if err != None:
-        assert err
+        raise Exception(err)
+    if not alert.waitUntilRunning("alt"):
+        raise Exception("Alert failed to start running")
+
     out, err = synopsysctl.exec(
         "create blackduck bd --admin-password a --postgres-password p --user-password u")
     if err != None:
-        assert err
+        raise Exception(err)
+    if not blackDuck.waitUntilRunning("bd"):
+        raise Exception("Black Duck failed to start running")
+
     out, err = synopsysctl.exec("create opssight ops")
     if err != None:
-        assert err
-    if alert.waitUntilRunning("alt") != None:
-        assert 0
-    if blackDuck.waitUntilRunning("bd") != None:
-        assert 0
-    if opsSight.waitUntilRunning("ops") != None:
-        assert 0
-
-    # Stop each Synopsys resource
-    out, err = synopsysctl.exec("stop alert alt")
-    if err != None:
-        assert err
-    out, err = synopsysctl.exec("stop blackduck bd")
-    if err != None:
-        assert err
-    out, err = synopsysctl.exec("stop opssight ops")
-
-    # Start each Synopsys resource
-    out, err = synopsysctl.exec("start alert alt")
-    if err != None:
-        assert err
-    out, err = synopsysctl.exec("start blackduck bd")
-    if err != None:
-        assert err
-    out, err = synopsysctl.exec("start opssight ops")
+        raise Exception(err)
+    if not opsSight.waitUntilRunning("ops"):
+        raise Exception("OpsSight failed to start running")
 
     # Get each Synopsys resource
     out, err = synopsysctl.exec("get alerts")
     if err != None:
-        assert 0
+        raise Exception(err)
     if "alt" not in out:
-        assert 0
+        raise Exception("Failed to get Alert alt")
     out, err = synopsysctl.exec("get blackducks")
     if err != None:
-        assert 0
+        raise Exception(err)
     if "bd" not in out:
-        assert 0
+        raise Exception("Failed to get Black Duck bd")
     out, err = synopsysctl.exec("get opssights")
     if err != None:
-        assert 0
+        raise Exception(err)
     if "ops" not in out:
-        assert 0
+        raise Exception("Failed to get OpsSight ops")
 
     # Describe each Synopsys resource
     out, err = synopsysctl.exec("describe alert alt")
     if err != None:
-        assert 0
+        raise Exception(err)
     out, err = synopsysctl.exec("describe blackduck bd")
     if err != None:
-        assert 0
+        raise Exception(err)
     out, err = synopsysctl.exec("describe opssight ops")
     if err != None:
-        assert 0
-
-    # Update each Synopsys resource
-    out, err = synopsysctl.exec("update alert alt")
-    if err != None:
-        assert 0
-    out, err = synopsysctl.exec("update blackduck bd")
-    if err != None:
-        assert 0
-    out, err = synopsysctl.exec("update opssight ops")
-    if err != None:
-        assert 0
+        raise Exception(err)
 
     # Delete each Synopsys resource
     out, err = synopsysctl.exec("delete alert alt")
     if err != None:
-        assert 0
+        raise Exception(err)
+    if not alert.waitUntilDeleted("alt"):
+        raise Exception("Failed to delete Alert alt")
+
     out, err = synopsysctl.exec("delete blackduck bd")
     if err != None:
-        assert 0
+        raise Exception(err)
+    if not blackDuck.waitUntilDeleted("bd"):
+        raise Exception("Failed to delete Black Duck bd")
+
     out, err = synopsysctl.exec("delete opssight ops")
     if err != None:
-        assert 0
-    if alert.waitUntilDeleted("alt") != None:
-        assert 0
-    if blackDuck.waitUntilDeleted("bd") != None:
-        assert 0
-    if opsSight.waitUntilDeleted("ops") != None:
-        assert 0
+        raise Exception(err)
+    if not opsSight.waitUntilDeleted("ops"):
+        raise Exception("Failed to delete OpsSight ops")
 
     # Destroy Synopsys Operator
     out, err = synopsysctl.exec("destroy")
     if err != None:
         assert err
-    if so.waitUntilDeleted("synopsys-operator") != None:
-        assert 0
+    if not so.waitUntilDeleted("synopsys-operator"):
+        raise Exception("Failed to delete Synopsys Operator")
 
     if alert.CRDExists():
         raise Exception("Alert CRD didn't delete")
@@ -161,17 +134,17 @@ def test_synopsysctlSmoke():
 def test_mockAlert():
     logging.info("TEST: test_mockAlert")
     # Create clients
-    h = Helper(synopsysctl_path=synopsysctl_path, kubectl_path=kubectl_path)
+    h = Helper(synopsysctl_path=synopsysctl_path)
     synopsysctl = Synopsysctl(executable=synopsysctl_path, version="latest")
-    kubectl = Kubectl(executable=kubectl_path)
     terminal = Terminal()
 
     # Deploy the Synopsys Operator
     synopsysctl.exec(
-        "deploy {} --cluster-scoped --enable-alert --enable-blackduck --enable-opssight".format(image))
+        "deploy {image} --cluster-scoped --enable-alert --enable-blackduck --enable-opssight")
     so = SynopsysOperator(h)
     so.waitUntilRunning("synopsys-operator")
-    so.waitForCRDs()
+    if not so.didCrdsComeUp():
+        raise Exception("CRDs failed to come up")
 
     # Generate files
     altJSON, err = synopsysctl.exec(
@@ -199,16 +172,16 @@ def test_mockAlert():
     f.close()
 
     # Create namespaces
-    kubectl.exec("create ns alt-json")
-    kubectl.exec("create ns alt-yaml")
-    kubectl.exec("create ns alt-kube-json")
-    kubectl.exec("create ns alt-kube-yaml")
+    h.corev1Api.create_namespace("alt-json")
+    h.corev1Api.create_namespace("alt-yaml")
+    h.corev1Api.create_namespace("alt-kube-json")
+    h.corev1Api.create_namespace("alt-kube-yaml")
 
     # Create Alert instances in namespaces
-    kubectl.exec("create -f alt.json")
-    kubectl.exec("create -f alt.yaml")
-    kubectl.exec("create -f alt-kube.json")
-    kubectl.exec("create -f alt-kube.yaml")
+    utils.create_from_yaml(h.apiClient, "alt.json")
+    utils.create_from_yaml(h.apiClient, "alt.yaml")
+    utils.create_from_yaml(h.apiClient, "alt-kube.json")
+    utils.create_from_yaml(h.apiClient, "alt-kube.yaml")
 
     # Wait for Alert instances to be running
     alert = Alert(h)
@@ -218,14 +191,15 @@ def test_mockAlert():
     alert.waitUntilRunning("alt-kube-yaml")
 
     # Delete the CRDs
-    kubectl.exec("delete alert alt-json")
-    kubectl.exec("delete alert alt-yaml")
+    h.customObjectsApi.delete_cluster_custom_object(
+        "synopsys.com", "apiextensions.k8s.io/v1beta1", "alerts", "alt-json", client.V1DeleteOptions())
+    h.customObjectsApi.delete_cluster_custom_object(
+        "synopsys.com", "apiextensions.k8s.io/v1beta1", "alerts", "alt-yaml", client.V1DeleteOptions())
 
-    # Delete the namespaces
-    kubectl.exec("delete ns alt-json")
-    kubectl.exec("delete ns alt-yaml")
-    kubectl.exec("delete ns alt-kube-json")
-    kubectl.exec("delete ns alt-kube-yaml")
+    h.corev1Api.delete_namespace("alt-json", client.V1DeleteOptions)
+    h.corev1Api.delete_namespace("alt-yaml", client.V1DeleteOptions())
+    h.corev1Api.delete_namespace("alt-kube-json", client.V1DeleteOptions())
+    h.corev1Api.delete_namespace("alt-kube-yaml", client.V1DeleteOptions())
 
     # Verify Alert instances deleted
     alert.waitUntilDeleted("alt-json")
@@ -245,7 +219,7 @@ def test_mockAlert():
 def test_namespacedOperations():
     logging.info("TEST: test_namespacedOperations")
     # Create clients
-    h = Helper(synopsysctl_path="synopsysctl_path", kubectl_path=kubectl_path)
+    h = Helper(synopsysctl_path="synopsysctl_path")
     synopsysctl = Synopsysctl(executable=synopsysctl_path, version="latest")
     so = SynopsysOperator(h)
     alt = Alert(h)
@@ -254,7 +228,7 @@ def test_namespacedOperations():
     # Deploy Synopsys Operator into namespace 1
     synopsysctl.exec("deploy {} --enable-alert -n test-space1".format(image))
     so.waitUntilRunning(namespace="test-space1")
-    alt.waitForCRD()
+    alt.didCrdComeUp()
 
     # Deploy Synopsys Operator into namespace 2
     synopsysctl.exec("deploy --enable-blackduck -n test-space2")
@@ -290,7 +264,7 @@ def test_namespacedOperations():
 def test_nodeAffinity():
     logging.info("TEST: test_nodeAffinity")
     # Create Helpers
-    h = Helper(synopsysctl_path=synopsysctl_path, kubectl_path=kubectl_path)
+    h = Helper(synopsysctl_path=synopsysctl_path)
     synopsysctl = Synopsysctl(executable=synopsysctl_path, version="latest")
     bd = BlackDuck(h)
 
@@ -307,7 +281,7 @@ def test_nodeAffinity():
     bd.waitUntilRunning("bd")
 
     # Check if Documentation pod was configured correctly
-    documentationPod = h.v1.list_namespaced_pod(
+    documentationPod = h.corev1Api.list_namespaced_pod(
         namespace="bd", label_selector='component=documentation').items[0]
     docPodNodeAffinity = documentationPod.spec.affinity.node_affinity
     docPodNodeTerms = docPodNodeAffinity.required_during_scheduling_ignored_during_execution.node_selector_terms
@@ -346,5 +320,29 @@ def test_2019_4_0():
     pass
 
 
-# test_mockAlert()
-test_nodeAffinity()
+def main():
+    h = Helper(synopsysctl_path=synopsysctl_path)
+    try:
+        test_synopsysctlSmoke()
+    except Exception as e:
+        print(f"Exception in main: {e}")
+    finally:
+        logging.debug("sending delete namespace events to k8s api")
+        h.corev1Api.delete_namespace("alt", client.V1DeleteOptions())
+        h.corev1Api.delete_namespace("bd", client.V1DeleteOptions())
+        h.corev1Api.delete_namespace("ops", client.V1DeleteOptions())
+        h.corev1Api.delete_namespace(
+            "synopsys-operator", client.V1DeleteOptions())
+
+        logging.debug("sending delete crd events to k8s api")
+        h.apiextensionsV1beta1Api.delete_custom_resource_definition(
+            "alerts.synopsys.com", client.V1DeleteOptions())
+        h.apiextensionsV1beta1Api.delete_custom_resource_definition(
+            "blackducks.synopsys.com", client.V1DeleteOptions())
+        h.apiextensionsV1beta1Api.delete_custom_resource_definition(
+            "opssights.synopsys.com", client.V1DeleteOptions())
+
+
+if __name__ == '__main__':
+    logging.debug("running main")
+    main()

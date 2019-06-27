@@ -51,13 +51,12 @@ class Synopsysctl(Ctl):
             command = "deploy --cluster-scoped --enable-alert --enable-blackduck --enable-opssight"
         elif self.version in ["2019.4.2", "2019.4.1", "2019.4.0"]:
             command = "deploy"
-
-        self.exec(command)
+        return self.exec(command)
 
     def destroyDefault(self):
         self.verify()
         command = "destroy"
-        self.exec(command)
+        return self.exec(command)
 
 
 class Kubectl(Ctl):
