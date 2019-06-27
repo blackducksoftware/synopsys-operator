@@ -97,7 +97,7 @@ func (a *Alert) getCreater(version string) (Creater, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("version %s is not supported", version)
+	return nil, fmt.Errorf("version '%s' is not supported.  Supported versions: %s", version, strings.Join(a.Versions(), ", "))
 }
 
 func (a *Alert) ensureVersion(alt *alertapi.Alert) error {
@@ -113,7 +113,7 @@ func (a *Alert) ensureVersion(alt *alertapi.Alert) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("version '%s' is not supported", alt.Spec.Version)
+		return fmt.Errorf("version '%s' is not supported.  Supported versions: %s", alt.Spec.Version, strings.Join(a.Versions(), ", "))
 	}
 	return nil
 }
