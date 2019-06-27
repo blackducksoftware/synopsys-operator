@@ -36,7 +36,8 @@ import (
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
+	alertapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
+	blackduckapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
@@ -90,13 +91,13 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		}
 	case reflect.TypeOf(alertapi.Alert{}):
 		alert := crd.(alertapi.Alert)
-		cList, err = app.Alert().GetComponents(&alert)
+		cList, err = app.Alert().GetComponents(&alert, alertapp.CRDResources)
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}
 	case reflect.TypeOf(blackduckapi.Blackduck{}):
 		blackDuck := crd.(blackduckapi.Blackduck)
-		cList, err = app.Blackduck().GetComponents(&blackDuck, blackduck.CRDResources)
+		cList, err = app.Blackduck().GetComponents(&blackDuck, blackduckapp.CRDResources)
 		if err != nil {
 			return fmt.Errorf("failed to get components: %s", err)
 		}

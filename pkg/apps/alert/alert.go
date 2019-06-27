@@ -39,6 +39,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Constants for each unit of a deployment of Alert
+const (
+	CRDResources = "ALERT"
+	PVCResources = "PVC"
+)
+
 // Alert is used to handle Alerts in the cluster
 type Alert struct {
 	config      *protoform.Config
@@ -187,7 +193,7 @@ func (a *Alert) Delete(name string) error {
 }
 
 // GetComponents gets the necessary creater and returns the Alert's components
-func (a *Alert) GetComponents(alt *alertapi.Alert) (*api.ComponentList, error) {
+func (a *Alert) GetComponents(alt *alertapi.Alert, compType string) (*api.ComponentList, error) {
 	// If the version is not specified then we set it to be the latest.
 	if err := a.ensureVersion(alt); err != nil {
 		return nil, err
@@ -196,5 +202,12 @@ func (a *Alert) GetComponents(alt *alertapi.Alert) (*api.ComponentList, error) {
 	if err != nil {
 		return nil, err
 	}
-	return creater.GetComponents(alt)
+	switch strings.ToUpper(compType) {
+	case CRDResources:
+		return creater.GetComponents(alt)
+	case PVCResources:
+		pvcs, err := creater.GetPVC(alt)
+		return &api.ComponentList{PersistentVolumeClaims: pvcs}, err
+	}
+	return nil, fmt.Errorf("invalid components type '%s'", compType)
 }

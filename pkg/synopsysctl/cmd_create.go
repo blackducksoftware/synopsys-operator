@@ -30,6 +30,7 @@ import (
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	alertapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	blackduckapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
@@ -51,6 +52,8 @@ var baseBlackDuckSpec string
 var baseOpsSightSpec string
 
 var namespace string
+
+var alertNativePVC bool
 var blackDuckNativeDatabase bool
 var blackDuckNativePVC bool
 
@@ -181,7 +184,24 @@ var createAlertNativeCmd = &cobra.Command{
 		alert := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
 
 		log.Debugf("generating Kubernetes resources for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-		return PrintResource(*alert, nativeFormat, true)
+		app, err := getDefaultApp(nativeClusterType)
+		if err != nil {
+			return err
+		}
+		var cList *api.ComponentList
+		switch {
+		case alertNativePVC:
+			cList, err = app.Alert().GetComponents(alert, alertapp.PVCResources)
+		case !alertNativePVC:
+			return PrintResource(*alert, nativeFormat, true)
+		}
+		if err != nil {
+			return fmt.Errorf("failed to generate Black Duck components due to %+v", err)
+		}
+		if cList == nil {
+			return fmt.Errorf("unable to genreate Black Duck components")
+		}
+		return PrintComponentListKube(cList, nativeFormat)
 	},
 }
 
@@ -510,6 +530,7 @@ func init() {
 
 	createAlertCtl.AddSpecFlags(createAlertNativeCmd, true)
 	addNativeFormatFlag(createAlertNativeCmd)
+	createAlertNativeCmd.Flags().BoolVar(&alertNativePVC, "output-pvc", alertNativePVC, "If true, output resources for only Alert's persistent volume claims")
 	createAlertCmd.AddCommand(createAlertNativeCmd)
 
 	// Add Black Duck Command
