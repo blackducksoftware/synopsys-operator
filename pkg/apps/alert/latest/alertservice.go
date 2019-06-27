@@ -32,7 +32,7 @@ func (a *SpecConfig) getAlertClusterService() *components.Service {
 	return util.CreateService(
 		util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
 		a.getLabel("alert"),
-		a.alert.Namespace,
+		a.alert.Spec.Namespace,
 		int32(*a.alert.Spec.Port),
 		int32(*a.alert.Spec.Port),
 		horizonapi.ServiceTypeServiceIP,
@@ -45,7 +45,7 @@ func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 	return util.CreateService(
 		util.GetResourceName(a.alert.Name, util.AlertName, "exposed"),
 		a.getLabel("alert"),
-		a.alert.Namespace,
+		a.alert.Spec.Namespace,
 		int32(*a.alert.Spec.Port),
 		int32(*a.alert.Spec.Port),
 		horizonapi.ServiceTypeNodePort,
@@ -58,7 +58,7 @@ func (a *SpecConfig) getAlertServiceLoadBalancer() *components.Service {
 	return util.CreateService(
 		util.GetResourceName(a.alert.Name, util.AlertName, "exposed"),
 		a.getLabel("alert"),
-		a.alert.Namespace,
+		a.alert.Spec.Namespace,
 		int32(*a.alert.Spec.Port),
 		int32(*a.alert.Spec.Port),
 		horizonapi.ServiceTypeLoadBalancer,
