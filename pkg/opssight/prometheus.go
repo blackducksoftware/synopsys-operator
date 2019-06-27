@@ -203,31 +203,6 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 		Namespace: p.opssight.Spec.Namespace,
 	})
 
-	/*
-			example:
-
-		{
-		  "global": {
-		    "scrape_interval": "5s"
-		  },
-		  "scrape_configs": [
-		    {
-		      "job_name": "perceptor-scrape",
-		      "scrape_interval": "5s",
-		      "static_configs": [
-		        {
-		          "targets": [
-		            "perceptor:3001",
-		            "perceptor-scanner:3003",
-		            "perceptor-imagefacade:3004",
-		            "pod-perceiver:3002"
-		          ]
-		        }
-		      ]
-		    }
-		  ]
-		}
-	*/
 	targets := []string{
 		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name), p.opssight.Spec.Perceptor.Port),
 		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ScannerPod.Scanner.Name), p.opssight.Spec.ScannerPod.Scanner.Port),

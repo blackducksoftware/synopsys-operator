@@ -135,7 +135,7 @@ func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSight) error {
 	if !ac.config.DryRun {
 		// call the CRUD updater to create or update opssight
 		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, opssightSpec.Namespace, "2.2.3",
-			components, fmt.Sprintf("app=%s,name=%s", util.OpsSightName, opssight.Name), false)
+			components, fmt.Sprintf("app=%s,name=%s", util.OpsSightName, opssight.Name), true)
 		_, errs := commonConfig.CRUDComponents()
 
 		if len(errs) > 0 {

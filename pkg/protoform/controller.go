@@ -102,7 +102,7 @@ func NewController(configPath string, version string) (*Deployer, error) {
 			Image:     "",
 			Expose:    "",
 		}
-		prometheusCm := prometheusConfig.GetPrometheusConfigMap()
+		prometheusCm, err := prometheusConfig.GetPrometheusConfigMap()
 		if err != nil {
 			return nil, errors.Annotate(err, "unable to create prometheus configmap")
 		}

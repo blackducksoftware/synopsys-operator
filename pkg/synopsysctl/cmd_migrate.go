@@ -100,6 +100,20 @@ func migrateOperator(namespace string) error {
 		return fmt.Errorf("unable to list Custom Resource Definitions due to %+v", err)
 	}
 
+	ns, err := util.GetNamespace(kubeClient, namespace)
+	if err != nil {
+		return fmt.Errorf("unable to find Synopsys Operator in namespace %s due to %+v", namespace, err)
+	}
+
+	if _, ok := ns.Labels["owner"]; !ok {
+		ns.Labels = util.InitLabels(ns.Labels)
+		ns.Labels["owner"] = util.OperatorName
+		_, err = util.UpdateNamespace(kubeClient, ns)
+		if err != nil {
+			return fmt.Errorf("unable to update Synopsys Operator in namespace %s due to %+v", namespace, err)
+		}
+	}
+
 	cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
 		return fmt.Errorf("error getting the Synopsys Operator config map in namespace %s due to %+v", namespace, err)
@@ -119,6 +133,10 @@ func migrateOperator(namespace string) error {
 		cmData["IsClusterScoped"] = isClusterScoped
 	}
 
+	if val, ok := cm.Data["Expose"]; (ok && len(string(val)) == 0) || !ok {
+		cmData["Expose"] = util.NONE
+	}
+
 	bytes, err := json.Marshal(cmData)
 	if err != nil {
 		return fmt.Errorf("unable to marshal config map data due to %+v", err)
@@ -129,6 +147,23 @@ func migrateOperator(namespace string) error {
 	_, err = util.UpdateConfigMap(kubeClient, namespace, cm)
 	if err != nil {
 		return fmt.Errorf("unable to update the Synopsys Operator config map in namespace %s due to %+v", namespace, err)
+	}
+
+	cm, err = util.GetConfigMap(kubeClient, namespace, "prometheus")
+	if err != nil {
+		return fmt.Errorf("error getting the Prometheus config map in namespace %s due to %+v", namespace, err)
+	}
+	isUpdated := false
+	if val, ok := cm.Data["Expose"]; (ok && len(val) == 0) || !ok {
+		cm.Data["Expose"] = util.NONE
+		isUpdated = true
+	}
+
+	if isUpdated {
+		_, err = util.UpdateConfigMap(kubeClient, namespace, cm)
+		if err != nil {
+			return fmt.Errorf("unable to update the Synopsys Operator config map in namespace %s due to %+v", namespace, err)
+		}
 	}
 
 	log.Infof("successfully migrated Synopsys Operator resources in namespace '%s'", namespace)
@@ -201,6 +236,9 @@ func migrateAlert(namespace string) error {
 		if _, ok := alert.Annotations["synopsys.com/created.by"]; !ok {
 			alert.Annotations = util.InitAnnotations(alert.Annotations)
 			alert.Annotations["synopsys.com/created.by"] = "pre-2019.6.0"
+			if len(alert.Spec.ExposeService) == 0 {
+				alert.Spec.ExposeService = util.NONE
+			}
 			_, err := alertClient.SynopsysV1().Alerts(alertNamespace).Update(&alert)
 			if err != nil {
 				return fmt.Errorf("error migrating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
@@ -245,6 +283,9 @@ func migrateBlackDuck(namespace string) error {
 		if _, ok := blackDuck.Annotations["synopsys.com/created.by"]; !ok {
 			blackDuck.Annotations = util.InitAnnotations(blackDuck.Annotations)
 			blackDuck.Annotations["synopsys.com/created.by"] = "pre-2019.6.0"
+			if len(blackDuck.Spec.ExposeService) == 0 {
+				blackDuck.Spec.ExposeService = util.NONE
+			}
 			_, err := blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Update(&blackDuck)
 			if err != nil {
 				return fmt.Errorf("error migrating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
@@ -287,11 +328,27 @@ func migrateOpsSight(namespace string) error {
 		opsSight.Spec.Blackduck.BlackduckSpec.AdminPassword = defaultPassword
 		opsSight.Spec.Blackduck.BlackduckSpec.UserPassword = defaultPassword
 		opsSight.Spec.Blackduck.BlackduckSpec.PostgresPassword = defaultPassword
+		if strings.HasPrefix(opsSight.Spec.Perceptor.Name, "opssight-") {
+			opsSight.Spec.Perceptor.Name = "core"
+			opsSight.Spec.ScannerPod.Name = "scanner"
+			opsSight.Spec.ScannerPod.Scanner.Name = "scanner"
+			opsSight.Spec.ScannerPod.ImageFacade.Name = "image-getter"
+			opsSight.Spec.ScannerPod.ImageFacade.ServiceAccount = "scanner"
+			opsSight.Spec.Perceiver.PodPerceiver.Name = "pod-processor"
+			opsSight.Spec.Perceiver.ImagePerceiver.Name = "image-processor"
+			opsSight.Spec.Perceiver.ServiceAccount = "processor"
+		}
 
 		// update annotations
 		if _, ok := opsSight.Annotations["synopsys.com/created.by"]; !ok {
 			opsSight.Annotations = util.InitAnnotations(opsSight.Annotations)
 			opsSight.Annotations["synopsys.com/created.by"] = "pre-2019.6.0"
+			if len(opsSight.Spec.Perceptor.Expose) == 0 {
+				opsSight.Spec.Perceptor.Expose = util.NONE
+			}
+			if len(opsSight.Spec.Prometheus.Expose) == 0 {
+				opsSight.Spec.Prometheus.Expose = util.NONE
+			}
 			_, err := opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Update(&opsSight)
 			if err != nil {
 				return fmt.Errorf("error migrating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
@@ -416,6 +473,54 @@ func addNameLabels(namespace string, name string, appName string) error {
 			_, err = util.UpdateSecret(kubeClient, namespace, &secret)
 			if err != nil {
 				return fmt.Errorf("unable to update %s secret in namespace %s due to %+v", secret.GetName(), namespace, err)
+			}
+		}
+	}
+
+	serviceAccounts, err := util.ListServiceAccounts(kubeClient, namespace, fmt.Sprintf("app=%s", appName))
+	if err != nil {
+		return fmt.Errorf("unable to list service accounts for %s %s in namespace %s due to %+v", appName, name, namespace, err)
+	}
+
+	for _, serviceAccount := range serviceAccounts.Items {
+		if _, ok := serviceAccount.Labels["name"]; !ok {
+			serviceAccount.Labels = util.InitLabels(serviceAccount.Labels)
+			serviceAccount.Labels["name"] = name
+			_, err = util.UpdateServiceAccount(kubeClient, namespace, &serviceAccount)
+			if err != nil {
+				return fmt.Errorf("unable to update %s service account in namespace %s due to %+v", serviceAccount.GetName(), namespace, err)
+			}
+		}
+	}
+
+	clusterRoles, err := util.ListClusterRoles(kubeClient, fmt.Sprintf("app=%s", appName))
+	if err != nil {
+		return fmt.Errorf("unable to list cluster role for %s %s in namespace %s due to %+v", appName, name, namespace, err)
+	}
+
+	for _, clusterRole := range clusterRoles.Items {
+		if _, ok := clusterRole.Labels["name"]; !ok {
+			clusterRole.Labels = util.InitLabels(clusterRole.Labels)
+			clusterRole.Labels["name"] = name
+			_, err = util.UpdateClusterRole(kubeClient, &clusterRole)
+			if err != nil {
+				return fmt.Errorf("unable to update %s cluster role due to %+v", clusterRole.GetName(), err)
+			}
+		}
+	}
+
+	clusterRoleBindings, err := util.ListClusterRoleBindings(kubeClient, fmt.Sprintf("app=%s", appName))
+	if err != nil {
+		return fmt.Errorf("unable to list cluster role bindings for %s %s in namespace %s due to %+v", appName, name, namespace, err)
+	}
+
+	for _, crb := range clusterRoleBindings.Items {
+		if _, ok := crb.Labels["name"]; !ok {
+			crb.Labels = util.InitLabels(crb.Labels)
+			crb.Labels["name"] = name
+			_, err = util.UpdateClusterRoleBinding(kubeClient, &crb)
+			if err != nil {
+				return fmt.Errorf("unable to update %s cluster role bindings due to %+v", crb.GetName(), err)
 			}
 		}
 	}

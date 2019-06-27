@@ -212,7 +212,7 @@ func (p *SpecConfig) ImagePerceiverServiceAccount() *components.ServiceAccount {
 // PodPerceiverClusterRole creates a cluster role for the pod perceiver
 func (p *SpecConfig) PodPerceiverClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
-		Name:       p.opssight.Spec.Perceiver.PodPerceiver.Name,
+		Name:       util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceiver.PodPerceiver.Name),
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
@@ -228,7 +228,7 @@ func (p *SpecConfig) PodPerceiverClusterRole() *components.ClusterRole {
 // ImagePerceiverClusterRole creates a cluster role for the image perceiver
 func (p *SpecConfig) ImagePerceiverClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
-		Name:       p.opssight.Spec.Perceiver.ImagePerceiver.Name,
+		Name:       util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceiver.ImagePerceiver.Name),
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{
@@ -244,7 +244,7 @@ func (p *SpecConfig) ImagePerceiverClusterRole() *components.ClusterRole {
 // PodPerceiverClusterRoleBinding creates a cluster role binding for the pod perceiver
 func (p *SpecConfig) PodPerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
-		Name:       p.opssight.Spec.Perceiver.PodPerceiver.Name,
+		Name:       util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceiver.PodPerceiver.Name),
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
@@ -265,7 +265,7 @@ func (p *SpecConfig) PodPerceiverClusterRoleBinding(clusterRole *components.Clus
 // ImagePerceiverClusterRoleBinding creates a cluster role binding for the image perceiver
 func (p *SpecConfig) ImagePerceiverClusterRoleBinding(clusterRole *components.ClusterRole) *components.ClusterRoleBinding {
 	clusterRoleBinding := components.NewClusterRoleBinding(horizonapi.ClusterRoleBindingConfig{
-		Name:       p.opssight.Spec.Perceiver.ImagePerceiver.Name,
+		Name:       util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceiver.ImagePerceiver.Name),
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
