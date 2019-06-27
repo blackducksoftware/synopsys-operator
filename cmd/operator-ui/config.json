@@ -1,0 +1,7 @@
+{
+    "DryRun": false,
+    "LogLevel": "debug",
+    "Namespace": "synopsys-operator",
+    "IsClusterScoped": true,
+    "CrdNames": "blackducks.synopsys.com"
+}

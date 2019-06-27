@@ -10,5 +10,7 @@
 <br/>
 
 <ul>
-  <li><a href="<%= blackducksPath() %>"><h4>Black Duck Instances</h4></a></li>
+  <%= if (blackducksPath()) { %>
+    <li><a href="<%= blackducksPath() %>"><h4>Black Duck Instances</h4></a></li>
+  <% } %>
 </ul>

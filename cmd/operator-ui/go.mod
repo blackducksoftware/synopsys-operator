@@ -4,8 +4,7 @@ go 1.12
 
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.5.0 // indirect
-	github.com/Azure/go-autorest/autorest v0.2.0 // indirect
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20190624145944-d4121b4f1d7e
+	github.com/blackducksoftware/synopsys-operator v0.0.0-20190627141745-dce10bd31f29
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -15,8 +14,8 @@ require (
 	github.com/gobuffalo/mw-forcessl v0.0.0-20190224202501-6d1ef7ffb276
 	github.com/gobuffalo/mw-i18n v0.0.0-20190224203426-337de00e4c33
 	github.com/gobuffalo/mw-paramlogger v0.0.0-20190224201358-0d45762ab655
-	github.com/gobuffalo/packr/v2 v2.4.0
-	github.com/gobuffalo/suite v2.6.2+incompatible
+	github.com/gobuffalo/packr/v2 v2.5.1
+	github.com/gobuffalo/suite v2.7.0+incompatible
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/pkg/errors v0.8.1
@@ -26,13 +25,14 @@ require (
 	github.com/unrolled/secure v1.0.0
 	go.opencensus.io v0.22.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	k8s.io/apiextensions-apiserver v0.0.0-20190612130911-80dacc8982f1
 	k8s.io/apimachinery v0.0.0-20190624085041-961b39a1baa0
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208 // indirect
 )
 
 replace (
-	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190624145944-d4121b4f1d7e
+	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190627141745-dce10bd31f29
 	github.com/golang/lint => github.com/golang/lint v0.0.0-20190409202823-5614ed5bae6fb75893070bdc0996a68765fdd275
 	k8s.io/api => k8s.io/api v0.0.0-20190313235455-40a48860b5ab
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190315093550-53c4693659ed

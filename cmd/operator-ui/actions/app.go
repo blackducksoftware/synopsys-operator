@@ -22,7 +22,10 @@ under the License.
 package actions
 
 import (
+	"strings"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/gobuffalo/buffalo"
 	"github.com/gobuffalo/envy"
 	csrf "github.com/gobuffalo/mw-csrf"
@@ -80,18 +83,20 @@ func App(config *protoform.Config) *buffalo.App {
 		app.GET("/", HomeHandler)
 
 		// creates the in-cluster config
-		kubeConfig, err := rest.InClusterConfig()
-		if err != nil {
-			log.Warnf("error getting in cluster config. Fallback to native config. Error message: %s", err)
-			kubeConfig, err = newKubeClientFromOutsideCluster()
-		}
+		if strings.Contains(config.CrdNames, util.BlackDuckCRDName) {
+			kubeConfig, err := rest.InClusterConfig()
+			if err != nil {
+				log.Warnf("error getting in cluster config. Fallback to native config. Error message: %s", err)
+				kubeConfig, err = newKubeClientFromOutsideCluster()
+			}
 
-		blackDuckResource, err := NewBlackduckResource(config, kubeConfig)
-		if err != nil {
-			log.Panic(err)
+			blackDuckResource, err := NewBlackduckResource(config, kubeConfig)
+			if err != nil {
+				log.Panic(err)
+			}
+			app.Resource("/blackducks", blackDuckResource)
+			app.POST("/blackducks/{blackduck_id}/state", blackDuckResource.ChangeState)
 		}
-		app.Resource("/blackducks", blackDuckResource)
-		app.POST("/blackducks/{blackduck_id}/state", blackDuckResource.ChangeState)
 		app.ServeFiles("/", assetsBox) // serve files from the public directory
 	}
 
