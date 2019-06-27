@@ -96,7 +96,7 @@ func (b *Blackduck) getCreater(version string) (Creater, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("version %s is not supported", version)
+	return nil, fmt.Errorf("version '%s' is not supported.  Supported versions: %s", version, strings.Join(b.Versions(), ", "))
 }
 
 func (b *Blackduck) ensureVersion(bd *v1.Blackduck) error {
@@ -112,7 +112,7 @@ func (b *Blackduck) ensureVersion(bd *v1.Blackduck) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("version '%s' is not supported", bd.Spec.Version)
+		return fmt.Errorf("version '%s' is not supported.  Supported versions: %s", bd.Spec.Version, strings.Join(versions, ", "))
 	}
 	return nil
 }
