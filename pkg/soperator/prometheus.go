@@ -58,12 +58,15 @@ func (specConfig *PrometheusSpecConfig) GetComponents() (*api.ComponentList, err
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+
+	configMap, err := specConfig.GetPrometheusConfigMap()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
 	components := &api.ComponentList{
 		Deployments: []*components.Deployment{deployment},
 		Services:    specConfig.GetPrometheusService(),
-		ConfigMaps: []*components.ConfigMap{
-			specConfig.GetPrometheusConfigMap(),
-		},
+		ConfigMaps:  []*components.ConfigMap{configMap},
 	}
 
 	// Add routes for OpenShift

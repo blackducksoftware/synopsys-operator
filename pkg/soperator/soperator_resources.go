@@ -131,7 +131,9 @@ func (specConfig *SpecConfig) getOperatorDeployment() (*horizoncomponents.Deploy
 	})
 
 	synopsysOperatorPod.AddContainer(synopsysOperatorContainer)
-	synopsysOperatorPod.AddContainer(synopsysOperatorUIContainer)
+	if specConfig.Expose != util.NONE && len(specConfig.Crds) > 0 && strings.Contains(strings.Join(specConfig.Crds, ","), util.BlackDuckCRDName) {
+		synopsysOperatorPod.AddContainer(synopsysOperatorUIContainer)
+	}
 	synopsysOperatorPod.AddVolume(synopsysOperatorVolume)
 	synopsysOperatorPod.AddLabels(map[string]string{"app": "synopsys-operator", "component": "operator"})
 
