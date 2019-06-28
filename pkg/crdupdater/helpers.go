@@ -178,6 +178,20 @@ func compareVolumes(oldVolume []corev1.Volume, newVolume []corev1.Volume) bool {
 	return true
 }
 
+func compareProbes(oldProbe *corev1.Probe, newProbe *corev1.Probe) bool {
+	if oldProbe == nil && newProbe == nil {
+		return true
+	} else if (oldProbe != nil && newProbe == nil) || (oldProbe == nil && newProbe != nil) {
+		return false
+	} else if !reflect.DeepEqual(oldProbe.Handler, newProbe.Handler) &&
+		!reflect.DeepEqual(oldProbe.InitialDelaySeconds, newProbe.InitialDelaySeconds) &&
+		!reflect.DeepEqual(oldProbe.TimeoutSeconds, newProbe.TimeoutSeconds) &&
+		!reflect.DeepEqual(oldProbe.PeriodSeconds, newProbe.PeriodSeconds) {
+		return false
+	}
+	return true
+}
+
 func sortVolumes(volumes []corev1.Volume) []corev1.Volume {
 	for _, volume := range volumes {
 		if volume.Secret != nil {

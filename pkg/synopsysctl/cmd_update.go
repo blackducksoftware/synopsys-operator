@@ -69,16 +69,16 @@ Update Operator Commands
 // getUpdatedOperator returns a SpecConfig for Synopsys Operator with the updates provided by the user
 func getUpdatedOperator(currOperatorSpec *soperator.SpecConfig, cmd *cobra.Command) (*soperator.SpecConfig, []string, error) {
 
-	newCrds := []string{}
+	newCrds := make([]string, 0)
 	namespace := currOperatorSpec.Namespace
 
 	// convert crds to CRD map for easy comparison
 	crdMap := make(map[string]string, 0)
-	for _, crd := range currOperatorSpec.Crds {
-		crdMap[strings.TrimSpace(crd)] = strings.TrimSpace(crd)
-	}
 
 	crds := currOperatorSpec.Crds
+	for _, crd := range crds {
+		crdMap[strings.TrimSpace(crd)] = strings.TrimSpace(crd)
+	}
 
 	newOperatorSpec := soperator.SpecConfig{}
 
