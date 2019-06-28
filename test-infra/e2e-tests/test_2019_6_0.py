@@ -41,72 +41,72 @@ def test_smoke():
         raise Exception("OpsSight CRD failed to come up")
     # SETUP END
 
-    # Create Alert
-    _, err = my_synopsysctl.exec("create alert alt --persistent-storage=false")
-    if err:
-        raise Exception(f"Exception creating alert: {err}")
-    if my_alert.arePodsRunning("alt") is False:
-        raise Exception("Alert pods are not running")
-    # Create Black Duck
-    _, err = my_synopsysctl.exec(
-        "create blackduck bd --admin-password a --postgres-password p --user-password u")
-    if err:
-        raise Exception(f"Exception creating Black Duck: {err}")
-    if not my_black_duck.arePodsRunning("bd"):
-        raise Exception("Black Duck pods are not running")
-    # Create OpsSight
-    _, err = my_synopsysctl.exec("create opssight ops")
-    if err:
-        raise Exception(f"Exception creating OpsSight: {err}")
-    if not my_opssight.arePodsRunning("ops"):
-        raise Exception("OpsSight pods are not running")
+    # # Create Alert
+    # _, err = my_synopsysctl.exec("create alert alt --persistent-storage=false")
+    # if err:
+    #     raise Exception(f"Exception creating alert: {err}")
+    # if my_alert.arePodsRunning("alt") is False:
+    #     raise Exception("Alert pods are not running")
+    # # Create Black Duck
+    # _, err = my_synopsysctl.exec(
+    #     "create blackduck bd --admin-password a --postgres-password p --user-password u --template ephemeral")
+    # if err:
+    #     raise Exception(f"Exception creating Black Duck: {err}")
+    # if my_black_duck.arePodsRunning("bd") is False:
+    #     raise Exception("Black Duck pods are not running")
+    # # Create OpsSight
+    # _, err = my_synopsysctl.exec("create opssight ops")
+    # if err:
+    #     raise Exception(f"Exception creating OpsSight: {err}")
+    # if my_opssight.arePodsRunning("ops") is False:
+    #     raise Exception("OpsSight pods are not running")
 
-    # Check if CRs are created
-    out, err = my_synopsysctl.exec("get alerts")
-    if err:
-        raise Exception(err)
-    if "alt" not in out:
-        raise Exception("Failed to get Alert alt")
-    out, err = my_synopsysctl.exec("get blackducks")
-    if err:
-        raise Exception(err)
-    if "bd" not in out:
-        raise Exception("Failed to get Black Duck bd")
-    out, err = my_synopsysctl.exec("get opssights")
-    if err:
-        raise Exception(err)
-    if "ops" not in out:
-        raise Exception("Failed to get OpsSight ops")
+    # # Check if CRs are created
+    # out, err = my_synopsysctl.exec("get alerts")
+    # if err:
+    #     raise Exception(err)
+    # if "alt" not in out:
+    #     raise Exception("Failed to get Alert alt")
+    # out, err = my_synopsysctl.exec("get blackducks")
+    # if err:
+    #     raise Exception(err)
+    # if "bd" not in out:
+    #     raise Exception("Failed to get Black Duck bd")
+    # out, err = my_synopsysctl.exec("get opssights")
+    # if err:
+    #     raise Exception(err)
+    # if "ops" not in out:
+    #     raise Exception("Failed to get OpsSight ops")
 
-    # Describe each Synopsys resource
-    _, err = my_synopsysctl.exec("describe alert alt")
-    if err:
-        raise Exception(err)
-    _, err = my_synopsysctl.exec("describe blackduck bd")
-    if err:
-        raise Exception(err)
-    _, err = my_synopsysctl.exec("describe opssight ops")
-    if err:
-        raise Exception(err)
+    # # Describe each Synopsys resource
+    # _, err = my_synopsysctl.exec("describe alert alt")
+    # if err:
+    #     raise Exception(err)
+    # _, err = my_synopsysctl.exec("describe blackduck bd")
+    # if err:
+    #     raise Exception(err)
+    # _, err = my_synopsysctl.exec("describe opssight ops")
+    # if err:
+    #     raise Exception(err)
 
-    # Delete each Synopsys resource
-    _, err = my_synopsysctl.exec("delete alert alt")
-    if err:
-        raise Exception(err)
-    if my_alert.arePodsDeleted("alt") is False:
-        raise Exception("Failed to delete Alert alt")
+    # # Delete each Synopsys resource
+    # _, err = my_synopsysctl.exec("delete alert alt")
+    # if err:
+    #     raise Exception(err)
+    # if my_alert.arePodsDeleted("alt") is False:
+    #     raise Exception("Failed to delete Alert alt")
 
-    _, err = my_synopsysctl.exec("delete blackduck bd")
-    if err:
-        raise Exception(err)
-    if my_black_duck.arePodsDeleted("bd") is False:
-        raise Exception("Failed to delete Black Duck bd")
+    # _, err = my_synopsysctl.exec("delete blackduck bd")
+    # if err:
+    #     raise Exception(err)
+    # if my_black_duck.arePodsDeleted("bd") is False:
+    #     raise Exception("Failed to delete Black Duck bd")
 
-    _, err = my_synopsysctl.exec("delete opssight ops")
-    if err:
-        raise Exception(err)
-    if my_opssight.arePodsDeleted("ops") is False:
-        raise Exception("Failed to delete OpsSight ops")
+    # _, err = my_synopsysctl.exec("delete opssight ops")
+    # if err:
+    #     raise Exception(err)
+    # if my_opssight.arePodsDeleted("ops") is False:
+    #     raise Exception("Failed to delete OpsSight ops")
 
     # CLEANUP
     # Destroy Synopsys Operator
@@ -130,7 +130,7 @@ def main():
     except:
         logging.error("FAILED to load kube config")
 
-    client.rest.logger.setLevel("INFO")
+    client.rest.logger.setLevel("DEBUG")
     logging.basicConfig(level=logging.DEBUG)
 
     h = Helper(synopsysctl_path=SYNOPSYSCTL_PATH)

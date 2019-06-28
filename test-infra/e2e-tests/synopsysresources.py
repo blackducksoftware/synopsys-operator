@@ -4,7 +4,7 @@ import subprocess
 import time
 
 import yaml
-from kubernetes import client, config
+from kubernetes import client, config, watch
 
 from ctl import Synopsysctl, Terminal
 
@@ -26,6 +26,7 @@ class Helper():
         self.corev1Api = client.CoreV1Api()
         self.apiextensionsV1beta1Api = client.ApiextensionsV1beta1Api()
         self.customObjectsApi = client.CustomObjectsApi()
+        self.watcher = watch.Watch()
 
     # def clusterLogIn(self, cluster_ip, username, password):
     #     command = "login {} --username={} --password={} --insecure-skip-tls-verify=true".format(
@@ -35,7 +36,7 @@ class Helper():
     #         logging.error(str(err))
     #         sys.exit(1)
 
-    def arePodsRunning(self, namespace, label="", retry=10):
+    def arePodsRunning(self, namespace, label="", timeout_seconds=60, watch=True):
         """INPUTS
         - namespace: namespace of pods
         - label: label to identify pods
@@ -45,17 +46,23 @@ class Helper():
         """
         logging.debug("waiting for pods in namespace '{}' with label '{}'".format(
             namespace, label))
-        for i in range(retry):
-            retryDelay(i, retry)
-            podList = self.corev1Api.list_namespaced_pod(
-                namespace, label_selector=label)
-            for pod in podList.items:
-                if pod.status.phase != "Running":
-                    break
-                return True
+        stream = self.corev1Api.list_namespaced_pod(namespace=namespace,
+                                                    label_selector=label,
+                                                    pretty=True,
+                                                    timeout_seconds=timeout_seconds,
+                                                    watch=watch
+                                                    )
+        for event in stream:
+            logging.info(
+                f"Event: {event['type']} {event['object'].kind} {event['object'].metadata.name}")
+
+        for pod in stream.items:
+            if pod.status.phase != "Running":
+                break
+            return True
         return False
 
-    def arePodsDeleted(self, namespace, label="", retry=10):
+    def arePodsDeleted(self, namespace, label="", retry=100):
         """INPUTS
         - namespace: namespace of pods
         - label: label to identify pods
