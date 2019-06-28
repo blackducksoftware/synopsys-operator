@@ -83,7 +83,7 @@ func (c *Creater) getAuthenticationVolumes() []*components.Volume {
 
 	var hubAuthVolume *components.Volume
 	if c.blackDuck.Spec.PersistentStorage {
-		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"))
+		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", c.getPVCName("authentication"))
 	} else {
 		hubAuthVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")
 	}

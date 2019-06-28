@@ -1078,7 +1078,6 @@ func DeleteRoleBinding(clientset *kubernetes.Clientset, namespace string, name s
 func GetRouteClient(restConfig *rest.Config, clientset *kubernetes.Clientset, namespace string) *routeclient.RouteV1Client {
 	routeClient, err := routeclient.NewForConfig(restConfig)
 	if routeClient == nil || err != nil {
-		log.Debugf("unable to get route client")
 		return nil
 	}
 
@@ -1087,15 +1086,12 @@ func GetRouteClient(restConfig *rest.Config, clientset *kubernetes.Clientset, na
 		return routeClient
 	}
 
-	log.Debugf("unable to get oc version due to %+v", err)
-
 	// if not within container, check using list routes to determine whether it is an OpenShift cluster
 	_, err = ListRoutes(routeClient, namespace, "")
 	if err == nil {
 		return routeClient
 	}
 
-	log.Debugf("unable to list routes and hence ignoring routes due to %+v", err)
 	return nil
 }
 

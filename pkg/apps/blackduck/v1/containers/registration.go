@@ -79,7 +79,7 @@ func (c *Creater) getRegistrationVolumes() []*components.Volume {
 	registrationSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration-security")
 
 	if c.blackDuck.Spec.PersistentStorage {
-		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "registration"))
+		registrationVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-registration", c.getPVCName("registration"))
 	} else {
 		registrationVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-registration")
 	}
