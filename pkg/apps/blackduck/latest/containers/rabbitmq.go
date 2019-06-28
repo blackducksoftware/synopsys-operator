@@ -61,7 +61,7 @@ func (c *Creater) getRabbitmqVolumes() []*components.Volume {
 	rabbitmqSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-security")
 	var rabbitmqDataEmptyDir *components.Volume
 	if c.blackDuck.Spec.PersistentStorage {
-		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"))
+		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", c.getPVCName("rabbitmq"))
 	} else {
 		rabbitmqDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-data")
 	}
