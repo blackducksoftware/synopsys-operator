@@ -84,6 +84,7 @@ func (n *Namespace) add(isPatched bool) (bool, error) {
 		if err != nil {
 			return false, fmt.Errorf("unable to create namespace due to %+v", err)
 		}
+		return false, nil
 	}
 	return n.patch(ns, false)
 }

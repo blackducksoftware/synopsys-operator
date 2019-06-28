@@ -1704,7 +1704,7 @@ func GetOperatorNamespaceByCRDScope(kubeClient *kubernetes.Clientset, crdName st
 		if err != nil {
 			continue
 		}
-		crds := strings.Split(crdNames, ",")
+		crds := StringToStringSlice(crdNames, ",")
 		for _, crd := range crds {
 			if crd == crdName {
 				return namespace, nil
@@ -1731,6 +1731,14 @@ func GetCRDNamesFromConfigMap(kubeClient *kubernetes.Clientset, namespace string
 		return crdNames.(string), nil
 	}
 	return "", fmt.Errorf("unable to find CRD names in the Synopsys Operator config map")
+}
+
+// StringToStringSlice slices s into all substrings separated by sep
+func StringToStringSlice(s string, sep string) []string {
+	if len(s) > 0 {
+		return strings.Split(s, sep)
+	}
+	return make([]string, 0)
 }
 
 // InitLabels initialize the label

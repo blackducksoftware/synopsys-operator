@@ -25,7 +25,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -128,7 +127,7 @@ func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientse
 		log.Errorf("unable to unmarshal config map data due to %+v", err)
 	}
 	if crdNames, ok := cmData["CrdNames"]; ok {
-		sOperatorSpec.Crds = strings.Split(crdNames.(string), ",")
+		sOperatorSpec.Crds = util.StringToStringSlice(crdNames.(string), ",")
 	}
 
 	// Set the secretType and secret data

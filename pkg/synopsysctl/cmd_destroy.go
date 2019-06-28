@@ -107,7 +107,7 @@ func destroy(namespace string) error {
 				log.Errorf("unable to unmarshal config map data due to %+v", cmErr)
 			}
 			if crdNames, ok := cmData["CrdNames"]; ok {
-				crds = strings.Split(crdNames.(string), ",")
+				crds = util.StringToStringSlice(crdNames.(string), ",")
 			}
 			if value, ok := cmData["IsClusterScoped"]; ok {
 				isClusterScoped = value.(bool)
