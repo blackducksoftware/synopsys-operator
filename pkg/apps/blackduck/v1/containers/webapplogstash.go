@@ -105,14 +105,14 @@ func (c *Creater) getWebappLogtashVolumes() []*components.Volume {
 	webappSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp-security")
 	var webappVolume *components.Volume
 	if c.blackDuck.Spec.PersistentStorage {
-		webappVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-webapp", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webapp"))
+		webappVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-webapp", c.getPVCName("webapp"))
 	} else {
 		webappVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webapp")
 	}
 
 	var logstashVolume *components.Volume
 	if c.blackDuck.Spec.PersistentStorage {
-		logstashVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-logstash", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "logstash"))
+		logstashVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-logstash", c.getPVCName("logstash"))
 	} else {
 		logstashVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-logstash")
 	}

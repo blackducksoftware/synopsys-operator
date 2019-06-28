@@ -72,7 +72,7 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 func (c *Creater) getCfsslVolumes() []*components.Volume {
 	var cfsslVolume *components.Volume
 	if c.blackDuck.Spec.PersistentStorage {
-		cfsslVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-cfssl", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "cfssl"))
+		cfsslVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-cfssl", c.getPVCName("cfssl"))
 	} else {
 		cfsslVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-cfssl")
 	}

@@ -41,7 +41,7 @@ func (c *Creater) GetPostgres() *postgres.Postgres {
 
 	var pvcName string
 	if c.blackDuck.Spec.PersistentStorage {
-		pvcName = util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "postgres")
+		pvcName = c.getPVCName("postgres")
 	}
 
 	return &postgres.Postgres{

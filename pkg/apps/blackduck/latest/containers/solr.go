@@ -72,7 +72,7 @@ func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationCo
 func (c *Creater) getSolrVolumes() []*components.Volume {
 	var solrVolume *components.Volume
 	if c.blackDuck.Spec.PersistentStorage {
-		solrVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-solr", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "solr"))
+		solrVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-solr", c.getPVCName("solr"))
 	} else {
 		solrVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-solr")
 	}

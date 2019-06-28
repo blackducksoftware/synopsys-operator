@@ -79,8 +79,8 @@ func (c *Creater) getUploadCacheVolumes() []*components.Volume {
 	var uploadCacheDataDir *components.Volume
 	var uploadCacheDataKey *components.Volume
 	if c.blackDuck.Spec.PersistentStorage {
-		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache-data"))
-		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache-key"))
+		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", c.getPVCName("uploadcache-data"))
+		uploadCacheDataKey, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-key", c.getPVCName("uploadcache-key"))
 	} else {
 		uploadCacheDataDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-data")
 		uploadCacheDataKey, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-key")

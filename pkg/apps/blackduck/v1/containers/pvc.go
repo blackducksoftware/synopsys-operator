@@ -33,9 +33,6 @@ import (
 func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 	var pvcs []*components.PersistentVolumeClaim
 
-	// get the created by operator version annotation
-	createdBy, ok := c.blackDuck.Annotations["synopsys.com/created.by"]
-
 	defaultPVC := map[string]string{
 		"blackduck-postgres":          "150Gi",
 		"blackduck-authentication":    "2Gi",
@@ -79,7 +76,7 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 			}
 
 			pvcName := util.GetResourceName(c.blackDuck.Name, "", name)
-			if ok && createdBy == "pre-2019.6.0" {
+			if c.blackDuck.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
 				pvcName = name
 			}
 
