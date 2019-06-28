@@ -193,7 +193,9 @@ func (d *Deployment) patch(rc interface{}, isPatched bool) (bool, error) {
 					!reflect.DeepEqual(sortEnvs(oldContainer.Env), sortEnvs(newContainer.Env)) ||
 					!reflect.DeepEqual(sortVolumeMounts(oldContainer.VolumeMounts), sortVolumeMounts(newContainer.VolumeMounts)) ||
 					!compareVolumes(sortVolumes(d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Volumes), sortVolumes(d.newDeployments[deployment.GetName()].Spec.Template.Spec.Volumes)) ||
-					!compareAffinities(d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Affinity, d.newDeployments[deployment.GetName()].Spec.Template.Spec.Affinity)) {
+					!compareAffinities(d.oldDeployments[deployment.GetName()].Spec.Template.Spec.Affinity, d.newDeployments[deployment.GetName()].Spec.Template.Spec.Affinity) ||
+					!compareProbes(oldContainer.LivenessProbe, newContainer.LivenessProbe) ||
+					!compareProbes(oldContainer.ReadinessProbe, newContainer.ReadinessProbe)) {
 				isChanged = true
 				break
 			}

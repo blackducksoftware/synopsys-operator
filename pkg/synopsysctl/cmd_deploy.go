@@ -296,7 +296,7 @@ var deployCmd = &cobra.Command{
 		if !isClusterScoped {
 			_, err = util.GetNamespace(kubeClient, operatorNamespace)
 			if err != nil {
-				return fmt.Errorf("please create the namespace %s to deploy the Synopsys Operator in namespace scoped", operatorNamespace)
+				return fmt.Errorf("please create the namespace '%s' to deploy the Synopsys Operator in namespace scoped", operatorNamespace)
 			}
 		}
 
