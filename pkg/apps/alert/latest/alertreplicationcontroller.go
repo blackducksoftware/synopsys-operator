@@ -27,6 +27,7 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -150,9 +151,14 @@ func (a *SpecConfig) getAlertEmptyDirVolume() (*components.Volume, error) {
 
 // getAlertPVCVolume returns a new PVCVolume for an Alert
 func (a *SpecConfig) getAlertPVCVolume() *components.Volume {
+	name := operatorutil.GetResourceName(a.alert.Name, util.AlertName, a.alert.Spec.PVCName)
+	if a.alert.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
+		name = a.alert.Spec.PVCName
+	}
+
 	vol := components.NewPVCVolume(horizonapi.PVCVolumeConfig{
 		VolumeName: "dir-alert",
-		PVCName:    util.GetResourceName(a.alert.Name, util.AlertName, a.alert.Spec.PVCName),
+		PVCName:    name,
 		ReadOnly:   false,
 	})
 
