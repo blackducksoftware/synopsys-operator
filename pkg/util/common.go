@@ -1593,6 +1593,21 @@ func isSynopsysResourceExist(namespace, label string) error {
 	return nil
 }
 
+// IsOwnerLabelExistInNamespace check for owner label exist in the namespace
+func IsOwnerLabelExistInNamespace(kubeClient *kubernetes.Clientset, namespace string) bool {
+	// verify whether the namespace exist
+	ns, err := GetNamespace(kubeClient, namespace)
+	if err != nil {
+		return false
+	}
+
+	// check for owner label
+	if owner, ok := ns.Labels["owner"]; !ok || (ok && owner != OperatorName) {
+		return false
+	}
+	return true
+}
+
 // CheckResourceNamespace checks whether namespace is having any resource types
 func CheckResourceNamespace(kubeClient *kubernetes.Clientset, namespace string, label string, isOperator bool) (bool, error) {
 	// verify whether the namespace exist
@@ -1601,28 +1616,25 @@ func CheckResourceNamespace(kubeClient *kubernetes.Clientset, namespace string, 
 		return false, fmt.Errorf("error getting namespace due to %+v", err)
 	}
 
-	if owner, ok := ns.Labels["owner"]; ok && owner == OperatorName {
-		var isExist bool
-		if !isOperator {
-			// check whether the operator already exist in the namespace
-			isExist = IsOperatorExist(kubeClient, namespace)
-			if isExist {
-				return true, fmt.Errorf("synopsys operator is already running in %s namespace... namespace cannot be deleted", namespace)
-			}
+	var isExist bool
+	if !isOperator {
+		// check whether the operator already exist in the namespace
+		isExist = IsOperatorExist(kubeClient, namespace)
+		if isExist {
+			return true, fmt.Errorf("synopsys operator is already running in %s namespace... namespace cannot be deleted", namespace)
 		}
-
-		// iterate over each label and verify whether any Synopsys resources like Alert, Black Duck or OpsSight etc. exist in the namespace
-		for synopsysLabel := range ns.Labels {
-			if synopsysLabel != label {
-				err := isSynopsysResourceExist(namespace, synopsysLabel)
-				if err != nil {
-					return true, err
-				}
-			}
-		}
-	} else {
-		return true, fmt.Errorf("owner label is missing in the namespace and hence the namespace cannot be deleted")
 	}
+
+	// iterate over each label and verify whether any Synopsys resources like Alert, Black Duck or OpsSight etc. exist in the namespace
+	for synopsysLabel := range ns.Labels {
+		if synopsysLabel != label {
+			err := isSynopsysResourceExist(namespace, synopsysLabel)
+			if err != nil {
+				return true, err
+			}
+		}
+	}
+
 	return true, nil
 }
 

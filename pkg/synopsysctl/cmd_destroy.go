@@ -85,14 +85,6 @@ func destroy(namespace string) error {
 	// delete namespace
 	isNamespaceExist, err := util.CheckResourceNamespace(kubeClient, namespace, "", true)
 	if isNamespaceExist {
-		if err != nil {
-			if isForceDestroy {
-				log.Warnf("%s. namespace cannot be deleted", err.Error())
-			} else {
-				return fmt.Errorf("%s. It is not recommended to destroy the Synopsys Operator so these resources can continue to be managed. If you are sure you want to delete the Synopsys Operator anyway then you can use the 'force' option which will keep all the instances and delete only the Synopsys Operator", err.Error())
-			}
-		}
-
 		// get the synopsys operator configmap to get the crd names and cluster scope
 		crds := make([]string, 0)
 		var isClusterScoped bool
@@ -115,20 +107,39 @@ func destroy(namespace string) error {
 		}
 
 		log.Infof("deleting the Synopsys Operator resources in namespace '%s'", namespace)
-		if isClusterScoped && err == nil {
-			err = util.DeleteNamespace(kubeClient, namespace)
+		var isDeleteOperatorResource bool
+		if isClusterScoped {
 			if err != nil {
-				log.Errorf("unable to delete the Synopsys Operator namespace due to %+v", err)
+				if isForceDestroy {
+					log.Warnf("%s. namespace cannot be deleted", err.Error())
+				} else {
+					return fmt.Errorf("%s. It is not recommended to destroy the Synopsys Operator so these resources can continue to be managed. If you are sure you want to delete the Synopsys Operator anyway then you can use the 'force' option which will keep all the instances and delete only the Synopsys Operator", err.Error())
+				}
 			} else {
-				log.Infof("successfully destroyed Synopsys Operator in namespace '%s'", namespace)
+				isOwnerLabelExist := util.IsOwnerLabelExistInNamespace(kubeClient, namespace)
+				if isOwnerLabelExist {
+					err = util.DeleteNamespace(kubeClient, namespace)
+					if err != nil {
+						log.Errorf("unable to delete the Synopsys Operator namespace due to %+v", err)
+					} else {
+						log.Infof("successfully destroyed Synopsys Operator in namespace '%s'", namespace)
+					}
+				} else {
+					log.Errorf("owner label is missing in the namespace and hence the namespace cannot be deleted")
+					isDeleteOperatorResource = true
+				}
 			}
 		} else {
+			isDeleteOperatorResource = true
+		}
+
+		if isDeleteOperatorResource {
 			commonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespace, "", &api.ComponentList{}, "app=synopsys-operator", false)
 			_, crudErrors := commonConfig.CRUDComponents()
 			if len(crudErrors) > 0 {
 				log.Errorf("unable to delete the Synopsys Operator resources in namespace '%s' due to %+v", namespace, crudErrors)
 			} else {
-				log.Infof("successfully destroyed Synopsys Operator in namespace '%s'", namespace)
+				log.Infof("successfully destroyed Synopsys Operator resources in namespace '%s'", namespace)
 			}
 		}
 
