@@ -1306,6 +1306,34 @@ func GetCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clients
 	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(name, metav1.GetOptions{})
 }
 
+// WatchCustomResourceDefinition watches the custom resource defintion
+func WatchCustomResourceDefinition(apiExtensionClient *apiextensionsclient.Clientset, name string, timeout int) (watch.Interface, error) {
+	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Watch(metav1.ListOptions{TimeoutSeconds: IntToInt64(timeout)})
+}
+
+// BlockUntilWatchEventReceived blocks until first event is received, and sees if it matches the wanted eventType
+func BlockUntilWatchEventReceived(watchInterface watch.Interface, eventType watch.EventType) error {
+	defer watchInterface.Stop()
+	watchEvent := <-watchInterface.ResultChan()
+	if watchEvent.Type != eventType {
+		return fmt.Errorf("The event from the watch did not match the wanted eventType: %v", eventType)
+	}
+	return nil
+}
+
+// BlockUntilCrdIsAdded blocks until first event is received, and sees if it matches the wanted eventType
+func BlockUntilCrdIsAdded(apiExtensionClient *apiextensionsclient.Clientset, name string, timeout int) error {
+	watchInterface, err := WatchCustomResourceDefinition(apiExtensionClient, name, timeout)
+	if err != nil {
+		return fmt.Errorf("something went wrong in the watch event: %v", err)
+	}
+	err = BlockUntilWatchEventReceived(watchInterface, watch.Added)
+	if err != nil {
+		return fmt.Errorf("%v crd was not added: %v", name, err)
+	}
+	return nil
+}
+
 // ListCustomResourceDefinitions list the custom resource defintions
 func ListCustomResourceDefinitions(apiExtensionClient *apiextensionsclient.Clientset, labelSelector string) (*apiextensions.CustomResourceDefinitionList, error) {
 	return apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().List(metav1.ListOptions{LabelSelector: labelSelector})
