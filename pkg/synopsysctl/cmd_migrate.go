@@ -50,11 +50,7 @@ var migrateCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(namespace) > 0 {
-			err := migrate(namespace)
-			if err != nil {
-				log.Error(err)
-			}
-			return err
+			return migrate(namespace)
 		}
 
 		// get operator namespace
@@ -68,11 +64,7 @@ var migrateCmd = &cobra.Command{
 			if len(namespaces) > 1 {
 				return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to migrate")
 			}
-			err = migrate(namespaces[0])
-			if err != nil {
-				log.Error(err)
-			}
-			return err
+			return migrate(namespaces[0])
 		}
 
 		log.Errorf("namespace of the Synopsys Operator need to be provided")
@@ -404,7 +396,7 @@ func migrateOpsSight(namespace string) error {
 		}
 
 		// include name in all resources
-		err = addNameLabels(opsSightNamespace, opsSightName, util.BlackDuckName)
+		err = addNameLabels(opsSightNamespace, opsSightName, util.OpsSightName)
 		if err != nil {
 			return err
 		}
@@ -441,7 +433,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	for _, deployment := range deployments.Items {
-		if _, ok := deployment.Labels["name"]; !ok {
+		if _, ok := deployment.Labels["name"]; !ok || appName == util.OpsSightName {
 			deployment.Labels = util.InitLabels(deployment.Labels)
 			deployment.Labels["name"] = name
 			deployment.Spec.Template.Labels = util.InitLabels(deployment.Spec.Template.Labels)
@@ -459,14 +451,33 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	for _, rc := range rcs.Items {
-		if _, ok := rc.Labels["name"]; !ok {
+		if _, ok := rc.Labels["name"]; !ok || appName == util.OpsSightName {
 			rc.Labels = util.InitLabels(rc.Labels)
 			rc.Labels["name"] = name
 			rc.Spec.Template.Labels = util.InitLabels(rc.Spec.Template.Labels)
 			rc.Spec.Template.Labels["name"] = name
+			if appName == util.OpsSightName {
+				rc.Spec.Selector = util.InitLabels(rc.Spec.Selector)
+				rc.Spec.Selector["name"] = name
+			}
 			_, err = util.UpdateReplicationController(kubeClient, namespace, &rc)
 			if err != nil {
 				return fmt.Errorf("unable to update %s replication controller in namespace %s due to %+v", rc.GetName(), namespace, err)
+			}
+		}
+	}
+
+	// delete pods
+	if appName == util.OpsSightName {
+		pods, err := util.ListPodsWithLabels(kubeClient, namespace, fmt.Sprintf("app=%s", appName))
+		if err != nil {
+			return fmt.Errorf("unable to list pods for %s %s in namespace %s due to %+v", appName, name, namespace, err)
+		}
+
+		for _, pod := range pods.Items {
+			err = util.DeletePod(kubeClient, namespace, pod.GetName())
+			if err != nil {
+				return fmt.Errorf("unable to delete pod %s in namespace %s due to %+v", pod.GetName(), namespace, err)
 			}
 		}
 	}
@@ -477,7 +488,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	for _, svc := range services.Items {
-		if _, ok := svc.Labels["name"]; !ok {
+		if _, ok := svc.Labels["name"]; !ok || appName == util.OpsSightName {
 			svc.Labels = util.InitLabels(svc.Labels)
 			svc.Labels["name"] = name
 			_, err = util.UpdateService(kubeClient, namespace, &svc)
@@ -493,7 +504,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	for _, cm := range configmaps.Items {
-		if _, ok := cm.Labels["name"]; !ok {
+		if _, ok := cm.Labels["name"]; !ok || appName == util.OpsSightName {
 			cm.Labels = util.InitLabels(cm.Labels)
 			cm.Labels["name"] = name
 			_, err = util.UpdateConfigMap(kubeClient, namespace, &cm)
@@ -509,7 +520,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	for _, secret := range secrets.Items {
-		if _, ok := secret.Labels["name"]; !ok {
+		if _, ok := secret.Labels["name"]; !ok || appName == util.OpsSightName {
 			secret.Labels = util.InitLabels(secret.Labels)
 			secret.Labels["name"] = name
 			_, err = util.UpdateSecret(kubeClient, namespace, &secret)
@@ -525,7 +536,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	for _, serviceAccount := range serviceAccounts.Items {
-		if _, ok := serviceAccount.Labels["name"]; !ok {
+		if _, ok := serviceAccount.Labels["name"]; !ok || appName == util.OpsSightName {
 			serviceAccount.Labels = util.InitLabels(serviceAccount.Labels)
 			serviceAccount.Labels["name"] = name
 			_, err = util.UpdateServiceAccount(kubeClient, namespace, &serviceAccount)
@@ -541,7 +552,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	for _, clusterRole := range clusterRoles.Items {
-		if _, ok := clusterRole.Labels["name"]; !ok {
+		if _, ok := clusterRole.Labels["name"]; !ok || appName == util.OpsSightName {
 			clusterRole.Labels = util.InitLabels(clusterRole.Labels)
 			clusterRole.Labels["name"] = name
 			_, err = util.UpdateClusterRole(kubeClient, &clusterRole)
@@ -557,7 +568,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	for _, crb := range clusterRoleBindings.Items {
-		if _, ok := crb.Labels["name"]; !ok {
+		if _, ok := crb.Labels["name"]; !ok || appName == util.OpsSightName {
 			crb.Labels = util.InitLabels(crb.Labels)
 			crb.Labels["name"] = name
 			_, err = util.UpdateClusterRoleBinding(kubeClient, &crb)
@@ -591,7 +602,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 		}
 
 		for _, route := range routes.Items {
-			if _, ok := route.Labels["name"]; !ok {
+			if _, ok := route.Labels["name"]; !ok || appName == util.OpsSightName {
 				route.Labels = util.InitLabels(route.Labels)
 				route.Labels["name"] = name
 				_, err = util.UpdateRoute(routeClient, namespace, &route)
