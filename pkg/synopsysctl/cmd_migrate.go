@@ -50,7 +50,11 @@ var migrateCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(namespace) > 0 {
-			return migrate(namespace)
+			err := migrate(namespace)
+			if err != nil {
+				log.Error(err)
+			}
+			return err
 		}
 
 		// get operator namespace
@@ -64,7 +68,11 @@ var migrateCmd = &cobra.Command{
 			if len(namespaces) > 1 {
 				return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to migrate")
 			}
-			return migrate(namespaces[0])
+			err = migrate(namespaces[0])
+			if err != nil {
+				log.Error(err)
+			}
+			return err
 		}
 
 		log.Errorf("namespace of the Synopsys Operator need to be provided")
@@ -73,7 +81,11 @@ var migrateCmd = &cobra.Command{
 }
 
 func migrate(namespace string) error {
-	err := migrateCRD(namespace)
+	err := scaleDownSynopsysOperator(namespace)
+	if err != nil {
+		return err
+	}
+	err = migrateCRD(namespace)
 	if err != nil {
 		return err
 	}
@@ -85,6 +97,21 @@ func migrate(namespace string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func scaleDownSynopsysOperator(namespace string) error {
+	log.Infof("scaling down Synopsys Operator in namespace '%s'", namespace)
+	deployment, err := util.GetDeployment(kubeClient, namespace, "synopsys-operator")
+	if err != nil {
+		return fmt.Errorf("unable to find the Synopsys Operator deployment in namespace '%s' due to %+v", namespace, err)
+	}
+	replicas := util.IntToInt32(0)
+	_, err = util.PatchDeploymentForReplicas(kubeClient, deployment, replicas)
+	if err != nil {
+		return fmt.Errorf("unable to scale down the Synopsys Operator deployment in namespace '%s' due to %+v", namespace, err)
+	}
+	log.Infof("successfully scaled down Synopsys Operator in namespace '%s'", namespace)
 	return nil
 }
 
@@ -303,7 +330,22 @@ func migrateBlackDuck(namespace string) error {
 		if err != nil {
 			return err
 		}
+
+		if blackDuck.Spec.PersistentStorage {
+			err = removePVC(blackDuckNamespace)
+			if err != nil {
+				return err
+			}
+		}
 		log.Infof("successfully migrated Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
+	}
+	return nil
+}
+
+func removePVC(blackDuckNamespace string) error {
+	_, err := util.GetPVC(kubeClient, blackDuckNamespace, "blackduck-rabbitmq")
+	if err == nil {
+		return util.DeletePVC(kubeClient, blackDuckNamespace, "blackduck-rabbitmq")
 	}
 	return nil
 }
