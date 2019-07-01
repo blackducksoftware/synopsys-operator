@@ -110,11 +110,6 @@ func (hc *Creater) init(deployer *horizon.Deployer, bdspec *v1.BlackduckSpec, hu
 				if len(claim.Size) > 0 {
 					size = claim.Size
 				}
-			case "blackduck-rabbitmq":
-				size = "5Gi"
-				if len(claim.Size) > 0 {
-					size = claim.Size
-				}
 			case "blackduck-uploadcache-data":
 				size = "100Gi"
 				if len(claim.Size) > 0 {

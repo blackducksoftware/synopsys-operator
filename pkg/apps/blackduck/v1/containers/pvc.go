@@ -43,7 +43,6 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 		"blackduck-logstash":          "20Gi",
 		"blackduck-zookeeper-data":    "2Gi",
 		"blackduck-zookeeper-datalog": "2Gi",
-		"blackduck-rabbitmq":          "5Gi",
 		"blackduck-uploadcache-data":  "100Gi",
 		"blackduck-uploadcache-key":   "2Gi",
 	}
@@ -52,7 +51,6 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 		delete(defaultPVC, "blackduck-postgres")
 	}
 	if !c.isBinaryAnalysisEnabled {
-		delete(defaultPVC, "blackduck-rabbitmq")
 		delete(defaultPVC, "blackduck-uploadcache-data")
 		delete(defaultPVC, "blackduck-uploadcache-key")
 	}
