@@ -47,9 +47,6 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 		Labels:              c.GetVersionLabel("rabbitmq"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("rabbitmq"),
 	}
-	if !c.config.IsOpenshift {
-		podConfig.FSGID = util.IntToInt64(0)
-	}
 
 	return util.CreateReplicationControllerFromContainer(
 		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
@@ -59,13 +56,7 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 // getRabbitmqVolumes will return the rabbitmq volumes
 func (c *Creater) getRabbitmqVolumes() []*components.Volume {
 	rabbitmqSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-security")
-	var rabbitmqDataEmptyDir *components.Volume
-	if c.blackDuck.Spec.PersistentStorage {
-		rabbitmqDataEmptyDir, _ = util.CreatePersistentVolumeClaimVolume("dir-rabbitmq-data", c.getPVCName("rabbitmq"))
-	} else {
-		rabbitmqDataEmptyDir, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-rabbitmq-data")
-	}
-	volumes := []*components.Volume{rabbitmqSecurityEmptyDir, rabbitmqDataEmptyDir}
+	volumes := []*components.Volume{rabbitmqSecurityEmptyDir}
 	return volumes
 }
 
@@ -73,7 +64,6 @@ func (c *Creater) getRabbitmqVolumes() []*components.Volume {
 func (c *Creater) getRabbitmqVolumeMounts() []*horizonapi.VolumeMountConfig {
 	volumesMounts := []*horizonapi.VolumeMountConfig{
 		{Name: "dir-rabbitmq-security", MountPath: "/opt/blackduck/rabbitmq/security"},
-		{Name: "dir-rabbitmq-data", MountPath: "/var/lib/rabbitmq"},
 	}
 	return volumesMounts
 }
