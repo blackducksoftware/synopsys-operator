@@ -98,23 +98,12 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 			MinCountFailure: 10,
 		}},
 	}
-	var initContainers []*util.Container
-	if len(p.PVCName) > 0 {
-		postgresInitContainerConfig := &util.Container{
-			ContainerConfig: &horizonapi.ContainerConfig{Name: "alpine", Image: "alpine",
-				Command: []string{"sh", "-c", fmt.Sprintf("chmod -cR 777 %s", postgresDataMountPath)}},
-			VolumeMounts: postgresVolumeMounts,
-			PortConfig:   []*horizonapi.PortConfig{{ContainerPort: 3001, Protocol: horizonapi.ProtocolTCP}},
-		}
-		initContainers = append(initContainers, postgresInitContainerConfig)
-	}
 
 	podConfig := &util.PodConfig{
-		Name:           p.Name,
-		Volumes:        postgresVolumes,
-		Containers:     []*util.Container{postgresExternalContainerConfig},
-		InitContainers: initContainers,
-		Labels:         p.Labels,
+		Name:       p.Name,
+		Volumes:    postgresVolumes,
+		Containers: []*util.Container{postgresExternalContainerConfig},
+		Labels:     p.Labels,
 	}
 
 	if !p.IsOpenshift {
@@ -126,6 +115,7 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 	if err != nil {
 		return nil, fmt.Errorf("%+v", err)
 	}
+
 	// increase TerminationGracePeriod to better handle pg shutdown
 	pod.Spec.TerminationGracePeriodSeconds = &p.TerminationGracePeriodSeconds
 
