@@ -482,6 +482,14 @@ func ListPodsWithLabels(clientset *kubernetes.Clientset, namespace string, label
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
+// DeletePod will delete the input pods corresponding to a namespace
+func DeletePod(clientset *kubernetes.Clientset, namespace string, name string) error {
+	propagationPolicy := metav1.DeletePropagationBackground
+	return clientset.CoreV1().Pods(namespace).Delete(name, &metav1.DeleteOptions{
+		PropagationPolicy: &propagationPolicy,
+	})
+}
+
 // GetReplicationController will get the replication controller corresponding to a namespace and name
 func GetReplicationController(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ReplicationController, error) {
 	return clientset.CoreV1().ReplicationControllers(namespace).Get(name, metav1.GetOptions{})
