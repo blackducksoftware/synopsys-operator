@@ -104,7 +104,7 @@ func GetOperatorImage(kubeClient *kubernetes.Clientset, namespace string) (strin
 
 // GetOldOperatorSpec returns a spec that respesents the current Synopsys Operator in the cluster
 func GetOldOperatorSpec(restConfig *rest.Config, kubeClient *kubernetes.Clientset, namespace string) (*SpecConfig, error) {
-	log.Debugf("creating new synopsys operator spec")
+	log.Debugf("creating new Synopsys Operator spec")
 	currCM, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
 	if err != nil {
 		return nil, fmt.Errorf("unable to get synopsys operator config map in namespace %s due to %+v", namespace, err)

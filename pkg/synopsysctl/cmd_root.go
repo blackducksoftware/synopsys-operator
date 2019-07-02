@@ -55,8 +55,9 @@ var rootCmd = &cobra.Command{
 			mockMode = true
 		}
 		nativeMode := strings.Contains(cmd.CommandPath(), "native")
+		updatingResource := strings.Contains(cmd.CommandPath(), "update")
 		// only set resource clients if we are not in mock mode and we are not in native mode
-		if !mockMode && !nativeMode {
+		if updatingResource || (!mockMode && !nativeMode) {
 			callSetResourceClients()
 		}
 		return parseLogLevelAndKubeConfig(cmd)
