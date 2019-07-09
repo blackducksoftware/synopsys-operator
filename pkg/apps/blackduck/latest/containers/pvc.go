@@ -34,17 +34,15 @@ func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
 	var pvcs []*components.PersistentVolumeClaim
 
 	defaultPVC := map[string]string{
-		"blackduck-postgres":          "150Gi",
-		"blackduck-authentication":    "2Gi",
-		"blackduck-cfssl":             "2Gi",
-		"blackduck-registration":      "2Gi",
-		"blackduck-solr":              "2Gi",
-		"blackduck-webapp":            "2Gi",
-		"blackduck-logstash":          "20Gi",
-		"blackduck-zookeeper-data":    "2Gi",
-		"blackduck-zookeeper-datalog": "2Gi",
-		"blackduck-uploadcache-data":  "100Gi",
-		"blackduck-uploadcache-key":   "2Gi",
+		"blackduck-postgres":         "150Gi",
+		"blackduck-authentication":   "2Gi",
+		"blackduck-cfssl":            "2Gi",
+		"blackduck-registration":     "2Gi",
+		"blackduck-solr":             "2Gi",
+		"blackduck-webapp":           "2Gi",
+		"blackduck-logstash":         "20Gi",
+		"blackduck-zookeeper":        "4Gi",
+		"blackduck-uploadcache-data": "100Gi",
 	}
 
 	if c.blackDuck.Spec.ExternalPostgres != nil {

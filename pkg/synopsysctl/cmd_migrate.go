@@ -25,13 +25,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var busyBoxImage = defaultBusyBoxImage
 
 // migrateCmd migrates a resource before upgrading Synopsys Operator
 var migrateCmd = &cobra.Command{
@@ -49,6 +56,10 @@ var migrateCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if _, err := util.ValidateImageString(busyBoxImage); err != nil {
+			return err
+		}
+
 		if len(namespace) > 0 {
 			return migrate(namespace)
 		}
@@ -73,7 +84,7 @@ var migrateCmd = &cobra.Command{
 }
 
 func migrate(namespace string) error {
-	err := scaleDownSynopsysOperator(namespace)
+	err := scaleDownDeployment(namespace, util.OperatorName)
 	if err != nil {
 		return err
 	}
@@ -85,25 +96,36 @@ func migrate(namespace string) error {
 	if err != nil {
 		return err
 	}
-	err = migrateCR(namespace)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
-func scaleDownSynopsysOperator(namespace string) error {
-	log.Infof("scaling down Synopsys Operator in namespace '%s'", namespace)
-	deployment, err := util.GetDeployment(kubeClient, namespace, "synopsys-operator")
+func scaleDownDeployment(namespace string, name string) error {
+	log.Infof("scaling down %s deployment in namespace '%s'", name, namespace)
+	deployment, err := util.GetDeployment(kubeClient, namespace, name)
 	if err != nil {
-		return fmt.Errorf("unable to find the Synopsys Operator deployment in namespace '%s' due to %+v", namespace, err)
+		return fmt.Errorf("unable to find the %s deployment in namespace '%s' due to %+v", name, namespace, err)
 	}
 	replicas := util.IntToInt32(0)
 	_, err = util.PatchDeploymentForReplicas(kubeClient, deployment, replicas)
 	if err != nil {
-		return fmt.Errorf("unable to scale down the Synopsys Operator deployment in namespace '%s' due to %+v", namespace, err)
+		return fmt.Errorf("unable to scale down the %s deployment in namespace '%s' due to %+v", name, namespace, err)
 	}
-	log.Infof("successfully scaled down Synopsys Operator in namespace '%s'", namespace)
+	log.Infof("successfully scaled down %s deployment in namespace '%s'", name, namespace)
+	return nil
+}
+
+func scaleDownRC(namespace string, name string) error {
+	log.Infof("scaling down %s replication controller in namespace '%s'", name, namespace)
+	rc, err := util.GetReplicationController(kubeClient, namespace, name)
+	if err != nil {
+		return fmt.Errorf("unable to find the %s replication controller in namespace '%s' due to %+v", name, namespace, err)
+	}
+	replicas := util.IntToInt32(0)
+	_, err = util.PatchReplicationControllerForReplicas(kubeClient, rc, replicas)
+	if err != nil {
+		return fmt.Errorf("unable to scale down the %s replication controller in namespace '%s' due to %+v", name, namespace, err)
+	}
+	log.Infof("successfully scaled down %s replication controller in namespace '%s'", name, namespace)
 	return nil
 }
 
@@ -133,7 +155,7 @@ func migrateOperator(namespace string) error {
 		}
 	}
 
-	cm, err := util.GetConfigMap(kubeClient, namespace, "synopsys-operator")
+	cm, err := util.GetConfigMap(kubeClient, namespace, util.OperatorName)
 	if err != nil {
 		return fmt.Errorf("error getting the Synopsys Operator config map in namespace %s due to %+v", namespace, err)
 	}
@@ -196,7 +218,8 @@ func migrateCRD(namespace string) error {
 	for _, crdName := range crdNames {
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdName)
 		if err != nil {
-			return fmt.Errorf("error getting %s custom resource defintion due to %+v", crdName, err)
+			log.Errorf("error getting %s custom resource defintion due to %+v", crdName, err)
+			continue
 		}
 
 		// if crd labels doesn't contain app, then updates
@@ -211,30 +234,31 @@ func migrateCRD(namespace string) error {
 			}
 		}
 		log.Infof("successfully migrated '%s' custom resource definition", crd.GetName())
+		err = migrateCR(namespace, crdName)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 // migrateCR add the labels to the existing custom resource instances
-func migrateCR(namespace string) error {
-	crdNames := []string{util.AlertCRDName, util.BlackDuckCRDName, util.OpsSightCRDName}
-	for _, crdName := range crdNames {
-		switch crdName {
-		case util.AlertCRDName:
-			err := migrateAlert(namespace)
-			if err != nil {
-				return err
-			}
-		case util.BlackDuckCRDName:
-			err := migrateBlackDuck(namespace)
-			if err != nil {
-				return err
-			}
-		case util.OpsSightCRDName:
-			err := migrateOpsSight(namespace)
-			if err != nil {
-				return err
-			}
+func migrateCR(namespace string, crdName string) error {
+	switch crdName {
+	case util.AlertCRDName:
+		err := migrateAlert(namespace)
+		if err != nil {
+			return err
+		}
+	case util.BlackDuckCRDName:
+		err := migrateBlackDuck(namespace)
+		if err != nil {
+			return err
+		}
+	case util.OpsSightCRDName:
+		err := migrateOpsSight(namespace)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -324,9 +348,60 @@ func migrateBlackDuck(namespace string) error {
 		}
 
 		if blackDuck.Spec.PersistentStorage {
-			err = removePVC(blackDuckNamespace)
+			var rabbitmqRCName, zookeeperRCName, uploadCacheRCName, uploadCacheKeyPVCName, uploadCacheDataPVCName string
+			if value, ok := blackDuck.Annotations["synopsys.com/created.by"]; ok && "pre-2019.6.0" == value {
+				rabbitmqRCName = "rabbitmq"
+				zookeeperRCName = "zookeeper"
+				uploadCacheRCName = "uploadcache"
+				uploadCacheKeyPVCName = "blackduck-uploadcache-key"
+				uploadCacheDataPVCName = "blackduck-uploadcache-data"
+			} else {
+				rabbitmqRCName = util.GetResourceName(blackDuckName, util.BlackDuckName, "rabbitmq")
+				zookeeperRCName = util.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper")
+				uploadCacheRCName = util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache")
+				uploadCacheKeyPVCName = fmt.Sprintf("%s-blackduck-uploadcache-key", blackDuckName)
+				uploadCacheDataPVCName = fmt.Sprintf("%s-blackduck-uploadcache-data", blackDuckName)
+			}
+			// scale down zookeeper
+			err = scaleDownRC(blackDuckNamespace, zookeeperRCName)
 			if err != nil {
 				return err
+			}
+			// scale down upload cache
+			err = scaleDownRC(blackDuckNamespace, uploadCacheRCName)
+			if err != nil {
+				return err
+			}
+
+			if isSourceCodeEnabled(blackDuck.Spec.Environs) {
+				err = migrateUploadCachePVCJob(blackDuckNamespace, blackDuckName, uploadCacheKeyPVCName, uploadCacheDataPVCName)
+				if err != nil {
+					return err
+				}
+			}
+
+			pvcs := []string{"blackduck-rabbitmq"}
+			if value, ok := blackDuck.Annotations["synopsys.com/created.by"]; ok && "pre-2019.6.0" == value {
+				pvcs = append(pvcs, "zookeeper-data", "zookeeper-datalog")
+			} else {
+				pvcs = append(pvcs, util.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper-data"), util.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper-datalog"))
+			}
+			for _, pvc := range pvcs {
+				// check for an existance of PVC
+				_, err := util.GetPVC(kubeClient, blackDuckNamespace, pvc)
+				if err == nil {
+					if "blackduck-rabbitmq" == pvc {
+						// scale down rabbitmq
+						err = scaleDownRC(blackDuckNamespace, rabbitmqRCName)
+						if err != nil {
+							return err
+						}
+					}
+					err = removePVC(blackDuckNamespace, pvc)
+					if err != nil {
+						return err
+					}
+				}
 			}
 		}
 		log.Infof("successfully migrated Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
@@ -334,12 +409,92 @@ func migrateBlackDuck(namespace string) error {
 	return nil
 }
 
-func removePVC(blackDuckNamespace string) error {
-	_, err := util.GetPVC(kubeClient, blackDuckNamespace, "blackduck-rabbitmq")
-	if err == nil {
-		return util.DeletePVC(kubeClient, blackDuckNamespace, "blackduck-rabbitmq")
+func isSourceCodeEnabled(environs []string) bool {
+	for _, value := range environs {
+		if strings.Contains(value, "ENABLE_SOURCE_UPLOADS") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				mapValue := strings.ToLower(strings.TrimSpace(values[1]))
+				if strings.EqualFold(mapValue, "true") {
+					return true
+				}
+			}
+			return false
+		}
 	}
-	return nil
+	return false
+}
+
+// removePVC removes the PVC
+func removePVC(namespace string, name string) error {
+	log.Infof("removing %s PVC from namespace '%s'", name, namespace)
+	err := util.DeletePVC(kubeClient, namespace, name)
+	if err == nil {
+		log.Infof("removed %s PVC successfully from namespace '%s'", name, namespace)
+	}
+	return err
+}
+
+// migrateUploadCachePVCJob create a Kube job to migrate the upload cache key data to upload cache data PVC
+func migrateUploadCachePVCJob(namespace string, name string, uploadCacheKeyVolumeName string, uploadCacheDataVolumeName string) error {
+	log.Infof("migrating upload cache key persistent volume to upload cache data persistent volume for Black Duck %s in namespace '%s'", name, namespace)
+	uploadCacheKeyVolume := components.NewPVCVolume(horizonapi.PVCVolumeConfig{PVCName: uploadCacheKeyVolumeName, VolumeName: "dir-uploadcache-key"})
+	uploadCacheDataVolume := components.NewPVCVolume(horizonapi.PVCVolumeConfig{PVCName: uploadCacheDataVolumeName, VolumeName: "dir-uploadcache-data"})
+	migrateJob := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "migrate-upload-cache",
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    "migrate-key",
+							Image:   busyBoxImage,
+							Command: []string{"sh", "-c", "mkdir -p /opt/blackduck/hub/blackduck-upload-cache/keys && mkdir -p /opt/blackduck/hub/blackduck-upload-cache/uploads/bdio && mkdir -p /opt/blackduck/hub/blackduck-upload-cache/uploads/sources && chmod 775 /opt/blackduck/hub/blackduck-upload-cache/keys && chmod 775 /opt/blackduck/hub/blackduck-upload-cache/uploads/bdio && chmod 775 /opt/blackduck/hub/blackduck-upload-cache/uploads/sources && if [ ! \"$(ls -A /opt/blackduck/hub/blackduck-upload-cache/keys)\" ]; then cp -pr /tmp/keys/MASTER_KEY_ENCRYPTED /opt/blackduck/hub/blackduck-upload-cache/keys; cp -pr /tmp/keys/MASTER_KEY_HASHED /opt/blackduck/hub/blackduck-upload-cache/keys; fi && if [ ! \"$(ls -A /opt/blackduck/hub/blackduck-upload-cache/uploads/bdio)\" ] && [ -d /opt/blackduck/hub/blackduck-upload-cache/bdio ]; then cp -pr /opt/blackduck/hub/blackduck-upload-cache/bdio /opt/blackduck/hub/blackduck-upload-cache/uploads; fi && if [ ! \"$(ls -A /opt/blackduck/hub/blackduck-upload-cache/uploads/sources)\" ] && [ -d /opt/blackduck/hub/blackduck-upload-cache/sources ]; then cp -pr /opt/blackduck/hub/blackduck-upload-cache/sources /opt/blackduck/hub/blackduck-upload-cache/uploads; fi && if [ -d /opt/blackduck/hub/blackduck-upload-cache/sources ]; then rm -rf /opt/blackduck/hub/blackduck-upload-cache/sources; fi && if [ -d /opt/blackduck/hub/blackduck-upload-cache/bdio ]; then rm -rf /opt/blackduck/hub/blackduck-upload-cache/bdio; fi"},
+							VolumeMounts: []corev1.VolumeMount{
+								{Name: "dir-uploadcache-key", MountPath: "/tmp/keys"},
+								{Name: "dir-uploadcache-data", MountPath: "/opt/blackduck/hub/blackduck-upload-cache"},
+							},
+						},
+					},
+					RestartPolicy: corev1.RestartPolicyNever,
+					Volumes: []corev1.Volume{
+						{Name: uploadCacheKeyVolume.Name, VolumeSource: uploadCacheKeyVolume.VolumeSource},
+						{Name: uploadCacheDataVolume.Name, VolumeSource: uploadCacheDataVolume.VolumeSource},
+					},
+				},
+			},
+		},
+	}
+
+	job, err := kubeClient.BatchV1().Jobs(namespace).Create(migrateJob)
+	if err != nil {
+		return err
+	}
+
+	timeout := time.NewTimer(30 * time.Minute)
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	defer timeout.Stop()
+
+	for {
+		select {
+		case <-timeout.C:
+			return fmt.Errorf("the migration of upload cache key to data is timed out for Black Duck %s in namespace '%s'", name, namespace)
+
+		case <-ticker.C:
+			job, err = kubeClient.BatchV1().Jobs(job.Namespace).Get(job.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			if job.Status.Succeeded > 0 {
+				log.Infof("successfully migrated upload cache key persistent volume to upload cache data persistent volume for Black Duck %s in namespace '%s'", name, namespace)
+				kubeClient.BatchV1().Jobs(job.Namespace).Delete(job.Name, &metav1.DeleteOptions{})
+				return nil
+			}
+		}
+	}
 }
 
 // migrateOpsSight migrates the existing OpsSight instances
@@ -620,4 +775,5 @@ func init() {
 	// Add Migrate Commands
 	rootCmd.AddCommand(migrateCmd)
 	migrateCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
+	migrateCmd.Flags().StringVarP(&busyBoxImage, "busybox-image", "i", busyBoxImage, "Image URL of Busybox")
 }
