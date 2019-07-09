@@ -72,30 +72,23 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 
 // getZookeeperVolumes will return the zookeeper volumes
 func (c *Creater) getZookeeperVolumes() []*components.Volume {
-	var zookeeperDataVolume *components.Volume
-	var zookeeperDatalogVolume *components.Volume
+	var zookeeperVolume *components.Volume
 
 	if c.blackDuck.Spec.PersistentStorage {
-		zookeeperDataVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-data", c.getPVCName("zookeeper-data"))
+		zookeeperVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper", c.getPVCName("zookeeper"))
 	} else {
-		zookeeperDataVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-data")
+		zookeeperVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper")
 	}
 
-	if c.blackDuck.Spec.PersistentStorage {
-		zookeeperDatalogVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-zookeeper-datalog", c.getPVCName("zookeeper-datalog"))
-	} else {
-		zookeeperDatalogVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-zookeeper-datalog")
-	}
-
-	volumes := []*components.Volume{zookeeperDataVolume, zookeeperDatalogVolume}
+	volumes := []*components.Volume{zookeeperVolume}
 	return volumes
 }
 
 // getZookeeperVolumeMounts will return the zookeeper volume mounts
 func (c *Creater) getZookeeperVolumeMounts() []*horizonapi.VolumeMountConfig {
 	volumesMounts := []*horizonapi.VolumeMountConfig{
-		{Name: "dir-zookeeper-data", MountPath: "/opt/blackduck/zookeeper/data"},
-		{Name: "dir-zookeeper-datalog", MountPath: "/opt/blackduck/zookeeper/datalog"},
+		{Name: "dir-zookeeper", MountPath: "/opt/blackduck/zookeeper/data", SubPath: "data"},
+		{Name: "dir-zookeeper", MountPath: "/opt/blackduck/zookeeper/datalog", SubPath: "datalog"},
 	}
 	return volumesMounts
 }
