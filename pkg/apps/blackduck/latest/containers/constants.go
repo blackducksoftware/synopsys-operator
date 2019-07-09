@@ -25,7 +25,7 @@ const (
 	// SHARED VALUES
 	cfsslMemoryLimit           = "640M"
 	logstashMemoryLimit        = "1G"
-	registrationMemoryLimit    = "640M"
+	registrationMemoryLimit    = "1G"
 	zookeeperMemoryLimit       = "640M"
 	authenticationMemoryLimit  = "1024M"
 	authenticationHubMaxMemory = "512m"
