@@ -31,3 +31,6 @@ const DefaultOperatorNamespace string = "synopsys-operator"
 const defaultBaseAlertSpec string = "default"
 const defaultBaseBlackDuckSpec string = "persistentStorageLatest"
 const defaultBaseOpsSightSpec string = "default"
+
+// busybox image
+const defaultBusyBoxImage string = "docker.io/busybox:1.28"
