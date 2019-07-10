@@ -105,7 +105,7 @@ func (c *Creater) GetPostgresSecret(adminPassword string, userPassword string, p
 	hubSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: c.blackDuck.Spec.Namespace, Name: util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "db-creds"), Type: horizonapi.SecretTypeOpaque})
 
 	if c.blackDuck.Spec.ExternalPostgres != nil {
-		hubSecret.AddData(map[string][]byte{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": []byte(c.blackDuck.Spec.ExternalPostgres.PostgresAdminPassword), "HUB_POSTGRES_USER_PASSWORD_FILE": []byte(c.blackDuck.Spec.ExternalPostgres.PostgresUserPassword)})
+		hubSecret.AddData(map[string][]byte{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": []byte(adminPassword), "HUB_POSTGRES_USER_PASSWORD_FILE": []byte(userPassword)})
 	} else {
 		hubSecret.AddData(map[string][]byte{"HUB_POSTGRES_ADMIN_PASSWORD_FILE": []byte(adminPassword), "HUB_POSTGRES_USER_PASSWORD_FILE": []byte(userPassword), "HUB_POSTGRES_POSTGRES_PASSWORD_FILE": []byte(postgresPassword)})
 	}
