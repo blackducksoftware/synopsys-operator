@@ -317,7 +317,7 @@ var createBlackDuckCmd = &cobra.Command{
 		}
 		for _, v := range blackducks.Items {
 			if strings.EqualFold(v.Spec.Namespace, blackDuckNamespace) {
-				return fmt.Errorf("due to issues with this version of Black Duck, only one instance per namespace is allowed")
+				return fmt.Errorf("a Black Duck instance already exists in namespace '%s', only one instance per namespace is allowed", blackDuckNamespace)
 			}
 		}
 
