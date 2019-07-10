@@ -60,9 +60,9 @@ var stopAlertCmd = &cobra.Command{
 		log.Infof("stopping Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 
 		// Get the Alert
-		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertNamespace)
+		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertName)
 		if err != nil {
-			return fmt.Errorf("error stopping Alert '%s' due to %+v", alertNamespace, err)
+			return fmt.Errorf("error stopping Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
 
 		// Make changes to Spec
@@ -101,7 +101,7 @@ var stopBlackDuckCmd = &cobra.Command{
 		log.Infof("stopping Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Get the Black Duck
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
