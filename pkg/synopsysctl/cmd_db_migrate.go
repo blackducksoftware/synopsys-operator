@@ -42,39 +42,48 @@ var dbMigrateCmd = &cobra.Command{
 // dbMigrateBlackDuckCmd puts a Black Duck instance into the db-migrate state
 var dbMigrateBlackDuckCmd = &cobra.Command{
 	Use:           "blackduck NAME",
-	Example:       "synopsysctl db-migrate blackduck <name>\nsynopsysctl db-migrate blackduck <name> -n <namespace>",
+	Example:       "synopsysctl db-migrate blackduck <name>\nsynopsysctl db-migrate blackduck <name1> <name2>\nsynopsysctl db-migrate blackduck <name> -n <namespace>\nsynopsysctl db-migrate blackduck <name1> <name2> -n <namespace>",
 	Short:         "Put a Black Duck instance into database migration mode",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
+		if len(args) == 0 {
 			cmd.Help()
-			return fmt.Errorf("this command takes 1 argument")
+			return fmt.Errorf("this command takes one or more arguments")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, "", namespace, args[0])
-		if err != nil {
-			return err
-		}
-		log.Infof("putting Black Duck '%s' in namespace '%s' into database migration mode...", blackDuckName, blackDuckNamespace)
+		errors := []error{}
+		for _, bdArg := range args {
+			blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, "", namespace, bdArg)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			log.Infof("putting Black Duck '%s' in namespace '%s' into database migration mode...", blackDuckName, blackDuckNamespace)
 
-		// Get the Black Duck
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
-		if err != nil {
-			return fmt.Errorf("unable to get Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-		}
+			// Get the Black Duck
+			currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+			if err != nil {
+				errors = append(errors, fmt.Errorf("unable to get Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err))
+				continue
+			}
 
-		// Make changes to Spec
-		currBlackDuck.Spec.DesiredState = "DbMigrate"
-		// Update Black Duck
-		_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
-		if err != nil {
-			return fmt.Errorf("error putting Black Duck '%s' in namespace '%s' into database migration mode due to %+v", blackDuckName, blackDuckNamespace, err)
-		}
+			// Make changes to Spec
+			currBlackDuck.Spec.DesiredState = "DbMigrate"
+			// Update Black Duck
+			_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
+			if err != nil {
+				errors = append(errors, fmt.Errorf("error putting Black Duck '%s' in namespace '%s' into database migration mode due to %+v", blackDuckName, blackDuckNamespace, err))
+				continue
+			}
 
-		log.Infof("successfully modified Black Duck '%s' in namespace '%s' for database migration mode", blackDuckName, blackDuckNamespace)
+			log.Infof("successfully modified Black Duck '%s' in namespace '%s' for database migration mode", blackDuckName, blackDuckNamespace)
+		}
+		if len(errors) > 0 {
+			return fmt.Errorf("%v", errors)
+		}
 		return nil
 	},
 }
