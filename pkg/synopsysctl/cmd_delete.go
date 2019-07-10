@@ -105,7 +105,7 @@ var deleteBlackDuckCmd = &cobra.Command{
 // deleteOpsSightCmd deletes OpsSight instances from the cluster
 var deleteOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME...",
-	Example:       "synopsysctl delete opssight <name>\nsynopsysctl delete opssight <name1> <name2> <name3>\nsynopsysctl delete opssight <name> -n <namespace>\nsynopsysctl delete opssight <name1> <name2> <name3> -n <namespace>",
+	Example:       "synopsysctl delete opssight <name>\nsynopsysctl delete opssight <name1> <name2> <name3>",
 	Short:         "Delete one or many OpsSight instances",
 	Aliases:       []string{"ops"},
 	SilenceUsage:  true,

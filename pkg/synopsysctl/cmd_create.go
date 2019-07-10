@@ -441,7 +441,7 @@ func updateOpsSightSpecWithFlags(cmd *cobra.Command, opsSightName string, opsSig
 // createOpsSightCmd creates an OpsSight instance
 var createOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME",
-	Example:       "synopsysctl create opssight <name>\nsynopsysctl create opssight <name> -n <namespace>\nsynopsysctl create opssight <name> --mock json",
+	Example:       "synopsysctl create opssight <name>\nsynopsysctl create opssight <name> --mock json",
 	Short:         "Create an OpsSight instance",
 	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
@@ -490,7 +490,7 @@ var createOpsSightCmd = &cobra.Command{
 // createOpsSightNativeCmd prints the Kubernetes resources for creating an OpsSight instance
 var createOpsSightNativeCmd = &cobra.Command{
 	Use:           "native NAME",
-	Example:       "synopsysctl create opssight native <name>\nsynopsysctl create opssight native <name> -n <namespace>\nsynopsysctl create opssight native <name> -o yaml",
+	Example:       "synopsysctl create opssight native <name>\nsynopsysctl create opssight native <name> -o yaml",
 	Short:         "Print the Kubernetes resources for creating an OpsSight instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,

@@ -100,7 +100,7 @@ var editBlackDuckCmd = &cobra.Command{
 // editOpsSightCmd edits an OpsSight instance by using the kube/oc editor
 var editOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME",
-	Example:       "synopsysctl edit opssight <name>\nsynopsysctl edit opssight <name> -n <namespace>",
+	Example:       "synopsysctl edit opssight <name>",
 	Short:         "Edit an OpsSight instance",
 	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
