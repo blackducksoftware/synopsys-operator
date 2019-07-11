@@ -917,7 +917,7 @@ func updateOpsSight(ops *opssightapi.OpsSight, flagset *pflag.FlagSet) (*opssigh
 // updateOpsSightCmd updates an OpsSight instance
 var updateOpsSightCmd = &cobra.Command{
 	Use:           "opssight NAME",
-	Example:       "synopsyctl update opssight <name> --blackduck-max-count 2\nsynopsyctl update opssight <name> --blackduck-max-count 2 -n <namespace>\nsynopsyctl update opssight <name> --blackduck-max-count 2 --mock json",
+	Example:       "synopsyctl update opssight <name> --blackduck-max-count 2\nsynopsyctl update opssight <name> --blackduck-max-count 2 --mock json",
 	Short:         "Update an OpsSight instance",
 	Aliases:       []string{"ops"},
 	SilenceUsage:  true,
@@ -970,7 +970,7 @@ var updateOpsSightCmd = &cobra.Command{
 // updateOpsSightNativeCmd prints the Kubernetes resources with updates to an OpsSight instance
 var updateOpsSightNativeCmd = &cobra.Command{
 	Use:           "native NAME",
-	Example:       "synopsyctl update opssight native <name> --blackduck-max-count 2\nsynopsyctl update opssight native <name> --blackduck-max-count 2 -n <namespace>\nsynopsyctl update opssight native <name> --blackduck-max-count 2 -o yaml",
+	Example:       "synopsyctl update opssight native <name> --blackduck-max-count 2\nsynopsyctl update opssight native <name> --blackduck-max-count 2 -o yaml",
 	Short:         "Print the Kubernetes resources with updates to an OpsSight instance",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -1023,7 +1023,7 @@ func updateOpsSightImage(ops *opssightapi.OpsSight, imageName, image string) (*o
 // updateOpsSightImageCmd updates an image of an OpsSight instance's component
 var updateOpsSightImageCmd = &cobra.Command{
 	Use:           "image NAME OPSSIGHTCORE|SCANNER|IMAGEGETTER|IMAGEPROCESSOR|PODPROCESSOR|METRICS IMAGE",
-	Example:       "synopsysctl update opssight image <name> SCANNER docker.io/new_scanner_image_url\nsynopsysctl update opssight image <name> SCANNER docker.io/new_scanner_image_url -n <namespace>",
+	Example:       "synopsysctl update opssight image <name> SCANNER docker.io/new_scanner_image_url",
 	Short:         "Update an image of an OpsSight instance's component",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -1068,7 +1068,7 @@ var updateOpsSightImageCmd = &cobra.Command{
 // updateOpsSightImageNativeCmd prints the Kuberntes resources with updates to an image of an OpsSight instance's component
 var updateOpsSightImageNativeCmd = &cobra.Command{
 	Use:           "native NAME OPSSIGHTCORE|SCANNER|IMAGEGETTER|IMAGEPROCESSOR|PODPROCESSOR|METRICS IMAGE",
-	Example:       "synopsysctl update opssight image native <name> SCANNER docker.io/new_scanner_image_url\nsynopsysctl update opssight image native <name> SCANNER docker.io/new_scanner_image_url -n <namespace>",
+	Example:       "synopsysctl update opssight image native <name> SCANNER docker.io/new_scanner_image_url",
 	Short:         "Print the Kuberntes resources with updates to an image of an OpsSight instance's component",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -1122,7 +1122,7 @@ func updateOpsSightExternalHost(ops *opssightapi.OpsSight, scheme, domain, port,
 // updateOpsSightExternalHostCmd updates an external host for an OpsSight intance's component
 var updateOpsSightExternalHostCmd = &cobra.Command{
 	Use:           "externalhost NAME SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT",
-	Example:       "synopsysctl update opssight externalhost <name> scheme domain 80 user pass 50\nsynopsysctl update opssight externalhost <name> scheme domain 80 user pass 50 -n <namespace>",
+	Example:       "synopsysctl update opssight externalhost <name> scheme domain 80 user pass 50",
 	Short:         "Update an external host for an OpsSight intance's component",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -1177,7 +1177,7 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 // updateOpsSightExternalHostNativeCmd prints the Kubernetes resources with updates to an external host for an OpsSight intance's component
 var updateOpsSightExternalHostNativeCmd = &cobra.Command{
 	Use:           "externalhost NAME SCHEME DOMAIN PORT USER PASSWORD SCANLIMIT",
-	Example:       "synopsysctl update opssight externalhost native <name> scheme domain 80 user pass 50\nsynopsysctl update opssight externalhost native <name> scheme domain 80 user pass 50 -n <namespace>",
+	Example:       "synopsysctl update opssight externalhost native <name> scheme domain 80 user pass 50",
 	Short:         "Print the Kubernetes resources with updates to an external host for an OpsSight intance's component",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -1230,7 +1230,7 @@ func updateOpsSightAddRegistry(ops *opssightapi.OpsSight, url, user, pass string
 // updateOpsSightAddRegistryCmd adds an internal registry to an OpsSight instance's ImageFacade
 var updateOpsSightAddRegistryCmd = &cobra.Command{
 	Use:           "registry NAME URL USER PASSWORD",
-	Example:       "synopsysctl update opssight registry <name> reg_url reg_username reg_password\nsynopsysctl update opssight registry <name> reg_url reg_username reg_password -n <namespace>",
+	Example:       "synopsysctl update opssight registry <name> reg_url reg_username reg_password",
 	Short:         "Add an internal registry to an OpsSight instance's ImageFacade",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -1275,7 +1275,7 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 // updateOpsSightAddRegistryNativeCmd prints the Kubernetes resources with updates from adding an internal registry to an OpsSight instance's ImageFacade
 var updateOpsSightAddRegistryNativeCmd = &cobra.Command{
 	Use:           "native NAME URL USER PASSWORD",
-	Example:       "synopsysctl update opssight registry native <name> reg_url reg_username reg_password\nsynopsysctl update opssight registry native <name> reg_url reg_username reg_password -n <namespace>",
+	Example:       "synopsysctl update opssight registry native <name> reg_url reg_username reg_password",
 	Short:         "Print the Kubernetes resources with updates from adding an internal registry to an OpsSight instance's ImageFacade",
 	SilenceUsage:  true,
 	SilenceErrors: true,

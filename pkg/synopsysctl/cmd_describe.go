@@ -109,7 +109,7 @@ var describeBlackDuckCmd = &cobra.Command{
 // describeOpsSightCmd shows details of one or many OpsSight instances
 var describeOpsSightCmd = &cobra.Command{
 	Use:           "opssight [NAME...]",
-	Example:       "synopsysctl describe opssights\nsynopsysctl describe opssight <name>\nsynopsysctl describe opssights <name1> <name2>\nsynopsysctl describe opssights -n <namespace>\nsynopsysctl describe opssight <name> -n <namespace>\nsynopsysctl describe opssights <name1> <name2> -n <namespace>",
+	Example:       "synopsysctl describe opssights\nsynopsysctl describe opssight <name>\nsynopsysctl describe opssights <name1> <name2>",
 	Aliases:       []string{"opssights", "ops"},
 	Short:         "Show details of one or many OpsSight instances",
 	SilenceUsage:  true,
