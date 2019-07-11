@@ -43,7 +43,7 @@ var busyBoxImage = defaultBusyBoxImage
 // migrateCmd migrates a resource before upgrading Synopsys Operator
 var migrateCmd = &cobra.Command{
 	Use:           "migrate",
-	Example:       "synopsysctl migrate <from>\nsynopsysctl migrate 2019.4.2",
+	Example:       "synopsysctl migrate <from>\nsynopsysctl migrate 2019.4.2\nsynopsysctl migrate <from> -n <namespace>",
 	Short:         "Migrate a Synopsys resource before upgrading the operator",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -78,8 +78,7 @@ var migrateCmd = &cobra.Command{
 			return migrate(namespaces[0])
 		}
 
-		log.Errorf("namespace of the Synopsys Operator need to be provided")
-		return nil
+		return fmt.Errorf("namespace of the Synopsys Operator need to be provided")
 	},
 }
 
@@ -771,9 +770,92 @@ func addNameLabels(namespace string, name string, appName string) error {
 	return nil
 }
 
+// migrateCleanupCmd cleanup the unused resources
+var migrateCleanupCmd = &cobra.Command{
+	Use:           "cleanup",
+	Example:       "synopsysctl migrate cleanup <from>\nsynopsysctl migrate cleanup 2019.4.2\nsynopsysctl migrate cleanup <from> -n <namespace>",
+	Short:         "Cleanup any unused resources after a Synopsys Operator migration. This should only be done after the user has verified full functionality. This can not be undone",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Check number of arguments
+		if len(args) != 1 {
+			cmd.Help()
+			return fmt.Errorf("this command takes 1 argument")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(namespace) > 0 {
+			return cleanup(namespace)
+		}
+
+		// get operator namespace
+		isClusterScoped := util.GetClusterScope(apiExtensionClient)
+		if isClusterScoped {
+			namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+			if err != nil {
+				return err
+			}
+
+			if len(namespaces) > 1 {
+				return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to cleanup")
+			}
+			return cleanup(namespaces[0])
+		}
+		return fmt.Errorf("namespace of the Synopsys Operator need to be provided")
+	},
+}
+
+// cleanup will cleanup the resources
+func cleanup(namespace string) error {
+	blackDucks, err := util.ListHubs(blackDuckClient, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to list Black Duck instances in namespace '%s' due to %+v", namespace, err)
+	}
+	for _, blackDuck := range blackDucks.Items {
+		blackDuckName := blackDuck.Name
+		blackDuckNamespace := blackDuck.Spec.Namespace
+		log.Infof("cleaning up the Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+		if blackDuck.Spec.PersistentStorage {
+			pods, err := util.ListPodsWithLabels(kubeClient, namespace, "job-name=migrate-upload-cache")
+			if err != nil {
+				return fmt.Errorf("failed to find the upload-cache migration pod in namespace '%s' due to %+v", namespace, err)
+			}
+
+			for _, pod := range pods.Items {
+				err = util.DeletePod(kubeClient, namespace, pod.Name)
+				if err != nil {
+					return fmt.Errorf("unable to delete pod %s in namespace '%s' due to %+v", pod.Name, namespace, err)
+				}
+			}
+
+			var uploadCacheKeyPVCName string
+			if value, ok := blackDuck.Annotations["synopsys.com/created.by"]; ok && "pre-2019.6.0" == value {
+				uploadCacheKeyPVCName = "blackduck-uploadcache-key"
+			} else {
+				uploadCacheKeyPVCName = fmt.Sprintf("%s-blackduck-uploadcache-key", blackDuckName)
+			}
+			// check for an existance of PVC
+			_, err = util.GetPVC(kubeClient, blackDuckNamespace, uploadCacheKeyPVCName)
+			if err == nil {
+				err = removePVC(blackDuckNamespace, uploadCacheKeyPVCName)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		log.Infof("successfully cleaned up the Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
+	}
+	return nil
+}
+
 func init() {
 	// Add Migrate Commands
 	rootCmd.AddCommand(migrateCmd)
 	migrateCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	migrateCmd.Flags().StringVarP(&busyBoxImage, "busybox-image", "i", busyBoxImage, "Image URL of Busybox")
+	// Add Migrate Cleanup command to Migrate command
+	migrateCmd.AddCommand(migrateCleanupCmd)
+	migrateCleanupCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 }
