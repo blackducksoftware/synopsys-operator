@@ -38,6 +38,31 @@ var getOutputFormat string
 // Get Command flag for -selector functionality
 var getSelector string
 
+// Get Command flag for --all-namespaces functionality
+var getAllNamespaces bool
+
+func generateKubectlGetCommand(resourceName string, args []string) []string {
+	kubectlCmd := []string{"get", resourceName}
+	if len(namespace) > 0 {
+		kubectlCmd = append(kubectlCmd, "-n", namespace)
+	}
+	if len(args) > 0 {
+		kubectlCmd = append(kubectlCmd, args...)
+	}
+	if getOutputFormat != "" {
+		kubectlCmd = append(kubectlCmd, "-o")
+		kubectlCmd = append(kubectlCmd, getOutputFormat)
+	}
+	if getSelector != "" {
+		kubectlCmd = append(kubectlCmd, "-l")
+		kubectlCmd = append(kubectlCmd, getSelector)
+	}
+	if getAllNamespaces {
+		kubectlCmd = append(kubectlCmd, allNamespacesFlag)
+	}
+	return kubectlCmd
+}
+
 // getCmd lists resources in the cluster
 var getCmd = &cobra.Command{
 	Use:   "get",
@@ -60,22 +85,7 @@ var getAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Alert instances...")
-		kubectlCmd := []string{"get", "alerts"}
-		if len(namespace) > 0 {
-			kubectlCmd = append(kubectlCmd, "-n", namespace)
-		}
-		if len(args) > 0 {
-			kubectlCmd = append(kubectlCmd, args...)
-		}
-		if cmd.LocalFlags().Lookup("output").Changed {
-			kubectlCmd = append(kubectlCmd, "-o")
-			kubectlCmd = append(kubectlCmd, getOutputFormat)
-		}
-		if cmd.LocalFlags().Lookup("selector").Changed {
-			kubectlCmd = append(kubectlCmd, "-l")
-			kubectlCmd = append(kubectlCmd, getSelector)
-		}
-		out, err := RunKubeCmd(restconfig, kubeClient, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubeClient, generateKubectlGetCommand("alerts", args)...)
 		if err != nil {
 			return fmt.Errorf("error getting Alert instances due to %+v - %s", out, err)
 		}
@@ -97,22 +107,7 @@ var getBlackDuckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting Black Duck instances...")
-		kubectlCmd := []string{"get", "blackducks"}
-		if len(namespace) > 0 {
-			kubectlCmd = append(kubectlCmd, "-n", namespace)
-		}
-		if len(args) > 0 {
-			kubectlCmd = append(kubectlCmd, args...)
-		}
-		if cmd.LocalFlags().Lookup("output").Changed {
-			kubectlCmd = append(kubectlCmd, "-o")
-			kubectlCmd = append(kubectlCmd, getOutputFormat)
-		}
-		if cmd.LocalFlags().Lookup("selector").Changed {
-			kubectlCmd = append(kubectlCmd, "-l")
-			kubectlCmd = append(kubectlCmd, getSelector)
-		}
-		out, err := RunKubeCmd(restconfig, kubeClient, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubeClient, generateKubectlGetCommand("blackducks", args)...)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck instances due to %+v - %s", out, err)
 		}
@@ -198,22 +193,7 @@ var getOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debugf("getting OpsSight instances...")
-		kubectlCmd := []string{"get", "opssights"}
-		if len(namespace) > 0 {
-			kubectlCmd = append(kubectlCmd, "-n", namespace)
-		}
-		if len(args) > 0 {
-			kubectlCmd = append(kubectlCmd, args...)
-		}
-		if cmd.LocalFlags().Lookup("output").Changed {
-			kubectlCmd = append(kubectlCmd, "-o")
-			kubectlCmd = append(kubectlCmd, getOutputFormat)
-		}
-		if cmd.LocalFlags().Lookup("selector").Changed {
-			kubectlCmd = append(kubectlCmd, "-l")
-			kubectlCmd = append(kubectlCmd, getSelector)
-		}
-		out, err := RunKubeCmd(restconfig, kubeClient, kubectlCmd...)
+		out, err := RunKubeCmd(restconfig, kubeClient, generateKubectlGetCommand("opssights", args)...)
 		if err != nil {
 			return fmt.Errorf("error getting OpsSight instances due to %+v - %s", out, err)
 		}
@@ -230,11 +210,13 @@ func init() {
 	getAlertCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getAlertCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format (json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...)")
 	getAlertCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	getAlertCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
 	getCmd.AddCommand(getAlertCmd)
 
 	getBlackDuckCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getBlackDuckCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format (json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...)")
 	getBlackDuckCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	getBlackDuckCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
 
 	getBlackDuckRootKeyCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getBlackDuckCmd.AddCommand(getBlackDuckRootKeyCmd)
@@ -243,5 +225,6 @@ func init() {
 	getOpsSightCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
 	getOpsSightCmd.Flags().StringVarP(&getOutputFormat, "output", "o", getOutputFormat, "Output format (json,yaml,wide,name,custom-columns=...,custom-columns-file=...,go-template=...,go-template-file=...,jsonpath=...,jsonpath-file=...)")
 	getOpsSightCmd.Flags().StringVarP(&getSelector, "selector", "l", getSelector, "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	getOpsSightCmd.Flags().BoolVar(&getAllNamespaces, "all-namespaces", getAllNamespaces, "If present, list the requested object(s) across all namespaces")
 	getCmd.AddCommand(getOpsSightCmd)
 }
