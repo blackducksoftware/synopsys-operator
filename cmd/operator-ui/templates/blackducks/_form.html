@@ -71,6 +71,10 @@
       <li value="<%= environ %>"><%= environ %></li>
       <% } %>
     </ul>
+    <input type="hidden" id="blackduck-View.NodeAffinities" name="View.NodeAffinities" value="" />
+    <div id="nodeAffinityFilePath">
+        <%= f.FileTag("nodeAffinityFilePath", {label: "Node Affinity JSON File", onchange: "readNodeAffinitesAsStringFromFile(this)"}) %>
+    </div>
     <select id="blackduck-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
     <select id="blackduck-Spec.ImageRegistries" name="Spec.ImageRegistries" multiple="multiple" hidden></select>
     <center>
@@ -395,4 +399,14 @@
       customAuthCAId.style.display = 'none';
     }
   }
+
+  function readNodeAffinitesAsStringFromFile(element) {
+    var fileReader = new FileReader();
+    fileReader.onload = function(){
+      var data = fileReader.result;
+      document.getElementById("blackduck-View.NodeAffinities").value = data;
+    };
+    fileReader.readAsText(element.files[0]);
+  }
+
 </script>
