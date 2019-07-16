@@ -44,10 +44,10 @@ type Postgres struct {
 	PVCName                       string
 	Port                          int32
 	Image                         string
-	MinCPU                        string
-	MaxCPU                        string
-	MinMemory                     string
-	MaxMemory                     string
+	MinCPU                        int
+	MaxCPU                        int
+	MinMemory                     int
+	MaxMemory                     int
 	Database                      string
 	User                          string
 	PasswordSecretName            string
@@ -72,10 +72,10 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 			Name:       p.Name,
 			Image:      p.Image,
 			PullPolicy: horizonapi.PullIfNotPresent,
-			MinMem:     p.MinMemory,
-			MaxMem:     p.MaxMemory,
-			MinCPU:     p.MinCPU,
-			MaxCPU:     p.MaxCPU,
+			MinMem:     fmt.Sprintf("%dM", p.MinMemory),
+			MaxMem:     fmt.Sprintf("%dM", p.MaxMemory),
+			MinCPU:     fmt.Sprintf("%d", p.MinCPU),
+			MaxCPU:     fmt.Sprintf("%d", p.MinCPU),
 		},
 		EnvConfigs:   postgresEnvs,
 		VolumeMounts: postgresVolumeMounts,
