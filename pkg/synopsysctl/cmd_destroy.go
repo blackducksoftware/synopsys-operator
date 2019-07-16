@@ -53,7 +53,10 @@ var destroyCmd = &cobra.Command{
 		if len(args) > 0 {
 			for _, operatorNamespace := range args {
 				log.Infof("destroying Synopsys Operator in namespace '%s'...", operatorNamespace)
-				return destroy(operatorNamespace)
+				err := destroy(operatorNamespace)
+				if err != nil {
+					log.Warnf("%s", err)
+				}
 			}
 		} else {
 			operatorNamespace := DefaultOperatorNamespace
