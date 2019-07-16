@@ -24,7 +24,6 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
 )
 
 // ReadFileData returns the information within a file as a string
@@ -33,5 +32,5 @@ func ReadFileData(filepath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to read from file %s: %s", filepath, err)
 	}
-	return strings.TrimSuffix(string(data), "\n"), nil
+	return string(data), nil
 }
