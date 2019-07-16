@@ -38,6 +38,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -273,6 +274,36 @@ func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blac
 	}
 	blackDuck.Kind = "Blackduck"
 	blackDuck.APIVersion = "synopsys.com/v1"
+
+	// Get PVCs from app
+	app, err := getDefaultApp(nativeClusterType)
+	if err != nil {
+		return nil
+	}
+	cList, err := app.Blackduck().GetComponents(blackDuck, blackduckapp.PVCResources)
+	m := map[string]string{}
+	for _, pvc := range cList.PersistentVolumeClaims {
+		name := pvc.GetName()
+		sizeQuanitity := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+		sizeCanonical := sizeQuanitity.String()
+		m[name] = sizeCanonical
+	}
+	// Add User's PVCs to the map
+	currSpecPVCs := blackDuck.Spec.PVC
+	for _, specPvc := range currSpecPVCs {
+		m[specPvc.Name] = specPvc.Size
+
+	}
+	// Add the map's PVCs to the spec
+	blackDuck.Spec.PVC = []blackduckv1.PVC{}
+	for pvcName, pvcSize := range m {
+		blackDuck.Spec.PVC = append(blackDuck.Spec.PVC,
+			blackduckv1.PVC{
+				Name: pvcName,
+				Size: pvcSize,
+			})
+	}
+
 	return blackDuck
 }
 

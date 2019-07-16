@@ -80,52 +80,7 @@ func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 		ExposeService:     NONE,
 		Environs:          []string{},
 		ImageRegistries:   []string{},
-		PVC: []blackduckv1.PVC{
-			{
-				Name: "blackduck-postgres",
-				Size: "150Gi",
-			},
-			{
-				Name: "blackduck-authentication",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-cfssl",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-registration",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-solr",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-webapp",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-logstash",
-				Size: "20Gi",
-			},
-			{
-				Name: "blackduck-zookeeper-data",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-zookeeper-datalog",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-uploadcache-data",
-				Size: "100Gi",
-			},
-			{
-				Name: "blackduck-uploadcache-key",
-				Size: "2Gi",
-			},
-		},
+		PVC:               []blackduckv1.PVC{},
 	}
 }
 
@@ -137,53 +92,12 @@ func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.Blackduck
 		Size:              "small",
 		LivenessProbes:    false,
 		PersistentStorage: true,
-		PVC: []blackduckv1.PVC{
-			{
-				Name: "blackduck-authentication",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-cfssl",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-registration",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-solr",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-webapp",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-logstash",
-				Size: "20Gi",
-			},
-			{
-				Name: "blackduck-zookeeper-data",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-zookeeper-datalog",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-uploadcache-data",
-				Size: "100Gi",
-			},
-			{
-				Name: "blackduck-uploadcache-key",
-				Size: "2Gi",
-			},
-		},
-		CertificateName: "default",
-		Type:            "Artifacts",
-		ExposeService:   NONE,
-		Environs:        []string{},
-		ImageRegistries: []string{},
+		PVC:               []blackduckv1.PVC{},
+		CertificateName:   "default",
+		Type:              "Artifacts",
+		ExposeService:     NONE,
+		Environs:          []string{},
+		ImageRegistries:   []string{},
 	}
 }
 
@@ -195,49 +109,12 @@ func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 		Size:              "small",
 		LivenessProbes:    false,
 		PersistentStorage: true,
-		PVC: []blackduckv1.PVC{
-			{
-				Name: "blackduck-postgres",
-				Size: "150Gi",
-			},
-			{
-				Name: "blackduck-authentication",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-cfssl",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-registration",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-solr",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-webapp",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-logstash",
-				Size: "20Gi",
-			},
-			{
-				Name: "blackduck-zookeeper-data",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-zookeeper-datalog",
-				Size: "2Gi",
-			},
-		},
-		CertificateName: "default",
-		Type:            "Artifacts",
-		ExposeService:   NONE,
-		Environs:        []string{},
-		ImageRegistries: []string{},
+		PVC:               []blackduckv1.PVC{},
+		CertificateName:   "default",
+		Type:              "Artifacts",
+		ExposeService:     NONE,
+		Environs:          []string{},
+		ImageRegistries:   []string{},
 	}
 }
 
@@ -249,42 +126,9 @@ func GetBlackDuckDefaultExternalPersistentStorageV1() *blackduckv1.BlackduckSpec
 		Size:              "small",
 		LivenessProbes:    false,
 		PersistentStorage: true,
-		PVC: []blackduckv1.PVC{
-			{
-				Name: "blackduck-authentication",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-cfssl",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-registration",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-solr",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-webapp",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-logstash",
-				Size: "20Gi",
-			},
-			{
-				Name: "blackduck-zookeeper-data",
-				Size: "2Gi",
-			},
-			{
-				Name: "blackduck-zookeeper-datalog",
-				Size: "2Gi",
-			},
-		},
-		Type:          "Artifacts",
-		ExposeService: NONE,
+		PVC:               []blackduckv1.PVC{},
+		Type:              "Artifacts",
+		ExposeService:     NONE,
 	}
 }
 
