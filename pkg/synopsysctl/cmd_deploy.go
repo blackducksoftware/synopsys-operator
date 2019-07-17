@@ -209,9 +209,9 @@ func checkUpdateCustomResource(crdType string, namespace string, scope apiextens
 // getSpecToDeploySOperator returns the config from creating Synopsys Operator
 func getSpecToDeploySOperator(crds []string) (*soperator.SpecConfig, error) {
 	// verify Synopsys Operator image has a tag
-	imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
-	if !imageHasTag {
-		return nil, fmt.Errorf("Synopsys Operator image doesn't have a tag: %s", synopsysOperatorImage)
+	// validate Synopsys Operator image
+	if _, err := util.ValidateImageString(synopsysOperatorImage); err != nil {
+		return nil, err
 	}
 	// generate random string as SEAL key
 	log.Debugf("getting Seal Key")
