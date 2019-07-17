@@ -33,6 +33,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -182,7 +183,10 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	routeClient := util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
+	var routeClient *routeclient.RouteV1Client
+	if util.IsOpenshift(c.kubeClient) {
+		routeClient = util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
+	}
 	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1), nil, routeClient)
 }
 

@@ -748,20 +748,22 @@ func addNameLabels(namespace string, name string, appName string) error {
 		}
 	}
 
-	routeClient := util.GetRouteClient(restconfig, kubeClient, namespace)
-	if routeClient != nil {
-		routes, err := util.ListRoutes(routeClient, namespace, fmt.Sprintf("app=%s", appName))
-		if err != nil {
-			return fmt.Errorf("unable to list routes for %s %s in namespace %s due to %+v", appName, name, namespace, err)
-		}
+	if util.IsOpenshift(kubeClient) {
+		routeClient := util.GetRouteClient(restconfig, kubeClient, namespace)
+		if routeClient != nil {
+			routes, err := util.ListRoutes(routeClient, namespace, fmt.Sprintf("app=%s", appName))
+			if err != nil {
+				return fmt.Errorf("unable to list routes for %s %s in namespace %s due to %+v", appName, name, namespace, err)
+			}
 
-		for _, route := range routes.Items {
-			if _, ok := route.Labels["name"]; !ok || appName == util.OpsSightName {
-				route.Labels = util.InitLabels(route.Labels)
-				route.Labels["name"] = name
-				_, err = util.UpdateRoute(routeClient, namespace, &route)
-				if err != nil {
-					return fmt.Errorf("unable to update %s route in namespace %s due to %+v", route.GetName(), namespace, err)
+			for _, route := range routes.Items {
+				if _, ok := route.Labels["name"]; !ok || appName == util.OpsSightName {
+					route.Labels = util.InitLabels(route.Labels)
+					route.Labels["name"] = name
+					_, err = util.UpdateRoute(routeClient, namespace, &route)
+					if err != nil {
+						return fmt.Errorf("unable to update %s route in namespace %s due to %+v", route.GetName(), namespace, err)
+					}
 				}
 			}
 		}
