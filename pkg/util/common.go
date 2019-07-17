@@ -1397,7 +1397,10 @@ func GetClusterScope(apiExtensionClient *apiextensionsclient.Clientset) bool {
 	return false
 }
 
-// GetOperatorNamespace returns the namespace of the synopsys operator based on the labels
+// GetOperatorNamespace uses labels to return the namespace of the synopsys operator based on
+// the provided namespace. In cluster scoped mode it will return the namespaces of all operators if provided
+// namespace=NamespaceAll. In namespace scoped mode it will return nil if there is no operator in
+// the namespace
 func GetOperatorNamespace(clientset *kubernetes.Clientset, namespace string) ([]string, error) {
 	namespaces := make(map[string]string, 0)
 	// check if operator is already installed
