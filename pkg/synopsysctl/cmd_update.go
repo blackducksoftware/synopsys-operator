@@ -85,10 +85,9 @@ func getUpdatedOperator(currOperatorSpec *soperator.SpecConfig, cmd *cobra.Comma
 	// update Spec with changes from user's flags
 	if cmd.Flag("synopsys-operator-image").Changed {
 		log.Debugf("updating Synopsys Operator's image to '%s'", synopsysOperatorImage)
-		// check image tag
-		imageHasTag := len(strings.Split(synopsysOperatorImage, ":")) == 2
-		if !imageHasTag {
-			return nil, nil, fmt.Errorf("Synopsys Operator's image does not have a tag: %s", synopsysOperatorImage)
+		// check Synopsys Operator image
+		if _, err := util.ValidateImageString(synopsysOperatorImage); err != nil {
+			return nil, nil, err
 		}
 		newOperatorSpec.Image = synopsysOperatorImage
 	}
