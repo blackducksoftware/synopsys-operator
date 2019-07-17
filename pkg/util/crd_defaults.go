@@ -302,7 +302,7 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 		Perceptor: &opssightv1.Perceptor{
 			Name:                           "core",
 			Port:                           3001,
-			Image:                          "docker.io/blackducksoftware/opssight-core:2.2.3",
+			Image:                          "docker.io/blackducksoftware/opssight-core:2.2.4",
 			CheckForStalledScansPauseHours: 999999,
 			StalledScanClientTimeoutHours:  999999,
 			ModelMetricsPauseSeconds:       15,
@@ -315,14 +315,14 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			Scanner: &opssightv1.Scanner{
 				Name:                 "scanner",
 				Port:                 3003,
-				Image:                "docker.io/blackducksoftware/opssight-scanner:2.2.3",
+				Image:                "docker.io/blackducksoftware/opssight-scanner:2.2.4",
 				ClientTimeoutSeconds: 600,
 			},
 			ImageFacade: &opssightv1.ImageFacade{
 				Name:               "image-getter",
 				Port:               3004,
 				InternalRegistries: []*opssightv1.RegistryAuth{},
-				Image:              "docker.io/blackducksoftware/opssight-image-getter:2.2.3",
+				Image:              "docker.io/blackducksoftware/opssight-image-getter:2.2.4",
 				ServiceAccount:     "scanner",
 				ImagePullerType:    "skopeo",
 			},
@@ -334,11 +334,11 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			Port:                 3002,
 			ImagePerceiver: &opssightv1.ImagePerceiver{
 				Name:  "image-processor",
-				Image: "docker.io/blackducksoftware/opssight-image-processor:2.2.3",
+				Image: "docker.io/blackducksoftware/opssight-image-processor:2.2.4",
 			},
 			PodPerceiver: &opssightv1.PodPerceiver{
 				Name:  "pod-processor",
-				Image: "docker.io/blackducksoftware/opssight-pod-processor:2.2.3",
+				Image: "docker.io/blackducksoftware/opssight-pod-processor:2.2.4",
 			},
 			ServiceAccount:            "processor",
 			AnnotationIntervalSeconds: 30,
@@ -389,7 +389,7 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 		Perceptor: &opssightv1.Perceptor{
 			Name:                           "core",
 			Port:                           3001,
-			Image:                          "docker.io/blackducksoftware/opssight-core:2.2.3",
+			Image:                          "docker.io/blackducksoftware/opssight-core:2.2.4",
 			CheckForStalledScansPauseHours: 999999,
 			StalledScanClientTimeoutHours:  999999,
 			ModelMetricsPauseSeconds:       15,
@@ -402,14 +402,14 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			Scanner: &opssightv1.Scanner{
 				Name:                 "scanner",
 				Port:                 3003,
-				Image:                "docker.io/blackducksoftware/opssight-scanner:2.2.3",
+				Image:                "docker.io/blackducksoftware/opssight-scanner:2.2.4",
 				ClientTimeoutSeconds: 600,
 			},
 			ImageFacade: &opssightv1.ImageFacade{
 				Name:               "image-getter",
 				Port:               3004,
 				InternalRegistries: []*opssightv1.RegistryAuth{},
-				Image:              "docker.io/blackducksoftware/opssight-image-getter:2.2.3",
+				Image:              "docker.io/blackducksoftware/opssight-image-getter:2.2.4",
 				ServiceAccount:     "scanner",
 				ImagePullerType:    "skopeo",
 			},
@@ -420,11 +420,11 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			EnablePodPerceiver:   true,
 			ImagePerceiver: &opssightv1.ImagePerceiver{
 				Name:  "image-processor",
-				Image: "docker.io/blackducksoftware/opssight-image-processor:2.2.3",
+				Image: "docker.io/blackducksoftware/opssight-image-processor:2.2.4",
 			},
 			PodPerceiver: &opssightv1.PodPerceiver{
 				Name:  "pod-processor",
-				Image: "docker.io/blackducksoftware/opssight-pod-processor:2.2.3",
+				Image: "docker.io/blackducksoftware/opssight-pod-processor:2.2.4",
 			},
 			ServiceAccount:            "opssight-processor",
 			AnnotationIntervalSeconds: 30,
