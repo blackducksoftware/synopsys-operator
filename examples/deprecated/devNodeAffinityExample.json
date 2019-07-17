@@ -2,28 +2,10 @@
   "documentation": [
     {
       "affinityType": "Hard",
-      "key": "kubernetes.io/hostname",
-      "op": "In",
-      "values": [
-        "gke-yb-multiple-nodes-default-pool-27fa3cc9-4qm6"
-      ]
-    },
-    {
-      "affinityType": "Hard",
       "key": "beta.kubernetes.io/arch",
       "op": "In",
       "values": [
         "amd64"
-      ]
-    }
-  ],
-  "zookeeper": [
-    {
-      "affinityType": "Hard",
-      "key": "kubernetes.io/hostname",
-      "op": "In",
-      "values": [
-        "gke-yb-multiple-nodes-default-pool-27fa3cc9-gc7r"
       ]
     }
   ]
