@@ -1329,38 +1329,51 @@ func WaitUntilPodsAreReady(clientset *kubernetes.Clientset, namespace string, la
 		select {
 		case <-timeout.C:
 			// check right before the timeout; this will handle both when timeout is less than ticker; and also when timeout is not a multiple of 10 seconds
-			err := IsPodReady(clientset, namespace, labelSelector)
-			if err == nil {
+			podsAreReady, err := ArePodsReady(clientset, namespace, labelSelector)
+			if err != nil {
+				return err
+			}
+			if podsAreReady == false {
 				return nil
 			}
 			return fmt.Errorf("[NS: %s | Label: %s] the pods weren't ready - timing out after %d seconds", namespace, labelSelector, timeoutInSeconds)
 		case <-ticker.C:
 			// log.Debugf("Ticker ticked at: %v", time.Now())
-			err := IsPodReady(clientset, namespace, labelSelector)
-			if err == nil {
+			podsAreReady, err := ArePodsReady(clientset, namespace, labelSelector)
+			if err != nil {
+				return err
+			}
+			if podsAreReady == true {
 				return nil
 			}
 		}
 	}
 }
 
-// IsPodReady returns whether the pods are ready or not
-func IsPodReady(clientset *kubernetes.Clientset, namespace string, labelSelector string) error {
+// ArePodsReady returns whether the pods are ready or not. Returns an error if pods will never become ready.
+func ArePodsReady(clientset *kubernetes.Clientset, namespace string, labelSelector string) (bool, error) {
 	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 
+	// Check if all the pods are ready
+	arePodsReady := true
 	for _, p := range pods.Items {
+		// Skip if a pod is in a failed or unknown state
+		if p.Status.Phase == corev1.PodFailed || p.Status.Phase == corev1.PodUnknown {
+			continue
+		}
+		// verify the pod is ready, otherwise set arePodsReady to false
 		for _, condition := range p.Status.Conditions {
 			if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionFalse {
-				return fmt.Errorf("[NS: %s | Label: %s] the pods weren't ready", namespace, labelSelector)
+				arePodsReady = false
 			}
 		}
 	}
-	return nil
+	return arePodsReady, nil
 }
 
 // GetClusterScopeByName returns whether the CRD is cluster scope
