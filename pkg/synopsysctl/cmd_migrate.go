@@ -29,6 +29,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -53,32 +54,55 @@ var migrateCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+		// validate Synopsys Operator image
+		if _, err := util.ValidateImageString(synopsysOperatorImage); err != nil {
+			return err
+		}
+		// validate busy box image
 		if _, err := util.ValidateImageString(busyBoxImage); err != nil {
 			return err
 		}
-
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Check if a namespace was provided, else determine the namespace from the cluster
+		namespaceToMigrate := ""
 		if len(namespace) > 0 {
-			return migrate(namespace)
+			namespaceToMigrate = namespace
+		} else {
+			isClusterScoped := util.GetClusterScope(apiExtensionClient)
+			if isClusterScoped {
+				namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
+				if err != nil {
+					return err
+				}
+				if len(namespaces) > 1 {
+					return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to migrate")
+				}
+				namespaceToMigrate = namespaces[0]
+			} else {
+				return fmt.Errorf("namespace of Synopsys Operator must be provided in namespace scoped mode")
+			}
+		}
+		// Migrate the CRDs
+		err := migrate(namespaceToMigrate)
+		if err != nil {
+			return err
 		}
 
-		// get operator namespace
-		isClusterScoped := util.GetClusterScope(apiExtensionClient)
-		if isClusterScoped {
-			namespaces, err := util.GetOperatorNamespace(kubeClient, metav1.NamespaceAll)
-			if err != nil {
-				return err
-			}
-
-			if len(namespaces) > 1 {
-				return fmt.Errorf("more than 1 Synopsys Operator found in your cluster. please pass the namespace of the Synopsys Operator that you want to migrate")
-			}
-			return migrate(namespaces[0])
+		// Update the Operator Image
+		currOperatorSpec, err := soperator.GetOldOperatorSpec(restconfig, kubeClient, namespaceToMigrate) // Get current Synopsys Operator Spec
+		if err != nil {
+			return err
 		}
-
-		return fmt.Errorf("namespace of the Synopsys Operator need to be provided")
+		newOperatorSpec := *currOperatorSpec          // Make copy
+		newOperatorSpec.Image = synopsysOperatorImage // Set new image
+		sOperatorCreater := soperator.NewCreater(false, restconfig, kubeClient)
+		err = sOperatorCreater.EnsureSynopsysOperator(namespaceToMigrate, blackDuckClient, opsSightClient, alertClient, currOperatorSpec, &newOperatorSpec) // this will scale up the deployment
+		if err != nil {
+			return fmt.Errorf("unable to update Synopsys Operator due to %+v", err)
+		}
+		return nil
 	},
 }
 
@@ -854,7 +878,8 @@ func init() {
 	// Add Migrate Commands
 	rootCmd.AddCommand(migrateCmd)
 	migrateCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	migrateCmd.Flags().StringVarP(&busyBoxImage, "busybox-image", "i", busyBoxImage, "Image URL of Busybox")
+	migrateCmd.Flags().StringVarP(&busyBoxImage, "busybox-image", "b", busyBoxImage, "Image URL of Busybox")
+	migrateCmd.Flags().StringVarP(&synopsysOperatorImage, "update-image", "i", synopsysOperatorImage, "Image to migrate the Synopsys Operator instance to")
 	// Add Migrate Cleanup command to Migrate command
 	migrateCmd.AddCommand(migrateCleanupCmd)
 	migrateCleanupCmd.Flags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
