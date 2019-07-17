@@ -41,7 +41,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -616,7 +615,7 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 var updateBlackDuckRootKeyCmd = &cobra.Command{
 	Use:           "masterkey NEW_SEAL_KEY STORED_MASTER_KEY_FILE_PATH",
 	Example:       "synopsysctl update blackduck masterkey <new seal key> <file path of the stored master key>",
-	Short:         "Update the root key to all Black Duck instances for source code upload functionality",
+	Short:         "Update the master key to all Black Duck instances for source code upload functionality",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -627,16 +626,9 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var crdScope apiextensions.ResourceScope
-		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, util.BlackDuckCRDName)
+		_, _, crdScope, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
 		if err != nil {
-			return fmt.Errorf("unable to get Custom Resource Definition '%s' in the cluster due to %+v", util.BlackDuckCRDName, err)
-		}
-		crdScope = crd.Spec.Scope
-
-		// Check Number of Arguments
-		if crdScope != apiextensions.ClusterScoped && len(namespace) == 0 {
-			return fmt.Errorf("must provide a namespace to update the Black Duck instance")
+			return err
 		}
 
 		operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(kubeClient, util.BlackDuckCRDName, crdScope, namespace)
@@ -659,7 +651,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 
 		for _, blackduck := range blackducks.Items {
 			blackDuckName := blackduck.Name
-			blackDuckNamespace := blackduck.Namespace
+			blackDuckNamespace := blackduck.Spec.Namespace
 			log.Infof("updating Black Duck '%s's master key in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 			fileName := filepath.Join(filePath, fmt.Sprintf("%s-%s.key", blackDuckNamespace, blackDuckName))
