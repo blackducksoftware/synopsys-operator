@@ -30,13 +30,11 @@ import (
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
-	util "github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -133,8 +131,7 @@ func DetermineClusterClients(restConfig *rest.Config, kubeClient *kubernetes.Cli
 
 	// Add Openshift rules
 	openshiftTest := false
-	routeClient := operatorutil.GetRouteClient(restConfig, kubeClient, metav1.NamespaceAll) // kube doesn't have a route client but openshift does
-	if routeClient != nil {
+	if util.IsOpenshift(kubeClient) {
 		openshiftTest = true
 	}
 
