@@ -228,7 +228,7 @@ func getSpecToDeploySOperator(crds []string) (*soperator.SpecConfig, error) {
 	}
 	// Deploy Synopsys Operator
 	log.Debugf("creating Synopsys Operator's components")
-	soperatorSpec := soperator.NewSOperator(operatorNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(restconfig, kubeClient, operatorNamespace),
+	soperatorSpec := soperator.NewSOperator(operatorNamespace, synopsysOperatorImage, exposeUI, soperator.GetClusterType(kubeClient),
 		strings.ToUpper(dryRun) == "TRUE", logLevel, threadiness, postgresRestartInMins, podWaitTimeoutSeconds, resyncIntervalInSeconds,
 		terminationGracePeriodSeconds, sealKey, restconfig, kubeClient, cert, key, isClusterScoped, crds, admissionWebhookListener)
 	return soperatorSpec, nil

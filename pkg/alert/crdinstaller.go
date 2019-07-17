@@ -137,15 +137,15 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	routeClient := util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
-
 	c.handler = &Handler{
 		config:      c.config,
 		kubeConfig:  c.kubeConfig,
 		kubeClient:  c.kubeClient,
 		alertClient: c.alertClient,
 		defaults:    c.defaults.(*alertapi.AlertSpec),
-		routeClient: routeClient,
+	}
+	if util.IsOpenshift(c.kubeClient) {
+		c.handler.routeClient = util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
 	}
 }
 

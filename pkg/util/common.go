@@ -57,7 +57,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -1085,22 +1084,10 @@ func DeleteRoleBinding(clientset *kubernetes.Clientset, namespace string, name s
 // fails due to an error or due to being on kubernetes (doesn't support routes)
 func GetRouteClient(restConfig *rest.Config, clientset *kubernetes.Clientset, namespace string) *routeclient.RouteV1Client {
 	routeClient, err := routeclient.NewForConfig(restConfig)
-	if routeClient == nil || err != nil {
+	if err != nil {
 		return nil
 	}
-
-	ocVersion, err := GetOcVersion(clientset)
-	if err == nil && len(ocVersion) > 0 {
-		return routeClient
-	}
-
-	// if not within container, check using list routes to determine whether it is an OpenShift cluster
-	_, err = ListRoutes(routeClient, namespace, "")
-	if err == nil {
-		return routeClient
-	}
-
-	return nil
+	return routeClient
 }
 
 // GetRoute gets an OpenShift routes
@@ -1555,20 +1542,14 @@ func GetKubernetesVersion(clientset *kubernetes.Clientset) (string, error) {
 	return "", err
 }
 
-// GetOcVersion will return the version of openshift
-func GetOcVersion(clientset *kubernetes.Clientset) (string, error) {
-	body, err := clientset.Discovery().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
+// IsOpenshift will whether it is an openshift cluster
+func IsOpenshift(clientset *kubernetes.Clientset) bool {
+	body, err := clientset.Discovery().RESTClient().Get().AbsPath("/").Do().Raw()
 	if err != nil {
-		return "", err
+		return false
 	}
 
-	var info version.Info
-	err = json.Unmarshal(body, &info)
-	if err != nil {
-		return "", fmt.Errorf("unable to parse the server version: %v", err)
-	}
-
-	return info.GitVersion, err
+	return strings.Contains(string(body), "openshift")
 }
 
 // IsOperatorExist returns whether the operator exist or not
