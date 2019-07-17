@@ -56,7 +56,7 @@ func (in *Alert) DeepCopyObject() runtime.Object {
 func (in *AlertList) DeepCopyInto(out *AlertList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Alert, len(*in))
