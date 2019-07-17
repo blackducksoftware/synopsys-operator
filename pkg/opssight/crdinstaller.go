@@ -169,8 +169,6 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	routeClient := util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
-
 	hubClient, err := hubclient.NewForConfig(c.kubeConfig)
 	if err != nil {
 		log.Errorf("unable to create the hub client for opssight: %+v", err)
@@ -184,9 +182,12 @@ func (c *CRDInstaller) CreateHandler() {
 		OpsSightClient:   c.opssightclient,
 		Namespace:        c.config.Namespace,
 		OSSecurityClient: osClient,
-		RouteClient:      routeClient,
 		Defaults:         c.defaults.(*opssightapi.OpsSightSpec),
 		HubClient:        hubClient,
+	}
+
+	if util.IsOpenshift(c.kubeClient) {
+		c.handler.RouteClient = util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
 	}
 }
 
