@@ -22,15 +22,26 @@ under the License.
 package blackduck
 
 import (
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	util2 "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"net/http"
+	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	latestblackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
-	v1blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -55,7 +66,1605 @@ type Blackduck struct {
 	kubeClient      *kubernetes.Clientset
 	blackduckClient *blackduckclientset.Clientset
 	routeClient     *routeclient.RouteV1Client
-	creaters        []Creater
+}
+
+var publicVersions = map[string]types.PublicVersion{
+	"2018.12.0": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2018.12.0",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2018.12.0",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2018.12.0",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2018.12.0",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2018.12.0",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.3",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2018.12.0",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.2",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.0",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+			"solr": {
+				Identifier: types.RcSolrV1,
+				Container: map[types.ContainerName]string{
+					types.SolrContainerName: "blackducksoftware/blackduck-solr:1.0.0",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceSolrV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2018.12.1": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2018.12.1",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2018.12.1",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2018.12.1",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2018.12.1",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2018.12.1",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.3",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2018.12.1",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.2",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.0",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+			"solr": {
+				Identifier: types.RcSolrV1,
+				Container: map[types.ContainerName]string{
+					types.SolrContainerName: "blackducksoftware/blackduck-solr:1.0.0",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceSolrV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2018.12.2": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2018.12.2",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2018.12.2",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2018.12.2",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2018.12.2",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2018.12.2",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.3",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2018.12.2",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.2",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.0",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+			"solr": {
+				Identifier: types.RcSolrV1,
+				Container: map[types.ContainerName]string{
+					types.SolrContainerName: "blackducksoftware/blackduck-solr:1.0.0",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceSolrV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2018.12.3": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2018.12.3",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2018.12.3",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2018.12.3",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2018.12.3",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2018.12.3",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.3",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2018.12.3",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.2",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.0",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+			"solr": {
+				Identifier: types.RcSolrV1,
+				Container: map[types.ContainerName]string{
+					types.SolrContainerName: "blackducksoftware/blackduck-solr:1.0.0",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceSolrV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2018.12.4": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2018.12.4",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2018.12.4",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2018.12.4",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2018.12.4",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2018.12.4",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.3",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2018.12.4",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.2",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.0",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+			"solr": {
+				Identifier: types.RcSolrV1,
+				Container: map[types.ContainerName]string{
+					types.SolrContainerName: "blackducksoftware/blackduck-solr:1.0.0",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceSolrV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.2.0": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.2.0",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.2.0",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.2.0",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.2.0",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.2.0",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.3",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.2.0",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.2",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.2",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+			"solr": {
+				Identifier: types.RcSolrV1,
+				Container: map[types.ContainerName]string{
+					types.SolrContainerName: "blackducksoftware/blackduck-solr:1.0.0",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceSolrV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.2.1": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.2.1",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.2.1",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.2.1",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.2.1",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.2.1",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.3",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.2.1",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.2",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.2",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+			"solr": {
+				Identifier: types.RcSolrV1,
+				Container: map[types.ContainerName]string{
+					types.SolrContainerName: "blackducksoftware/blackduck-solr:1.0.0",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceSolrV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.2.2": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.2.2",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.2.2",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.2.2",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.2.2",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.2.2",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.3",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.2.2",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.2",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.2",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+			"solr": {
+				Identifier: types.RcSolrV1,
+				Container: map[types.ContainerName]string{
+					types.SolrContainerName: "blackducksoftware/blackduck-solr:1.0.0",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceSolrV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.4.0": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.4.0",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.4.0",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.4.0",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.4.0",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.4.0",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.8",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.4.0",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.4",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.7",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.4.1": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.4.1",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.4.1",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.4.1",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.4.1",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.4.1",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.8",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.4.1",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.4",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.7",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.4.2": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.4.2",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.4.2",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.4.2",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.4.2",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.4.2",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.8",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.4.2",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.4",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.7",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.4.3": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.4.3",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.01",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.4.3",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.4.3",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.4.3",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.4.3",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.8",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.4.3",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.4",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.7",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.6.0": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.6.0",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.03",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.6.0",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.6.0",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.6.0",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.6.0",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.8",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.6.0",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.4",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.7",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceExposeV1,
+		},
+	},
+	"2019.6.1": {
+		Size: types.SizeV1,
+		RCs: map[string]types.PublicRC{
+			"authentication": {
+				Identifier: types.RcAuthenticationV1,
+				Container: map[types.ContainerName]string{
+					types.AuthenticationContainerName: "blackducksoftware/blackduck-authentication:2019.6.1",
+				},
+			},
+			"binaryscanner": {
+				Identifier: types.RcBinaryScannerV1,
+				Container: map[types.ContainerName]string{
+					types.BinaryScannerContainerName: "blackducksoftware/appcheck-worker:2019.03",
+				},
+			},
+			"cfssl": {
+				Identifier: types.RcCfsslV1,
+				Container: map[types.ContainerName]string{
+					types.CfsslContainerName: "blackducksoftware/blackduck-cfssl:1.0.0",
+				},
+			},
+			"documentation": {
+				Identifier: types.RcDocumentationV1,
+				Container: map[types.ContainerName]string{
+					types.DocumentationContainerName: "blackducksoftware/blackduck-documentation:2019.6.1",
+				},
+			},
+			"jobrunner": {
+				Identifier: types.RcJobrunnerV1,
+				Container: map[types.ContainerName]string{
+					types.JobrunnerContainerName: "blackducksoftware/blackduck-jobrunner:2019.6.1",
+				},
+			},
+			"rabbitmq": {
+				Identifier: types.RcRabbitmqV1,
+				Container: map[types.ContainerName]string{
+					types.RabbitMQContainerName: "blackducksoftware/rabbitmq:1.0.0",
+				},
+			},
+			"registration": {
+				Identifier: types.RcRegistrationV1,
+				Container: map[types.ContainerName]string{
+					types.RegistrationContainerName: "blackducksoftware/blackduck-registration:2019.6.1",
+				},
+			},
+			"scan": {
+				Identifier: types.RcScanV1,
+				Container: map[types.ContainerName]string{
+					types.ScanContainerName: "blackducksoftware/blackduck-scan:2019.6.1",
+				},
+			},
+			"uploadcache": {
+				Identifier: types.RcUploadCacheV1,
+				Container: map[types.ContainerName]string{
+					types.UploadCacheContainerName: "blackducksoftware/blackduck-upload-cache:1.0.8",
+				},
+			},
+			"webapp-logstash": {
+				Identifier: types.RcWebappLogstashV1,
+				Container: map[types.ContainerName]string{
+					types.WebappContainerName:   "blackducksoftware/blackduck-webapp:2019.6.1",
+					types.LogstashContainerName: "blackducksoftware/blackduck-logstash:1.0.4",
+				},
+			},
+			"webserver": {
+				Identifier: types.RcWebserverV1,
+				Container: map[types.ContainerName]string{
+					types.WebserverContainerName: "blackducksoftware/blackduck-nginx:1.0.7",
+				},
+			},
+			"zookeeper": {
+				Identifier: types.RcZookeeperV1,
+				Container: map[types.ContainerName]string{
+					types.ZookeeperContainerName: "blackducksoftware/blackduck-zookeeper:1.0.0",
+				},
+			},
+			"postgres": {
+				Identifier: types.RcPostgresV1,
+				Container: map[types.ContainerName]string{
+					types.PostgresContainerName: "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1",
+				},
+			},
+		},
+		Secrets: []types.ComponentName{
+			types.SecretUploadCacheV1,
+			types.SecretProxyCertificateV1,
+			types.SecretAuthCertificateV1,
+			types.SecretWebCertificateV1,
+			types.SecretPostgresV1,
+		},
+		ConfigMaps: []types.ComponentName{
+			types.GlobalConfigmapV1,
+			types.DatabaseConfigmapV1,
+		},
+		Services: []types.ComponentName{
+			types.ServiceAuthentivationV1,
+			types.ServiceCfsslV1,
+			types.ServiceDocumentationV1,
+			types.ServiceRabbitMQV1,
+			types.ServiceRegistrationV1,
+			types.ServiceScanV1,
+			types.ServiceUploadCacheV1,
+			types.ServiceWebappV1,
+			types.ServiceLogstashV1,
+			types.ServiceWebserverV1,
+			types.ServiceZookeeperV1,
+			types.ServicePostgresV1,
+			types.ServiceExposeV1,
+		},
+	},
 }
 
 // NewBlackduck will return a Blackduck
@@ -76,30 +1685,13 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 		routeClient = util.GetRouteClient(kubeConfig, kubeclient, config.Namespace)
 	}
 
-	creaters := []Creater{
-		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
-		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
-	}
-
 	return &Blackduck{
 		config:          config,
 		kubeConfig:      kubeConfig,
 		kubeClient:      kubeclient,
 		blackduckClient: blackduckClient,
 		routeClient:     routeClient,
-		creaters:        creaters,
 	}
-}
-
-func (b *Blackduck) getCreater(version string) (Creater, error) {
-	for _, c := range b.creaters {
-		for _, v := range c.Versions() {
-			if strings.Compare(v, version) == 0 {
-				return c, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("version '%s' is not supported.  Supported versions: %s", version, strings.Join(b.Versions(), ", "))
 }
 
 func (b *Blackduck) ensureVersion(bd *v1.Blackduck) error {
@@ -170,46 +1762,417 @@ func (b *Blackduck) Delete(name string) error {
 // Versions returns the versions that the operator supports
 func (b *Blackduck) Versions() []string {
 	var versions []string
-	for _, c := range b.creaters {
-		for _, v := range c.Versions() {
-			versions = append(versions, v)
-		}
+	for v := range publicVersions {
+		versions = append(versions, v)
 	}
 	return versions
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
-func (b *Blackduck) Ensure(bd *v1.Blackduck) error {
+func (b *Blackduck) Ensure(blackduck *v1.Blackduck) error {
 	// If the version is not specified then we set it to be the latest.
-	if err := b.ensureVersion(bd); err != nil {
-		return err
-	}
-	creater, err := b.getCreater(bd.Spec.Version)
-	if err != nil {
+	if err := b.ensureVersion(blackduck); err != nil {
 		return err
 	}
 
-	return creater.Ensure(bd)
+	newBlackuck := blackduck.DeepCopy()
+
+	version, ok := publicVersions[blackduck.Spec.Version]
+	if !ok {
+		return fmt.Errorf("versiom %s is not supported", blackduck.Spec.Version)
+	}
+
+	cp, err := store.GetComponents(version, b.config, b.kubeClient, blackduck)
+
+	pvcs := b.GetPVCs(blackduck)
+
+	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
+		// Save/Update the PVCs for the Black Duck
+		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
+		_, errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("stop blackduck: %+v", errors)
+		}
+	} else if strings.EqualFold(blackduck.Spec.DesiredState, "DbMigrate") {
+		// Save/Update the PVCs for the Black Duck
+		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
+		isPatched, errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("migrate blackduck: %+v", errors)
+		}
+
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
+			&cp, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackduck.Name), false)
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update postgres component: %+v", errors)
+		}
+	} else {
+		// Save/Update the PVCs for the Black Duck
+		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
+			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
+		isPatched, errors := commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update pvc: %+v", errors)
+		}
+
+		// install postgres
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
+			&cp, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackduck.Name), false)
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update postgres component: %+v", errors)
+		}
+		// log.Debugf("created/updated postgres component for %s", blackduck.Spec.Namespace)
+
+		//Check postgres and initialize if needed.
+		if blackduck.Spec.ExternalPostgres == nil {
+			// TODO return whether we re-initialized or not
+			err = b.initPostgres(blackduck.Name, &blackduck.Spec)
+			if err != nil {
+				return err
+			}
+		}
+
+		// install cfssl
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
+			&cp, fmt.Sprintf("app=%s,name=%s,component in (configmap,serviceAccount,cfssl)", util.BlackDuckName, blackduck.Name), false)
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update cfssl component: %+v", errors)
+		}
+
+		err = util.WaitUntilPodsAreReady(b.kubeClient, blackduck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component=cfssl", util.BlackDuckName, blackduck.Name), b.config.PodWaitTimeoutSeconds)
+		if err != nil {
+			return fmt.Errorf("the cfssl pod is not ready: %v", err)
+		}
+
+		// deploy non postgres and uploadcache component
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
+			&cp, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl,configmap,serviceAccount,uploadcache,route)", util.BlackDuckName, blackduck.Name), false)
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update non postgres, cfssl and uploadcache components: %+v", errors)
+		}
+		// log.Debugf("created/updated non postgres and upload cache component for %s", blackduck.Spec.Namespace)
+
+		// deploy upload cache component
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
+			&cp, fmt.Sprintf("app=%s,name=%s,component in (uploadcache,route)", util.BlackDuckName, blackduck.Name), false)
+		isPatched, errors = commonConfig.CRUDComponents()
+		if len(errors) > 0 {
+			return fmt.Errorf("update upload cache component: %+v", errors)
+		}
+		// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
+
+		if strings.ToUpper(blackduck.Spec.ExposeService) == util.NODEPORT {
+			newBlackuck.Status.IP, err = util2.GetNodePortIPAddress(b.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
+		} else if strings.ToUpper(blackduck.Spec.ExposeService) == util.LOADBALANCER {
+			newBlackuck.Status.IP, err = util2.GetLoadBalancerIPAddress(b.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
+		}
+
+		// get Route on Openshift
+		if strings.ToUpper(blackduck.Spec.ExposeService) == util.OPENSHIFT && b.routeClient != nil {
+			route, _ := util.GetRoute(b.routeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, ""))
+			if route != nil {
+				newBlackuck.Status.IP = route.Spec.Host
+			}
+		}
+
+		err = util.WaitUntilPodsAreReady(b.kubeClient, blackduck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl)", util.BlackDuckName, blackduck.Name), b.config.PodWaitTimeoutSeconds)
+		if err != nil {
+			return fmt.Errorf("the remaining pods are not ready: %v", err)
+		}
+
+		// TODO wait for webserver to be up before we register
+		if len(blackduck.Spec.LicenseKey) > 0 {
+			if err := b.registerIfNeeded(blackduck); err != nil {
+				log.Infof("couldn't register blackduck %s: %v", blackduck.Name, err)
+			}
+		}
+	}
+
+	if !reflect.DeepEqual(blackduck.Status, newBlackuck.Status) {
+		bd, err := util.GetHub(b.blackduckClient, blackduck.Spec.Namespace, blackduck.Name)
+		if err != nil {
+			return err
+		}
+		bd.Status = newBlackuck.Status
+		if _, err := b.blackduckClient.SynopsysV1().Blackducks(blackduck.Spec.Namespace).Update(bd); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // GetComponents gets the Black Duck's creater and returns the components
 func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*api.ComponentList, error) {
 	// If the version is not specified then we set it to be the latest.
-	if err := b.ensureVersion(bd); err != nil {
-		return nil, err
-	}
-	creater, err := b.getCreater(bd.Spec.Version)
+	//if err := b.ensureVersion(bd); err != nil {
+	//	return nil, err
+	//}
+	//creater, err := b.getCreater(bd.Spec.Version)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//switch strings.ToUpper(compType) {
+	//case CRDResources:
+	//	return creater.GetComponents(bd)
+	//case DatabaseResources:
+	//	return creater.GetPostgresComponents(bd)
+	//case PVCResources:
+	//	pvcs := creater.GetPVC(bd)
+	//	return &api.ComponentList{PersistentVolumeClaims: pvcs}, nil
+	//}
+	//return nil, fmt.Errorf("invalid components type '%s'", compType)
+	return nil, nil
+}
+
+func (b Blackduck) initPostgres(name string, bdspec *blackduckapi.BlackduckSpec) error {
+	adminPassword, err := util.Base64Decode(bdspec.AdminPassword)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("%v: unable to decode adminPassword due to: %+v", bdspec.Namespace, err)
 	}
-	switch strings.ToUpper(compType) {
-	case CRDResources:
-		return creater.GetComponents(bd)
-	case DatabaseResources:
-		return creater.GetPostgresComponents(bd)
-	case PVCResources:
-		pvcs := creater.GetPVC(bd)
-		return &api.ComponentList{PersistentVolumeClaims: pvcs}, nil
+	userPassword, err := util.Base64Decode(bdspec.UserPassword)
+	if err != nil {
+		return fmt.Errorf("%v: unable to decode userPassword due to: %+v", bdspec.Namespace, err)
 	}
-	return nil, fmt.Errorf("invalid components type '%s'", compType)
+	postgresPassword, err := util.Base64Decode(bdspec.PostgresPassword)
+	if err != nil {
+		return fmt.Errorf("%v: unable to decode postgresPassword due to: %+v", bdspec.Namespace, err)
+	}
+
+	err = util.WaitUntilPodsAreReady(b.kubeClient, bdspec.Namespace, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, name), b.config.PodWaitTimeoutSeconds)
+	if err != nil {
+		return fmt.Errorf("the postgres pod is not yet ready: %v", err)
+	}
+
+	// Check if initialization is required.
+	db, err := database.NewDatabase(fmt.Sprintf("%s.%s.svc.cluster.local", util.GetResourceName(name, util.BlackDuckName, "postgres"), bdspec.Namespace), "postgres", "postgres", postgresPassword, "postgres")
+	if err != nil {
+		return err
+	}
+	defer db.Connection.Close()
+
+	// Wait for the DB to be up
+	if !db.WaitForDatabase(10) {
+		return fmt.Errorf("database %s is not accessible", bdspec.Namespace)
+	}
+
+	result, err := db.Connection.Exec("SELECT datname FROM pg_catalog.pg_database WHERE datname='bds_hub';")
+	if err != nil {
+		return err
+	}
+	nbRow, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	// We initialize the DB if the bds_hub database doesn't exist
+	if nbRow == 0 {
+		log.Infof("postres instance %s requires to be re-initialized", bdspec.Namespace)
+		if len(bdspec.DbPrototype) == 0 {
+			err := InitDatabase(name, bdspec, b.config.IsClusterScoped, adminPassword, userPassword, postgresPassword)
+			if err != nil {
+				log.Errorf("%v: error: %+v", bdspec.Namespace, err)
+				return fmt.Errorf("%v: error: %+v", bdspec.Namespace, err)
+			}
+		} else {
+			fromNamespaces, err := util.ListNamespaces(b.kubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.BlackDuckName, bdspec.DbPrototype))
+			if len(fromNamespaces.Items) == 0 {
+				return fmt.Errorf("unable to find the %s Black Duck instance", bdspec.DbPrototype)
+			}
+			fromNamespace := fromNamespaces.Items[0].Name
+			_, fromPw, err := util2.GetHubDBPassword(b.kubeClient, fromNamespace, bdspec.DbPrototype)
+			if err != nil {
+				return err
+			}
+			err = util2.CloneJob(b.kubeClient, fromNamespace, bdspec.DbPrototype, bdspec.Namespace, name, fromPw)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (b Blackduck) getPVCVolumeName(namespace string, name string) (string, error) {
+	pvc, err := util.GetPVC(b.kubeClient, namespace, name)
+	if err != nil {
+		return "", fmt.Errorf("unable to get pvc in %s namespace because %s", namespace, err.Error())
+	}
+
+	return pvc.Spec.VolumeName, nil
+}
+
+func (b Blackduck) registerIfNeeded(bd *blackduckapi.Blackduck) error {
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+		Timeout: time.Second * 10,
+	}
+
+	resp, err := client.Get(fmt.Sprintf("https://%s.%s.svc:443/api/v1/registrations?summary=true", util.GetResourceName(bd.Name, util.BlackDuckName, "webserver"), bd.Spec.Namespace))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	dec := json.NewDecoder(resp.Body)
+	var objmap map[string]*json.RawMessage
+
+	err = dec.Decode(&objmap)
+	if err != nil {
+		return err
+	}
+
+	// Check whether the registration is valid
+	if val, ok := objmap["valid"]; ok {
+		var r bool
+		err := json.Unmarshal(*val, &r)
+		if err != nil {
+			return err
+		}
+
+		// We register if the registration is invalid
+		if !r {
+			if err := b.autoRegisterHub(bd.Name, &bd.Spec); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (b Blackduck) autoRegisterHub(name string, bdspec *blackduckapi.BlackduckSpec) error {
+	// Filter the registration pod to auto register the hub using the registration key from the environment variable
+	registrationPod, err := util.FilterPodByNamePrefixInNamespace(b.kubeClient, bdspec.Namespace, util.GetResourceName(name, util.BlackDuckName, "registration"))
+	if err != nil {
+		return err
+	}
+
+	registrationKey := bdspec.LicenseKey
+
+	if registrationPod != nil && !strings.EqualFold(registrationKey, "") {
+		for i := 0; i < 20; i++ {
+			registrationPod, err := util.GetPod(b.kubeClient, bdspec.Namespace, registrationPod.Name)
+			if err != nil {
+				return err
+			}
+
+			// Create the exec into Kubernetes pod request
+			req := util.CreateExecContainerRequest(b.kubeClient, registrationPod, "/bin/sh")
+			// Exec into the Kubernetes pod and execute the commands
+			_, err = util.ExecContainer(b.kubeConfig, req, []string{fmt.Sprintf(`curl -k -X POST "https://127.0.0.1:8443/registration/HubRegistration?registrationid=%s&action=activate" -k --cert /opt/blackduck/hub/hub-registration/security/blackduck_system.crt --key /opt/blackduck/hub/hub-registration/security/blackduck_system.key`, registrationKey)})
+
+			if err == nil {
+				log.Infof("blackduck %s has been registered", bdspec.Namespace)
+				return nil
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
+	return fmt.Errorf("unable to register the blackduck %s", bdspec.Namespace)
+}
+
+func (b Blackduck) isBinaryAnalysisEnabled(bdspec *blackduckapi.BlackduckSpec) bool {
+	for _, value := range bdspec.Environs {
+		if strings.Contains(value, "USE_BINARY_UPLOADS") {
+			values := strings.SplitN(value, ":", 2)
+			if len(values) == 2 {
+				mapValue := strings.TrimSpace(values[1])
+				if strings.EqualFold(mapValue, "1") {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
+}
+
+// GetPVCs will return the PVCs
+func (b Blackduck) GetPVCs(blackduck *blackduckapi.Blackduck) []*components.PersistentVolumeClaim {
+	var pvcs []*components.PersistentVolumeClaim
+
+	defaultPVC := map[string]string{
+		"blackduck-postgres":         "150Gi",
+		"blackduck-authentication":   "2Gi",
+		"blackduck-cfssl":            "2Gi",
+		"blackduck-registration":     "2Gi",
+		"blackduck-solr":             "2Gi",
+		"blackduck-webapp":           "2Gi",
+		"blackduck-logstash":         "20Gi",
+		"blackduck-zookeeper":        "4Gi",
+		"blackduck-uploadcache-data": "100Gi",
+	}
+
+	if blackduck.Spec.ExternalPostgres != nil {
+		delete(defaultPVC, "blackduck-postgres")
+	}
+
+	if blackduck.Spec.PersistentStorage {
+		pvcMap := make(map[string]blackduckapi.PVC)
+		for _, claim := range blackduck.Spec.PVC {
+			pvcMap[claim.Name] = claim
+		}
+
+		for name, defaultSize := range defaultPVC {
+			size := defaultSize
+			storageClass := blackduck.Spec.PVCStorageClass
+			if claim, ok := pvcMap[name]; ok {
+				if len(claim.StorageClass) > 0 {
+					storageClass = claim.StorageClass
+				}
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+			}
+
+			pvcName := util.GetResourceName(blackduck.Name, "", name)
+			if blackduck.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
+				pvcName = name
+			}
+
+			pvcs = append(pvcs, b.createPVC(pvcName, size, defaultSize, storageClass, horizonapi.ReadWriteOnce, utils.GetLabel("pvc", blackduck.Name), blackduck))
+		}
+	}
+
+	return pvcs
+}
+
+func (b Blackduck) createPVC(name string, requestedSize string, defaultSize string, storageclass string, accessMode horizonapi.PVCAccessModeType, label map[string]string, blackduck *blackduckapi.Blackduck) *components.PersistentVolumeClaim {
+	// Workaround so that storageClass does not get set to "", which prevent Kube from using the default storageClass
+	var class *string
+	if len(storageclass) > 0 {
+		class = &storageclass
+	} else {
+		class = nil
+	}
+
+	var size string
+	_, err := resource.ParseQuantity(requestedSize)
+	if err != nil {
+		size = defaultSize
+	} else {
+		size = requestedSize
+	}
+
+	pvc, _ := components.NewPersistentVolumeClaim(horizonapi.PVCConfig{
+		Name:      name,
+		Namespace: blackduck.Spec.Namespace,
+		Size:      size,
+		Class:     class,
+	})
+
+	pvc.AddAccessMode(accessMode)
+	pvc.AddLabels(label)
+
+	return pvc
 }

@@ -34,6 +34,9 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
 	log "github.com/sirupsen/logrus"
 	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
+
+	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components"
+	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/sizes/v1"
 )
 
 var version string
