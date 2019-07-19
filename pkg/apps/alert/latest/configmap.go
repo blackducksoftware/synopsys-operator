@@ -37,8 +37,13 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 		Namespace: a.alert.Spec.Namespace,
 	})
 
-	// Add Environs
 	configMapData := map[string]string{}
+	// Add Black Duck CFSSL host
+	if *a.alert.Spec.StandAlone {
+		configMapData["HUB_CFSSL_HOST"] = util.GetResourceName(a.alert.Name, util.AlertName, "cfssl")
+	}
+
+	// Add Environs
 	for _, environ := range a.alert.Spec.Environs {
 		vals := strings.Split(environ, ":")
 		if len(vals) != 2 {
