@@ -24,12 +24,12 @@ package actions
 import (
 	"encoding/json"
 	"fmt"
+	v1Configmap "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/configmap/global/v1"
 	"sort"
 	"strings"
 
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -210,7 +210,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 
 	// environment variables
 	if bd.View.Environs == nil {
-		env := containers.GetHubKnobs()
+		env := v1Configmap.GetHubKnobs()
 		environs := []string{}
 		for key, value := range env {
 			if !strings.EqualFold(value, "") {

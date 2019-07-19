@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.5.0 // indirect
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20190717133729-c4d94c144a5a
+	github.com/blackducksoftware/synopsys-operator v0.0.0-20190718181801-134da21479b2
 	github.com/codegangsta/negroni v1.0.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gobuffalo/buffalo v0.14.6
