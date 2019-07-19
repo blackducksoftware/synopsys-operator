@@ -180,7 +180,6 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.PodPerceiverService())
-		components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
 		podClusterRole := p.PodPerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, podClusterRole)
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.PodPerceiverClusterRoleBinding(podClusterRole))
@@ -194,10 +193,15 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 		}
 		components.ReplicationControllers = append(components.ReplicationControllers, rc)
 		components.Services = append(components.Services, p.ImagePerceiverService())
-		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
 		imageClusterRole := p.ImagePerceiverClusterRole()
 		components.ClusterRoles = append(components.ClusterRoles, imageClusterRole)
 		components.ClusterRoleBindings = append(components.ClusterRoleBindings, p.ImagePerceiverClusterRoleBinding(imageClusterRole))
+	}
+
+	if p.opssight.Spec.Perceiver.EnablePodPerceiver || p.opssight.Spec.Perceiver.EnableImagePerceiver {
+		// Use the same service account
+		//components.ServiceAccounts = append(components.ServiceAccounts, p.PodPerceiverServiceAccount())
+		components.ServiceAccounts = append(components.ServiceAccounts, p.ImagePerceiverServiceAccount())
 	}
 
 	// Add skyfire
