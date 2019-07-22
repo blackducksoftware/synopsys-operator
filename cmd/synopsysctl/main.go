@@ -22,6 +22,8 @@ under the License.
 package main
 
 import (
+	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components"
+	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/sizes/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/synopsysctl"
 	log "github.com/sirupsen/logrus"
 )

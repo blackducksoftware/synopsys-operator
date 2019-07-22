@@ -24,6 +24,8 @@ package api
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	routev1 "github.com/openshift/api/route/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // Route defines the route component
@@ -85,4 +87,89 @@ func (clist *ComponentList) GetKubeInterfaces() []interface{} {
 		components = append(components, pvc.PersistentVolumeClaim)
 	}
 	return components
+}
+
+func (clist *ComponentList) Filter(filter string) (*ComponentList, error) {
+	components := &ComponentList{}
+
+	labelSelector, err := metav1.ParseToLabelSelector(filter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+	if clist.ReplicationControllers != nil {
+		for _, rc := range clist.ReplicationControllers {
+			if rc != nil && selector.Matches(labels.Set(rc.Labels)) {
+				components.ReplicationControllers = append(components.ReplicationControllers, rc)
+			}
+		}
+	}
+
+	if clist.Services != nil {
+		for _, svc := range clist.Services {
+			if svc != nil && selector.Matches(labels.Set(svc.Labels)) {
+				components.Services = append(components.Services, svc)
+			}
+		}
+	}
+
+	if clist.ConfigMaps != nil {
+		for _, cm := range clist.ConfigMaps {
+			if cm != nil && selector.Matches(labels.Set(cm.Labels)) {
+				components.ConfigMaps = append(components.ConfigMaps, cm)
+			}
+		}
+	}
+
+	if clist.ServiceAccounts != nil {
+		for _, sa := range clist.ServiceAccounts {
+			if sa != nil && selector.Matches(labels.Set(sa.Labels)) {
+				components.ServiceAccounts = append(components.ServiceAccounts, sa)
+			}
+		}
+	}
+
+	if clist.ClusterRoleBindings != nil {
+		for _, crb := range clist.ClusterRoleBindings {
+			if crb != nil && selector.Matches(labels.Set(crb.Labels)) {
+				components.ClusterRoleBindings = append(components.ClusterRoleBindings, crb)
+			}
+		}
+	}
+
+	if clist.ClusterRoles != nil {
+		for _, cr := range clist.ClusterRoles {
+			if cr != nil && selector.Matches(labels.Set(cr.Labels)) {
+				components.ClusterRoles = append(components.ClusterRoles, cr)
+			}
+		}
+	}
+
+	if clist.Deployments != nil {
+		for _, d := range clist.Deployments {
+			if d != nil && selector.Matches(labels.Set(d.Labels)) {
+				components.Deployments = append(components.Deployments, d)
+			}
+		}
+	}
+
+	if clist.Secrets != nil {
+		for _, sec := range clist.Secrets {
+			if sec != nil && selector.Matches(labels.Set(sec.Labels)) {
+				components.Secrets = append(components.Secrets, sec)
+			}
+		}
+	}
+
+	if clist.PersistentVolumeClaims != nil {
+		for _, pvc := range clist.PersistentVolumeClaims {
+			if pvc != nil && selector.Matches(labels.Set(pvc.Labels)) {
+				components.PersistentVolumeClaims = append(components.PersistentVolumeClaims, pvc)
+			}
+		}
+	}
+	return components, nil
 }
