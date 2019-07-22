@@ -33,13 +33,16 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		return nil, fmt.Errorf("couldn't find container %s", types.ScanContainerName)
 	}
 
+	if containerConfig.MaxMem == nil {
+		return nil, fmt.Errorf("Maxmem must be set for %s", types.ScanContainerName)
+	}
+
 	scannerEnvs := []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name), utils.GetHubDBConfigEnv(c.blackduck.Name)}
-	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", containerConfig.MaxMem-512)})
+	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
 	hubScanEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-scan")
 	hubScanContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "scan", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs: scannerEnvs,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "scan", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      scannerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
 			{
 				Name:      "db-passwords",
@@ -58,6 +61,8 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		},
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
 	}
+
+	utils2.SetLimits(hubScanContainerConfig.ContainerConfig, containerConfig)
 
 	if c.blackduck.Spec.LivenessProbes {
 		hubScanContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{

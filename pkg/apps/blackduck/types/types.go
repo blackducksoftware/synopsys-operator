@@ -35,10 +35,10 @@ type ReplicationController struct {
 
 type Container struct {
 	Image  string
-	MinCPU int
-	MaxCPU int
-	MinMem int
-	MaxMem int
+	MinCPU *int32
+	MaxCPU *int32
+	MinMem *int32
+	MaxMem *int32
 }
 
 type ReplicationControllerInterface interface {
@@ -60,10 +60,10 @@ type SizeInterface interface {
 }
 
 type ContainerSize struct {
-	MinCPU int
-	MaxCPU int
-	MinMem int
-	MaxMem int
+	MinCPU *int32
+	MaxCPU *int32
+	MinMem *int32
+	MaxMem *int32
 }
 
 type Size struct {

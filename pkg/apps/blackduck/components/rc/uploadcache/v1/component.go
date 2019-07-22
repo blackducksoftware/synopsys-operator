@@ -35,13 +35,14 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	volumeMounts := c.getUploadCacheVolumeMounts()
 
 	uploadCacheContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs:   []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
-		VolumeMounts: volumeMounts,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "uploadcache", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		VolumeMounts:    volumeMounts,
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: int32(9443), Protocol: horizonapi.ProtocolTCP},
 			{ContainerPort: int32(9444), Protocol: horizonapi.ProtocolTCP}},
 	}
+
+	utils2.SetLimits(uploadCacheContainerConfig.ContainerConfig, containerConfig)
 
 	if c.blackduck.Spec.LivenessProbes {
 		uploadCacheContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{

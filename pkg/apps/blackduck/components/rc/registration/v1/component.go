@@ -34,13 +34,13 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	registrationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs:   []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
-		VolumeMounts: c.getRegistrationVolumeMounts(),
-		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "registration", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		VolumeMounts:    c.getRegistrationVolumeMounts(),
+		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
 	}
 
+	utils2.SetLimits(registrationContainerConfig.ContainerConfig, containerConfig)
 	if c.blackduck.Spec.LivenessProbes {
 		registrationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{

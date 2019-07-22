@@ -6,7 +6,10 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"k8s.io/client-go/kubernetes"
+	"strings"
+
 	//_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"log"
@@ -104,6 +107,9 @@ func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kub
 	}
 
 	size := sizegen.GetSize(blackduck.Spec.Size)
+	if size == nil {
+		return nil, fmt.Errorf("size %s couldn't be found in %s", blackduck.Spec.Size, v.Size)
+	}
 
 	// RC
 	for k, v := range v.RCs {
@@ -119,7 +125,7 @@ func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kub
 
 		for cName, c := range v.Container {
 			rc.Containers[cName] = types.Container{
-				Image:  c,
+				Image:  generateImageTag(c, blackduck),
 				MinMem: size[k].Containers[cName].MinMem,
 				MaxMem: size[k].Containers[cName].MaxMem,
 				MinCPU: size[k].Containers[cName].MinCPU,
@@ -179,4 +185,42 @@ func generateConfigmap(v types.PublicVersion, config *protoform.Config, kubeclie
 		cms = append(cms, c.GetCM()...)
 	}
 	return cms, nil
+}
+
+func generateImageTag(currentImage string, blackduck *v1.Blackduck) string {
+	if len(blackduck.Spec.ImageRegistries) > 0 {
+		imageName, err := util.GetImageName(currentImage)
+		if err != nil {
+			return currentImage
+		}
+		return getFullContainerNameFromImageRegistryConf(imageName, blackduck.Spec.ImageRegistries)
+	}
+
+	if len(blackduck.Spec.RegistryConfiguration.Registry) > 0 && len(blackduck.Spec.RegistryConfiguration.Namespace) > 0 {
+		imageName, err := util.GetImageName(currentImage)
+		if err != nil {
+			return currentImage
+		}
+		imageTag, err := util.GetImageTag(currentImage)
+		if err != nil {
+			return currentImage
+		}
+		return fmt.Sprintf("%s/%s/%s:%s", blackduck.Spec.RegistryConfiguration.Registry, blackduck.Spec.RegistryConfiguration.Namespace, imageName, imageTag)
+	}
+
+	return currentImage
+}
+
+func getFullContainerNameFromImageRegistryConf(baseContainer string, images []string) string {
+	for _, reg := range images {
+		// normal case: we expect registries
+		if strings.Contains(reg, baseContainer) {
+			_, err := util.ValidateImageString(reg)
+			if err != nil {
+				break
+			}
+			return reg
+		}
+	}
+	return baseContainer
 }

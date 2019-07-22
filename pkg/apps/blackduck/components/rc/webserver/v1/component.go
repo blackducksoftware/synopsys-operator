@@ -34,12 +34,13 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	webServerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs:   []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
-		VolumeMounts: c.getWebserverVolumeMounts(),
-		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webserver", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		VolumeMounts:    c.getWebserverVolumeMounts(),
+		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
 	}
+
+	utils2.SetLimits(webServerContainerConfig.ContainerConfig, containerConfig)
 
 	if c.blackduck.Spec.LivenessProbes {
 		webServerContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{

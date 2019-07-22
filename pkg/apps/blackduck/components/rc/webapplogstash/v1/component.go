@@ -33,24 +33,28 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		return nil, fmt.Errorf("couldn't find container %s", types.WebappContainerName)
 	}
 
+	if containerConfig.MaxMem == nil {
+		return nil, fmt.Errorf("Maxmem must be set for %s", types.WebappContainerName)
+	}
+
 	lontainerConfig, ok := c.Containers[types.LogstashContainerName]
 	if !ok {
 		return nil, fmt.Errorf("couldn't find container %s", types.LogstashContainerName)
 	}
 
 	webappEnvs := []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name), utils.GetHubDBConfigEnv(c.blackduck.Name)}
-	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", containerConfig.MaxMem-512)})
+	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
 
 	webappVolumeMounts := c.getWebappVolumeMounts()
 
 	webappContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs:   webappEnvs,
-		VolumeMounts: webappVolumeMounts,
-		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      webappEnvs,
+		VolumeMounts:    webappVolumeMounts,
+		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
 	}
 
+	utils2.SetLimits(webappContainerConfig.ContainerConfig, containerConfig)
 	if c.blackduck.Spec.LivenessProbes {
 		webappContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
@@ -73,12 +77,13 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	logstashVolumeMounts := c.getLogstashVolumeMounts()
 
 	logstashContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: lontainerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", lontainerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", lontainerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", lontainerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", lontainerConfig.MaxCPU)},
-		EnvConfigs:   []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
-		VolumeMounts: logstashVolumeMounts,
-		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(5044), Protocol: horizonapi.ProtocolTCP}},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: lontainerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		VolumeMounts:    logstashVolumeMounts,
+		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(5044), Protocol: horizonapi.ProtocolTCP}},
 	}
+
+	utils2.SetLimits(logstashContainerConfig.ContainerConfig, lontainerConfig)
 
 	if c.blackduck.Spec.LivenessProbes {
 		logstashContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
