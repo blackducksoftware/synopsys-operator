@@ -8,6 +8,9 @@ objects:
   metadata:
     name: ${HUB_NAME}
   spec:
+    adminPassword: test
+    postgresPassword: test
+    userPassword: test
     namespace: ${HUB_NAME}
     certificateName: default
     livenessProbes: false
