@@ -33,13 +33,16 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		return nil, fmt.Errorf("couldn't find container %s", types.JobrunnerContainerName)
 	}
 
+	if containerConfig.MaxMem == nil {
+		return nil, fmt.Errorf("Maxmem must be set for %s", types.JobrunnerContainerName)
+	}
+
 	jobRunnerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-jobrunner")
 	jobRunnerEnvs := []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name), utils.GetHubDBConfigEnv(c.blackduck.Name)}
-	jobRunnerEnvs = append(jobRunnerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", containerConfig.MaxMem-512)})
+	jobRunnerEnvs = append(jobRunnerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
 	jobRunnerContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "jobrunner", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs: jobRunnerEnvs,
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "jobrunner", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      jobRunnerEnvs,
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
 			{Name: "db-passwords", MountPath: "/tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE", SubPath: "HUB_POSTGRES_ADMIN_PASSWORD_FILE"},
 			{Name: "db-passwords", MountPath: "/tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE", SubPath: "HUB_POSTGRES_USER_PASSWORD_FILE"},
@@ -47,6 +50,8 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		},
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: int32(3001), Protocol: horizonapi.ProtocolTCP}},
 	}
+
+	utils2.SetLimits(jobRunnerContainerConfig.ContainerConfig, containerConfig)
 
 	if c.blackduck.Spec.LivenessProbes {
 		jobRunnerContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{

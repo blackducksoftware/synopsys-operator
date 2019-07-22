@@ -36,12 +36,12 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	volumeMounts := c.getRabbitmqVolumeMounts()
 
 	rabbitmqContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs:   []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
-		VolumeMounts: volumeMounts,
-		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(5671), Protocol: horizonapi.ProtocolTCP}},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		VolumeMounts:    volumeMounts,
+		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(5671), Protocol: horizonapi.ProtocolTCP}},
 	}
+	utils2.SetLimits(rabbitmqContainerConfig.ContainerConfig, containerConfig)
 
 	podConfig := &util.PodConfig{
 		Volumes:             c.getRabbitmqVolumes(),

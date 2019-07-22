@@ -36,11 +36,13 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	cfsslVolumeMounts := c.getCfsslolumeMounts()
 	cfsslContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "cfssl", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
+			PullPolicy: horizonapi.PullAlways},
 		EnvConfigs:   []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
 		VolumeMounts: cfsslVolumeMounts,
 		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(8888), Protocol: horizonapi.ProtocolTCP}},
 	}
+
+	utils2.SetLimits(cfsslContainerConfig.ContainerConfig, containerConfig)
 
 	if c.blackduck.Spec.LivenessProbes {
 		cfsslContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{

@@ -35,14 +35,14 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 
 	documentationEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-documentation")
 	documentationContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs: []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "documentation", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
 		VolumeMounts: []*horizonapi.VolumeMountConfig{
 			{Name: "dir-documentation", MountPath: "/opt/blackduck/hub/hub-documentation/security"},
 		},
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
 	}
+	utils2.SetLimits(documentationContainerConfig.ContainerConfig, containerConfig)
 
 	if c.blackduck.Spec.LivenessProbes {
 		documentationContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{

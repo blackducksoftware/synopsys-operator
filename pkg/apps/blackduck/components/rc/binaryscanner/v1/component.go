@@ -34,11 +34,11 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 
 	binaryScannerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "binaryscanner", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU),
-			Command: []string{"/docker-entrypoint.sh"}},
+			PullPolicy: horizonapi.PullAlways, Command: []string{"/docker-entrypoint.sh"}},
 		EnvConfigs: []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: int32(3001), Protocol: horizonapi.ProtocolTCP}},
 	}
+	utils2.SetLimits(binaryScannerContainerConfig.ContainerConfig, containerConfig)
 
 	podConfig := &util.PodConfig{
 		Containers:          []*util.Container{binaryScannerContainerConfig},

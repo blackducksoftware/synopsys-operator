@@ -36,13 +36,13 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	volumeMounts := c.getZookeeperVolumeMounts()
 
 	zookeeperContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs:   []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
-		VolumeMounts: volumeMounts,
-		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(2181), Protocol: horizonapi.ProtocolTCP}},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "zookeeper", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		VolumeMounts:    volumeMounts,
+		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(2181), Protocol: horizonapi.ProtocolTCP}},
 	}
 
+	utils2.SetLimits(zookeeperContainerConfig.ContainerConfig, containerConfig)
 	if c.blackduck.Spec.LivenessProbes {
 		zookeeperContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{

@@ -33,18 +33,24 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		return nil, fmt.Errorf("couldn't find container %s", types.AuthenticationContainerName)
 	}
 
+	if containerConfig.MaxMem == nil {
+		return nil, fmt.Errorf("Maxmem must be set for %s", types.AuthenticationContainerName)
+	}
+
 	volumeMounts := c.getAuthenticationVolumeMounts()
 	var authEnvs []*horizonapi.EnvConfig
 	authEnvs = append(authEnvs, utils.GetHubDBConfigEnv(c.blackduck.Name))
 	authEnvs = append(authEnvs, utils.GetHubConfigEnv(c.blackduck.Name))
-	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", containerConfig.MaxMem-512)})
+	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
 	hubAuthContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: containerConfig.Image,
-			PullPolicy: horizonapi.PullAlways, MinMem: fmt.Sprintf("%dM", containerConfig.MinMem), MaxMem: fmt.Sprintf("%dM", containerConfig.MaxMem), MinCPU: fmt.Sprintf("%d", containerConfig.MinCPU), MaxCPU: fmt.Sprintf("%d", containerConfig.MaxCPU)},
-		EnvConfigs:   authEnvs,
-		VolumeMounts: volumeMounts,
-		PortConfig:   []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		EnvConfigs:      authEnvs,
+		VolumeMounts:    volumeMounts,
+		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
 	}
+
+	utils2.SetLimits(hubAuthContainerConfig.ContainerConfig, containerConfig)
+
 	if c.blackduck.Spec.LivenessProbes {
 		hubAuthContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
