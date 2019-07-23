@@ -3,7 +3,7 @@ module github.com/blackducksoftware/synopsys-operator/cmd/operator-ui
 go 1.12
 
 require (
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20190730143019-d8595d228a98
+	github.com/blackducksoftware/synopsys-operator v0.0.0-20190731195248-6da43fec939c
 	github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/gobuffalo/buffalo v0.14.7
 	github.com/gobuffalo/envy v1.7.0

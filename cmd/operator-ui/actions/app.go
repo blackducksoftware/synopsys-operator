@@ -90,7 +90,9 @@ func App(config *protoform.Config) *buffalo.App {
 				kubeConfig, err = newKubeClientFromOutsideCluster()
 			}
 
-			blackDuckResource, err := NewBlackduckResource(config, kubeConfig)
+			protoformDeployer, _ := protoform.NewDeployer(config, kubeConfig, nil)
+
+			blackDuckResource, err := NewBlackduckResource(protoformDeployer)
 			if err != nil {
 				log.Panic(err)
 			}
