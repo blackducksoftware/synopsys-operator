@@ -32,12 +32,8 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // HandlerInterface contains the methods that are required
@@ -71,17 +67,14 @@ const (
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	config      *protoform.Config
-	kubeConfig  *rest.Config
-	kubeClient  *kubernetes.Clientset
-	alertClient *alertclientset.Clientset
-	defaults    *alertapi.AlertSpec
-	routeClient *routeclient.RouteV1Client
+	protoformDeployer *protoform.Deployer
+	alertClient       *alertclientset.Clientset
+	defaults          *alertapi.AlertSpec
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset, routeClient *routeclient.RouteV1Client, defaults *alertapi.AlertSpec) *Handler {
-	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient, defaults: defaults}
+func NewHandler(protoformDeployer *protoform.Deployer, alertClient *alertclientset.Clientset, defaults *alertapi.AlertSpec) *Handler {
+	return &Handler{protoformDeployer: protoformDeployer, alertClient: alertClient, defaults: defaults}
 }
 
 // ObjectCreated will be called for create alert events
@@ -95,9 +88,8 @@ func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("objectDeleted: %+v", name)
 
 	// if cluster scope, then check whether the alert CRD exist. If not exist, then don't delete the instance
-	if h.config.IsClusterScoped {
-		apiClientset, err := clientset.NewForConfig(h.kubeConfig)
-		crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.AlertCRDName, metav1.GetOptions{})
+	if h.protoformDeployer.Config.IsClusterScoped {
+		crd, err := h.protoformDeployer.APIExtensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.AlertCRDName, metav1.GetOptions{})
 		if err != nil || crd.DeletionTimestamp != nil {
 			// We do not delete the Alert instance if the CRD doesn't exist or that it is in the process of being deleted
 			log.Warnf("Ignoring request to delete %s because the %s CRD doesn't exist or is being deleted", name, util.AlertCRDName)
@@ -105,7 +97,7 @@ func (h *Handler) ObjectDeleted(name string) {
 		}
 	}
 
-	app := apps.NewApp(h.config, h.kubeConfig)
+	app := apps.NewApp(h.protoformDeployer)
 	err := app.Alert().Delete(name)
 	if err != nil {
 		log.Error(err)
@@ -125,8 +117,8 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	var err error
 	if _, ok = alert.Annotations["synopsys.com/created.by"]; !ok {
 		alert.Annotations = util.InitAnnotations(alert.Annotations)
-		alert.Annotations["synopsys.com/created.by"] = h.config.Version
-		alert, err = util.UpdateAlert(h.alertClient, h.config.Namespace, alert)
+		alert.Annotations["synopsys.com/created.by"] = h.protoformDeployer.Config.Version
+		alert, err = util.UpdateAlert(h.alertClient, h.protoformDeployer.Config.Namespace, alert)
 		if err != nil {
 			log.Errorf("couldn't update the annotation for %s Alert instance in %s namespace due to %+v", alert.Name, alert.Spec.Namespace, err)
 			return
@@ -153,7 +145,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	}
 
 	// Update the Alert
-	app := apps.NewApp(h.config, h.kubeConfig)
+	app := apps.NewApp(h.protoformDeployer)
 	err = app.Alert().Ensure(alert)
 	if err != nil {
 		log.Errorf("unable to ensure the Alert %s due to %+v", alert.Name, err)
@@ -192,5 +184,5 @@ func (h *Handler) updateState(statusState State, errorMessage string, alert *ale
 }
 
 func (h *Handler) updateAlertObject(obj *alertapi.Alert) (*alertapi.Alert, error) {
-	return h.alertClient.SynopsysV1().Alerts(h.config.Namespace).Update(obj)
+	return h.alertClient.SynopsysV1().Alerts(h.protoformDeployer.Config.Namespace).Update(obj)
 }

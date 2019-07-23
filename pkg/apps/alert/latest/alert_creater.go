@@ -26,41 +26,32 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
-	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // Creater stores the configuration and clients to create specific versions of Alerts
 type Creater struct {
-	config      *protoform.Config
-	kubeConfig  *rest.Config
-	kubeClient  *kubernetes.Clientset
-	alertClient *alertclientset.Clientset
-	routeClient *routeclient.RouteV1Client
+	protoformDeployer *protoform.Deployer
 }
 
 // NewCreater returns this Alert Creater
-func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, alertClient *alertclientset.Clientset,
-	routeClient *routeclient.RouteV1Client) *Creater {
-	return &Creater{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, alertClient: alertClient, routeClient: routeClient}
+func NewCreater(protoformDeployer *protoform.Deployer) *Creater {
+	return &Creater{protoformDeployer: protoformDeployer}
 }
 
 // GetComponents returns the resource components for an Alert
 func (ac *Creater) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
-	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
+	specConfig := NewSpecConfig(alert, ac.protoformDeployer.Config.IsClusterScoped)
 	return specConfig.GetComponents()
 }
 
 // GetPVC returns the Persistent Volume Claims for an Alert
 func (ac *Creater) GetPVC(alert *alertapi.Alert) ([]*components.PersistentVolumeClaim, error) {
-	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
+	specConfig := NewSpecConfig(alert, ac.protoformDeployer.Config.IsClusterScoped)
 	pvc, err := specConfig.getAlertPersistentVolumeClaim()
 	return []*components.PersistentVolumeClaim{pvc}, err
 }
@@ -73,13 +64,13 @@ func (ac *Creater) Versions() []string {
 // Ensure is an Interface function that will make sure the instance is correctly deployed or deploy it if needed
 func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	// Get Kubernetes Components for the Alert
-	specConfig := NewSpecConfig(alert, ac.config.IsClusterScoped)
+	specConfig := NewSpecConfig(alert, ac.protoformDeployer.Config.IsClusterScoped)
 	cpList, err := specConfig.GetComponents()
 	if err != nil {
 		return err
 	}
 	if strings.EqualFold(alert.Spec.DesiredState, "STOP") {
-		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
+		commonConfig := crdupdater.NewCRUDComponents(ac.protoformDeployer.KubeConfig, ac.protoformDeployer.KubeClient, ac.protoformDeployer.Config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
 			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
@@ -87,7 +78,7 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 		}
 	} else {
 		// Update components in cluster
-		commonConfig := crdupdater.NewCRUDComponents(ac.kubeConfig, ac.kubeClient, ac.config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
+		commonConfig := crdupdater.NewCRUDComponents(ac.protoformDeployer.KubeConfig, ac.protoformDeployer.KubeClient, ac.protoformDeployer.Config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
 			cpList, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {

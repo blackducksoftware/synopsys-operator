@@ -64,7 +64,9 @@ func getDefaultApp(cType string) (*apps.App, error) {
 		pc.IsOpenshift = true
 	}
 	rc := &rest.Config{}
-	return apps.NewApp(pc, rc), nil
+
+	protoformDeployer, _ := protoform.NewDeployer(pc, rc, nil)
+	return apps.NewApp(protoformDeployer), nil
 }
 
 // PrintResource prints a Resource as yaml or json. printKubeComponents allows printing the kuberentes

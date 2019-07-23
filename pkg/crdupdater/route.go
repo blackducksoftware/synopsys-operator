@@ -45,7 +45,7 @@ func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
 	if !util.IsOpenshift(config.kubeClient) {
 		return nil, nil
 	}
-	routeClient := util.GetRouteClient(config.kubeConfig, config.kubeClient, config.namespace)
+	routeClient := util.GetRouteClient(config.kubeConfig)
 
 	deployer, err := util.NewDeployer(config.kubeConfig)
 	if err != nil {

@@ -33,42 +33,34 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
 
 // CRDInstaller defines the specification
 type CRDInstaller struct {
-	config         *protoform.Config
-	kubeConfig     *rest.Config
-	kubeClient     *kubernetes.Clientset
-	defaults       interface{}
-	resyncPeriod   time.Duration
-	indexers       cache.Indexers
-	informer       cache.SharedIndexInformer
-	queue          workqueue.RateLimitingInterface
-	handler        *Handler
-	controller     *Controller
-	opssightclient *opssightclientset.Clientset
-	stopCh         <-chan struct{}
+	protformDeployer *protoform.Deployer
+	defaults         interface{}
+	indexers         cache.Indexers
+	informer         cache.SharedIndexInformer
+	queue            workqueue.RateLimitingInterface
+	handler          *Handler
+	controller       *Controller
+	opssightclient   *opssightclientset.Clientset
+	stopCh           <-chan struct{}
 }
 
 // NewCRDInstaller will create a controller configuration
-func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
-	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, stopCh: stopCh}
-	log.Debugf("resync period: %d", config.ResyncIntervalInSeconds)
-	crdInstaller.resyncPeriod = time.Duration(config.ResyncIntervalInSeconds) * time.Second
+func NewCRDInstaller(protoformDeployer *protoform.Deployer, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+	crdInstaller := &CRDInstaller{protformDeployer: protoformDeployer, defaults: defaults, stopCh: stopCh}
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
 }
 
 // CreateClientSet will create the CRD client
 func (c *CRDInstaller) CreateClientSet() error {
-	opssightClient, err := opssightclientset.NewForConfig(c.kubeConfig)
+	opssightClient, err := opssightclientset.NewForConfig(c.protformDeployer.KubeConfig)
 	if err != nil {
 		return errors.Annotate(err, "Unable to create OpsSight informer client")
 	}
@@ -79,11 +71,11 @@ func (c *CRDInstaller) CreateClientSet() error {
 // Deploy will deploy the CRD
 func (c *CRDInstaller) Deploy() error {
 	// Any new, pluggable maintainance stuff should go in here...
-	blackDuckClient, err := hubclient.NewForConfig(c.kubeConfig)
+	blackDuckClient, err := hubclient.NewForConfig(c.protformDeployer.KubeConfig)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	crdUpdater := NewUpdater(c.config, c.kubeClient, blackDuckClient, c.opssightclient)
+	crdUpdater := NewUpdater(c.protformDeployer.Config, c.protformDeployer.KubeClient, blackDuckClient, c.opssightclient)
 	go crdUpdater.Run(c.stopCh)
 	return nil
 }
@@ -94,10 +86,11 @@ func (c *CRDInstaller) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *CRDInstaller) CreateInformer() {
+	resyncPeriod := time.Duration(c.protformDeployer.Config.ResyncIntervalInSeconds) * time.Second
 	c.informer = opssightinformer.NewOpsSightInformer(
 		c.opssightclient,
-		c.config.Namespace,
-		c.resyncPeriod,
+		c.protformDeployer.Config.Namespace,
+		resyncPeriod,
 		c.indexers,
 	)
 }
@@ -158,36 +151,34 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	osClient, err := securityclient.NewForConfig(c.kubeConfig)
-	if err != nil {
-		osClient = nil
-	} else {
-		_, err := util.GetOpenShiftSecurityConstraint(osClient, "privileged")
+	securityClient := c.protformDeployer.SecurityClient
+	if securityClient != nil {
+		_, err := util.GetOpenShiftSecurityConstraint(securityClient, "privileged")
 		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
 			log.Debugf("ignoring scc privileged for Kubernetes cluster")
-			osClient = nil
+			securityClient = nil
 		}
 	}
 
-	hubClient, err := hubclient.NewForConfig(c.kubeConfig)
+	hubClient, err := hubclient.NewForConfig(c.protformDeployer.KubeConfig)
 	if err != nil {
 		log.Errorf("unable to create the hub client for opssight: %+v", err)
 		return
 	}
 
 	c.handler = &Handler{
-		Config:           c.config,
-		KubeConfig:       c.kubeConfig,
-		KubeClient:       c.kubeClient,
+		Config:           c.protformDeployer.Config,
+		KubeConfig:       c.protformDeployer.KubeConfig,
+		KubeClient:       c.protformDeployer.KubeClient,
 		OpsSightClient:   c.opssightclient,
-		Namespace:        c.config.Namespace,
-		OSSecurityClient: osClient,
+		Namespace:        c.protformDeployer.Config.Namespace,
+		OSSecurityClient: securityClient,
 		Defaults:         c.defaults.(*opssightapi.OpsSightSpec),
 		HubClient:        hubClient,
 	}
 
-	if util.IsOpenshift(c.kubeClient) {
-		c.handler.RouteClient = util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
+	if util.IsOpenshift(c.protformDeployer.KubeClient) {
+		c.handler.RouteClient = util.GetRouteClient(c.protformDeployer.KubeConfig)
 	}
 }
 
@@ -196,18 +187,18 @@ func (c *CRDInstaller) CreateController() {
 	c.controller = NewController(
 		&Controller{
 			Logger:            log.NewEntry(log.New()),
-			Clientset:         c.kubeClient,
+			Clientset:         c.protformDeployer.KubeClient,
 			Queue:             c.queue,
 			Informer:          c.informer,
 			Handler:           c.handler,
 			OpsSightClientset: c.opssightclient,
-			Namespace:         c.config.Namespace,
+			Namespace:         c.protformDeployer.Config.Namespace,
 		})
 }
 
 // Run will run the CRD controller
 func (c *CRDInstaller) Run() {
-	go c.controller.Run(c.config.Threadiness, c.stopCh)
+	go c.controller.Run(c.protformDeployer.Config.Threadiness, c.stopCh)
 }
 
 // PostRun will run post CRD controller execution

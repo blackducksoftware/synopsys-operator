@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"

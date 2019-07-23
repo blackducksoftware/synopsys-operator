@@ -775,7 +775,7 @@ func addNameLabels(namespace string, name string, appName string) error {
 	}
 
 	if util.IsOpenshift(kubeClient) {
-		routeClient := util.GetRouteClient(restconfig, kubeClient, namespace)
+		routeClient := util.GetRouteClient(restconfig)
 		if routeClient != nil {
 			routes, err := util.ListRoutes(routeClient, namespace, fmt.Sprintf("app=%s", appName))
 			if err != nil {

@@ -1685,35 +1685,24 @@ var publicVersions = map[string]types.PublicVersion{
 }
 
 // NewBlackduck will return a Blackduck
-func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck {
-	// Initialiase the clienset using kubeConfig
-	kubeclient, err := kubernetes.NewForConfig(kubeConfig)
-	if err != nil {
-		return nil
-	}
-
+func NewBlackduck(protoformDeployer *protoform.Deployer) *Blackduck {
+	kubeConfig := protoformDeployer.KubeConfig
 	blackduckClient, err := blackduckclientset.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil
 	}
-
 	sizeClient, err := sizeclientset.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil
 	}
 
-	var routeClient *routeclient.RouteV1Client
-	if util.IsOpenshift(kubeclient) {
-		routeClient = util.GetRouteClient(kubeConfig, kubeclient, config.Namespace)
-	}
-
 	return &Blackduck{
-		config:          config,
+		config:          protoformDeployer.Config,
 		kubeConfig:      kubeConfig,
-		kubeClient:      kubeclient,
+		kubeClient:      protoformDeployer.KubeClient,
 		blackduckClient: blackduckClient,
 		sizeClient:      sizeClient,
-		routeClient:     routeClient,
+		routeClient:     protoformDeployer.RouteClient,
 	}
 }
 
