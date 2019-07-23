@@ -32,10 +32,16 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Ctl type provides functionality for an Alert
-// for the Synopsysctl tool
-type Ctl struct {
-	Spec                 *alertapi.AlertSpec
+// CRSpecBuilderFromCobraFlags uses Cobra commands, Cobra flags and other
+// values to create an Alert CR's Spec.
+//
+// The fields in the CRSpecBuilderFromCobraFlags represent places where the values of the Cobra flags are stored.
+//
+// Usage: Use CRSpecBuilderFromCobraFlags to add flags to your Cobra Command for making an Alert Spec.
+// When flags are used the correspoding value in this struct will by set. You can then
+// generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
+type CRSpecBuilderFromCobraFlags struct {
+	alertSpec            *alertapi.AlertSpec
 	Version              string
 	AlertImage           string
 	CfsslImage           string
@@ -54,69 +60,53 @@ type Ctl struct {
 	DesiredState         string
 }
 
-// NewAlertCtl creates a new AlertCtl struct
-func NewAlertCtl() *Ctl {
-	return &Ctl{
-		Spec: &alertapi.AlertSpec{},
+// NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
+func NewCRSpecBuilderFromCobraFlags() *CRSpecBuilderFromCobraFlags {
+	return &CRSpecBuilderFromCobraFlags{
+		alertSpec: &alertapi.AlertSpec{},
 	}
 }
 
-// GetSpec returns the Spec for the resource
-func (ctl *Ctl) GetSpec() interface{} {
-	return *ctl.Spec
+// GetCRSpec returns a pointer to the AlertSpec as an interface{}
+func (ctl *CRSpecBuilderFromCobraFlags) GetCRSpec() interface{} {
+	return *ctl.alertSpec
 }
 
-// SetSpec sets the Spec for the resource
-func (ctl *Ctl) SetSpec(spec interface{}) error {
+// SetCRSpec sets the alertSpec in the struct
+func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(alertapi.AlertSpec)
 	if !ok {
 		return fmt.Errorf("error setting Alert spec")
 	}
-	ctl.Spec = &convertedSpec
+	ctl.alertSpec = &convertedSpec
 	return nil
 }
 
-// CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
-	encryptPassLength := len(ctl.EncryptionPassword)
-	if encryptPassLength > 0 && encryptPassLength < 16 {
-		return fmt.Errorf("flag EncryptionPassword is %d characters. Must be 16 or more characters", encryptPassLength)
-	}
-	globalSaltLength := len(ctl.EncryptionGlobalSalt)
-	if globalSaltLength > 0 && globalSaltLength < 16 {
-		return fmt.Errorf("flag EncryptionGlobalSalt is %d characters. Must be 16 or more characters", globalSaltLength)
-	}
-	isValid := util.IsExposeServiceValid(ctl.ExposeService)
-	if !isValid {
-		return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
-	}
-	return nil
-}
-
-// Constants for Default Specs
+// Constants for predefined specs
 const (
 	EmptySpec   string = "empty"
 	DefaultSpec string = "default"
 )
 
-// SwitchSpec switches Alert's Spec to a different predefined spec
-func (ctl *Ctl) SwitchSpec(specType string) error {
+// SetPredefinedCRSpec sets the alertSpec to a predefined spec
+func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) error {
 	switch specType {
 	case EmptySpec:
-		ctl.Spec = &alertapi.AlertSpec{}
+		ctl.alertSpec = &alertapi.AlertSpec{}
 	case DefaultSpec:
-		ctl.Spec = util.GetAlertDefault()
-		ctl.Spec.PersistentStorage = true
-		ctl.Spec.StandAlone = util.BoolToPtr(true)
+		ctl.alertSpec = util.GetAlertDefault()
+		ctl.alertSpec.PersistentStorage = true
+		ctl.alertSpec.StandAlone = util.BoolToPtr(true)
 	default:
 		return fmt.Errorf("Alert spec type '%s' is not valid", specType)
 	}
 	return nil
 }
 
-// AddSpecFlags adds flags for Alert's Spec to the command
+// AddCRSpecFlagsToCommand adds flags to a Cobra Command that are need for Alert's Spec.
+// The flags map to fields in the CRSpecBuilderFromCobraFlags struct.
 // master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
+func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Alert")
 	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "URL of Alert's Image")
 	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "URL of CFSSL's Image")
@@ -142,64 +132,92 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().MarkDeprecated("alert-desired-state", "alert-desired-state flag is deprecated and will be removed by the next release")
 }
 
-// SetChangedFlags visits every flag and calls setFlag to update
-// the resource's spec
-func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
-	flagset.VisitAll(ctl.SetFlag)
+// CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
+// used in the AlertSpec
+func (ctl *CRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
+	if FlagWasSet(flagset, "encryption-password") {
+		encryptPassLength := len(ctl.EncryptionPassword)
+		if encryptPassLength > 0 && encryptPassLength < 16 {
+			return fmt.Errorf("flag EncryptionPassword is %d characters. Must be 16 or more characters", encryptPassLength)
+		}
+	}
+	if FlagWasSet(flagset, "encryption-global-salt") {
+		globalSaltLength := len(ctl.EncryptionGlobalSalt)
+		if globalSaltLength > 0 && globalSaltLength < 16 {
+			return fmt.Errorf("flag EncryptionGlobalSalt is %d characters. Must be 16 or more characters", globalSaltLength)
+		}
+	}
+	if FlagWasSet(flagset, "expose-ui") {
+		isValid := util.IsExposeServiceValid(ctl.ExposeService)
+		if !isValid {
+			return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+		}
+	}
+	return nil
 }
 
-// SetFlag sets an Alert's Spec field if its flag was changed
-func (ctl *Ctl) SetFlag(f *pflag.Flag) {
+// FlagWasSet returns true if a flag was changed and it exists, otherwise it returns false
+func FlagWasSet(flagset *pflag.FlagSet, flagName string) bool {
+	if flagset.Lookup(flagName) != nil && flagset.Lookup(flagName).Changed {
+		return true
+	}
+	return false
+}
+
+// GenerateCRSpecFromFlags checks if a flag was changed and updates the alertSpec with the value that's stored
+// in the corresponding struct field
+func (ctl *CRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *pflag.FlagSet) (interface{}, error) {
+	err := ctl.CheckValuesFromFlags(flagset)
+	if err != nil {
+		return nil, err
+	}
+	flagset.VisitAll(ctl.SetCRSpecFieldByFlag)
+	return *ctl.alertSpec, nil
+}
+
+// SetCRSpecFieldByFlag updates a field in the alertSpec if the flag was set by the user. It gets the
+// value from the corresponding struct field
+func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "version":
-			ctl.Spec.Version = ctl.Version
+			ctl.alertSpec.Version = ctl.Version
 		case "alert-image":
-			ctl.Spec.AlertImage = ctl.AlertImage
+			ctl.alertSpec.AlertImage = ctl.AlertImage
 		case "cfssl-image":
-			ctl.Spec.CfsslImage = ctl.CfsslImage
+			ctl.alertSpec.CfsslImage = ctl.CfsslImage
 		case "standalone":
 			standAloneVal := strings.ToUpper(ctl.StandAlone) == "TRUE"
-			ctl.Spec.StandAlone = &standAloneVal
+			ctl.alertSpec.StandAlone = &standAloneVal
 		case "expose-ui":
-			ctl.Spec.ExposeService = ctl.ExposeService
+			ctl.alertSpec.ExposeService = ctl.ExposeService
 		case "port":
-			ctl.Spec.Port = &ctl.Port
+			ctl.alertSpec.Port = &ctl.Port
 		case "encryption-password":
-			ctl.Spec.EncryptionPassword = ctl.EncryptionPassword
+			ctl.alertSpec.EncryptionPassword = ctl.EncryptionPassword
 		case "encryption-global-salt":
-			ctl.Spec.EncryptionGlobalSalt = ctl.EncryptionGlobalSalt
+			ctl.alertSpec.EncryptionGlobalSalt = ctl.EncryptionGlobalSalt
 		case "persistent-storage":
-			ctl.Spec.PersistentStorage = strings.ToUpper(ctl.PersistentStorage) == "TRUE"
+			ctl.alertSpec.PersistentStorage = strings.ToUpper(ctl.PersistentStorage) == "TRUE"
 		case "pvc-name":
-			ctl.Spec.PVCName = ctl.PVCName
+			ctl.alertSpec.PVCName = ctl.PVCName
 		case "pvc-storage-class":
-			ctl.Spec.PVCStorageClass = ctl.PVCStorageClass
+			ctl.alertSpec.PVCStorageClass = ctl.PVCStorageClass
 		case "pvc-size":
-			ctl.Spec.PVCSize = ctl.PVCSize
+			ctl.alertSpec.PVCSize = ctl.PVCSize
 		case "alert-memory":
-			ctl.Spec.AlertMemory = ctl.AlertMemory
+			ctl.alertSpec.AlertMemory = ctl.AlertMemory
 		case "cfssl-memory":
-			ctl.Spec.CfsslMemory = ctl.CfsslMemory
+			ctl.alertSpec.CfsslMemory = ctl.CfsslMemory
 		case "environs":
-			ctl.Spec.Environs = ctl.Environs
+			ctl.alertSpec.Environs = ctl.Environs
 		case "alert-desired-state":
-			ctl.Spec.DesiredState = ctl.DesiredState
+			ctl.alertSpec.DesiredState = ctl.DesiredState
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
 	} else {
 		log.Debugf("flag '%s': UNCHANGED", f.Name)
 	}
-}
-
-// SpecIsValid verifies the spec has necessary fields to deploy
-func (ctl *Ctl) SpecIsValid() (bool, error) {
-	return true, nil
-}
-
-// CanUpdate checks if a user has permission to modify based on the spec
-func (ctl *Ctl) CanUpdate() (bool, error) {
-	return true, nil
 }

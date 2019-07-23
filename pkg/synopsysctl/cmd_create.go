@@ -42,10 +42,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Create Command Resource Ctls
-var createAlertCtl ResourceCtl
-var createBlackDuckCtl ResourceCtl
-var createOpsSightCtl ResourceCtl
+// Create Command CRSpecBuilderFromCobraFlagsInterface
+var createAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var createBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var createOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 
 // Default Base Specs for Create
 var baseAlertSpec string
@@ -72,18 +72,12 @@ Create Alert Commands
 */
 
 var createAlertPreRun = func(cmd *cobra.Command, args []string) error {
-	// Check the user's flags
-	err := createAlertCtl.CheckSpecFlags(cmd.Flags())
-	if err != nil {
-		cmd.Help()
-		return err
-	}
 	// Set the base spec
 	if !cmd.Flags().Lookup("template").Changed {
 		baseAlertSpec = defaultBaseAlertSpec
 	}
 	log.Debugf("setting Alert's base spec to '%s'", baseAlertSpec)
-	err = createAlertCtl.SwitchSpec(baseAlertSpec)
+	err := createAlertCobraHelper.SetPredefinedCRSpec(baseAlertSpec)
 	if err != nil {
 		cmd.Help()
 		return err
@@ -91,13 +85,16 @@ var createAlertPreRun = func(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func updateAlertSpecWithFlags(cmd *cobra.Command, alertName string, alertNamespace string) *alertv1.Alert {
+func updateAlertSpecWithFlags(cmd *cobra.Command, alertName string, alertNamespace string) (*alertv1.Alert, error) {
 	// Update Spec with user's flags
 	log.Debugf("updating spec with user's flags")
-	createAlertCtl.SetChangedFlags(cmd.Flags())
+	alertInterface, err := createAlertCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
+	if err != nil {
+		return nil, err
+	}
 
 	// Set Namespace in Spec
-	alertSpec, _ := createAlertCtl.GetSpec().(alertv1.AlertSpec)
+	alertSpec, _ := alertInterface.(alertv1.AlertSpec)
 	alertSpec.Namespace = alertNamespace
 
 	// Create Alert CRD
@@ -110,7 +107,7 @@ func updateAlertSpecWithFlags(cmd *cobra.Command, alertName string, alertNamespa
 	}
 	alert.Kind = "Alert"
 	alert.APIVersion = "synopsys.com/v1"
-	return alert
+	return alert, nil
 }
 
 // createCmd creates an Alert instance
@@ -135,7 +132,10 @@ var createAlertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		alert := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
+		alert, err := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
+		if err != nil {
+			return err
+		}
 
 		// If mock mode, return and don't create resources
 		if mockMode {
@@ -182,7 +182,10 @@ var createAlertNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		alert := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
+		alert, err := updateAlertSpecWithFlags(cmd, alertName, alertNamespace)
+		if err != nil {
+			return err
+		}
 
 		log.Debugf("generating Kubernetes resources for Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 		app, err := getDefaultApp(nativeClusterType)
@@ -235,19 +238,12 @@ func checkPasswords(flagset *pflag.FlagSet) {
 }
 
 var createBlackDuckPreRun = func(cmd *cobra.Command, args []string) error {
-	// Check the user's flags
-	err := createBlackDuckCtl.CheckSpecFlags(cmd.Flags())
-
-	if err != nil {
-		cmd.Help()
-		return err
-	}
 	// Set the base spec
 	if !cmd.Flags().Lookup("template").Changed {
 		baseBlackDuckSpec = defaultBaseBlackDuckSpec
 	}
 	log.Debugf("setting Black Duck's base spec to '%s'", baseBlackDuckSpec)
-	err = createBlackDuckCtl.SwitchSpec(baseBlackDuckSpec)
+	err := createBlackDuckCobraHelper.SetPredefinedCRSpec(baseBlackDuckSpec)
 	if err != nil {
 		cmd.Help()
 		return err
@@ -255,13 +251,16 @@ var createBlackDuckPreRun = func(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blackDuckNamespace string) *blackduckv1.Blackduck {
+func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blackDuckNamespace string) (*blackduckv1.Blackduck, error) {
 	// Update Spec with user's flags
 	log.Debugf("updating spec with user's flags")
-	createBlackDuckCtl.SetChangedFlags(cmd.Flags())
+	blackDuckInterface, err := createBlackDuckCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
+	if err != nil {
+		return nil, err
+	}
 
 	// Set Namespace in Spec
-	blackDuckSpec, _ := createBlackDuckCtl.GetSpec().(blackduckv1.BlackduckSpec)
+	blackDuckSpec, _ := blackDuckInterface.(blackduckv1.BlackduckSpec)
 	blackDuckSpec.Namespace = blackDuckNamespace
 
 	// Create and Deploy Black Duck CRD
@@ -278,7 +277,7 @@ func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blac
 	// Get PVCs from app
 	app, err := getDefaultApp(nativeClusterType)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	cList, err := app.Blackduck().GetComponents(blackDuck, blackduckapp.PVCResources)
 	m := map[string]string{}
@@ -304,7 +303,7 @@ func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blac
 			})
 	}
 
-	return blackDuck
+	return blackDuck, nil
 }
 
 // createBlackDuckCmd creates a Black Duck instance
@@ -331,7 +330,10 @@ var createBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		blackDuck := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+		if err != nil {
+			return err
+		}
 
 		// If mock mode, return and don't create resources
 		if mockMode {
@@ -396,7 +398,10 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		blackDuck := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+		blackDuck, err := updateBlackDuckSpecWithFlags(cmd, blackDuckName, blackDuckNamespace)
+		if err != nil {
+			return err
+		}
 
 		log.Debugf("generating Kubernetes resources for Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 		app, err := getDefaultApp(nativeClusterType)
@@ -428,18 +433,12 @@ Create OpsSight Commands
 */
 
 var createOpsSightPreRun = func(cmd *cobra.Command, args []string) error {
-	// Check the user's flags
-	err := createOpsSightCtl.CheckSpecFlags(cmd.Flags())
-	if err != nil {
-		cmd.Help()
-		return err
-	}
 	// Set the base spec
 	if !cmd.Flags().Lookup("template").Changed {
 		baseOpsSightSpec = defaultBaseOpsSightSpec
 	}
 	log.Debugf("setting OpsSight's base spec to '%s'", baseOpsSightSpec)
-	err = createOpsSightCtl.SwitchSpec(baseOpsSightSpec)
+	err := createOpsSightCobraHelper.SetPredefinedCRSpec(baseOpsSightSpec)
 	if err != nil {
 		cmd.Help()
 		return err
@@ -447,13 +446,16 @@ var createOpsSightPreRun = func(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func updateOpsSightSpecWithFlags(cmd *cobra.Command, opsSightName string, opsSightNamespace string) *opssightv1.OpsSight {
+func updateOpsSightSpecWithFlags(cmd *cobra.Command, opsSightName string, opsSightNamespace string) (*opssightv1.OpsSight, error) {
 	// Update Spec with user's flags
 	log.Debugf("updating spec with user's flags")
-	createOpsSightCtl.SetChangedFlags(cmd.Flags())
+	opsSightInterface, err := createOpsSightCobraHelper.GenerateCRSpecFromFlags(cmd.Flags())
+	if err != nil {
+		return nil, err
+	}
 
 	// Set Namespace in Spec
-	opsSightSpec, _ := createOpsSightCtl.GetSpec().(opssightv1.OpsSightSpec)
+	opsSightSpec, _ := opsSightInterface.(opssightv1.OpsSightSpec)
 	opsSightSpec.Namespace = opsSightNamespace
 
 	// Create and Deploy OpsSight CRD
@@ -466,7 +468,7 @@ func updateOpsSightSpecWithFlags(cmd *cobra.Command, opsSightName string, opsSig
 	}
 	opsSight.Kind = "OpsSight"
 	opsSight.APIVersion = "synopsys.com/v1"
-	return opsSight
+	return opsSight, nil
 }
 
 // createOpsSightCmd creates an OpsSight instance
@@ -492,7 +494,10 @@ var createOpsSightCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		opsSight := updateOpsSightSpecWithFlags(cmd, opsSightName, opsSightNamespace)
+		opsSight, err := updateOpsSightSpecWithFlags(cmd, opsSightName, opsSightNamespace)
+		if err != nil {
+			return err
+		}
 
 		// If mock mode, return and don't create resources
 		if mockMode {
@@ -539,7 +544,10 @@ var createOpsSightNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		opsSight := updateOpsSightSpecWithFlags(cmd, opsSightName, opsSightNamespace)
+		opsSight, err := updateOpsSightSpecWithFlags(cmd, opsSightName, opsSightNamespace)
+		if err != nil {
+			return err
+		}
 
 		log.Debugf("generating Kubernetes resources for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 		return PrintResource(*opsSight, nativeFormat, true)
@@ -548,20 +556,20 @@ var createOpsSightNativeCmd = &cobra.Command{
 
 func init() {
 	// initialize global resource ctl structs for commands to use
-	createAlertCtl = alert.NewAlertCtl()
-	createBlackDuckCtl = blackduck.NewBlackDuckCtl()
-	createOpsSightCtl = opssight.NewOpsSightCtl()
+	createAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
+	createBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
+	createOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
 
 	rootCmd.AddCommand(createCmd)
 
 	// Add Alert Command
 	createAlertCmd.PersistentFlags().StringVar(&baseAlertSpec, "template", baseAlertSpec, "Base resource configuration to modify with flags (empty|default)")
 	createAlertCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	createAlertCtl.AddSpecFlags(createAlertCmd, true)
+	createAlertCobraHelper.AddCRSpecFlagsToCommand(createAlertCmd, true)
 	addMockFlag(createAlertCmd)
 	createCmd.AddCommand(createAlertCmd)
 
-	createAlertCtl.AddSpecFlags(createAlertNativeCmd, true)
+	createAlertCobraHelper.AddCRSpecFlagsToCommand(createAlertNativeCmd, true)
 	addNativeFormatFlag(createAlertNativeCmd)
 	createAlertNativeCmd.Flags().BoolVar(&alertNativePVC, "output-pvc", alertNativePVC, "If true, output resources for only Alert's persistent volume claims")
 	createAlertCmd.AddCommand(createAlertNativeCmd)
@@ -569,11 +577,11 @@ func init() {
 	// Add Black Duck Command
 	createBlackDuckCmd.PersistentFlags().StringVar(&baseBlackDuckSpec, "template", baseBlackDuckSpec, "Base resource configuration to modify with flags (empty|persistentStorageLatest|persistentStorageV1|externalPersistentStorageLatest|externalPersistentStorageV1|bdba|ephemeral|ephemeralCustomAuthCA|externalDB|IPV6Disabled)")
 	createBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	createBlackDuckCtl.AddSpecFlags(createBlackDuckCmd, true)
+	createBlackDuckCobraHelper.AddCRSpecFlagsToCommand(createBlackDuckCmd, true)
 	addMockFlag(createBlackDuckCmd)
 	createCmd.AddCommand(createBlackDuckCmd)
 
-	createBlackDuckCtl.AddSpecFlags(createBlackDuckNativeCmd, true)
+	createBlackDuckCobraHelper.AddCRSpecFlagsToCommand(createBlackDuckNativeCmd, true)
 	addNativeFormatFlag(createBlackDuckNativeCmd)
 	createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativeDatabase, "output-database", blackDuckNativeDatabase, "If true, output resources for only Black Duck's database")
 	createBlackDuckNativeCmd.Flags().BoolVar(&blackDuckNativePVC, "output-pvc", blackDuckNativePVC, "If true, output resources for only Black Duck's persistent volume claims")
@@ -582,11 +590,11 @@ func init() {
 	// Add OpsSight Command
 	createOpsSightCmd.PersistentFlags().StringVar(&baseOpsSightSpec, "template", baseOpsSightSpec, "Base resource configuration to modify with flags (empty|upstream|default|disabledBlackDuck)")
 	createOpsSightCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	createOpsSightCtl.AddSpecFlags(createOpsSightCmd, true)
+	createOpsSightCobraHelper.AddCRSpecFlagsToCommand(createOpsSightCmd, true)
 	addMockFlag(createOpsSightCmd)
 	createCmd.AddCommand(createOpsSightCmd)
 
-	createOpsSightCtl.AddSpecFlags(createOpsSightNativeCmd, true)
+	createOpsSightCobraHelper.AddCRSpecFlagsToCommand(createOpsSightNativeCmd, true)
 	addNativeFormatFlag(createOpsSightNativeCmd)
 	createOpsSightCmd.AddCommand(createOpsSightNativeCmd)
 

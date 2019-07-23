@@ -31,57 +31,69 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewAlertCtl(t *testing.T) {
+func TestNewCRSpecBuilderFromCobraFlags(t *testing.T) {
 	assert := assert.New(t)
-	alertCtl := NewAlertCtl()
-	assert.Equal(&Ctl{
-		Spec: &alertapi.AlertSpec{},
-	}, alertCtl)
+	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
+	assert.Equal(&CRSpecBuilderFromCobraFlags{
+		alertSpec: &alertapi.AlertSpec{},
+	}, alertCobraHelper)
 }
 
-func TestGetSpec(t *testing.T) {
+func TestGetCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	alertCtl := NewAlertCtl()
-	assert.Equal(alertapi.AlertSpec{}, alertCtl.GetSpec())
+	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
+	assert.Equal(alertapi.AlertSpec{}, alertCobraHelper.GetCRSpec())
 }
 
-func TestSetSpec(t *testing.T) {
+func TestSetCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	alertCtl := NewAlertCtl()
+	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
 	specToSet := alertapi.AlertSpec{Namespace: "test", Version: "test"}
-	alertCtl.SetSpec(specToSet)
-	assert.Equal(specToSet, alertCtl.GetSpec())
+	alertCobraHelper.SetCRSpec(specToSet)
+	assert.Equal(specToSet, alertCobraHelper.GetCRSpec())
 
 	// check for error
-	assert.Error(alertCtl.SetSpec(""))
+	assert.Error(alertCobraHelper.SetCRSpec(""))
 }
 
-func TestCheckSpecFlags(t *testing.T) {
+func TestCheckValuesFromFlags(t *testing.T) {
 	assert := assert.New(t)
-	alertCtl := NewAlertCtl()
-	alertCtl.ExposeService = util.NONE
+	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
+	alertCobraHelper.ExposeService = util.NONE
 	cmd := &cobra.Command{}
-	specFlags := alertCtl.CheckSpecFlags(cmd.Flags())
+	specFlags := alertCobraHelper.CheckValuesFromFlags(cmd.Flags())
 	assert.Nil(specFlags)
 
 	var tests = []struct {
-		input *Ctl
+		input          *CRSpecBuilderFromCobraFlags
+		flagNameToTest string
+		flagValue      string
 	}{
 		// invalid expose case
-		{input: &Ctl{
-			Spec:          &alertapi.AlertSpec{},
+		{input: &CRSpecBuilderFromCobraFlags{
+			alertSpec:     &alertapi.AlertSpec{},
 			ExposeService: "",
-		}},
+		},
+			flagNameToTest: "expose-ui",
+			flagValue:      "",
+		},
 	}
 
 	for _, test := range tests {
-		assert.Error(test.input.CheckSpecFlags(cmd.Flags()))
+		cmd := &cobra.Command{}
+		alertCobraHelper.AddCRSpecFlagsToCommand(cmd, true)
+		flagset := cmd.Flags()
+		flagset.Set(test.flagNameToTest, test.flagValue)
+		err := test.input.CheckValuesFromFlags(flagset)
+		if err == nil {
+			t.Errorf("Expected an error but got nil, test: %+v", test)
+		}
 	}
 }
 
-func TestSwitchSpec(t *testing.T) {
+func TestSetPredefinedCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	alertCtl := NewAlertCtl()
+	alertCobraHelper := NewCRSpecBuilderFromCobraFlags()
 	defaultSpec := *util.GetAlertDefault()
 	defaultSpec.StandAlone = util.BoolToPtr(true)
 	defaultSpec.PersistentStorage = true
@@ -96,23 +108,23 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: "default"
 	for _, test := range tests {
-		assert.Nil(alertCtl.SwitchSpec(test.input))
-		assert.Equal(test.expected, alertCtl.GetSpec())
+		assert.Nil(alertCobraHelper.SetPredefinedCRSpec(test.input))
+		assert.Equal(test.expected, alertCobraHelper.GetCRSpec())
 	}
 
 	// test cases: default
 	createAlertSpecType := ""
-	assert.Error(alertCtl.SwitchSpec(createAlertSpecType))
+	assert.Error(alertCobraHelper.SetPredefinedCRSpec(createAlertSpecType))
 
 }
 
-func TestAddSpecFlags(t *testing.T) {
+func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	assert := assert.New(t)
 
 	// test case: Only Non-Master Flags are added
-	ctl := NewAlertCtl()
+	ctl := NewCRSpecBuilderFromCobraFlags()
 	actualCmd := &cobra.Command{}
-	ctl.AddSpecFlags(actualCmd, false)
+	ctl.AddCRSpecFlagsToCommand(actualCmd, false)
 
 	cmd := &cobra.Command{}
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Alert")
@@ -138,201 +150,201 @@ func TestAddSpecFlags(t *testing.T) {
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
 
-func TestSetChangedFlags(t *testing.T) {
+func TestGenerateCRSpecFromFlags(t *testing.T) {
 	assert := assert.New(t)
 
-	actualCtl := NewAlertCtl()
+	actualCtl := NewCRSpecBuilderFromCobraFlags()
 	cmd := &cobra.Command{}
-	actualCtl.AddSpecFlags(cmd, true)
-	actualCtl.SetChangedFlags(cmd.Flags())
+	actualCtl.AddCRSpecFlagsToCommand(cmd, true)
+	actualCtl.GenerateCRSpecFromFlags(cmd.Flags())
 
-	expCtl := NewAlertCtl()
+	expCtl := NewCRSpecBuilderFromCobraFlags()
 
-	assert.Equal(expCtl.Spec, actualCtl.Spec)
+	assert.Equal(expCtl.alertSpec, actualCtl.alertSpec)
 
 }
 
-func TestSetFlag(t *testing.T) {
+func TestSetCRSpecFieldByFlag(t *testing.T) {
 	assert := assert.New(t)
 
 	var tests = []struct {
 		flagName    string
-		initialCtl  *Ctl
-		changedCtl  *Ctl
+		initialCtl  *CRSpecBuilderFromCobraFlags
+		changedCtl  *CRSpecBuilderFromCobraFlags
 		changedSpec *alertapi.AlertSpec
 	}{
 		// case
 		{flagName: "version",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				Version: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{Version: "changed"},
 		},
 		// case
 		{flagName: "alert-image",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				AlertImage: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{AlertImage: "changed"},
 		},
 		// case
 		{flagName: "cfssl-image",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				CfsslImage: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{CfsslImage: "changed"},
 		},
 		// case
 		{flagName: "standalone",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				StandAlone: "true",
 			},
 			changedSpec: &alertapi.AlertSpec{StandAlone: util.BoolToPtr(true)},
 		},
 		// case
 		{flagName: "standalone",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				StandAlone: "false",
 			},
 			changedSpec: &alertapi.AlertSpec{StandAlone: util.BoolToPtr(false)},
 		},
 		// case
 		{flagName: "expose-ui",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				ExposeService: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{ExposeService: "changed"},
 		},
 		// case
 		{flagName: "port",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				Port: 1234,
 			},
 			changedSpec: &alertapi.AlertSpec{Port: util.IntToInt32(1234)},
 		},
 		// case
 		{flagName: "encryption-password",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				EncryptionPassword: "changedEncryptionPassword",
 			},
 			changedSpec: &alertapi.AlertSpec{EncryptionPassword: "changedEncryptionPassword"},
 		},
 		// case
 		{flagName: "encryption-global-salt",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				EncryptionGlobalSalt: "changedEncryptionGlobalSalt",
 			},
 			changedSpec: &alertapi.AlertSpec{EncryptionGlobalSalt: "changedEncryptionGlobalSalt"},
 		},
 		// case
 		{flagName: "environs",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"},
 			},
 			changedSpec: &alertapi.AlertSpec{Environs: []string{"changedEnviron:Number1", "changedEnviron:Number2"}},
 		},
 		// case
 		{flagName: "persistent-storage",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				PersistentStorage: "true",
 			},
 			changedSpec: &alertapi.AlertSpec{PersistentStorage: true},
 		},
 		// case
 		{flagName: "persistent-storage",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				PersistentStorage: "false",
 			},
 			changedSpec: &alertapi.AlertSpec{PersistentStorage: false},
 		},
 		// case
 		{flagName: "pvc-name",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				PVCName: "changedPVCName",
 			},
 			changedSpec: &alertapi.AlertSpec{PVCName: "changedPVCName"},
 		},
 		// case
 		{flagName: "pvc-storage-class",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				PVCStorageClass: "changedStorageClass",
 			},
 			changedSpec: &alertapi.AlertSpec{PVCStorageClass: "changedStorageClass"},
 		},
 		// case
 		{flagName: "pvc-size",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				PVCSize: "changedStorageSize",
 			},
 			changedSpec: &alertapi.AlertSpec{PVCSize: "changedStorageSize"},
 		},
 		// case
 		{flagName: "alert-memory",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				AlertMemory: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{AlertMemory: "changed"},
 		},
 		// case
 		{flagName: "cfssl-memory",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				CfsslMemory: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{CfsslMemory: "changed"},
 		},
 		// case
 		{flagName: "alert-desired-state",
-			initialCtl: NewAlertCtl(),
-			changedCtl: &Ctl{Spec: &alertapi.AlertSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
 				DesiredState: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{DesiredState: "changed"},
 		},
 	}
 
-	// get the Ctl's flags
+	// get the CRSpecBuilderFromCobraFlags's flags
 	cmd := &cobra.Command{}
-	actualCtl := NewAlertCtl()
-	actualCtl.AddSpecFlags(cmd, true)
+	actualCtl := NewCRSpecBuilderFromCobraFlags()
+	actualCtl.AddCRSpecFlagsToCommand(cmd, true)
 	flagset := cmd.Flags()
 
 	for _, test := range tests {
-		actualCtl = NewAlertCtl()
+		actualCtl = NewCRSpecBuilderFromCobraFlags()
 		// check the Flag exists
 		foundFlag := flagset.Lookup(test.flagName)
 		if foundFlag == nil {
 			t.Errorf("flag %s is not in the spec", test.flagName)
 		}
-		// check the correct Ctl is used
+		// check the correct CRSpecBuilderFromCobraFlags is used
 		assert.Equal(test.initialCtl, actualCtl)
 		actualCtl = test.changedCtl
 		// test setting a flag
 		f := &pflag.Flag{Changed: true, Name: test.flagName}
-		actualCtl.SetFlag(f)
-		assert.Equal(test.changedSpec, actualCtl.Spec)
+		actualCtl.SetCRSpecFieldByFlag(f)
+		assert.Equal(test.changedSpec, actualCtl.alertSpec)
 	}
 
 	// case: nothing set if flag doesn't exist
-	actualCtl = NewAlertCtl()
+	actualCtl = NewCRSpecBuilderFromCobraFlags()
 	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
-	actualCtl.SetFlag(f)
-	assert.Equal(&alertapi.AlertSpec{}, actualCtl.Spec)
+	actualCtl.SetCRSpecFieldByFlag(f)
+	assert.Equal(&alertapi.AlertSpec{}, actualCtl.alertSpec)
 
 }

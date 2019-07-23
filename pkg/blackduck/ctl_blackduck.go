@@ -33,10 +33,16 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Ctl type provides functionality for a Black Duck
-// for the Synopsysctl tool
-type Ctl struct {
-	Spec                          *blackduckv1.BlackduckSpec
+// CRSpecBuilderFromCobraFlags uses Cobra commands, Cobra flags and other
+// values to create a Black Duck CR's Spec.
+//
+// The fields in the CRSpecBuilderFromCobraFlags represent places where the values of the Cobra flags are stored.
+//
+// Usage: Use CRSpecBuilderFromCobraFlags to add flags to your Cobra Command for making a Black Duck Spec.
+// When flags are used the correspoding value in this struct will by set. You can then
+// generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
+type CRSpecBuilderFromCobraFlags struct {
+	blackDuckSpec                 *blackduckv1.BlackduckSpec
 	Size                          string
 	Version                       string
 	ExposeService                 string
@@ -72,67 +78,29 @@ type Ctl struct {
 	NodeAffinityFilePath          string
 }
 
-// NewBlackDuckCtl creates a new Ctl struct
-func NewBlackDuckCtl() *Ctl {
-	return &Ctl{
-		Spec: &blackduckv1.BlackduckSpec{},
+// NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
+func NewCRSpecBuilderFromCobraFlags() *CRSpecBuilderFromCobraFlags {
+	return &CRSpecBuilderFromCobraFlags{
+		blackDuckSpec: &blackduckv1.BlackduckSpec{},
 	}
 }
 
-// GetSpec returns the Spec for the resource
-func (ctl *Ctl) GetSpec() interface{} {
-	return *ctl.Spec
+// GetCRSpec returns a pointer to the BlackDuckSpec as an interface{}
+func (ctl *CRSpecBuilderFromCobraFlags) GetCRSpec() interface{} {
+	return *ctl.blackDuckSpec
 }
 
-// SetSpec sets the Spec for the resource
-func (ctl *Ctl) SetSpec(spec interface{}) error {
+// SetCRSpec sets the blackDuckSpec in the struct
+func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(blackduckv1.BlackduckSpec)
 	if !ok {
 		return fmt.Errorf("error in Black Duck spec conversion")
 	}
-	ctl.Spec = &convertedSpec
+	ctl.blackDuckSpec = &convertedSpec
 	return nil
 }
 
-func isValidSize(size string) bool {
-	switch strings.ToLower(size) {
-	case
-		"",
-		"small",
-		"medium",
-		"large",
-		"x-large":
-		return true
-	}
-	return false
-}
-
-// CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
-	if !isValidSize(ctl.Size) {
-		return fmt.Errorf("size must be 'small', 'medium', 'large' or 'x-large'")
-	}
-	isValid := util.IsExposeServiceValid(ctl.ExposeService)
-	if !isValid {
-		return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
-	}
-	for _, environ := range ctl.Environs {
-		if !strings.Contains(environ, ":") {
-			return fmt.Errorf("invalid environ format - NAME:VALUE")
-		}
-	}
-
-	setStateToDbMigrate := flagset.Lookup("migration-mode")
-	if setStateToDbMigrate != nil {
-		if val, _ := flagset.GetBool("migration-mode"); !val && setStateToDbMigrate.Changed {
-			return fmt.Errorf("--migration-mode cannot be set to false")
-		}
-	}
-
-	return nil
-}
-
-// Constants for Default Specs
+// Constants for predefined specs
 const (
 	EmptySpec                           string = "empty"
 	PersistentStorageLatestSpec         string = "persistentStorageLatest"
@@ -146,38 +114,39 @@ const (
 	IPV6DisabledSpec                    string = "IPV6Disabled"
 )
 
-// SwitchSpec switches the Black Duck's Spec to a different predefined spec
-func (ctl *Ctl) SwitchSpec(createBlackDuckSpecType string) error {
-	switch createBlackDuckSpecType {
+// SetPredefinedCRSpec sets the blackDuckSpec to a predefined spec
+func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) error {
+	switch specType {
 	case EmptySpec:
-		ctl.Spec = &blackduckv1.BlackduckSpec{}
+		ctl.blackDuckSpec = &blackduckv1.BlackduckSpec{}
 	case PersistentStorageLatestSpec:
-		ctl.Spec = util.GetBlackDuckDefaultPersistentStorageLatest()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultPersistentStorageLatest()
 	case PersistentStorageV1Spec:
-		ctl.Spec = util.GetBlackDuckDefaultPersistentStorageV1()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultPersistentStorageV1()
 	case ExternalPersistentStorageLatestSpec:
-		ctl.Spec = util.GetBlackDuckDefaultExternalPersistentStorageLatest()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultExternalPersistentStorageLatest()
 	case ExternalPersistentStorageV1Spec:
-		ctl.Spec = util.GetBlackDuckDefaultExternalPersistentStorageV1()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultExternalPersistentStorageV1()
 	case BDBASpec:
-		ctl.Spec = util.GetBlackDuckDefaultBDBA()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultBDBA()
 	case EphemeralSpec:
-		ctl.Spec = util.GetBlackDuckDefaultEphemeral()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultEphemeral()
 	case EphemeralCustomAuthCASpec:
-		ctl.Spec = util.GetBlackDuckDefaultEphemeralCustomAuthCA()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultEphemeralCustomAuthCA()
 	case ExternalDBSpec:
-		ctl.Spec = util.GetBlackDuckDefaultExternalDB()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultExternalDB()
 	case IPV6DisabledSpec:
-		ctl.Spec = util.GetBlackDuckDefaultIPV6Disabled()
+		ctl.blackDuckSpec = util.GetBlackDuckDefaultIPV6Disabled()
 	default:
-		return fmt.Errorf("Black Duck spec type '%s' is not valid", createBlackDuckSpecType)
+		return fmt.Errorf("Black Duck spec type '%s' is not valid", specType)
 	}
 	return nil
 }
 
-// AddSpecFlags adds flags for Black Duck's Spec to the command
+// AddCRSpecFlagsToCommand adds flags to a Cobra Command that are need for BlackDuck's Spec.
+// The flags map to fields in the CRSpecBuilderFromCobraFlags struct.
 // master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
+func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	if master {
 		cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
 		cmd.Flags().StringVar(&ctl.PersistentStorage, "persistent-storage", ctl.PersistentStorage, "If true, Black Duck has persistent storage (true|false)")
@@ -230,67 +199,122 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().MarkDeprecated("desired-state", "desired-state flag is deprecated and will be removed by the next release")
 }
 
-// SetChangedFlags visits every flag and calls setFlag to update
-// the resource's spec
-func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
-	// Update spec fields with flags
-	flagset.VisitAll(ctl.SetFlag)
+func isValidSize(size string) bool {
+	switch strings.ToLower(size) {
+	case
+		"",
+		"small",
+		"medium",
+		"large",
+		"x-large":
+		return true
+	}
+	return false
 }
 
-// SetFlag sets a Black Duck's Spec field if its flag was changed
-func (ctl *Ctl) SetFlag(f *pflag.Flag) {
+// CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
+// used in the blackDuckSpec
+func (ctl *CRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
+	if FlagWasSet(flagset, "size") {
+		if !isValidSize(ctl.Size) {
+			return fmt.Errorf("size must be 'small', 'medium', 'large' or 'x-large'")
+		}
+	}
+	if FlagWasSet(flagset, "expose-ui") {
+		isValid := util.IsExposeServiceValid(ctl.ExposeService)
+		if !isValid {
+			return fmt.Errorf("expose ui must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+		}
+	}
+	if FlagWasSet(flagset, "environs") {
+		for _, environ := range ctl.Environs {
+			if !strings.Contains(environ, ":") {
+				return fmt.Errorf("invalid environ format - NAME:VALUE")
+			}
+		}
+	}
+	if FlagWasSet(flagset, "migration-mode") {
+		if val, _ := flagset.GetBool("migration-mode"); !val {
+			return fmt.Errorf("--migration-mode cannot be set to false")
+		}
+	}
+	return nil
+}
+
+// FlagWasSet returns true if a flag was changed and it exists, otherwise it returns false
+func FlagWasSet(flagset *pflag.FlagSet, flagName string) bool {
+	if flagset.Lookup(flagName) != nil && flagset.Lookup(flagName).Changed {
+		return true
+	}
+	return false
+}
+
+// GenerateCRSpecFromFlags checks if a flag was changed and updates the blackDuckSpec with the value that's stored
+// in the corresponding struct field
+func (ctl *CRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *pflag.FlagSet) (interface{}, error) {
+	err := ctl.CheckValuesFromFlags(flagset)
+	if err != nil {
+		return nil, err
+	}
+	flagset.VisitAll(ctl.SetCRSpecFieldByFlag)
+	return *ctl.blackDuckSpec, nil
+}
+
+// SetCRSpecFieldByFlag updates a field in the blackDuckSpec if the flag was set by the user. It gets the
+// value from the corresponding struct field
+func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "size":
-			ctl.Spec.Size = ctl.Size
+			ctl.blackDuckSpec.Size = ctl.Size
 		case "version":
-			ctl.Spec.Version = ctl.Version
+			ctl.blackDuckSpec.Version = ctl.Version
 		case "expose-ui":
-			ctl.Spec.ExposeService = ctl.ExposeService
+			ctl.blackDuckSpec.ExposeService = ctl.ExposeService
 		case "db-prototype":
-			ctl.Spec.DbPrototype = ctl.DbPrototype
+			ctl.blackDuckSpec.DbPrototype = ctl.DbPrototype
 		case "external-postgres-host":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			if ctl.blackDuckSpec.ExternalPostgres == nil {
+				ctl.blackDuckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresHost = ctl.ExternalPostgresHost
+			ctl.blackDuckSpec.ExternalPostgres.PostgresHost = ctl.ExternalPostgresHost
 		case "external-postgres-port":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			if ctl.blackDuckSpec.ExternalPostgres == nil {
+				ctl.blackDuckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresPort = ctl.ExternalPostgresPort
+			ctl.blackDuckSpec.ExternalPostgres.PostgresPort = ctl.ExternalPostgresPort
 		case "external-postgres-admin":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			if ctl.blackDuckSpec.ExternalPostgres == nil {
+				ctl.blackDuckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresAdmin = ctl.ExternalPostgresAdmin
+			ctl.blackDuckSpec.ExternalPostgres.PostgresAdmin = ctl.ExternalPostgresAdmin
 		case "external-postgres-user":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			if ctl.blackDuckSpec.ExternalPostgres == nil {
+				ctl.blackDuckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresUser = ctl.ExternalPostgresUser
+			ctl.blackDuckSpec.ExternalPostgres.PostgresUser = ctl.ExternalPostgresUser
 		case "external-postgres-ssl":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			if ctl.blackDuckSpec.ExternalPostgres == nil {
+				ctl.blackDuckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresSsl = strings.ToUpper(ctl.ExternalPostgresSsl) == "TRUE"
+			ctl.blackDuckSpec.ExternalPostgres.PostgresSsl = strings.ToUpper(ctl.ExternalPostgresSsl) == "TRUE"
 		case "external-postgres-admin-password":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			if ctl.blackDuckSpec.ExternalPostgres == nil {
+				ctl.blackDuckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresAdminPassword = util.Base64Encode([]byte(ctl.ExternalPostgresAdminPassword))
+			ctl.blackDuckSpec.ExternalPostgres.PostgresAdminPassword = util.Base64Encode([]byte(ctl.ExternalPostgresAdminPassword))
 		case "external-postgres-user-password":
-			if ctl.Spec.ExternalPostgres == nil {
-				ctl.Spec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
+			if ctl.blackDuckSpec.ExternalPostgres == nil {
+				ctl.blackDuckSpec.ExternalPostgres = &blackduckv1.PostgresExternalDBConfig{}
 			}
-			ctl.Spec.ExternalPostgres.PostgresUserPassword = util.Base64Encode([]byte(ctl.ExternalPostgresUserPassword))
+			ctl.blackDuckSpec.ExternalPostgres.PostgresUserPassword = util.Base64Encode([]byte(ctl.ExternalPostgresUserPassword))
 		case "pvc-storage-class":
-			ctl.Spec.PVCStorageClass = ctl.PvcStorageClass
+			ctl.blackDuckSpec.PVCStorageClass = ctl.PvcStorageClass
 		case "liveness-probes":
-			ctl.Spec.LivenessProbes = strings.ToUpper(ctl.LivenessProbes) == "TRUE"
+			ctl.blackDuckSpec.LivenessProbes = strings.ToUpper(ctl.LivenessProbes) == "TRUE"
 		case "persistent-storage":
-			ctl.Spec.PersistentStorage = strings.ToUpper(ctl.PersistentStorage) == "TRUE"
+			ctl.blackDuckSpec.PersistentStorage = strings.ToUpper(ctl.PersistentStorage) == "TRUE"
 		case "pvc-file-path":
 			data, err := util.ReadFileData(ctl.PVCFilePath)
 			if err != nil {
@@ -303,7 +327,7 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				log.Errorf("failed to unmarshal pvc structs: %+v", err)
 				return
 			}
-			ctl.Spec.PVC = pvcs
+			ctl.blackDuckSpec.PVC = pvcs
 		case "node-affinity-file-path":
 			data, err := util.ReadFileData(ctl.NodeAffinityFilePath)
 			if err != nil {
@@ -316,76 +340,76 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				log.Errorf("failed to unmarshal node affinities: %+v", err)
 				return
 			}
-			ctl.Spec.NodeAffinities = nodeAffinities
+			ctl.blackDuckSpec.NodeAffinities = nodeAffinities
 		case "postgres-claim-size":
-			for i := range ctl.Spec.PVC {
-				if ctl.Spec.PVC[i].Name == "blackduck-postgres" { // update claim size and return
-					ctl.Spec.PVC[i].Size = ctl.PostgresClaimSize
+			for i := range ctl.blackDuckSpec.PVC {
+				if ctl.blackDuckSpec.PVC[i].Name == "blackduck-postgres" { // update claim size and return
+					ctl.blackDuckSpec.PVC[i].Size = ctl.PostgresClaimSize
 					return
 				}
 			}
-			ctl.Spec.PVC = append(ctl.Spec.PVC, blackduckv1.PVC{Name: "blackduck-postgres", Size: ctl.PostgresClaimSize}) // add postgres PVC if doesn't exist
+			ctl.blackDuckSpec.PVC = append(ctl.blackDuckSpec.PVC, blackduckv1.PVC{Name: "blackduck-postgres", Size: ctl.PostgresClaimSize}) // add postgres PVC if doesn't exist
 		case "certificate-name":
-			ctl.Spec.CertificateName = ctl.CertificateName
+			ctl.blackDuckSpec.CertificateName = ctl.CertificateName
 		case "certificate-file-path":
 			data, err := util.ReadFileData(ctl.CertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %+v", err)
 				return
 			}
-			ctl.Spec.Certificate = data
+			ctl.blackDuckSpec.Certificate = data
 		case "certificate-key-file-path":
 			data, err := util.ReadFileData(ctl.CertificateKeyFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %+v", err)
 				return
 			}
-			ctl.Spec.CertificateKey = data
+			ctl.blackDuckSpec.CertificateKey = data
 		case "proxy-certificate-file-path":
 			data, err := util.ReadFileData(ctl.ProxyCertificateFilePath)
 			if err != nil {
 				log.Errorf("failed to read certificate file: %+v", err)
 				return
 			}
-			ctl.Spec.ProxyCertificate = data
+			ctl.blackDuckSpec.ProxyCertificate = data
 		case "auth-custom-ca-file-path":
 			data, err := util.ReadFileData(ctl.AuthCustomCAFilePath)
 			if err != nil {
 				log.Errorf("failed to read authCustomCA file: %+v", err)
 				return
 			}
-			ctl.Spec.AuthCustomCA = data
+			ctl.blackDuckSpec.AuthCustomCA = data
 		case "type":
-			ctl.Spec.Type = ctl.Type
+			ctl.blackDuckSpec.Type = ctl.Type
 		case "desired-state":
-			ctl.Spec.DesiredState = ctl.DesiredState
+			ctl.blackDuckSpec.DesiredState = ctl.DesiredState
 		case "migration-mode":
 			if ctl.MigrationMode {
-				ctl.Spec.DesiredState = "DbMigrate"
+				ctl.blackDuckSpec.DesiredState = "DbMigrate"
 			}
 		case "environs":
-			ctl.Spec.Environs = ctl.Environs
+			ctl.blackDuckSpec.Environs = ctl.Environs
 		case "image-registries":
-			ctl.Spec.ImageRegistries = ctl.ImageRegistries
+			ctl.blackDuckSpec.ImageRegistries = ctl.ImageRegistries
 		case "license-key":
-			ctl.Spec.LicenseKey = ctl.LicenseKey
+			ctl.blackDuckSpec.LicenseKey = ctl.LicenseKey
 		case "admin-password":
-			ctl.Spec.AdminPassword = util.Base64Encode([]byte(ctl.AdminPassword))
+			ctl.blackDuckSpec.AdminPassword = util.Base64Encode([]byte(ctl.AdminPassword))
 		case "postgres-password":
-			ctl.Spec.PostgresPassword = util.Base64Encode([]byte(ctl.PostgresPassword))
+			ctl.blackDuckSpec.PostgresPassword = util.Base64Encode([]byte(ctl.PostgresPassword))
 		case "user-password":
-			ctl.Spec.UserPassword = util.Base64Encode([]byte(ctl.UserPassword))
+			ctl.blackDuckSpec.UserPassword = util.Base64Encode([]byte(ctl.UserPassword))
 		case "enable-binary-analysis":
 			if ctl.EnableBinaryAnalysis {
-				ctl.Spec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:1"}, ctl.Spec.Environs)
+				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:1"}, ctl.blackDuckSpec.Environs)
 			} else {
-				ctl.Spec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:0"}, ctl.Spec.Environs)
+				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"USE_BINARY_UPLOADS:0"}, ctl.blackDuckSpec.Environs)
 			}
 		case "enable-source-code-upload":
 			if ctl.EnableSourceCodeUpload {
-				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:true"}, ctl.Spec.Environs)
+				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:true"}, ctl.blackDuckSpec.Environs)
 			} else {
-				ctl.Spec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:false"}, ctl.Spec.Environs)
+				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:false"}, ctl.blackDuckSpec.Environs)
 			}
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
@@ -393,14 +417,4 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 	} else {
 		log.Debugf("flag '%s': UNCHANGED", f.Name)
 	}
-}
-
-// SpecIsValid verifies the spec has necessary fields to deploy
-func (ctl *Ctl) SpecIsValid() (bool, error) {
-	return true, nil
-}
-
-// CanUpdate checks if a user has permission to modify based on the spec
-func (ctl *Ctl) CanUpdate() (bool, error) {
-	return true, nil
 }

@@ -32,70 +32,86 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewBlackDuckCtl(t *testing.T) {
+func TestNewCRSpecBuilderFromCobraFlags(t *testing.T) {
 	assert := assert.New(t)
-	blackduckCtl := NewBlackDuckCtl()
-	assert.Equal(&Ctl{
-		Spec: &blackduckapi.BlackduckSpec{},
-	}, blackduckCtl)
+	blackDuckCobraHelper := NewCRSpecBuilderFromCobraFlags()
+	assert.Equal(&CRSpecBuilderFromCobraFlags{
+		blackDuckSpec: &blackduckapi.BlackduckSpec{},
+	}, blackDuckCobraHelper)
 }
 
-func TestGetSpec(t *testing.T) {
+func TestGetCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	blackDuckCtl := NewBlackDuckCtl()
-	assert.Equal(blackduckapi.BlackduckSpec{}, blackDuckCtl.GetSpec())
+	blackDuckCtl := NewCRSpecBuilderFromCobraFlags()
+	assert.Equal(blackduckapi.BlackduckSpec{}, blackDuckCtl.GetCRSpec())
 }
 
-func TestSetSpec(t *testing.T) {
+func TestSetCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	blackDuckCtl := NewBlackDuckCtl()
+	blackDuckCtl := NewCRSpecBuilderFromCobraFlags()
 	specToSet := blackduckapi.BlackduckSpec{Namespace: "test"}
-	blackDuckCtl.SetSpec(specToSet)
-	assert.Equal(specToSet, blackDuckCtl.GetSpec())
+	blackDuckCtl.SetCRSpec(specToSet)
+	assert.Equal(specToSet, blackDuckCtl.GetCRSpec())
 
 	// check for error
-	assert.Error(blackDuckCtl.SetSpec(""))
+	assert.Error(blackDuckCtl.SetCRSpec(""))
 }
 
-func TestCheckSpecFlags(t *testing.T) {
-	assert := assert.New(t)
-
+func TestCheckValuesFromFlags(t *testing.T) {
 	// default case
-	blackduckCtl := NewBlackDuckCtl()
-	blackduckCtl.ExposeService = util.NONE
+	blackDuckCobraHelper := NewCRSpecBuilderFromCobraFlags()
+	blackDuckCobraHelper.ExposeService = util.NONE
 	cmd := &cobra.Command{}
-	blackduckCtl.AddSpecFlags(cmd, true)
-	err := blackduckCtl.CheckSpecFlags(cmd.Flags())
+	blackDuckCobraHelper.AddCRSpecFlagsToCommand(cmd, true)
+	err := blackDuckCobraHelper.CheckValuesFromFlags(cmd.Flags())
 	if err != nil {
 		t.Errorf("expected nil error, got: %+v", err)
 	}
 
 	var tests = []struct {
-		input *Ctl
+		input          *CRSpecBuilderFromCobraFlags
+		flagNameToTest string
+		flagValue      string
 	}{
 		// case
-		{input: &Ctl{
-			Spec: &blackduckapi.BlackduckSpec{},
-			Size: "notValid",
-		}},
+		{input: &CRSpecBuilderFromCobraFlags{
+			blackDuckSpec: &blackduckapi.BlackduckSpec{},
+			Size:          "notValid",
+		},
+			flagNameToTest: "size",
+			flagValue:      "notValid",
+		},
 		// case
-		{input: &Ctl{
-			Spec:     &blackduckapi.BlackduckSpec{},
-			Environs: []string{"invalid"},
-		}},
-		{input: &Ctl{
-			Spec:          &blackduckapi.BlackduckSpec{},
+		{input: &CRSpecBuilderFromCobraFlags{
+			blackDuckSpec: &blackduckapi.BlackduckSpec{},
+			Environs:      []string{"invalid"},
+		},
+			flagNameToTest: "environs",
+			flagValue:      "invalid",
+		},
+		{input: &CRSpecBuilderFromCobraFlags{
+			blackDuckSpec: &blackduckapi.BlackduckSpec{},
 			ExposeService: "",
-		}},
+		},
+			flagNameToTest: "expose-ui",
+			flagValue:      "",
+		},
 	}
 
 	for _, test := range tests {
-		assert.Error(test.input.CheckSpecFlags(cmd.Flags()))
+		cmd := &cobra.Command{}
+		blackDuckCobraHelper.AddCRSpecFlagsToCommand(cmd, true)
+		flagset := cmd.Flags()
+		flagset.Set(test.flagNameToTest, test.flagValue)
+		err := test.input.CheckValuesFromFlags(flagset)
+		if err == nil {
+			t.Errorf("Expected an error but got nil, test: %+v", test)
+		}
 	}
 }
-func TestSwitchSpec(t *testing.T) {
+func TestSetPredefinedCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	blackDuckCtl := NewBlackDuckCtl()
+	blackDuckCtl := NewCRSpecBuilderFromCobraFlags()
 	var tests = []struct {
 		input    string
 		expected *blackduckapi.BlackduckSpec
@@ -114,21 +130,21 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: "empty", "persistentStorage", "default"
 	for _, test := range tests {
-		assert.Nil(blackDuckCtl.SwitchSpec(test.input))
-		assert.Equal(*test.expected, blackDuckCtl.GetSpec())
+		assert.Nil(blackDuckCtl.SetPredefinedCRSpec(test.input))
+		assert.Equal(*test.expected, blackDuckCtl.GetCRSpec())
 	}
 
 	// test cases: ""
 	createBlackDuckSpecType := ""
-	assert.Error(blackDuckCtl.SwitchSpec(createBlackDuckSpecType))
+	assert.Error(blackDuckCtl.SetPredefinedCRSpec(createBlackDuckSpecType))
 }
 
-func TestAddSpecFlags(t *testing.T) {
+func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	assert := assert.New(t)
 
-	ctl := NewBlackDuckCtl()
+	ctl := NewCRSpecBuilderFromCobraFlags()
 	actualCmd := &cobra.Command{}
-	ctl.AddSpecFlags(actualCmd, true)
+	ctl.AddCRSpecFlagsToCommand(actualCmd, true)
 
 	cmd := &cobra.Command{}
 	cmd.Flags().StringVar(&ctl.PvcStorageClass, "pvc-storage-class", ctl.PvcStorageClass, "Name of Storage Class for the PVC")
@@ -171,57 +187,57 @@ func TestAddSpecFlags(t *testing.T) {
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 }
 
-func TestSetChangedFlags(t *testing.T) {
+func TestGenerateCRSpecFromFlags(t *testing.T) {
 	assert := assert.New(t)
 
-	actualCtl := NewBlackDuckCtl()
+	actualCtl := NewCRSpecBuilderFromCobraFlags()
 	cmd := &cobra.Command{}
-	actualCtl.AddSpecFlags(cmd, true)
-	actualCtl.SetChangedFlags(cmd.Flags())
+	actualCtl.AddCRSpecFlagsToCommand(cmd, true)
+	actualCtl.GenerateCRSpecFromFlags(cmd.Flags())
 
-	expCtl := NewBlackDuckCtl()
-	sort.Strings(expCtl.Spec.Environs)
-	sort.Strings(actualCtl.Spec.Environs)
+	expCtl := NewCRSpecBuilderFromCobraFlags()
+	sort.Strings(expCtl.blackDuckSpec.Environs)
+	sort.Strings(actualCtl.blackDuckSpec.Environs)
 
-	assert.Equal(expCtl.Spec, actualCtl.Spec)
+	assert.Equal(expCtl.blackDuckSpec, actualCtl.blackDuckSpec)
 
 }
 
-func TestSetFlag(t *testing.T) {
+func TestSetCRSpecFieldByFlag(t *testing.T) {
 	assert := assert.New(t)
 
 	var tests = []struct {
 		flagName    string
-		initialCtl  *Ctl
-		changedCtl  *Ctl
+		initialCtl  *CRSpecBuilderFromCobraFlags
+		changedCtl  *CRSpecBuilderFromCobraFlags
 		changedSpec *blackduckapi.BlackduckSpec
 	}{
 		// case
 		{
 			flagName:   "size",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec: &blackduckapi.BlackduckSpec{},
-				Size: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
+				Size:          "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Size: "changed"},
 		},
 		// case
 		{
 			flagName:   "version",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:    &blackduckapi.BlackduckSpec{},
-				Version: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
+				Version:       "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Version: "changed"},
 		},
 		// case
 		{
 			flagName:   "expose-ui",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:          &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
 				ExposeService: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{ExposeService: "changed"},
@@ -229,19 +245,19 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "db-prototype",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:        &blackduckapi.BlackduckSpec{},
-				DbPrototype: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
+				DbPrototype:   "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{DbPrototype: "changed"},
 		},
 		// case
 		{
 			flagName:   "external-postgres-host",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:        &blackduckapi.BlackduckSpec{},
 				ExternalPostgresHost: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{
@@ -251,9 +267,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-port",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:        &blackduckapi.BlackduckSpec{},
 				ExternalPostgresPort: 10,
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{
@@ -263,9 +279,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-admin",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                  &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:         &blackduckapi.BlackduckSpec{},
 				ExternalPostgresAdmin: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{
@@ -275,9 +291,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-user",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:        &blackduckapi.BlackduckSpec{},
 				ExternalPostgresUser: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{
@@ -287,9 +303,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-ssl",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:       &blackduckapi.BlackduckSpec{},
 				ExternalPostgresSsl: "false",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{
@@ -299,9 +315,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-ssl",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:       &blackduckapi.BlackduckSpec{},
 				ExternalPostgresSsl: "true",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{
@@ -311,9 +327,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-admin-password",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                          &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:                 &blackduckapi.BlackduckSpec{},
 				ExternalPostgresAdminPassword: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{
@@ -323,9 +339,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "external-postgres-user-password",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                         &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:                &blackduckapi.BlackduckSpec{},
 				ExternalPostgresUserPassword: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{
@@ -335,9 +351,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "pvc-storage-class",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:            &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:   &blackduckapi.BlackduckSpec{},
 				PvcStorageClass: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{PVCStorageClass: "changed"},
@@ -345,9 +361,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "liveness-probes",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:           &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:  &blackduckapi.BlackduckSpec{},
 				LivenessProbes: "false",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{LivenessProbes: false},
@@ -355,9 +371,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "liveness-probes",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:           &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:  &blackduckapi.BlackduckSpec{},
 				LivenessProbes: "true",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{LivenessProbes: true},
@@ -365,9 +381,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "persistent-storage",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:              &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:     &blackduckapi.BlackduckSpec{},
 				PersistentStorage: "false",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{PersistentStorage: false},
@@ -375,9 +391,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "persistent-storage",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:              &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:     &blackduckapi.BlackduckSpec{},
 				PersistentStorage: "true",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{PersistentStorage: true},
@@ -385,19 +401,19 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "pvc-file-path",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:        &blackduckapi.BlackduckSpec{},
-				PVCFilePath: "../../examples/synopsysctl/pvc.json",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
+				PVCFilePath:   "../../examples/synopsysctl/pvc.json",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "name1", Size: "size1", StorageClass: "storageclass1"}, {Name: "name2", Size: "size2", StorageClass: "storageclass2"}}},
 		},
 		// case
 		{
 			flagName:   "node-affinity-file-path",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:        &blackduckapi.BlackduckSpec{},
 				NodeAffinityFilePath: "../../examples/synopsysctl/nodeAffinity.json",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{NodeAffinities: map[string][]blackduckapi.NodeAffinity{
@@ -415,9 +431,9 @@ func TestSetFlag(t *testing.T) {
 		// case: add postgres-claim with size if PVC doesn't exist
 		{
 			flagName:   "postgres-claim-size",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:              &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:     &blackduckapi.BlackduckSpec{},
 				PostgresClaimSize: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
@@ -425,9 +441,9 @@ func TestSetFlag(t *testing.T) {
 		// case: append postgres-claim with size if PVC doesn't exist
 		{
 			flagName:   "postgres-claim-size",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:              &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "other-pvc", Size: "other-size"}}},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:     &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "other-pvc", Size: "other-size"}}},
 				PostgresClaimSize: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "other-pvc", Size: "other-size"}, {Name: "blackduck-postgres", Size: "changed"}}},
@@ -435,9 +451,9 @@ func TestSetFlag(t *testing.T) {
 		// case: update postgres-claim with size if PVC exists
 		{
 			flagName:   "postgres-claim-size",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:              &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "unchanged"}}},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:     &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "unchanged"}}},
 				PostgresClaimSize: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
@@ -445,9 +461,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "certificate-name",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:            &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:   &blackduckapi.BlackduckSpec{},
 				CertificateName: "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{CertificateName: "changed"},
@@ -455,9 +471,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "certificate-file-path",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:       &blackduckapi.BlackduckSpec{},
 				CertificateFilePath: "../../examples/synopsysctl/certificate.txt",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Certificate: "CERTIFICATE"},
@@ -465,9 +481,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "certificate-key-file-path",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                   &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:          &blackduckapi.BlackduckSpec{},
 				CertificateKeyFilePath: "../../examples/synopsysctl/certificateKey.txt",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{CertificateKey: "CERTIFICATE_KEY=CERTIFICATE_KEY_DATA"},
@@ -475,9 +491,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "proxy-certificate-file-path",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                     &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:            &blackduckapi.BlackduckSpec{},
 				ProxyCertificateFilePath: "../../examples/synopsysctl/proxyCertificate.txt",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{ProxyCertificate: "PROXY_CERTIFICATE"},
@@ -485,9 +501,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "auth-custom-ca-file-path",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:        &blackduckapi.BlackduckSpec{},
 				AuthCustomCAFilePath: "../../examples/synopsysctl/authCustomCA.txt",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{AuthCustomCA: "AUTH_CUSTOM_CA"},
@@ -495,29 +511,29 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "type",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec: &blackduckapi.BlackduckSpec{},
-				Type: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
+				Type:          "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Type: "changed"},
 		},
 		// case
 		{
 			flagName:   "desired-state",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:         &blackduckapi.BlackduckSpec{},
-				DesiredState: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
+				DesiredState:  "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{DesiredState: "changed"},
 		},
 		// case
 		{
 			flagName:   "migration-mode",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:          &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
 				MigrationMode: true,
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{DesiredState: "DbMigrate"},
@@ -526,10 +542,10 @@ func TestSetFlag(t *testing.T) {
 		{
 			// TODO: add a check in environs for correct input string format
 			flagName:   "environs",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:     &blackduckapi.BlackduckSpec{},
-				Environs: []string{"changed"},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
+				Environs:      []string{"changed"},
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"changed"}},
 		},
@@ -537,9 +553,9 @@ func TestSetFlag(t *testing.T) {
 		{
 			// TODO: add a check for name:Val
 			flagName:   "image-registries",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:            &blackduckapi.BlackduckSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:   &blackduckapi.BlackduckSpec{},
 				ImageRegistries: []string{"changed"},
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{ImageRegistries: []string{"changed"}},
@@ -547,19 +563,19 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "license-key",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:       &blackduckapi.BlackduckSpec{},
-				LicenseKey: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec: &blackduckapi.BlackduckSpec{},
+				LicenseKey:    "changed",
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{LicenseKey: "changed"},
 		},
 		// case : set binary analysis to enabled
 		{
 			flagName:   "enable-binary-analysis",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:        &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
 				EnableBinaryAnalysis: true,
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
@@ -567,9 +583,9 @@ func TestSetFlag(t *testing.T) {
 		// case : set binary analysis to disabled
 		{
 			flagName:   "enable-binary-analysis",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                 &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:        &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:1"}},
 				EnableBinaryAnalysis: false,
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"USE_BINARY_UPLOADS:0"}},
@@ -577,9 +593,9 @@ func TestSetFlag(t *testing.T) {
 		// case : set source code upload to enabled
 		{
 			flagName:   "enable-source-code-upload",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                   &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:          &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
 				EnableSourceCodeUpload: true,
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
@@ -587,41 +603,41 @@ func TestSetFlag(t *testing.T) {
 		// case : set source code upload to disabled
 		{
 			flagName:   "enable-source-code-upload",
-			initialCtl: NewBlackDuckCtl(),
-			changedCtl: &Ctl{
-				Spec:                   &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				blackDuckSpec:          &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:true"}},
 				EnableSourceCodeUpload: false,
 			},
 			changedSpec: &blackduckapi.BlackduckSpec{Environs: []string{"ENABLE_SOURCE_UPLOADS:false"}},
 		},
 	}
 
-	// get the Ctl's flags
+	// get the CRSpecBuilderFromCobraFlags's flags
 	cmd := &cobra.Command{}
-	actualCtl := NewBlackDuckCtl()
-	actualCtl.AddSpecFlags(cmd, true)
+	actualCtl := NewCRSpecBuilderFromCobraFlags()
+	actualCtl.AddCRSpecFlagsToCommand(cmd, true)
 	flagset := cmd.Flags()
 
 	for _, test := range tests {
-		actualCtl = NewBlackDuckCtl()
+		actualCtl = NewCRSpecBuilderFromCobraFlags()
 		// check the Flag exists
 		foundFlag := flagset.Lookup(test.flagName)
 		if foundFlag == nil {
 			t.Errorf("flag %s is not in the spec", test.flagName)
 		}
-		// check the correct Ctl is used
+		// check the correct CRSpecBuilderFromCobraFlags is used
 		assert.Equal(test.initialCtl, actualCtl)
 		actualCtl = test.changedCtl
 		// test setting a flag
 		f := &pflag.Flag{Changed: true, Name: test.flagName}
-		actualCtl.SetFlag(f)
-		assert.Equal(test.changedSpec, actualCtl.Spec)
+		actualCtl.SetCRSpecFieldByFlag(f)
+		assert.Equal(test.changedSpec, actualCtl.blackDuckSpec)
 	}
 
 	// case: nothing set if flag doesn't exist
-	actualCtl = NewBlackDuckCtl()
+	actualCtl = NewCRSpecBuilderFromCobraFlags()
 	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
-	actualCtl.SetFlag(f)
-	assert.Equal(&blackduckapi.BlackduckSpec{}, actualCtl.Spec)
+	actualCtl.SetCRSpecFieldByFlag(f)
+	assert.Equal(&blackduckapi.BlackduckSpec{}, actualCtl.blackDuckSpec)
 
 }
