@@ -1910,25 +1910,30 @@ func (b *Blackduck) Ensure(blackduck *v1.Blackduck) error {
 
 // GetComponents gets the Black Duck's creater and returns the components
 func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*api.ComponentList, error) {
-	// If the version is not specified then we set it to be the latest.
-	//if err := b.ensureVersion(bd); err != nil {
-	//	return nil, err
-	//}
-	//creater, err := b.getCreater(bd.Spec.Version)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//switch strings.ToUpper(compType) {
-	//case CRDResources:
-	//	return creater.GetComponents(bd)
-	//case DatabaseResources:
-	//	return creater.GetPostgresComponents(bd)
-	//case PVCResources:
-	//	pvcs := creater.GetPVC(bd)
-	//	return &api.ComponentList{PersistentVolumeClaims: pvcs}, nil
-	//}
-	//return nil, fmt.Errorf("invalid components type '%s'", compType)
-	return nil, nil
+	//If the version is not specified then we set it to be the latest.
+	if err := b.ensureVersion(bd); err != nil {
+		return nil, err
+	}
+
+	version, ok := publicVersions[bd.Spec.Version]
+	if !ok {
+		return nil, fmt.Errorf("version %s is not supported", bd.Spec.Version)
+	}
+
+	cp, err := store.GetComponents(version, b.config, b.kubeClient, bd)
+	if err != nil {
+		return nil, err
+	}
+
+	switch strings.ToUpper(compType) {
+	case CRDResources:
+		return cp.Filter("component notin (postgres)")
+	case DatabaseResources:
+		return cp.Filter("component in (postgres)")
+	case PVCResources:
+		return &api.ComponentList{PersistentVolumeClaims: b.GetPVCs(bd)}, nil
+	}
+	return nil, fmt.Errorf("invalid components type '%s'", compType)
 }
 
 func (b Blackduck) initPostgres(name string, bdspec *blackduckapi.BlackduckSpec) error {

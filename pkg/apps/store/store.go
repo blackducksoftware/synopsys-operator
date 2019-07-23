@@ -33,19 +33,16 @@ func Register(name types.ComponentName, function interface{}) {
 			ComponentStore.Rc = make(map[types.ComponentName]types.ReplicationControllerCreater)
 		}
 		ComponentStore.Rc[name] = function.(func(*types.ReplicationController, *protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ReplicationControllerInterface)
-		fmt.Println("loaded RC: " + name)
 	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ServiceInterface:
 		if ComponentStore.Service == nil {
 			ComponentStore.Service = make(map[types.ComponentName]types.ServiceCreater)
 		}
 		ComponentStore.Service[name] = function.(func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ServiceInterface)
-		fmt.Println("loaded service: " + name)
 	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ConfigMapInterface:
 		if ComponentStore.Configmap == nil {
 			ComponentStore.Configmap = make(map[types.ComponentName]types.ConfigmapCreater)
 		}
 		ComponentStore.Configmap[name] = function.(func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ConfigMapInterface)
-		fmt.Println("loaded configmap: " + name)
 	case types.PvcCreater:
 		ComponentStore.PVC[name] = function.(types.PvcCreater)
 	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.SecretInterface:
@@ -53,7 +50,6 @@ func Register(name types.ComponentName, function interface{}) {
 			ComponentStore.Secret = make(map[types.ComponentName]types.SecretCreater)
 		}
 		ComponentStore.Secret[name] = function.(func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.SecretInterface)
-		fmt.Println("loaded secret: " + name)
 	case types.SizeInterface:
 		if ComponentStore.Size == nil {
 			ComponentStore.Size = make(map[types.ComponentName]types.SizeInterface)
