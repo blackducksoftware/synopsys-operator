@@ -32,65 +32,80 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewOpsSightCtl(t *testing.T) {
+func TestNewCRSpecBuilderFromCobraFlags(t *testing.T) {
 	assert := assert.New(t)
-	opsSightCtl := NewOpsSightCtl()
-	assert.Equal(&Ctl{
-		Spec: &opssightapi.OpsSightSpec{},
-	}, opsSightCtl)
+	opsSightCobraHelper := NewCRSpecBuilderFromCobraFlags()
+	assert.Equal(&CRSpecBuilderFromCobraFlags{
+		opsSightSpec: &opssightapi.OpsSightSpec{},
+	}, opsSightCobraHelper)
 }
 
-func TestGetSpec(t *testing.T) {
+func TestGetCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	opsSightCtl := NewOpsSightCtl()
-	assert.Equal(opssightapi.OpsSightSpec{}, opsSightCtl.GetSpec())
+	opsSightCobraHelper := NewCRSpecBuilderFromCobraFlags()
+	assert.Equal(opssightapi.OpsSightSpec{}, opsSightCobraHelper.GetCRSpec())
 }
 
-func TestSetSpec(t *testing.T) {
+func TestSetCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	opsSightCtl := NewOpsSightCtl()
+	opsSightCobraHelper := NewCRSpecBuilderFromCobraFlags()
 	specToSet := opssightapi.OpsSightSpec{Namespace: "test"}
-	opsSightCtl.SetSpec(specToSet)
-	assert.Equal(specToSet, opsSightCtl.GetSpec())
+	opsSightCobraHelper.SetCRSpec(specToSet)
+	assert.Equal(specToSet, opsSightCobraHelper.GetCRSpec())
 
 	// check for error
-	assert.Error(opsSightCtl.SetSpec(""))
+	assert.Error(opsSightCobraHelper.SetCRSpec(""))
 }
 
-func TestCheckSpecFlags(t *testing.T) {
+func TestCheckValuesFromFlags(t *testing.T) {
 	assert := assert.New(t)
-	opsSightCtl := NewOpsSightCtl()
-	opsSightCtl.PerceptorExpose = util.NONE
-	opsSightCtl.PrometheusExpose = util.NONE
+	opsSightCobraHelper := NewCRSpecBuilderFromCobraFlags()
+	opsSightCobraHelper.PerceptorExpose = util.NONE
+	opsSightCobraHelper.PrometheusExpose = util.NONE
 	cmd := &cobra.Command{}
-	specFlags := opsSightCtl.CheckSpecFlags(cmd.Flags())
+	specFlags := opsSightCobraHelper.CheckValuesFromFlags(cmd.Flags())
 	assert.Nil(specFlags)
 
 	var tests = []struct {
-		input *Ctl
+		input          *CRSpecBuilderFromCobraFlags
+		flagNameToTest string
+		flagValue      string
 	}{
 		// invalid opssight core expose case
-		{input: &Ctl{
-			Spec:             &opssightapi.OpsSightSpec{},
+		{input: &CRSpecBuilderFromCobraFlags{
+			opsSightSpec:     &opssightapi.OpsSightSpec{},
 			PerceptorExpose:  "",
 			PrometheusExpose: util.NONE,
-		}},
+		},
+			flagNameToTest: "opssight-core-expose",
+			flagValue:      "",
+		},
 		// invalid prometheus metrics expose case
-		{input: &Ctl{
-			Spec:             &opssightapi.OpsSightSpec{},
+		{input: &CRSpecBuilderFromCobraFlags{
+			opsSightSpec:     &opssightapi.OpsSightSpec{},
 			PerceptorExpose:  util.NONE,
 			PrometheusExpose: "",
-		}},
+		},
+			flagNameToTest: "expose-metrics",
+			flagValue:      "",
+		},
 	}
 
 	for _, test := range tests {
-		assert.Error(test.input.CheckSpecFlags(cmd.Flags()))
+		cmd := &cobra.Command{}
+		opsSightCobraHelper.AddCRSpecFlagsToCommand(cmd, true)
+		flagset := cmd.Flags()
+		flagset.Set(test.flagNameToTest, test.flagValue)
+		err := test.input.CheckValuesFromFlags(flagset)
+		if err == nil {
+			t.Errorf("Expected an error but got nil, test: %+v", test)
+		}
 	}
 }
 
-func TestSwitchSpec(t *testing.T) {
+func TestSetPredefinedCRSpec(t *testing.T) {
 	assert := assert.New(t)
-	opsSightCtl := NewOpsSightCtl()
+	opsSightCobraHelper := NewCRSpecBuilderFromCobraFlags()
 	defaultSpec := util.GetOpsSightDefault()
 	defaultSpec.Perceiver.EnablePodPerceiver = true
 	defaultSpec.EnableMetrics = true
@@ -107,22 +122,22 @@ func TestSwitchSpec(t *testing.T) {
 
 	// test cases: "empty", "default", "disabledBlackduck"
 	for _, test := range tests {
-		assert.Nil(opsSightCtl.SwitchSpec(test.input))
-		assert.Equal(*test.expected, opsSightCtl.GetSpec())
+		assert.Nil(opsSightCobraHelper.SetPredefinedCRSpec(test.input))
+		assert.Equal(*test.expected, opsSightCobraHelper.GetCRSpec())
 	}
 
 	// test cases: default
 	createOpsSightSpecType := ""
-	assert.Error(opsSightCtl.SwitchSpec(createOpsSightSpecType))
+	assert.Error(opsSightCobraHelper.SetPredefinedCRSpec(createOpsSightSpecType))
 
 }
 
-func TestAddSpecFlags(t *testing.T) {
+func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	assert := assert.New(t)
 
-	ctl := NewOpsSightCtl()
+	ctl := NewCRSpecBuilderFromCobraFlags()
 	actualCmd := &cobra.Command{}
-	ctl.AddSpecFlags(actualCmd, true)
+	ctl.AddCRSpecFlagsToCommand(actualCmd, true)
 
 	cmd := &cobra.Command{}
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of OpsSight's Core")
@@ -167,35 +182,35 @@ func TestAddSpecFlags(t *testing.T) {
 
 }
 
-func TestSetChangedFlags(t *testing.T) {
+func TestGenerateCRSpecFromFlags(t *testing.T) {
 	assert := assert.New(t)
 
-	actualCtl := NewOpsSightCtl()
+	actualCtl := NewCRSpecBuilderFromCobraFlags()
 	cmd := &cobra.Command{}
-	actualCtl.AddSpecFlags(cmd, true)
-	actualCtl.SetChangedFlags(cmd.Flags())
+	actualCtl.AddCRSpecFlagsToCommand(cmd, true)
+	actualCtl.GenerateCRSpecFromFlags(cmd.Flags())
 
-	expCtl := NewOpsSightCtl()
+	expCtl := NewCRSpecBuilderFromCobraFlags()
 
-	assert.Equal(expCtl.Spec, actualCtl.Spec)
+	assert.Equal(expCtl.opsSightSpec, actualCtl.opsSightSpec)
 
 }
 
-func TestSetFlag(t *testing.T) {
+func TestSetCRSpecFieldByFlag(t *testing.T) {
 	assert := assert.New(t)
 
 	var tests = []struct {
 		flagName    string
-		initialCtl  *Ctl
-		changedCtl  *Ctl
+		initialCtl  *CRSpecBuilderFromCobraFlags
+		changedCtl  *CRSpecBuilderFromCobraFlags
 		changedSpec *opssightapi.OpsSightSpec
 	}{
 		// case
 		{
 			flagName:   "opssight-core-image",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:           &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:   &opssightapi.OpsSightSpec{},
 				PerceptorImage: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{Image: "changed"}},
@@ -203,9 +218,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "opssight-core-expose",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:            &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:    &opssightapi.OpsSightSpec{},
 				PerceptorExpose: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{Expose: "changed"}},
@@ -213,9 +228,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "opssight-core-check-scan-hours",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                                    &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                            &opssightapi.OpsSightSpec{},
 				PerceptorCheckForStalledScansPauseHours: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{CheckForStalledScansPauseHours: 10}},
@@ -223,9 +238,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "opssight-core-scan-client-timeout-hours",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                                   &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                           &opssightapi.OpsSightSpec{},
 				PerceptorStalledScanClientTimeoutHours: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{StalledScanClientTimeoutHours: 10}},
@@ -233,9 +248,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "opssight-core-metrics-pause-seconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                              &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                      &opssightapi.OpsSightSpec{},
 				PerceptorModelMetricsPauseSeconds: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{ModelMetricsPauseSeconds: 10}},
@@ -243,9 +258,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "opssight-core-unknown-image-pause-milliseconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                                   &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                           &opssightapi.OpsSightSpec{},
 				PerceptorUnknownImagePauseMilliseconds: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{UnknownImagePauseMilliseconds: 10}},
@@ -253,9 +268,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "opssight-core-client-timeout-milliseconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                               &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                       &opssightapi.OpsSightSpec{},
 				PerceptorClientTimeoutMilliseconds: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{ClientTimeoutMilliseconds: 10}},
@@ -263,9 +278,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "scanner-image",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                   &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:           &opssightapi.OpsSightSpec{},
 				ScannerPodScannerImage: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{Scanner: &opssightapi.Scanner{Image: "changed"}}},
@@ -273,9 +288,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "scanner-client-timeout-seconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                                  &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                          &opssightapi.OpsSightSpec{},
 				ScannerPodScannerClientTimeoutSeconds: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{Scanner: &opssightapi.Scanner{ClientTimeoutSeconds: 10}}},
@@ -283,9 +298,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "image-getter-image",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                       &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:               &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeImage: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{Image: "changed"}}},
@@ -293,9 +308,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "image-getter-secure-registries-file-path",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec: &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec: &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeInternalRegistriesFilePath: "../../examples/synopsysctl/imageGetterSecureRegistries.json",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{InternalRegistries: []*opssightapi.RegistryAuth{
@@ -309,9 +324,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "image-getter-image-puller-type",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                                 &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                         &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeImagePullerType: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{ImagePullerType: "changed"}}},
@@ -319,9 +334,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "image-getter-service-account",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                                &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                        &opssightapi.OpsSightSpec{},
 				ScannerPodImageFacadeServiceAccount: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{ServiceAccount: "changed"}}},
@@ -329,9 +344,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "scannerpod-replica-count",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                   &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:           &opssightapi.OpsSightSpec{},
 				ScannerPodReplicaCount: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ReplicaCount: 10}},
@@ -339,9 +354,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "scannerpod-image-directory",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                     &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:             &opssightapi.OpsSightSpec{},
 				ScannerPodImageDirectory: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageDirectory: "changed"}},
@@ -349,9 +364,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "enable-pod-processor",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                        &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                &opssightapi.OpsSightSpec{},
 				PerceiverEnablePodPerceiver: "false",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{EnablePodPerceiver: false}},
@@ -359,9 +374,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "enable-pod-processor",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                        &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                &opssightapi.OpsSightSpec{},
 				PerceiverEnablePodPerceiver: "true",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{EnablePodPerceiver: true}},
@@ -369,9 +384,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "image-processor-image",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                         &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                 &opssightapi.OpsSightSpec{},
 				PerceiverImagePerceiverImage: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{ImagePerceiver: &opssightapi.ImagePerceiver{Image: "changed"}}},
@@ -379,9 +394,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "pod-processor-image",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                       &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:               &opssightapi.OpsSightSpec{},
 				PerceiverPodPerceiverImage: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{PodPerceiver: &opssightapi.PodPerceiver{Image: "changed"}}},
@@ -389,9 +404,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "pod-processor-namespace-filter",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                                 &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                         &opssightapi.OpsSightSpec{},
 				PerceiverPodPerceiverNamespaceFilter: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{PodPerceiver: &opssightapi.PodPerceiver{NamespaceFilter: "changed"}}},
@@ -399,9 +414,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "processor-annotation-interval-seconds",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                               &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                       &opssightapi.OpsSightSpec{},
 				PerceiverAnnotationIntervalSeconds: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{AnnotationIntervalSeconds: 10}},
@@ -409,9 +424,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "processor-dump-interval-minutes",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                         &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                 &opssightapi.OpsSightSpec{},
 				PerceiverDumpIntervalMinutes: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{DumpIntervalMinutes: 10}},
@@ -419,59 +434,59 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "default-cpu",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:       &opssightapi.OpsSightSpec{},
-				DefaultCPU: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec: &opssightapi.OpsSightSpec{},
+				DefaultCPU:   "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{DefaultCPU: "changed"},
 		},
 		// case
 		{
 			flagName:   "default-memory",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:       &opssightapi.OpsSightSpec{},
-				DefaultMem: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec: &opssightapi.OpsSightSpec{},
+				DefaultMem:   "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{DefaultMem: "changed"},
 		},
 		// case
 		{
 			flagName:   "scanner-cpu",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:       &opssightapi.OpsSightSpec{},
-				ScannerCPU: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec: &opssightapi.OpsSightSpec{},
+				ScannerCPU:   "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerCPU: "changed"},
 		},
 		// case
 		{
 			flagName:   "scanner-memory",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:       &opssightapi.OpsSightSpec{},
-				ScannerMem: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec: &opssightapi.OpsSightSpec{},
+				ScannerMem:   "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerMem: "changed"},
 		},
 		// case
 		{
 			flagName:   "log-level",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:     &opssightapi.OpsSightSpec{},
-				LogLevel: "changed",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec: &opssightapi.OpsSightSpec{},
+				LogLevel:     "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{LogLevel: "changed"},
 		},
 		// case
 		{
 			flagName:   "enable-metrics",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:          &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:  &opssightapi.OpsSightSpec{},
 				EnableMetrics: "false",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{EnableMetrics: false},
@@ -479,9 +494,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "enable-metrics",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:          &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:  &opssightapi.OpsSightSpec{},
 				EnableMetrics: "true",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{EnableMetrics: true},
@@ -489,9 +504,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "metrics-image",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:            &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:    &opssightapi.OpsSightSpec{},
 				PrometheusImage: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Image: "changed"}},
@@ -499,9 +514,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "metrics-port",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:           &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:   &opssightapi.OpsSightSpec{},
 				PrometheusPort: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Port: 10}},
@@ -509,9 +524,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "expose-metrics",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:             &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:     &opssightapi.OpsSightSpec{},
 				PrometheusExpose: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Expose: "changed"}},
@@ -519,9 +534,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "blackduck-external-hosts-file-path",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                           &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:                   &opssightapi.OpsSightSpec{},
 				BlackduckExternalHostsFilePath: "../../examples/synopsysctl/blackduckExternalHosts.json",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{ExternalHosts: []*opssightapi.Host{
@@ -538,9 +553,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "blackduck-TLS-verification",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                     &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:             &opssightapi.OpsSightSpec{},
 				BlackduckTLSVerification: "false",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{TLSVerification: false}},
@@ -548,9 +563,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "blackduck-TLS-verification",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                     &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:             &opssightapi.OpsSightSpec{},
 				BlackduckTLSVerification: "true",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{TLSVerification: true}},
@@ -558,9 +573,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "blackduck-initial-count",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:                  &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:          &opssightapi.OpsSightSpec{},
 				BlackduckInitialCount: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{InitialCount: 10}},
@@ -568,9 +583,9 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "blackduck-max-count",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:              &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:      &opssightapi.OpsSightSpec{},
 				BlackduckMaxCount: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{MaxCount: 10}},
@@ -578,41 +593,41 @@ func TestSetFlag(t *testing.T) {
 		// case
 		{
 			flagName:   "blackduck-type",
-			initialCtl: NewOpsSightCtl(),
-			changedCtl: &Ctl{
-				Spec:          &opssightapi.OpsSightSpec{},
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:  &opssightapi.OpsSightSpec{},
 				BlackduckType: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{BlackduckSpec: &blackduckapi.BlackduckSpec{Type: "changed"}}},
 		},
 	}
 
-	// get the Ctl's flags
+	// get the CRSpecBuilderFromCobraFlags's flags
 	cmd := &cobra.Command{}
-	actualCtl := NewOpsSightCtl()
-	actualCtl.AddSpecFlags(cmd, true)
+	actualCtl := NewCRSpecBuilderFromCobraFlags()
+	actualCtl.AddCRSpecFlagsToCommand(cmd, true)
 	flagset := cmd.Flags()
 
 	for _, test := range tests {
-		actualCtl = NewOpsSightCtl()
+		actualCtl = NewCRSpecBuilderFromCobraFlags()
 		// check the Flag exists
 		foundFlag := flagset.Lookup(test.flagName)
 		if foundFlag == nil {
 			t.Errorf("flag %s is not in the spec", test.flagName)
 		}
-		// check the correct Ctl is used
+		// check the correct CRSpecBuilderFromCobraFlags is used
 		assert.Equal(test.initialCtl, actualCtl)
 		actualCtl = test.changedCtl
 		// test setting a flag
 		f := &pflag.Flag{Changed: true, Name: test.flagName}
-		actualCtl.SetFlag(f)
-		assert.Equal(test.changedSpec, actualCtl.Spec)
+		actualCtl.SetCRSpecFieldByFlag(f)
+		assert.Equal(test.changedSpec, actualCtl.opsSightSpec)
 	}
 
 	// case: nothing set if flag doesn't exist
-	actualCtl = NewOpsSightCtl()
+	actualCtl = NewCRSpecBuilderFromCobraFlags()
 	f := &pflag.Flag{Changed: true, Name: "bad-flag"}
-	actualCtl.SetFlag(f)
-	assert.Equal(&opssightapi.OpsSightSpec{}, actualCtl.Spec)
+	actualCtl.SetCRSpecFieldByFlag(f)
+	assert.Equal(&opssightapi.OpsSightSpec{}, actualCtl.opsSightSpec)
 
 }

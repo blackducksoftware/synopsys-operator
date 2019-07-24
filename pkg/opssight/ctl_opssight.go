@@ -35,10 +35,16 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Ctl type provides functionality for an OpsSight
-// for the Synopsysctl tool
-type Ctl struct {
-	Spec                                            *opssightapi.OpsSightSpec
+// CRSpecBuilderFromCobraFlags uses Cobra commands, Cobra flags and other
+// values to create an OpsSight CR's Spec.
+//
+// The fields in the CRSpecBuilderFromCobraFlags represent places where the values of the Cobra flags are stored.
+//
+// Usage: Use CRSpecBuilderFromCobraFlags to add flags to your Cobra Command for making an OpsSight Spec.
+// When flags are used the correspoding value in this struct will by set. You can then
+// generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
+type CRSpecBuilderFromCobraFlags struct {
+	opsSightSpec                                    *opssightapi.OpsSightSpec
 	PerceptorName                                   string
 	PerceptorImage                                  string
 	PerceptorPort                                   int
@@ -103,43 +109,29 @@ type Ctl struct {
 	BlackduckType                                   string
 }
 
-// NewOpsSightCtl creates a new Ctl struct
-func NewOpsSightCtl() *Ctl {
-	return &Ctl{
-		Spec: &opssightapi.OpsSightSpec{},
+// NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
+func NewCRSpecBuilderFromCobraFlags() *CRSpecBuilderFromCobraFlags {
+	return &CRSpecBuilderFromCobraFlags{
+		opsSightSpec: &opssightapi.OpsSightSpec{},
 	}
 }
 
-// GetSpec returns the Spec for the resource
-func (ctl *Ctl) GetSpec() interface{} {
-	return *ctl.Spec
+// GetCRSpec returns a pointer to the OpsSightSpec as an interface{}
+func (ctl *CRSpecBuilderFromCobraFlags) GetCRSpec() interface{} {
+	return *ctl.opsSightSpec
 }
 
-// SetSpec sets the Spec for the resource
-func (ctl *Ctl) SetSpec(spec interface{}) error {
+// SetCRSpec sets the opsSightSpec in the struct
+func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpec(spec interface{}) error {
 	convertedSpec, ok := spec.(opssightapi.OpsSightSpec)
 	if !ok {
 		return fmt.Errorf("error setting OpsSight spec")
 	}
-	ctl.Spec = &convertedSpec
+	ctl.opsSightSpec = &convertedSpec
 	return nil
 }
 
-// CheckSpecFlags returns an error if a user input was invalid
-func (ctl *Ctl) CheckSpecFlags(flagset *pflag.FlagSet) error {
-	isValid := util.IsExposeServiceValid(ctl.PerceptorExpose)
-	if !isValid {
-		return fmt.Errorf("opssight core expose must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
-	}
-
-	isValid = util.IsExposeServiceValid(ctl.PrometheusExpose)
-	if !isValid {
-		return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
-	}
-	return nil
-}
-
-// Constants
+// Constants for predefined specs
 const (
 	EmptySpec             string = "empty"
 	UpstreamSpec          string = "upstream"
@@ -147,32 +139,33 @@ const (
 	DisabledBlackDuckSpec string = "disabledBlackDuck"
 )
 
-// SwitchSpec switches OpsSight's Spec to a different predefined spec
-func (ctl *Ctl) SwitchSpec(createOpsSightSpecType string) error {
-	switch createOpsSightSpecType {
+// SetPredefinedCRSpec sets the opsSightSpec to a predefined spec
+func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) error {
+	switch specType {
 	case EmptySpec:
-		ctl.Spec = &opssightapi.OpsSightSpec{}
+		ctl.opsSightSpec = &opssightapi.OpsSightSpec{}
 	case UpstreamSpec:
-		ctl.Spec = crddefaults.GetOpsSightUpstream()
-		ctl.Spec.Perceiver.EnablePodPerceiver = true
-		ctl.Spec.EnableMetrics = true
+		ctl.opsSightSpec = crddefaults.GetOpsSightUpstream()
+		ctl.opsSightSpec.Perceiver.EnablePodPerceiver = true
+		ctl.opsSightSpec.EnableMetrics = true
 	case DefaultSpec:
-		ctl.Spec = crddefaults.GetOpsSightDefault()
-		ctl.Spec.Perceiver.EnablePodPerceiver = true
-		ctl.Spec.EnableMetrics = true
+		ctl.opsSightSpec = crddefaults.GetOpsSightDefault()
+		ctl.opsSightSpec.Perceiver.EnablePodPerceiver = true
+		ctl.opsSightSpec.EnableMetrics = true
 	case DisabledBlackDuckSpec:
-		ctl.Spec = crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()
-		ctl.Spec.Perceiver.EnablePodPerceiver = true
-		ctl.Spec.EnableMetrics = true
+		ctl.opsSightSpec = crddefaults.GetOpsSightDefaultWithIPV6DisabledBlackDuck()
+		ctl.opsSightSpec.Perceiver.EnablePodPerceiver = true
+		ctl.opsSightSpec.EnableMetrics = true
 	default:
-		return fmt.Errorf("OpsSight spec type '%s' is not valid", createOpsSightSpecType)
+		return fmt.Errorf("OpsSight spec type '%s' is not valid", specType)
 	}
 	return nil
 }
 
-// AddSpecFlags adds flags for OpsSight's Spec to the command
+// AddCRSpecFlagsToCommand adds flags to a Cobra Command that are need for OpsSight's Spec.
+// The flags map to fields in the CRSpecBuilderFromCobraFlags struct.
 // master - if false, doesn't add flags that all Users shouldn't use
-func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
+func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of OpsSight's Core")
 	if master {
 		cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", util.NONE, "Type of service for OpsSight's core model (NODEPORT|LOADBALANCER|OPENSHIFT|NONE)")
@@ -220,10 +213,41 @@ func (ctl *Ctl) AddSpecFlags(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.BlackduckPassword, "blackduck-password", ctl.BlackduckPassword, "Password to use for all internal Blackduck 'sysadmin' account")
 }
 
-// SetChangedFlags visits every flag and calls setFlag to update
-// the resource's spec
-func (ctl *Ctl) SetChangedFlags(flagset *pflag.FlagSet) {
-	flagset.VisitAll(ctl.SetFlag)
+// CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
+// used in the opsSightSpec
+func (ctl *CRSpecBuilderFromCobraFlags) CheckValuesFromFlags(flagset *pflag.FlagSet) error {
+	if FlagWasSet(flagset, "opssight-core-expose") {
+		isValid := util.IsExposeServiceValid(ctl.PerceptorExpose)
+		if !isValid {
+			return fmt.Errorf("opssight core expose must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+		}
+	}
+	if FlagWasSet(flagset, "expose-metrics") {
+		isValid := util.IsExposeServiceValid(ctl.PrometheusExpose)
+		if !isValid {
+			return fmt.Errorf("expose metrics must be '%s', '%s', '%s' or '%s'", util.NODEPORT, util.LOADBALANCER, util.OPENSHIFT, util.NONE)
+		}
+	}
+	return nil
+}
+
+// FlagWasSet returns true if a flag was changed and it exists, otherwise it returns false
+func FlagWasSet(flagset *pflag.FlagSet, flagName string) bool {
+	if flagset.Lookup(flagName) != nil && flagset.Lookup(flagName).Changed {
+		return true
+	}
+	return false
+}
+
+// GenerateCRSpecFromFlags checks if a flag was changed and updates the opsSightSpec with the value that's stored
+// in the corresponding struct field
+func (ctl *CRSpecBuilderFromCobraFlags) GenerateCRSpecFromFlags(flagset *pflag.FlagSet) (interface{}, error) {
+	err := ctl.CheckValuesFromFlags(flagset)
+	if err != nil {
+		return nil, err
+	}
+	flagset.VisitAll(ctl.SetCRSpecFieldByFlag)
+	return *ctl.opsSightSpec, nil
 }
 
 // InternalRegistryStructs - file format for reading data
@@ -236,76 +260,77 @@ type ExternalHostStructs struct {
 	Data []opssightapi.Host
 }
 
-// SetFlag sets an OpsSights's Spec field if its flag was changed
-func (ctl *Ctl) SetFlag(f *pflag.Flag) {
+// SetCRSpecFieldByFlag updates a field in the opsSightSpec if the flag was set by the user. It gets the
+// value from the corresponding struct field
+func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
 		case "opssight-core-image":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
+			if ctl.opsSightSpec.Perceptor == nil {
+				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
 			}
-			ctl.Spec.Perceptor.Image = ctl.PerceptorImage
+			ctl.opsSightSpec.Perceptor.Image = ctl.PerceptorImage
 		case "opssight-core-expose":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
+			if ctl.opsSightSpec.Perceptor == nil {
+				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
 			}
-			ctl.Spec.Perceptor.Expose = ctl.PerceptorExpose
+			ctl.opsSightSpec.Perceptor.Expose = ctl.PerceptorExpose
 		case "opssight-core-check-scan-hours":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
+			if ctl.opsSightSpec.Perceptor == nil {
+				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
 			}
-			ctl.Spec.Perceptor.CheckForStalledScansPauseHours = ctl.PerceptorCheckForStalledScansPauseHours
+			ctl.opsSightSpec.Perceptor.CheckForStalledScansPauseHours = ctl.PerceptorCheckForStalledScansPauseHours
 		case "opssight-core-scan-client-timeout-hours":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
+			if ctl.opsSightSpec.Perceptor == nil {
+				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
 			}
-			ctl.Spec.Perceptor.StalledScanClientTimeoutHours = ctl.PerceptorStalledScanClientTimeoutHours
+			ctl.opsSightSpec.Perceptor.StalledScanClientTimeoutHours = ctl.PerceptorStalledScanClientTimeoutHours
 		case "opssight-core-metrics-pause-seconds":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
+			if ctl.opsSightSpec.Perceptor == nil {
+				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
 			}
-			ctl.Spec.Perceptor.ModelMetricsPauseSeconds = ctl.PerceptorModelMetricsPauseSeconds
+			ctl.opsSightSpec.Perceptor.ModelMetricsPauseSeconds = ctl.PerceptorModelMetricsPauseSeconds
 		case "opssight-core-unknown-image-pause-milliseconds":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
+			if ctl.opsSightSpec.Perceptor == nil {
+				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
 			}
-			ctl.Spec.Perceptor.UnknownImagePauseMilliseconds = ctl.PerceptorUnknownImagePauseMilliseconds
+			ctl.opsSightSpec.Perceptor.UnknownImagePauseMilliseconds = ctl.PerceptorUnknownImagePauseMilliseconds
 		case "opssight-core-client-timeout-milliseconds":
-			if ctl.Spec.Perceptor == nil {
-				ctl.Spec.Perceptor = &opssightapi.Perceptor{}
+			if ctl.opsSightSpec.Perceptor == nil {
+				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
 			}
-			ctl.Spec.Perceptor.ClientTimeoutMilliseconds = ctl.PerceptorClientTimeoutMilliseconds
+			ctl.opsSightSpec.Perceptor.ClientTimeoutMilliseconds = ctl.PerceptorClientTimeoutMilliseconds
 		case "scanner-image":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
+			if ctl.opsSightSpec.ScannerPod == nil {
+				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
 			}
-			if ctl.Spec.ScannerPod.Scanner == nil {
-				ctl.Spec.ScannerPod.Scanner = &opssightapi.Scanner{}
+			if ctl.opsSightSpec.ScannerPod.Scanner == nil {
+				ctl.opsSightSpec.ScannerPod.Scanner = &opssightapi.Scanner{}
 			}
-			ctl.Spec.ScannerPod.Scanner.Image = ctl.ScannerPodScannerImage
+			ctl.opsSightSpec.ScannerPod.Scanner.Image = ctl.ScannerPodScannerImage
 		case "scanner-client-timeout-seconds":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
+			if ctl.opsSightSpec.ScannerPod == nil {
+				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
 			}
-			if ctl.Spec.ScannerPod.Scanner == nil {
-				ctl.Spec.ScannerPod.Scanner = &opssightapi.Scanner{}
+			if ctl.opsSightSpec.ScannerPod.Scanner == nil {
+				ctl.opsSightSpec.ScannerPod.Scanner = &opssightapi.Scanner{}
 			}
-			ctl.Spec.ScannerPod.Scanner.ClientTimeoutSeconds = ctl.ScannerPodScannerClientTimeoutSeconds
+			ctl.opsSightSpec.ScannerPod.Scanner.ClientTimeoutSeconds = ctl.ScannerPodScannerClientTimeoutSeconds
 		case "image-getter-image":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
+			if ctl.opsSightSpec.ScannerPod == nil {
+				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
 			}
-			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
+			if ctl.opsSightSpec.ScannerPod.ImageFacade == nil {
+				ctl.opsSightSpec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
-			ctl.Spec.ScannerPod.ImageFacade.Image = ctl.ScannerPodImageFacadeImage
+			ctl.opsSightSpec.ScannerPod.ImageFacade.Image = ctl.ScannerPodImageFacadeImage
 		case "image-getter-secure-registries-file-path":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
+			if ctl.opsSightSpec.ScannerPod == nil {
+				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
 			}
-			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
+			if ctl.opsSightSpec.ScannerPod.ImageFacade == nil {
+				ctl.opsSightSpec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
 			data, err := util.ReadFileData(ctl.ScannerPodImageFacadeInternalRegistriesFilePath)
 			if err != nil {
@@ -318,107 +343,107 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				log.Errorf("failed to unmarshal internal registries: %+v", err)
 				return
 			}
-			ctl.Spec.ScannerPod.ImageFacade.InternalRegistries = registryStructs
+			ctl.opsSightSpec.ScannerPod.ImageFacade.InternalRegistries = registryStructs
 		case "image-getter-image-puller-type":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
+			if ctl.opsSightSpec.ScannerPod == nil {
+				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
 			}
-			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
+			if ctl.opsSightSpec.ScannerPod.ImageFacade == nil {
+				ctl.opsSightSpec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
-			ctl.Spec.ScannerPod.ImageFacade.ImagePullerType = ctl.ScannerPodImageFacadeImagePullerType
+			ctl.opsSightSpec.ScannerPod.ImageFacade.ImagePullerType = ctl.ScannerPodImageFacadeImagePullerType
 		case "image-getter-service-account":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
+			if ctl.opsSightSpec.ScannerPod == nil {
+				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
 			}
-			if ctl.Spec.ScannerPod.ImageFacade == nil {
-				ctl.Spec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
+			if ctl.opsSightSpec.ScannerPod.ImageFacade == nil {
+				ctl.opsSightSpec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
-			ctl.Spec.ScannerPod.ImageFacade.ServiceAccount = ctl.ScannerPodImageFacadeServiceAccount
+			ctl.opsSightSpec.ScannerPod.ImageFacade.ServiceAccount = ctl.ScannerPodImageFacadeServiceAccount
 		case "scannerpod-replica-count":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
+			if ctl.opsSightSpec.ScannerPod == nil {
+				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
 			}
-			ctl.Spec.ScannerPod.ReplicaCount = ctl.ScannerPodReplicaCount
+			ctl.opsSightSpec.ScannerPod.ReplicaCount = ctl.ScannerPodReplicaCount
 		case "scannerpod-image-directory":
-			if ctl.Spec.ScannerPod == nil {
-				ctl.Spec.ScannerPod = &opssightapi.ScannerPod{}
+			if ctl.opsSightSpec.ScannerPod == nil {
+				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
 			}
-			ctl.Spec.ScannerPod.ImageDirectory = ctl.ScannerPodImageDirectory
+			ctl.opsSightSpec.ScannerPod.ImageDirectory = ctl.ScannerPodImageDirectory
 		case "enable-image-processor":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
-			ctl.Spec.Perceiver.EnableImagePerceiver = strings.ToUpper(ctl.PerceiverEnableImagePerceiver) == "TRUE"
+			ctl.opsSightSpec.Perceiver.EnableImagePerceiver = strings.ToUpper(ctl.PerceiverEnableImagePerceiver) == "TRUE"
 		case "enable-pod-processor":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
-			ctl.Spec.Perceiver.EnablePodPerceiver = strings.ToUpper(ctl.PerceiverEnablePodPerceiver) == "TRUE"
+			ctl.opsSightSpec.Perceiver.EnablePodPerceiver = strings.ToUpper(ctl.PerceiverEnablePodPerceiver) == "TRUE"
 		case "image-processor-image":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
-			if ctl.Spec.Perceiver.ImagePerceiver == nil {
-				ctl.Spec.Perceiver.ImagePerceiver = &opssightapi.ImagePerceiver{}
+			if ctl.opsSightSpec.Perceiver.ImagePerceiver == nil {
+				ctl.opsSightSpec.Perceiver.ImagePerceiver = &opssightapi.ImagePerceiver{}
 			}
-			ctl.Spec.Perceiver.ImagePerceiver.Image = ctl.PerceiverImagePerceiverImage
+			ctl.opsSightSpec.Perceiver.ImagePerceiver.Image = ctl.PerceiverImagePerceiverImage
 		case "pod-processor-image":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
-			if ctl.Spec.Perceiver.PodPerceiver == nil {
-				ctl.Spec.Perceiver.PodPerceiver = &opssightapi.PodPerceiver{}
+			if ctl.opsSightSpec.Perceiver.PodPerceiver == nil {
+				ctl.opsSightSpec.Perceiver.PodPerceiver = &opssightapi.PodPerceiver{}
 			}
-			ctl.Spec.Perceiver.PodPerceiver.Image = ctl.PerceiverPodPerceiverImage
+			ctl.opsSightSpec.Perceiver.PodPerceiver.Image = ctl.PerceiverPodPerceiverImage
 		case "pod-processor-namespace-filter":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
-			if ctl.Spec.Perceiver.PodPerceiver == nil {
-				ctl.Spec.Perceiver.PodPerceiver = &opssightapi.PodPerceiver{}
+			if ctl.opsSightSpec.Perceiver.PodPerceiver == nil {
+				ctl.opsSightSpec.Perceiver.PodPerceiver = &opssightapi.PodPerceiver{}
 			}
-			ctl.Spec.Perceiver.PodPerceiver.NamespaceFilter = ctl.PerceiverPodPerceiverNamespaceFilter
+			ctl.opsSightSpec.Perceiver.PodPerceiver.NamespaceFilter = ctl.PerceiverPodPerceiverNamespaceFilter
 		case "processor-annotation-interval-seconds":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
-			ctl.Spec.Perceiver.AnnotationIntervalSeconds = ctl.PerceiverAnnotationIntervalSeconds
+			ctl.opsSightSpec.Perceiver.AnnotationIntervalSeconds = ctl.PerceiverAnnotationIntervalSeconds
 		case "processor-dump-interval-minutes":
-			if ctl.Spec.Perceiver == nil {
-				ctl.Spec.Perceiver = &opssightapi.Perceiver{}
+			if ctl.opsSightSpec.Perceiver == nil {
+				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
-			ctl.Spec.Perceiver.DumpIntervalMinutes = ctl.PerceiverDumpIntervalMinutes
+			ctl.opsSightSpec.Perceiver.DumpIntervalMinutes = ctl.PerceiverDumpIntervalMinutes
 		case "default-cpu":
-			ctl.Spec.DefaultCPU = ctl.DefaultCPU
+			ctl.opsSightSpec.DefaultCPU = ctl.DefaultCPU
 		case "default-memory":
-			ctl.Spec.DefaultMem = ctl.DefaultMem
+			ctl.opsSightSpec.DefaultMem = ctl.DefaultMem
 		case "scanner-cpu":
-			ctl.Spec.ScannerCPU = ctl.ScannerCPU
+			ctl.opsSightSpec.ScannerCPU = ctl.ScannerCPU
 		case "scanner-memory":
-			ctl.Spec.ScannerMem = ctl.ScannerMem
+			ctl.opsSightSpec.ScannerMem = ctl.ScannerMem
 		case "log-level":
-			ctl.Spec.LogLevel = ctl.LogLevel
+			ctl.opsSightSpec.LogLevel = ctl.LogLevel
 		case "enable-metrics":
-			ctl.Spec.EnableMetrics = strings.ToUpper(ctl.EnableMetrics) == "TRUE"
+			ctl.opsSightSpec.EnableMetrics = strings.ToUpper(ctl.EnableMetrics) == "TRUE"
 		case "metrics-image":
-			if ctl.Spec.Prometheus == nil {
-				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
+			if ctl.opsSightSpec.Prometheus == nil {
+				ctl.opsSightSpec.Prometheus = &opssightapi.Prometheus{}
 			}
-			ctl.Spec.Prometheus.Image = ctl.PrometheusImage
+			ctl.opsSightSpec.Prometheus.Image = ctl.PrometheusImage
 		case "metrics-port":
-			if ctl.Spec.Prometheus == nil {
-				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
+			if ctl.opsSightSpec.Prometheus == nil {
+				ctl.opsSightSpec.Prometheus = &opssightapi.Prometheus{}
 			}
-			ctl.Spec.Prometheus.Port = ctl.PrometheusPort
+			ctl.opsSightSpec.Prometheus.Port = ctl.PrometheusPort
 		case "expose-metrics":
-			if ctl.Spec.Prometheus == nil {
-				ctl.Spec.Prometheus = &opssightapi.Prometheus{}
+			if ctl.opsSightSpec.Prometheus == nil {
+				ctl.opsSightSpec.Prometheus = &opssightapi.Prometheus{}
 			}
-			ctl.Spec.Prometheus.Expose = ctl.PrometheusExpose
+			ctl.opsSightSpec.Prometheus.Expose = ctl.PrometheusExpose
 		case "blackduck-external-hosts-file-path":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
+			if ctl.opsSightSpec.Blackduck == nil {
+				ctl.opsSightSpec.Blackduck = &opssightapi.Blackduck{}
 			}
 			data, err := util.ReadFileData(ctl.BlackduckExternalHostsFilePath)
 			if err != nil {
@@ -431,52 +456,42 @@ func (ctl *Ctl) SetFlag(f *pflag.Flag) {
 				log.Errorf("failed to unmarshal internal registry structs: %+v", err)
 				return
 			}
-			ctl.Spec.Blackduck.ExternalHosts = hostStructs
+			ctl.opsSightSpec.Blackduck.ExternalHosts = hostStructs
 		case "blackduck-TLS-verification":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
+			if ctl.opsSightSpec.Blackduck == nil {
+				ctl.opsSightSpec.Blackduck = &opssightapi.Blackduck{}
 			}
-			ctl.Spec.Blackduck.TLSVerification = strings.ToUpper(ctl.BlackduckTLSVerification) == "TRUE"
+			ctl.opsSightSpec.Blackduck.TLSVerification = strings.ToUpper(ctl.BlackduckTLSVerification) == "TRUE"
 		case "blackduck-initial-count":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
+			if ctl.opsSightSpec.Blackduck == nil {
+				ctl.opsSightSpec.Blackduck = &opssightapi.Blackduck{}
 			}
-			ctl.Spec.Blackduck.InitialCount = ctl.BlackduckInitialCount
+			ctl.opsSightSpec.Blackduck.InitialCount = ctl.BlackduckInitialCount
 		case "blackduck-max-count":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
+			if ctl.opsSightSpec.Blackduck == nil {
+				ctl.opsSightSpec.Blackduck = &opssightapi.Blackduck{}
 			}
-			ctl.Spec.Blackduck.MaxCount = ctl.BlackduckMaxCount
+			ctl.opsSightSpec.Blackduck.MaxCount = ctl.BlackduckMaxCount
 		case "blackduck-type":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
+			if ctl.opsSightSpec.Blackduck == nil {
+				ctl.opsSightSpec.Blackduck = &opssightapi.Blackduck{}
 			}
-			if ctl.Spec.Blackduck.BlackduckSpec == nil {
-				ctl.Spec.Blackduck.BlackduckSpec = &blackduckapi.BlackduckSpec{}
+			if ctl.opsSightSpec.Blackduck.BlackduckSpec == nil {
+				ctl.opsSightSpec.Blackduck.BlackduckSpec = &blackduckapi.BlackduckSpec{}
 			}
-			ctl.Spec.Blackduck.BlackduckSpec.Type = ctl.BlackduckType
+			ctl.opsSightSpec.Blackduck.BlackduckSpec.Type = ctl.BlackduckType
 		case "blackduck-password":
-			if ctl.Spec.Blackduck == nil {
-				ctl.Spec.Blackduck = &opssightapi.Blackduck{}
+			if ctl.opsSightSpec.Blackduck == nil {
+				ctl.opsSightSpec.Blackduck = &opssightapi.Blackduck{}
 			}
-			if ctl.Spec.Blackduck.BlackduckSpec == nil {
-				ctl.Spec.Blackduck.BlackduckSpec = &blackduckapi.BlackduckSpec{}
+			if ctl.opsSightSpec.Blackduck.BlackduckSpec == nil {
+				ctl.opsSightSpec.Blackduck.BlackduckSpec = &blackduckapi.BlackduckSpec{}
 			}
-			ctl.Spec.Blackduck.BlackduckPassword = crddefaults.Base64Encode([]byte(ctl.BlackduckPassword))
+			ctl.opsSightSpec.Blackduck.BlackduckPassword = crddefaults.Base64Encode([]byte(ctl.BlackduckPassword))
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
 	} else {
 		log.Debugf("flag '%s': UNCHANGED", f.Name)
 	}
-}
-
-// SpecIsValid verifies the spec has necessary fields to deploy
-func (ctl *Ctl) SpecIsValid() (bool, error) {
-	return true, nil
-}
-
-// CanUpdate checks if a user has permission to modify based on the spec
-func (ctl *Ctl) CanUpdate() (bool, error) {
-	return true, nil
 }
