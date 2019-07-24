@@ -123,19 +123,6 @@ func UniqueStringSlice(input []string) []string {
 	return output
 }
 
-// GetResourceName returns the name of the resource
-func GetResourceName(name string, appName string, defaultName string) string {
-	if len(appName) == 0 {
-		return fmt.Sprintf("%s-%s", name, defaultName)
-	}
-
-	if len(defaultName) == 0 {
-		return fmt.Sprintf("%s-%s", name, appName)
-	}
-
-	return fmt.Sprintf("%s-%s-%s", name, appName, defaultName)
-}
-
 // RemoveFromStringSlice will remove the string from the slice and it will maintain the order
 func RemoveFromStringSlice(slice []string, str string) []string {
 	for index, value := range slice {

@@ -22,6 +22,7 @@ under the License.
 package alert
 
 import (
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -33,14 +34,14 @@ import (
 // getAlertConfigMap returns a new ConfigMap for an Alert
 func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 	configMap := components.NewConfigMap(horizonapi.ConfigMapConfig{
-		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "blackduck-config"),
+		Name:      utils.GetResourceName(a.alert.Name, util.AlertName, "blackduck-config"),
 		Namespace: a.alert.Spec.Namespace,
 	})
 
 	configMapData := map[string]string{}
 	// Add Black Duck CFSSL host
 	if *a.alert.Spec.StandAlone {
-		configMapData["HUB_CFSSL_HOST"] = util.GetResourceName(a.alert.Name, util.AlertName, "cfssl")
+		configMapData["HUB_CFSSL_HOST"] = utils.GetResourceName(a.alert.Name, util.AlertName, "cfssl")
 	}
 
 	// Add Environs

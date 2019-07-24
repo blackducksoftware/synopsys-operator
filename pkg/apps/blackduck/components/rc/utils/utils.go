@@ -5,13 +5,14 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 func GetDBSecretVolume(name string) *components.Volume {
 	return components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "db-passwords",
-		MapOrSecretName: util.GetResourceName(name, util.BlackDuckName, "db-creds"),
+		MapOrSecretName: utils.GetResourceName(name, util.BlackDuckName, "db-creds"),
 		Items: []horizonapi.KeyPath{
 			{Key: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", Path: "HUB_POSTGRES_ADMIN_PASSWORD_FILE", Mode: util.IntToInt32(420)},
 			{Key: "HUB_POSTGRES_USER_PASSWORD_FILE", Path: "HUB_POSTGRES_USER_PASSWORD_FILE", Mode: util.IntToInt32(420)},
@@ -23,7 +24,7 @@ func GetDBSecretVolume(name string) *components.Volume {
 func GetProxyVolume(name string) *components.Volume {
 	return components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "blackduck-proxy-certificate",
-		MapOrSecretName: util.GetResourceName(name, util.BlackDuckName, "proxy-certificate"),
+		MapOrSecretName: utils.GetResourceName(name, util.BlackDuckName, "proxy-certificate"),
 		Items: []horizonapi.KeyPath{
 			{Key: "HUB_PROXY_CERT_FILE", Path: "HUB_PROXY_CERT_FILE", Mode: util.IntToInt32(420)},
 		},
@@ -32,11 +33,11 @@ func GetProxyVolume(name string) *components.Volume {
 }
 
 func GetHubConfigEnv(name string) *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: util.GetResourceName(name, util.BlackDuckName, "config")}
+	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: utils.GetResourceName(name, util.BlackDuckName, "config")}
 }
 
 func GetHubDBConfigEnv(name string) *horizonapi.EnvConfig {
-	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: util.GetResourceName(name, util.BlackDuckName, "db-config")}
+	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: utils.GetResourceName(name, util.BlackDuckName, "db-config")}
 }
 
 var affTypeMap = map[string]horizonapi.AffinityType{
@@ -79,5 +80,5 @@ func GetPVCName(name string, blackduck *v1.Blackduck) string {
 	if blackduck.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
 		return fmt.Sprintf("blackduck-%s", name)
 	}
-	return util.GetResourceName(blackduck.Name, util.BlackDuckName, name)
+	return utils.GetResourceName(blackduck.Name, util.BlackDuckName, name)
 }

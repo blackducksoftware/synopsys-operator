@@ -24,13 +24,14 @@ package alert
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // getAlertClusterService returns a new cluster Service for an Alert
 func (a *SpecConfig) getAlertClusterService() *components.Service {
 	return util.CreateService(
-		util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
+		utils.GetResourceName(a.alert.Name, util.AlertName, "alert"),
 		a.getLabel("alert"),
 		a.alert.Spec.Namespace,
 		int32(*a.alert.Spec.Port),
@@ -43,7 +44,7 @@ func (a *SpecConfig) getAlertClusterService() *components.Service {
 // getAlertServiceNodePort returns a new Node Port Service for an Alert
 func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 	return util.CreateService(
-		util.GetResourceName(a.alert.Name, util.AlertName, "exposed"),
+		utils.GetResourceName(a.alert.Name, util.AlertName, "exposed"),
 		a.getLabel("alert"),
 		a.alert.Spec.Namespace,
 		int32(*a.alert.Spec.Port),
@@ -56,7 +57,7 @@ func (a *SpecConfig) getAlertServiceNodePort() *components.Service {
 // getAlertServiceLoadBalancer returns a new Load Balancer Service for an Alert
 func (a *SpecConfig) getAlertServiceLoadBalancer() *components.Service {
 	return util.CreateService(
-		util.GetResourceName(a.alert.Name, util.AlertName, "exposed"),
+		utils.GetResourceName(a.alert.Name, util.AlertName, "exposed"),
 		a.getLabel("alert"),
 		a.alert.Spec.Namespace,
 		int32(*a.alert.Spec.Port),

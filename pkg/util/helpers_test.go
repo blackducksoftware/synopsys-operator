@@ -22,6 +22,7 @@ under the License.
 package util
 
 import (
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"reflect"
 	"sort"
 	"testing"
@@ -222,7 +223,7 @@ func TestGetResourceName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetResourceName(tt.args.name, tt.args.appName, tt.args.defaultName); got != tt.want {
+			if got := utils.GetResourceName(tt.args.name, tt.args.appName, tt.args.defaultName); got != tt.want {
 				t.Errorf("GetResourceName() = %v, want %v", got, tt.want)
 			}
 		})

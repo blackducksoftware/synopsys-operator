@@ -24,6 +24,7 @@ package blackduck
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -199,7 +200,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	} else { // Start, Running, and Error States
 		if !strings.EqualFold(bd.Status.State, string(Running)) {
 			// Verify that we can access the Black Duck
-			blackDuckURL := fmt.Sprintf("%s.%s.svc", util.GetResourceName(bd.Name, util.BlackDuckName, "webserver"), bd.Spec.Namespace)
+			blackDuckURL := fmt.Sprintf("%s.%s.svc", utils.GetResourceName(bd.Name, util.BlackDuckName, "webserver"), bd.Spec.Namespace)
 			status := h.verifyHub(blackDuckURL, bd.Spec.Namespace, bd.Name)
 
 			if status { // Set state to Running if we can access the Black Duck

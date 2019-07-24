@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -43,7 +44,7 @@ func (a *SpecConfig) getAlertSecret() (*components.Secret, error) {
 
 	// create a secret
 	alertSecret := components.NewSecret(horizonapi.SecretConfig{
-		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "secret"),
+		Name:      utils.GetResourceName(a.alert.Name, util.AlertName, "secret"),
 		Namespace: a.alert.Spec.Namespace,
 		Type:      horizonapi.SecretTypeOpaque,
 	})

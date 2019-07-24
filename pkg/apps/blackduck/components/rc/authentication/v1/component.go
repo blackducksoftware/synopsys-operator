@@ -9,6 +9,7 @@ import (
 	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -74,7 +75,7 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		Volumes:             c.getAuthenticationVolumes(),
 		Containers:          []*util.Container{hubAuthContainerConfig},
 		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              utils2.GetVersionLabel("authentication", c.blackduck.Name, c.blackduck.Spec.Version),
+		Labels:              apputils.GetVersionLabel("authentication", c.blackduck.Name, c.blackduck.Spec.Version),
 		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("authentication", &c.blackduck.Spec),
 	}
 
@@ -83,8 +84,8 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
-		podConfig, utils2.GetLabel("authentication", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("authentication", c.blackduck.Name))
 }
 
 // getAuthenticationVolumes will return the authentication volumes

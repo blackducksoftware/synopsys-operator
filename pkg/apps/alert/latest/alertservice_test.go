@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"reflect"
 	"testing"
 
@@ -59,7 +60,7 @@ func TestSpecConfig_getAlertServiceLoadBalancer(t *testing.T) {
 					APIVersion: "v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      util.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "exposed"),
+					Name:      utils.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "exposed"),
 					Namespace: tt.altSpecConfig.alert.Spec.Namespace,
 					Labels:    map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},
@@ -107,7 +108,7 @@ func TestSpecConfig_getAlertServiceNodePort(t *testing.T) {
 					APIVersion: "v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      util.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "exposed"),
+					Name:      utils.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "exposed"),
 					Namespace: tt.altSpecConfig.alert.Spec.Namespace,
 					Labels:    map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},
@@ -155,7 +156,7 @@ func TestSpecConfig_getAlertService(t *testing.T) {
 					APIVersion: "v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      util.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "alert"),
+					Name:      utils.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "alert"),
 					Namespace: tt.altSpecConfig.alert.Spec.Namespace,
 					Labels:    map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},

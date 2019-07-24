@@ -23,16 +23,18 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strings"
-
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"strings"
 	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
 
 	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components"
@@ -60,6 +62,56 @@ func runProtoform(configPath string, version string) {
 	deployer, err := protoform.NewController(configPath, version)
 	if err != nil {
 		panic(err)
+	}
+
+	// check for the existence of operator configmap, if not create it
+	_, err = util.GetConfigMap(deployer.KubeClientSet, deployer.Config.Namespace, "synopsys-operator")
+	if err != nil {
+		d, err := horizon.NewDeployer(deployer.KubeConfig)
+		if err != nil {
+			panic("unable to create deployer object")
+		}
+
+		operatorConfig := soperator.SpecConfig{
+			Namespace:                     deployer.Config.Namespace,
+			Image:                         "",
+			Expose:                        "",
+			DryRun:                        deployer.Config.DryRun,
+			LogLevel:                      deployer.Config.LogLevel,
+			Threadiness:                   deployer.Config.Threadiness,
+			PostgresRestartInMins:         deployer.Config.PostgresRestartInMins,
+			PodWaitTimeoutSeconds:         deployer.Config.PodWaitTimeoutSeconds,
+			ResyncIntervalInSeconds:       deployer.Config.ResyncIntervalInSeconds,
+			TerminationGracePeriodSeconds: deployer.Config.TerminationGracePeriodSeconds,
+			Crds:                          strings.Split(deployer.Config.CrdNames, ","),
+			IsClusterScoped:               deployer.Config.IsClusterScoped,
+		}
+		operatorCm, err := operatorConfig.GetOperatorConfigMap()
+		if err != nil {
+			panic("unable to create operator configmap")
+		}
+		d.AddComponent(horizonapi.ConfigMapComponent, operatorCm)
+		d.Run()
+	}
+
+	// check for the existence of prometheus configmap, if not create it
+	_, err = util.GetConfigMap(deployer.KubeClientSet, deployer.Config.Namespace, "prometheus")
+	if err != nil {
+		d, err := horizon.NewDeployer(deployer.KubeConfig)
+		if err != nil {
+			panic("unable to create deployer object")
+		}
+		prometheusConfig := soperator.PrometheusSpecConfig{
+			Namespace: deployer.Config.Namespace,
+			Image:     "",
+			Expose:    "",
+		}
+		prometheusCm, err := prometheusConfig.GetPrometheusConfigMap()
+		if err != nil {
+			panic("unable to create prometheus configmap")
+		}
+		d.AddComponent(horizonapi.ConfigMapComponent, prometheusCm)
+		d.Run()
 	}
 
 	// Log Kubernetes version

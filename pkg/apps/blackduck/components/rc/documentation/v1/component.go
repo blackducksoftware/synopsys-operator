@@ -9,6 +9,7 @@ import (
 	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -61,7 +62,7 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		Volumes:             []*components.Volume{documentationEmptyDir},
 		Containers:          []*util.Container{documentationContainerConfig},
 		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              utils2.GetVersionLabel("documentation", c.blackduck.Name, c.blackduck.Spec.Version),
+		Labels:              apputils.GetVersionLabel("documentation", c.blackduck.Name, c.blackduck.Spec.Version),
 		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("documentation", &c.blackduck.Spec),
 	}
 
@@ -70,8 +71,8 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "documentation"), Replicas: util.IntToInt32(1)},
-		podConfig, utils2.GetLabel("documentation", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "documentation"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("documentation", c.blackduck.Name))
 }
 
 func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *blackduckapi.Blackduck) types.ReplicationControllerInterface {

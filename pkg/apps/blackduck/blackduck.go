@@ -27,10 +27,10 @@ import (
 	"fmt"
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	util2 "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"net/http"
@@ -185,6 +185,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServiceSolrV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV1},
 	},
 	"2018.12.1": {
 		Size: types.SizeV1,
@@ -302,6 +303,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServiceSolrV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV1},
 	},
 	"2018.12.2": {
 		Size: types.SizeV1,
@@ -419,6 +421,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServiceSolrV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV1},
 	},
 	"2018.12.3": {
 		Size: types.SizeV1,
@@ -536,6 +539,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServiceSolrV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV1},
 	},
 	"2018.12.4": {
 		Size: types.SizeV1,
@@ -653,6 +657,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServiceSolrV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV1},
 	},
 	"2019.2.0": {
 		Size: types.SizeV1,
@@ -770,6 +775,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServiceSolrV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV1},
 	},
 	"2019.2.1": {
 		Size: types.SizeV1,
@@ -887,6 +893,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServiceSolrV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV1},
 	},
 	"2019.2.2": {
 		Size: types.SizeV1,
@@ -1004,6 +1011,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServiceSolrV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV1},
 	},
 	"2019.4.0": {
 		Size: types.SizeV1,
@@ -1114,6 +1122,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServicePostgresV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV2},
 	},
 	"2019.4.1": {
 		Size: types.SizeV1,
@@ -1224,6 +1233,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServicePostgresV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV2},
 	},
 	"2019.4.2": {
 		Size: types.SizeV1,
@@ -1334,6 +1344,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServicePostgresV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV2},
 	},
 	"2019.4.3": {
 		Size: types.SizeV1,
@@ -1444,6 +1455,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServicePostgresV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV2},
 	},
 	"2019.6.0": {
 		Size: types.SizeV1,
@@ -1554,6 +1566,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServicePostgresV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV2},
 	},
 	"2019.6.1": {
 		Size: types.SizeV1,
@@ -1664,6 +1677,7 @@ var publicVersions = map[string]types.PublicVersion{
 			types.ServicePostgresV1,
 			types.ServiceExposeV1,
 		},
+		PVC: []types.ComponentName{types.PVCV2},
 	},
 }
 
@@ -1784,12 +1798,10 @@ func (b *Blackduck) Ensure(blackduck *v1.Blackduck) error {
 
 	cp, err := store.GetComponents(version, b.config, b.kubeClient, blackduck)
 
-	pvcs := b.GetPVCs(blackduck)
-
 	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
+			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("stop blackduck: %+v", errors)
@@ -1797,7 +1809,7 @@ func (b *Blackduck) Ensure(blackduck *v1.Blackduck) error {
 	} else if strings.EqualFold(blackduck.Spec.DesiredState, "DbMigrate") {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
+			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("migrate blackduck: %+v", errors)
@@ -1812,7 +1824,7 @@ func (b *Blackduck) Ensure(blackduck *v1.Blackduck) error {
 	} else {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: pvcs}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
+			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update pvc: %+v", errors)
@@ -1868,14 +1880,14 @@ func (b *Blackduck) Ensure(blackduck *v1.Blackduck) error {
 		// log.Debugf("created/updated upload cache component for %s", blackduck.Spec.Namespace)
 
 		if strings.ToUpper(blackduck.Spec.ExposeService) == util.NODEPORT {
-			newBlackuck.Status.IP, err = util2.GetNodePortIPAddress(b.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
+			newBlackuck.Status.IP, err = util2.GetNodePortIPAddress(b.kubeClient, blackduck.Spec.Namespace, apputils.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
 		} else if strings.ToUpper(blackduck.Spec.ExposeService) == util.LOADBALANCER {
-			newBlackuck.Status.IP, err = util2.GetLoadBalancerIPAddress(b.kubeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
+			newBlackuck.Status.IP, err = util2.GetLoadBalancerIPAddress(b.kubeClient, blackduck.Spec.Namespace, apputils.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
 		}
 
 		// get Route on Openshift
 		if strings.ToUpper(blackduck.Spec.ExposeService) == util.OPENSHIFT && b.routeClient != nil {
-			route, _ := util.GetRoute(b.routeClient, blackduck.Spec.Namespace, util.GetResourceName(blackduck.Name, util.BlackDuckName, ""))
+			route, _ := util.GetRoute(b.routeClient, blackduck.Spec.Namespace, apputils.GetResourceName(blackduck.Name, util.BlackDuckName, ""))
 			if route != nil {
 				newBlackuck.Status.IP = route.Spec.Host
 			}
@@ -1927,11 +1939,11 @@ func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*
 
 	switch strings.ToUpper(compType) {
 	case CRDResources:
-		return cp.Filter("component notin (postgres)")
+		return cp.Filter("component notin (postgres, pvc)")
 	case DatabaseResources:
 		return cp.Filter("component in (postgres)")
 	case PVCResources:
-		return &api.ComponentList{PersistentVolumeClaims: b.GetPVCs(bd)}, nil
+		return cp.Filter("component in (pvc)")
 	}
 	return nil, fmt.Errorf("invalid components type '%s'", compType)
 }
@@ -1956,7 +1968,7 @@ func (b Blackduck) initPostgres(name string, bdspec *blackduckapi.BlackduckSpec)
 	}
 
 	// Check if initialization is required.
-	db, err := database.NewDatabase(fmt.Sprintf("%s.%s.svc.cluster.local", util.GetResourceName(name, util.BlackDuckName, "postgres"), bdspec.Namespace), "postgres", "postgres", postgresPassword, "postgres")
+	db, err := database.NewDatabase(fmt.Sprintf("%s.%s.svc.cluster.local", apputils.GetResourceName(name, util.BlackDuckName, "postgres"), bdspec.Namespace), "postgres", "postgres", postgresPassword, "postgres")
 	if err != nil {
 		return err
 	}
@@ -2022,7 +2034,7 @@ func (b Blackduck) registerIfNeeded(bd *blackduckapi.Blackduck) error {
 		Timeout: time.Second * 10,
 	}
 
-	resp, err := client.Get(fmt.Sprintf("https://%s.%s.svc:443/api/v1/registrations?summary=true", util.GetResourceName(bd.Name, util.BlackDuckName, "webserver"), bd.Spec.Namespace))
+	resp, err := client.Get(fmt.Sprintf("https://%s.%s.svc:443/api/v1/registrations?summary=true", apputils.GetResourceName(bd.Name, util.BlackDuckName, "webserver"), bd.Spec.Namespace))
 	if err != nil {
 		return err
 	}
@@ -2057,7 +2069,7 @@ func (b Blackduck) registerIfNeeded(bd *blackduckapi.Blackduck) error {
 
 func (b Blackduck) autoRegisterHub(name string, bdspec *blackduckapi.BlackduckSpec) error {
 	// Filter the registration pod to auto register the hub using the registration key from the environment variable
-	registrationPod, err := util.FilterPodByNamePrefixInNamespace(b.kubeClient, bdspec.Namespace, util.GetResourceName(name, util.BlackDuckName, "registration"))
+	registrationPod, err := util.FilterPodByNamePrefixInNamespace(b.kubeClient, bdspec.Namespace, apputils.GetResourceName(name, util.BlackDuckName, "registration"))
 	if err != nil {
 		return err
 	}
@@ -2100,56 +2112,6 @@ func (b Blackduck) isBinaryAnalysisEnabled(bdspec *blackduckapi.BlackduckSpec) b
 		}
 	}
 	return false
-}
-
-// GetPVCs will return the PVCs
-func (b Blackduck) GetPVCs(blackduck *blackduckapi.Blackduck) []*components.PersistentVolumeClaim {
-	var pvcs []*components.PersistentVolumeClaim
-
-	defaultPVC := map[string]string{
-		"blackduck-postgres":         "150Gi",
-		"blackduck-authentication":   "2Gi",
-		"blackduck-cfssl":            "2Gi",
-		"blackduck-registration":     "2Gi",
-		"blackduck-solr":             "2Gi",
-		"blackduck-webapp":           "2Gi",
-		"blackduck-logstash":         "20Gi",
-		"blackduck-zookeeper":        "4Gi",
-		"blackduck-uploadcache-data": "100Gi",
-	}
-
-	if blackduck.Spec.ExternalPostgres != nil {
-		delete(defaultPVC, "blackduck-postgres")
-	}
-
-	if blackduck.Spec.PersistentStorage {
-		pvcMap := make(map[string]blackduckapi.PVC)
-		for _, claim := range blackduck.Spec.PVC {
-			pvcMap[claim.Name] = claim
-		}
-
-		for name, defaultSize := range defaultPVC {
-			size := defaultSize
-			storageClass := blackduck.Spec.PVCStorageClass
-			if claim, ok := pvcMap[name]; ok {
-				if len(claim.StorageClass) > 0 {
-					storageClass = claim.StorageClass
-				}
-				if len(claim.Size) > 0 {
-					size = claim.Size
-				}
-			}
-
-			pvcName := util.GetResourceName(blackduck.Name, "", name)
-			if blackduck.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
-				pvcName = name
-			}
-
-			pvcs = append(pvcs, b.createPVC(pvcName, size, defaultSize, storageClass, horizonapi.ReadWriteOnce, utils.GetLabel("pvc", blackduck.Name), blackduck))
-		}
-	}
-
-	return pvcs
 }
 
 func (b Blackduck) createPVC(name string, requestedSize string, defaultSize string, storageclass string, accessMode horizonapi.PVCAccessModeType, label map[string]string, blackduck *blackduckapi.Blackduck) *components.PersistentVolumeClaim {

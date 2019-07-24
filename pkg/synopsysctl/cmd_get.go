@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"io/ioutil"
 	"path/filepath"
 
@@ -157,7 +158,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 
 		sealKey := string(secret.Data["SEAL_KEY"])
 		// Filter the upload cache pod to get the master key using the seal key
-		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache"))
+		uploadCachePod, err := util.FilterPodByNamePrefixInNamespace(kubeClient, namespace, utils.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache"))
 		if err != nil {
 			return fmt.Errorf("unable to filter the upload cache pod in namespace '%s' due to %+v", namespace, err)
 		}

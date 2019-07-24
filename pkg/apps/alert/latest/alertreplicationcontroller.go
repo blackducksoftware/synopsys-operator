@@ -23,11 +23,11 @@ package alert
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	operatorutil "github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -37,7 +37,7 @@ func (a *SpecConfig) getAlertReplicationController() (*components.ReplicationCon
 	replicas := int32(1)
 	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
+		Name:      utils.GetResourceName(a.alert.Name, util.AlertName, "alert"),
 		Namespace: a.alert.Spec.Namespace,
 	})
 	replicationController.AddSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
@@ -55,7 +55,7 @@ func (a *SpecConfig) getAlertReplicationController() (*components.ReplicationCon
 // getAlertPod returns a new Pod for an Alert
 func (a *SpecConfig) getAlertPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
+		Name: utils.GetResourceName(a.alert.Name, util.AlertName, "alert"),
 	})
 	pod.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "alert"})
 
@@ -114,12 +114,12 @@ func (a *SpecConfig) getAlertContainer() (*components.Container, error) {
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromConfigMap,
-		FromName: util.GetResourceName(a.alert.Name, util.AlertName, "blackduck-config"),
+		FromName: utils.GetResourceName(a.alert.Name, util.AlertName, "blackduck-config"),
 	})
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromSecret,
-		FromName: util.GetResourceName(a.alert.Name, util.AlertName, "secret"),
+		FromName: utils.GetResourceName(a.alert.Name, util.AlertName, "secret"),
 	})
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{
@@ -151,7 +151,7 @@ func (a *SpecConfig) getAlertEmptyDirVolume() (*components.Volume, error) {
 
 // getAlertPVCVolume returns a new PVCVolume for an Alert
 func (a *SpecConfig) getAlertPVCVolume() *components.Volume {
-	name := operatorutil.GetResourceName(a.alert.Name, util.AlertName, a.alert.Spec.PVCName)
+	name := utils.GetResourceName(a.alert.Name, util.AlertName, a.alert.Spec.PVCName)
 	if a.alert.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
 		name = a.alert.Spec.PVCName
 	}

@@ -4,9 +4,9 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"k8s.io/client-go/kubernetes"
@@ -19,7 +19,7 @@ type BdService struct {
 }
 
 func (b BdService) GetService() *components.Service {
-	return util.CreateService(util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "documentation"), utils.GetLabel("documentation", b.blackduck.Name), b.blackduck.Spec.Namespace, int32(8443), int32(8443), horizonapi.ServiceTypeServiceIP, utils.GetVersionLabel("documentation", b.blackduck.Name, b.blackduck.Spec.Version))
+	return util.CreateService(apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "documentation"), apputils.GetLabel("documentation", b.blackduck.Name), b.blackduck.Spec.Namespace, int32(8443), int32(8443), horizonapi.ServiceTypeServiceIP, apputils.GetVersionLabel("documentation", b.blackduck.Name, b.blackduck.Spec.Version))
 }
 
 func NewBdService(config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *blackduckapi.Blackduck) types.ServiceInterface {

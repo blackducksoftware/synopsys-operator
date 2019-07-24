@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -33,7 +34,7 @@ import (
 // getAlertPersistentVolumeClaim returns a new PVC for an Alert
 func (a *SpecConfig) getAlertPersistentVolumeClaim() (*components.PersistentVolumeClaim, error) {
 
-	name := operatorutil.GetResourceName(a.alert.Name, operatorutil.AlertName, a.alert.Spec.PVCName)
+	name := utils.GetResourceName(a.alert.Name, operatorutil.AlertName, a.alert.Spec.PVCName)
 	if a.alert.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
 		name = a.alert.Spec.PVCName
 	}

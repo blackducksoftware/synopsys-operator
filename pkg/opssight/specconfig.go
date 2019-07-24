@@ -24,6 +24,7 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -83,7 +84,7 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 				StalledScanClientTimeoutHours:  opssightSpec.Perceptor.StalledScanClientTimeoutHours,
 				UnknownImagePauseMilliseconds:  opssightSpec.Perceptor.UnknownImagePauseMilliseconds,
 			},
-			Host:        util.GetResourceName(name, util.OpsSightName, opssightSpec.Perceptor.Name),
+			Host:        utils.GetResourceName(name, util.OpsSightName, opssightSpec.Perceptor.Name),
 			Port:        opssightSpec.Perceptor.Port,
 			UseMockMode: false,
 		},
@@ -108,7 +109,7 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
 	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
-		MapOrSecretName: util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ConfigMapName),
+		MapOrSecretName: utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ConfigMapName),
 		DefaultMode:     util.IntToInt32(420),
 	})
 }
@@ -118,7 +119,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
 	name := p.opssight.Name
 	// Add config map
-	cm, err := p.configMap.horizonConfigMap(util.GetResourceName(name, util.OpsSightName, p.opssight.Spec.ConfigMapName), p.opssight.Spec.Namespace, fmt.Sprintf("%s.json", p.opssight.Spec.ConfigMapName))
+	cm, err := p.configMap.horizonConfigMap(utils.GetResourceName(name, util.OpsSightName, p.opssight.Spec.ConfigMapName), p.opssight.Spec.Namespace, fmt.Sprintf("%s.json", p.opssight.Spec.ConfigMapName))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

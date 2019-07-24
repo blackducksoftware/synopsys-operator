@@ -49,6 +49,10 @@ const (
 	SecretProxyCertificateV1 ComponentName = "secretProxyCertificateV1"
 	SecretUploadCacheV1      ComponentName = "secretUploadCacheV1"
 	SecretPostgresV1         ComponentName = "secretPostgresV1"
+
+	// PVC
+	PVCV1 ComponentName = "pvcV1"
+	PVCV2 ComponentName = "pvcV2"
 )
 
 type ContainerName string

@@ -23,6 +23,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 	"time"
 
@@ -105,7 +106,7 @@ func UpdateState(h *blackduckclient.Clientset, name string, namespace string, st
 func GetHubDBPassword(kubeClient *kubernetes.Clientset, namespace string, name string) (string, string, error) {
 	var userPw, adminPw string
 
-	secret, err := util.GetSecret(kubeClient, namespace, util.GetResourceName(name, util.BlackDuckName, "db-creds"))
+	secret, err := util.GetSecret(kubeClient, namespace, utils.GetResourceName(name, util.BlackDuckName, "db-creds"))
 	if err != nil {
 		return userPw, adminPw, err
 	}
@@ -126,11 +127,11 @@ func GetHubDBPassword(kubeClient *kubernetes.Clientset, namespace string, name s
 
 // CloneJob create a Kube job to clone a postgres instance
 func CloneJob(clientset *kubernetes.Clientset, fromNamespace string, from string, toNamespace string, to string, password string) error {
-	command := fmt.Sprintf("pg_dumpall -h %s.%s.svc.cluster.local -U postgres | psql -h %s.%s.svc.cluster.local -U postgres", util.GetResourceName(from, util.BlackDuckName, "postgres"), fromNamespace, util.GetResourceName(to, util.BlackDuckName, "postgres"), toNamespace)
+	command := fmt.Sprintf("pg_dumpall -h %s.%s.svc.cluster.local -U postgres | psql -h %s.%s.svc.cluster.local -U postgres", utils.GetResourceName(from, util.BlackDuckName, "postgres"), fromNamespace, utils.GetResourceName(to, util.BlackDuckName, "postgres"), toNamespace)
 
 	cloneJob := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: util.GetResourceName(to, util.BlackDuckName, "clone-job"),
+			Name: utils.GetResourceName(to, util.BlackDuckName, "clone-job"),
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{

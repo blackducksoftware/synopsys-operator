@@ -7,9 +7,9 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
@@ -30,9 +30,9 @@ func (b BdRSecret) GetSecrets() []*components.Secret {
 			logrus.Warnf("The proxy certificate provided is invalid")
 		} else {
 			logrus.Debugf("Adding Proxy certificate with SN: %x", cert.SerialNumber)
-			proxyCertificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: b.blackduck.Spec.Namespace, Name: util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "proxy-certificate"), Type: horizonapi.SecretTypeOpaque})
+			proxyCertificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: b.blackduck.Spec.Namespace, Name: apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "proxy-certificate"), Type: horizonapi.SecretTypeOpaque})
 			proxyCertificateSecret.AddData(map[string][]byte{"HUB_PROXY_CERT_FILE": []byte(b.blackduck.Spec.ProxyCertificate)})
-			proxyCertificateSecret.AddLabels(utils2.GetVersionLabel("secret", b.blackduck.Name, b.blackduck.Spec.Version))
+			proxyCertificateSecret.AddLabels(apputils.GetVersionLabel("secret", b.blackduck.Name, b.blackduck.Spec.Version))
 			secrets = append(secrets, proxyCertificateSecret)
 		}
 	}

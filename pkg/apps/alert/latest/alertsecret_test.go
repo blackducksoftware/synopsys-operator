@@ -22,6 +22,7 @@ under the License.
 package alert
 
 import (
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"reflect"
 	"testing"
 
@@ -106,7 +107,7 @@ func TestSpecConfig_getAlertSecret(t *testing.T) {
 						APIVersion: "v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      util.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "secret"),
+						Name:      utils.GetResourceName(tt.altSpecConfig.alert.Name, util.AlertName, "secret"),
 						Namespace: tt.altSpecConfig.alert.Spec.Namespace,
 						Labels:    map[string]string{"app": util.AlertName, "component": "alert", "name": tt.altSpecConfig.alert.Name},
 					},

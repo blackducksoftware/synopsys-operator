@@ -22,6 +22,10 @@ under the License.
 package v1
 
 import (
+	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
+	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,6 +39,84 @@ type Blackduck struct {
 	View               BlackduckView   `json:"view"`
 	Spec               BlackduckSpec   `json:"spec"`
 	Status             BlackduckStatus `json:"status,omitempty"`
+}
+
+func (b *Blackduck) GenPVC(defaultPVC map[string]string) ([]*components.PersistentVolumeClaim, error) {
+	var pvcs []*components.PersistentVolumeClaim
+	if b.Spec.PersistentStorage {
+		pvcMap := make(map[string]PVC)
+		for _, claim := range b.Spec.PVC {
+			pvcMap[claim.Name] = claim
+		}
+
+		for name, defaultSize := range defaultPVC {
+			size := defaultSize
+			storageClass := b.Spec.PVCStorageClass
+			volumeName := ""
+
+			if claim, ok := pvcMap[name]; ok {
+				if len(claim.StorageClass) > 0 {
+					storageClass = claim.StorageClass
+				}
+				if len(claim.Size) > 0 {
+					size = claim.Size
+				}
+				volumeName = claim.VolumeName
+			}
+
+			pvcName := utils.GetResourceName(b.Name, "", name)
+			if b.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
+				pvcName = name
+			}
+			pvc, err := createPVC(pvcName, size, storageClass, horizonapi.ReadWriteOnce, utils.GetLabel("pvc", b.Name), b.Spec.Namespace, volumeName)
+			if err != nil {
+				return nil, err
+			}
+			pvcs = append(pvcs, pvc)
+		}
+	}
+	return pvcs, nil
+}
+
+func createPVC(name string, requestedSize string, storageclass string, accessMode horizonapi.PVCAccessModeType, label map[string]string, namespace string, volumeName string) (*components.PersistentVolumeClaim, error) {
+	// Workaround so that storageClass does not get set to "", which prevent Kube from using the default storageClass
+	var class *string
+	if len(storageclass) > 0 {
+		class = &storageclass
+	} else {
+		class = nil
+	}
+
+	var size string
+	_, err := resource.ParseQuantity(requestedSize)
+	if err != nil {
+		return nil, err
+	}
+	size = requestedSize
+
+	config := horizonapi.PVCConfig{
+		Name:      name,
+		Namespace: namespace,
+		Size:      size,
+		Class:     class,
+	}
+
+	if len(volumeName) > 0 {
+		// Needed so that it doesn't use the default storage class
+		var tmp = ""
+		config.Class = &tmp
+		config.VolumeName = volumeName
+	}
+
+	pvc, err := components.NewPersistentVolumeClaim(config)
+	if err != nil {
+		return nil, err
+	}
+
+	pvc.AddAccessMode(accessMode)
+	pvc.AddLabels(label)
+
+	return pvc, nil
 }
 
 // BlackduckView will be used to populate information for the Blackduck UI.
@@ -91,6 +173,7 @@ type PVC struct {
 	Name         string `json:"name"`
 	Size         string `json:"size,omitempty"`
 	StorageClass string `json:"storageClass,omitempty"`
+	VolumeName   string `json:"volumeName,omitempty"`
 }
 
 // NodeAffinity will contain the specifications of a node affinity

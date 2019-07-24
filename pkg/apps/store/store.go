@@ -43,8 +43,11 @@ func Register(name types.ComponentName, function interface{}) {
 			ComponentStore.Configmap = make(map[types.ComponentName]types.ConfigmapCreater)
 		}
 		ComponentStore.Configmap[name] = function.(func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ConfigMapInterface)
-	case types.PvcCreater:
-		ComponentStore.PVC[name] = function.(types.PvcCreater)
+	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.PVCInterface:
+		if ComponentStore.PVC == nil {
+			ComponentStore.PVC = make(map[types.ComponentName]types.PvcCreater)
+		}
+		ComponentStore.PVC[name] = function.(func(config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *v1.Blackduck) types.PVCInterface)
 	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.SecretInterface:
 		if ComponentStore.Secret == nil {
 			ComponentStore.Secret = make(map[types.ComponentName]types.SecretCreater)
@@ -90,6 +93,13 @@ func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *
 		return cp, err
 	}
 	cp.Secrets = secrets
+
+	// PVC
+	pvcs, err := generatePVCs(v, config, kubeclient, blackduck)
+	if err != nil {
+		return cp, err
+	}
+	cp.PersistentVolumeClaims = pvcs
 
 	return cp, nil
 }
@@ -139,7 +149,9 @@ func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kub
 		if err != nil {
 			return nil, err
 		}
-		rcs = append(rcs, comp)
+		if comp != nil {
+			rcs = append(rcs, comp)
+		}
 	}
 	return rcs, nil
 }
@@ -152,7 +164,10 @@ func generateSecret(v types.PublicVersion, config *protoform.Config, kubeclient 
 			return nil, fmt.Errorf("couldn't find secret %s", v)
 		}
 		c := component(config, kubeclient, blackduck)
-		secrets = append(secrets, c.GetSecrets()...)
+		res := c.GetSecrets()
+		if len(res) > 0 {
+			secrets = append(secrets, res...)
+		}
 	}
 	return secrets, nil
 }
@@ -165,7 +180,10 @@ func generateService(v types.PublicVersion, config *protoform.Config, kubeclient
 			return nil, fmt.Errorf("couldn't find secret %s", v)
 		}
 		c := component(config, kubeclient, blackduck)
-		services = append(services, c.GetService())
+		res := c.GetService()
+		if res != nil {
+			services = append(services, res)
+		}
 	}
 	return services, nil
 }
@@ -178,9 +196,31 @@ func generateConfigmap(v types.PublicVersion, config *protoform.Config, kubeclie
 			return nil, fmt.Errorf("couldn't find secret %s", v)
 		}
 		c := component(config, kubeclient, blackduck)
-		cms = append(cms, c.GetCM()...)
+		res := c.GetCM()
+		if len(res) > 0 {
+			cms = append(cms, res...)
+		}
 	}
 	return cms, nil
+}
+
+func generatePVCs(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, blackduck *v1.Blackduck) ([]*components.PersistentVolumeClaim, error) {
+	var pvcs []*components.PersistentVolumeClaim
+	for _, v := range v.PVC {
+		component, ok := ComponentStore.PVC[v]
+		if !ok {
+			return nil, fmt.Errorf("couldn't find secret %s", v)
+		}
+		c := component(config, kubeclient, blackduck)
+		res, err := c.GetPVCs()
+		if err != nil {
+			return nil, err
+		}
+		if len(res) > 0 {
+			pvcs = append(pvcs, res...)
+		}
+	}
+	return pvcs, nil
 }
 
 func generateImageTag(currentImage string, blackduck *v1.Blackduck) string {
