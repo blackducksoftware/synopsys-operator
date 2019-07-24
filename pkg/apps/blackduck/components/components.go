@@ -43,4 +43,8 @@ import (
 	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/secret/proxycertificate/v1"
 	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/secret/uploadcache/v1"
 	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/secret/webcertificate/v1"
+
+	// PVCs
+	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/pvc/v1"
+	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/pvc/v2"
 )

@@ -9,6 +9,7 @@ import (
 	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -59,7 +60,7 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		Volumes:             c.getWebserverVolumes(),
 		Containers:          []*util.Container{webServerContainerConfig},
 		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              utils2.GetVersionLabel("webserver", c.blackduck.Name, c.blackduck.Spec.Version),
+		Labels:              apputils.GetVersionLabel("webserver", c.blackduck.Name, c.blackduck.Spec.Version),
 		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("webserver", &c.blackduck.Spec),
 	}
 
@@ -68,20 +69,20 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "webserver"), Replicas: util.IntToInt32(1)},
-		podConfig, utils2.GetLabel("webserver", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "webserver"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("webserver", c.blackduck.Name))
 }
 
 // getWebserverVolumes will return the authentication volumes
 func (c *BdReplicationController) getWebserverVolumes() []*components.Volume {
 	webServerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-webserver")
-	webServerSecretVol, _ := util.CreateSecretVolume("certificate", util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "webserver-certificate"), 0444)
+	webServerSecretVol, _ := util.CreateSecretVolume("certificate", apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "webserver-certificate"), 0444)
 
 	volumes := []*components.Volume{webServerEmptyDir, webServerSecretVol}
 
 	// Custom CA auth
 	if len(c.blackduck.Spec.AuthCustomCA) > 1 {
-		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "auth-custom-ca"), 0444)
+		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "auth-custom-ca"), 0444)
 		volumes = append(volumes, authCustomCaVolume)
 	}
 	return volumes

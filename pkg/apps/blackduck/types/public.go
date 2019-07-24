@@ -6,6 +6,7 @@ type PublicVersion struct {
 	Services   []ComponentName
 	ConfigMaps []ComponentName
 	Secrets    []ComponentName
+	PVC        []ComponentName
 }
 
 type PublicRC struct {

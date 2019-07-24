@@ -23,6 +23,7 @@ package opssight
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -35,7 +36,7 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	rc.AddSelectors(map[string]string{"component": p.opssight.Spec.Skyfire.Name, "app": "opssight", "name": p.opssight.Name})
@@ -51,7 +52,7 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 
 func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name:           util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
+		Name:           utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
 		ServiceAccount: p.opssight.Spec.Skyfire.ServiceAccount,
 	})
 	pod.AddLabels(map[string]string{"component": p.opssight.Spec.Skyfire.Name, "app": "opssight", "name": p.opssight.Name})
@@ -130,7 +131,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 		return nil, err
 	}
 
-	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.SecretName)})
+	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.SecretName)})
 
 	return container, nil
 }
@@ -153,7 +154,7 @@ func (p *SpecConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 // PerceptorSkyfireService creates a service for perceptor skyfire
 func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
@@ -180,7 +181,7 @@ func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 // PerceptorSkyfireServiceAccount creates a service account for perceptor skyfire
 func (p *SpecConfig) PerceptorSkyfireServiceAccount() *components.ServiceAccount {
 	serviceAccount := components.NewServiceAccount(horizonapi.ServiceAccountConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, "skyfire"),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, "skyfire"),
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	serviceAccount.AddLabels(map[string]string{"component": "skyfire", "app": "opssight", "name": p.opssight.Name})
@@ -211,7 +212,7 @@ func (p *SpecConfig) PerceptorSkyfireClusterRoleBinding(clusterRole *components.
 	})
 	clusterRoleBinding.AddSubject(horizonapi.SubjectConfig{
 		Kind:      "ServiceAccount",
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, "skyfire"),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, "skyfire"),
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	clusterRoleBinding.AddRoleRef(horizonapi.RoleRefConfig{

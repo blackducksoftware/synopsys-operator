@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -35,7 +36,7 @@ func (a *SpecConfig) getCfsslReplicationController() (*components.ReplicationCon
 	replicas := int32(1)
 	replicationController := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
+		Name:      utils.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
 		Namespace: a.alert.Spec.Namespace,
 	})
 	replicationController.AddSelectors(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
@@ -53,7 +54,7 @@ func (a *SpecConfig) getCfsslReplicationController() (*components.ReplicationCon
 // getCfsslPod returns a new Pod for a Cffsl
 func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
+		Name: utils.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
 	})
 	pod.AddLabels(map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "cfssl"})
 
@@ -104,7 +105,7 @@ func (a *SpecConfig) getCfsslContainer() (*components.Container, error) {
 
 	container.AddEnv(horizonapi.EnvConfig{
 		Type:     horizonapi.EnvFromConfigMap,
-		FromName: util.GetResourceName(a.alert.Name, util.AlertName, "blackduck-config"),
+		FromName: utils.GetResourceName(a.alert.Name, util.AlertName, "blackduck-config"),
 	})
 
 	container.AddLivenessProbe(horizonapi.ProbeConfig{

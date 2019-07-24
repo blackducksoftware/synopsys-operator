@@ -9,6 +9,7 @@ import (
 	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -61,7 +62,7 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		Volumes:             c.getCfsslVolumes(),
 		Containers:          []*util.Container{cfsslContainerConfig},
 		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              utils2.GetVersionLabel("cfssl", c.blackduck.Name, c.blackduck.Spec.Version),
+		Labels:              apputils.GetVersionLabel("cfssl", c.blackduck.Name, c.blackduck.Spec.Version),
 		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("cfssl", &c.blackduck.Spec),
 	}
 
@@ -70,8 +71,8 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "cfssl"), Replicas: util.IntToInt32(1)},
-		podConfig, utils2.GetLabel("cfssl", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "cfssl"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("cfssl", c.blackduck.Name))
 }
 
 // getCfsslVolumes will return the cfssl volumes

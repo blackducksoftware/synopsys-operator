@@ -9,6 +9,7 @@ import (
 	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -60,7 +61,7 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		Volumes:             c.getZookeeperVolumes(),
 		Containers:          []*util.Container{zookeeperContainerConfig},
 		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              utils2.GetVersionLabel("zookeeper", c.blackduck.Name, c.blackduck.Spec.Version),
+		Labels:              apputils.GetVersionLabel("zookeeper", c.blackduck.Name, c.blackduck.Spec.Version),
 		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("zookeeper", &c.blackduck.Spec),
 	}
 
@@ -69,8 +70,8 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "zookeeper"), Replicas: util.IntToInt32(1)},
-		podConfig, utils2.GetLabel("zookeeper", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "zookeeper"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("zookeeper", c.blackduck.Name))
 }
 
 // getZookeeperVolumes will return the zookeeper volumes

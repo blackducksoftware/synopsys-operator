@@ -12,9 +12,9 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"math/big"
@@ -32,11 +32,11 @@ type BdRSecret struct {
 
 func (b BdRSecret) GetSecrets() []*components.Secret {
 	var secrets []*components.Secret
-	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: b.blackduck.Spec.Namespace, Name: util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "webserver-certificate"), Type: horizonapi.SecretTypeOpaque})
+	certificateSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: b.blackduck.Spec.Namespace, Name: apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "webserver-certificate"), Type: horizonapi.SecretTypeOpaque})
 
 	cert, key, _ := b.getTLSCertKeyOrCreate()
 	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(cert), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
-	certificateSecret.AddLabels(utils2.GetVersionLabel("secret", b.blackduck.Name, b.blackduck.Spec.Version))
+	certificateSecret.AddLabels(apputils.GetVersionLabel("secret", b.blackduck.Name, b.blackduck.Spec.Version))
 
 	secrets = append(secrets, certificateSecret)
 	return secrets
@@ -49,7 +49,7 @@ func (b BdRSecret) getTLSCertKeyOrCreate() (string, string, error) {
 
 	// Cert copy
 	if len(b.blackduck.Spec.CertificateName) > 0 && !strings.EqualFold(b.blackduck.Spec.CertificateName, "default") {
-		secret, err := util.GetSecret(b.kubeClient, b.blackduck.Spec.CertificateName, util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "webserver-certificate"))
+		secret, err := util.GetSecret(b.kubeClient, b.blackduck.Spec.CertificateName, apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "webserver-certificate"))
 		if err == nil {
 			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
 			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
@@ -67,7 +67,7 @@ func (b BdRSecret) getTLSCertKeyOrCreate() (string, string, error) {
 			cert, certok := secret.Data["WEBSERVER_CUSTOM_CERT_FILE"]
 			key, keyok := secret.Data["WEBSERVER_CUSTOM_KEY_FILE"]
 			if !certok || !keyok {
-				util.DeleteSecret(b.kubeClient, b.blackduck.Spec.Namespace, util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "webserver-certificate"))
+				util.DeleteSecret(b.kubeClient, b.blackduck.Spec.Namespace, apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "webserver-certificate"))
 			} else {
 				return string(cert), string(key), nil
 			}

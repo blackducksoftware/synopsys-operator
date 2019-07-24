@@ -24,13 +24,14 @@ package alert
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // getCfsslService returns a new Service for a Cffsl
 func (a *SpecConfig) getCfsslService() *components.Service {
 	return util.CreateService(
-		util.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
+		utils.GetResourceName(a.alert.Name, util.AlertName, "cfssl"),
 		a.getLabel("cfssl"),
 		a.alert.Spec.Namespace,
 		int32(8888),

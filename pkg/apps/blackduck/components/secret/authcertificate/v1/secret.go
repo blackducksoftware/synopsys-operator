@@ -7,9 +7,9 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
@@ -31,9 +31,9 @@ func (b BdRSecret) GetSecrets() []*components.Secret {
 			logrus.Warnf("The Auth Custom CA provided is invalid")
 		} else {
 			logrus.Debugf("Adding The Auth Custom CA with SN: %x", cert.SerialNumber)
-			authCustomCASecret := components.NewSecret(horizonapi.SecretConfig{Namespace: b.blackduck.Spec.Namespace, Name: util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "auth-custom-ca"), Type: horizonapi.SecretTypeOpaque})
+			authCustomCASecret := components.NewSecret(horizonapi.SecretConfig{Namespace: b.blackduck.Spec.Namespace, Name: apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "auth-custom-ca"), Type: horizonapi.SecretTypeOpaque})
 			authCustomCASecret.AddData(map[string][]byte{"AUTH_CUSTOM_CA": []byte(b.blackduck.Spec.AuthCustomCA)})
-			authCustomCASecret.AddLabels(utils2.GetVersionLabel("secret", b.blackduck.Name, b.blackduck.Spec.Version))
+			authCustomCASecret.AddLabels(apputils.GetVersionLabel("secret", b.blackduck.Name, b.blackduck.Spec.Version))
 			secrets = append(secrets, authCustomCASecret)
 		}
 	}

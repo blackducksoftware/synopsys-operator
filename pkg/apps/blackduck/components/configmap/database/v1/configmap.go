@@ -4,9 +4,9 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"k8s.io/client-go/kubernetes"
@@ -27,7 +27,7 @@ func (b BdConfigmap) GetCM() []*components.ConfigMap {
 
 	var configMaps []*components.ConfigMap
 	// DB
-	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: b.blackduck.Spec.Namespace, Name: util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "db-config")})
+	hubDbConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: b.blackduck.Spec.Namespace, Name: apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "db-config")})
 	if b.blackduck.Spec.ExternalPostgres != nil {
 		hubDbConfig.AddData(map[string]string{
 			"HUB_POSTGRES_ADMIN": b.blackduck.Spec.ExternalPostgres.PostgresAdmin,
@@ -40,7 +40,7 @@ func (b BdConfigmap) GetCM() []*components.ConfigMap {
 			"HUB_POSTGRES_ADMIN": "blackduck",
 			"HUB_POSTGRES_USER":  "blackduck_user",
 			"HUB_POSTGRES_PORT":  "5432",
-			"HUB_POSTGRES_HOST":  util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "postgres"),
+			"HUB_POSTGRES_HOST":  apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "postgres"),
 		})
 	}
 
@@ -52,7 +52,7 @@ func (b BdConfigmap) GetCM() []*components.ConfigMap {
 	} else {
 		hubDbConfig.AddData(map[string]string{"HUB_POSTGRES_ENABLE_SSL": "false"})
 	}
-	hubDbConfig.AddLabels(utils.GetVersionLabel("postgres", b.blackduck.Name, b.blackduck.Spec.Version))
+	hubDbConfig.AddLabels(apputils.GetVersionLabel("postgres", b.blackduck.Name, b.blackduck.Spec.Version))
 	configMaps = append(configMaps, hubDbConfig)
 	return configMaps
 }

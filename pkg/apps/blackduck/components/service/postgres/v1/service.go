@@ -3,10 +3,10 @@ package v1
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"k8s.io/client-go/kubernetes"
@@ -19,7 +19,7 @@ type BdService struct {
 }
 
 func (b BdService) GetService() *components.Service {
-	name := util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "postgres")
+	name := apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "postgres")
 
 	p := &postgres.Postgres{
 		Name:        name,
@@ -27,7 +27,7 @@ func (b BdService) GetService() *components.Service {
 		Port:        int32(5432),
 		Database:    "blackduck",
 		User:        "blackduck",
-		Labels:      utils.GetLabel("postgres", b.blackduck.Name),
+		Labels:      apputils.GetLabel("postgres", b.blackduck.Name),
 		IsOpenshift: b.config.IsOpenshift,
 	}
 

@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 	"time"
 
@@ -379,9 +380,9 @@ func migrateBlackDuck(namespace string) error {
 				uploadCacheKeyPVCName = "blackduck-uploadcache-key"
 				uploadCacheDataPVCName = "blackduck-uploadcache-data"
 			} else {
-				rabbitmqRCName = util.GetResourceName(blackDuckName, util.BlackDuckName, "rabbitmq")
-				zookeeperRCName = util.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper")
-				uploadCacheRCName = util.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache")
+				rabbitmqRCName = utils.GetResourceName(blackDuckName, util.BlackDuckName, "rabbitmq")
+				zookeeperRCName = utils.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper")
+				uploadCacheRCName = utils.GetResourceName(blackDuckName, util.BlackDuckName, "uploadcache")
 				uploadCacheKeyPVCName = fmt.Sprintf("%s-blackduck-uploadcache-key", blackDuckName)
 				uploadCacheDataPVCName = fmt.Sprintf("%s-blackduck-uploadcache-data", blackDuckName)
 			}
@@ -407,7 +408,7 @@ func migrateBlackDuck(namespace string) error {
 			if value, ok := blackDuck.Annotations["synopsys.com/created.by"]; ok && "pre-2019.6.0" == value {
 				pvcs = append(pvcs, "zookeeper-data", "zookeeper-datalog")
 			} else {
-				pvcs = append(pvcs, util.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper-data"), util.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper-datalog"))
+				pvcs = append(pvcs, utils.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper-data"), utils.GetResourceName(blackDuckName, util.BlackDuckName, "zookeeper-datalog"))
 			}
 			for _, pvc := range pvcs {
 				// check for an existance of PVC

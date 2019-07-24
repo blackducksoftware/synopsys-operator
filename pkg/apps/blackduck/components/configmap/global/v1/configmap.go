@@ -5,9 +5,9 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"k8s.io/client-go/kubernetes"
@@ -27,7 +27,7 @@ func NewBdConfigmap(config *protoform.Config, kubeClient *kubernetes.Clientset, 
 func (b BdConfigmap) GetCM() []*components.ConfigMap {
 	var configMaps []*components.ConfigMap
 
-	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: b.blackduck.Spec.Namespace, Name: util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "config")})
+	hubConfig := components.NewConfigMap(horizonapi.ConfigMapConfig{Namespace: b.blackduck.Spec.Namespace, Name: apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "config")})
 
 	hubData := map[string]string{
 		"RUN_SECRETS_DIR": "/tmp/secrets",
@@ -38,26 +38,26 @@ func (b BdConfigmap) GetCM() []*components.ConfigMap {
 		// TODO: commented the below 2 environs until the HUB-20482 is fixed. once it if fixed, uncomment them
 		//"HUB_AUTHENTICATION_HOST": util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "authentication"),
 		//"AUTHENTICATION_HOST":     fmt.Sprintf("%s:%d", util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "authentication"), int32(8443)),
-		"CLIENT_CERT_CN":        util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "binaryscanner"),
-		"CFSSL":                 fmt.Sprintf("%s:8888", util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "cfssl")),
-		"HUB_CFSSL_HOST":        util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "cfssl"),
-		"BLACKDUCK_CFSSL_HOST":  util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "cfssl"),
+		"CLIENT_CERT_CN":        apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "binaryscanner"),
+		"CFSSL":                 fmt.Sprintf("%s:8888", apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "cfssl")),
+		"HUB_CFSSL_HOST":        apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "cfssl"),
+		"BLACKDUCK_CFSSL_HOST":  apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "cfssl"),
 		"BLACKDUCK_CFSSL_PORT":  "8888",
-		"HUB_DOC_HOST":          util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "documentation"),
-		"HUB_JOBRUNNER_HOST":    util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "jobrunner"),
-		"HUB_LOGSTASH_HOST":     util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "logstash"),
-		"RABBIT_MQ_HOST":        util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "rabbitmq"),
-		"BROKER_URL":            fmt.Sprintf("amqps://%s/protecodesc", util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "rabbitmq")),
-		"HUB_REGISTRATION_HOST": util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "registration"),
-		"HUB_SCAN_HOST":         util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "scan"),
-		"HUB_SOLR_HOST":         util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "solr"),
+		"HUB_DOC_HOST":          apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "documentation"),
+		"HUB_JOBRUNNER_HOST":    apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "jobrunner"),
+		"HUB_LOGSTASH_HOST":     apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "logstash"),
+		"RABBIT_MQ_HOST":        apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "rabbitmq"),
+		"BROKER_URL":            fmt.Sprintf("amqps://%s/protecodesc", apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "rabbitmq")),
+		"HUB_REGISTRATION_HOST": apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "registration"),
+		"HUB_SCAN_HOST":         apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "scan"),
+		"HUB_SOLR_HOST":         apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "solr"),
 		// TODO: commented the below 2 environs until the HUB-20412 is fixed. once it if fixed, uncomment them
 		// "BLACKDUCK_UPLOAD_CACHE_HOST": util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"),
 		// "HUB_UPLOAD_CACHE_HOST":       util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"),
 		// TODO: commented the below environs until the HUB-20462 is fixed. once it if fixed, uncomment them
 		// "HUB_WEBAPP_HOST":    util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webapp"),
-		"HUB_WEBSERVER_HOST": util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "webserver"),
-		"HUB_ZOOKEEPER_HOST": util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "zookeeper"),
+		"HUB_WEBSERVER_HOST": apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "webserver"),
+		"HUB_ZOOKEEPER_HOST": apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "zookeeper"),
 	}
 	hubData = util.MergeEnvMaps(blackduckServiceData, hubData)
 
@@ -77,7 +77,7 @@ func (b BdConfigmap) GetCM() []*components.ConfigMap {
 	hubData = util.MergeEnvMaps(hubData, environs)
 
 	hubConfig.AddData(hubData)
-	hubConfig.AddLabels(utils.GetVersionLabel("configmap", b.blackduck.Name, b.blackduck.Spec.Version))
+	hubConfig.AddLabels(apputils.GetVersionLabel("configmap", b.blackduck.Name, b.blackduck.Spec.Version))
 	configMaps = append(configMaps, hubConfig)
 
 	return configMaps

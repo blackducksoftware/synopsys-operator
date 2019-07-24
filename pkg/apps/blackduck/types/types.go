@@ -10,7 +10,7 @@ import (
 type ReplicationControllerCreater func(*ReplicationController, *protoform.Config, *kubernetes.Clientset, *v1.Blackduck) ReplicationControllerInterface
 type ServiceCreater func(config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *v1.Blackduck) ServiceInterface
 type ConfigmapCreater func(config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *v1.Blackduck) ConfigMapInterface
-type PvcCreater func(blackduck *v1.Blackduck) PVCInterface
+type PvcCreater func(config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *v1.Blackduck) PVCInterface
 type SecretCreater func(config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *v1.Blackduck) SecretInterface
 
 type TagOrImage struct {
@@ -23,7 +23,7 @@ type ConfigMapInterface interface {
 }
 
 type PVCInterface interface {
-	GetPVCs() []*components.PersistentVolumeClaim
+	GetPVCs() ([]*components.PersistentVolumeClaim, error)
 	// TODO add deployment, rc
 }
 

@@ -23,6 +23,7 @@ package alert
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
@@ -34,10 +35,10 @@ import (
 func (a *SpecConfig) getOpenShiftRoute() *api.Route {
 	if strings.ToUpper(a.alert.Spec.ExposeService) == util.OPENSHIFT {
 		return &api.Route{
-			Name:               util.GetResourceName(a.alert.Name, util.AlertName, ""),
+			Name:               utils.GetResourceName(a.alert.Name, util.AlertName, ""),
 			Namespace:          a.alert.Spec.Namespace,
 			Kind:               "Service",
-			ServiceName:        util.GetResourceName(a.alert.Name, util.AlertName, "alert"),
+			ServiceName:        utils.GetResourceName(a.alert.Name, util.AlertName, "alert"),
 			PortName:           fmt.Sprintf("port-%d", *a.alert.Spec.Port),
 			Labels:             map[string]string{"app": util.AlertName, "name": a.alert.Name, "component": "route"},
 			TLSTerminationType: routev1.TLSTerminationPassthrough,

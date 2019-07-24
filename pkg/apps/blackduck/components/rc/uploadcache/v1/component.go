@@ -9,6 +9,7 @@ import (
 	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 
@@ -60,7 +61,7 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		Volumes:             c.getUploadCacheVolumes(),
 		Containers:          []*util.Container{uploadCacheContainerConfig},
 		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              utils2.GetVersionLabel("uploadcache", c.blackduck.Name, c.blackduck.Spec.Version),
+		Labels:              apputils.GetVersionLabel("uploadcache", c.blackduck.Name, c.blackduck.Spec.Version),
 		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("uploadcache", &c.blackduck.Spec),
 	}
 
@@ -69,14 +70,14 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "uploadcache"), Replicas: util.IntToInt32(1)},
-		podConfig, utils2.GetLabel("uploadcache", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "uploadcache"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("uploadcache", c.blackduck.Name))
 }
 
 // getUploadCacheVolumes will return the uploadCache volumes
 func (c *BdReplicationController) getUploadCacheVolumes() []*components.Volume {
 	uploadCacheSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-uploadcache-security")
-	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", util.GetResourceName(c.blackduck.Name, util.BlackDuckName, "upload-cache"), 0444)
+	sealKeySecretVol, _ := util.CreateSecretVolume("dir-seal-key", apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "upload-cache"), 0444)
 	var uploadCacheDataDir *components.Volume
 	if c.blackduck.Spec.PersistentStorage {
 		uploadCacheDataDir, _ = util.CreatePersistentVolumeClaimVolume("dir-uploadcache-data", utils.GetPVCName("uploadcache-data", c.blackduck))

@@ -4,9 +4,9 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/sirupsen/logrus"
@@ -22,7 +22,7 @@ type BdRSecret struct {
 func (b BdRSecret) GetSecrets() []*components.Secret {
 	var secrets []*components.Secret
 
-	uploadCacheSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: b.blackduck.Spec.Namespace, Name: util.GetResourceName(b.blackduck.Name, util.BlackDuckName, "upload-cache"), Type: horizonapi.SecretTypeOpaque})
+	uploadCacheSecret := components.NewSecret(horizonapi.SecretConfig{Namespace: b.blackduck.Spec.Namespace, Name: apputils.GetResourceName(b.blackduck.Name, util.BlackDuckName, "upload-cache"), Type: horizonapi.SecretTypeOpaque})
 
 	if !b.config.DryRun {
 		secret, err := util.GetSecret(b.kubeClient, b.config.Namespace, "blackduck-secret")
@@ -35,7 +35,7 @@ func (b BdRSecret) GetSecrets() []*components.Secret {
 		uploadCacheSecret.AddData(map[string][]byte{"SEAL_KEY": {}})
 	}
 
-	uploadCacheSecret.AddLabels(utils2.GetVersionLabel("uploadcache", b.blackduck.Name, b.blackduck.Spec.Version))
+	uploadCacheSecret.AddLabels(apputils.GetVersionLabel("uploadcache", b.blackduck.Name, b.blackduck.Spec.Version))
 	secrets = append(secrets, uploadCacheSecret)
 
 	return secrets

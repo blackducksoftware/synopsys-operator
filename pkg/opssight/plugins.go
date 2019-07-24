@@ -25,6 +25,7 @@ package opssight
 
 import (
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 	"time"
 
@@ -225,7 +226,7 @@ func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssig
 				concurrentScanLimit = 2
 			}
 			host := &opssightapi.Host{
-				Domain:              fmt.Sprintf("%s.%s.svc", util.GetResourceName(hub.Name, util.BlackDuckName, "webserver"), hub.Spec.Namespace),
+				Domain:              fmt.Sprintf("%s.%s.svc", utils.GetResourceName(hub.Name, util.BlackDuckName, "webserver"), hub.Spec.Namespace),
 				ConcurrentScanLimit: concurrentScanLimit,
 				Scheme:              "https",
 				User:                "sysadmin",

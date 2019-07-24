@@ -24,6 +24,7 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
@@ -40,7 +41,7 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
 		Namespace: p.opssight.Spec.Namespace,
 	})
 	pod, err := p.perceptorPod()
@@ -55,7 +56,7 @@ func (p *SpecConfig) PerceptorReplicationController() (*components.ReplicationCo
 
 func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name: util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
+		Name: utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
 	})
 	pod.AddLabels(map[string]string{"component": p.opssight.Spec.Perceptor.Name, "app": "opssight", "name": p.opssight.Name})
 	cont, err := p.perceptorContainer()
@@ -105,7 +106,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 		return nil, errors.Trace(err)
 	}
 
-	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.SecretName)})
+	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.SecretName)})
 
 	return container, nil
 }
@@ -113,7 +114,7 @@ func (p *SpecConfig) perceptorContainer() (*components.Container, error) {
 // PerceptorService creates a service for perceptor
 func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
@@ -138,7 +139,7 @@ func (p *SpecConfig) PerceptorService() (*components.Service, error) {
 func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
 	name := fmt.Sprintf("%s-exposed", p.opssight.Spec.Perceptor.Name)
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, name),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, name),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeNodePort,
 	})
@@ -163,7 +164,7 @@ func (p *SpecConfig) PerceptorNodePortService() (*components.Service, error) {
 func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error) {
 	name := fmt.Sprintf("%s-exposed", p.opssight.Spec.Perceptor.Name)
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, name),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, name),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeLoadBalancer,
 	})
@@ -187,7 +188,7 @@ func (p *SpecConfig) PerceptorLoadBalancerService() (*components.Service, error)
 // PerceptorSecret create a secret for perceptor
 func (p *SpecConfig) PerceptorSecret() (*components.Secret, error) {
 	secretConfig := horizonapi.SecretConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.SecretName),
+		Name:      utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.SecretName),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.SecretTypeOpaque,
 	}
@@ -217,10 +218,10 @@ func (p *SpecConfig) GetPerceptorOpenShiftRoute() *api.Route {
 	namespace := p.opssight.Spec.Namespace
 	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
 		return &api.Route{
-			Name:               util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
+			Name:               utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
 			Namespace:          namespace,
 			Kind:               "Service",
-			ServiceName:        util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
+			ServiceName:        utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
 			PortName:           fmt.Sprintf("port-%s", p.opssight.Spec.Perceptor.Name),
 			Labels:             map[string]string{"app": "opssight", "name": p.opssight.Name, "component": fmt.Sprintf("%s-ui", p.opssight.Spec.Perceptor.Name)},
 			TLSTerminationType: routev1.TLSTerminationEdge,
