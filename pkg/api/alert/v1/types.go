@@ -22,6 +22,7 @@ under the License.
 package v1
 
 import (
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -59,7 +60,9 @@ type AlertSpec struct {
 	AlertMemory string `json:"alertMemory,omitempty"`
 	CfsslMemory string `json:"cfsslMemory,omitempty"`
 
-	DesiredState string `json:"desiredState,omitempty"`
+	DesiredState          string                    `json:"desiredState,omitempty"`
+	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
+	RegistryConfiguration api.RegistryConfiguration `json:"registryConfiguration,omitempty"`
 }
 
 // AlertStatus is the status for a Alert resource

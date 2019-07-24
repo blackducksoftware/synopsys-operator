@@ -33,5 +33,5 @@ type Creater interface {
 	Versions() []string
 	GetComponents(blackDuck *blackduckapi.Blackduck) (*api.ComponentList, error)
 	GetPostgresComponents(blackDuck *blackduckapi.Blackduck) (*api.ComponentList, error)
-	GetPVC(blackduck *blackduckapi.Blackduck) []*components.PersistentVolumeClaim
+	GetPVC(blackduck *blackduckapi.Blackduck) ([]*components.PersistentVolumeClaim, error)
 }

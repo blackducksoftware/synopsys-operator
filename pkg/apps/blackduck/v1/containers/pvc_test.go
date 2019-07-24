@@ -29,7 +29,7 @@ import (
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -46,7 +46,10 @@ func TestGetPVCs(t *testing.T) {
 	ba := false
 	// Default PVCs for this test
 	c := NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackduckapi.BlackduckSpec{PersistentStorage: true}}, flavor, ba)
-	defaultPVCs := c.GetPVCs()
+	defaultPVCs, err := c.GetPVCs()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
 
 	// Case: No PVCs specified - defaults
 	specPVCs := []blackduckapi.PVC{}
@@ -55,8 +58,11 @@ func TestGetPVCs(t *testing.T) {
 		PVC:               specPVCs,
 	}
 	c = NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackDuckSpec}, flavor, ba)
-	createdPVCs := c.GetPVCs()
-	err := checkPVCs(defaultPVCs, specPVCs, createdPVCs)
+	createdPVCs, err := c.GetPVCs()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+	err = checkPVCs(defaultPVCs, specPVCs, createdPVCs)
 	if err != nil {
 		t.Errorf("%s", err)
 	}
@@ -75,7 +81,10 @@ func TestGetPVCs(t *testing.T) {
 		PVC:               specPVCs,
 	}
 	c = NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackDuckSpec}, flavor, ba)
-	createdPVCs = c.GetPVCs()
+	createdPVCs, err = c.GetPVCs()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
 	err = checkPVCs(defaultPVCs, specPVCs, createdPVCs)
 	if err != nil {
 		t.Errorf("%s", err)
@@ -95,7 +104,10 @@ func TestGetPVCs(t *testing.T) {
 		PVC:               specPVCs,
 	}
 	c = NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackDuckSpec}, flavor, ba)
-	createdPVCs = c.GetPVCs()
+	createdPVCs, err = c.GetPVCs()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
 	err = checkPVCs(defaultPVCs, []blackduckapi.PVC{}, createdPVCs) // a bad PVC is like it doesn't exist
 	if err != nil {
 		t.Errorf("%s", err)
@@ -120,7 +132,10 @@ func TestGetPVCs(t *testing.T) {
 		PVC:               specPVCs,
 	}
 	c = NewCreater(&pc, nil, nil, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: "test"}, Spec: blackDuckSpec}, flavor, ba)
-	createdPVCs = c.GetPVCs()
+	createdPVCs, err = c.GetPVCs()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
 	err = checkPVCs(defaultPVCs, []blackduckapi.PVC{{Name: strings.Split(defaultPVCs[0].GetName(), "test-")[1], Size: "10Gi", StorageClass: "testStorageClass"}}, createdPVCs)
 	if err != nil {
 		t.Errorf("%s", err)

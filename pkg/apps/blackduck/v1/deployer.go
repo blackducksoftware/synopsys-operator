@@ -293,7 +293,7 @@ func (hc *Creater) getExposeService(bd *blackduckapi.Blackduck) *components.Serv
 }
 
 // GetPVC returns the PVC
-func (hc *Creater) GetPVC(blackduck *blackduckapi.Blackduck) []*components.PersistentVolumeClaim {
+func (hc *Creater) GetPVC(blackduck *blackduckapi.Blackduck) ([]*components.PersistentVolumeClaim, error) {
 	containerCreater := containers.NewCreater(hc.config, hc.kubeConfig, hc.kubeClient, blackduck, nil, hc.isBinaryAnalysisEnabled(&blackduck.Spec))
 	return containerCreater.GetPVCs()
 }
