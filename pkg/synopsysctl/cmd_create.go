@@ -280,6 +280,9 @@ func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blac
 		return nil, err
 	}
 	cList, err := app.Blackduck().GetComponents(blackDuck, blackduckapp.PVCResources)
+	if err != nil {
+		return nil, err
+	}
 	m := map[string]string{}
 	for _, pvc := range cList.PersistentVolumeClaims {
 		name := pvc.GetName()
@@ -344,7 +347,7 @@ var createBlackDuckCmd = &cobra.Command{
 		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 		// Verifying only one Black Duck instance per namespace
-		blackducks, err := util.ListHubs(blackDuckClient, blackDuckNamespace)
+		blackducks, err := util.ListBlackDucks(blackDuckClient, blackDuckNamespace)
 		if err != nil {
 			return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackDuckNamespace, err)
 		}

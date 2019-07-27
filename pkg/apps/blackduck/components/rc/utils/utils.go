@@ -2,13 +2,15 @@ package utils
 
 import (
 	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
+// GetDBSecretVolume get database secret volume
 func GetDBSecretVolume(name string) *components.Volume {
 	return components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "db-passwords",
@@ -21,6 +23,7 @@ func GetDBSecretVolume(name string) *components.Volume {
 	})
 }
 
+// GetProxyVolume get proxy certificate secret volume
 func GetProxyVolume(name string) *components.Volume {
 	return components.NewSecretVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      "blackduck-proxy-certificate",
@@ -32,11 +35,13 @@ func GetProxyVolume(name string) *components.Volume {
 	})
 }
 
-func GetHubConfigEnv(name string) *horizonapi.EnvConfig {
+// GetBlackDuckConfigEnv get Black Duck environment configuration
+func GetBlackDuckConfigEnv(name string) *horizonapi.EnvConfig {
 	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: utils.GetResourceName(name, util.BlackDuckName, "config")}
 }
 
-func GetHubDBConfigEnv(name string) *horizonapi.EnvConfig {
+// GetBlackDuckDBConfigEnv get Black Duck database environment configuration
+func GetBlackDuckDBConfigEnv(name string) *horizonapi.EnvConfig {
 	return &horizonapi.EnvConfig{Type: horizonapi.EnvFromConfigMap, FromName: utils.GetResourceName(name, util.BlackDuckName, "db-config")}
 }
 
@@ -54,7 +59,8 @@ var nodeOperatorMap = map[string]horizonapi.NodeOperator{
 	"Lt":           horizonapi.NodeOperatorLt,
 }
 
-func GetNodeAffinityConfigs(podName string, bdspec *v1.BlackduckSpec) map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig {
+// GetNodeAffinityConfigs get node affinity configuration
+func GetNodeAffinityConfigs(podName string, bdspec *blackduckapi.BlackduckSpec) map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig {
 
 	// make an empty NodeAffinityMap
 	nodeAffinityMap := make(map[horizonapi.AffinityType][]*horizonapi.NodeAffinityConfig)
@@ -76,7 +82,8 @@ func GetNodeAffinityConfigs(podName string, bdspec *v1.BlackduckSpec) map[horizo
 	return nodeAffinityMap
 }
 
-func GetPVCName(name string, blackduck *v1.Blackduck) string {
+// GetPVCName get PVC name
+func GetPVCName(name string, blackduck *blackduckapi.Blackduck) string {
 	if blackduck.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
 		return fmt.Sprintf("blackduck-%s", name)
 	}

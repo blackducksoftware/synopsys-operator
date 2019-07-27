@@ -2,19 +2,19 @@ package store
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"k8s.io/client-go/kubernetes"
+	"reflect"
 	"strings"
 
-	//_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
-	"log"
+	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 )
 
+// Components contains the list of components to be added/updated
 type Components struct {
 	Rc        map[types.ComponentName]types.ReplicationControllerCreater
 	Service   map[types.ComponentName]types.ServiceCreater
@@ -24,78 +24,95 @@ type Components struct {
 	Size      map[types.ComponentName]types.SizeInterface
 }
 
+// ComponentStore stores the components
 var ComponentStore Components
 
+// Register registers the components to the store
 func Register(name types.ComponentName, function interface{}) {
 	switch function.(type) {
-	case func(*types.ReplicationController, *protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ReplicationControllerInterface:
+	case func(*types.ReplicationController, *protoform.Config, *kubernetes.Clientset, interface{}) (types.ReplicationControllerInterface, error):
 		if ComponentStore.Rc == nil {
 			ComponentStore.Rc = make(map[types.ComponentName]types.ReplicationControllerCreater)
 		}
-		ComponentStore.Rc[name] = function.(func(*types.ReplicationController, *protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ReplicationControllerInterface)
-	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ServiceInterface:
+		ComponentStore.Rc[name] = function.(func(*types.ReplicationController, *protoform.Config, *kubernetes.Clientset, interface{}) (types.ReplicationControllerInterface, error))
+	case func(*protoform.Config, *kubernetes.Clientset, interface{}) (types.ServiceInterface, error):
 		if ComponentStore.Service == nil {
 			ComponentStore.Service = make(map[types.ComponentName]types.ServiceCreater)
 		}
-		ComponentStore.Service[name] = function.(func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ServiceInterface)
-	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ConfigMapInterface:
+		ComponentStore.Service[name] = function.(func(*protoform.Config, *kubernetes.Clientset, interface{}) (types.ServiceInterface, error))
+	case func(*protoform.Config, *kubernetes.Clientset, interface{}) (types.ConfigMapInterface, error):
 		if ComponentStore.Configmap == nil {
 			ComponentStore.Configmap = make(map[types.ComponentName]types.ConfigmapCreater)
 		}
-		ComponentStore.Configmap[name] = function.(func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.ConfigMapInterface)
-	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.PVCInterface:
+		ComponentStore.Configmap[name] = function.(func(*protoform.Config, *kubernetes.Clientset, interface{}) (types.ConfigMapInterface, error))
+	case func(*protoform.Config, *kubernetes.Clientset, interface{}) (types.PVCInterface, error):
 		if ComponentStore.PVC == nil {
 			ComponentStore.PVC = make(map[types.ComponentName]types.PvcCreater)
 		}
-		ComponentStore.PVC[name] = function.(func(config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *v1.Blackduck) types.PVCInterface)
-	case func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.SecretInterface:
+		ComponentStore.PVC[name] = function.(func(config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck interface{}) (types.PVCInterface, error))
+	case func(*protoform.Config, *kubernetes.Clientset, interface{}) (types.SecretInterface, error):
 		if ComponentStore.Secret == nil {
 			ComponentStore.Secret = make(map[types.ComponentName]types.SecretCreater)
 		}
-		ComponentStore.Secret[name] = function.(func(*protoform.Config, *kubernetes.Clientset, *v1.Blackduck) types.SecretInterface)
+		ComponentStore.Secret[name] = function.(func(*protoform.Config, *kubernetes.Clientset, interface{}) (types.SecretInterface, error))
 	case types.SizeInterface:
 		if ComponentStore.Size == nil {
 			ComponentStore.Size = make(map[types.ComponentName]types.SizeInterface)
 		}
 		ComponentStore.Size[name] = function.(types.SizeInterface)
 	default:
-		log.Fatal("Couldn't load " + name)
+		log.Fatalf("couldn't load %s because unable to find the type %+v", name, reflect.TypeOf(function))
 	}
 }
 
-func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, blackduck *v1.Blackduck) (api.ComponentList, error) {
+// customResource holds the custom resource configuration
+type customResource struct {
+	namespace             string
+	size                  string
+	imageRegistries       []string
+	registryConfiguration *api.RegistryConfiguration
+}
+
+// GetComponents get the components and generate the corresponding horizon object
+func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, cr interface{}) (api.ComponentList, error) {
 	var cp api.ComponentList
 
+	// get the custom resource info
+	customResource, err := getCR(cr)
+	if err != nil {
+		return api.ComponentList{}, fmt.Errorf("unable to get the components because %+v", err)
+	}
+
 	// Rc
-	rcs, err := generateRc(v, config, kubeclient, blackduck)
+	rcs, err := generateRc(v, config, kubeclient, customResource, cr)
 	if err != nil {
 		return cp, err
 	}
 	cp.ReplicationControllers = rcs
 
 	// Services
-	services, err := generateService(v, config, kubeclient, blackduck)
+	services, err := generateService(v, config, kubeclient, cr)
 	if err != nil {
 		return cp, err
 	}
 	cp.Services = services
 
 	// Configmap
-	cm, err := generateConfigmap(v, config, kubeclient, blackduck)
+	cm, err := generateConfigmap(v, config, kubeclient, cr)
 	if err != nil {
 		return cp, err
 	}
 	cp.ConfigMaps = cm
 
 	// Secret
-	secrets, err := generateSecret(v, config, kubeclient, blackduck)
+	secrets, err := generateSecret(v, config, kubeclient, cr)
 	if err != nil {
 		return cp, err
 	}
 	cp.Secrets = secrets
 
 	// PVC
-	pvcs, err := generatePVCs(v, config, kubeclient, blackduck)
+	pvcs, err := generatePVCs(v, config, kubeclient, cr)
 	if err != nil {
 		return cp, err
 	}
@@ -104,38 +121,64 @@ func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *
 	return cp, nil
 }
 
-func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, blackduck *v1.Blackduck) ([]*components.ReplicationController, error) {
-	var rcs []*components.ReplicationController
+func getCR(cr interface{}) (*customResource, error) {
+	spec := reflect.ValueOf(cr).Elem().FieldByName("Spec")
+
+	namespace, ok := spec.FieldByName("Namespace").Interface().(string)
+	if !ok {
+		return nil, fmt.Errorf("namespace can't be retrieved from the custom resource because of type mismatch. expected: string, actual: %+v", reflect.TypeOf(namespace))
+	}
+
+	size, ok := spec.FieldByName("Size").Interface().(string)
+	if !ok {
+		return nil, fmt.Errorf("size can't be retrieved from the custom resource because of type mismatch. expected: string, actual: %+v", reflect.TypeOf(size))
+	}
+
+	imageRegistries, ok := spec.FieldByName("ImageRegistries").Interface().([]string)
+	if !ok {
+		return nil, fmt.Errorf("image registries can't be retrieved from the custom resource because of type mismatch. expected: []string, actual: %+v", reflect.TypeOf(imageRegistries))
+	}
+
+	registryConfiguration, ok := spec.FieldByName("RegistryConfiguration").Interface().(api.RegistryConfiguration)
+	if !ok {
+		return nil, fmt.Errorf("registry configuration can't be retrieved from the custom resource because of type mismatch. expected: api.RegistryConfiguration, actual: %+v", reflect.TypeOf(registryConfiguration))
+	}
+
+	return &customResource{namespace: namespace, size: size, imageRegistries: imageRegistries, registryConfiguration: &registryConfiguration}, nil
+}
+
+func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, customResource *customResource, cr interface{}) ([]*components.ReplicationController, error) {
+	rcs := make([]*components.ReplicationController, 0)
 	// Size
-	sizegen, okk := ComponentStore.Size[v.Size]
-	if !okk {
+	sizegen, ok := ComponentStore.Size[v.Size]
+	if !ok {
 		return nil, fmt.Errorf("size %s couldn't be found", v.Size)
 	}
 
-	size := sizegen.GetSize(blackduck.Spec.Size)
-	if size == nil {
-		return nil, fmt.Errorf("size %s couldn't be found in %s", blackduck.Spec.Size, v.Size)
+	componentSize := sizegen.GetSize(customResource.size)
+	if componentSize == nil {
+		return nil, fmt.Errorf("size %s couldn't be found in %s", customResource.size, v.Size)
 	}
 
 	// RC
 	for k, v := range v.RCs {
-		rcSize, ok := size[k]
+		rcSize, ok := componentSize[k]
 		if !ok {
-			return nil, fmt.Errorf("replication controller %s couldn't be found in size [%s]", k, blackduck.Spec.Size)
+			return nil, fmt.Errorf("replication controller %s couldn't be found in size [%s]", k, customResource.size)
 		}
 		rc := &types.ReplicationController{
-			Namespace:  blackduck.Spec.Namespace,
+			Namespace:  customResource.namespace,
 			Replicas:   rcSize.Replica,
 			Containers: map[types.ContainerName]types.Container{},
 		}
 
-		for cName, c := range v.Container {
-			rc.Containers[cName] = types.Container{
-				Image:  generateImageTag(c, blackduck),
-				MinMem: size[k].Containers[cName].MinMem,
-				MaxMem: size[k].Containers[cName].MaxMem,
-				MinCPU: size[k].Containers[cName].MinCPU,
-				MaxCPU: size[k].Containers[cName].MaxCPU,
+		for containerName, defaultImage := range v.Container {
+			rc.Containers[containerName] = types.Container{
+				Image:  generateImageTag(defaultImage, customResource.imageRegistries, customResource.registryConfiguration),
+				MinMem: componentSize[k].Containers[containerName].MinMem,
+				MaxMem: componentSize[k].Containers[containerName].MaxMem,
+				MinCPU: componentSize[k].Containers[containerName].MinCPU,
+				MaxCPU: componentSize[k].Containers[containerName].MaxCPU,
 			}
 		}
 
@@ -144,8 +187,8 @@ func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kub
 			return nil, fmt.Errorf("rc %s couldn't be found", v.Identifier)
 		}
 
-		test := component(rc, config, kubeclient, blackduck)
-		comp, err := test.GetRc()
+		rcCreater, err := component(rc, config, kubeclient, cr)
+		comp, err := rcCreater.GetRc()
 		if err != nil {
 			return nil, err
 		}
@@ -156,15 +199,18 @@ func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kub
 	return rcs, nil
 }
 
-func generateSecret(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, blackduck *v1.Blackduck) ([]*components.Secret, error) {
-	var secrets []*components.Secret
+func generateSecret(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, cr interface{}) ([]*components.Secret, error) {
+	secrets := make([]*components.Secret, 0)
 	for _, v := range v.Secrets {
 		component, ok := ComponentStore.Secret[v]
 		if !ok {
 			return nil, fmt.Errorf("couldn't find secret %s", v)
 		}
-		c := component(config, kubeclient, blackduck)
-		res := c.GetSecrets()
+		secretCreater, err := component(config, kubeclient, cr)
+		if err != nil {
+			return nil, err
+		}
+		res := secretCreater.GetSecrets()
 		if len(res) > 0 {
 			secrets = append(secrets, res...)
 		}
@@ -172,15 +218,18 @@ func generateSecret(v types.PublicVersion, config *protoform.Config, kubeclient 
 	return secrets, nil
 }
 
-func generateService(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, blackduck *v1.Blackduck) ([]*components.Service, error) {
-	var services []*components.Service
+func generateService(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, cr interface{}) ([]*components.Service, error) {
+	services := make([]*components.Service, 0)
 	for _, v := range v.Services {
 		component, ok := ComponentStore.Service[v]
 		if !ok {
-			return nil, fmt.Errorf("couldn't find secret %s", v)
+			return nil, fmt.Errorf("couldn't find service %s", v)
 		}
-		c := component(config, kubeclient, blackduck)
-		res := c.GetService()
+		serviceCreater, err := component(config, kubeclient, cr)
+		if err != nil {
+			return nil, err
+		}
+		res := serviceCreater.GetService()
 		if res != nil {
 			services = append(services, res)
 		}
@@ -188,15 +237,18 @@ func generateService(v types.PublicVersion, config *protoform.Config, kubeclient
 	return services, nil
 }
 
-func generateConfigmap(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, blackduck *v1.Blackduck) ([]*components.ConfigMap, error) {
-	var cms []*components.ConfigMap
+func generateConfigmap(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, cr interface{}) ([]*components.ConfigMap, error) {
+	cms := make([]*components.ConfigMap, 0)
 	for _, v := range v.ConfigMaps {
 		component, ok := ComponentStore.Configmap[v]
 		if !ok {
-			return nil, fmt.Errorf("couldn't find secret %s", v)
+			return nil, fmt.Errorf("couldn't find configmap %s", v)
 		}
-		c := component(config, kubeclient, blackduck)
-		res := c.GetCM()
+		cmCreater, err := component(config, kubeclient, cr)
+		if err != nil {
+			return nil, err
+		}
+		res := cmCreater.GetCM()
 		if len(res) > 0 {
 			cms = append(cms, res...)
 		}
@@ -204,15 +256,18 @@ func generateConfigmap(v types.PublicVersion, config *protoform.Config, kubeclie
 	return cms, nil
 }
 
-func generatePVCs(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, blackduck *v1.Blackduck) ([]*components.PersistentVolumeClaim, error) {
-	var pvcs []*components.PersistentVolumeClaim
+func generatePVCs(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, cr interface{}) ([]*components.PersistentVolumeClaim, error) {
+	pvcs := make([]*components.PersistentVolumeClaim, 0)
 	for _, v := range v.PVC {
 		component, ok := ComponentStore.PVC[v]
 		if !ok {
-			return nil, fmt.Errorf("couldn't find secret %s", v)
+			return nil, fmt.Errorf("couldn't find pvc %s", v)
 		}
-		c := component(config, kubeclient, blackduck)
-		res, err := c.GetPVCs()
+		pvcCreater, err := component(config, kubeclient, cr)
+		if err != nil {
+			return nil, err
+		}
+		res, err := pvcCreater.GetPVCs()
 		if err != nil {
 			return nil, err
 		}
@@ -223,31 +278,37 @@ func generatePVCs(v types.PublicVersion, config *protoform.Config, kubeclient *k
 	return pvcs, nil
 }
 
-func generateImageTag(currentImage string, blackduck *v1.Blackduck) string {
-	if len(blackduck.Spec.ImageRegistries) > 0 {
-		imageName, err := util.GetImageName(currentImage)
+func generateImageTag(defaultImage string, imageRegistries []string, registryConfig *api.RegistryConfiguration) string {
+	if len(imageRegistries) > 0 {
+		imageName, err := util.GetImageName(defaultImage)
 		if err != nil {
-			return currentImage
+			return defaultImage
 		}
-		return getFullContainerNameFromImageRegistryConf(imageName, blackduck.Spec.ImageRegistries)
+		defaultImage = getFullContainerNameFromImageRegistryConf(imageName, imageRegistries, defaultImage)
 	}
 
-	if len(blackduck.Spec.RegistryConfiguration.Registry) > 0 && len(blackduck.Spec.RegistryConfiguration.Namespace) > 0 {
-		imageName, err := util.GetImageName(currentImage)
-		if err != nil {
-			return currentImage
-		}
-		imageTag, err := util.GetImageTag(currentImage)
-		if err != nil {
-			return currentImage
-		}
-		return fmt.Sprintf("%s/%s/%s:%s", blackduck.Spec.RegistryConfiguration.Registry, blackduck.Spec.RegistryConfiguration.Namespace, imageName, imageTag)
+	if len(registryConfig.Registry) > 0 && len(registryConfig.Namespace) > 0 {
+		return getRegistryConfiguration(defaultImage, registryConfig)
 	}
-
-	return currentImage
+	return defaultImage
 }
 
-func getFullContainerNameFromImageRegistryConf(baseContainer string, images []string) string {
+func getRegistryConfiguration(image string, registryConfig *api.RegistryConfiguration) string {
+	if len(registryConfig.Registry) > 0 && len(registryConfig.Namespace) > 0 {
+		imageName, err := util.GetImageName(image)
+		if err != nil {
+			return image
+		}
+		imageTag, err := util.GetImageTag(image)
+		if err != nil {
+			return image
+		}
+		return fmt.Sprintf("%s/%s/%s:%s", registryConfig.Registry, registryConfig.Namespace, imageName, imageTag)
+	}
+	return image
+}
+
+func getFullContainerNameFromImageRegistryConf(baseContainer string, images []string, defaultImage string) string {
 	for _, reg := range images {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
@@ -258,5 +319,5 @@ func getFullContainerNameFromImageRegistryConf(baseContainer string, images []st
 			return reg
 		}
 	}
-	return baseContainer
+	return defaultImage
 }

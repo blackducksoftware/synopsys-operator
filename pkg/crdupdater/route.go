@@ -51,6 +51,7 @@ func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
 	if err != nil {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
+
 	newRoutes := append([]*api.Route{}, routes...)
 	for i := 0; i < len(newRoutes); i++ {
 		if !isLabelsExist(config.expectedLabels, newRoutes[i].Labels) {
@@ -58,6 +59,7 @@ func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
 			i--
 		}
 	}
+
 	return &Route{
 		config:      config,
 		deployer:    deployer,

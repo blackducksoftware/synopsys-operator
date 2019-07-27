@@ -1,14 +1,17 @@
 package v1
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"strings"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 type size struct{}
 
+// GetSize returns the size for each container
 func (s size) GetSize(name string) map[string]*types.Size {
 	switch strings.ToUpper(name) {
 	case "SMALL":
@@ -16,7 +19,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"authentication": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.AuthenticationContainerName: {
+					blackduck.AuthenticationContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -25,7 +28,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"binaryscanner": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.BinaryScannerContainerName: {
+					blackduck.BinaryScannerContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
 						MinMem: util.IntToInt32(2048),
@@ -36,7 +39,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"cfssl": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.CfsslContainerName: {
+					blackduck.CfsslContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -45,7 +48,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"documentation": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.DocumentationContainerName: {
+					blackduck.DocumentationContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -54,7 +57,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"jobrunner": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.JobrunnerContainerName: {
+					blackduck.JobrunnerContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
 						MinMem: util.IntToInt32(4608),
@@ -65,7 +68,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"rabbitmq": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.RabbitMQContainerName: {
+					blackduck.RabbitMQContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -74,7 +77,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"registration": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.RegistrationContainerName: {
+					blackduck.RegistrationContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -83,7 +86,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"scan": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.ScanContainerName: {
+					blackduck.ScanContainerName: {
 						MinMem: util.IntToInt32(2560),
 						MaxMem: util.IntToInt32(2560),
 					},
@@ -92,7 +95,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"solr": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.SolrContainerName: {
+					blackduck.SolrContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -101,7 +104,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"uploadcache": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.UploadCacheContainerName: {
+					blackduck.UploadCacheContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -110,13 +113,13 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"webapp-logstash": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.WebappContainerName: {
+					blackduck.WebappContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
 						MinMem: util.IntToInt32(2560),
 						MaxMem: util.IntToInt32(2560),
 					},
-					types.LogstashContainerName: {
+					blackduck.LogstashContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -125,7 +128,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"webserver": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.WebserverContainerName: {
+					blackduck.WebserverContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -134,7 +137,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"zookeeper": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.ZookeeperContainerName: {
+					blackduck.ZookeeperContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -143,7 +146,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"postgres": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.PostgresContainerName: {
+					blackduck.PostgresContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
 						MinMem: util.IntToInt32(3072),
@@ -157,7 +160,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"authentication": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.AuthenticationContainerName: {
+					blackduck.AuthenticationContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -166,7 +169,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"binaryscanner": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.BinaryScannerContainerName: {
+					blackduck.BinaryScannerContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
 						MinMem: util.IntToInt32(2048),
@@ -177,7 +180,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"cfssl": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.CfsslContainerName: {
+					blackduck.CfsslContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -186,7 +189,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"documentation": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.DocumentationContainerName: {
+					blackduck.DocumentationContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -195,7 +198,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"jobrunner": {
 				Replica: 4,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.JobrunnerContainerName: {
+					blackduck.JobrunnerContainerName: {
 						MinCPU: util.IntToInt32(4),
 						MaxCPU: util.IntToInt32(4),
 						MinMem: util.IntToInt32(7168),
@@ -206,7 +209,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"rabbitmq": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.RabbitMQContainerName: {
+					blackduck.RabbitMQContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -215,7 +218,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"registration": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.RegistrationContainerName: {
+					blackduck.RegistrationContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -224,7 +227,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"scan": {
 				Replica: 2,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.ScanContainerName: {
+					blackduck.ScanContainerName: {
 						MinMem: util.IntToInt32(5120),
 						MaxMem: util.IntToInt32(5120),
 					},
@@ -233,7 +236,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"solr": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.SolrContainerName: {
+					blackduck.SolrContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -242,7 +245,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"uploadcache": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.UploadCacheContainerName: {
+					blackduck.UploadCacheContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -251,13 +254,13 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"webapp-logstash": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.WebappContainerName: {
+					blackduck.WebappContainerName: {
 						MinCPU: util.IntToInt32(2),
 						MaxCPU: util.IntToInt32(2),
 						MinMem: util.IntToInt32(5120),
 						MaxMem: util.IntToInt32(5120),
 					},
-					types.LogstashContainerName: {
+					blackduck.LogstashContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -266,7 +269,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"webserver": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.WebserverContainerName: {
+					blackduck.WebserverContainerName: {
 						MinMem: util.IntToInt32(2048),
 						MaxMem: util.IntToInt32(2048),
 					},
@@ -275,7 +278,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"zookeeper": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.ZookeeperContainerName: {
+					blackduck.ZookeeperContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -284,7 +287,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"postgres": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.PostgresContainerName: {
+					blackduck.PostgresContainerName: {
 						MinCPU: util.IntToInt32(2),
 						MaxCPU: util.IntToInt32(2),
 						MinMem: util.IntToInt32(8192),
@@ -298,7 +301,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"authentication": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.AuthenticationContainerName: {
+					blackduck.AuthenticationContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -307,7 +310,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"binaryscanner": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.BinaryScannerContainerName: {
+					blackduck.BinaryScannerContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
 						MinMem: util.IntToInt32(2048),
@@ -318,7 +321,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"cfssl": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.CfsslContainerName: {
+					blackduck.CfsslContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -327,7 +330,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"documentation": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.DocumentationContainerName: {
+					blackduck.DocumentationContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -336,10 +339,10 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"jobrunner": {
 				Replica: 6,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.JobrunnerContainerName: {
+					blackduck.JobrunnerContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
-						MinMem: util.IntToInt32(13834),
+						MinMem: util.IntToInt32(13824),
 						MaxMem: util.IntToInt32(13824),
 					},
 				},
@@ -347,7 +350,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"rabbitmq": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.RabbitMQContainerName: {
+					blackduck.RabbitMQContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -356,7 +359,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"registration": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.RegistrationContainerName: {
+					blackduck.RegistrationContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -365,7 +368,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"scan": {
 				Replica: 3,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.ScanContainerName: {
+					blackduck.ScanContainerName: {
 						MinMem: util.IntToInt32(9728),
 						MaxMem: util.IntToInt32(9728),
 					},
@@ -374,7 +377,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"solr": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.SolrContainerName: {
+					blackduck.SolrContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -383,7 +386,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"uploadcache": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.UploadCacheContainerName: {
+					blackduck.UploadCacheContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -392,13 +395,13 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"webapp-logstash": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.WebappContainerName: {
+					blackduck.WebappContainerName: {
 						MinCPU: util.IntToInt32(2),
 						MaxCPU: util.IntToInt32(2),
 						MinMem: util.IntToInt32(9728),
 						MaxMem: util.IntToInt32(9728),
 					},
-					types.LogstashContainerName: {
+					blackduck.LogstashContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -407,7 +410,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"webserver": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.WebserverContainerName: {
+					blackduck.WebserverContainerName: {
 						MinMem: util.IntToInt32(2048),
 						MaxMem: util.IntToInt32(2048),
 					},
@@ -416,7 +419,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"zookeeper": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.ZookeeperContainerName: {
+					blackduck.ZookeeperContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -425,7 +428,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"postgres": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.PostgresContainerName: {
+					blackduck.PostgresContainerName: {
 						MinCPU: util.IntToInt32(2),
 						MaxCPU: util.IntToInt32(2),
 						MinMem: util.IntToInt32(12288),
@@ -439,7 +442,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"authentication": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.AuthenticationContainerName: {
+					blackduck.AuthenticationContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -448,7 +451,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"binaryscanner": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.BinaryScannerContainerName: {
+					blackduck.BinaryScannerContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
 						MinMem: util.IntToInt32(2048),
@@ -459,7 +462,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"cfssl": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.CfsslContainerName: {
+					blackduck.CfsslContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -468,7 +471,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"documentation": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.DocumentationContainerName: {
+					blackduck.DocumentationContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -477,7 +480,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"jobrunner": {
 				Replica: 10,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.JobrunnerContainerName: {
+					blackduck.JobrunnerContainerName: {
 						MinCPU: util.IntToInt32(1),
 						MaxCPU: util.IntToInt32(1),
 						MinMem: util.IntToInt32(13824),
@@ -488,7 +491,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"rabbitmq": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.RabbitMQContainerName: {
+					blackduck.RabbitMQContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -497,7 +500,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"registration": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.RegistrationContainerName: {
+					blackduck.RegistrationContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -506,7 +509,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"scan": {
 				Replica: 5,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.ScanContainerName: {
+					blackduck.ScanContainerName: {
 						MinMem: util.IntToInt32(9728),
 						MaxMem: util.IntToInt32(9728),
 					},
@@ -515,7 +518,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"solr": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.SolrContainerName: {
+					blackduck.SolrContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -524,7 +527,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"uploadcache": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.UploadCacheContainerName: {
+					blackduck.UploadCacheContainerName: {
 						MinMem: util.IntToInt32(512),
 						MaxMem: util.IntToInt32(512),
 					},
@@ -533,13 +536,13 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"webapp-logstash": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.WebappContainerName: {
+					blackduck.WebappContainerName: {
 						MinCPU: util.IntToInt32(3),
 						MaxCPU: util.IntToInt32(3),
 						MinMem: util.IntToInt32(9728),
 						MaxMem: util.IntToInt32(9728),
 					},
-					types.LogstashContainerName: {
+					blackduck.LogstashContainerName: {
 						MinMem: util.IntToInt32(1024),
 						MaxMem: util.IntToInt32(1024),
 					},
@@ -548,7 +551,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"webserver": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.WebserverContainerName: {
+					blackduck.WebserverContainerName: {
 						MinMem: util.IntToInt32(2048),
 						MaxMem: util.IntToInt32(2048),
 					},
@@ -557,7 +560,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"zookeeper": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.ZookeeperContainerName: {
+					blackduck.ZookeeperContainerName: {
 						MinMem: util.IntToInt32(640),
 						MaxMem: util.IntToInt32(640),
 					},
@@ -566,7 +569,7 @@ func (s size) GetSize(name string) map[string]*types.Size {
 			"postgres": {
 				Replica: 1,
 				Containers: map[types.ContainerName]types.ContainerSize{
-					types.PostgresContainerName: {
+					blackduck.PostgresContainerName: {
 						MinCPU: util.IntToInt32(3),
 						MaxCPU: util.IntToInt32(3),
 						MinMem: util.IntToInt32(12288),
@@ -580,5 +583,5 @@ func (s size) GetSize(name string) map[string]*types.Size {
 }
 
 func init() {
-	store.Register(types.SizeV1, &size{})
+	store.Register(blackduck.BlackDuckSizeV1, &size{})
 }

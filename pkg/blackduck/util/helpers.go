@@ -23,11 +23,11 @@ package util
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 	"time"
 
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	blackduckclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	batchv1 "k8s.io/api/batch/v1"
@@ -36,21 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
-
-// GetHubVersion will return the Blackduck version from the list of Blackduck environment variables
-func GetHubVersion(environs []string) string {
-	for _, value := range environs {
-		if strings.Contains(value, "HUB_VERSION") {
-			values := strings.SplitN(value, ":", 2)
-			if len(values) == 2 {
-				return strings.TrimSpace(values[1])
-			}
-			break
-		}
-	}
-
-	return ""
-}
 
 // GetLoadBalancerIPAddress will return the load balance service ip address
 func GetLoadBalancerIPAddress(kubeClient *kubernetes.Clientset, namespace string, serviceName string) (string, error) {
@@ -92,7 +77,7 @@ func intArrayToStringArray(intArr []int32, delim string) string {
 }
 
 // UpdateState will be used to update the hub object
-func UpdateState(h *blackduckclient.Clientset, name string, namespace string, statusState string, error error) (*blackduckv1.Blackduck, error) {
+func UpdateState(h *blackduckclient.Clientset, name string, namespace string, statusState string, error error) (*blackduckapi.Blackduck, error) {
 	errorMessage := ""
 	if error != nil {
 		errorMessage = fmt.Sprintf("%+v", error)
@@ -102,8 +87,8 @@ func UpdateState(h *blackduckclient.Clientset, name string, namespace string, st
 	return h.SynopsysV1().Blackducks(namespace).Patch(name, types.MergePatchType, []byte(patch))
 }
 
-// GetHubDBPassword will retrieve the blackduck and blackduck_user db password
-func GetHubDBPassword(kubeClient *kubernetes.Clientset, namespace string, name string) (string, string, error) {
+// GetBlackDuckDBPassword will retrieve the blackduck and blackduck_user db password
+func GetBlackDuckDBPassword(kubeClient *kubernetes.Clientset, namespace string, name string) (string, string, error) {
 	var userPw, adminPw string
 
 	secret, err := util.GetSecret(kubeClient, namespace, utils.GetResourceName(name, util.BlackDuckName, "db-creds"))

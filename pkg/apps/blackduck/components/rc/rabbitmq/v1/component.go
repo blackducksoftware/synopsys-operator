@@ -2,59 +2,60 @@ package v1
 
 import (
 	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
-	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
 	"k8s.io/client-go/kubernetes"
 )
 
+// BdReplicationController holds the Black Duck RC configuration
 type BdReplicationController struct {
 	*types.ReplicationController
 	config     *protoform.Config
 	kubeClient *kubernetes.Clientset
-	blackduck  *blackduckapi.Blackduck
+	blackDuck  *blackduckapi.Blackduck
 }
 
 func init() {
-	store.Register(types.RcRabbitmqV1, NewBdReplicationController)
+	store.Register(blackduck.BlackDuckRabbitMQRCV1, NewBdReplicationController)
 }
 
+// GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-
-	containerConfig, ok := c.Containers[types.RabbitMQContainerName]
+	containerConfig, ok := c.Containers[blackduck.RabbitMQContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", types.RabbitMQContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", blackduck.RabbitMQContainerName)
 	}
 
 	volumeMounts := c.getRabbitmqVolumeMounts()
 
 	rabbitmqContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "rabbitmq", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
-		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetBlackDuckConfigEnv(c.blackDuck.Name)},
 		VolumeMounts:    volumeMounts,
 		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(5671), Protocol: horizonapi.ProtocolTCP}},
 	}
-	utils2.SetLimits(rabbitmqContainerConfig.ContainerConfig, containerConfig)
+	apputils.SetLimits(rabbitmqContainerConfig.ContainerConfig, containerConfig)
 
 	podConfig := &util.PodConfig{
 		Volumes:             c.getRabbitmqVolumes(),
 		Containers:          []*util.Container{rabbitmqContainerConfig},
-		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              apputils.GetVersionLabel("rabbitmq", c.blackduck.Name, c.blackduck.Spec.Version),
-		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("rabbitmq", &c.blackduck.Spec),
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              apputils.GetVersionLabel("rabbitmq", c.blackDuck.Name, c.blackDuck.Spec.Version),
+		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("rabbitmq", &c.blackDuck.Spec),
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
-		podConfig, apputils.GetLabel("rabbitmq", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: apputils.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "rabbitmq"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("rabbitmq", c.blackDuck.Name))
 }
 
 // getRabbitmqVolumes will return the rabbitmq volumes
@@ -72,6 +73,11 @@ func (c *BdReplicationController) getRabbitmqVolumeMounts() []*horizonapi.Volume
 	return volumesMounts
 }
 
-func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *blackduckapi.Blackduck) types.ReplicationControllerInterface {
-	return &BdReplicationController{ReplicationController: replicationController, config: config, kubeClient: kubeClient, blackduck: blackduck}
+// NewBdReplicationController returns the Black Duck RC configuration
+func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, cr interface{}) (types.ReplicationControllerInterface, error) {
+	blackDuck, ok := cr.(*blackduckapi.Blackduck)
+	if !ok {
+		return nil, fmt.Errorf("unable to cast the interface to Black Duck object")
+	}
+	return &BdReplicationController{ReplicationController: replicationController, config: config, kubeClient: kubeClient, blackDuck: blackDuck}, nil
 }

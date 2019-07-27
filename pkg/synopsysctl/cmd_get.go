@@ -24,9 +24,10 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -145,7 +146,7 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		filePath := args[1]
 		log.Infof("getting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
-		_, err = util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		_, err = util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}

@@ -1,5 +1,6 @@
 package types
 
+// PublicVersion refers to public version configuration
 type PublicVersion struct {
 	Size       ComponentName
 	RCs        map[string]PublicRC
@@ -9,6 +10,7 @@ type PublicVersion struct {
 	PVC        []ComponentName
 }
 
+// PublicRC refers to public container configuration
 type PublicRC struct {
 	Identifier ComponentName
 	Container  map[ContainerName]string

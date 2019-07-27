@@ -64,7 +64,7 @@ var dbMigrateBlackDuckCmd = &cobra.Command{
 			log.Infof("putting Black Duck '%s' in namespace '%s' into database migration mode...", blackDuckName, blackDuckNamespace)
 
 			// Get the Black Duck
-			currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+			currBlackDuck, err := util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("unable to get Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err))
 				continue

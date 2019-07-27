@@ -269,7 +269,7 @@ func isDeleteCrd(crd string, namespace string) error {
 		}
 
 		// check whether any alert instance is running in the namespace
-		blackDucks, err := util.ListHubs(blackDuckClient, namespace)
+		blackDucks, err := util.ListBlackDucks(blackDuckClient, namespace)
 		if err != nil {
 			return fmt.Errorf("unable to list Black Duck instances due to %+v", err)
 		}

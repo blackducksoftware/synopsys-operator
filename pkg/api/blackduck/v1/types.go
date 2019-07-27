@@ -24,6 +24,7 @@ package v1
 import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -155,7 +156,7 @@ type BlackduckSpec struct {
 	Environs              []string                  `json:"environs,omitempty"`
 	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
 	LicenseKey            string                    `json:"licenseKey,omitempty"`
-	RegistryConfiguration RegistryConfiguration     `json:"registryConfiguration,omitempty"`
+	RegistryConfiguration api.RegistryConfiguration `json:"registryConfiguration,omitempty"`
 	AdminPassword         string                    `json:"adminPassword"`
 	UserPassword          string                    `json:"userPassword"`
 	PostgresPassword      string                    `json:"postgresPassword"`
@@ -194,13 +195,6 @@ type PostgresExternalDBConfig struct {
 	PostgresSsl           bool   `json:"postgresSsl"`
 	PostgresAdminPassword string `json:"postgresAdminPassword"`
 	PostgresUserPassword  string `json:"postgresUserPassword"`
-}
-
-// RegistryConfiguration contains the registry configuration
-type RegistryConfiguration struct {
-	Registry    string   `json:"registry"`
-	Namespace   string   `json:"namespace"`
-	PullSecrets []string `json:"pullSecrets"`
 }
 
 // BlackduckStatus will be CRD Blackduck definition's Status

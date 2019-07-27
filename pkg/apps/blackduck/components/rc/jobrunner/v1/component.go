@@ -2,44 +2,45 @@ package v1
 
 import (
 	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
-	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
 	"k8s.io/client-go/kubernetes"
 )
 
+// BdReplicationController holds the Black Duck RC configuration
 type BdReplicationController struct {
 	*types.ReplicationController
 	config     *protoform.Config
 	kubeClient *kubernetes.Clientset
-	blackduck  *blackduckapi.Blackduck
+	blackDuck  *blackduckapi.Blackduck
 }
 
 func init() {
-	store.Register(types.RcJobrunnerV1, NewBdReplicationController)
+	store.Register(blackduck.BlackDuckJobRunnerRCV1, NewBdReplicationController)
 }
 
+// GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-
-	containerConfig, ok := c.Containers[types.JobrunnerContainerName]
+	containerConfig, ok := c.Containers[blackduck.JobrunnerContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", types.JobrunnerContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", blackduck.JobrunnerContainerName)
 	}
 
 	if containerConfig.MaxMem == nil {
-		return nil, fmt.Errorf("Maxmem must be set for %s", types.JobrunnerContainerName)
+		return nil, fmt.Errorf("Maxmem must be set for %s", blackduck.JobrunnerContainerName)
 	}
 
 	jobRunnerEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-jobrunner")
-	jobRunnerEnvs := []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name), utils.GetHubDBConfigEnv(c.blackduck.Name)}
+	jobRunnerEnvs := []*horizonapi.EnvConfig{utils.GetBlackDuckConfigEnv(c.blackDuck.Name), utils.GetBlackDuckDBConfigEnv(c.blackDuck.Name)}
 	jobRunnerEnvs = append(jobRunnerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
 	jobRunnerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "jobrunner", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
@@ -52,9 +53,9 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: int32(3001), Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	utils2.SetLimits(jobRunnerContainerConfig.ContainerConfig, containerConfig)
+	apputils.SetLimits(jobRunnerContainerConfig.ContainerConfig, containerConfig)
 
-	if c.blackduck.Spec.LivenessProbes {
+	if c.blackDuck.Spec.LivenessProbes {
 		jobRunnerContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Type:    horizonapi.ActionTypeCommand,
@@ -67,32 +68,38 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		}}
 	}
 
-	jobRunnerVolumes := []*components.Volume{utils.GetDBSecretVolume(c.blackduck.Name), jobRunnerEmptyDir}
+	jobRunnerVolumes := []*components.Volume{utils.GetDBSecretVolume(c.blackDuck.Name), jobRunnerEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.blackduck.Spec.ProxyCertificate) > 0 {
+	if len(c.blackDuck.Spec.ProxyCertificate) > 0 {
 		jobRunnerContainerConfig.VolumeMounts = append(jobRunnerContainerConfig.VolumeMounts, &horizonapi.VolumeMountConfig{
 			Name:      "proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
 			SubPath:   "HUB_PROXY_CERT_FILE",
 		})
-		jobRunnerVolumes = append(jobRunnerVolumes, utils.GetProxyVolume(c.blackduck.Name))
+		jobRunnerVolumes = append(jobRunnerVolumes, utils.GetProxyVolume(c.blackDuck.Name))
 	}
 
 	podConfig := &util.PodConfig{
 		Volumes:             jobRunnerVolumes,
 		Containers:          []*util.Container{jobRunnerContainerConfig},
-		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              apputils.GetVersionLabel("jobrunner", c.blackduck.Name, c.blackduck.Spec.Version),
-		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("jobrunner", &c.blackduck.Spec),
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              apputils.GetVersionLabel("jobrunner", c.blackDuck.Name, c.blackDuck.Spec.Version),
+		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("jobrunner", &c.blackDuck.Spec),
 	}
 	if !c.config.IsOpenshift {
 		podConfig.FSGID = util.IntToInt64(0)
 	}
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "jobrunner"), Replicas: util.IntToInt32(c.Replicas)},
-		podConfig, apputils.GetLabel("jobrunner", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: apputils.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "jobrunner"), Replicas: util.IntToInt32(c.Replicas)},
+		podConfig, apputils.GetLabel("jobrunner", c.blackDuck.Name))
 }
-func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *blackduckapi.Blackduck) types.ReplicationControllerInterface {
-	return &BdReplicationController{ReplicationController: replicationController, config: config, kubeClient: kubeClient, blackduck: blackduck}
+
+// NewBdReplicationController returns the Black Duck RC configuration
+func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, cr interface{}) (types.ReplicationControllerInterface, error) {
+	blackDuck, ok := cr.(*blackduckapi.Blackduck)
+	if !ok {
+		return nil, fmt.Errorf("unable to cast the interface to Black Duck object")
+	}
+	return &BdReplicationController{ReplicationController: replicationController, config: config, kubeClient: kubeClient, blackDuck: blackDuck}, nil
 }
