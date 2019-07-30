@@ -113,7 +113,7 @@ var startBlackDuckCmd = &cobra.Command{
 			log.Infof("starting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 			// Get the Black Duck
-			currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+			currBlackDuck, err := util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err))
 				continue

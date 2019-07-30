@@ -2,46 +2,47 @@ package v1
 
 import (
 	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
-	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
 	"k8s.io/client-go/kubernetes"
 )
 
+// BdReplicationController holds the Black Duck RC configuration
 type BdReplicationController struct {
 	*types.ReplicationController
 	config     *protoform.Config
 	kubeClient *kubernetes.Clientset
-	blackduck  *blackduckapi.Blackduck
+	blackDuck  *blackduckapi.Blackduck
 }
 
 func init() {
-	store.Register(types.RcAuthenticationV1, NewBdReplicationController)
+	store.Register(blackduck.BlackDuckAuthenticationRCV1, NewBdReplicationController)
 }
 
+// GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-
-	containerConfig, ok := c.Containers[types.AuthenticationContainerName]
+	containerConfig, ok := c.Containers[blackduck.AuthenticationContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", types.AuthenticationContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", blackduck.AuthenticationContainerName)
 	}
 
 	if containerConfig.MaxMem == nil {
-		return nil, fmt.Errorf("Maxmem must be set for %s", types.AuthenticationContainerName)
+		return nil, fmt.Errorf("Maxmem must be set for %s", blackduck.AuthenticationContainerName)
 	}
 
 	volumeMounts := c.getAuthenticationVolumeMounts()
 	var authEnvs []*horizonapi.EnvConfig
-	authEnvs = append(authEnvs, utils.GetHubDBConfigEnv(c.blackduck.Name))
-	authEnvs = append(authEnvs, utils.GetHubConfigEnv(c.blackduck.Name))
+	authEnvs = append(authEnvs, utils.GetBlackDuckDBConfigEnv(c.blackDuck.Name))
+	authEnvs = append(authEnvs, utils.GetBlackDuckConfigEnv(c.blackDuck.Name))
 	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
 	hubAuthContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
@@ -50,9 +51,9 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	utils2.SetLimits(hubAuthContainerConfig.ContainerConfig, containerConfig)
+	apputils.SetLimits(hubAuthContainerConfig.ContainerConfig, containerConfig)
 
-	if c.blackduck.Spec.LivenessProbes {
+	if c.blackDuck.Spec.LivenessProbes {
 		hubAuthContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
 				Type: horizonapi.ActionTypeCommand,
@@ -74,9 +75,9 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	podConfig := &util.PodConfig{
 		Volumes:             c.getAuthenticationVolumes(),
 		Containers:          []*util.Container{hubAuthContainerConfig},
-		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              apputils.GetVersionLabel("authentication", c.blackduck.Name, c.blackduck.Spec.Version),
-		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("authentication", &c.blackduck.Spec),
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              apputils.GetVersionLabel("authentication", c.blackDuck.Name, c.blackDuck.Spec.Version),
+		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("authentication", &c.blackDuck.Spec),
 	}
 
 	if !c.config.IsOpenshift {
@@ -84,8 +85,8 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
-		podConfig, apputils.GetLabel("authentication", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: apputils.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("authentication", c.blackDuck.Name))
 }
 
 // getAuthenticationVolumes will return the authentication volumes
@@ -93,21 +94,21 @@ func (c *BdReplicationController) getAuthenticationVolumes() []*components.Volum
 	hubAuthSecurityEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication-security")
 
 	var hubAuthVolume *components.Volume
-	if c.blackduck.Spec.PersistentStorage {
-		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", utils.GetPVCName("authentication", c.blackduck))
+	if c.blackDuck.Spec.PersistentStorage {
+		hubAuthVolume, _ = util.CreatePersistentVolumeClaimVolume("dir-authentication", utils.GetPVCName("authentication", c.blackDuck))
 	} else {
 		hubAuthVolume, _ = util.CreateEmptyDirVolumeWithoutSizeLimit("dir-authentication")
 	}
 
-	volumes := []*components.Volume{hubAuthVolume, utils.GetDBSecretVolume(c.blackduck.Name), hubAuthSecurityEmptyDir}
+	volumes := []*components.Volume{hubAuthVolume, utils.GetDBSecretVolume(c.blackDuck.Name), hubAuthSecurityEmptyDir}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.blackduck.Spec.ProxyCertificate) > 0 {
-		volumes = append(volumes, utils.GetProxyVolume(c.blackduck.Name))
+	if len(c.blackDuck.Spec.ProxyCertificate) > 0 {
+		volumes = append(volumes, utils.GetProxyVolume(c.blackDuck.Name))
 	}
 
 	// Custom CA auth
-	if len(c.blackduck.Spec.AuthCustomCA) > 1 {
+	if len(c.blackDuck.Spec.AuthCustomCA) > 1 {
 		authCustomCaVolume, _ := util.CreateSecretVolume("auth-custom-ca", "auth-custom-ca", 0444)
 		volumes = append(volumes, authCustomCaVolume)
 	}
@@ -124,7 +125,7 @@ func (c *BdReplicationController) getAuthenticationVolumeMounts() []*horizonapi.
 	}
 
 	// Mount the HTTPS proxy certificate if provided
-	if len(c.blackduck.Spec.ProxyCertificate) > 0 {
+	if len(c.blackDuck.Spec.ProxyCertificate) > 0 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "blackduck-proxy-certificate",
 			MountPath: "/tmp/secrets/HUB_PROXY_CERT_FILE",
@@ -132,7 +133,7 @@ func (c *BdReplicationController) getAuthenticationVolumeMounts() []*horizonapi.
 		})
 	}
 
-	if len(c.blackduck.Spec.AuthCustomCA) > 1 {
+	if len(c.blackDuck.Spec.AuthCustomCA) > 1 {
 		volumesMounts = append(volumesMounts, &horizonapi.VolumeMountConfig{
 			Name:      "auth-custom-ca",
 			MountPath: "/tmp/secrets/AUTH_CUSTOM_CA",
@@ -143,6 +144,11 @@ func (c *BdReplicationController) getAuthenticationVolumeMounts() []*horizonapi.
 	return volumesMounts
 }
 
-func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *blackduckapi.Blackduck) types.ReplicationControllerInterface {
-	return &BdReplicationController{ReplicationController: replicationController, config: config, kubeClient: kubeClient, blackduck: blackduck}
+// NewBdReplicationController returns the Black Duck RC configuration
+func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, cr interface{}) (types.ReplicationControllerInterface, error) {
+	blackDuck, ok := cr.(*blackduckapi.Blackduck)
+	if !ok {
+		return nil, fmt.Errorf("unable to cast the interface to Black Duck object")
+	}
+	return &BdReplicationController{ReplicationController: replicationController, config: config, kubeClient: kubeClient, blackDuck: blackDuck}, nil
 }

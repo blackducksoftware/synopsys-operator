@@ -148,7 +148,7 @@ func (in *OpsSight) DeepCopyObject() runtime.Object {
 func (in *OpsSightList) DeepCopyInto(out *OpsSightList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]OpsSight, len(*in))
@@ -210,6 +210,12 @@ func (in *OpsSightSpec) DeepCopyInto(out *OpsSightSpec) {
 		*out = new(Blackduck)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ImageRegistries != nil {
+		in, out := &in.ImageRegistries, &out.ImageRegistries
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	in.RegistryConfiguration.DeepCopyInto(&out.RegistryConfiguration)
 	return
 }
 

@@ -71,7 +71,7 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 		ContainerConfig: &horizonapi.ContainerConfig{
 			Name:       p.Name,
 			Image:      p.Image,
-			PullPolicy: horizonapi.PullIfNotPresent,
+			PullPolicy: horizonapi.PullAlways,
 			MinMem:     fmt.Sprintf("%dM", p.MinMemory),
 			MaxMem:     fmt.Sprintf("%dM", p.MaxMemory),
 			MinCPU:     fmt.Sprintf("%d", p.MinCPU),

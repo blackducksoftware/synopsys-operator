@@ -24,11 +24,12 @@ package synopsysctl
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"io/ioutil"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -511,7 +512,7 @@ var updateBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
@@ -560,7 +561,7 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
@@ -602,7 +603,7 @@ var updateBlackDuckRootKeyCmd = &cobra.Command{
 		newSealKey := args[0]
 		filePath := args[1]
 
-		blackducks, err := util.ListHubs(blackDuckClient, operatorNamespace)
+		blackducks, err := util.ListBlackDucks(blackDuckClient, operatorNamespace)
 		if err != nil {
 			return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", operatorNamespace, err)
 		}
@@ -676,7 +677,7 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
@@ -720,7 +721,7 @@ var updateBlackDuckAddEnvironNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
@@ -779,7 +780,7 @@ var updateBlackDuckSetImageRegistryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
@@ -823,7 +824,7 @@ var updateBlackDuckSetImageRegistryNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+		currBlackDuck, err := util.GetBlackDuck(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
 			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}

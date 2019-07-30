@@ -2,50 +2,52 @@ package v1
 
 import (
 	"fmt"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
-	utils2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/utils"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-
 	"k8s.io/client-go/kubernetes"
 )
 
+// BdReplicationController holds the Black Duck RC configuration
 type BdReplicationController struct {
 	*types.ReplicationController
 	config     *protoform.Config
 	kubeClient *kubernetes.Clientset
-	blackduck  *blackduckapi.Blackduck
+	blackDuck  *blackduckapi.Blackduck
 }
 
 func init() {
-	store.Register(types.RcBinaryScannerV1, NewBdReplicationController)
+	store.Register(blackduck.BlackDuckBinaryScannerRCV1, NewBdReplicationController)
 }
 
+// GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-	containerConfig, ok := c.Containers[types.BinaryScannerContainerName]
+	containerConfig, ok := c.Containers[blackduck.BinaryScannerContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", types.BinaryScannerContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", blackduck.BinaryScannerContainerName)
 	}
 
 	binaryScannerContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "binaryscanner", Image: containerConfig.Image,
 			PullPolicy: horizonapi.PullAlways, Command: []string{"/docker-entrypoint.sh"}},
-		EnvConfigs: []*horizonapi.EnvConfig{utils.GetHubConfigEnv(c.blackduck.Name)},
+		EnvConfigs: []*horizonapi.EnvConfig{utils.GetBlackDuckConfigEnv(c.blackDuck.Name)},
 		PortConfig: []*horizonapi.PortConfig{{ContainerPort: int32(3001), Protocol: horizonapi.ProtocolTCP}},
 	}
-	utils2.SetLimits(binaryScannerContainerConfig.ContainerConfig, containerConfig)
+	apputils.SetLimits(binaryScannerContainerConfig.ContainerConfig, containerConfig)
 
 	podConfig := &util.PodConfig{
 		Containers:          []*util.Container{binaryScannerContainerConfig},
-		ImagePullSecrets:    c.blackduck.Spec.RegistryConfiguration.PullSecrets,
-		Labels:              apputils.GetVersionLabel("binaryscanner", c.blackduck.Name, c.blackduck.Spec.Version),
-		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("binaryscanner", &c.blackduck.Spec),
+		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
+		Labels:              apputils.GetVersionLabel("binaryscanner", c.blackDuck.Name, c.blackDuck.Spec.Version),
+		NodeAffinityConfigs: utils.GetNodeAffinityConfigs("binaryscanner", &c.blackDuck.Spec),
 	}
 
 	if !c.config.IsOpenshift {
@@ -53,10 +55,15 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	}
 
 	return util.CreateReplicationControllerFromContainer(
-		&horizonapi.ReplicationControllerConfig{Namespace: c.blackduck.Spec.Namespace, Name: apputils.GetResourceName(c.blackduck.Name, util.BlackDuckName, "binaryscanner"), Replicas: util.IntToInt32(1)},
-		podConfig, apputils.GetLabel("binaryscanner", c.blackduck.Name))
+		&horizonapi.ReplicationControllerConfig{Namespace: c.blackDuck.Spec.Namespace, Name: apputils.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "binaryscanner"), Replicas: util.IntToInt32(1)},
+		podConfig, apputils.GetLabel("binaryscanner", c.blackDuck.Name))
 }
 
-func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, blackduck *blackduckapi.Blackduck) types.ReplicationControllerInterface {
-	return &BdReplicationController{ReplicationController: replicationController, config: config, kubeClient: kubeClient, blackduck: blackduck}
+// NewBdReplicationController returns the Black Duck RC configuration
+func NewBdReplicationController(replicationController *types.ReplicationController, config *protoform.Config, kubeClient *kubernetes.Clientset, cr interface{}) (types.ReplicationControllerInterface, error) {
+	blackDuck, ok := cr.(*blackduckapi.Blackduck)
+	if !ok {
+		return nil, fmt.Errorf("unable to cast the interface to Black Duck object")
+	}
+	return &BdReplicationController{ReplicationController: replicationController, config: config, kubeClient: kubeClient, blackDuck: blackDuck}, nil
 }

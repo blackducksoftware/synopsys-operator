@@ -24,14 +24,14 @@ package blackduck
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 
-	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	blackduckutils "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -85,7 +85,7 @@ type Handler struct {
 	kubeConfig       *rest.Config
 	kubeClient       *kubernetes.Clientset
 	blackduckClient  *blackduckclientset.Clientset
-	defaults         *blackduckv1.BlackduckSpec
+	defaults         *blackduckapi.BlackduckSpec
 	cmMutex          chan bool
 	osSecurityClient *securityclient.SecurityV1Client
 	routeClient      *routeclient.RouteV1Client
@@ -93,7 +93,7 @@ type Handler struct {
 
 // NewHandler will create the handler
 func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
-	defaults *blackduckv1.BlackduckSpec, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
+	defaults *blackduckapi.BlackduckSpec, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
 	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient, defaults: defaults,
 		cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
 }
@@ -135,7 +135,7 @@ func (h *Handler) ObjectDeleted(name string) {
 // ObjectUpdated will be called for update black duck events
 func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	var err error
-	bd, ok := objNew.(*blackduckv1.Blackduck)
+	bd, ok := objNew.(*blackduckapi.Blackduck)
 	if !ok {
 		log.Error("unable to cast Black Duck object")
 		return
@@ -201,7 +201,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 		if !strings.EqualFold(bd.Status.State, string(Running)) {
 			// Verify that we can access the Black Duck
 			blackDuckURL := fmt.Sprintf("%s.%s.svc", utils.GetResourceName(bd.Name, util.BlackDuckName, "webserver"), bd.Spec.Namespace)
-			status := h.verifyHub(blackDuckURL, bd.Spec.Namespace, bd.Name)
+			status := h.verifyBlackDuck(blackDuckURL, bd.Spec.Namespace, bd.Name)
 
 			if status { // Set state to Running if we can access the Black Duck
 				bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Running), nil)
@@ -213,7 +213,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	}
 }
 
-func (h *Handler) verifyHub(blackDuckURL string, namespace string, name string) bool {
+func (h *Handler) verifyBlackDuck(blackDuckURL string, namespace string, name string) bool {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -228,7 +228,7 @@ func (h *Handler) verifyHub(blackDuckURL string, namespace string, name string) 
 		if err != nil {
 			log.Debugf("unable to talk with the Black Duck %s", blackDuckURL)
 			time.Sleep(10 * time.Second)
-			_, err := util.GetHub(h.blackduckClient, namespace, name)
+			_, err := util.GetBlackDuck(h.blackduckClient, namespace, name)
 			if err != nil {
 				return false
 			}

@@ -24,9 +24,10 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 	"time"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -330,7 +331,7 @@ func migrateAlert(namespace string) error {
 
 // migrateBlackDuck migrates the existing Black Duck instances
 func migrateBlackDuck(namespace string) error {
-	blackDucks, err := util.ListHubs(blackDuckClient, namespace)
+	blackDucks, err := util.ListBlackDucks(blackDuckClient, namespace)
 	if err != nil {
 		return fmt.Errorf("failed to list Black Duck instances in namespace '%s' due to %+v", namespace, err)
 	}
@@ -836,7 +837,7 @@ var migrateCleanupCmd = &cobra.Command{
 
 // cleanup will cleanup the resources
 func cleanup(namespace string) error {
-	blackDucks, err := util.ListHubs(blackDuckClient, namespace)
+	blackDucks, err := util.ListBlackDucks(blackDuckClient, namespace)
 	if err != nil {
 		return fmt.Errorf("failed to list Black Duck instances in namespace '%s' due to %+v", namespace, err)
 	}

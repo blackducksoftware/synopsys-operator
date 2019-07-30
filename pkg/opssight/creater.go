@@ -148,7 +148,7 @@ func (ac *Creater) CreateOpsSight(opssight *opssightapi.OpsSight) error {
 			return errors.Annotatef(err, "post deploy")
 		}
 
-		err = ac.deployHub(opssightSpec)
+		err = ac.deployBlackDuck(opssightSpec)
 		if err != nil {
 			return errors.Annotatef(err, "deploy hub")
 		}
@@ -249,7 +249,7 @@ func (ac *Creater) postDeploy(spec *SpecConfig, namespace string) error {
 	return nil
 }
 
-func (ac *Creater) deployHub(createOpsSight *opssightapi.OpsSightSpec) error {
+func (ac *Creater) deployBlackDuck(createOpsSight *opssightapi.OpsSightSpec) error {
 	if createOpsSight.Blackduck.InitialCount > createOpsSight.Blackduck.MaxCount {
 		createOpsSight.Blackduck.InitialCount = createOpsSight.Blackduck.MaxCount
 	}
@@ -274,7 +274,7 @@ func (ac *Creater) deployHub(createOpsSight *opssightapi.OpsSightSpec) error {
 		hubSpec.Namespace = name
 		createHub := &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: name}, Spec: *hubSpec}
 		log.Debugf("hub[%d]: %+v", i, createHub)
-		_, err = util.CreateHub(ac.hubClient, name, createHub)
+		_, err = util.CreateBlackDuck(ac.hubClient, name, createHub)
 		if err != nil {
 			log.Errorf("hub[%d]: unable to create the hub due to %+v", i, err)
 			hubErrs[name] = fmt.Errorf("unable to create the hub due to %+v", err)

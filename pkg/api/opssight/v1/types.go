@@ -22,7 +22,8 @@ under the License.
 package v1
 
 import (
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -64,10 +65,10 @@ type Blackduck struct {
 	TLSVerification                    bool    `json:"tlsVerification"`
 
 	// Auto scaling parameters
-	InitialCount                       int               `json:"initialCount"`
-	MaxCount                           int               `json:"maxCount"`
-	DeleteBlackduckThresholdPercentage int               `json:"deleteBlackduckThresholdPercentage"`
-	BlackduckSpec                      *v1.BlackduckSpec `json:"blackduckSpec"`
+	InitialCount                       int                         `json:"initialCount"`
+	MaxCount                           int                         `json:"maxCount"`
+	DeleteBlackduckThresholdPercentage int                         `json:"deleteBlackduckThresholdPercentage"`
+	BlackduckSpec                      *blackduckapi.BlackduckSpec `json:"blackduckSpec"`
 }
 
 // Perceptor stores the Perceptor configuration
@@ -161,6 +162,7 @@ type Prometheus struct {
 type OpsSightSpec struct {
 	// OpsSight
 	Namespace     string      `json:"namespace"`
+	Size          string      `json:"size"`
 	Perceptor     *Perceptor  `json:"perceptor"`
 	ScannerPod    *ScannerPod `json:"scannerPod"`
 	Perceiver     *Perceiver  `json:"perceiver"`
@@ -187,7 +189,9 @@ type OpsSightSpec struct {
 	// Black Duck
 	Blackduck *Blackduck `json:"blackduck"`
 
-	DesiredState string `json:"desiredState"`
+	DesiredState          string                    `json:"desiredState"`
+	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
+	RegistryConfiguration api.RegistryConfiguration `json:"registryConfiguration,omitempty"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource
