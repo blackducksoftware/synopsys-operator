@@ -45,7 +45,7 @@ func (b BdPVC) GetPVCs() ([]*components.PersistentVolumeClaim, error) {
 		defaultPVC["blackduck-postgres"] = "150Gi"
 	}
 
-	return b.blackDuck.GenPVC(defaultPVC)
+	return blackduck.GenPVC(*b.blackDuck, defaultPVC)
 }
 
 func init() {
