@@ -25,20 +25,19 @@ import (
 	"fmt"
 	"strings"
 
-	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
+	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	alertapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	blackduckapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
-	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
-	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -273,38 +272,6 @@ func updateBlackDuckSpecWithFlags(cmd *cobra.Command, blackDuckName string, blac
 	}
 	blackDuck.Kind = "Blackduck"
 	blackDuck.APIVersion = "synopsys.com/v1"
-
-	// Get PVCs from app
-	app, err := getDefaultApp(nativeClusterType)
-	if err != nil {
-		return nil, err
-	}
-	cList, err := app.Blackduck().GetComponents(blackDuck, blackduckapp.PVCResources)
-	if err != nil {
-		return nil, err
-	}
-	m := map[string]string{}
-	for _, pvc := range cList.PersistentVolumeClaims {
-		name := pvc.GetName()
-		sizeQuanitity := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-		sizeCanonical := sizeQuanitity.String()
-		m[name] = sizeCanonical
-	}
-	// Add User's PVCs to the map
-	currSpecPVCs := blackDuck.Spec.PVC
-	for _, specPvc := range currSpecPVCs {
-		m[specPvc.Name] = specPvc.Size
-
-	}
-	// Add the map's PVCs to the spec
-	blackDuck.Spec.PVC = []blackduckv1.PVC{}
-	for pvcName, pvcSize := range m {
-		blackDuck.Spec.PVC = append(blackDuck.Spec.PVC,
-			blackduckv1.PVC{
-				Name: pvcName,
-				Size: pvcSize,
-			})
-	}
 
 	return blackDuck, nil
 }

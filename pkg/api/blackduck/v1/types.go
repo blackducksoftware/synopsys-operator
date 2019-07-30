@@ -50,26 +50,26 @@ func (b *Blackduck) GenPVC(defaultPVC map[string]string) ([]*components.Persiste
 			pvcMap[claim.Name] = claim
 		}
 
-		for name, defaultSize := range defaultPVC {
-			size := defaultSize
-			storageClass := b.Spec.PVCStorageClass
-			volumeName := ""
+		for name, size := range defaultPVC {
+			var claim PVC
 
-			if claim, ok := pvcMap[name]; ok {
-				if len(claim.StorageClass) > 0 {
-					storageClass = claim.StorageClass
+			if _, ok := pvcMap[name]; ok {
+				claim = pvcMap[name]
+			} else {
+				claim = PVC{
+					Name:         name,
+					Size:         size,
+					StorageClass: b.Spec.PVCStorageClass,
 				}
-				if len(claim.Size) > 0 {
-					size = claim.Size
-				}
-				volumeName = claim.VolumeName
 			}
 
-			pvcName := utils.GetResourceName(b.Name, "", name)
-			if b.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
-				pvcName = name
+			// Set the claim name to be app specific if the PVC was not created by an operator version prior to
+			// 2019.6.0
+			if b.Annotations["synopsys.com/created.by"] != "pre-2019.6.0" {
+				claim.Name = utils.GetResourceName(b.Name, "", name)
 			}
-			pvc, err := createPVC(pvcName, size, storageClass, horizonapi.ReadWriteOnce, utils.GetLabel("pvc", b.Name), b.Spec.Namespace, volumeName)
+
+			pvc, err := createPVC(claim, horizonapi.ReadWriteOnce, utils.GetLabel("pvc", b.Name), b.Spec.Namespace)
 			if err != nil {
 				return nil, err
 			}
@@ -79,34 +79,35 @@ func (b *Blackduck) GenPVC(defaultPVC map[string]string) ([]*components.Persiste
 	return pvcs, nil
 }
 
-func createPVC(name string, requestedSize string, storageclass string, accessMode horizonapi.PVCAccessModeType, label map[string]string, namespace string, volumeName string) (*components.PersistentVolumeClaim, error) {
+func createPVC(claim PVC, accessMode horizonapi.PVCAccessModeType, label map[string]string, namespace string) (*components.PersistentVolumeClaim, error) {
 	// Workaround so that storageClass does not get set to "", which prevent Kube from using the default storageClass
 	var class *string
-	if len(storageclass) > 0 {
-		class = &storageclass
+
+	if len(claim.StorageClass) > 0 {
+		class = &claim.StorageClass
 	} else {
 		class = nil
 	}
 
 	var size string
-	_, err := resource.ParseQuantity(requestedSize)
+	_, err := resource.ParseQuantity(claim.Size)
 	if err != nil {
 		return nil, err
 	}
-	size = requestedSize
+	size = claim.Size
 
 	config := horizonapi.PVCConfig{
-		Name:      name,
+		Name:      claim.Name,
 		Namespace: namespace,
 		Size:      size,
 		Class:     class,
 	}
 
-	if len(volumeName) > 0 {
+	if len(claim.VolumeName) > 0 {
 		// Needed so that it doesn't use the default storage class
 		var tmp = ""
 		config.Class = &tmp
-		config.VolumeName = volumeName
+		config.VolumeName = claim.VolumeName
 	}
 
 	pvc, err := components.NewPersistentVolumeClaim(config)
