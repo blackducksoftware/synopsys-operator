@@ -23,6 +23,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizon "github.com/blackducksoftware/horizon/pkg/deployer"
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
@@ -33,11 +36,11 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/webhook"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"strings"
+
 	//"github.com/blackducksoftware/synopsys-operator/pkg/sample"
 
 	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components"
+	_ "github.com/blackducksoftware/synopsys-operator/pkg/apps/opssight/components"
 )
 
 var version string

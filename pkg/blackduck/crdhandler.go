@@ -79,12 +79,11 @@ type Handler struct {
 	protoformDeployer *protoform.Deployer
 	blackduckClient   *blackduckclientset.Clientset
 	defaults          *blackduckapi.BlackduckSpec
-	cmMutex           chan bool
 }
 
 // NewHandler will create the handler
-func NewHandler(protoformDeployer *protoform.Deployer, hubClient *blackduckclientset.Clientset, defaults *blackduckapi.BlackduckSpec, cmMutex chan bool) *Handler {
-	return &Handler{protoformDeployer: protoformDeployer, blackduckClient: hubClient, defaults: defaults, cmMutex: cmMutex}
+func NewHandler(protoformDeployer *protoform.Deployer, blackDuckClient *blackduckclientset.Clientset, defaults *blackduckapi.BlackduckSpec) *Handler {
+	return &Handler{protoformDeployer: protoformDeployer, blackduckClient: blackDuckClient, defaults: defaults}
 }
 
 // APISetHubsRequest to set the Black Duck urls for Perceptor
@@ -95,7 +94,6 @@ type APISetHubsRequest struct {
 // ObjectCreated will be called for create hub events
 func (h *Handler) ObjectCreated(obj interface{}) {
 	h.ObjectUpdated(nil, obj)
-
 }
 
 // ObjectDeleted will be called for delete hub events

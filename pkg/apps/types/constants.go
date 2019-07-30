@@ -21,7 +21,7 @@ under the License.
 
 package types
 
-// TODO a type for each component type
+// Black Duck component constansts
 const (
 	// Size
 	BlackDuckSizeV1 ComponentName = "blackDuckSizeV1"
@@ -105,4 +105,81 @@ const (
 	ZookeeperContainerName ContainerName = "zookeeper"
 	// PostgresContainerName ...
 	PostgresContainerName ContainerName = "postgres"
+)
+
+// OpsSight component constants
+const (
+	// Size
+	OpsSightSizeV1 ComponentName = "opsSightSizeV1"
+
+	// Cluster Role
+	OpsSightPodProcessorClusterRoleV1   ComponentName = "opsSightPodProcessorClusterRoleV1"
+	OpsSightImageProcessorClusterRoleV1 ComponentName = "opsSightImageProcessorClusterRoleV1"
+	OpsSightScannerClusterRoleV1        ComponentName = "OpsSightScannerClusterRoleV1"
+	SkyfireClusterRoleV1                ComponentName = "skyfireClusterRoleV1"
+
+	// Cluster Role Binding
+	OpsSightPodProcessorClusterRoleBindingV1   ComponentName = "opsSightPodProcessorClusterRoleBindingV1"
+	OpsSightImageProcessorClusterRoleBindingV1 ComponentName = "opsSightImageProcessorClusterRoleBindingV1"
+	OpsSightScannerClusterRoleBindingV1        ComponentName = "opsSightScannerClusterRoleBindingV1"
+	SkyfireClusterRoleBindingV1                ComponentName = "skyfireClusterRoleBindingV1"
+
+	// Config Map
+	OpsSightConfigMapV1        ComponentName = "opsSightConfigMapV1"
+	OpsSightMetricsConfigMapV1 ComponentName = "opsSightMetricsConfigMapV1"
+
+	// Deployment
+	OpsSightMetricsDeploymentV1 ComponentName = "opsSightMetricsDeploymentV1"
+
+	// RC
+	OpsSightCoreRCV1           ComponentName = "opsSightCoreRCV1"
+	OpsSightPodProcessorRCV1   ComponentName = "opsSightPodProcessorRCV1"
+	OpsSightImageProcessorRCV1 ComponentName = "opsSightImageProcessorRCV1"
+	OpsSightScannerRCV1        ComponentName = "opsSightScannerRCV1"
+	SkyfireRCV1                ComponentName = "skyfireRCV1"
+
+	// Route
+	OpsSightCoreRouteV1    ComponentName = "opsSightCoreRouteV1"
+	OpsSightMetricsRouteV1 ComponentName = "opsSightMetricsRouteV1"
+
+	// Secret
+	OpsSightSecretV1 ComponentName = "opsSightSecretV1"
+
+	// Service
+	OpsSightCoreServiceV1           ComponentName = "opsSightCoreServiceV1"
+	OpsSightExposeCoreServiceV1     ComponentName = "opsSightExposeCoreServiceV1"
+	OpsSightPodProcessorServiceV1   ComponentName = "opsSightPodProcessorServiceV1"
+	OpsSightImageProcessorServiceV1 ComponentName = "opsSightImageProcessorServiceV1"
+	OpsSightImageGetterServiceV1    ComponentName = "opsSightImageGetterServiceV1"
+	OpsSightScannerServiceV1        ComponentName = "opsSightScannerServiceV1"
+	OpsSightMetricsServiceV1        ComponentName = "opsSightMetricsServiceV1"
+	OpsSightExposeMetricsServiceV1  ComponentName = "opsSightExposeMetricsServiceV1"
+	SkyfireServiceV1                ComponentName = "skyfireServiceV1"
+
+	// Service Account
+	OpsSightPodProcessorServiceAccountV1   ComponentName = "opsSightPodProcessorServiceAccountV1"
+	OpsSightImageProcessorServiceAccountV1 ComponentName = "opsSightImageProcessorServiceAccountV1"
+	OpsSightScannerServiceAccountV1        ComponentName = "opsSightScannerServiceAccountV1"
+	SkyfireServiceAccountV1                ComponentName = "skyfireServiceAccountV1"
+)
+
+// OpsSight container name
+const (
+	// Downstream
+	OpsSightCoreContainerName           ContainerName = "opssight-core"
+	OpsSightPodProcessorContainerName   ContainerName = "opssight-pod-processor"
+	OpsSightImageProcessorContainerName ContainerName = "opssight-image-processor"
+	OpsSightImageGetterContainerName    ContainerName = "opssight-image-getter"
+	OpsSightScannerContainerName        ContainerName = "opssight-scanner"
+
+	// Common between upstream and downstream
+	OpsSightMetricsContainerName ContainerName = "prometheus"
+	SkyfireContainerName         ContainerName = "skyfire"
+
+	// Upstream
+	PerceptorContainerName            ContainerName = "perceptor"
+	PodPerceiverContainerName         ContainerName = "pod-perceiver"
+	ImagePerceiverContainerName       ContainerName = "image-perceiver"
+	PerceptorImageFacadeContainerName ContainerName = "perceptor-imagefacade"
+	PerceptorScannerContainerName     ContainerName = "perceptor-scanner"
 )

@@ -22,12 +22,12 @@ under the License.
 package size
 
 import (
+	"strings"
+
 	sizev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/size/v1"
-	types2 "github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"strings"
 )
 
 // GetDefaultSize returns the default size. This will be used ny synopsysctl to create the Size custom resources during the deployment
@@ -39,11 +39,11 @@ func GetDefaultSize(name string) *sizev1.Size {
 				Name: name,
 			},
 			Spec: sizev1.SizeSpec{
-				Rc: map[string]sizev1.RCSize{
+				PodResources: map[string]sizev1.PodResource{
 					"authentication": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.AuthenticationContainerName): {
+							string(types.AuthenticationContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -52,7 +52,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"binaryscanner": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.BinaryScannerContainerName): {
+							string(types.BinaryScannerContainerName): {
 								MinCPU: util.IntToInt32(1),
 								MaxCPU: util.IntToInt32(1),
 								MinMem: util.IntToInt32(2048),
@@ -63,7 +63,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"cfssl": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.CfsslContainerName): {
+							string(types.CfsslContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -72,7 +72,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"documentation": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.DocumentationContainerName): {
+							string(types.DocumentationContainerName): {
 								MinMem: util.IntToInt32(512),
 								MaxMem: util.IntToInt32(512),
 							},
@@ -81,7 +81,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"jobrunner": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.JobrunnerContainerName): {
+							string(types.JobrunnerContainerName): {
 								MinCPU: util.IntToInt32(1),
 								MaxCPU: util.IntToInt32(1),
 								MinMem: util.IntToInt32(4608),
@@ -92,7 +92,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"rabbitmq": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.RabbitMQContainerName): {
+							string(types.RabbitMQContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -101,7 +101,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"registration": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.RegistrationContainerName): {
+							string(types.RegistrationContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -110,7 +110,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"scan": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.ScanContainerName): {
+							string(types.ScanContainerName): {
 								MinMem: util.IntToInt32(2560),
 								MaxMem: util.IntToInt32(2560),
 							},
@@ -119,7 +119,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"solr": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.SolrContainerName): {
+							string(types.SolrContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -128,7 +128,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"uploadcache": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.UploadCacheContainerName): {
+							string(types.UploadCacheContainerName): {
 								MinMem: util.IntToInt32(512),
 								MaxMem: util.IntToInt32(512),
 							},
@@ -137,13 +137,13 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"webapp-logstash": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.WebappContainerName): {
+							string(types.WebappContainerName): {
 								MinCPU: util.IntToInt32(1),
 								MaxCPU: util.IntToInt32(1),
 								MinMem: util.IntToInt32(2560),
 								MaxMem: util.IntToInt32(2560),
 							},
-							string(types2.LogstashContainerName): {
+							string(types.LogstashContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -152,7 +152,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"webserver": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.WebserverContainerName): {
+							string(types.WebserverContainerName): {
 								MinMem: util.IntToInt32(512),
 								MaxMem: util.IntToInt32(512),
 							},
@@ -161,7 +161,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"zookeeper": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.ZookeeperContainerName): {
+							string(types.ZookeeperContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -170,7 +170,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"postgres": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.PostgresContainerName): {
+							string(types.PostgresContainerName): {
 								MinCPU: util.IntToInt32(1),
 								MaxCPU: util.IntToInt32(1),
 								MinMem: util.IntToInt32(3072),
@@ -186,11 +186,11 @@ func GetDefaultSize(name string) *sizev1.Size {
 				Name: name,
 			},
 			Spec: sizev1.SizeSpec{
-				Rc: map[string]sizev1.RCSize{
+				PodResources: map[string]sizev1.PodResource{
 					"authentication": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.AuthenticationContainerName): {
+							string(types.AuthenticationContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -199,7 +199,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"binaryscanner": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.BinaryScannerContainerName): {
+							string(types.BinaryScannerContainerName): {
 								MinCPU: util.IntToInt32(1),
 								MaxCPU: util.IntToInt32(1),
 								MinMem: util.IntToInt32(2048),
@@ -210,7 +210,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"cfssl": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.CfsslContainerName): {
+							string(types.CfsslContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -219,7 +219,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"documentation": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.DocumentationContainerName): {
+							string(types.DocumentationContainerName): {
 								MinMem: util.IntToInt32(512),
 								MaxMem: util.IntToInt32(512),
 							},
@@ -228,7 +228,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"jobrunner": {
 						Replica: 4,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.JobrunnerContainerName): {
+							string(types.JobrunnerContainerName): {
 								MinCPU: util.IntToInt32(4),
 								MaxCPU: util.IntToInt32(4),
 								MinMem: util.IntToInt32(7168),
@@ -239,7 +239,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"rabbitmq": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.RabbitMQContainerName): {
+							string(types.RabbitMQContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -248,7 +248,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"registration": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.RegistrationContainerName): {
+							string(types.RegistrationContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -257,7 +257,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"scan": {
 						Replica: 2,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.ScanContainerName): {
+							string(types.ScanContainerName): {
 								MinMem: util.IntToInt32(5120),
 								MaxMem: util.IntToInt32(5120),
 							},
@@ -266,7 +266,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"solr": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.SolrContainerName): {
+							string(types.SolrContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -275,7 +275,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"uploadcache": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.UploadCacheContainerName): {
+							string(types.UploadCacheContainerName): {
 								MinMem: util.IntToInt32(512),
 								MaxMem: util.IntToInt32(512),
 							},
@@ -284,13 +284,13 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"webapp-logstash": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.WebappContainerName): {
+							string(types.WebappContainerName): {
 								MinCPU: util.IntToInt32(2),
 								MaxCPU: util.IntToInt32(2),
 								MinMem: util.IntToInt32(5120),
 								MaxMem: util.IntToInt32(5120),
 							},
-							string(types2.LogstashContainerName): {
+							string(types.LogstashContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -299,7 +299,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"webserver": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.WebserverContainerName): {
+							string(types.WebserverContainerName): {
 								MinMem: util.IntToInt32(2048),
 								MaxMem: util.IntToInt32(2048),
 							},
@@ -308,7 +308,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"zookeeper": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.ZookeeperContainerName): {
+							string(types.ZookeeperContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -317,7 +317,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"postgres": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.PostgresContainerName): {
+							string(types.PostgresContainerName): {
 								MinCPU: util.IntToInt32(2),
 								MaxCPU: util.IntToInt32(2),
 								MinMem: util.IntToInt32(8192),
@@ -334,11 +334,11 @@ func GetDefaultSize(name string) *sizev1.Size {
 				Name: name,
 			},
 			Spec: sizev1.SizeSpec{
-				Rc: map[string]sizev1.RCSize{
+				PodResources: map[string]sizev1.PodResource{
 					"authentication": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.AuthenticationContainerName): {
+							string(types.AuthenticationContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -347,7 +347,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"binaryscanner": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.BinaryScannerContainerName): {
+							string(types.BinaryScannerContainerName): {
 								MinCPU: util.IntToInt32(1),
 								MaxCPU: util.IntToInt32(1),
 								MinMem: util.IntToInt32(2048),
@@ -358,7 +358,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"cfssl": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.CfsslContainerName): {
+							string(types.CfsslContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -367,7 +367,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"documentation": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.DocumentationContainerName): {
+							string(types.DocumentationContainerName): {
 								MinMem: util.IntToInt32(512),
 								MaxMem: util.IntToInt32(512),
 							},
@@ -376,7 +376,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"jobrunner": {
 						Replica: 6,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.JobrunnerContainerName): {
+							string(types.JobrunnerContainerName): {
 								MinCPU: util.IntToInt32(1),
 								MaxCPU: util.IntToInt32(1),
 								MinMem: util.IntToInt32(13824),
@@ -387,7 +387,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"rabbitmq": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.RabbitMQContainerName): {
+							string(types.RabbitMQContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -396,7 +396,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"registration": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.RegistrationContainerName): {
+							string(types.RegistrationContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -405,7 +405,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"scan": {
 						Replica: 3,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.ScanContainerName): {
+							string(types.ScanContainerName): {
 								MinMem: util.IntToInt32(9728),
 								MaxMem: util.IntToInt32(9728),
 							},
@@ -414,7 +414,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"solr": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.SolrContainerName): {
+							string(types.SolrContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -423,7 +423,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"uploadcache": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.UploadCacheContainerName): {
+							string(types.UploadCacheContainerName): {
 								MinMem: util.IntToInt32(512),
 								MaxMem: util.IntToInt32(512),
 							},
@@ -432,13 +432,13 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"webapp-logstash": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.WebappContainerName): {
+							string(types.WebappContainerName): {
 								MinCPU: util.IntToInt32(2),
 								MaxCPU: util.IntToInt32(2),
 								MinMem: util.IntToInt32(9728),
 								MaxMem: util.IntToInt32(9728),
 							},
-							string(types2.LogstashContainerName): {
+							string(types.LogstashContainerName): {
 								MinMem: util.IntToInt32(1024),
 								MaxMem: util.IntToInt32(1024),
 							},
@@ -447,7 +447,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"webserver": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.WebserverContainerName): {
+							string(types.WebserverContainerName): {
 								MinMem: util.IntToInt32(2048),
 								MaxMem: util.IntToInt32(2048),
 							},
@@ -456,7 +456,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"zookeeper": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.ZookeeperContainerName): {
+							string(types.ZookeeperContainerName): {
 								MinMem: util.IntToInt32(640),
 								MaxMem: util.IntToInt32(640),
 							},
@@ -465,7 +465,7 @@ func GetDefaultSize(name string) *sizev1.Size {
 					"postgres": {
 						Replica: 1,
 						ContainerLimit: map[string]sizev1.ContainerSize{
-							string(types2.PostgresContainerName): {
+							string(types.PostgresContainerName): {
 								MinCPU: util.IntToInt32(2),
 								MaxCPU: util.IntToInt32(2),
 								MinMem: util.IntToInt32(12288),

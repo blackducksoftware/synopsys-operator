@@ -176,7 +176,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	c.handler = NewHandler(c.protformDeployer, c.hubClient, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1))
+	c.handler = NewHandler(c.protformDeployer, c.hubClient, c.defaults.(*v1.BlackduckSpec))
 }
 
 // CreateController will create a CRD controller

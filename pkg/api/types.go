@@ -102,6 +102,7 @@ func (clist *ComponentList) GetKubeInterfaces() []interface{} {
 	return components
 }
 
+// Filter filters the components
 func (clist *ComponentList) Filter(filter string) (*ComponentList, error) {
 	components := &ComponentList{}
 
