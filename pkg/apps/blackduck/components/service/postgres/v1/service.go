@@ -2,10 +2,8 @@ package v1
 
 import (
 	"fmt"
-
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
@@ -49,5 +47,5 @@ func NewBdService(config *protoform.Config, kubeClient *kubernetes.Clientset, cr
 }
 
 func init() {
-	store.Register(blackduck.BlackDuckPostgresServiceV1, NewBdService)
+	store.Register(types.BlackDuckPostgresServiceV1, NewBdService)
 }

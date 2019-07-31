@@ -76,22 +76,3 @@ type ServiceInterface interface {
 	GetService() *components.Service
 	// TODO add deployment, rc
 }
-
-// SizeInterface refers to size related interface
-type SizeInterface interface {
-	GetSize(name string) map[string]*Size
-}
-
-// ContainerSize refers to container size configuration
-type ContainerSize struct {
-	MinCPU *int32
-	MaxCPU *int32
-	MinMem *int32
-	MaxMem *int32
-}
-
-// Size refers to size configuration
-type Size struct {
-	Replica    int
-	Containers map[ContainerName]ContainerSize
-}

@@ -1,7 +1,12 @@
 package store
 
 import (
+	"errors"
 	"fmt"
+	sizev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/size/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/size"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"reflect"
 	"strings"
 
@@ -12,6 +17,8 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+
+	sizeclientset "github.com/blackducksoftware/synopsys-operator/pkg/size/client/clientset/versioned"
 )
 
 // Components contains the list of components to be added/updated
@@ -21,7 +28,6 @@ type Components struct {
 	Configmap map[types.ComponentName]types.ConfigmapCreater
 	PVC       map[types.ComponentName]types.PvcCreater
 	Secret    map[types.ComponentName]types.SecretCreater
-	Size      map[types.ComponentName]types.SizeInterface
 }
 
 // ComponentStore stores the components
@@ -55,11 +61,6 @@ func Register(name types.ComponentName, function interface{}) {
 			ComponentStore.Secret = make(map[types.ComponentName]types.SecretCreater)
 		}
 		ComponentStore.Secret[name] = function.(func(*protoform.Config, *kubernetes.Clientset, interface{}) (types.SecretInterface, error))
-	case types.SizeInterface:
-		if ComponentStore.Size == nil {
-			ComponentStore.Size = make(map[types.ComponentName]types.SizeInterface)
-		}
-		ComponentStore.Size[name] = function.(types.SizeInterface)
 	default:
 		log.Fatalf("couldn't load %s because unable to find the type %+v", name, reflect.TypeOf(function))
 	}
@@ -74,7 +75,7 @@ type customResource struct {
 }
 
 // GetComponents get the components and generate the corresponding horizon object
-func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, cr interface{}) (api.ComponentList, error) {
+func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, sizeClient *sizeclientset.Clientset, cr interface{}) (api.ComponentList, error) {
 	var cp api.ComponentList
 
 	// get the custom resource info
@@ -84,7 +85,7 @@ func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *
 	}
 
 	// Rc
-	rcs, err := generateRc(v, config, kubeclient, customResource, cr)
+	rcs, err := generateRc(v, config, kubeclient, sizeClient, customResource, cr)
 	if err != nil {
 		return cp, err
 	}
@@ -147,39 +148,56 @@ func getCR(cr interface{}) (*customResource, error) {
 	return &customResource{namespace: namespace, size: size, imageRegistries: imageRegistries, registryConfiguration: &registryConfiguration}, nil
 }
 
-func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, customResource *customResource, cr interface{}) ([]*components.ReplicationController, error) {
+func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, sizeClient *sizeclientset.Clientset, customResource *customResource, cr interface{}) ([]*components.ReplicationController, error) {
 	rcs := make([]*components.ReplicationController, 0)
 	// Size
-	sizegen, ok := ComponentStore.Size[v.Size]
-	if !ok {
-		return nil, fmt.Errorf("size %s couldn't be found", v.Size)
+
+	if len(customResource.size) == 0 {
+		return nil, errors.New("size couldn't be found")
 	}
 
-	componentSize := sizegen.GetSize(customResource.size)
-	if componentSize == nil {
-		return nil, fmt.Errorf("size %s couldn't be found in %s", customResource.size, v.Size)
+	var componentSize *sizev1.Size
+	var err error
+
+	if config.DryRun {
+		componentSize = size.GetDefaultSize(customResource.size)
+		if componentSize == nil {
+			return nil, fmt.Errorf("couldn't find size %s", customResource.size)
+		}
+	} else {
+		componentSize, err = sizeClient.SynopsysV1().Sizes(config.Namespace).Get(strings.ToLower(customResource.size), metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// RC
 	for k, v := range v.RCs {
-		rcSize, ok := componentSize[k]
-		if !ok {
-			return nil, fmt.Errorf("replication controller %s couldn't be found in size [%s]", k, customResource.size)
-		}
+		rcSize, rcFound := componentSize.Spec.Rc[k]
+
 		rc := &types.ReplicationController{
 			Namespace:  customResource.namespace,
-			Replicas:   rcSize.Replica,
+			Replicas:   1,
 			Containers: map[types.ContainerName]types.Container{},
 		}
 
+		if rcFound {
+			rc.Replicas = rcSize.Replica
+		}
+
 		for containerName, defaultImage := range v.Container {
-			rc.Containers[containerName] = types.Container{
-				Image:  generateImageTag(defaultImage, customResource.imageRegistries, customResource.registryConfiguration),
-				MinMem: componentSize[k].Containers[containerName].MinMem,
-				MaxMem: componentSize[k].Containers[containerName].MaxMem,
-				MinCPU: componentSize[k].Containers[containerName].MinCPU,
-				MaxCPU: componentSize[k].Containers[containerName].MaxCPU,
+			tmpContainer := types.Container{
+				Image: generateImageTag(defaultImage, customResource.imageRegistries, customResource.registryConfiguration),
 			}
+			if rcFound {
+				if containerSize, containerSizeFound := rcSize.ContainerLimit[string(containerName)]; containerSizeFound {
+					tmpContainer.MinMem = containerSize.MinMem
+					tmpContainer.MaxMem = containerSize.MaxMem
+					tmpContainer.MinCPU = containerSize.MinCPU
+					tmpContainer.MaxCPU = containerSize.MaxCPU
+				}
+			}
+			rc.Containers[containerName] = tmpContainer
 		}
 
 		component, ok := ComponentStore.Rc[v.Identifier]

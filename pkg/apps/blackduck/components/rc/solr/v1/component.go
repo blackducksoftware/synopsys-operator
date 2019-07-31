@@ -2,11 +2,9 @@ package v1
 
 import (
 	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
@@ -25,14 +23,14 @@ type BdReplicationController struct {
 }
 
 func init() {
-	store.Register(blackduck.BlackDuckSolrRCV1, NewBdReplicationController)
+	store.Register(types.BlackDuckSolrRCV1, NewBdReplicationController)
 }
 
 // GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-	containerConfig, ok := c.Containers[blackduck.SolrContainerName]
+	containerConfig, ok := c.Containers[types.SolrContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", blackduck.SolrContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", types.SolrContainerName)
 	}
 	solrVolumeMount := c.getSolrVolumeMounts()
 	solrContainerConfig := &util.Container{

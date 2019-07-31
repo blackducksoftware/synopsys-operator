@@ -2,10 +2,8 @@ package v2
 
 import (
 	"fmt"
-
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -48,5 +46,5 @@ func (b BdPVC) GetPVCs() ([]*components.PersistentVolumeClaim, error) {
 }
 
 func init() {
-	store.Register(blackduck.BlackDuckPVCV2, NewPvc)
+	store.Register(types.BlackDuckPVCV2, NewPvc)
 }

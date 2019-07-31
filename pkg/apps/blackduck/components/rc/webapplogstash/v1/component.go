@@ -2,11 +2,9 @@ package v1
 
 import (
 	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
@@ -25,38 +23,40 @@ type BdReplicationController struct {
 }
 
 func init() {
-	store.Register(blackduck.BlackDuckWebappLogstashRCV1, NewBdReplicationController)
+	store.Register(types.BlackDuckWebappLogstashRCV1, NewBdReplicationController)
 }
 
 // GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-	containerConfig, ok := c.Containers[blackduck.WebappContainerName]
+	webappConfig, ok := c.Containers[types.WebappContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", blackduck.WebappContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", types.WebappContainerName)
 	}
 
-	if containerConfig.MaxMem == nil {
-		return nil, fmt.Errorf("Maxmem must be set for %s", blackduck.WebappContainerName)
+	logstashConfig, ok := c.Containers[types.LogstashContainerName]
+	if !ok {
+		return nil, fmt.Errorf("couldn't find container %s", types.LogstashContainerName)
 	}
 
-	lontainerConfig, ok := c.Containers[blackduck.LogstashContainerName]
-	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", blackduck.LogstashContainerName)
+	// hubMaxMemory is the amount of memory allocated to the JVM. We keep 512mb for alpine
+	hubMaxMemory := 2048
+	if webappConfig.MaxMem != nil && *webappConfig.MaxMem > 512 {
+		hubMaxMemory = int(*webappConfig.MaxMem - 512)
 	}
 
 	webappEnvs := []*horizonapi.EnvConfig{utils.GetBlackDuckConfigEnv(c.blackDuck.Name), utils.GetBlackDuckDBConfigEnv(c.blackDuck.Name)}
-	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
+	webappEnvs = append(webappEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dm", hubMaxMemory)})
 
 	webappVolumeMounts := c.getWebappVolumeMounts()
 
 	webappContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "webapp", Image: webappConfig.Image, PullPolicy: horizonapi.PullAlways},
 		EnvConfigs:      webappEnvs,
 		VolumeMounts:    webappVolumeMounts,
 		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(8443), Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	apputils.SetLimits(webappContainerConfig.ContainerConfig, containerConfig)
+	apputils.SetLimits(webappContainerConfig.ContainerConfig, webappConfig)
 	if c.blackDuck.Spec.LivenessProbes {
 		webappContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{
 			ActionConfig: horizonapi.ActionConfig{
@@ -79,13 +79,13 @@ func (c *BdReplicationController) GetRc() (*components.ReplicationController, er
 	logstashVolumeMounts := c.getLogstashVolumeMounts()
 
 	logstashContainerConfig := &util.Container{
-		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: lontainerConfig.Image, PullPolicy: horizonapi.PullAlways},
+		ContainerConfig: &horizonapi.ContainerConfig{Name: "logstash", Image: logstashConfig.Image, PullPolicy: horizonapi.PullAlways},
 		EnvConfigs:      []*horizonapi.EnvConfig{utils.GetBlackDuckConfigEnv(c.blackDuck.Name)},
 		VolumeMounts:    logstashVolumeMounts,
 		PortConfig:      []*horizonapi.PortConfig{{ContainerPort: int32(5044), Protocol: horizonapi.ProtocolTCP}},
 	}
 
-	apputils.SetLimits(logstashContainerConfig.ContainerConfig, lontainerConfig)
+	apputils.SetLimits(logstashContainerConfig.ContainerConfig, logstashConfig)
 
 	if c.blackDuck.Spec.LivenessProbes {
 		logstashContainerConfig.LivenessProbeConfigs = []*horizonapi.ProbeConfig{{

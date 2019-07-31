@@ -1,0 +1,87 @@
+package types
+
+// TODO a type for each component type
+const (
+	// Size
+	BlackDuckSizeV1 ComponentName = "blackDuckSizeV1"
+
+	// RC
+	BlackDuckAuthenticationRCV1 ComponentName = "blackDuckAuthenticationRCV1"
+	BlackDuckBinaryScannerRCV1  ComponentName = "blackDuckBinaryscannerRCV1"
+	BlackDuckCfsslRCV1          ComponentName = "blackDuckCfsslRCV1"
+	BlackDuckDocumentationRCV1  ComponentName = "blackDuckDocumentationRCV1"
+	BlackDuckJobRunnerRCV1      ComponentName = "blackDuckJobRunnerRCV1"
+	BlackDuckPostgresRCV1       ComponentName = "blackDuckPostgresRCV1"
+	BlackDuckRabbitMQRCV1       ComponentName = "blackDuckRabbitMQRCV1"
+	BlackDuckRegistrationRCV1   ComponentName = "blackDuckRegistrationRCV1"
+	BlackDuckScanRCV1           ComponentName = "blackDuckScanRCV1"
+	BlackDuckSolrRCV1           ComponentName = "blackDuckSolrRCV1"
+	BlackDuckUploadCacheRCV1    ComponentName = "blackDuckUploadCacheRCV1"
+	BlackDuckWebappLogstashRCV1 ComponentName = "blackDuckWebappLogstashRCV1"
+	BlackDuckWebserverRCV1      ComponentName = "blackDuckWebserverRCV1"
+	BlackDuckZookeeperRCV1      ComponentName = "blackDuckZookeeperRCV1"
+
+	// Service
+	BlackDuckAuthentivationServiceV1 ComponentName = "blackDuckAuthenticationServiceV1"
+	BlackDuckCfsslServiceV1          ComponentName = "blackDuckCfsslServiceV1"
+	BlackDuckDocumentationServiceV1  ComponentName = "blackDuckDocumentationServiceV1"
+	BlackDuckPostgresServiceV1       ComponentName = "blackDuckPostgresServiceV1"
+	BlackDuckRabbitMQServiceV1       ComponentName = "blackDuckRabbitMQServiceV1"
+	BlackDuckRegistrationServiceV1   ComponentName = "blackDuckRegistrationServiceV1"
+	BlackDuckScanServiceV1           ComponentName = "blackDuckScanServiceV1"
+	BlackDuckSolrServiceV1           ComponentName = "blackDuckSolrServiceV1"
+	BlackDuckUploadCacheServiceV1    ComponentName = "blackDuckUploadCacheServiceV1"
+	BlackDuckWebappServiceV1         ComponentName = "blackDuckWebappServiceV1"
+	BlackDuckLogstashServiceV1       ComponentName = "blackDuckLogstashServiceV1"
+	BlackDuckWebserverServiceV1      ComponentName = "blackDuckWebserverServiceV1"
+	BlackDuckZookeeperServiceV1      ComponentName = "blackDuckZookeeperServiceV1"
+	BlackDuckExposeServiceV1         ComponentName = "blackDuckExposeServiceV1"
+
+	// ConfigMap
+	BlackDuckGlobalConfigmapV1   ComponentName = "blackDuckGlobalConfigmapV1"
+	BlackDuckDatabaseConfigmapV1 ComponentName = "blackDuckDatabaseConfigmapV1"
+
+	// Secret
+	BlackDuckWebCertificateSecretV1   ComponentName = "blackDuckWebCertificateSecretV1"
+	BlackDuckAuthCertificateSecretV1  ComponentName = "blackDuckAuthCertificateSecretV1"
+	BlackDuckProxyCertificateSecretV1 ComponentName = "blackDuckProxyCertificateSecretV1"
+	BlackDuckUploadCacheSecretV1      ComponentName = "blackDuckUploadCacheSecretV1"
+	BlackDuckPostgresSecretV1         ComponentName = "blackDuckPostgresSecretV1"
+
+	// PVC
+	BlackDuckPVCV1 ComponentName = "blackDuckPVCV1"
+	BlackDuckPVCV2 ComponentName = "blackDuckPVCV2"
+)
+
+const (
+	// AuthenticationContainerName ...
+	AuthenticationContainerName ContainerName = "authentication"
+	// BinaryScannerContainerName ...
+	BinaryScannerContainerName ContainerName = "binaryscanner"
+	// CfsslContainerName ...
+	CfsslContainerName ContainerName = "cfssl"
+	// DocumentationContainerName ...
+	DocumentationContainerName ContainerName = "documentation"
+	// JobrunnerContainerName ...
+	JobrunnerContainerName ContainerName = "jobrunner"
+	// RabbitMQContainerName ...
+	RabbitMQContainerName ContainerName = "rabbitmq"
+	// RegistrationContainerName ...
+	RegistrationContainerName ContainerName = "registration"
+	// ScanContainerName ...
+	ScanContainerName ContainerName = "scan"
+	// SolrContainerName ...
+	SolrContainerName ContainerName = "solr"
+	// UploadCacheContainerName ...
+	UploadCacheContainerName ContainerName = "uploadcache"
+	// WebappContainerName ...
+	WebappContainerName ContainerName = "webapp"
+	// LogstashContainerName ...
+	LogstashContainerName ContainerName = "logstash"
+	// WebserverContainerName ...
+	WebserverContainerName ContainerName = "webserver"
+	// ZookeeperContainerName ...
+	ZookeeperContainerName ContainerName = "zookeeper"
+	// PostgresContainerName ...
+	PostgresContainerName ContainerName = "postgres"
+)

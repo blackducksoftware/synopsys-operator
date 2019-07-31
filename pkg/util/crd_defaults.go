@@ -37,6 +37,8 @@ const (
 	OpsSightCRDName = "opssights.synopsys.com"
 	// PrmCRDName is the name of the Polaris Reporting Module CRD
 	PrmCRDName = "prms.synopsys.com"
+	// SizeCRDName is the name of the Size CRD
+	SizeCRDName = "sizes.synopsys.com"
 
 	// OperatorName is the name of an Operator
 	OperatorName = "synopsys-operator"

@@ -2,11 +2,9 @@ package v1
 
 import (
 	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
@@ -25,22 +23,24 @@ type BdReplicationController struct {
 }
 
 func init() {
-	store.Register(blackduck.BlackDuckScanRCV1, NewBdReplicationController)
+	store.Register(types.BlackDuckScanRCV1, NewBdReplicationController)
 }
 
 // GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-	containerConfig, ok := c.Containers[blackduck.ScanContainerName]
+	containerConfig, ok := c.Containers[types.ScanContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", blackduck.ScanContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", types.ScanContainerName)
 	}
 
-	if containerConfig.MaxMem == nil {
-		return nil, fmt.Errorf("Maxmem must be set for %s", blackduck.ScanContainerName)
+	// hubMaxMemory is the amount of memory allocated to the JVM. We keep 512mb for alpine
+	hubMaxMemory := 2048
+	if containerConfig.MaxMem != nil && *containerConfig.MaxMem > 512 {
+		hubMaxMemory = int(*containerConfig.MaxMem - 512)
 	}
 
 	scannerEnvs := []*horizonapi.EnvConfig{utils.GetBlackDuckConfigEnv(c.blackDuck.Name), utils.GetBlackDuckDBConfigEnv(c.blackDuck.Name)}
-	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
+	scannerEnvs = append(scannerEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dm", hubMaxMemory)})
 	hubScanEmptyDir, _ := util.CreateEmptyDirVolumeWithoutSizeLimit("dir-scan")
 	hubScanContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "scan", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},

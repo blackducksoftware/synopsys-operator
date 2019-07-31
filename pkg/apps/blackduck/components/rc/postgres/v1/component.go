@@ -2,10 +2,8 @@ package v1
 
 import (
 	"fmt"
-
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database/postgres"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
@@ -25,14 +23,14 @@ type BdReplicationController struct {
 }
 
 func init() {
-	store.Register(blackduck.BlackDuckPostgresRCV1, NewBdReplicationController)
+	store.Register(types.BlackDuckPostgresRCV1, NewBdReplicationController)
 }
 
 // GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-	containerConfig, ok := c.Containers[blackduck.PostgresContainerName]
+	containerConfig, ok := c.Containers[types.PostgresContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", blackduck.PostgresContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", types.PostgresContainerName)
 	}
 
 	name := apputils.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "postgres")
