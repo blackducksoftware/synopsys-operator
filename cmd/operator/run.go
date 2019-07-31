@@ -64,7 +64,7 @@ func runProtoform(configPath string, version string) {
 	}
 
 	// check for the existence of operator configmap, if not create it
-	_, err = util.GetConfigMap(deployer.KubeClientSet, deployer.Config.Namespace, "synopsys-operator")
+	_, err = util.GetConfigMap(deployer.KubeClient, deployer.Config.Namespace, "synopsys-operator")
 	if err != nil {
 		d, err := horizon.NewDeployer(deployer.KubeConfig)
 		if err != nil {
@@ -94,7 +94,7 @@ func runProtoform(configPath string, version string) {
 	}
 
 	// check for the existence of prometheus configmap, if not create it
-	_, err = util.GetConfigMap(deployer.KubeClientSet, deployer.Config.Namespace, "prometheus")
+	_, err = util.GetConfigMap(deployer.KubeClient, deployer.Config.Namespace, "prometheus")
 	if err != nil {
 		d, err := horizon.NewDeployer(deployer.KubeConfig)
 		if err != nil {
@@ -114,12 +114,10 @@ func runProtoform(configPath string, version string) {
 	}
 
 	// Log Kubernetes version
-	kversion, err := util.GetKubernetesVersion(deployer.KubeClientSet)
+	kversion, err := util.GetKubernetesVersion(deployer.KubeClient)
 	if err == nil {
 		log.Infof("Kubernetes: %s", kversion)
 	}
-
-	deployer.Config.IsOpenshift = util.IsOpenshift(deployer.KubeClientSet)
 
 	stopCh := make(chan struct{})
 
@@ -155,13 +153,13 @@ func startController(deployer *protoform.Deployer, name string, stopCh chan stru
 	// Add controllers to the Operator
 	switch strings.ToLower(name) {
 	case util.BlackDuckCRDName:
-		blackduckController := blackduck.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetBlackDuckTemplate(), stopCh)
+		blackduckController := blackduck.NewCRDInstaller(deployer, util.GetBlackDuckTemplate(), stopCh)
 		deployer.AddController(blackduckController)
 	case util.AlertCRDName:
-		alertController := alert.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetAlertTemplate(), stopCh)
+		alertController := alert.NewCRDInstaller(deployer, util.GetAlertTemplate(), stopCh)
 		deployer.AddController(alertController)
 	case util.OpsSightCRDName:
-		opsSightController := opssight.NewCRDInstaller(deployer.Config, deployer.KubeConfig, deployer.KubeClientSet, util.GetOpsSightDefault(), stopCh)
+		opsSightController := opssight.NewCRDInstaller(deployer, util.GetOpsSightDefault(), stopCh)
 		deployer.AddController(opsSightController)
 	default:
 		log.Warnf("unable to start the %s custom resource definition controller due to invalid custom resource definition name", name)

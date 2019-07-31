@@ -1059,7 +1059,7 @@ func DeleteRoleBinding(clientset *kubernetes.Clientset, namespace string, name s
 
 // GetRouteClient attempts to get a Route Client. It returns nil if it
 // fails due to an error or due to being on kubernetes (doesn't support routes)
-func GetRouteClient(restConfig *rest.Config, clientset *kubernetes.Clientset, namespace string) *routeclient.RouteV1Client {
+func GetRouteClient(restConfig *rest.Config) *routeclient.RouteV1Client {
 	routeClient, err := routeclient.NewForConfig(restConfig)
 	if err != nil {
 		return nil

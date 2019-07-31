@@ -37,13 +37,8 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
-	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // HandlerInterface interface contains the methods that are required
@@ -81,21 +76,15 @@ const (
 
 // Handler will store the configuration that is required to initiantiate the informers callback
 type Handler struct {
-	config           *protoform.Config
-	kubeConfig       *rest.Config
-	kubeClient       *kubernetes.Clientset
-	blackduckClient  *blackduckclientset.Clientset
-	defaults         *blackduckapi.BlackduckSpec
-	cmMutex          chan bool
-	osSecurityClient *securityclient.SecurityV1Client
-	routeClient      *routeclient.RouteV1Client
+	protoformDeployer *protoform.Deployer
+	blackduckClient   *blackduckclientset.Clientset
+	defaults          *blackduckapi.BlackduckSpec
+	cmMutex           chan bool
 }
 
 // NewHandler will create the handler
-func NewHandler(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, hubClient *blackduckclientset.Clientset,
-	defaults *blackduckapi.BlackduckSpec, cmMutex chan bool, osSecurityClient *securityclient.SecurityV1Client, routeClient *routeclient.RouteV1Client) *Handler {
-	return &Handler{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, blackduckClient: hubClient, defaults: defaults,
-		cmMutex: cmMutex, osSecurityClient: osSecurityClient, routeClient: routeClient}
+func NewHandler(protoformDeployer *protoform.Deployer, hubClient *blackduckclientset.Clientset, defaults *blackduckapi.BlackduckSpec, cmMutex chan bool) *Handler {
+	return &Handler{protoformDeployer: protoformDeployer, blackduckClient: hubClient, defaults: defaults, cmMutex: cmMutex}
 }
 
 // APISetHubsRequest to set the Black Duck urls for Perceptor
@@ -114,9 +103,8 @@ func (h *Handler) ObjectDeleted(name string) {
 	log.Debugf("ObjectDeleted: %+v", name)
 
 	// if cluster scope, then check whether the Black Duck CRD exist. If not exist, then don't delete the instance
-	if h.config.IsClusterScoped {
-		apiClientset, err := clientset.NewForConfig(h.kubeConfig)
-		crd, err := apiClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.BlackDuckCRDName, metav1.GetOptions{})
+	if h.protoformDeployer.Config.IsClusterScoped {
+		crd, err := h.protoformDeployer.APIExtensionsClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.BlackDuckCRDName, metav1.GetOptions{})
 		if err != nil || crd.DeletionTimestamp != nil {
 			// We do not delete the Black Duck instance if the CRD doesn't exist or that it is in the process of being deleted
 			log.Warnf("Ignoring request to delete %s because the %s CRD doesn't exist or is being deleted", name, util.BlackDuckCRDName)
@@ -125,7 +113,7 @@ func (h *Handler) ObjectDeleted(name string) {
 	}
 
 	// Voluntary deletion. The CRD still exists but the Black Duck resource has been deleted
-	app := apps.NewApp(h.config, h.kubeConfig)
+	app := apps.NewApp(h.protoformDeployer)
 	err := app.Blackduck().Delete(name)
 	if err != nil {
 		log.Error(err)
@@ -143,8 +131,8 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 
 	if _, ok = bd.Annotations["synopsys.com/created.by"]; !ok {
 		bd.Annotations = util.InitAnnotations(bd.Annotations)
-		bd.Annotations["synopsys.com/created.by"] = h.config.Version
-		bd, err = util.UpdateBlackduck(h.blackduckClient, h.config.Namespace, bd)
+		bd.Annotations["synopsys.com/created.by"] = h.protoformDeployer.Config.Version
+		bd, err = util.UpdateBlackduck(h.blackduckClient, h.protoformDeployer.Config.Namespace, bd)
 		if err != nil {
 			log.Errorf("couldn't update the annotation for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 			return
@@ -172,7 +160,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	log.Debugf("ObjectUpdated: %s", bd.Name)
 
 	// Ensure
-	app := apps.NewApp(h.config, h.kubeConfig)
+	app := apps.NewApp(h.protoformDeployer)
 	err = app.Blackduck().Ensure(bd)
 	if err != nil {
 		log.Error(err)

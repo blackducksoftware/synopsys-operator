@@ -25,26 +25,24 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"k8s.io/client-go/rest"
 )
 
 // App struct
 type App struct {
-	config     *protoform.Config
-	kubeConfig *rest.Config
+	protoformDeployer *protoform.Deployer
 }
 
 // NewApp will return an App
-func NewApp(config *protoform.Config, kubeConfig *rest.Config) *App {
-	return &App{config: config, kubeConfig: kubeConfig}
+func NewApp(protoformDeployer *protoform.Deployer) *App {
+	return &App{protoformDeployer: protoformDeployer}
 }
 
 // Alert will return an Alert
 func (a *App) Alert() *alert.Alert {
-	return alert.NewAlert(a.config, a.kubeConfig)
+	return alert.NewAlert(a.protoformDeployer)
 }
 
 // Blackduck will return a Blackduck
 func (a *App) Blackduck() *blackduck.Blackduck {
-	return blackduck.NewBlackduck(a.config, a.kubeConfig)
+	return blackduck.NewBlackduck(a.protoformDeployer)
 }

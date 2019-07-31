@@ -33,42 +33,34 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
 
 // CRDInstaller defines the specification for the CRD
 type CRDInstaller struct {
-	config       *protoform.Config
-	kubeConfig   *rest.Config
-	kubeClient   *kubernetes.Clientset
-	defaults     interface{}
-	resyncPeriod time.Duration
-	indexers     cache.Indexers
-	infomer      cache.SharedIndexInformer
-	queue        workqueue.RateLimitingInterface
-	handler      *Handler
-	controller   *Controller
-	hubClient    *hubclientset.Clientset
-	threadiness  int
-	stopCh       <-chan struct{}
+	protformDeployer *protoform.Deployer
+	defaults         interface{}
+	indexers         cache.Indexers
+	infomer          cache.SharedIndexInformer
+	queue            workqueue.RateLimitingInterface
+	handler          *Handler
+	controller       *Controller
+	hubClient        *hubclientset.Clientset
+	stopCh           <-chan struct{}
 }
 
 // NewCRDInstaller will create a CRD installer configuration
-func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
-	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
-	crdInstaller.resyncPeriod = time.Duration(config.ResyncIntervalInSeconds) * time.Second
+func NewCRDInstaller(protoformDeployer *protoform.Deployer, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+	crdInstaller := &CRDInstaller{protformDeployer: protoformDeployer, defaults: defaults, stopCh: stopCh}
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
 }
 
 // CreateClientSet will create the CRD client
 func (c *CRDInstaller) CreateClientSet() error {
-	hubClient, err := hubclientset.NewForConfig(c.kubeConfig)
+	hubClient, err := hubclientset.NewForConfig(c.protformDeployer.KubeConfig)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -78,7 +70,7 @@ func (c *CRDInstaller) CreateClientSet() error {
 
 // Deploy will deploy the CRD and other relevant components
 func (c *CRDInstaller) Deploy() error {
-	deployer, err := horizon.NewDeployer(c.kubeConfig)
+	deployer, err := horizon.NewDeployer(c.protformDeployer.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -86,14 +78,14 @@ func (c *CRDInstaller) Deploy() error {
 	// creation of default blackduck nginx certificate secret
 	certificate, key := CreateSelfSignedCert()
 	certificateSecret := components.NewSecret(horizonapi.SecretConfig{
-		Namespace: c.config.Namespace,
+		Namespace: c.protformDeployer.Config.Namespace,
 		Name:      "blackduck-certificate",
 		Type:      horizonapi.SecretTypeOpaque,
 	})
 	certificateSecret.AddData(map[string][]byte{"WEBSERVER_CUSTOM_CERT_FILE": []byte(certificate), "WEBSERVER_CUSTOM_KEY_FILE": []byte(key)})
 	deployer.AddComponent(horizonapi.SecretComponent, certificateSecret)
 
-	_, err = util.GetSecret(c.kubeClient, c.config.Namespace, "blackduck-secret")
+	_, err = util.GetSecret(c.protformDeployer.KubeClient, c.protformDeployer.Config.Namespace, "blackduck-secret")
 	if err != nil {
 		sealKey, err := util.GetRandomString(32)
 		if err != nil {
@@ -102,7 +94,7 @@ func (c *CRDInstaller) Deploy() error {
 		// creation of blackduck secret to store the seal key
 		operatorSecret := components.NewSecret(horizonapi.SecretConfig{
 			Name:      "blackduck-secret",
-			Namespace: c.config.Namespace,
+			Namespace: c.protformDeployer.Config.Namespace,
 			Type:      horizonapi.SecretTypeOpaque,
 		})
 		operatorSecret.AddData(map[string][]byte{
@@ -131,10 +123,11 @@ func (c *CRDInstaller) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *CRDInstaller) CreateInformer() {
+	resyncPeriod := time.Duration(c.protformDeployer.Config.ResyncIntervalInSeconds) * time.Second
 	c.infomer = hubinformerv2.NewBlackduckInformer(
 		c.hubClient,
-		c.config.Namespace,
-		c.resyncPeriod,
+		c.protformDeployer.Config.Namespace,
+		resyncPeriod,
 		c.indexers,
 	)
 }
@@ -183,11 +176,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	var routeClient *routeclient.RouteV1Client
-	if util.IsOpenshift(c.kubeClient) {
-		routeClient = util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
-	}
-	c.handler = NewHandler(c.config, c.kubeConfig, c.kubeClient, c.hubClient, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1), nil, routeClient)
+	c.handler = NewHandler(c.protformDeployer, c.hubClient, c.defaults.(*v1.BlackduckSpec), make(chan bool, 1))
 }
 
 // CreateController will create a CRD controller
@@ -197,7 +186,7 @@ func (c *CRDInstaller) CreateController() {
 
 // Run will run the CRD controller
 func (c *CRDInstaller) Run() {
-	go c.controller.Run(c.threadiness, c.stopCh)
+	go c.controller.Run(c.protformDeployer.Config.Threadiness, c.stopCh)
 }
 
 // PostRun will run post CRD controller execution

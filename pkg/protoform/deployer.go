@@ -22,8 +22,14 @@ under the License.
 package protoform
 
 import (
+	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	"strings"
+
 	crd "github.com/blackducksoftware/synopsys-operator/pkg/crds"
 	"github.com/juju/errors"
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -31,25 +37,47 @@ import (
 
 // Deployer handles deploying configured components to a cluster
 type Deployer struct {
-	Config             *Config
-	KubeConfig         *rest.Config
-	KubeClientSet      *kubernetes.Clientset
-	APIExtensionClient *apiextensionsclient.Clientset
-	controllers        []crd.ProtoformControllerInterface
+	Config              *Config
+	KubeConfig          *rest.Config
+	KubeClient          *kubernetes.Clientset
+	APIExtensionsClient *apiextensionsclient.Clientset
+	RouteClient         *routeclient.RouteV1Client
+	SecurityClient      *securityclient.SecurityV1Client
+	controllers         []crd.ProtoformControllerInterface
 }
 
 // NewDeployer will create the specification that is used for deploying controllers
-func NewDeployer(config *Config, kubeConfig *rest.Config, kubeClientSet *kubernetes.Clientset) (*Deployer, error) {
-	apiExtensionClient, err := apiextensionsclient.NewForConfig(kubeConfig)
+func NewDeployer(config *Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset) (*Deployer, error) {
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(kubeConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating API Extensions Client: %s", err)
+	}
+
+	// Make OpenShift clients
+	var routeClient *routeclient.RouteV1Client
+	var securityClient *securityclient.SecurityV1Client
+	if config.IsOpenshift {
+		routeClient, err = routeclient.NewForConfig(kubeConfig)
+		if err != nil {
+			// If we can't make a routeClient, then a customer should still be able to deploy the application
+			fmt.Printf("on OpenShift, still an error creating Route Client: %s", err)
+		}
+		// We only need securityClient for OpsSight
+		if strings.Contains(config.CrdNames, util.OpsSightCRDName) {
+			securityClient, err = securityclient.NewForConfig(kubeConfig)
+			if err != nil {
+				return nil, fmt.Errorf("on OpenShift, still an error creating Security Client: %s", err)
+			}
+		}
 	}
 	deployer := Deployer{
-		Config:             config,
-		KubeConfig:         kubeConfig,
-		KubeClientSet:      kubeClientSet,
-		APIExtensionClient: apiExtensionClient,
-		controllers:        make([]crd.ProtoformControllerInterface, 0),
+		Config:              config,
+		KubeConfig:          kubeConfig,
+		KubeClient:          kubeClient,
+		APIExtensionsClient: apiExtensionsClient,
+		RouteClient:         routeClient,
+		SecurityClient:      securityClient,
+		controllers:         make([]crd.ProtoformControllerInterface, 0),
 	}
 	return &deployer, nil
 }

@@ -28,43 +28,35 @@ import (
 	alertinformerv1 "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/informers/externalversions/alert/v1"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
 
 // CRDInstaller defines the specification for the controller
 type CRDInstaller struct {
-	config       *protoform.Config
-	kubeConfig   *rest.Config
-	kubeClient   *kubernetes.Clientset
-	defaults     interface{}
-	resyncPeriod time.Duration
-	indexers     cache.Indexers
-	infomer      cache.SharedIndexInformer
-	queue        workqueue.RateLimitingInterface
-	handler      *Handler
-	controller   *Controller
-	alertClient  *alertclientset.Clientset
-	threadiness  int
-	stopCh       <-chan struct{}
+	protformDeployer *protoform.Deployer
+	defaults         interface{}
+	indexers         cache.Indexers
+	infomer          cache.SharedIndexInformer
+	queue            workqueue.RateLimitingInterface
+	handler          *Handler
+	controller       *Controller
+	alertClient      *alertclientset.Clientset
+	stopCh           <-chan struct{}
 }
 
 // NewCRDInstaller will create a installer configuration
-func NewCRDInstaller(config *protoform.Config, kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
-	crdInstaller := &CRDInstaller{config: config, kubeConfig: kubeConfig, kubeClient: kubeClient, defaults: defaults, threadiness: config.Threadiness, stopCh: stopCh}
-	crdInstaller.resyncPeriod = time.Duration(config.ResyncIntervalInSeconds) * time.Second
+func NewCRDInstaller(protoformDeployer *protoform.Deployer, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
+	crdInstaller := &CRDInstaller{protformDeployer: protoformDeployer, defaults: defaults, stopCh: stopCh}
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
 }
 
 // CreateClientSet will create the CRD client
 func (c *CRDInstaller) CreateClientSet() error {
-	alertClient, err := alertclientset.NewForConfig(c.kubeConfig)
+	alertClient, err := alertclientset.NewForConfig(c.protformDeployer.KubeConfig)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -83,10 +75,11 @@ func (c *CRDInstaller) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *CRDInstaller) CreateInformer() {
+	resyncPeriod := time.Duration(c.protformDeployer.Config.ResyncIntervalInSeconds) * time.Second
 	c.infomer = alertinformerv1.NewAlertInformer(
 		c.alertClient,
-		c.config.Namespace,
-		c.resyncPeriod,
+		c.protformDeployer.Config.Namespace,
+		resyncPeriod,
 		c.indexers,
 	)
 }
@@ -138,14 +131,9 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
 	c.handler = &Handler{
-		config:      c.config,
-		kubeConfig:  c.kubeConfig,
-		kubeClient:  c.kubeClient,
-		alertClient: c.alertClient,
-		defaults:    c.defaults.(*alertapi.AlertSpec),
-	}
-	if util.IsOpenshift(c.kubeClient) {
-		c.handler.routeClient = util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
+		protoformDeployer: c.protformDeployer,
+		alertClient:       c.alertClient,
+		defaults:          c.defaults.(*alertapi.AlertSpec),
 	}
 }
 
@@ -156,7 +144,7 @@ func (c *CRDInstaller) CreateController() {
 
 // Run will run the CRD controller
 func (c *CRDInstaller) Run() {
-	go c.controller.Run(c.config.Threadiness, c.stopCh)
+	go c.controller.Run(c.protformDeployer.Config.Threadiness, c.stopCh)
 }
 
 // PostRun will run post CRD controller execution

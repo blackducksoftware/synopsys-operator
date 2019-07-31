@@ -26,17 +26,13 @@ import (
 	"sort"
 	"strings"
 
-	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	latestalert "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // Constants for each unit of a deployment of Alert
@@ -47,43 +43,20 @@ const (
 
 // Alert is used to handle Alerts in the cluster
 type Alert struct {
-	config      *protoform.Config
-	kubeConfig  *rest.Config
-	kubeClient  *kubernetes.Clientset
-	alertClient *alertclientset.Clientset
-	routeClient *routeclient.RouteV1Client
-	creaters    []Creater
+	protoformDeployer *protoform.Deployer
+	creaters          []Creater
 }
 
 // NewAlert will return an Alert type
-func NewAlert(config *protoform.Config, kubeConfig *rest.Config) *Alert {
-	// Initialiase the clienset
-	kubeclient, err := kubernetes.NewForConfig(kubeConfig)
-	if err != nil {
-		return nil
-	}
-	// Initialize the Alert client
-	alertClient, err := alertclientset.NewForConfig(kubeConfig)
-	if err != nil {
-		return nil
-	}
-	// Initialize the Route Client for Openshift routes
-	routeClient, err := routeclient.NewForConfig(kubeConfig)
-	if err != nil {
-		routeClient = nil
-	}
-	// Initialize creaters for different versions of Alert (each Creater can support differernt versions)
+func NewAlert(protoformDeployer *protoform.Deployer) *Alert {
+	// Initialize creaters for different versions of Alert (each Creater can support different versions)
 	creaters := []Creater{
-		latestalert.NewCreater(config, kubeConfig, kubeclient, alertClient, routeClient),
+		latestalert.NewCreater(protoformDeployer),
 	}
 
 	return &Alert{
-		config:      config,
-		kubeConfig:  kubeConfig,
-		kubeClient:  kubeclient,
-		alertClient: alertClient,
-		routeClient: routeClient,
-		creaters:    creaters,
+		protoformDeployer: protoformDeployer,
+		creaters:          creaters,
 	}
 }
 
@@ -155,7 +128,7 @@ func (a *Alert) Delete(name string) error {
 	} else if len(values) == 1 {
 		name = values[0]
 		namespace = values[0]
-		ns, err := util.ListNamespaces(a.kubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.AlertName, name))
+		ns, err := util.ListNamespaces(a.protoformDeployer.KubeClient, fmt.Sprintf("synopsys.com/%s.%s", util.AlertName, name))
 		if err != nil {
 			log.Errorf("unable to list %s Alert instance namespaces %s due to %+v", name, namespace, err)
 		}
@@ -170,7 +143,7 @@ func (a *Alert) Delete(name string) error {
 	}
 
 	// delete an Alert instance
-	commonConfig := crdupdater.NewCRUDComponents(a.kubeConfig, a.kubeClient, a.config.DryRun, false, namespace, "",
+	commonConfig := crdupdater.NewCRUDComponents(a.protoformDeployer.KubeConfig, a.protoformDeployer.KubeClient, a.protoformDeployer.Config.DryRun, false, namespace, "",
 		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.AlertName, name), false)
 	_, crudErrors := commonConfig.CRUDComponents()
 	if len(crudErrors) > 0 {
@@ -179,11 +152,11 @@ func (a *Alert) Delete(name string) error {
 
 	var err error
 	// if cluster scope, if no other instance running in Synopsys Operator namespace, delete the namespace or delete the Synopsys labels in the namespace
-	if a.config.IsClusterScoped {
-		err = util.DeleteResourceNamespace(a.kubeClient, util.AlertName, namespace, name, false)
+	if a.protoformDeployer.Config.IsClusterScoped {
+		err = util.DeleteResourceNamespace(a.protoformDeployer.KubeClient, util.AlertName, namespace, name, false)
 	} else {
 		// if namespace scope, delete the label from the namespace
-		_, err = util.CheckAndUpdateNamespace(a.kubeClient, util.AlertName, namespace, name, "", true)
+		_, err = util.CheckAndUpdateNamespace(a.protoformDeployer.KubeClient, util.AlertName, namespace, name, "", true)
 	}
 	if err != nil {
 		return err
