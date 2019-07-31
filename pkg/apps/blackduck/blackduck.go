@@ -2139,32 +2139,80 @@ func (b Blackduck) isBinaryAnalysisEnabled(bdspec *blackduckapi.BlackduckSpec) b
 	return false
 }
 
-func (b Blackduck) createPVC(name string, requestedSize string, defaultSize string, storageclass string, accessMode horizonapi.PVCAccessModeType, label map[string]string, blackduck *blackduckapi.Blackduck) *components.PersistentVolumeClaim {
+func GenPVC(blackDuck blackduckapi.Blackduck, defaultPVC map[string]string) ([]*components.PersistentVolumeClaim, error) {
+	var pvcs []*components.PersistentVolumeClaim
+	if blackDuck.Spec.PersistentStorage {
+		pvcMap := make(map[string]blackduckapi.PVC)
+		for _, claim := range blackDuck.Spec.PVC {
+			pvcMap[claim.Name] = claim
+		}
+
+		for name, size := range defaultPVC {
+			var claim blackduckapi.PVC
+
+			if _, ok := pvcMap[name]; ok {
+				claim = pvcMap[name]
+			} else {
+				claim = blackduckapi.PVC{
+					Name:         name,
+					Size:         size,
+					StorageClass: blackDuck.Spec.PVCStorageClass,
+				}
+			}
+
+			// Set the claim name to be app specific if the PVC was not created by an operator version prior to
+			// 2019.6.0
+			if blackDuck.Annotations["synopsys.com/created.by"] != "pre-2019.6.0" {
+				claim.Name = apputils.GetResourceName(blackDuck.Name, "", name)
+			}
+
+			pvc, err := createPVC(claim, horizonapi.ReadWriteOnce, apputils.GetLabel("pvc", blackDuck.Name), blackDuck.Spec.Namespace)
+			if err != nil {
+				return nil, err
+			}
+			pvcs = append(pvcs, pvc)
+		}
+	}
+	return pvcs, nil
+}
+
+func createPVC(claim blackduckapi.PVC, accessMode horizonapi.PVCAccessModeType, label map[string]string, namespace string) (*components.PersistentVolumeClaim, error) {
 	// Workaround so that storageClass does not get set to "", which prevent Kube from using the default storageClass
 	var class *string
-	if len(storageclass) > 0 {
-		class = &storageclass
+	if len(claim.StorageClass) > 0 {
+		class = &claim.StorageClass
 	} else {
 		class = nil
 	}
 
 	var size string
-	_, err := resource.ParseQuantity(requestedSize)
+	_, err := resource.ParseQuantity(claim.Size)
 	if err != nil {
-		size = defaultSize
-	} else {
-		size = requestedSize
+		return nil, err
 	}
+	size = claim.Size
 
-	pvc, _ := components.NewPersistentVolumeClaim(horizonapi.PVCConfig{
-		Name:      name,
-		Namespace: blackduck.Spec.Namespace,
+	config := horizonapi.PVCConfig{
+		Name:      claim.Name,
+		Namespace: namespace,
 		Size:      size,
 		Class:     class,
-	})
+	}
+
+	if len(claim.VolumeName) > 0 {
+		// Needed so that it doesn't use the default storage class
+		var tmp = ""
+		config.Class = &tmp
+		config.VolumeName = claim.VolumeName
+	}
+
+	pvc, err := components.NewPersistentVolumeClaim(config)
+	if err != nil {
+		return nil, err
+	}
 
 	pvc.AddAccessMode(accessMode)
 	pvc.AddLabels(label)
 
-	return pvc
+	return pvc, nil
 }
