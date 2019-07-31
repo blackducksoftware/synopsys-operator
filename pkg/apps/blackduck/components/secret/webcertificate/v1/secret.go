@@ -16,7 +16,6 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	apputils "github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
@@ -162,5 +161,5 @@ func NewBdRSecret(config *protoform.Config, kubeClient *kubernetes.Clientset, cr
 }
 
 func init() {
-	store.Register(blackduck.BlackDuckWebCertificateSecretV1, NewBdRSecret)
+	store.Register(types.BlackDuckWebCertificateSecretV1, NewBdRSecret)
 }

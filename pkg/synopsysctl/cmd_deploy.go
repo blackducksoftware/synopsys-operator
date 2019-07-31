@@ -24,11 +24,12 @@ package synopsysctl
 import (
 	"crypto/x509/pkix"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/size"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
+	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
@@ -123,6 +124,18 @@ func getCrdConfigs(namespace string, isClusterScoped bool, crds []string) ([]*ho
 		}
 
 		switch crd {
+		case util.SizeCRDName:
+			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
+				APIVersion: "apiextensions.k8s.io/v1beta1",
+				Name:       util.SizeCRDName,
+				Namespace:  namespace,
+				Group:      "synopsys.com",
+				CRDVersion: "v1",
+				Kind:       "Size",
+				Plural:     "sizes",
+				Singular:   "size",
+				Scope:      crdScope,
+			})
 		case util.BlackDuckCRDName:
 			crdConfig = horizoncomponents.NewCustomResourceDefintion(horizonapi.CRDConfig{
 				APIVersion: "apiextensions.k8s.io/v1beta1",
@@ -272,12 +285,16 @@ var deployCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		// Add Size CRD
+		crds = append(crds, util.SizeCRDName)
+
 		// Get CRD configs
 		crdConfigs, err := getCrdConfigs(operatorNamespace, isClusterScoped, crds)
 		if err != nil {
 			return err
 		}
-		if len(crdConfigs) == 0 {
+		if len(crdConfigs) <= 1 {
 			return fmt.Errorf("no resources are enabled (include flag(s): --enable-alert --enable-blackduck --enable-opssight )")
 		}
 		// Create Synopsys Operator Spec
@@ -312,6 +329,15 @@ var deployCmd = &cobra.Command{
 		err = deployCrds(operatorNamespace, isClusterScoped, crdConfigs)
 		if err != nil {
 			return err
+		}
+
+		// Create default sizes
+		defaultsSizes := []string{"small", "medium", "large"}
+		for _, v := range defaultsSizes {
+			_, err = sizeClient.SynopsysV1().Sizes(operatorNamespace).Create(size.GetDefaultSize(v))
+			if err != nil {
+				return err
+			}
 		}
 
 		log.Debugf("creating Synopsys Operator components")

@@ -2,11 +2,9 @@ package v1
 
 import (
 	"fmt"
-
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/rc/utils"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
@@ -25,25 +23,27 @@ type BdReplicationController struct {
 }
 
 func init() {
-	store.Register(blackduck.BlackDuckAuthenticationRCV1, NewBdReplicationController)
+	store.Register(types.BlackDuckAuthenticationRCV1, NewBdReplicationController)
 }
 
 // GetRc returns the RC
 func (c *BdReplicationController) GetRc() (*components.ReplicationController, error) {
-	containerConfig, ok := c.Containers[blackduck.AuthenticationContainerName]
+	containerConfig, ok := c.Containers[types.AuthenticationContainerName]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find container %s", blackduck.AuthenticationContainerName)
+		return nil, fmt.Errorf("couldn't find container %s", types.AuthenticationContainerName)
 	}
 
-	if containerConfig.MaxMem == nil {
-		return nil, fmt.Errorf("Maxmem must be set for %s", blackduck.AuthenticationContainerName)
+	// hubMaxMemory is the amount of memory allocated to the JVM. We keep 512mb for alpine
+	hubMaxMemory := 512
+	if containerConfig.MaxMem != nil && *containerConfig.MaxMem > 512 {
+		hubMaxMemory = int(*containerConfig.MaxMem - 512)
 	}
 
 	volumeMounts := c.getAuthenticationVolumeMounts()
 	var authEnvs []*horizonapi.EnvConfig
 	authEnvs = append(authEnvs, utils.GetBlackDuckDBConfigEnv(c.blackDuck.Name))
 	authEnvs = append(authEnvs, utils.GetBlackDuckConfigEnv(c.blackDuck.Name))
-	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dM", *containerConfig.MaxMem-512)})
+	authEnvs = append(authEnvs, &horizonapi.EnvConfig{Type: horizonapi.EnvVal, NameOrPrefix: "HUB_MAX_MEMORY", KeyOrVal: fmt.Sprintf("%dm", hubMaxMemory)})
 	hubAuthContainerConfig := &util.Container{
 		ContainerConfig: &horizonapi.ContainerConfig{Name: "authentication", Image: containerConfig.Image, PullPolicy: horizonapi.PullAlways},
 		EnvConfigs:      authEnvs,

@@ -30,6 +30,7 @@ import (
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
+	sizeclientset "github.com/blackducksoftware/synopsys-operator/pkg/size/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -46,6 +47,7 @@ var apiExtensionClient *apiextensionsclient.Clientset
 var alertClient *alertclientset.Clientset
 var blackDuckClient *blackduckclientset.Clientset
 var opsSightClient *opssightclientset.Clientset
+var sizeClient *sizeclientset.Clientset
 
 func parseLogLevelAndKubeConfig(cmd *cobra.Command) error {
 	// Set the Log Level
@@ -99,6 +101,10 @@ func setResourceClients() error {
 	opsSightClient, err = opssightclientset.NewForConfig(restconfig)
 	if err != nil {
 		log.Errorf("error creating OpsSight Clientset: %s", err)
+	}
+	sizeClient, err = sizeclientset.NewForConfig(restconfig)
+	if err != nil {
+		log.Errorf("error creating Size Clientset: %s", err)
 	}
 	return nil
 }
