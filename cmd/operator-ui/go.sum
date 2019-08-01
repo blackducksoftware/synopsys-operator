@@ -55,6 +55,8 @@ github.com/blackducksoftware/horizon v0.0.0-20190603173136-e141457f7a80 h1:GHryH
 github.com/blackducksoftware/horizon v0.0.0-20190603173136-e141457f7a80/go.mod h1:zprIpuTlP5utWbWF58V+/SOx9kbWm8PbXLUBwUvPh+0=
 github.com/blackducksoftware/synopsys-operator v0.0.0-20190730143019-d8595d228a98 h1:ecRvI3vtsWO0Ab1Ee2BbgERKYf/Qsl69UF35oM/cr/M=
 github.com/blackducksoftware/synopsys-operator v0.0.0-20190730143019-d8595d228a98/go.mod h1:HBg590fDyTctTrdp8Q2kUmLYyOsC4soXB+yRCI/ZubM=
+github.com/blackducksoftware/synopsys-operator v0.0.0-20190731195248-6da43fec939c h1:GkkV9IYKTJWu08sZ6qe4sgPbpNgmOegvxGx21LL5DTQ=
+github.com/blackducksoftware/synopsys-operator v0.0.0-20190731195248-6da43fec939c/go.mod h1:HBg590fDyTctTrdp8Q2kUmLYyOsC4soXB+yRCI/ZubM=
 github.com/blang/semver v3.5.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
