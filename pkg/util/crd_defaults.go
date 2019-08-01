@@ -24,6 +24,7 @@ package util
 import (
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	//samplev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
 )
@@ -82,7 +83,7 @@ func GetBlackDuckDefaultPersistentStorageLatest() *blackduckv1.BlackduckSpec {
 		ExposeService:     NONE,
 		Environs:          []string{},
 		ImageRegistries:   []string{},
-		PVC:               []blackduckv1.PVC{},
+		PVC:               []corev1.PVC{},
 	}
 }
 
@@ -94,7 +95,7 @@ func GetBlackDuckDefaultExternalPersistentStorageLatest() *blackduckv1.Blackduck
 		Size:              "small",
 		LivenessProbes:    false,
 		PersistentStorage: true,
-		PVC:               []blackduckv1.PVC{},
+		PVC:               []corev1.PVC{},
 		CertificateName:   "default",
 		Type:              "Artifacts",
 		ExposeService:     NONE,
@@ -111,7 +112,7 @@ func GetBlackDuckDefaultPersistentStorageV1() *blackduckv1.BlackduckSpec {
 		Size:              "small",
 		LivenessProbes:    false,
 		PersistentStorage: true,
-		PVC:               []blackduckv1.PVC{},
+		PVC:               []corev1.PVC{},
 		CertificateName:   "default",
 		Type:              "Artifacts",
 		ExposeService:     NONE,
@@ -128,7 +129,7 @@ func GetBlackDuckDefaultExternalPersistentStorageV1() *blackduckv1.BlackduckSpec
 		Size:              "small",
 		LivenessProbes:    false,
 		PersistentStorage: true,
-		PVC:               []blackduckv1.PVC{},
+		PVC:               []corev1.PVC{},
 		Type:              "Artifacts",
 		ExposeService:     NONE,
 	}

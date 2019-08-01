@@ -24,22 +24,22 @@ package store
 import (
 	"errors"
 	"fmt"
-	sizev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/size/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/size"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"reflect"
 	"strings"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	sizev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/size/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-
+	"github.com/blackducksoftware/synopsys-operator/pkg/size"
 	sizeclientset "github.com/blackducksoftware/synopsys-operator/pkg/size/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+
+	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 // Components contains the list of components to be added/updated
@@ -92,17 +92,17 @@ type customResource struct {
 	namespace             string
 	size                  string
 	imageRegistries       []string
-	registryConfiguration *api.RegistryConfiguration
+	registryConfiguration *corev1.RegistryConfiguration
 }
 
 // GetComponents get the components and generate the corresponding horizon object
-func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, sizeClient *sizeclientset.Clientset, cr interface{}) (api.ComponentList, error) {
-	var cp api.ComponentList
+func GetComponents(v types.PublicVersion, config *protoform.Config, kubeclient *kubernetes.Clientset, sizeClient *sizeclientset.Clientset, cr interface{}) (util.ComponentList, error) {
+	var cp util.ComponentList
 
 	// get the custom resource info
 	customResource, err := getCR(cr)
 	if err != nil {
-		return api.ComponentList{}, fmt.Errorf("unable to get the components because %+v", err)
+		return util.ComponentList{}, fmt.Errorf("unable to get the components because %+v", err)
 	}
 
 	// Rc
@@ -161,7 +161,7 @@ func getCR(cr interface{}) (*customResource, error) {
 		return nil, fmt.Errorf("image registries can't be retrieved from the custom resource because of type mismatch. expected: []string, actual: %+v", reflect.TypeOf(imageRegistries))
 	}
 
-	registryConfiguration, ok := spec.FieldByName("RegistryConfiguration").Interface().(api.RegistryConfiguration)
+	registryConfiguration, ok := spec.FieldByName("RegistryConfiguration").Interface().(corev1.RegistryConfiguration)
 	if !ok {
 		return nil, fmt.Errorf("registry configuration can't be retrieved from the custom resource because of type mismatch. expected: api.RegistryConfiguration, actual: %+v", reflect.TypeOf(registryConfiguration))
 	}
@@ -317,7 +317,7 @@ func generatePVCs(v types.PublicVersion, config *protoform.Config, kubeclient *k
 	return pvcs, nil
 }
 
-func generateImageTag(defaultImage string, imageRegistries []string, registryConfig *api.RegistryConfiguration) string {
+func generateImageTag(defaultImage string, imageRegistries []string, registryConfig *corev1.RegistryConfiguration) string {
 	if len(imageRegistries) > 0 {
 		imageName, err := util.GetImageName(defaultImage)
 		if err != nil {
@@ -332,7 +332,7 @@ func generateImageTag(defaultImage string, imageRegistries []string, registryCon
 	return defaultImage
 }
 
-func getRegistryConfiguration(image string, registryConfig *api.RegistryConfiguration) string {
+func getRegistryConfiguration(image string, registryConfig *corev1.RegistryConfiguration) string {
 	if len(registryConfig.Registry) > 0 && len(registryConfig.Namespace) > 0 {
 		imageName, err := util.GetImageName(image)
 		if err != nil {

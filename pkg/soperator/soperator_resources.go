@@ -27,11 +27,12 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
 	log "github.com/sirupsen/logrus"
+
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // getOperatorDeployment creates a deployment for Synopsys Operaotor
@@ -529,9 +530,9 @@ func (specConfig *SpecConfig) getOperatorSecret() *horizoncomponents.Secret {
 }
 
 // getOpenShiftRoute creates the OpenShift route component for Synopsys Operator
-func (specConfig *SpecConfig) getOpenShiftRoute() *api.Route {
+func (specConfig *SpecConfig) getOpenShiftRoute() *corev1.Route {
 	if strings.ToUpper(specConfig.Expose) == util.OPENSHIFT {
-		return &api.Route{
+		return &corev1.Route{
 			Name:               "synopsys-operator-ui",
 			Namespace:          specConfig.Namespace,
 			Kind:               "Service",

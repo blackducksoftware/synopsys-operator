@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	v1Configmap "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/components/configmap/global/v1"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
@@ -135,7 +136,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 
 	// PVCs
 	if len(bd.Spec.PVC) == 0 {
-		bd.Spec.PVC = []blackduckapi.PVC{
+		bd.Spec.PVC = []corev1.PVC{
 			{
 				Name: "blackduck-postgres",
 				Size: "150Gi",

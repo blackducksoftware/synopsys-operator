@@ -25,7 +25,6 @@ import (
 	"fmt"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -39,7 +38,7 @@ type CommonConfig struct {
 	isPatched                 bool
 	namespace                 string
 	version                   string
-	components                *api.ComponentList
+	components                *util.ComponentList
 	labelSelector             string
 	expectedLabels            map[string]label
 	controllers               map[string]horizonapi.DeployerControllerInterface
@@ -49,7 +48,7 @@ type CommonConfig struct {
 
 // NewCRUDComponents returns the common configuration which will be used to add, patch or remove the components
 func NewCRUDComponents(kubeConfig *rest.Config, kubeClient *kubernetes.Clientset, dryRun bool, isPatched bool, namespace string,
-	version string, components *api.ComponentList, labelSelector string, isClusterLevelPermEnabled bool) *CommonConfig {
+	version string, components *util.ComponentList, labelSelector string, isClusterLevelPermEnabled bool) *CommonConfig {
 	return &CommonConfig{
 		kubeConfig:                kubeConfig,
 		kubeClient:                kubeClient,

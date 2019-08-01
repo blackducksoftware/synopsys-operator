@@ -31,10 +31,8 @@ import (
 	"strings"
 	"time"
 
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
-	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/database"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
@@ -49,7 +47,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -1750,7 +1747,7 @@ func (b *Blackduck) Delete(name string) error {
 
 	// delete the Black Duck instance
 	commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, namespace, "",
-		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, name), false)
+		&util.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, name), false)
 	_, crudErrors := commonConfig.CRUDComponents()
 	if len(crudErrors) > 0 {
 		return fmt.Errorf("unable to delete the %s Black Duck instance in %s namespace due to %+v", name, namespace, crudErrors)
@@ -1802,7 +1799,7 @@ func (b *Blackduck) Ensure(blackduck *blackduckapi.Blackduck) error {
 	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
+			&util.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("stop blackduck: %+v", errors)
@@ -1810,7 +1807,7 @@ func (b *Blackduck) Ensure(blackduck *blackduckapi.Blackduck) error {
 	} else if strings.EqualFold(blackduck.Spec.DesiredState, "DbMigrate") {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
+			&util.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("migrate blackduck: %+v", errors)
@@ -1825,7 +1822,7 @@ func (b *Blackduck) Ensure(blackduck *blackduckapi.Blackduck) error {
 	} else {
 		// Save/Update the PVCs for the Black Duck
 		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
+			&util.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update pvc: %+v", errors)
@@ -1871,7 +1868,7 @@ func (b *Blackduck) Ensure(blackduck *blackduckapi.Blackduck) error {
 
 		// add routes to component list
 		if util.OPENSHIFT == strings.ToUpper(blackduck.Spec.ExposeService) {
-			cp.Routes = []*api.Route{{
+			cp.Routes = []*corev1.Route{{
 				Name:               apputils.GetResourceName(blackduck.Name, util.BlackDuckName, ""),
 				Namespace:          blackduck.Spec.Namespace,
 				Kind:               "Service",
@@ -1935,7 +1932,7 @@ func (b *Blackduck) Ensure(blackduck *blackduckapi.Blackduck) error {
 }
 
 // GetComponents gets the Black Duck's creater and returns the components
-func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*api.ComponentList, error) {
+func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*util.ComponentList, error) {
 	//If the version is not specified then we set it to be the latest.
 	if err := b.ensureVersion(bd); err != nil {
 		return nil, err
@@ -2126,82 +2123,4 @@ func (b Blackduck) isBinaryAnalysisEnabled(bdspec *blackduckapi.BlackduckSpec) b
 		}
 	}
 	return false
-}
-
-func GenPVC(blackDuck blackduckapi.Blackduck, defaultPVC map[string]string) ([]*components.PersistentVolumeClaim, error) {
-	var pvcs []*components.PersistentVolumeClaim
-	if blackDuck.Spec.PersistentStorage {
-		pvcMap := make(map[string]blackduckapi.PVC)
-		for _, claim := range blackDuck.Spec.PVC {
-			pvcMap[claim.Name] = claim
-		}
-
-		for name, size := range defaultPVC {
-			var claim blackduckapi.PVC
-
-			if _, ok := pvcMap[name]; ok {
-				claim = pvcMap[name]
-			} else {
-				claim = blackduckapi.PVC{
-					Name:         name,
-					Size:         size,
-					StorageClass: blackDuck.Spec.PVCStorageClass,
-				}
-			}
-
-			// Set the claim name to be app specific if the PVC was not created by an operator version prior to
-			// 2019.6.0
-			if blackDuck.Annotations["synopsys.com/created.by"] != "pre-2019.6.0" {
-				claim.Name = apputils.GetResourceName(blackDuck.Name, "", name)
-			}
-
-			pvc, err := createPVC(claim, horizonapi.ReadWriteOnce, apputils.GetLabel("pvc", blackDuck.Name), blackDuck.Spec.Namespace)
-			if err != nil {
-				return nil, err
-			}
-			pvcs = append(pvcs, pvc)
-		}
-	}
-	return pvcs, nil
-}
-
-func createPVC(claim blackduckapi.PVC, accessMode horizonapi.PVCAccessModeType, label map[string]string, namespace string) (*components.PersistentVolumeClaim, error) {
-	// Workaround so that storageClass does not get set to "", which prevent Kube from using the default storageClass
-	var class *string
-	if len(claim.StorageClass) > 0 {
-		class = &claim.StorageClass
-	} else {
-		class = nil
-	}
-
-	var size string
-	_, err := resource.ParseQuantity(claim.Size)
-	if err != nil {
-		return nil, err
-	}
-	size = claim.Size
-
-	config := horizonapi.PVCConfig{
-		Name:      claim.Name,
-		Namespace: namespace,
-		Size:      size,
-		Class:     class,
-	}
-
-	if len(claim.VolumeName) > 0 {
-		// Needed so that it doesn't use the default storage class
-		var tmp = ""
-		config.Class = &tmp
-		config.VolumeName = claim.VolumeName
-	}
-
-	pvc, err := components.NewPersistentVolumeClaim(config)
-	if err != nil {
-		return nil, err
-	}
-
-	pvc.AddAccessMode(accessMode)
-	pvc.AddLabels(label)
-
-	return pvc, nil
 }

@@ -23,12 +23,14 @@ package opssight
 
 import (
 	"fmt"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // PerceptorSkyfireReplicationController creates a replication controller for perceptor skyfire

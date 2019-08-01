@@ -21,9 +21,10 @@ package externalversions
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
+
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	cache "k8s.io/client-go/tools/cache"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other

@@ -23,8 +23,9 @@ package alert
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // Creater interface for Alert
@@ -33,6 +34,6 @@ import (
 type Creater interface {
 	Versions() []string
 	Ensure(alert *alertapi.Alert) error
-	GetComponents(alert *alertapi.Alert) (*api.ComponentList, error)
+	GetComponents(alert *alertapi.Alert) (*util.ComponentList, error)
 	GetPVC(alert *alertapi.Alert) ([]*components.PersistentVolumeClaim, error)
 }

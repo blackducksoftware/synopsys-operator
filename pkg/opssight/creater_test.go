@@ -27,11 +27,11 @@ import (
 	"testing"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/google/go-cmp/cmp"
+
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"github.com/google/go-cmp/cmp"
 )
 
 // TestUpstreamPerceptor will test the upstream deployment
@@ -277,7 +277,7 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 	}
 }
 
-func prettyPrintObj(components *api.ComponentList) {
+func prettyPrintObj(components *util.ComponentList) {
 	for _, cb := range components.ClusterRoleBindings {
 		util.PrettyPrint(cb.ClusterRoleBinding)
 	}

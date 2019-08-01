@@ -23,49 +23,56 @@ package v1
 
 import (
 	"fmt"
+
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"k8s.io/client-go/kubernetes"
+
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/store"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/types"
+	commoncomponents "github.com/blackducksoftware/synopsys-operator/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
-	"k8s.io/client-go/kubernetes"
 )
 
-// BdPVC holds the Black Duck PVC configuration
-type BdPVC struct {
-	config     *protoform.Config
-	kubeClient *kubernetes.Clientset
-	blackDuck  *blackduckapi.Blackduck
+// BlackDuckPVCV1 describes the V1 deployments of PVCs for Black Duck
+type BlackDuckPVCV1 struct {
+	commoncomponents.PVC
+	blackDuck *blackduckapi.Blackduck
 }
 
-// NewPvc returns the Black Duck PVC configuration
+// NewPvc returns the Black Duck PVCV1 configuration
 func NewPvc(config *protoform.Config, kubeClient *kubernetes.Clientset, cr interface{}) (types.PVCInterface, error) {
 	blackDuck, ok := cr.(*blackduckapi.Blackduck)
 	if !ok {
 		return nil, fmt.Errorf("unable to cast the interface to Black Duck object")
 	}
-	return &BdPVC{config: config, kubeClient: kubeClient, blackDuck: blackDuck}, nil
+	pvc := commoncomponents.NewPVC(config, kubeClient)
+	return &BlackDuckPVCV1{pvc, blackDuck}, nil
 }
 
-// GetPVCs returns the PVC
-func (b BdPVC) GetPVCs() ([]*components.PersistentVolumeClaim, error) {
-	defaultPVC := map[string]string{
-		"blackduck-authentication":   "2Gi",
-		"blackduck-cfssl":            "2Gi",
-		"blackduck-registration":     "2Gi",
-		"blackduck-solr":             "2Gi",
-		"blackduck-webapp":           "2Gi",
-		"blackduck-logstash":         "20Gi",
-		"blackduck-zookeeper":        "4Gi",
-		"blackduck-uploadcache-data": "100Gi",
-	}
+// GetPVCs returns the PVC definitions
+func (b BlackDuckPVCV1) GetPVCs() ([]*components.PersistentVolumeClaim, error) {
+	spec := b.blackDuck.Spec
 
-	if b.blackDuck.Spec.ExternalPostgres == nil {
-		defaultPVC["blackduck-postgres"] = "150Gi"
-	}
+	if spec.PersistentStorage {
+		defaultPVC := map[string]string{
+			"blackduck-authentication":   "2Gi",
+			"blackduck-cfssl":            "2Gi",
+			"blackduck-registration":     "2Gi",
+			"blackduck-solr":             "2Gi",
+			"blackduck-webapp":           "2Gi",
+			"blackduck-logstash":         "20Gi",
+			"blackduck-zookeeper":        "4Gi",
+			"blackduck-uploadcache-data": "100Gi",
+		}
 
-	return blackduck.GenPVC(*b.blackDuck, defaultPVC)
+		if b.blackDuck.Spec.ExternalPostgres == nil {
+			defaultPVC["blackduck-postgres"] = "150Gi"
+		}
+
+		return b.Generate(defaultPVC, spec.PVC, spec.PVCStorageClass, b.blackDuck.Name, spec.Namespace, b.blackDuck.Annotations["synopsys.com/created.by"])
+	}
+	return []*components.PersistentVolumeClaim{}, nil
 }
 
 func init() {

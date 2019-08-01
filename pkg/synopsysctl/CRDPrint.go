@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -41,6 +41,7 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // PrintFormat represents the format to print the struct
@@ -82,7 +83,7 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 		return err
 	}
 
-	var cList *api.ComponentList
+	var cList *util.ComponentList
 
 	switch reflect.TypeOf(crd) {
 	case reflect.TypeOf(soperator.SpecConfig{}):
@@ -125,7 +126,7 @@ func PrintResource(crd interface{}, format string, printKubeComponents bool) err
 }
 
 // PrintComponentListKube does
-func PrintComponentListKube(cList *api.ComponentList, format string) error {
+func PrintComponentListKube(cList *util.ComponentList, format string) error {
 	kubeInterfaces := cList.GetKubeInterfaces()
 	return PrintComponents(kubeInterfaces, format)
 }

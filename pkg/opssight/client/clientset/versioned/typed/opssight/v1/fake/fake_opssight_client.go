@@ -19,9 +19,10 @@ limitations under the License.
 package fake
 
 import (
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/testing"
+
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/typed/opssight/v1"
-	rest "k8s.io/client-go/rest"
-	testing "k8s.io/client-go/testing"
 )
 
 type FakeSynopsysV1 struct {

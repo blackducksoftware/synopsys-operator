@@ -24,19 +24,20 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	"github.com/juju/errors"
+	"k8s.io/client-go/kubernetes"
+
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"github.com/juju/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 // SpecConfig will contain the specification of OpsSight
@@ -115,8 +116,8 @@ func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
 }
 
 // GetComponents will return the list of components
-func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
-	components := &api.ComponentList{}
+func (p *SpecConfig) GetComponents() (*util.ComponentList, error) {
+	components := &util.ComponentList{}
 	name := p.opssight.Name
 	// Add config map
 	cm, err := p.configMap.horizonConfigMap(utils.GetResourceName(name, util.OpsSightName, p.opssight.Spec.ConfigMapName), p.opssight.Spec.Namespace, fmt.Sprintf("%s.json", p.opssight.Spec.ConfigMapName))

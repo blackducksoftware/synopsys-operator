@@ -27,10 +27,11 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
+
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // GetPrometheusService creates a Horizon Service component for Prometheus
@@ -195,9 +196,9 @@ func (specConfig *PrometheusSpecConfig) GetPrometheusConfigMap() (*horizoncompon
 }
 
 // GetOpenShiftRoute creates the OpenShift route component for the prometheus
-func (specConfig *PrometheusSpecConfig) GetOpenShiftRoute() *api.Route {
+func (specConfig *PrometheusSpecConfig) GetOpenShiftRoute() *corev1.Route {
 	if strings.ToUpper(specConfig.Expose) == util.OPENSHIFT {
-		return &api.Route{
+		return &corev1.Route{
 			Name:               "synopsys-operator-prometheus",
 			Namespace:          specConfig.Namespace,
 			Kind:               "Service",

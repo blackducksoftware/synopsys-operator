@@ -19,14 +19,15 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/typed/opssight/v1"
-	fakesynopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/typed/opssight/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
+
+	clientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/typed/opssight/v1"
+	fakesynopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned/typed/opssight/v1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

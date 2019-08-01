@@ -31,13 +31,13 @@ import (
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
-	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
+	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
-	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
-	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
+	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	"github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"

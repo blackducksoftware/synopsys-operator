@@ -23,15 +23,16 @@ package blackduck
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // Creater interface
 type Creater interface {
 	Ensure(blackDuck *blackduckapi.Blackduck) error
 	Versions() []string
-	GetComponents(blackDuck *blackduckapi.Blackduck) (*api.ComponentList, error)
-	GetPostgresComponents(blackDuck *blackduckapi.Blackduck) (*api.ComponentList, error)
+	GetComponents(blackDuck *blackduckapi.Blackduck) (*util.ComponentList, error)
+	GetPostgresComponents(blackDuck *blackduckapi.Blackduck) (*util.ComponentList, error)
 	GetPVC(blackduck *blackduckapi.Blackduck) []*components.PersistentVolumeClaim
 }

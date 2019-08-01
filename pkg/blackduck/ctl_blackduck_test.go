@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -406,7 +407,7 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				blackDuckSpec: &blackduckapi.BlackduckSpec{},
 				PVCFilePath:   "../../examples/synopsysctl/pvc.json",
 			},
-			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "name1", Size: "size1", StorageClass: "storageclass1"}, {Name: "name2", Size: "size2", StorageClass: "storageclass2"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []corev1.PVC{{Name: "name1", Size: "size1", StorageClass: "storageclass1"}, {Name: "name2", Size: "size2", StorageClass: "storageclass2"}}},
 		},
 		// case
 		{
@@ -436,27 +437,27 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				blackDuckSpec:     &blackduckapi.BlackduckSpec{},
 				PostgresClaimSize: "changed",
 			},
-			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []corev1.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
 		},
 		// case: append postgres-claim with size if PVC doesn't exist
 		{
 			flagName:   "postgres-claim-size",
 			initialCtl: NewCRSpecBuilderFromCobraFlags(),
 			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:     &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "other-pvc", Size: "other-size"}}},
+				blackDuckSpec:     &blackduckapi.BlackduckSpec{PVC: []corev1.PVC{{Name: "other-pvc", Size: "other-size"}}},
 				PostgresClaimSize: "changed",
 			},
-			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "other-pvc", Size: "other-size"}, {Name: "blackduck-postgres", Size: "changed"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []corev1.PVC{{Name: "other-pvc", Size: "other-size"}, {Name: "blackduck-postgres", Size: "changed"}}},
 		},
 		// case: update postgres-claim with size if PVC exists
 		{
 			flagName:   "postgres-claim-size",
 			initialCtl: NewCRSpecBuilderFromCobraFlags(),
 			changedCtl: &CRSpecBuilderFromCobraFlags{
-				blackDuckSpec:     &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "unchanged"}}},
+				blackDuckSpec:     &blackduckapi.BlackduckSpec{PVC: []corev1.PVC{{Name: "blackduck-postgres", Size: "unchanged"}}},
 				PostgresClaimSize: "changed",
 			},
-			changedSpec: &blackduckapi.BlackduckSpec{PVC: []blackduckapi.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
+			changedSpec: &blackduckapi.BlackduckSpec{PVC: []corev1.PVC{{Name: "blackduck-postgres", Size: "changed"}}},
 		},
 		// case
 		{

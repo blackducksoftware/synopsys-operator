@@ -27,7 +27,6 @@ import (
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/horizon/pkg/deployer"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"k8s.io/client-go/rest"
 )
 
@@ -136,7 +135,7 @@ func (i *DeployerHelper) AddController(name string, c horizonapi.DeployerControl
 }
 
 // PreDeploy will provide the deploy objects
-func (i *DeployerHelper) PreDeploy(components *api.ComponentList, namespace string) {
+func (i *DeployerHelper) PreDeploy(components *ComponentList, namespace string) {
 	if components != nil {
 		i.addNS(namespace)
 		i.addRCs(components.ReplicationControllers)

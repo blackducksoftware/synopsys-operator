@@ -26,14 +26,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 var isForceDestroy bool
@@ -137,7 +137,7 @@ func destroy(namespace string) error {
 		}
 
 		if isDeleteOperatorResource {
-			commonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespace, "", &api.ComponentList{}, "app=synopsys-operator", false)
+			commonConfig := crdupdater.NewCRUDComponents(restconfig, kubeClient, false, false, namespace, "", &util.ComponentList{}, "app=synopsys-operator", false)
 			_, crudErrors := commonConfig.CRUDComponents()
 			if len(crudErrors) > 0 {
 				log.Errorf("unable to delete the Synopsys Operator resources in namespace '%s' due to %+v", namespace, crudErrors)

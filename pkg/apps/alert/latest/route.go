@@ -23,18 +23,19 @@ package alert
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	routev1 "github.com/openshift/api/route/v1"
+
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // getOpenShiftRoute creates the OpenShift route component for the alert
-func (a *SpecConfig) getOpenShiftRoute() *api.Route {
+func (a *SpecConfig) getOpenShiftRoute() *corev1.Route {
 	if strings.ToUpper(a.alert.Spec.ExposeService) == util.OPENSHIFT {
-		return &api.Route{
+		return &corev1.Route{
 			Name:               utils.GetResourceName(a.alert.Name, util.AlertName, ""),
 			Namespace:          a.alert.Spec.Namespace,
 			Kind:               "Service",

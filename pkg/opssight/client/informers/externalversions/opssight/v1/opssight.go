@@ -19,16 +19,17 @@ limitations under the License.
 package v1
 
 import (
-	time "time"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
 
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	versioned "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
-	internalinterfaces "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/internalinterfaces"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/internalinterfaces"
 	v1 "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/listers/opssight/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
-	watch "k8s.io/apimachinery/pkg/watch"
-	cache "k8s.io/client-go/tools/cache"
 )
 
 // OpsSightInformer provides access to a shared informer and lister for

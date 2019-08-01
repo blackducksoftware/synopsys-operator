@@ -19,12 +19,13 @@ limitations under the License.
 package internalinterfaces
 
 import (
-	time "time"
+	"time"
 
-	versioned "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
-	cache "k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 )
 
 // NewInformerFunc takes versioned.Interface and time.Duration to return a SharedIndexInformer.

@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -44,9 +44,9 @@ func NewSpecConfig(alert *alertapi.Alert, isClusterScope bool) *SpecConfig {
 }
 
 // GetComponents will return the list of components for alert
-func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
+func (a *SpecConfig) GetComponents() (*util.ComponentList, error) {
 	log.Infof("Getting Alert Components")
-	components := &api.ComponentList{}
+	components := &util.ComponentList{}
 
 	// Add alert components
 	components.ConfigMaps = append(components.ConfigMaps, a.getAlertConfigMap())
@@ -98,7 +98,7 @@ func (a *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	// Add routes for OpenShift
 	route := a.getOpenShiftRoute()
 	if route != nil {
-		components.Routes = []*api.Route{route}
+		components.Routes = []*corev1.Route{route}
 	}
 
 	return components, nil

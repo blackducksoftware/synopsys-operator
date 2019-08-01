@@ -23,7 +23,7 @@ package sample
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api/sample/v1"
 )
 
@@ -41,9 +41,9 @@ func NewSample(config *v1.SampleSpec) *SpecConfig {
 
 // GetComponents will return a ComponentList representing all
 // Kubernetes Resources for the Sample
-func (specConfig *SpecConfig) GetComponents(config *v1.SampleSpec) (*api.ComponentList, error) {
+func (specConfig *SpecConfig) GetComponents(config *v1.SampleSpec) (*util.ComponentList, error) {
 	// TODO(user) Add your Sample's Horizon Components
-	components := &api.ComponentList{
+	components := &util.ComponentList{
 		Deployments: []*components.Deployment{
 			specConfig.getSampleDeployment(),
 		},

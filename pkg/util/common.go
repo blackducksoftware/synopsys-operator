@@ -34,20 +34,23 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
-	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
-	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	securityclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+
+	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
+	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
+
 	log "github.com/sirupsen/logrus"
+
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	kubecorev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/api/storage/v1beta1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -338,14 +341,14 @@ func CreateServiceWithMultiplePort(name string, selectLabel map[string]string, n
 }
 
 // CreateSecretFromFile will create the secret from file
-func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, namespace string, name string, dataKey string) (*corev1.Secret, error) {
+func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, namespace string, name string, dataKey string) (*kubecorev1.Secret, error) {
 	file, err := ioutil.ReadFile(jsonFile)
 	if err != nil {
 		log.Panicf("Unable to read the secret file %s due to error: %v\n", jsonFile, err)
 	}
 
-	return clientset.CoreV1().Secrets(namespace).Create(&corev1.Secret{
-		Type:       corev1.SecretTypeOpaque,
+	return clientset.CoreV1().Secrets(namespace).Create(&kubecorev1.Secret{
+		Type:       kubecorev1.SecretTypeOpaque,
 		StringData: map[string]string{dataKey: string(file)},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -354,9 +357,9 @@ func CreateSecretFromFile(clientset *kubernetes.Clientset, jsonFile string, name
 }
 
 // CreateSecret will create the secret
-func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string, stringData map[string]string) (*corev1.Secret, error) {
-	return clientset.CoreV1().Secrets(namespace).Create(&corev1.Secret{
-		Type:       corev1.SecretTypeOpaque,
+func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string, stringData map[string]string) (*kubecorev1.Secret, error) {
+	return clientset.CoreV1().Secrets(namespace).Create(&kubecorev1.Secret{
+		Type:       kubecorev1.SecretTypeOpaque,
 		StringData: stringData,
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -365,17 +368,17 @@ func CreateSecret(clientset *kubernetes.Clientset, namespace string, name string
 }
 
 // GetSecret will create the secret
-func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Secret, error) {
+func GetSecret(clientset *kubernetes.Clientset, namespace string, name string) (*kubecorev1.Secret, error) {
 	return clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListSecrets will list the secret
-func ListSecrets(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.SecretList, error) {
+func ListSecrets(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*kubecorev1.SecretList, error) {
 	return clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateSecret updates a secret
-func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *corev1.Secret) (*corev1.Secret, error) {
+func UpdateSecret(clientset *kubernetes.Clientset, namespace string, secret *kubecorev1.Secret) (*kubecorev1.Secret, error) {
 	return clientset.CoreV1().Secrets(namespace).Update(secret)
 }
 
@@ -391,17 +394,17 @@ func ReadFromFile(filePath string) ([]byte, error) {
 }
 
 // GetConfigMap will get the config map
-func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ConfigMap, error) {
+func GetConfigMap(clientset *kubernetes.Clientset, namespace string, name string) (*kubecorev1.ConfigMap, error) {
 	return clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListConfigMaps will list the config map
-func ListConfigMaps(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ConfigMapList, error) {
+func ListConfigMaps(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*kubecorev1.ConfigMapList, error) {
 	return clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateConfigMap updates a config map
-func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func UpdateConfigMap(clientset *kubernetes.Clientset, namespace string, configMap *kubecorev1.ConfigMap) (*kubecorev1.ConfigMap, error) {
 	return clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
 }
 
@@ -436,8 +439,8 @@ func DeleteConfigMap(clientset *kubernetes.Clientset, namespace string, name str
 // }
 
 // CreateNamespace will create the namespace
-func CreateNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.Namespace, error) {
-	return clientset.CoreV1().Namespaces().Create(&corev1.Namespace{
+func CreateNamespace(clientset *kubernetes.Clientset, namespace string) (*kubecorev1.Namespace, error) {
+	return clientset.CoreV1().Namespaces().Create(&kubecorev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      namespace,
@@ -446,17 +449,17 @@ func CreateNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1
 }
 
 // GetNamespace will get the namespace
-func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*corev1.Namespace, error) {
+func GetNamespace(clientset *kubernetes.Clientset, namespace string) (*kubecorev1.Namespace, error) {
 	return clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
 }
 
 // ListNamespaces will list the namespace
-func ListNamespaces(clientset *kubernetes.Clientset, labelSelector string) (*corev1.NamespaceList, error) {
+func ListNamespaces(clientset *kubernetes.Clientset, labelSelector string) (*kubecorev1.NamespaceList, error) {
 	return clientset.CoreV1().Namespaces().List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateNamespace updates a namespace
-func UpdateNamespace(clientset *kubernetes.Clientset, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+func UpdateNamespace(clientset *kubernetes.Clientset, namespace *kubecorev1.Namespace) (*kubecorev1.Namespace, error) {
 	return clientset.CoreV1().Namespaces().Update(namespace)
 }
 
@@ -466,17 +469,17 @@ func DeleteNamespace(clientset *kubernetes.Clientset, namespace string) error {
 }
 
 // GetPod will get the input pods corresponding to a namespace
-func GetPod(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Pod, error) {
+func GetPod(clientset *kubernetes.Clientset, namespace string, name string) (*kubecorev1.Pod, error) {
 	return clientset.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListPods will get all the pods corresponding to a namespace
-func ListPods(clientset *kubernetes.Clientset, namespace string) (*corev1.PodList, error) {
+func ListPods(clientset *kubernetes.Clientset, namespace string) (*kubecorev1.PodList, error) {
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 }
 
 // ListPodsWithLabels will get all the pods corresponding to a namespace and labels
-func ListPodsWithLabels(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.PodList, error) {
+func ListPodsWithLabels(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*kubecorev1.PodList, error) {
 	return clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
@@ -489,17 +492,17 @@ func DeletePod(clientset *kubernetes.Clientset, namespace string, name string) e
 }
 
 // GetReplicationController will get the replication controller corresponding to a namespace and name
-func GetReplicationController(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ReplicationController, error) {
+func GetReplicationController(clientset *kubernetes.Clientset, namespace string, name string) (*kubecorev1.ReplicationController, error) {
 	return clientset.CoreV1().ReplicationControllers(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListReplicationControllers will get the replication controllers corresponding to a namespace
-func ListReplicationControllers(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ReplicationControllerList, error) {
+func ListReplicationControllers(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*kubecorev1.ReplicationControllerList, error) {
 	return clientset.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateReplicationController updates the replication controller
-func UpdateReplicationController(clientset *kubernetes.Clientset, namespace string, rc *corev1.ReplicationController) (*corev1.ReplicationController, error) {
+func UpdateReplicationController(clientset *kubernetes.Clientset, namespace string, rc *kubecorev1.ReplicationController) (*kubecorev1.ReplicationController, error) {
 	return clientset.CoreV1().ReplicationControllers(namespace).Update(rc)
 }
 
@@ -535,19 +538,19 @@ func DeleteDeployment(clientset *kubernetes.Clientset, namespace string, name st
 }
 
 // CreatePersistentVolume will create the persistent volume
-func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storageClass string, claimSize string, nfsPath string, nfsServer string) (*corev1.PersistentVolume, error) {
+func CreatePersistentVolume(clientset *kubernetes.Clientset, name string, storageClass string, claimSize string, nfsPath string, nfsServer string) (*kubecorev1.PersistentVolume, error) {
 	pvQuantity, _ := resource.ParseQuantity(claimSize)
-	return clientset.CoreV1().PersistentVolumes().Create(&corev1.PersistentVolume{
+	return clientset.CoreV1().PersistentVolumes().Create(&kubecorev1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: name,
 			Name:      name,
 		},
-		Spec: corev1.PersistentVolumeSpec{
-			Capacity:         map[corev1.ResourceName]resource.Quantity{corev1.ResourceStorage: pvQuantity},
-			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+		Spec: kubecorev1.PersistentVolumeSpec{
+			Capacity:         map[kubecorev1.ResourceName]resource.Quantity{kubecorev1.ResourceStorage: pvQuantity},
+			AccessModes:      []kubecorev1.PersistentVolumeAccessMode{kubecorev1.ReadWriteOnce},
 			StorageClassName: storageClass,
-			PersistentVolumeSource: corev1.PersistentVolumeSource{
-				NFS: &corev1.NFSVolumeSource{
+			PersistentVolumeSource: kubecorev1.PersistentVolumeSource{
+				NFS: &kubecorev1.NFSVolumeSource{
 					Path:   nfsPath,
 					Server: nfsServer,
 				},
@@ -588,8 +591,8 @@ func CreatePersistentVolumeClaim(name string, namespace string, pvcClaimSize str
 }
 
 // ValidateServiceEndpoint will validate whether the service endpoint is ready to serve
-func ValidateServiceEndpoint(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.Endpoints, error) {
-	var endpoint *corev1.Endpoints
+func ValidateServiceEndpoint(clientset *kubernetes.Clientset, namespace string, name string) (*kubecorev1.Endpoints, error) {
+	var endpoint *kubecorev1.Endpoints
 	var err error
 	for i := 0; i < 20; i++ {
 		endpoint, err = GetServiceEndPoint(clientset, namespace, name)
@@ -631,7 +634,7 @@ func WaitForServiceEndpointReady(clientset *kubernetes.Clientset, namespace stri
 }
 
 // FilterPodByNamePrefixInNamespace will filter the pod based on pod name prefix from a list a pods in a given namespace
-func FilterPodByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace string, prefix string) (*corev1.Pod, error) {
+func FilterPodByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace string, prefix string) (*kubecorev1.Pod, error) {
 	pods, err := ListPods(clientset, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list the pods in namespace %s due to %+v", namespace, err)
@@ -645,7 +648,7 @@ func FilterPodByNamePrefixInNamespace(clientset *kubernetes.Clientset, namespace
 }
 
 // FilterPodByNamePrefix will filter the pod based on pod name prefix from a list a pods
-func FilterPodByNamePrefix(pods *corev1.PodList, prefix string) *corev1.Pod {
+func FilterPodByNamePrefix(pods *kubecorev1.PodList, prefix string) *kubecorev1.Pod {
 	for _, pod := range pods.Items {
 		if strings.HasPrefix(pod.Name, prefix) {
 			return &pod
@@ -662,17 +665,17 @@ func NewStringReader(ss []string) io.Reader {
 }
 
 // GetService will get the service information for the input service name inside the input namespace
-func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*corev1.Service, error) {
+func GetService(clientset *kubernetes.Clientset, namespace string, serviceName string) (*kubecorev1.Service, error) {
 	return clientset.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 }
 
 // ListServices will list the service information for the input service name inside the input namespace
-func ListServices(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ServiceList, error) {
+func ListServices(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*kubecorev1.ServiceList, error) {
 	return clientset.CoreV1().Services(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateService will update the service information for the input service name inside the input namespace
-func UpdateService(clientset *kubernetes.Clientset, namespace string, service *corev1.Service) (*corev1.Service, error) {
+func UpdateService(clientset *kubernetes.Clientset, namespace string, service *kubecorev1.Service) (*kubecorev1.Service, error) {
 	return clientset.CoreV1().Services(namespace).Update(service)
 }
 
@@ -682,7 +685,7 @@ func DeleteService(clientset *kubernetes.Clientset, namespace string, name strin
 }
 
 // GetServiceEndPoint will get the service endpoint information for the input service name inside the input namespace
-func GetServiceEndPoint(clientset *kubernetes.Clientset, namespace string, serviceName string) (*corev1.Endpoints, error) {
+func GetServiceEndPoint(clientset *kubernetes.Clientset, namespace string, serviceName string) (*kubecorev1.Endpoints, error) {
 	return clientset.CoreV1().Endpoints(namespace).Get(serviceName, metav1.GetOptions{})
 }
 
@@ -692,17 +695,17 @@ func ListStorageClasses(clientset *kubernetes.Clientset) (*v1beta1.StorageClassL
 }
 
 // GetPVC will get the PVC for the given name
-func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.PersistentVolumeClaim, error) {
+func GetPVC(clientset *kubernetes.Clientset, namespace string, name string) (*kubecorev1.PersistentVolumeClaim, error) {
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListPVCs will list the PVC for the given label selector
-func ListPVCs(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.PersistentVolumeClaimList, error) {
+func ListPVCs(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*kubecorev1.PersistentVolumeClaimList, error) {
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdatePVC will update the pvc information for the input pvc name inside the input namespace
-func UpdatePVC(clientset *kubernetes.Clientset, namespace string, pvc *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
+func UpdatePVC(clientset *kubernetes.Clientset, namespace string, pvc *kubecorev1.PersistentVolumeClaim) (*kubecorev1.PersistentVolumeClaim, error) {
 	return clientset.CoreV1().PersistentVolumeClaims(namespace).Update(pvc)
 }
 
@@ -889,17 +892,17 @@ func CreateServiceAccount(namespace string, name string) *components.ServiceAcco
 }
 
 // GetServiceAccount get a service account
-func GetServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) (*corev1.ServiceAccount, error) {
+func GetServiceAccount(clientset *kubernetes.Clientset, namespace string, name string) (*kubecorev1.ServiceAccount, error) {
 	return clientset.CoreV1().ServiceAccounts(namespace).Get(name, metav1.GetOptions{})
 }
 
 // ListServiceAccounts list a service account
-func ListServiceAccounts(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*corev1.ServiceAccountList, error) {
+func ListServiceAccounts(clientset *kubernetes.Clientset, namespace string, labelSelector string) (*kubecorev1.ServiceAccountList, error) {
 	return clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 }
 
 // UpdateServiceAccount updates a service account
-func UpdateServiceAccount(clientset *kubernetes.Clientset, namespace string, serviceAccount *corev1.ServiceAccount) (*corev1.ServiceAccount, error) {
+func UpdateServiceAccount(clientset *kubernetes.Clientset, namespace string, serviceAccount *kubecorev1.ServiceAccount) (*kubecorev1.ServiceAccount, error) {
 	return clientset.CoreV1().ServiceAccounts(namespace).Update(serviceAccount)
 }
 
@@ -1083,7 +1086,7 @@ func UpdateRoute(routeClient *routeclient.RouteV1Client, namespace string, route
 }
 
 // GetRouteComponent returns the route component
-func GetRouteComponent(routeClient *routeclient.RouteV1Client, route *api.Route, labels map[string]string) *routev1.Route {
+func GetRouteComponent(routeClient *routeclient.RouteV1Client, route *corev1.Route, labels map[string]string) *routev1.Route {
 	return &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      route.Name,
@@ -1151,7 +1154,7 @@ func UpdateOpenShiftSecurityConstraint(osSecurityClient *securityclient.Security
 }
 
 // PatchReplicationControllerForReplicas patch a replication controller for replica update
-func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old *corev1.ReplicationController, replicas *int32) (*corev1.ReplicationController, error) {
+func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old *kubecorev1.ReplicationController, replicas *int32) (*kubecorev1.ReplicationController, error) {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return nil, err
@@ -1162,7 +1165,7 @@ func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old 
 	if err != nil {
 		return nil, err
 	}
-	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.ReplicationController{})
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, kubecorev1.ReplicationController{})
 	if err != nil {
 		return nil, err
 	}
@@ -1174,7 +1177,7 @@ func PatchReplicationControllerForReplicas(clientset *kubernetes.Clientset, old 
 }
 
 // PatchReplicationController patch a replication controller
-func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.ReplicationController, new corev1.ReplicationController) error {
+func PatchReplicationController(clientset *kubernetes.Clientset, old kubecorev1.ReplicationController, new kubecorev1.ReplicationController) error {
 	oldData, err := json.Marshal(old)
 	if err != nil {
 		return err
@@ -1183,7 +1186,7 @@ func PatchReplicationController(clientset *kubernetes.Clientset, old corev1.Repl
 	if err != nil {
 		return err
 	}
-	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.ReplicationController{})
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, kubecorev1.ReplicationController{})
 	if err != nil {
 		return err
 	}
@@ -1340,12 +1343,12 @@ func ArePodsReady(clientset *kubernetes.Clientset, namespace string, labelSelect
 	arePodsReady := true
 	for _, p := range pods.Items {
 		// Skip if a pod is in a failed or unknown state
-		if p.Status.Phase == corev1.PodFailed || p.Status.Phase == corev1.PodUnknown {
+		if p.Status.Phase == kubecorev1.PodFailed || p.Status.Phase == kubecorev1.PodUnknown {
 			continue
 		}
 		// verify the pod is ready, otherwise set arePodsReady to false
 		for _, condition := range p.Status.Conditions {
-			if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionFalse {
+			if condition.Type == kubecorev1.PodReady && condition.Status == kubecorev1.ConditionFalse {
 				arePodsReady = false
 			}
 		}
@@ -1650,7 +1653,7 @@ func CheckAndUpdateNamespace(kubeClient *kubernetes.Clientset, resourceName stri
 }
 
 // updateLabelsInNamespace will update the labels in the namespace
-func updateLabelsInNamespace(kubeClient *kubernetes.Clientset, ns *corev1.Namespace, resourceName string, namespace string, name string, version string, isDelete bool) error {
+func updateLabelsInNamespace(kubeClient *kubernetes.Clientset, ns *kubecorev1.Namespace, resourceName string, namespace string, name string, version string, isDelete bool) error {
 	isLabelUpdated := false
 	ns.Labels = InitLabels(ns.Labels)
 	if isDelete {

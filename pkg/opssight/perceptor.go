@@ -24,16 +24,17 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
+
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // PerceptorReplicationController creates a replication controller for perceptor
@@ -214,10 +215,10 @@ func (p *SpecConfig) PerceptorSecret() (*components.Secret, error) {
 }
 
 // GetPerceptorOpenShiftRoute creates the OpenShift route component for the perceptor model
-func (p *SpecConfig) GetPerceptorOpenShiftRoute() *api.Route {
+func (p *SpecConfig) GetPerceptorOpenShiftRoute() *corev1.Route {
 	namespace := p.opssight.Spec.Namespace
 	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
-		return &api.Route{
+		return &corev1.Route{
 			Name:               utils.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name),
 			Namespace:          namespace,
 			Kind:               "Service",

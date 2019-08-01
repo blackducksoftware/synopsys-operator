@@ -26,13 +26,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	log "github.com/sirupsen/logrus"
+
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	latestalert "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	log "github.com/sirupsen/logrus"
 )
 
 // Constants for each unit of a deployment of Alert
@@ -144,7 +144,7 @@ func (a *Alert) Delete(name string) error {
 
 	// delete an Alert instance
 	commonConfig := crdupdater.NewCRUDComponents(a.protoformDeployer.KubeConfig, a.protoformDeployer.KubeClient, a.protoformDeployer.Config.DryRun, false, namespace, "",
-		&api.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.AlertName, name), false)
+		&util.ComponentList{}, fmt.Sprintf("app=%s,name=%s", util.AlertName, name), false)
 	_, crudErrors := commonConfig.CRUDComponents()
 	if len(crudErrors) > 0 {
 		return fmt.Errorf("unable to delete the %s Alert instance in %s namespace due to %+v", name, namespace, crudErrors)
@@ -166,7 +166,7 @@ func (a *Alert) Delete(name string) error {
 }
 
 // GetComponents gets the necessary creater and returns the Alert's components
-func (a *Alert) GetComponents(alt *alertapi.Alert, compType string) (*api.ComponentList, error) {
+func (a *Alert) GetComponents(alt *alertapi.Alert, compType string) (*util.ComponentList, error) {
 	// If the version is not specified then we set it to be the latest.
 	if err := a.ensureVersion(alt); err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (a *Alert) GetComponents(alt *alertapi.Alert, compType string) (*api.Compon
 		return creater.GetComponents(alt)
 	case PVCResources:
 		pvcs, err := creater.GetPVC(alt)
-		return &api.ComponentList{PersistentVolumeClaims: pvcs}, err
+		return &util.ComponentList{PersistentVolumeClaims: pvcs}, err
 	}
 	return nil, fmt.Errorf("invalid components type '%s'", compType)
 }

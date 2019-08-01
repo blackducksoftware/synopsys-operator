@@ -19,12 +19,13 @@ limitations under the License.
 package scheme
 
 import (
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 )
 
 var Scheme = runtime.NewScheme()

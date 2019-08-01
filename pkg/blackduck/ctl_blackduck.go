@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -321,7 +322,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				log.Errorf("failed to read pvc file: %+v", err)
 				return
 			}
-			pvcs := []blackduckapi.PVC{}
+			pvcs := []corev1.PVC{}
 			err = json.Unmarshal([]byte(data), &pvcs)
 			if err != nil {
 				log.Errorf("failed to unmarshal pvc structs: %+v", err)
@@ -348,7 +349,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 					return
 				}
 			}
-			ctl.blackDuckSpec.PVC = append(ctl.blackDuckSpec.PVC, blackduckapi.PVC{Name: "blackduck-postgres", Size: ctl.PostgresClaimSize}) // add postgres PVC if doesn't exist
+			ctl.blackDuckSpec.PVC = append(ctl.blackDuckSpec.PVC, corev1.PVC{Name: "blackduck-postgres", Size: ctl.PostgresClaimSize}) // add postgres PVC if doesn't exist
 		case "certificate-name":
 			ctl.blackDuckSpec.CertificateName = ctl.CertificateName
 		case "certificate-file-path":

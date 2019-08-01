@@ -22,9 +22,10 @@ under the License.
 package v1
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 )
 
 // +genclient
@@ -189,9 +190,9 @@ type OpsSightSpec struct {
 	// Black Duck
 	Blackduck *Blackduck `json:"blackduck"`
 
-	DesiredState          string                    `json:"desiredState"`
-	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
-	RegistryConfiguration api.RegistryConfiguration `json:"registryConfiguration,omitempty"`
+	DesiredState          string                       `json:"desiredState"`
+	ImageRegistries       []string                     `json:"imageRegistries,omitempty"`
+	RegistryConfiguration corev1.RegistryConfiguration `json:"registryConfiguration,omitempty"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource

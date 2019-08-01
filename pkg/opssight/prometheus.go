@@ -24,15 +24,17 @@ package opssight
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 	"strings"
+
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/utils"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
+
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // PerceptorMetricsDeployment creates a deployment for perceptor metrics
@@ -245,10 +247,10 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 }
 
 // GetPrometheusOpenShiftRoute creates the OpenShift route component for the prometheus metrics
-func (p *SpecConfig) GetPrometheusOpenShiftRoute() *api.Route {
+func (p *SpecConfig) GetPrometheusOpenShiftRoute() *corev1.Route {
 	namespace := p.opssight.Spec.Namespace
 	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
-		return &api.Route{
+		return &corev1.Route{
 			Name:               utils.GetResourceName(p.opssight.Name, util.OpsSightName, fmt.Sprintf("%s-metrics", p.opssight.Spec.Prometheus.Name)),
 			Namespace:          namespace,
 			Kind:               "Service",

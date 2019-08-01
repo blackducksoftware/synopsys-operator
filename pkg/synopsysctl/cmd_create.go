@@ -25,8 +25,12 @@ import (
 	"fmt"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/blackducksoftware/synopsys-operator/pkg/alert"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
@@ -35,10 +39,6 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	"github.com/blackducksoftware/synopsys-operator/pkg/opssight"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Create Command CRSpecBuilderFromCobraFlagsInterface
@@ -191,7 +191,7 @@ var createAlertNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var cList *api.ComponentList
+		var cList *util.ComponentList
 		switch {
 		case alertNativePVC:
 			cList, err = app.Alert().GetComponents(alert, alertapp.PVCResources)
@@ -378,7 +378,7 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var cList *api.ComponentList
+		var cList *util.ComponentList
 		blackDuck.Spec.LivenessProbes = true // enable LivenessProbes when generating Kubernetes resources for customers
 		switch {
 		case !blackDuckNativeDatabase && !blackDuckNativePVC:

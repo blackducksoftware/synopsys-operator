@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -44,7 +44,7 @@ func NewCreater(protoformDeployer *protoform.Deployer) *Creater {
 }
 
 // GetComponents returns the resource components for an Alert
-func (ac *Creater) GetComponents(alert *alertapi.Alert) (*api.ComponentList, error) {
+func (ac *Creater) GetComponents(alert *alertapi.Alert) (*util.ComponentList, error) {
 	specConfig := NewSpecConfig(alert, ac.protoformDeployer.Config.IsClusterScoped)
 	return specConfig.GetComponents()
 }
@@ -71,7 +71,7 @@ func (ac *Creater) Ensure(alert *alertapi.Alert) error {
 	}
 	if strings.EqualFold(alert.Spec.DesiredState, "STOP") {
 		commonConfig := crdupdater.NewCRUDComponents(ac.protoformDeployer.KubeConfig, ac.protoformDeployer.KubeClient, ac.protoformDeployer.Config.DryRun, false, alert.Spec.Namespace, alert.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
+			&util.ComponentList{PersistentVolumeClaims: cpList.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.AlertName, alert.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("unable to stop Alert: %+v", errors)

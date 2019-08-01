@@ -23,10 +23,12 @@ package soperator
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/juju/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // PrometheusSpecConfig represents the Promtheus component
@@ -53,7 +55,7 @@ func NewPrometheus(namespace, image string, expose string, restConfig *rest.Conf
 
 // GetComponents will return a ComponentList representing all
 // Kubernetes Resources for Prometheus
-func (specConfig *PrometheusSpecConfig) GetComponents() (*api.ComponentList, error) {
+func (specConfig *PrometheusSpecConfig) GetComponents() (*util.ComponentList, error) {
 	deployment, err := specConfig.GetPrometheusDeployment()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -63,7 +65,7 @@ func (specConfig *PrometheusSpecConfig) GetComponents() (*api.ComponentList, err
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	components := &api.ComponentList{
+	components := &util.ComponentList{
 		Deployments: []*components.Deployment{deployment},
 		Services:    specConfig.GetPrometheusService(),
 		ConfigMaps:  []*components.ConfigMap{configMap},
@@ -72,7 +74,7 @@ func (specConfig *PrometheusSpecConfig) GetComponents() (*api.ComponentList, err
 	// Add routes for OpenShift
 	route := specConfig.GetOpenShiftRoute()
 	if route != nil {
-		components.Routes = []*api.Route{route}
+		components.Routes = []*corev1.Route{route}
 	}
 	return components, nil
 }

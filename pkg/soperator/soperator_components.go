@@ -23,11 +23,13 @@ package soperator
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 )
 
 // SpecConfig represents the SOperator component
@@ -91,7 +93,7 @@ const (
 
 // GetComponents will return a ComponentList representing all
 // Kubernetes Resources for Synopsys Operator
-func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
+func (specConfig *SpecConfig) GetComponents() (*util.ComponentList, error) {
 	configMap, err := specConfig.GetOperatorConfigMap()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -101,7 +103,7 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	components := &api.ComponentList{
+	components := &util.ComponentList{
 		Deployments:     []*components.Deployment{deployment},
 		Services:        specConfig.getOperatorService(),
 		ConfigMaps:      []*components.ConfigMap{configMap},
@@ -121,7 +123,7 @@ func (specConfig *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	route := specConfig.getOpenShiftRoute()
 	log.Debugf("Route: %+v", route)
 	if route != nil {
-		components.Routes = []*api.Route{route}
+		components.Routes = []*corev1.Route{route}
 	}
 	return components, nil
 }

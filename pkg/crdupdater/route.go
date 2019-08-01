@@ -22,7 +22,7 @@ under the License.
 package crdupdater
 
 import (
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	corev1 "github.com/blackducksoftware/synopsys-operator/pkg/api/core/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	routev1 "github.com/openshift/api/route/v1"
@@ -35,13 +35,13 @@ type Route struct {
 	config      *CommonConfig
 	deployer    *util.DeployerHelper
 	routeClient *routeclient.RouteV1Client
-	routes      []*api.Route
+	routes      []*corev1.Route
 	oldRoutes   map[string]routev1.Route
 	newRoutes   map[string]*routev1.Route
 }
 
 // NewRoute returns the route configuration
-func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
+func NewRoute(config *CommonConfig, routes []*corev1.Route) (*Route, error) {
 	if !util.IsOpenshift(config.kubeClient) {
 		return nil, nil
 	}
@@ -52,7 +52,7 @@ func NewRoute(config *CommonConfig, routes []*api.Route) (*Route, error) {
 		return nil, errors.Annotatef(err, "unable to get deployer object for %s", config.namespace)
 	}
 
-	newRoutes := append([]*api.Route{}, routes...)
+	newRoutes := append([]*corev1.Route{}, routes...)
 	for i := 0; i < len(newRoutes); i++ {
 		if !isLabelsExist(config.expectedLabels, newRoutes[i].Labels) {
 			newRoutes = append(newRoutes[:i], newRoutes[i+1:]...)
