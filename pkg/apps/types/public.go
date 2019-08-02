@@ -23,16 +23,21 @@ package types
 
 // PublicVersion refers to public version configuration
 type PublicVersion struct {
-	Size       ComponentName
-	RCs        map[string]PublicRC
-	Services   []ComponentName
-	ConfigMaps []ComponentName
-	Secrets    []ComponentName
-	PVC        []ComponentName
+	Size                ComponentName
+	Deployments         map[string]PublicPodResource
+	RCs                 map[string]PublicPodResource
+	Services            []ComponentName
+	ConfigMaps          []ComponentName
+	Secrets             []ComponentName
+	PVC                 []ComponentName
+	ClusterRoles        []ComponentName
+	ClusterRoleBindings []ComponentName
+	ServiceAccounts     []ComponentName
+	Routes              []ComponentName
 }
 
-// PublicRC refers to public container configuration
-type PublicRC struct {
+// PublicPodResource refers to public pod resource configuration
+type PublicPodResource struct {
 	Identifier ComponentName
 	Container  map[ContainerName]string
 }

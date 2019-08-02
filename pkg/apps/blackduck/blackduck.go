@@ -74,7 +74,7 @@ type Blackduck struct {
 var publicVersions = map[string]types.PublicVersion{
 	"2018.12.0": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -192,7 +192,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2018.12.1": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -310,7 +310,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2018.12.2": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -428,7 +428,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2018.12.3": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -546,7 +546,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2018.12.4": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -664,7 +664,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.2.0": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -782,7 +782,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.2.1": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -900,7 +900,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.2.2": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -1018,7 +1018,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.4.0": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -1129,7 +1129,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.4.1": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -1240,7 +1240,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.4.2": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -1351,7 +1351,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.4.3": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -1462,7 +1462,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.6.0": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -1573,7 +1573,7 @@ var publicVersions = map[string]types.PublicVersion{
 	},
 	"2019.6.1": {
 		Size: types.BlackDuckSizeV1,
-		RCs: map[string]types.PublicRC{
+		RCs: map[string]types.PublicPodResource{
 			"authentication": {
 				Identifier: types.BlackDuckAuthenticationRCV1,
 				Container: map[types.ContainerName]string{
@@ -1781,152 +1781,152 @@ func (b *Blackduck) Versions() []string {
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
-func (b *Blackduck) Ensure(blackduck *blackduckapi.Blackduck) error {
+func (b *Blackduck) Ensure(blackDuck *blackduckapi.Blackduck) error {
 	// If the version is not specified then we set it to be the latest.
-	if err := b.ensureVersion(blackduck); err != nil {
+	if err := b.ensureVersion(blackDuck); err != nil {
 		return err
 	}
 
-	newBlackuck := blackduck.DeepCopy()
+	newBlackDuck := blackDuck.DeepCopy()
 
-	version, ok := publicVersions[blackduck.Spec.Version]
+	version, ok := publicVersions[blackDuck.Spec.Version]
 	if !ok {
-		return fmt.Errorf("versiom %s is not supported", blackduck.Spec.Version)
+		return fmt.Errorf("version %s is not supported", blackDuck.Spec.Version)
 	}
 
-	cp, err := store.GetComponents(version, b.config, b.kubeClient, b.sizeClient, blackduck)
+	cp, err := store.GetComponents(version, b.config, b.kubeClient, b.sizeClient, blackDuck)
 	if err != nil {
 		return err
 	}
 
-	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
+	if strings.EqualFold(blackDuck.Spec.DesiredState, "STOP") {
 		// Save/Update the PVCs for the Black Duck
-		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
+		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackDuck.Spec.Namespace, blackDuck.Spec.Version,
+			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackDuck.Name), false)
 		_, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
-			return fmt.Errorf("stop blackduck: %+v", errors)
+			return fmt.Errorf("stop Black Duck: %+v", errors)
 		}
-	} else if strings.EqualFold(blackduck.Spec.DesiredState, "DbMigrate") {
+	} else if strings.EqualFold(blackDuck.Spec.DesiredState, "DbMigrate") {
 		// Save/Update the PVCs for the Black Duck
-		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackduck.Name), false)
+		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackDuck.Spec.Namespace, blackDuck.Spec.Version,
+			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s", util.BlackDuckName, blackDuck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("migrate blackduck: %+v", errors)
 		}
 
-		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&cp, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackduck.Name), false)
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackDuck.Spec.Namespace, blackDuck.Spec.Version,
+			cp, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackDuck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update postgres component: %+v", errors)
 		}
 	} else {
 		// Save/Update the PVCs for the Black Duck
-		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackduck.Name), false)
+		commonConfig := crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, false, blackDuck.Spec.Namespace, blackDuck.Spec.Version,
+			&api.ComponentList{PersistentVolumeClaims: cp.PersistentVolumeClaims}, fmt.Sprintf("app=%s,name=%s,component=pvc", util.BlackDuckName, blackDuck.Name), false)
 		isPatched, errors := commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update pvc: %+v", errors)
 		}
 
 		// install postgres
-		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&cp, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackduck.Name), false)
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackDuck.Spec.Namespace, blackDuck.Spec.Version,
+			cp, fmt.Sprintf("app=%s,name=%s,component=postgres", util.BlackDuckName, blackDuck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update postgres component: %+v", errors)
 		}
 
 		//Check postgres and initialize if needed.
-		if blackduck.Spec.ExternalPostgres == nil {
+		if blackDuck.Spec.ExternalPostgres == nil {
 			// TODO return whether we re-initialized or not
-			err = b.initPostgres(blackduck.Name, &blackduck.Spec)
+			err = b.initPostgres(blackDuck.Name, &blackDuck.Spec)
 			if err != nil {
 				return err
 			}
 		}
 
 		// install cfssl
-		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&cp, fmt.Sprintf("app=%s,name=%s,component in (configmap,serviceAccount,cfssl)", util.BlackDuckName, blackduck.Name), false)
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackDuck.Spec.Namespace, blackDuck.Spec.Version,
+			cp, fmt.Sprintf("app=%s,name=%s,component in (configmap,serviceAccount,cfssl)", util.BlackDuckName, blackDuck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update cfssl component: %+v", errors)
 		}
 
-		err = util.WaitUntilPodsAreReady(b.kubeClient, blackduck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component=cfssl", util.BlackDuckName, blackduck.Name), b.config.PodWaitTimeoutSeconds)
+		err = util.WaitUntilPodsAreReady(b.kubeClient, blackDuck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component=cfssl", util.BlackDuckName, blackDuck.Name), b.config.PodWaitTimeoutSeconds)
 		if err != nil {
 			return fmt.Errorf("the cfssl pod is not ready: %v", err)
 		}
 
 		// deploy non postgres and uploadcache component
-		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&cp, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl,configmap,serviceAccount,uploadcache,route)", util.BlackDuckName, blackduck.Name), false)
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackDuck.Spec.Namespace, blackDuck.Spec.Version,
+			cp, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl,configmap,serviceAccount,uploadcache,route)", util.BlackDuckName, blackDuck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update non postgres, cfssl and uploadcache components: %+v", errors)
 		}
 
 		// add routes to component list
-		if util.OPENSHIFT == strings.ToUpper(blackduck.Spec.ExposeService) {
+		if util.OPENSHIFT == strings.ToUpper(blackDuck.Spec.ExposeService) {
 			cp.Routes = []*api.Route{{
-				Name:               apputils.GetResourceName(blackduck.Name, util.BlackDuckName, ""),
-				Namespace:          blackduck.Spec.Namespace,
+				Name:               apputils.GetResourceName(blackDuck.Name, util.BlackDuckName, ""),
+				Namespace:          blackDuck.Spec.Namespace,
 				Kind:               "Service",
-				ServiceName:        apputils.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver"),
+				ServiceName:        apputils.GetResourceName(blackDuck.Name, util.BlackDuckName, "webserver"),
 				PortName:           fmt.Sprintf("port-%d", 443),
-				Labels:             apputils.GetLabel("route", blackduck.Name),
+				Labels:             apputils.GetLabel("route", blackDuck.Name),
 				TLSTerminationType: routev1.TLSTerminationPassthrough,
 			}}
 		}
 
 		// deploy upload cache and route component
-		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackduck.Spec.Namespace, blackduck.Spec.Version,
-			&cp, fmt.Sprintf("app=%s,name=%s,component in (uploadcache,route)", util.BlackDuckName, blackduck.Name), false)
+		commonConfig = crdupdater.NewCRUDComponents(b.kubeConfig, b.kubeClient, b.config.DryRun, isPatched, blackDuck.Spec.Namespace, blackDuck.Spec.Version,
+			cp, fmt.Sprintf("app=%s,name=%s,component in (uploadcache,route)", util.BlackDuckName, blackDuck.Name), false)
 		isPatched, errors = commonConfig.CRUDComponents()
 		if len(errors) > 0 {
 			return fmt.Errorf("update upload cache component: %+v", errors)
 		}
 
-		if strings.ToUpper(blackduck.Spec.ExposeService) == util.NODEPORT {
-			newBlackuck.Status.IP, err = blackduckutil.GetNodePortIPAddress(b.kubeClient, blackduck.Spec.Namespace, apputils.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
-		} else if strings.ToUpper(blackduck.Spec.ExposeService) == util.LOADBALANCER {
-			newBlackuck.Status.IP, err = blackduckutil.GetLoadBalancerIPAddress(b.kubeClient, blackduck.Spec.Namespace, apputils.GetResourceName(blackduck.Name, util.BlackDuckName, "webserver-exposed"))
+		if strings.ToUpper(blackDuck.Spec.ExposeService) == util.NODEPORT {
+			newBlackDuck.Status.IP, err = blackduckutil.GetNodePortIPAddress(b.kubeClient, blackDuck.Spec.Namespace, apputils.GetResourceName(blackDuck.Name, util.BlackDuckName, "webserver-exposed"))
+		} else if strings.ToUpper(blackDuck.Spec.ExposeService) == util.LOADBALANCER {
+			newBlackDuck.Status.IP, err = blackduckutil.GetLoadBalancerIPAddress(b.kubeClient, blackDuck.Spec.Namespace, apputils.GetResourceName(blackDuck.Name, util.BlackDuckName, "webserver-exposed"))
 		}
 
 		// get Route on Openshift
-		if strings.ToUpper(blackduck.Spec.ExposeService) == util.OPENSHIFT && b.routeClient != nil {
-			route, err := util.GetRoute(b.routeClient, blackduck.Spec.Namespace, apputils.GetResourceName(blackduck.Name, util.BlackDuckName, ""))
+		if strings.ToUpper(blackDuck.Spec.ExposeService) == util.OPENSHIFT && b.routeClient != nil {
+			route, err := util.GetRoute(b.routeClient, blackDuck.Spec.Namespace, apputils.GetResourceName(blackDuck.Name, util.BlackDuckName, ""))
 			if err != nil {
-				log.Errorf("unable to get route %s in %s namespace due to %+v", apputils.GetResourceName(blackduck.Name, util.BlackDuckName, ""), blackduck.Spec.Namespace, err)
+				log.Errorf("unable to get route %s in %s namespace due to %+v", apputils.GetResourceName(blackDuck.Name, util.BlackDuckName, ""), blackDuck.Spec.Namespace, err)
 			}
 			if route != nil {
-				newBlackuck.Status.IP = route.Spec.Host
+				newBlackDuck.Status.IP = route.Spec.Host
 			}
 		}
 
-		err = util.WaitUntilPodsAreReady(b.kubeClient, blackduck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl)", util.BlackDuckName, blackduck.Name), b.config.PodWaitTimeoutSeconds)
+		err = util.WaitUntilPodsAreReady(b.kubeClient, blackDuck.Spec.Namespace, fmt.Sprintf("app=%s,name=%s,component notin (postgres,cfssl)", util.BlackDuckName, blackDuck.Name), b.config.PodWaitTimeoutSeconds)
 		if err != nil {
 			return fmt.Errorf("the remaining pods are not ready: %v", err)
 		}
 
 		// TODO wait for webserver to be up before we register
-		if len(blackduck.Spec.LicenseKey) > 0 {
-			if err := b.registerIfNeeded(blackduck); err != nil {
-				log.Infof("couldn't register blackduck %s: %v", blackduck.Name, err)
+		if len(blackDuck.Spec.LicenseKey) > 0 {
+			if err := b.registerIfNeeded(blackDuck); err != nil {
+				log.Infof("couldn't register blackduck %s: %v", blackDuck.Name, err)
 			}
 		}
 	}
 
-	if !reflect.DeepEqual(blackduck.Status, newBlackuck.Status) {
-		bd, err := util.GetBlackDuck(b.blackduckClient, blackduck.Spec.Namespace, blackduck.Name)
+	if !reflect.DeepEqual(blackDuck.Status, newBlackDuck.Status) {
+		bd, err := util.GetBlackDuck(b.blackduckClient, blackDuck.Spec.Namespace, blackDuck.Name)
 		if err != nil {
 			return err
 		}
-		bd.Status = newBlackuck.Status
-		if _, err := b.blackduckClient.SynopsysV1().Blackducks(blackduck.Spec.Namespace).Update(bd); err != nil {
+		bd.Status = newBlackDuck.Status
+		if _, err := b.blackduckClient.SynopsysV1().Blackducks(blackDuck.Spec.Namespace).Update(bd); err != nil {
 			return err
 		}
 	}
@@ -2128,6 +2128,7 @@ func (b Blackduck) isBinaryAnalysisEnabled(bdspec *blackduckapi.BlackduckSpec) b
 	return false
 }
 
+// GenPVC returns the list of Black Duck PVCs
 func GenPVC(blackDuck blackduckapi.Blackduck, defaultPVC map[string]string) ([]*components.PersistentVolumeClaim, error) {
 	var pvcs []*components.PersistentVolumeClaim
 	if blackDuck.Spec.PersistentStorage {

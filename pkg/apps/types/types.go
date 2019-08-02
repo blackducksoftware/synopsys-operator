@@ -23,6 +23,7 @@ package types
 
 import (
 	"github.com/blackducksoftware/horizon/pkg/components"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"k8s.io/client-go/kubernetes"
 )
@@ -33,8 +34,11 @@ type ComponentName string
 // ContainerName denotes the container name
 type ContainerName string
 
+// DeploymentCreater refers to Deployment creater
+type DeploymentCreater func(*PodResource, *protoform.Config, *kubernetes.Clientset, interface{}) (DeploymentInterface, error)
+
 // ReplicationControllerCreater refers to Replication Controller creater
-type ReplicationControllerCreater func(*ReplicationController, *protoform.Config, *kubernetes.Clientset, interface{}) (ReplicationControllerInterface, error)
+type ReplicationControllerCreater func(*PodResource, *protoform.Config, *kubernetes.Clientset, interface{}) (ReplicationControllerInterface, error)
 
 // ServiceCreater refers to Service creater
 type ServiceCreater func(*protoform.Config, *kubernetes.Clientset, interface{}) (ServiceInterface, error)
@@ -48,6 +52,18 @@ type PvcCreater func(*protoform.Config, *kubernetes.Clientset, interface{}) (PVC
 // SecretCreater refers to Secret creater
 type SecretCreater func(*protoform.Config, *kubernetes.Clientset, interface{}) (SecretInterface, error)
 
+// ClusterRoleCreater refers to Cluster role creater
+type ClusterRoleCreater func(*protoform.Config, *kubernetes.Clientset, interface{}) (ClusterRoleInterface, error)
+
+// ClusterRoleBindingCreater refers to Cluster role binding creater
+type ClusterRoleBindingCreater func(*protoform.Config, *kubernetes.Clientset, interface{}) (ClusterRoleBindingInterface, error)
+
+// ServiceAccountCreater refers to Service account creater
+type ServiceAccountCreater func(*protoform.Config, *kubernetes.Clientset, interface{}) (ServiceAccountInterface, error)
+
+// RouteCreater refers to Route creater
+type RouteCreater func(*protoform.Config, *kubernetes.Clientset, interface{}) (RouteInterface, error)
+
 // TagOrImage refers to Image and Tag
 type TagOrImage struct {
 	Tag   string
@@ -56,17 +72,16 @@ type TagOrImage struct {
 
 // ConfigMapInterface refers to Config Map related interface
 type ConfigMapInterface interface {
-	GetCM() []*components.ConfigMap
+	GetCM() (*components.ConfigMap, error)
 }
 
 // PVCInterface refers to PVC related interface
 type PVCInterface interface {
 	GetPVCs() ([]*components.PersistentVolumeClaim, error)
-	// TODO add deployment, rc
 }
 
-// ReplicationController refers to replication controller configuration
-type ReplicationController struct {
+// PodResource refers to resource configuration that shares between RC and deployment
+type PodResource struct {
 	Namespace  string
 	Replicas   int
 	Containers map[ContainerName]Container
@@ -81,19 +96,42 @@ type Container struct {
 	MaxMem *int32
 }
 
+// DeploymentInterface refers to deployment related interface
+type DeploymentInterface interface {
+	GetDeployment() (*components.Deployment, error)
+}
+
 // ReplicationControllerInterface refers to replication controller related interface
 type ReplicationControllerInterface interface {
 	GetRc() (*components.ReplicationController, error)
-	// TODO add deployment, rc
 }
 
 // SecretInterface refers to secret related interface
 type SecretInterface interface {
-	GetSecrets() []*components.Secret
+	GetSecret() (*components.Secret, error)
 }
 
 // ServiceInterface refers to service related interface
 type ServiceInterface interface {
-	GetService() *components.Service
-	// TODO add deployment, rc
+	GetService() (*components.Service, error)
+}
+
+// ClusterRoleInterface refers to cluster role related interface
+type ClusterRoleInterface interface {
+	GetClusterRole() (*components.ClusterRole, error)
+}
+
+// ClusterRoleBindingInterface refers to cluster role bindings related interface
+type ClusterRoleBindingInterface interface {
+	GetClusterRoleBinding() (*components.ClusterRoleBinding, error)
+}
+
+// ServiceAccountInterface refers to service account related interface
+type ServiceAccountInterface interface {
+	GetServiceAccount() (*components.ServiceAccount, error)
+}
+
+// RouteInterface refers to route related interface
+type RouteInterface interface {
+	GetRoute() (*api.Route, error)
 }

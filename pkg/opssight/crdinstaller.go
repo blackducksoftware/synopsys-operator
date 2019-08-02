@@ -27,7 +27,8 @@ import (
 	"time"
 
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
-	hubclient "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/opssight"
+	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	opssightinformer "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/informers/externalversions/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -40,27 +41,27 @@ import (
 
 // CRDInstaller defines the specification
 type CRDInstaller struct {
-	protformDeployer *protoform.Deployer
-	defaults         interface{}
-	indexers         cache.Indexers
-	informer         cache.SharedIndexInformer
-	queue            workqueue.RateLimitingInterface
-	handler          *Handler
-	controller       *Controller
-	opssightclient   *opssightclientset.Clientset
-	stopCh           <-chan struct{}
+	protoformDeployer *protoform.Deployer
+	defaults          interface{}
+	indexers          cache.Indexers
+	informer          cache.SharedIndexInformer
+	queue             workqueue.RateLimitingInterface
+	handler           *Handler
+	controller        *Controller
+	opssightclient    *opssightclientset.Clientset
+	stopCh            <-chan struct{}
 }
 
 // NewCRDInstaller will create a controller configuration
 func NewCRDInstaller(protoformDeployer *protoform.Deployer, defaults interface{}, stopCh <-chan struct{}) *CRDInstaller {
-	crdInstaller := &CRDInstaller{protformDeployer: protoformDeployer, defaults: defaults, stopCh: stopCh}
+	crdInstaller := &CRDInstaller{protoformDeployer: protoformDeployer, defaults: defaults, stopCh: stopCh}
 	crdInstaller.indexers = cache.Indexers{}
 	return crdInstaller
 }
 
 // CreateClientSet will create the CRD client
 func (c *CRDInstaller) CreateClientSet() error {
-	opssightClient, err := opssightclientset.NewForConfig(c.protformDeployer.KubeConfig)
+	opssightClient, err := opssightclientset.NewForConfig(c.protoformDeployer.KubeConfig)
 	if err != nil {
 		return errors.Annotate(err, "Unable to create OpsSight informer client")
 	}
@@ -71,11 +72,11 @@ func (c *CRDInstaller) CreateClientSet() error {
 // Deploy will deploy the CRD
 func (c *CRDInstaller) Deploy() error {
 	// Any new, pluggable maintainance stuff should go in here...
-	blackDuckClient, err := hubclient.NewForConfig(c.protformDeployer.KubeConfig)
+	blackDuckClient, err := blackduckclientset.NewForConfig(c.protoformDeployer.KubeConfig)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	crdUpdater := NewUpdater(c.protformDeployer.Config, c.protformDeployer.KubeClient, blackDuckClient, c.opssightclient)
+	crdUpdater := opssight.NewUpdater(c.protoformDeployer.Config, c.protoformDeployer.KubeClient, blackDuckClient, c.opssightclient)
 	go crdUpdater.Run(c.stopCh)
 	return nil
 }
@@ -86,10 +87,10 @@ func (c *CRDInstaller) PostDeploy() {
 
 // CreateInformer will create a informer for the CRD
 func (c *CRDInstaller) CreateInformer() {
-	resyncPeriod := time.Duration(c.protformDeployer.Config.ResyncIntervalInSeconds) * time.Second
+	resyncPeriod := time.Duration(c.protoformDeployer.Config.ResyncIntervalInSeconds) * time.Second
 	c.informer = opssightinformer.NewOpsSightInformer(
 		c.opssightclient,
-		c.protformDeployer.Config.Namespace,
+		c.protoformDeployer.Config.Namespace,
 		resyncPeriod,
 		c.indexers,
 	)
@@ -151,7 +152,7 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	securityClient := c.protformDeployer.SecurityClient
+	securityClient := c.protoformDeployer.SecurityClient
 	if securityClient != nil {
 		_, err := util.GetOpenShiftSecurityConstraint(securityClient, "privileged")
 		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
@@ -160,25 +161,22 @@ func (c *CRDInstaller) CreateHandler() {
 		}
 	}
 
-	hubClient, err := hubclient.NewForConfig(c.protformDeployer.KubeConfig)
+	blackDuckClient, err := blackduckclientset.NewForConfig(c.protoformDeployer.KubeConfig)
 	if err != nil {
 		log.Errorf("unable to create the hub client for opssight: %+v", err)
 		return
 	}
 
 	c.handler = &Handler{
-		Config:           c.protformDeployer.Config,
-		KubeConfig:       c.protformDeployer.KubeConfig,
-		KubeClient:       c.protformDeployer.KubeClient,
-		OpsSightClient:   c.opssightclient,
-		Namespace:        c.protformDeployer.Config.Namespace,
-		OSSecurityClient: securityClient,
-		Defaults:         c.defaults.(*opssightapi.OpsSightSpec),
-		HubClient:        hubClient,
+		protoformDeployer: c.protoformDeployer,
+		opsSightClient:    c.opssightclient,
+		defaults:          c.defaults.(*opssightapi.OpsSightSpec),
+		blackDuckClient:   blackDuckClient,
 	}
 
-	if util.IsOpenshift(c.protformDeployer.KubeClient) {
-		c.handler.RouteClient = util.GetRouteClient(c.protformDeployer.KubeConfig)
+	if util.IsOpenshift(c.protoformDeployer.KubeClient) {
+		c.handler.protoformDeployer.RouteClient = util.GetRouteClient(c.protoformDeployer.KubeConfig)
+		c.handler.protoformDeployer.SecurityClient = securityClient
 	}
 }
 
@@ -186,19 +184,16 @@ func (c *CRDInstaller) CreateHandler() {
 func (c *CRDInstaller) CreateController() {
 	c.controller = NewController(
 		&Controller{
-			Logger:            log.NewEntry(log.New()),
-			Clientset:         c.protformDeployer.KubeClient,
-			Queue:             c.queue,
-			Informer:          c.informer,
-			Handler:           c.handler,
-			OpsSightClientset: c.opssightclient,
-			Namespace:         c.protformDeployer.Config.Namespace,
+			logger:   log.NewEntry(log.New()),
+			queue:    c.queue,
+			informer: c.informer,
+			handler:  c.handler,
 		})
 }
 
 // Run will run the CRD controller
 func (c *CRDInstaller) Run() {
-	go c.controller.Run(c.protformDeployer.Config.Threadiness, c.stopCh)
+	go c.controller.Run(c.protoformDeployer.Config.Threadiness, c.stopCh)
 }
 
 // PostRun will run post CRD controller execution

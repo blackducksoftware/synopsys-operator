@@ -29,18 +29,20 @@ import (
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Size is a specification for a Alert resource
+// Size defines Size configuration
 type Size struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              SizeSpec `json:"spec"`
 }
 
+// SizeSpec is a specification for a template size
 type SizeSpec struct {
-	Rc map[string]RCSize `json:"rc"`
+	PodResources map[string]PodResource `json:"podResources"`
 }
 
-type RCSize struct {
+// PodResource defines the pod resource configuration
+type PodResource struct {
 	Replica        int                      `json:"replica"`
 	ContainerLimit map[string]ContainerSize `json:"containerLimit"`
 }
@@ -53,7 +55,6 @@ type ContainerSize struct {
 	MaxMem *int32 `json:"maxMem"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // SizeList is a list of Size resources
 type SizeList struct {
 	metav1.TypeMeta `json:",inline"`

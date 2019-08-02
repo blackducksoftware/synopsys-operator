@@ -23,6 +23,14 @@ ROOT=$(dirname "${BASH_SOURCE}")/..
 
 cd "${ROOT}"
 
-targets=$(go list -e ./... | egrep -v "/(vendor)/" | egrep -v "/(contrib)/")
+targets=$(go list -e ./... | egrep -v "/(vendor)/" | egrep -v "/(contrib)/" | egrep -v "/(cmd/operator-ui)")
 
 GO111MODULE=on go vet ${targets[@]}
+
+cd "cmd/operator-ui"
+
+targets=$(go list -e ./...)
+
+GO111MODULE=on go vet ${targets[@]}
+
+
