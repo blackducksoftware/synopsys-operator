@@ -25,7 +25,10 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 	"github.com/blackducksoftware/synopsys-operator/pkg/size"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
+	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	horizoncomponents "github.com/blackducksoftware/horizon/pkg/components"
@@ -328,6 +331,25 @@ var deployCmd = &cobra.Command{
 		log.Debugf("creating custom resource definitions")
 		err = deployCrds(operatorNamespace, isClusterScoped, crdConfigs)
 		if err != nil {
+			return err
+		}
+
+		// In some rare cases, the CRD may not be available when we create the default sizes.
+		if err := wait.PollImmediate(time.Second, time.Minute*3, func() (done bool, err error) {
+			crd, err := apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.SizeCRDName, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+			for _, v := range crd.Status.Conditions {
+				if v.Type == apiextensions.Established {
+					if v.Status == apiextensions.ConditionTrue {
+						return true, nil
+					}
+					break
+				}
+			}
+			return false, nil
+		}); err != nil {
 			return err
 		}
 
