@@ -58,6 +58,9 @@ type CRSpecBuilderFromCobraFlags struct {
 	AlertMemory          string
 	CfsslMemory          string
 	DesiredState         string
+	Registry             string
+	RegistryNamespace    string
+	PullSecrets          []string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -127,6 +130,9 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation of Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation of CFSSL")
 	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of Alert")
+	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
+	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
+	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("alert-desired-state", "alert-desired-state flag is deprecated and will be removed by the next release")
@@ -214,6 +220,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.alertSpec.Environs = ctl.Environs
 		case "alert-desired-state":
 			ctl.alertSpec.DesiredState = ctl.DesiredState
+		case "registry":
+			ctl.alertSpec.RegistryConfiguration.Registry = ctl.Registry
+		case "registry-namespace":
+			ctl.alertSpec.RegistryConfiguration.Namespace = ctl.RegistryNamespace
+		case "pull-secret-name":
+			ctl.alertSpec.RegistryConfiguration.PullSecrets = ctl.PullSecrets
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
