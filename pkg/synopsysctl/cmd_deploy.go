@@ -25,8 +25,6 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 	"github.com/blackducksoftware/synopsys-operator/pkg/size"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
 	"time"
 
@@ -335,28 +333,13 @@ var deployCmd = &cobra.Command{
 		}
 
 		// In some rare cases, the CRD may not be available when we create the default sizes.
-		if err := wait.PollImmediate(time.Second, time.Minute*3, func() (done bool, err error) {
-			crd, err := apiExtensionClient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(util.SizeCRDName, metav1.GetOptions{})
-			if err != nil {
-				return false, err
-			}
-			for _, v := range crd.Status.Conditions {
-				if v.Type == apiextensions.Established {
-					if v.Status == apiextensions.ConditionTrue {
-						return true, nil
-					}
-					break
-				}
-			}
-			return false, nil
-		}); err != nil {
+		if err := util.WaitForCRD(util.SizeCRDName, time.Second, time.Minute*3, apiExtensionClient); err != nil {
 			return err
 		}
 
 		// Create default sizes
-		defaultsSizes := []string{"small", "medium", "large"}
-		for _, v := range defaultsSizes {
-			_, err = sizeClient.SynopsysV1().Sizes(operatorNamespace).Create(size.GetDefaultSize(v))
+		for _, v := range size.GetAllDefaultSizes() {
+			_, err = sizeClient.SynopsysV1().Sizes(operatorNamespace).Create(v)
 			if err != nil {
 				return err
 			}

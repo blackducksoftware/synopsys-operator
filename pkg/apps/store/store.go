@@ -244,9 +244,9 @@ func generateDeployment(v types.PublicVersion, config *protoform.Config, kubecli
 	var err error
 
 	if config.DryRun {
-		componentSize = size.GetDefaultSize(customResource.size)
-		if componentSize == nil {
-			return nil, fmt.Errorf("couldn't find size %s", customResource.size)
+		componentSize, err = size.GetDefaultSize(customResource.size)
+		if err != nil {
+			return nil, err
 		}
 	} else {
 		componentSize, err = sizeClient.SynopsysV1().Sizes(config.Namespace).Get(strings.ToLower(customResource.size), metav1.GetOptions{})
@@ -288,9 +288,9 @@ func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kub
 	var err error
 
 	if config.DryRun {
-		componentSize = size.GetDefaultSize(customResource.size)
-		if componentSize == nil {
-			return nil, fmt.Errorf("couldn't find size %s", customResource.size)
+		componentSize, err = size.GetDefaultSize(customResource.size)
+		if err != nil {
+			return nil, err
 		}
 	} else {
 		componentSize, err = sizeClient.SynopsysV1().Sizes(config.Namespace).Get(strings.ToLower(customResource.size), metav1.GetOptions{})

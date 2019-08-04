@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"reflect"
 	"strings"
 	"time"
@@ -1745,4 +1746,22 @@ func InitAnnotations(annotations map[string]string) map[string]string {
 		return make(map[string]string, 0)
 	}
 	return annotations
+}
+
+func WaitForCRD(name string, interval time.Duration, timeout time.Duration, apiextensionsclient *apiextensionsclient.Clientset) error {
+	return wait.PollImmediate(interval, timeout, func() (done bool, err error) {
+		crd, err := apiextensionsclient.ApiextensionsV1beta1().CustomResourceDefinitions().Get(name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		for _, v := range crd.Status.Conditions {
+			if v.Type == apiextensions.Established {
+				if v.Status == apiextensions.ConditionTrue {
+					return true, nil
+				}
+				break
+			}
+		}
+		return false, nil
+	})
 }
