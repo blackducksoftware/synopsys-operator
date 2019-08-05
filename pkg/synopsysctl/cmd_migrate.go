@@ -24,6 +24,7 @@ package synopsysctl
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/size"
 	"strings"
 	"time"
 
@@ -110,6 +111,10 @@ var migrateCmd = &cobra.Command{
 
 func migrate(namespace string) error {
 	err := scaleDownDeployment(namespace, util.OperatorName)
+	if err != nil {
+		return err
+	}
+	err = migrateSize(namespace)
 	if err != nil {
 		return err
 	}
@@ -239,7 +244,7 @@ func migrateOperator(namespace string) error {
 
 // migrateCRD adds the labels to the custom resource definitions for the existing operator
 func migrateCRD(namespace string) error {
-	crdNames := []string{util.AlertCRDName, util.BlackDuckCRDName, util.OpsSightCRDName}
+	crdNames := []string{util.AlertCRDName, util.BlackDuckCRDName, util.OpsSightCRDName, util.SizeCRDName}
 	for _, crdName := range crdNames {
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdName)
 		if err != nil {
@@ -581,6 +586,32 @@ func migrateOpsSight(namespace string) error {
 			return err
 		}
 		log.Infof("successfully migrated OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
+	}
+	return nil
+}
+
+// migrateSize will ensure that the Size CRD exists as well as the default sizes
+func migrateSize(namespace string) error {
+	isClusterScoped := util.GetClusterScope(apiExtensionClient)
+	if _, err := util.GetCustomResourceDefinition(apiExtensionClient, util.SizeCRDName); err != nil {
+		crd, err := getCrdConfigs(namespace, isClusterScoped, []string{util.SizeCRDName})
+		if err != nil {
+			return err
+		}
+		if err := deployCrds(namespace, isClusterScoped, crd); err != nil {
+			return err
+		}
+		if err := util.WaitForCRD(util.SizeCRDName, time.Second, time.Minute*3, apiExtensionClient); err != nil {
+			return err
+		}
+	}
+
+	for _, v := range size.GetAllDefaultSizes() {
+		if _, err := sizeClient.SynopsysV1().Sizes(namespace).Get(v.Name, metav1.GetOptions{}); err != nil {
+			if _, err := sizeClient.SynopsysV1().Sizes(namespace).Create(v); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
