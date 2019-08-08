@@ -1,0 +1,8 @@
+apiVersion: synopsys.com/v1
+kind: Alert
+metadata:
+  name: alert-sample
+spec:
+  # Add fields here
+  finalYamlUrl: "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
+  shaOfFinalYaml: ""

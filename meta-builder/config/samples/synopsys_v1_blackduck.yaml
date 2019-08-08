@@ -1,0 +1,7 @@
+apiVersion: synopsys.com/v1
+kind: Blackduck
+metadata:
+  name: blackduck-sample
+spec:
+  # Add fields here
+  foo: bar
