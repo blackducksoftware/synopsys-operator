@@ -309,6 +309,9 @@ func generateRc(v types.PublicVersion, config *protoform.Config, kubeclient *kub
 		}
 
 		rcCreater, err := component(pod, config, kubeclient, cr)
+		if err != nil {
+			return nil, err
+		}
 		comp, err := rcCreater.GetRc()
 		if err != nil {
 			return nil, err

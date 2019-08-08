@@ -122,6 +122,7 @@ var createAlertCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	PreRunE: createAlertPreRun,
@@ -173,6 +174,7 @@ var createAlertNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	PreRunE: createAlertPreRun,
@@ -211,6 +213,13 @@ var createAlertNativeCmd = &cobra.Command{
 /*
 Create Black Duck Commands
 */
+
+func checkRegistryConfiguration(flagset *pflag.FlagSet) {
+	if flagset.Lookup("registry").Changed || flagset.Lookup("registry-namespace").Changed {
+		cobra.MarkFlagRequired(flagset, "registry")
+		cobra.MarkFlagRequired(flagset, "registry-namespace")
+	}
+}
 
 func checkPasswords(flagset *pflag.FlagSet) {
 	if flagset.Lookup("external-postgres-host").Changed ||
@@ -290,6 +299,7 @@ var createBlackDuckCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		checkPasswords(cmd.Flags())
 		return nil
 	},
@@ -360,6 +370,7 @@ var createBlackDuckNativeCmd = &cobra.Command{
 		if blackDuckNativeDatabase {
 			checkPasswords(cmd.Flags())
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	PreRunE: createBlackDuckPreRun,
@@ -455,6 +466,7 @@ var createOpsSightCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 arguments")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	PreRunE: createOpsSightPreRun,
@@ -506,6 +518,7 @@ var createOpsSightNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	PreRunE: createOpsSightPreRun,

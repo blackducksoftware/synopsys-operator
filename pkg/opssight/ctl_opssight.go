@@ -107,6 +107,9 @@ type CRSpecBuilderFromCobraFlags struct {
 	BlackduckInitialCount                           int
 	BlackduckMaxCount                               int
 	BlackduckType                                   string
+	Registry                                        string
+	RegistryNamespace                               string
+	PullSecrets                                     []string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -211,6 +214,9 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Duck instances that can be created")
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
 	cmd.Flags().StringVar(&ctl.BlackduckPassword, "blackduck-password", ctl.BlackduckPassword, "Password to use for all internal Blackduck 'sysadmin' account")
+	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
+	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
+	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
@@ -488,6 +494,12 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.opsSightSpec.Blackduck.BlackduckSpec = &blackduckapi.BlackduckSpec{}
 			}
 			ctl.opsSightSpec.Blackduck.BlackduckPassword = crddefaults.Base64Encode([]byte(ctl.BlackduckPassword))
+		case "registry":
+			ctl.opsSightSpec.RegistryConfiguration.Registry = ctl.Registry
+		case "registry-namespace":
+			ctl.opsSightSpec.RegistryConfiguration.Namespace = ctl.RegistryNamespace
+		case "pull-secret-name":
+			ctl.opsSightSpec.RegistryConfiguration.PullSecrets = ctl.PullSecrets
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
