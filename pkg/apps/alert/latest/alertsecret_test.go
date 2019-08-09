@@ -115,7 +115,7 @@ func TestSpecConfig_getAlertSecret(t *testing.T) {
 					},
 					Type: "Opaque",
 				}
-				if !reflect.DeepEqual(got.Secret, want) {
+				if !reflect.DeepEqual(got.Secret.Data, want.Data) || !reflect.DeepEqual(got.Secret.StringData, want.StringData) {
 					t.Errorf("altSpecConfig.GetAlertSecret() = %v, want %v", got, want)
 				}
 			}

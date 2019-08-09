@@ -74,7 +74,7 @@ func TestSpecConfig_getAlertServiceLoadBalancer(t *testing.T) {
 					Selector: map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},
 			}
-			if got := tt.altSpecConfig.getAlertServiceLoadBalancer(); !reflect.DeepEqual(got.Service, want) {
+			if got := tt.altSpecConfig.getAlertServiceLoadBalancer(); !reflect.DeepEqual(got.Service.Spec, want.Spec) {
 				t.Errorf("SpecConfig.getAlertServiceLoadBalancer() = %v, want %v", got.Service, want)
 			}
 		})
@@ -122,7 +122,7 @@ func TestSpecConfig_getAlertServiceNodePort(t *testing.T) {
 					Selector: map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},
 			}
-			if got := tt.altSpecConfig.getAlertServiceNodePort(); !reflect.DeepEqual(got.Service, want) {
+			if got := tt.altSpecConfig.getAlertServiceNodePort(); !reflect.DeepEqual(got.Service.Spec, want.Spec) {
 				t.Errorf("SpecConfig.getAlertServiceNodePort() = %v, want %v", got.Service, want)
 			}
 		})
@@ -170,7 +170,7 @@ func TestSpecConfig_getAlertService(t *testing.T) {
 					Selector: map[string]string{"app": util.AlertName, "name": tt.altSpecConfig.alert.Name, "component": "alert"},
 				},
 			}
-			if got := tt.altSpecConfig.getAlertClusterService(); !reflect.DeepEqual(got.Service, want) {
+			if got := tt.altSpecConfig.getAlertClusterService(); !reflect.DeepEqual(got.Service.Spec, want.Spec) {
 				t.Errorf("SpecConfig.getAlertService() = %v, want %v", got.Service, want)
 			}
 		})

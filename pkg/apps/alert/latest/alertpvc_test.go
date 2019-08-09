@@ -96,7 +96,7 @@ func TestSpecConfig_getAlertPersistentVolumeClaim(t *testing.T) {
 						StorageClassName: &tt.altSpecConfig.alert.Spec.PVCStorageClass,
 					},
 				}
-				if !reflect.DeepEqual(got.PersistentVolumeClaim, want) {
+				if !reflect.DeepEqual(got.PersistentVolumeClaim.Spec, want.Spec) {
 					t.Errorf("SpecConfig.getAlertPersistentVolumeClaim() = %v, want %v", got, want)
 				}
 			}
