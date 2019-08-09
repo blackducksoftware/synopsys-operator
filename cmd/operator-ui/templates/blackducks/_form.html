@@ -28,7 +28,8 @@
       <%= for (index, claim) in  blackduck.Spec.PVC { %>
       <%= if (claim.Name=="blackduck-postgres") { %>
       <%= f.HiddenTag("Spec.PVC["+index+"].Name", {value: claim.Name }) %>
-      <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: claim.Name, value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+      <%= f.InputTag("Spec.PVC["+index+"].Size", {Id: "blackduck-postgres-size", value: claim.Size, label: "Postgres Claim Size", placeholder: "Required for creating the Persistent Volume and Volume Claim", required: true}) %>
+      <%= f.InputTag("Spec.PVC["+index+"].VolumeName", {Id: "blackduck-postgres-volumename", value: claim.VolumeName, label: "Postgres Persistent Volume", placeholder: "[Optional] Postgres Persistent Volume"}) %>
       <% } %>
       <% } %>
     </div>
@@ -253,8 +254,11 @@
         document.getElementById("blackduck-Spec.PersistentStorage").setAttribute("readonly", "readonly")
         document.getElementById("blackduck-Spec.PVCStorageClass").setAttribute("readonly", "readonly")
         document.getElementById("blackduck-Spec.ScanType").setAttribute("readonly", "readonly")
-        if (document.getElementById("blackduck-postgres") != null) {
-          document.getElementById("blackduck-postgres").setAttribute("readonly", "readonly")
+        if (document.getElementById("blackduck-postgres-size") != null) {
+          document.getElementById("blackduck-postgres-size").setAttribute("readonly", "readonly")
+        }
+        if (document.getElementById("blackduck-postgres-volumename") != null) {
+          document.getElementById("blackduck-postgres-volumename").setAttribute("readonly", "readonly")
         }
       }
     }

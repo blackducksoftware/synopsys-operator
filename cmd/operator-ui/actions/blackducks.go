@@ -142,7 +142,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 	}
 
 	// PVCs
-	if bd.Spec.PVC == nil {
+	if len(bd.Spec.PVC) == 0 {
 		bd.Spec.PVC = []blackduckapi.PVC{
 			{
 				Name: "blackduck-postgres",
