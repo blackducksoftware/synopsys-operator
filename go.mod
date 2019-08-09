@@ -3,12 +3,15 @@ module github.com/blackducksoftware/synopsys-operator
 go 1.12
 
 require (
+	github.com/Azure/go-autorest/autorest v0.0.0-00010101000000-000000000000 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.2.0 // indirect
 	github.com/blackducksoftware/horizon v0.0.0-20190603173136-e141457f7a80
-	github.com/blackducksoftware/synopsys-operator/cmd/operator-ui v0.0.0-20190719175208-052dbc73c55d // indirect
+	github.com/docker/spdystream v0.0.0-00010101000000-000000000000 // indirect
+	github.com/evanphx/json-patch v0.0.0-00010101000000-000000000000 // indirect
 	github.com/gin-gonic/gin v1.4.0
 	github.com/google/go-cmp v0.3.0
 	github.com/google/gofuzz v1.0.0 // indirect
+	github.com/gophercloud/gophercloud v0.0.0-00010101000000-000000000000 // indirect
 	github.com/imdario/mergo v0.3.7
 	github.com/jackc/pgx v3.3.0+incompatible // indirect
 	github.com/juju/errors v0.0.0-20190207033735-e65537c515d7
@@ -24,10 +27,13 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
+	gopkg.in/inf.v0 v0.0.0-00010101000000-000000000000 // indirect
 	k8s.io/api v0.0.0-20190612125737-db0771252981
 	k8s.io/apiextensions-apiserver v0.0.0-20190626210203-fdc73e13f9a6
 	k8s.io/apimachinery v0.0.0-20190624085041-961b39a1baa0
 	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/kube-openapi v0.0.0-00010101000000-000000000000 // indirect
+	k8s.io/utils v0.0.0-00010101000000-000000000000 // indirect
 	sigs.k8s.io/yaml v1.1.0
 )
 
@@ -36,7 +42,6 @@ replace (
 	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.3.0
 	github.com/Azure/go-autorest/autorest/adal => github.com/Azure/go-autorest/autorest/adal v0.2.0
 	github.com/blackducksoftware/horizon => github.com/blackducksoftware/horizon v0.0.0-20190603173136-e141457f7a80
-	github.com/blackducksoftware/synopsys-operator/cmd/operator-ui => github.com/blackducksoftware/synopsys-operator/cmd/operator-ui v0.0.0-20190719175208-052dbc73c55d
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c
 	github.com/elazarl/goproxy => github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2
 	github.com/elazarl/goproxy/ext => github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2
