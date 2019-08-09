@@ -1,0 +1,13 @@
+version: "2"
+domain: com
+repo: github.com/yashbhutwala/kb-synopsys-operator
+resources:
+- group: synopsys
+  version: v1
+  kind: Alert
+- group: synopsys
+  version: v1
+  kind: Blackduck
+- group: synopsys
+  version: v1
+  kind: OpsSight
