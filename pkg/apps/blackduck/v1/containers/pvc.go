@@ -22,93 +22,29 @@ under the License.
 package containers
 
 import (
-	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
-	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	"github.com/blackducksoftware/synopsys-operator/pkg/util"
-	"k8s.io/apimachinery/pkg/api/resource"
+	blackduckutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/util"
 )
 
 // GetPVCs will return the PVCs
-func (c *Creater) GetPVCs() []*components.PersistentVolumeClaim {
-	var pvcs []*components.PersistentVolumeClaim
-
+func (c *Creater) GetPVCs() ([]*components.PersistentVolumeClaim, error) {
 	defaultPVC := map[string]string{
-		"blackduck-postgres":         "150Gi",
-		"blackduck-authentication":   "2Gi",
-		"blackduck-cfssl":            "2Gi",
-		"blackduck-registration":     "2Gi",
-		"blackduck-solr":             "2Gi",
-		"blackduck-webapp":           "2Gi",
-		"blackduck-logstash":         "20Gi",
-		"blackduck-zookeeper":        "4Gi",
-		"blackduck-uploadcache-data": "100Gi",
+		"blackduck-authentication": "2Gi",
+		"blackduck-cfssl":          "2Gi",
+		"blackduck-registration":   "2Gi",
+		"blackduck-solr":           "2Gi",
+		"blackduck-webapp":         "2Gi",
+		"blackduck-logstash":       "20Gi",
+		"blackduck-zookeeper":      "4Gi",
 	}
 
-	if c.blackDuck.Spec.ExternalPostgres != nil {
-		delete(defaultPVC, "blackduck-postgres")
+	if c.blackDuck.Spec.ExternalPostgres == nil {
+		defaultPVC["blackduck-postgres"] = "150Gi"
 	}
 
-	if !c.isBinaryAnalysisEnabled {
-		delete(defaultPVC, "blackduck-uploadcache-data")
+	if c.isBinaryAnalysisEnabled {
+		defaultPVC["blackduck-uploadcache-data"] = "100Gi"
 	}
 
-	if c.blackDuck.Spec.PersistentStorage {
-		pvcMap := make(map[string]blackduckapi.PVC)
-		for _, claim := range c.blackDuck.Spec.PVC {
-			pvcMap[claim.Name] = claim
-		}
-
-		for name, defaultSize := range defaultPVC {
-			size := defaultSize
-			storageClass := c.blackDuck.Spec.PVCStorageClass
-			if claim, ok := pvcMap[name]; ok {
-				if len(claim.StorageClass) > 0 {
-					storageClass = claim.StorageClass
-				}
-				if len(claim.Size) > 0 {
-					size = claim.Size
-				}
-			}
-
-			pvcName := util.GetResourceName(c.blackDuck.Name, "", name)
-			if c.blackDuck.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
-				pvcName = name
-			}
-
-			pvcs = append(pvcs, c.createPVC(pvcName, size, defaultSize, storageClass, horizonapi.ReadWriteOnce, c.GetLabel("pvc")))
-		}
-	}
-
-	return pvcs
-}
-
-func (c *Creater) createPVC(name string, requestedSize string, defaultSize string, storageclass string, accessMode horizonapi.PVCAccessModeType, label map[string]string) *components.PersistentVolumeClaim {
-	// Workaround so that storageClass does not get set to "", which prevent Kube from using the default storageClass
-	var class *string
-	if len(storageclass) > 0 {
-		class = &storageclass
-	} else {
-		class = nil
-	}
-
-	var size string
-	_, err := resource.ParseQuantity(requestedSize)
-	if err != nil {
-		size = defaultSize
-	} else {
-		size = requestedSize
-	}
-
-	pvc, _ := components.NewPersistentVolumeClaim(horizonapi.PVCConfig{
-		Name:      name,
-		Namespace: c.blackDuck.Spec.Namespace,
-		Size:      size,
-		Class:     class,
-	})
-
-	pvc.AddAccessMode(accessMode)
-	pvc.AddLabels(label)
-
-	return pvc
+	return blackduckutil.GenPVC(defaultPVC, c.blackDuck)
 }

@@ -208,7 +208,10 @@ func (b Blackduck) GetComponents(bd *blackduckapi.Blackduck, compType string) (*
 	case DatabaseResources:
 		return creater.GetPostgresComponents(bd)
 	case PVCResources:
-		pvcs := creater.GetPVC(bd)
+		pvcs, err := creater.GetPVC(bd)
+		if err != nil {
+			return nil, err
+		}
 		return &api.ComponentList{PersistentVolumeClaims: pvcs}, nil
 	}
 	return nil, fmt.Errorf("invalid components type '%s'", compType)

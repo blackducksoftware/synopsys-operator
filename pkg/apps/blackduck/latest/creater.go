@@ -64,7 +64,10 @@ func NewCreater(config *protoform.Config, kubeConfig *rest.Config, kubeClient *k
 func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	newBlackuck := blackduck.DeepCopy()
 
-	pvcs := hc.GetPVC(blackduck)
+	pvcs, err := hc.GetPVC(blackduck)
+	if err != nil {
+		return fmt.Errorf("get pvc :%+v", err)
+	}
 
 	if strings.EqualFold(blackduck.Spec.DesiredState, "STOP") {
 		// Save/Update the PVCs for the Black Duck

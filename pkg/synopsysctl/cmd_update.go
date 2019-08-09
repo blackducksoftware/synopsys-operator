@@ -44,10 +44,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Update Command Resource Ctls
-var updateAlertCtl ResourceCtl
-var updateBlackDuckCtl ResourceCtl
-var updateOpsSightCtl ResourceCtl
+// Update Command ResourceCtlSpecBuilders
+var updateAlertCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var updateBlackDuckCobraHelper CRSpecBuilderFromCobraFlagsInterface
+var updateOpsSightCobraHelper CRSpecBuilderFromCobraFlagsInterface
 
 var updateMockFormat = "json"
 
@@ -377,32 +377,13 @@ var updateOperatorNativeCmd = &cobra.Command{
 Update Alert Commands
 */
 
-// GetAlertToUpdate returns the Alert from the cluster if it can be updated
-func GetAlertToUpdate(alertName, alertNamespace string) (*alertapi.Alert, error) {
-	currAlert, err := util.GetAlert(alertClient, alertNamespace, alertName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-	}
-	err = updateAlertCtl.SetSpec(currAlert.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("cannot set existing Alert '%s's spec in namespace '%s' due to %+v", alertName, alertNamespace, err)
-	}
-
-	// Check if it can be updated
-	canUpdate, err := updateAlertCtl.CanUpdate()
-	if err != nil {
-		return nil, fmt.Errorf("cannot update Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
-	}
-	if canUpdate {
-		return currAlert, nil
-	}
-	return nil, fmt.Errorf("cannot update Black Duck '%s' in namespace '%s'", alertName, alertNamespace)
-}
-
 func updateAlert(alt *alertapi.Alert, flagset *pflag.FlagSet) (*alertapi.Alert, error) {
-	updateAlertCtl.SetSpec(alt.Spec)
-	updateAlertCtl.SetChangedFlags(flagset)
-	newSpec := updateAlertCtl.GetSpec().(alertapi.AlertSpec)
+	updateAlertCobraHelper.SetCRSpec(alt.Spec)
+	alertInterface, err := updateAlertCobraHelper.GenerateCRSpecFromFlags(flagset)
+	if err != nil {
+		return nil, err
+	}
+	newSpec := alertInterface.(alertapi.AlertSpec)
 	newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, alt.Spec.Environs)
 	alt.Spec = newSpec
 	return alt, nil
@@ -420,6 +401,7 @@ var updateAlertCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -428,9 +410,9 @@ var updateAlertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currAlert, err := GetAlertToUpdate(alertName, alertNamespace)
+		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
 		newAlert, err := updateAlert(currAlert, cmd.Flags())
 		if err != nil {
@@ -471,6 +453,7 @@ var updateAlertNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -478,9 +461,9 @@ var updateAlertNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currAlert, err := GetAlertToUpdate(alertName, alertNamespace)
+		currAlert, err := util.GetAlert(alertClient, alertNamespace, alertName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 		}
 		newAlert, err := updateAlert(currAlert, cmd.Flags())
 		if err != nil {
@@ -496,32 +479,13 @@ var updateAlertNativeCmd = &cobra.Command{
 Update Black Duck Commands
 */
 
-// GetBlackDuckToUpdate returns the Black Duck from the cluster if it can be updated
-func GetBlackDuckToUpdate(blackDuckName, blackDuckNamespace string) (*blackduckapi.Blackduck, error) {
-	// Get Black Duck Spec
-	currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-	}
-	// Check if Black Duck can be updated
-	err = updateBlackDuckCtl.SetSpec(currBlackDuck.Spec)
-	if err != nil {
-		return nil, fmt.Errorf("cannot set existing Black Duck '%s's spec in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-	}
-	canUpdate, err := updateBlackDuckCtl.CanUpdate()
-	if err != nil {
-		return nil, fmt.Errorf("cannot update Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
-	}
-	if canUpdate {
-		return currBlackDuck, nil
-	}
-	return nil, fmt.Errorf("cannot update Black Duck '%s' in namespace '%s'", blackDuckName, blackDuckNamespace)
-}
-
 func updateBlackDuck(bd *blackduckapi.Blackduck, flagset *pflag.FlagSet) (*blackduckapi.Blackduck, error) {
-	updateBlackDuckCtl.SetSpec(bd.Spec)
-	updateBlackDuckCtl.SetChangedFlags(flagset)
-	newSpec := updateBlackDuckCtl.GetSpec().(blackduckapi.BlackduckSpec)
+	updateBlackDuckCobraHelper.SetCRSpec(bd.Spec)
+	blackDuckInterface, err := updateBlackDuckCobraHelper.GenerateCRSpecFromFlags(flagset)
+	if err != nil {
+		return nil, err
+	}
+	newSpec := blackDuckInterface.(blackduckapi.BlackduckSpec)
 	// merge environs
 	newSpec.Environs = util.MergeEnvSlices(newSpec.Environs, bd.Spec.Environs)
 	bd.Spec = newSpec
@@ -539,6 +503,7 @@ var updateBlackDuckCmd = &cobra.Command{
 		if len(args) == 0 {
 			return fmt.Errorf("this command takes 1 or more arguments")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -547,9 +512,9 @@ var updateBlackDuckCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := GetBlackDuckToUpdate(blackDuckName, blackDuckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 		currBlackDuck, err = updateBlackDuck(currBlackDuck, cmd.Flags())
 		if err != nil {
@@ -589,6 +554,7 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 		if len(args) == 0 {
 			return fmt.Errorf("this command takes 1 or more arguments")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -596,9 +562,9 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := GetBlackDuckToUpdate(blackDuckName, blackDuckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 		newBlackDuck, err := updateBlackDuck(currBlackDuck, cmd.Flags())
 		if err != nil {
@@ -712,9 +678,9 @@ var updateBlackDuckAddEnvironCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := GetBlackDuckToUpdate(blackDuckName, blackDuckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 		newBlackDuck, err := updateBlackDuckAddEnviron(currBlackDuck, args[1])
 		if err != nil {
@@ -756,9 +722,9 @@ var updateBlackDuckAddEnvironNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := GetBlackDuckToUpdate(blackDuckName, blackDuckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 		newBlackDuck, err := updateBlackDuckAddEnviron(currBlackDuck, args[1])
 		if err != nil {
@@ -815,9 +781,9 @@ var updateBlackDuckSetImageRegistryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := GetBlackDuckToUpdate(blackDuckName, blackDuckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 		newBlackDuck, err := updateBlackDuckSetImageRegistry(currBlackDuck, args[1])
 		if err != nil {
@@ -859,9 +825,9 @@ var updateBlackDuckSetImageRegistryNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currBlackDuck, err := GetBlackDuckToUpdate(blackDuckName, blackDuckNamespace)
+		currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 		}
 		newBlackDuck, err := updateBlackDuckSetImageRegistry(currBlackDuck, args[1])
 		if err != nil {
@@ -877,29 +843,13 @@ var updateBlackDuckSetImageRegistryNativeCmd = &cobra.Command{
 Update OpsSight Commands
 */
 
-// GetOpsSightToUpdate returns the OpsSight from the cluster if it can be updated
-func GetOpsSightToUpdate(opsSightName, opsSightNamespace string) (*opssightapi.OpsSight, error) {
-	// Get OpsSight Spec
-	currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
-	if err != nil {
-		return nil, fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-	}
-	// Check if it can be updated
-	updateOpsSightCtl.SetSpec(currOpsSight.Spec)
-	canUpdate, err := updateOpsSightCtl.CanUpdate()
-	if err != nil {
-		return nil, fmt.Errorf("cannot update OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-	}
-	if canUpdate {
-		return currOpsSight, nil
-	}
-	return nil, fmt.Errorf("cannot update OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
-}
-
 func updateOpsSight(ops *opssightapi.OpsSight, flagset *pflag.FlagSet) (*opssightapi.OpsSight, error) {
-	updateOpsSightCtl.SetSpec(ops.Spec)
-	updateOpsSightCtl.SetChangedFlags(flagset)
-	newSpec := updateOpsSightCtl.GetSpec().(opssightapi.OpsSightSpec)
+	updateOpsSightCobraHelper.SetCRSpec(ops.Spec)
+	opsSightInterface, err := updateOpsSightCobraHelper.GenerateCRSpecFromFlags(flagset)
+	if err != nil {
+		return nil, err
+	}
+	newSpec := opsSightInterface.(opssightapi.OpsSightSpec)
 	ops.Spec = newSpec
 	return ops, nil
 }
@@ -916,6 +866,7 @@ var updateOpsSightCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -924,9 +875,9 @@ var updateOpsSightCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currOpsSight, err := GetOpsSightToUpdate(opsSightName, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		newOpsSight, err := updateOpsSight(currOpsSight, cmd.Flags())
 		if err != nil {
@@ -968,6 +919,7 @@ var updateOpsSightNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
+		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -975,9 +927,9 @@ var updateOpsSightNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currOpsSight, err := GetOpsSightToUpdate(opsSightName, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		newOpsSight, err := updateOpsSight(currOpsSight, cmd.Flags())
 		if err != nil {
@@ -1029,9 +981,9 @@ var updateOpsSightImageCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currOpsSight, err := GetOpsSightToUpdate(opsSightName, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		newOpsSight, err := updateOpsSightImage(currOpsSight, args[1], args[2])
 		if err != nil {
@@ -1073,9 +1025,9 @@ var updateOpsSightImageNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currOpsSight, err := GetOpsSightToUpdate(opsSightName, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		newOpsSight, err := updateOpsSightImage(currOpsSight, args[1], args[2])
 		if err != nil {
@@ -1138,9 +1090,9 @@ var updateOpsSightExternalHostCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currOpsSight, err := GetOpsSightToUpdate(opsSightName, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		newOpsSight, err := updateOpsSightExternalHost(currOpsSight, args[1], args[2], args[3], args[4], args[5], args[6])
 		if err != nil {
@@ -1192,9 +1144,9 @@ var updateOpsSightExternalHostNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currOpsSight, err := GetOpsSightToUpdate(opsSightName, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		newOpsSight, err := updateOpsSightExternalHost(currOpsSight, args[1], args[2], args[3], args[4], args[5], args[6])
 		if err != nil {
@@ -1236,9 +1188,9 @@ var updateOpsSightAddRegistryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currOpsSight, err := GetOpsSightToUpdate(opsSightName, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		newOpsSight, err := updateOpsSightAddRegistry(currOpsSight, args[1], args[2], args[3])
 		if err != nil {
@@ -1280,9 +1232,9 @@ var updateOpsSightAddRegistryNativeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		currOpsSight, err := GetOpsSightToUpdate(opsSightName, opsSightNamespace)
+		currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 		}
 		newOpsSight, err := updateOpsSightAddRegistry(currOpsSight, args[1], args[2], args[3])
 		if err != nil {
@@ -1316,9 +1268,9 @@ func addUpdateOperatorFlags(cmd *cobra.Command) {
 
 func init() {
 	// initialize global resource ctl structs for commands to use
-	updateBlackDuckCtl = blackduck.NewBlackDuckCtl()
-	updateOpsSightCtl = opssight.NewOpsSightCtl()
-	updateAlertCtl = alert.NewAlertCtl()
+	updateBlackDuckCobraHelper = blackduck.NewCRSpecBuilderFromCobraFlags()
+	updateOpsSightCobraHelper = opssight.NewCRSpecBuilderFromCobraFlags()
+	updateAlertCobraHelper = alert.NewCRSpecBuilderFromCobraFlags()
 
 	rootCmd.AddCommand(updateCmd)
 
@@ -1337,11 +1289,11 @@ func init() {
 
 	// updateAlertCmd
 	updateAlertCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	updateAlertCtl.AddSpecFlags(updateAlertCmd, false)
+	updateAlertCobraHelper.AddCRSpecFlagsToCommand(updateAlertCmd, false)
 	addMockFlag(updateAlertCmd)
 	updateCmd.AddCommand(updateAlertCmd)
 
-	updateAlertCtl.AddSpecFlags(updateAlertNativeCmd, false)
+	updateAlertCobraHelper.AddCRSpecFlagsToCommand(updateAlertNativeCmd, false)
 	addNativeFormatFlag(updateAlertNativeCmd)
 	updateAlertCmd.AddCommand(updateAlertNativeCmd)
 
@@ -1349,11 +1301,11 @@ func init() {
 
 	// updateBlackDuckCmd
 	updateBlackDuckCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	updateBlackDuckCtl.AddSpecFlags(updateBlackDuckCmd, false)
+	updateBlackDuckCobraHelper.AddCRSpecFlagsToCommand(updateBlackDuckCmd, false)
 	addMockFlag(updateBlackDuckCmd)
 	updateCmd.AddCommand(updateBlackDuckCmd)
 
-	updateBlackDuckCtl.AddSpecFlags(updateBlackDuckNativeCmd, false)
+	updateBlackDuckCobraHelper.AddCRSpecFlagsToCommand(updateBlackDuckNativeCmd, false)
 	addNativeFormatFlag(updateBlackDuckNativeCmd)
 	updateBlackDuckCmd.AddCommand(updateBlackDuckNativeCmd)
 
@@ -1375,11 +1327,11 @@ func init() {
 
 	// updateOpsSightCmd
 	updateOpsSightCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", namespace, "Namespace of the instance(s)")
-	updateOpsSightCtl.AddSpecFlags(updateOpsSightCmd, false)
+	updateOpsSightCobraHelper.AddCRSpecFlagsToCommand(updateOpsSightCmd, false)
 	addMockFlag(updateOpsSightCmd)
 	updateCmd.AddCommand(updateOpsSightCmd)
 
-	updateOpsSightCtl.AddSpecFlags(updateOpsSightNativeCmd, false)
+	updateOpsSightCobraHelper.AddCRSpecFlagsToCommand(updateOpsSightNativeCmd, false)
 	addNativeFormatFlag(updateOpsSightNativeCmd)
 	updateOpsSightCmd.AddCommand(updateOpsSightNativeCmd)
 

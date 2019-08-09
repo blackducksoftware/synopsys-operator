@@ -68,10 +68,16 @@ func NewController(configPath string, version string) (*Deployer, error) {
 			return nil, errors.Annotate(err, "unable to create deployer object")
 		}
 
+		config.IsOpenshift = util.IsOpenshift(kubeClientSet)
+		clusterType := soperator.KubernetesClusterType
+		if config.IsOpenshift {
+			clusterType = soperator.OpenshiftClusterType
+		}
+
 		operatorConfig := soperator.SpecConfig{
 			Namespace:                     config.Namespace,
-			Image:                         "",
-			Expose:                        "",
+			Expose:                        util.NONE,
+			ClusterType:                   clusterType,
 			DryRun:                        config.DryRun,
 			LogLevel:                      config.LogLevel,
 			Threadiness:                   config.Threadiness,
@@ -79,8 +85,8 @@ func NewController(configPath string, version string) (*Deployer, error) {
 			PodWaitTimeoutSeconds:         config.PodWaitTimeoutSeconds,
 			ResyncIntervalInSeconds:       config.ResyncIntervalInSeconds,
 			TerminationGracePeriodSeconds: config.TerminationGracePeriodSeconds,
-			Crds:                          strings.Split(config.CrdNames, ","),
 			IsClusterScoped:               config.IsClusterScoped,
+			Crds:                          strings.Split(config.CrdNames, ","),
 		}
 		operatorCm, err := operatorConfig.GetOperatorConfigMap()
 		if err != nil {
@@ -99,8 +105,7 @@ func NewController(configPath string, version string) (*Deployer, error) {
 		}
 		prometheusConfig := soperator.PrometheusSpecConfig{
 			Namespace: config.Namespace,
-			Image:     "",
-			Expose:    "",
+			Expose:    util.NONE,
 		}
 		prometheusCm, err := prometheusConfig.GetPrometheusConfigMap()
 		if err != nil {

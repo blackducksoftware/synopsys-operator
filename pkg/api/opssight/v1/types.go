@@ -22,7 +22,8 @@ under the License.
 package v1
 
 import (
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
+	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -64,10 +65,10 @@ type Blackduck struct {
 	TLSVerification                    bool    `json:"tlsVerification"`
 
 	// Auto scaling parameters
-	InitialCount                       int               `json:"initialCount"`
-	MaxCount                           int               `json:"maxCount"`
-	DeleteBlackduckThresholdPercentage int               `json:"deleteBlackduckThresholdPercentage"`
-	BlackduckSpec                      *v1.BlackduckSpec `json:"blackduckSpec"`
+	InitialCount                       int                         `json:"initialCount"`
+	MaxCount                           int                         `json:"maxCount"`
+	DeleteBlackduckThresholdPercentage int                         `json:"deleteBlackduckThresholdPercentage"`
+	BlackduckSpec                      *blackduckapi.BlackduckSpec `json:"blackduckSpec"`
 }
 
 // Perceptor stores the Perceptor configuration
@@ -137,16 +138,15 @@ type Perceiver struct {
 
 // Skyfire stores the Skyfire configuration
 type Skyfire struct {
-	Name           string `json:"name"`
-	Image          string `json:"image"`
-	Port           int    `json:"port"`
-	PrometheusPort int    `json:"prometheusPort"`
-	ServiceAccount string `json:"serviceAccount"`
-
-	HubClientTimeoutSeconds      int `json:"hubClientTimeoutSeconds"`
-	HubDumpPauseSeconds          int `json:"hubDumpPauseSeconds"`
-	KubeDumpIntervalSeconds      int `json:"kubeDumpIntervalSeconds"`
-	PerceptorDumpIntervalSeconds int `json:"perceptorDumpIntervalSeconds"`
+	Name                         string `json:"name"`
+	Image                        string `json:"image"`
+	Port                         int    `json:"port"`
+	PrometheusPort               int    `json:"prometheusPort"`
+	ServiceAccount               string `json:"serviceAccount"`
+	HubClientTimeoutSeconds      int    `json:"hubClientTimeoutSeconds"`
+	HubDumpPauseSeconds          int    `json:"hubDumpPauseSeconds"`
+	KubeDumpIntervalSeconds      int    `json:"kubeDumpIntervalSeconds"`
+	PerceptorDumpIntervalSeconds int    `json:"perceptorDumpIntervalSeconds"`
 }
 
 // Prometheus container definition
@@ -187,7 +187,9 @@ type OpsSightSpec struct {
 	// Black Duck
 	Blackduck *Blackduck `json:"blackduck"`
 
-	DesiredState string `json:"desiredState"`
+	DesiredState          string                    `json:"desiredState"`
+	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
+	RegistryConfiguration api.RegistryConfiguration `json:"registryConfiguration,omitempty"`
 }
 
 // OpsSightStatus is the status for a OpsSight resource
@@ -203,6 +205,5 @@ type OpsSightStatus struct {
 type OpsSightList struct {
 	meta_v1.TypeMeta `json:",inline"`
 	meta_v1.ListMeta `json:"metadata"`
-
-	Items []OpsSight `json:"items"`
+	Items            []OpsSight `json:"items"`
 }
