@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -55,7 +56,7 @@ var stopAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
 		for _, altArg := range args {
-			alertName, alertNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, altArg)
+			alertName, alertNamespace, crdNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, altArg)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -63,7 +64,7 @@ var stopAlertCmd = &cobra.Command{
 			log.Infof("stopping Alert '%s' in namespace '%s'...", alertName, alertNamespace)
 
 			// Get the Alert
-			currAlert, err := util.GetAlert(alertClient, alertNamespace, alertName)
+			currAlert, err := util.GetAlert(alertClient, crdNamespace, alertName, metav1.GetOptions{})
 			if err != nil {
 				errors = append(errors, fmt.Errorf("error getting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err))
 				continue
@@ -105,7 +106,7 @@ var stopBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
 		for _, bdArg := range args {
-			blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, bdArg)
+			blackDuckName, blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, bdArg)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -113,7 +114,7 @@ var stopBlackDuckCmd = &cobra.Command{
 			log.Infof("stopping Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
 
 			// Get the Black Duck
-			currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+			currBlackDuck, err := util.GetBlackduck(blackDuckClient, crdNamespace, blackDuckName, metav1.GetOptions{})
 			if err != nil {
 				errors = append(errors, fmt.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err))
 				continue
@@ -122,7 +123,7 @@ var stopBlackDuckCmd = &cobra.Command{
 			// Make changes to Spec
 			currBlackDuck.Spec.DesiredState = "STOP"
 			// Update Black Duck
-			_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
+			_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("error stopping Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err))
 				continue
@@ -154,7 +155,7 @@ var stopOpsSightCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
 		for _, opsArg := range args {
-			opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsArg)
+			opsSightName, opsSightNamespace, crdNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsArg)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -162,7 +163,7 @@ var stopOpsSightCmd = &cobra.Command{
 			log.Infof("stopping OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
 
 			// Get the OpsSight
-			currOpsSight, err := util.GetOpsSight(opsSightClient, opsSightNamespace, opsSightName)
+			currOpsSight, err := util.GetOpsSight(opsSightClient, crdNamespace, opsSightName, metav1.GetOptions{})
 			if err != nil {
 				errors = append(errors, fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err))
 				continue

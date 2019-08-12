@@ -85,7 +85,7 @@ func (c *CRDInstaller) PostDeploy() {
 func (c *CRDInstaller) CreateInformer() {
 	c.infomer = alertinformerv1.NewAlertInformer(
 		c.alertClient,
-		c.config.Namespace,
+		c.config.CrdNamespace,
 		c.resyncPeriod,
 		c.indexers,
 	)

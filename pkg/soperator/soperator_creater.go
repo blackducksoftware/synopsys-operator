@@ -92,7 +92,11 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 	if newCrdData.Blackduck.APIVersion != oldCrdData.Blackduck.APIVersion {
 		_, err := operatorutil.GetCustomResourceDefinition(apiExtensionClient, operatorutil.BlackDuckCRDName)
 		if err == nil {
-			oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion)
+			var ns string
+			if !oldOperatorSpec.IsClusterScoped {
+				ns = oldOperatorSpec.Namespace
+			}
+			oldBlackducks, err = GetBlackduckVersionsToRemove(blackduckClient, newCrdData.Blackduck.APIVersion, ns)
 			if err != nil {
 				return fmt.Errorf("failed to get Blackduck's to update: %s", err)
 			}

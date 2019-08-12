@@ -55,12 +55,12 @@ var deleteAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, alertName := range args {
-			alertName, alertNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
+			alertName, alertNamespace, crdNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
 			if err != nil {
 				return err
 			}
 			log.Infof("deleting Alert '%s' in namespace '%s'...", alertName, alertNamespace)
-			err = alertClient.SynopsysV1().Alerts(alertNamespace).Delete(alertName, &metav1.DeleteOptions{})
+			err = util.DeleteAlert(alertClient, alertName, crdNamespace, &metav1.DeleteOptions{})
 			if err != nil {
 				return fmt.Errorf("error deleting Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 			}
@@ -86,12 +86,12 @@ var deleteBlackDuckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, blackDuckName := range args {
-			blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
+			blackDuckName, blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
 			if err != nil {
 				return err
 			}
 			log.Infof("deleting Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-			err = blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Delete(blackDuckName, &metav1.DeleteOptions{})
+			err = util.DeleteBlackduck(blackDuckClient, blackDuckName, crdNamespace, &metav1.DeleteOptions{})
 			if err != nil {
 				return fmt.Errorf("error deleting Black Duck '%s' in namespace '%s' due to '%s'", blackDuckName, blackDuckNamespace, err)
 			}
@@ -117,12 +117,12 @@ var deleteOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for _, opsSightName := range args {
-			opsSightName, opsSightNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
+			opsSightName, opsSightNamespace, crdNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
 			if err != nil {
 				return err
 			}
 			log.Infof("deleting OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-			err = opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Delete(opsSightName, &metav1.DeleteOptions{})
+			err = util.DeleteOpsSight(opsSightClient, opsSightName, crdNamespace, &metav1.DeleteOptions{})
 			if err != nil {
 				return fmt.Errorf("error deleting OpsSight '%s' in namespace '%s' due to '%s'", opsSightName, opsSightNamespace, err)
 			}

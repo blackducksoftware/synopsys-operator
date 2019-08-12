@@ -136,7 +136,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	if _, ok = opssight.Annotations["synopsys.com/created.by"]; !ok {
 		opssight.Annotations = util.InitAnnotations(opssight.Annotations)
 		opssight.Annotations["synopsys.com/created.by"] = h.Config.Version
-		opssight, err = util.UpdateOpsSight(h.OpsSightClient, h.Config.Namespace, opssight)
+		opssight, err = util.UpdateOpsSight(h.OpsSightClient, h.Config.CrdNamespace, opssight)
 		if err != nil {
 			log.Errorf("couldn't update the annotation for %s OpsSight instance in %s namespace due to %+v", opssight.Name, opssight.Spec.Namespace, err)
 			return
@@ -198,7 +198,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 }
 
 func (h *Handler) updateState(state State, errorMessage string, opssight *opssightapi.OpsSight) (*opssightapi.OpsSight, error) {
-	newOpssight, err := util.GetOpsSight(h.OpsSightClient, opssight.Spec.Namespace, opssight.Name)
+	newOpssight, err := util.GetOpsSight(h.OpsSightClient, h.Config.CrdNamespace, opssight.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Annotate(err, "unable to get the opssigh to update the state of opssight object")
 	}
@@ -216,5 +216,5 @@ func (h *Handler) updateState(state State, errorMessage string, opssight *opssig
 }
 
 func (h *Handler) updateOpsSightObject(obj *opssightapi.OpsSight) (*opssightapi.OpsSight, error) {
-	return h.OpsSightClient.SynopsysV1().OpsSights(h.Namespace).Update(obj)
+	return util.UpdateOpsSight(h.OpsSightClient, h.Config.CrdNamespace, obj)
 }

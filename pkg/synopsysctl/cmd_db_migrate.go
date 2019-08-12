@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -56,7 +57,7 @@ var dbMigrateBlackDuckCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
 		for _, bdArg := range args {
-			blackDuckName, blackDuckNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, "", namespace, bdArg)
+			blackDuckName, blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, "", namespace, bdArg)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -64,7 +65,7 @@ var dbMigrateBlackDuckCmd = &cobra.Command{
 			log.Infof("putting Black Duck '%s' in namespace '%s' into database migration mode...", blackDuckName, blackDuckNamespace)
 
 			// Get the Black Duck
-			currBlackDuck, err := util.GetHub(blackDuckClient, blackDuckNamespace, blackDuckName)
+			currBlackDuck, err := util.GetBlackduck(blackDuckClient, crdNamespace, blackDuckName, metav1.GetOptions{})
 			if err != nil {
 				errors = append(errors, fmt.Errorf("unable to get Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err))
 				continue
@@ -73,7 +74,7 @@ var dbMigrateBlackDuckCmd = &cobra.Command{
 			// Make changes to Spec
 			currBlackDuck.Spec.DesiredState = "DbMigrate"
 			// Update Black Duck
-			_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck.Spec.Namespace, currBlackDuck)
+			_, err = util.UpdateBlackduck(blackDuckClient, currBlackDuck)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("error putting Black Duck '%s' in namespace '%s' into database migration mode due to %+v", blackDuckName, blackDuckNamespace, err))
 				continue

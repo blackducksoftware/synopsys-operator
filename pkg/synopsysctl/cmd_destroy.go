@@ -248,7 +248,7 @@ func isDeleteCrd(crd string, namespace string) error {
 		}
 
 		// check whether any alert instance is running in the namespace
-		alerts, err := util.ListAlerts(alertClient, namespace)
+		alerts, err := util.ListAlerts(alertClient, crd.Namespace, metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("unable to list Alert instances due to %+v", err)
 		}
@@ -269,7 +269,7 @@ func isDeleteCrd(crd string, namespace string) error {
 		}
 
 		// check whether any alert instance is running in the namespace
-		blackDucks, err := util.ListHubs(blackDuckClient, namespace)
+		blackDucks, err := util.ListBlackduck(blackDuckClient, crd.Namespace, metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("unable to list Black Duck instances due to %+v", err)
 		}
@@ -290,7 +290,7 @@ func isDeleteCrd(crd string, namespace string) error {
 		}
 
 		// check whether any alert instance is running in the namespace
-		opsSights, err := util.ListOpsSights(opsSightClient, namespace)
+		opsSights, err := util.ListOpsSights(opsSightClient, crd.Namespace, metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("unable to list OpsSight instances due to %+v", err)
 		}

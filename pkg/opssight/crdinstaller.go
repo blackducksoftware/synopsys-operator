@@ -96,7 +96,7 @@ func (c *CRDInstaller) PostDeploy() {
 func (c *CRDInstaller) CreateInformer() {
 	c.informer = opssightinformer.NewOpsSightInformer(
 		c.opssightclient,
-		c.config.Namespace,
+		c.config.CrdNamespace,
 		c.resyncPeriod,
 		c.indexers,
 	)

@@ -133,7 +133,7 @@ func (c *CRDInstaller) PostDeploy() {
 func (c *CRDInstaller) CreateInformer() {
 	c.infomer = hubinformerv2.NewBlackduckInformer(
 		c.hubClient,
-		c.config.Namespace,
+		c.config.CrdNamespace,
 		c.resyncPeriod,
 		c.indexers,
 	)
