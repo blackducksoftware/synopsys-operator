@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	alertsv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"github.com/go-logr/logr"
-	alertsv1 "github.com/yashbhutwala/kb-synopsys-operator/api/v1"
-	"github.com/yashbhutwala/kb-synopsys-operator/controllers/controllers_utils"
-	flying_dutchman "github.com/yashbhutwala/kb-synopsys-operator/flying-dutchman"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -24,26 +24,32 @@ import (
 
 // AlertSpec defines the desired state of Alert
 type AlertSpec struct {
-	Namespace         string   `json:"namespace,omitempty"`
-	Size              string   `json:"size"`
-	AlertImage        string   `json:"alertImage,omitempty"`
-	CfsslImage        string   `json:"cfsslImage,omitempty"`
-	ExposeService     string   `json:"exposeService"`
-	StandAlone        *bool    `json:"standAlone"`
-	Port              *int32   `json:"port"`
-	Environs          []string `json:"environs,omitempty"`
-	Secrets           []string `json:"secrets,omitempty"`
-	PersistentStorage bool     `json:"persistentStorage"`
-	PVCName           string   `json:"pvcName"`
-	PVCStorageClass   string   `json:"pvcStorageClass"`
-
+	Namespace         string            `json:"namespace,omitempty"`
+	Environs          []string          `json:"environs,omitempty"`
+	Secrets           []string          `json:"secrets,omitempty"`
+	DesiredState      string            `json:"desiredState,omitempty"`
+	Port              *int32            `json:"port"`
+	PersistentStorage PersistentStorage `json:"persistentStorage,omitempty"`
+	StandAlone        StandAlone        `json:"standAlone,,omitempty"`
+	ExposeService     string            `json:"exposeService"`
+	AlertImage        string            `json:"alertImage,omitempty"`
+	Size              string            `json:"size"`
 	// Should be passed like: e.g "1300Mi"
-	PVCSize               string                `json:"pvcSize"`
 	AlertMemory           string                `json:"alertMemory,omitempty"`
-	CfsslMemory           string                `json:"cfsslMemory,omitempty"`
-	DesiredState          string                `json:"desiredState,omitempty"`
 	ImageRegistries       []string              `json:"imageRegistries,omitempty"`
 	RegistryConfiguration RegistryConfiguration `json:"registryConfiguration,omitempty"`
+}
+
+type StandAlone struct {
+	CfsslImage  string `json:"cfsslImage,omitempty"`
+	CfsslMemory string `json:"cfsslMemory,omitempty"`
+}
+
+type PersistentStorage struct {
+	PVCName         string `json:"pvcName"`
+	PVCStorageClass string `json:"pvcStorageClass"`
+	// Should be passed like: e.g "1300Mi"
+	PVCSize string `json:"pvcSize"`
 }
 
 // RegistryConfiguration contains the registry configuration
