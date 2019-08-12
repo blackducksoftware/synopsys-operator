@@ -143,7 +143,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	if _, ok = bd.Annotations["synopsys.com/created.by"]; !ok {
 		bd.Annotations = util.InitAnnotations(bd.Annotations)
 		bd.Annotations["synopsys.com/created.by"] = h.config.Version
-		bd, err = util.UpdateBlackduck(h.blackduckClient, h.config.Namespace, bd)
+		bd, err = util.UpdateBlackduck(h.blackduckClient, bd)
 		if err != nil {
 			log.Errorf("couldn't update the annotation for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 			return
@@ -155,7 +155,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	err = mergo.Merge(&newSpec, blackDuckDefaultSpec)
 	if err != nil {
 		log.Errorf("unable to merge the Black Duck structs for %s due to %+v", bd.Name, err)
-		bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Error), err)
+		bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, h.config.CrdNamespace, string(Error), err)
 		if err != nil {
 			log.Errorf("couldn't update the Black Duck state: %v", err)
 		}
@@ -175,7 +175,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 	err = app.Blackduck().Ensure(bd)
 	if err != nil {
 		log.Error(err)
-		bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Error), err)
+		bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, h.config.CrdNamespace, string(Error), err)
 		if err != nil {
 			log.Errorf("couldn't update the state for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 		}
@@ -184,14 +184,14 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 
 	if strings.EqualFold(bd.Spec.DesiredState, string(Stop)) { // Stop State
 		if !strings.EqualFold(bd.Status.State, string(Stopped)) {
-			bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Stopped), nil)
+			bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, h.config.CrdNamespace, string(Stopped), nil)
 			if err != nil {
 				log.Errorf("couldn't update the state for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 			}
 		}
 	} else if strings.EqualFold(bd.Spec.DesiredState, string(DbMigrate)) { // DbMigrate State
 		if !strings.EqualFold(bd.Status.State, string(DbMigration)) {
-			bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(DbMigration), nil)
+			bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, h.config.CrdNamespace, string(DbMigration), nil)
 			if err != nil {
 				log.Errorf("couldn't update the state for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 			}
@@ -203,7 +203,7 @@ func (h *Handler) ObjectUpdated(objOld, objNew interface{}) {
 			status := h.verifyHub(blackDuckURL, bd.Spec.Namespace, bd.Name)
 
 			if status { // Set state to Running if we can access the Black Duck
-				bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, bd.Spec.Namespace, string(Running), nil)
+				bd, err = blackduckutils.UpdateState(h.blackduckClient, bd.Name, h.config.CrdNamespace, string(Running), nil)
 				if err != nil {
 					log.Errorf("couldn't update the state for %s Black Duck instance in %s namespace due to %+v", bd.Name, bd.Spec.Namespace, err)
 				}
@@ -227,7 +227,7 @@ func (h *Handler) verifyHub(blackDuckURL string, namespace string, name string) 
 		if err != nil {
 			log.Debugf("unable to talk with the Black Duck %s", blackDuckURL)
 			time.Sleep(10 * time.Second)
-			_, err := util.GetHub(h.blackduckClient, namespace, name)
+			_, err := util.GetBlackduck(h.blackduckClient, h.config.CrdNamespace, name, metav1.GetOptions{})
 			if err != nil {
 				return false
 			}

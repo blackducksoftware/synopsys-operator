@@ -289,7 +289,7 @@ func migrateCR(namespace string, crdName string) error {
 
 // migrateAlert migrates the existing Alert instances
 func migrateAlert(namespace string) error {
-	alerts, err := util.ListAlerts(alertClient, namespace)
+	alerts, err := util.ListAlerts(alertClient, namespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list Alert instances in namespace '%s' due to %+v", namespace, err)
 	}
@@ -329,7 +329,7 @@ func migrateAlert(namespace string) error {
 
 // migrateBlackDuck migrates the existing Black Duck instances
 func migrateBlackDuck(namespace string) error {
-	blackDucks, err := util.ListHubs(blackDuckClient, namespace)
+	blackDucks, err := util.ListBlackduck(blackDuckClient, namespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list Black Duck instances in namespace '%s' due to %+v", namespace, err)
 	}
@@ -522,7 +522,7 @@ func migrateUploadCachePVCJob(namespace string, name string, uploadCacheKeyVolum
 
 // migrateOpsSight migrates the existing OpsSight instances
 func migrateOpsSight(namespace string) error {
-	opsSights, err := util.ListOpsSights(opsSightClient, namespace)
+	opsSights, err := util.ListOpsSights(opsSightClient, namespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list OpsSight instances in namespace '%s' due to %+v", namespace, err)
 	}
@@ -835,7 +835,7 @@ var migrateCleanupCmd = &cobra.Command{
 
 // cleanup will cleanup the resources
 func cleanup(namespace string) error {
-	blackDucks, err := util.ListHubs(blackDuckClient, namespace)
+	blackDucks, err := util.ListBlackduck(blackDuckClient, namespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list Black Duck instances in namespace '%s' due to %+v", namespace, err)
 	}

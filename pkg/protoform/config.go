@@ -34,6 +34,7 @@ type Config struct {
 	DryRun                        bool
 	LogLevel                      string
 	Namespace                     string
+	CrdNamespace                  string
 	Threadiness                   int
 	PostgresRestartInMins         int64
 	HubFederatorConfig            *HubFederatorConfig
@@ -112,6 +113,10 @@ func GetConfig(configPath string, version string) (*Config, error) {
 
 	// set the operator version
 	config.Version = version
+
+	if !config.IsClusterScoped {
+		config.CrdNamespace = config.Namespace
+	}
 
 	return config, nil
 }

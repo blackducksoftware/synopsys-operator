@@ -97,10 +97,10 @@ func (p *Updater) Run(ch <-chan struct{}) {
 
 					hubListWatch := &cache.ListWatch{
 						ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-							return p.hubClient.SynopsysV1().Blackducks(p.config.Namespace).List(options)
+							return p.hubClient.SynopsysV1().Blackducks(p.config.CrdNamespace).List(options)
 						},
 						WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-							return p.hubClient.SynopsysV1().Blackducks(p.config.Namespace).Watch(options)
+							return p.hubClient.SynopsysV1().Blackducks(p.config.CrdNamespace).Watch(options)
 						},
 					}
 					_, hubController := cache.NewInformer(hubListWatch,
@@ -146,7 +146,7 @@ func (p *Updater) isBlackDuckRunning(obj interface{}) bool {
 
 // updateAllHubs will update the Black Duck instances in opssight resources
 func (p *Updater) updateAllHubs() []error {
-	opssights, err := util.ListOpsSights(p.opssightClient, p.config.Namespace)
+	opssights, err := util.ListOpsSights(p.opssightClient, p.config.CrdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return []error{errors.Annotatef(err, "unable to list opssight in namespace %s", p.config.Namespace)}
 	}
@@ -176,7 +176,7 @@ func (p *Updater) updateOpsSight(opssight *opssightapi.OpsSight) error {
 			logger.Debugf("waiting for opssight %s to be up.....", opssight.Name)
 			time.Sleep(10 * time.Second)
 
-			opssight, err = util.GetOpsSight(p.opssightClient, p.config.Namespace, opssight.Name)
+			opssight, err = util.GetOpsSight(p.opssightClient, p.config.CrdNamespace, opssight.Name, metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("unable to get opssight %s due to %+v", opssight.Name, err)
 			}
@@ -207,7 +207,7 @@ func (p *Updater) update(opssight *opssightapi.OpsSight) error {
 // getAllHubs get only the internal Black Duck instances from the cluster
 func (p *Updater) getAllHubs(hubType string, blackduckPassword string) []*opssightapi.Host {
 	hosts := []*opssightapi.Host{}
-	hubsList, err := util.ListHubs(p.hubClient, p.config.Namespace)
+	hubsList, err := util.ListBlackduck(p.hubClient, p.config.CrdNamespace, metav1.ListOptions{})
 	if err != nil {
 		log.Errorf("unable to list blackducks due to %+v", err)
 	}
@@ -244,14 +244,14 @@ func (p *Updater) updateOpsSightCRD(opsSight *opssightapi.OpsSight, hubs []*opss
 	opssightName := opsSight.Name
 	opsSightNamespace := opsSight.Spec.Namespace
 	logger.WithField("opssight", opssightName).Info("update opssight: looking for opssight")
-	opssight, err := p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Get(opssightName, metav1.GetOptions{})
+	opssight, err := util.GetOpsSight(p.opssightClient, p.config.CrdNamespace, opssightName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Annotatef(err, "unable to get opssight %s in %s namespace", opssightName, opsSightNamespace)
 	}
 
 	opssight.Status.InternalHosts = p.appendBlackDuckHosts(opssight.Status.InternalHosts, hubs)
 
-	_, err = p.opssightClient.SynopsysV1().OpsSights(p.config.Namespace).Update(opssight)
+	_, err = util.UpdateOpsSight(p.opssightClient, p.config.CrdNamespace, opsSight)
 	if err != nil {
 		return errors.Annotatef(err, "unable to update opssight %s in %s", opssightName, opsSightNamespace)
 	}

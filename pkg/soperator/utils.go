@@ -25,6 +25,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
@@ -39,9 +40,9 @@ import (
 )
 
 // GetBlackduckVersionsToRemove finds all Blackducks with a different version, returns their specs with the new version
-func GetBlackduckVersionsToRemove(blackduckClient *blackduckclientset.Clientset, newVersion string) ([]blackduckv1.Blackduck, error) {
+func GetBlackduckVersionsToRemove(blackduckClient *blackduckclientset.Clientset, newVersion string, namespace string) ([]blackduckv1.Blackduck, error) {
 	log.Debugf("Collecting all Blackducks that are not version: %s", newVersion)
-	currBlackDucks, err := util.GetBlackducks(blackduckClient)
+	currBlackDucks, err := util.ListBlackduck(blackduckClient, namespace, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BlackDucks: %s", err)
 	}

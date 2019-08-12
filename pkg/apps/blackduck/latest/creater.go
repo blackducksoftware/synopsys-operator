@@ -25,6 +25,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"reflect"
 	"strings"
@@ -195,7 +196,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 	}
 
 	if !reflect.DeepEqual(blackduck.Status, newBlackuck.Status) {
-		bd, err := util.GetHub(hc.blackduckClient, blackduck.Spec.Namespace, blackduck.Name)
+		bd, err := util.GetBlackduck(hc.blackduckClient, hc.config.CrdNamespace, blackduck.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
