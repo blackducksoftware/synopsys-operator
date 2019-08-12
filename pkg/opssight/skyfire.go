@@ -35,11 +35,11 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 	replicas := int32(1)
 	rc := components.NewReplicationController(horizonapi.ReplicationControllerConfig{
 		Replicas:  &replicas,
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
+		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["skyfire"]),
 		Namespace: p.opssight.Spec.Namespace,
 	})
-	rc.AddSelectors(map[string]string{"component": p.opssight.Spec.Skyfire.Name, "app": "opssight", "name": p.opssight.Name})
-	rc.AddLabels(map[string]string{"component": p.opssight.Spec.Skyfire.Name, "app": "opssight", "name": p.opssight.Name})
+	rc.AddSelectors(map[string]string{"component": p.names["skyfire"], "app": "opssight", "name": p.opssight.Name})
+	rc.AddLabels(map[string]string{"component": p.names["skyfire"], "app": "opssight", "name": p.opssight.Name})
 	pod, err := p.perceptorSkyfirePod()
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create skyfire volumes")
@@ -51,10 +51,10 @@ func (p *SpecConfig) PerceptorSkyfireReplicationController() (*components.Replic
 
 func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 	pod := components.NewPod(horizonapi.PodConfig{
-		Name:           util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
-		ServiceAccount: p.opssight.Spec.Skyfire.ServiceAccount,
+		Name:           util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["skyfire"]),
+		ServiceAccount: util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["skyfire"]),
 	})
-	pod.AddLabels(map[string]string{"component": p.opssight.Spec.Skyfire.Name, "app": "opssight", "name": p.opssight.Name})
+	pod.AddLabels(map[string]string{"component": p.names["skyfire"], "app": "opssight", "name": p.opssight.Name})
 
 	cont, err := p.perceptorSkyfireContainer()
 	if err != nil {
@@ -81,26 +81,15 @@ func (p *SpecConfig) perceptorSkyfirePod() (*components.Pod, error) {
 
 func (p *SpecConfig) pyfireContainer() (*components.Container, error) {
 	return components.NewContainer(horizonapi.ContainerConfig{
-		Name:    p.opssight.Spec.Skyfire.Name,
-		Image:   p.opssight.Spec.Skyfire.Image,
+		Name:    "skyfire",
+		Image:   p.images["skyfire"],
 		Command: []string{"python3"},
 		Args: []string{
 			"src/main.py",
-			fmt.Sprintf("/etc/skyfire/%s.json", p.opssight.Spec.ConfigMapName),
+			fmt.Sprintf("/etc/skyfire/%s.json", p.names["configmap"]),
 		},
 		MinCPU: p.opssight.Spec.DefaultCPU,
 		MinMem: p.opssight.Spec.DefaultMem,
-	})
-}
-
-func (p *SpecConfig) golangSkyfireContainer() (*components.Container, error) {
-	return components.NewContainer(horizonapi.ContainerConfig{
-		Name:    p.opssight.Spec.Skyfire.Name,
-		Image:   p.opssight.Spec.Skyfire.Image,
-		Command: []string{fmt.Sprintf("./%s", p.opssight.Spec.Skyfire.Name)},
-		Args:    []string{fmt.Sprintf("/etc/skyfire/%s.json", p.opssight.Spec.ConfigMapName)},
-		MinCPU:  p.opssight.Spec.DefaultCPU,
-		MinMem:  p.opssight.Spec.DefaultMem,
 	})
 }
 
@@ -111,7 +100,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: int32(p.opssight.Spec.Skyfire.Port),
+		ContainerPort: int32(3005),
 		Protocol:      horizonapi.ProtocolTCP,
 	})
 
@@ -130,7 +119,7 @@ func (p *SpecConfig) perceptorSkyfireContainer() (*components.Container, error) 
 		return nil, err
 	}
 
-	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.SecretName)})
+	container.AddEnv(horizonapi.EnvConfig{Type: horizonapi.EnvFromSecret, FromName: util.GetResourceName(p.opssight.Name, util.OpsSightName, "blackduck")})
 
 	return container, nil
 }
@@ -153,26 +142,26 @@ func (p *SpecConfig) perceptorSkyfireVolumes() ([]*components.Volume, error) {
 // PerceptorSkyfireService creates a service for perceptor skyfire
 func (p *SpecConfig) PerceptorSkyfireService() *components.Service {
 	service := components.NewService(horizonapi.ServiceConfig{
-		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name),
+		Name:      util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["skyfire"]),
 		Namespace: p.opssight.Spec.Namespace,
 		Type:      horizonapi.ServiceTypeServiceIP,
 	})
 
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(p.opssight.Spec.Skyfire.Port),
-		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Skyfire.Port),
+		Port:       int32(3005),
+		TargetPort: fmt.Sprintf("%d", 3005),
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       "main-skyfire",
 	})
 	service.AddPort(horizonapi.ServicePortConfig{
-		Port:       int32(p.opssight.Spec.Skyfire.PrometheusPort),
-		TargetPort: fmt.Sprintf("%d", p.opssight.Spec.Skyfire.PrometheusPort),
+		Port:       int32(3006),
+		TargetPort: fmt.Sprintf("%d", 3006),
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       "skyfire-prometheus",
 	})
 
-	service.AddLabels(map[string]string{"component": p.opssight.Spec.Skyfire.Name, "app": "opssight", "name": p.opssight.Name})
-	service.AddSelectors(map[string]string{"component": p.opssight.Spec.Skyfire.Name, "app": "opssight", "name": p.opssight.Name})
+	service.AddLabels(map[string]string{"component": p.names["skyfire"], "app": "opssight", "name": p.opssight.Name})
+	service.AddSelectors(map[string]string{"component": p.names["skyfire"], "app": "opssight", "name": p.opssight.Name})
 
 	return service
 }
@@ -190,7 +179,7 @@ func (p *SpecConfig) PerceptorSkyfireServiceAccount() *components.ServiceAccount
 // PerceptorSkyfireClusterRole creates a cluster role for perceptor skyfire
 func (p *SpecConfig) PerceptorSkyfireClusterRole() *components.ClusterRole {
 	clusterRole := components.NewClusterRole(horizonapi.ClusterRoleConfig{
-		Name:       "skyfire",
+		Name:       util.GetResourceName(p.opssight.Name, util.OpsSightName, "skyfire"),
 		APIVersion: "rbac.authorization.k8s.io/v1",
 	})
 	clusterRole.AddPolicyRule(horizonapi.PolicyRuleConfig{

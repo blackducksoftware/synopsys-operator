@@ -30,6 +30,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	appsutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	hubclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	opssightclientset "github.com/blackducksoftware/synopsys-operator/pkg/opssight/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -46,6 +47,8 @@ type SpecConfig struct {
 	hubClient               *hubclientset.Clientset
 	opssight                *opssightapi.OpsSight
 	configMap               *MainOpssightConfigMap
+	names                   map[string]string
+	images                  map[string]string
 	isBlackDuckClusterScope bool
 	dryRun                  bool
 }
@@ -54,6 +57,57 @@ type SpecConfig struct {
 func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, opssightClient *opssightclientset.Clientset, hubClient *hubclientset.Clientset, opssight *opssightapi.OpsSight, isBlackDuckClusterScope bool, dryRun bool) *SpecConfig {
 	opssightSpec := &opssight.Spec
 	name := opssight.Name
+	names := map[string]string{
+		"perceptor":                 "core",
+		"pod-perceiver":             "pod-processor",
+		"image-perceiver":           "image-processor",
+		"scanner":                   "scanner",
+		"perceptor-imagefacade":     "image-getter",
+		"skyfire":                   "skyfire",
+		"prometheus":                "prometheus",
+		"configmap":                 "opssight",
+		"perceiver-service-account": "processor",
+	}
+	baseImageURL := "docker.io/blackducksoftware"
+	version := "2.2.4"
+	images := map[string]string{
+		"perceptor":             fmt.Sprintf("%s/opssight-core:%s", baseImageURL, version),
+		"pod-perceiver":         fmt.Sprintf("%s/opssight-pod-processor:%s", baseImageURL, version),
+		"image-perceiver":       fmt.Sprintf("%s/opssight-image-processor:%s", baseImageURL, version),
+		"scanner":               fmt.Sprintf("%s/opssight-scanner:%s", baseImageURL, version),
+		"perceptor-imagefacade": fmt.Sprintf("%s/opssight-image-getter:%s", baseImageURL, version),
+		"skyfire":               "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
+		"prometheus":            "docker.io/prom/prometheus:v2.1.0",
+	}
+	if opssightSpec.IsUpstream {
+		names = map[string]string{
+			"perceptor":                 "perceptor",
+			"pod-perceiver":             "pod-perceiver",
+			"image-perceiver":           "image-perceiver",
+			"scanner":                   "scanner",
+			"perceptor-imagefacade":     "image-facade",
+			"skyfire":                   "skyfire",
+			"prometheus":                "prometheus",
+			"configmap":                 "perceptor",
+			"perceiver-service-account": "perceiver",
+		}
+		baseImageURL = "gcr.io/saas-hub-stg/blackducksoftware"
+		version = "master"
+		images = map[string]string{
+			"perceptor":             fmt.Sprintf("%s/perceptor:%s", baseImageURL, version),
+			"pod-perceiver":         fmt.Sprintf("%s/pod-perceiver:%s", baseImageURL, version),
+			"image-perceiver":       fmt.Sprintf("%s/image-perceiver:%s", baseImageURL, version),
+			"scanner":               fmt.Sprintf("%s/perceptor-scanner:%s", baseImageURL, version),
+			"perceptor-imagefacade": fmt.Sprintf("%s/perceptor-imagefacade:%s", baseImageURL, version),
+			"skyfire":               "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
+			"prometheus":            "docker.io/prom/prometheus:v2.1.0"}
+	}
+
+	for componentName, componentImage := range images {
+		image := appsutil.GenerateImageTag(componentImage, opssightSpec.ImageRegistries, opssightSpec.RegistryConfiguration)
+		images[componentName] = image
+	}
+
 	configMap := &MainOpssightConfigMap{
 		LogLevel: opssightSpec.LogLevel,
 		BlackDuck: &BlackDuckConfig{
@@ -63,7 +117,7 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 		ImageFacade: &ImageFacadeConfig{
 			CreateImagesOnly: false,
 			Host:             "localhost",
-			Port:             opssightSpec.ScannerPod.ImageFacade.Port,
+			Port:             3004,
 			ImagePullerType:  opssightSpec.ScannerPod.ImageFacade.ImagePullerType,
 		},
 		Perceiver: &PerceiverConfig{
@@ -73,7 +127,7 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 			},
 			AnnotationIntervalSeconds: opssightSpec.Perceiver.AnnotationIntervalSeconds,
 			DumpIntervalMinutes:       opssightSpec.Perceiver.DumpIntervalMinutes,
-			Port:                      opssightSpec.Perceiver.Port,
+			Port:                      3002,
 		},
 		Perceptor: &PerceptorConfig{
 			Timings: &PerceptorTimingsConfig{
@@ -83,32 +137,43 @@ func NewSpecConfig(config *protoform.Config, kubeClient *kubernetes.Clientset, o
 				StalledScanClientTimeoutHours:  opssightSpec.Perceptor.StalledScanClientTimeoutHours,
 				UnknownImagePauseMilliseconds:  opssightSpec.Perceptor.UnknownImagePauseMilliseconds,
 			},
-			Host:        util.GetResourceName(name, util.OpsSightName, opssightSpec.Perceptor.Name),
-			Port:        opssightSpec.Perceptor.Port,
+			Host:        util.GetResourceName(name, util.OpsSightName, names["perceptor"]),
+			Port:        3001,
 			UseMockMode: false,
 		},
 		Scanner: &ScannerConfig{
 			BlackDuckClientTimeoutSeconds: opssightSpec.ScannerPod.Scanner.ClientTimeoutSeconds,
 			ImageDirectory:                opssightSpec.ScannerPod.ImageDirectory,
-			Port:                          opssightSpec.ScannerPod.Scanner.Port,
+			Port:                          3003,
 		},
 		Skyfire: &SkyfireConfig{
 			BlackDuckClientTimeoutSeconds: opssightSpec.Skyfire.HubClientTimeoutSeconds,
 			BlackDuckDumpPauseSeconds:     opssightSpec.Skyfire.HubDumpPauseSeconds,
 			KubeDumpIntervalSeconds:       opssightSpec.Skyfire.KubeDumpIntervalSeconds,
 			PerceptorDumpIntervalSeconds:  opssightSpec.Skyfire.PerceptorDumpIntervalSeconds,
-			Port:                          opssightSpec.Skyfire.Port,
-			PrometheusPort:                opssightSpec.Skyfire.PrometheusPort,
+			Port:                          3005,
+			PrometheusPort:                3006,
 			UseInClusterConfig:            true,
 		},
 	}
-	return &SpecConfig{config: config, kubeClient: kubeClient, opssightClient: opssightClient, hubClient: hubClient, opssight: opssight, configMap: configMap, isBlackDuckClusterScope: isBlackDuckClusterScope, dryRun: dryRun}
+	return &SpecConfig{
+		config:                  config,
+		kubeClient:              kubeClient,
+		opssightClient:          opssightClient,
+		hubClient:               hubClient,
+		opssight:                opssight,
+		configMap:               configMap,
+		isBlackDuckClusterScope: isBlackDuckClusterScope,
+		dryRun:                  dryRun,
+		names:                   names,
+		images:                  images,
+	}
 }
 
 func (p *SpecConfig) configMapVolume(volumeName string) *components.Volume {
 	return components.NewConfigMapVolume(horizonapi.ConfigMapOrSecretVolumeConfig{
 		VolumeName:      volumeName,
-		MapOrSecretName: util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ConfigMapName),
+		MapOrSecretName: util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["configmap"]),
 		DefaultMode:     util.IntToInt32(420),
 	})
 }
@@ -118,7 +183,7 @@ func (p *SpecConfig) GetComponents() (*api.ComponentList, error) {
 	components := &api.ComponentList{}
 	name := p.opssight.Name
 	// Add config map
-	cm, err := p.configMap.horizonConfigMap(util.GetResourceName(name, util.OpsSightName, p.opssight.Spec.ConfigMapName), p.opssight.Spec.Namespace, fmt.Sprintf("%s.json", p.opssight.Spec.ConfigMapName))
+	cm, err := p.configMap.horizonConfigMap(util.GetResourceName(name, util.OpsSightName, p.names["configmap"]), p.opssight.Spec.Namespace, fmt.Sprintf("%s.json", p.names["configmap"]))
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

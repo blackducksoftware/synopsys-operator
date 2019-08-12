@@ -60,9 +60,9 @@ type AlertSpec struct {
 	AlertMemory string `json:"alertMemory,omitempty"`
 	CfsslMemory string `json:"cfsslMemory,omitempty"`
 
-	DesiredState          string                    `json:"desiredState,omitempty"`
-	ImageRegistries       []string                  `json:"imageRegistries,omitempty"`
-	RegistryConfiguration api.RegistryConfiguration `json:"registryConfiguration,omitempty"`
+	DesiredState          string                     `json:"desiredState,omitempty"`
+	ImageRegistries       []string                   `json:"imageRegistries,omitempty"`
+	RegistryConfiguration *api.RegistryConfiguration `json:"registryConfiguration,omitempty"`
 }
 
 // AlertStatus is the status for a Alert resource

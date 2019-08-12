@@ -214,10 +214,8 @@ func GetBlackDuckDefaultIPV6Disabled() *blackduckv1.BlackduckSpec {
 // GetOpsSightUpstream returns the required fields for an upstream OpsSight
 func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
+		IsUpstream: true,
 		Perceptor: &opssightv1.Perceptor{
-			Name:                           "perceptor",
-			Port:                           3001,
-			Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
 			CheckForStalledScansPauseHours: 999999,
 			StalledScanClientTimeoutHours:  999999,
 			ModelMetricsPauseSeconds:       15,
@@ -226,50 +224,24 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 			Expose:                         NONE,
 		},
 		Perceiver: &opssightv1.Perceiver{
-			EnableImagePerceiver: false,
-			EnablePodPerceiver:   true,
-			Port:                 3002,
-			ImagePerceiver: &opssightv1.ImagePerceiver{
-				Name:  "image-perceiver",
-				Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
-			},
-			PodPerceiver: &opssightv1.PodPerceiver{
-				Name:  "pod-perceiver",
-				Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
-			},
-			ServiceAccount:            "perceiver",
+			EnableImagePerceiver:      false,
+			EnablePodPerceiver:        true,
+			PodPerceiver:              &opssightv1.PodPerceiver{},
 			AnnotationIntervalSeconds: 30,
 			DumpIntervalMinutes:       30,
 		},
 		ScannerPod: &opssightv1.ScannerPod{
-			Name: "perceptor-scanner",
-			ImageFacade: &opssightv1.ImageFacade{
-				Port:           3004,
-				Image:          "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-				ServiceAccount: "perceptor-scanner",
-				Name:           "perceptor-imagefacade",
-			},
+			ImageFacade: &opssightv1.ImageFacade{},
 			Scanner: &opssightv1.Scanner{
-				Name:                 "perceptor-scanner",
-				Port:                 3003,
-				Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
 				ClientTimeoutSeconds: 600,
 			},
 			ReplicaCount:   1,
 			ImageDirectory: "/var/images",
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:   "prometheus",
-			Image:  "docker.io/prom/prometheus:v2.1.0",
-			Port:   9090,
 			Expose: NONE,
 		},
 		Skyfire: &opssightv1.Skyfire{
-			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
-			Name:                         "skyfire",
-			Port:                         3005,
-			PrometheusPort:               3006,
-			ServiceAccount:               "skyfire",
 			HubClientTimeoutSeconds:      100,
 			HubDumpPauseSeconds:          240,
 			KubeDumpIntervalSeconds:      60,
@@ -290,8 +262,6 @@ func GetOpsSightUpstream() *opssightv1.OpsSightSpec {
 		ScannerCPU:    "300m",
 		ScannerMem:    "1300Mi",
 		LogLevel:      "debug",
-		SecretName:    "perceptor",
-		ConfigMapName: "opssight",
 	}
 }
 
@@ -300,9 +270,6 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Namespace: "opssight-test",
 		Perceptor: &opssightv1.Perceptor{
-			Name:                           "core",
-			Port:                           3001,
-			Image:                          "docker.io/blackducksoftware/opssight-core:2.2.4",
 			CheckForStalledScansPauseHours: 999999,
 			StalledScanClientTimeoutHours:  999999,
 			ModelMetricsPauseSeconds:       15,
@@ -311,52 +278,27 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 			Expose:                         NONE,
 		},
 		ScannerPod: &opssightv1.ScannerPod{
-			Name: "scanner",
 			Scanner: &opssightv1.Scanner{
-				Name:                 "scanner",
-				Port:                 3003,
-				Image:                "docker.io/blackducksoftware/opssight-scanner:2.2.4",
 				ClientTimeoutSeconds: 600,
 			},
 			ImageFacade: &opssightv1.ImageFacade{
-				Name:               "image-getter",
-				Port:               3004,
 				InternalRegistries: []*opssightv1.RegistryAuth{},
-				Image:              "docker.io/blackducksoftware/opssight-image-getter:2.2.4",
-				ServiceAccount:     "scanner",
 				ImagePullerType:    "skopeo",
 			},
 			ReplicaCount: 1,
 		},
 		Perceiver: &opssightv1.Perceiver{
-			EnableImagePerceiver: false,
-			EnablePodPerceiver:   false,
-			Port:                 3002,
-			ImagePerceiver: &opssightv1.ImagePerceiver{
-				Name:  "image-processor",
-				Image: "docker.io/blackducksoftware/opssight-image-processor:2.2.4",
-			},
-			PodPerceiver: &opssightv1.PodPerceiver{
-				Name:  "pod-processor",
-				Image: "docker.io/blackducksoftware/opssight-pod-processor:2.2.4",
-			},
-			ServiceAccount:            "processor",
+			EnableImagePerceiver:      false,
+			EnablePodPerceiver:        false,
+			PodPerceiver:              &opssightv1.PodPerceiver{},
 			AnnotationIntervalSeconds: 30,
 			DumpIntervalMinutes:       30,
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:   "prometheus",
-			Port:   9090,
-			Image:  "docker.io/prom/prometheus:v2.1.0",
 			Expose: NONE,
 		},
 		EnableSkyfire: false,
 		Skyfire: &opssightv1.Skyfire{
-			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
-			Name:                         "skyfire",
-			Port:                         3005,
-			PrometheusPort:               3006,
-			ServiceAccount:               "skyfire",
 			HubClientTimeoutSeconds:      120,
 			HubDumpPauseSeconds:          240,
 			KubeDumpIntervalSeconds:      60,
@@ -368,8 +310,6 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 		ScannerCPU:    "300m",
 		ScannerMem:    "1300Mi",
 		LogLevel:      "debug",
-		SecretName:    "blackduck",
-		ConfigMapName: "opssight",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,
@@ -387,9 +327,6 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 	return &opssightv1.OpsSightSpec{
 		Namespace: "opssight-test",
 		Perceptor: &opssightv1.Perceptor{
-			Name:                           "core",
-			Port:                           3001,
-			Image:                          "docker.io/blackducksoftware/opssight-core:2.2.4",
 			CheckForStalledScansPauseHours: 999999,
 			StalledScanClientTimeoutHours:  999999,
 			ModelMetricsPauseSeconds:       15,
@@ -398,52 +335,27 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 			Expose:                         NONE,
 		},
 		ScannerPod: &opssightv1.ScannerPod{
-			Name: "scanner",
 			Scanner: &opssightv1.Scanner{
-				Name:                 "scanner",
-				Port:                 3003,
-				Image:                "docker.io/blackducksoftware/opssight-scanner:2.2.4",
 				ClientTimeoutSeconds: 600,
 			},
 			ImageFacade: &opssightv1.ImageFacade{
-				Name:               "image-getter",
-				Port:               3004,
 				InternalRegistries: []*opssightv1.RegistryAuth{},
-				Image:              "docker.io/blackducksoftware/opssight-image-getter:2.2.4",
-				ServiceAccount:     "scanner",
 				ImagePullerType:    "skopeo",
 			},
 			ReplicaCount: 1,
 		},
 		Perceiver: &opssightv1.Perceiver{
-			EnableImagePerceiver: false,
-			EnablePodPerceiver:   true,
-			ImagePerceiver: &opssightv1.ImagePerceiver{
-				Name:  "image-processor",
-				Image: "docker.io/blackducksoftware/opssight-image-processor:2.2.4",
-			},
-			PodPerceiver: &opssightv1.PodPerceiver{
-				Name:  "pod-processor",
-				Image: "docker.io/blackducksoftware/opssight-pod-processor:2.2.4",
-			},
-			ServiceAccount:            "opssight-processor",
+			EnableImagePerceiver:      false,
+			EnablePodPerceiver:        true,
+			PodPerceiver:              &opssightv1.PodPerceiver{},
 			AnnotationIntervalSeconds: 30,
 			DumpIntervalMinutes:       30,
-			Port:                      3002,
 		},
 		Prometheus: &opssightv1.Prometheus{
-			Name:   "prometheus",
-			Port:   9090,
-			Image:  "docker.io/prom/prometheus:v2.1.0",
 			Expose: NONE,
 		},
 		EnableSkyfire: false,
 		Skyfire: &opssightv1.Skyfire{
-			Image:                        "gcr.io/saas-hub-stg/blackducksoftware/pyfire:master",
-			Name:                         "skyfire",
-			Port:                         3005,
-			PrometheusPort:               3006,
-			ServiceAccount:               "skyfire",
 			HubClientTimeoutSeconds:      120,
 			HubDumpPauseSeconds:          240,
 			KubeDumpIntervalSeconds:      60,
@@ -455,8 +367,6 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 		ScannerCPU:    "300m",
 		ScannerMem:    "1300Mi",
 		LogLevel:      "debug",
-		SecretName:    "blackduck",
-		ConfigMapName: "opssight",
 		Blackduck: &opssightv1.Blackduck{
 			InitialCount:                       0,
 			MaxCount:                           0,

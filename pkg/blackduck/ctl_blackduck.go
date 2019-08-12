@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -418,10 +419,19 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.blackDuckSpec.Environs = util.MergeEnvSlices([]string{"ENABLE_SOURCE_UPLOADS:false"}, ctl.blackDuckSpec.Environs)
 			}
 		case "registry":
+			if ctl.blackDuckSpec.RegistryConfiguration == nil {
+				ctl.blackDuckSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.blackDuckSpec.RegistryConfiguration.Registry = ctl.Registry
 		case "registry-namespace":
+			if ctl.blackDuckSpec.RegistryConfiguration == nil {
+				ctl.blackDuckSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.blackDuckSpec.RegistryConfiguration.Namespace = ctl.RegistryNamespace
 		case "pull-secret-name":
+			if ctl.blackDuckSpec.RegistryConfiguration == nil {
+				ctl.blackDuckSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.blackDuckSpec.RegistryConfiguration.PullSecrets = ctl.PullSecrets
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)

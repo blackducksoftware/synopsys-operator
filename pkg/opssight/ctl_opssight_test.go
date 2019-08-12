@@ -24,6 +24,7 @@ package opssight
 import (
 	"testing"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -140,25 +141,20 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	ctl.AddCRSpecFlagsToCommand(actualCmd, true)
 
 	cmd := &cobra.Command{}
-	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of OpsSight's Core")
+	cmd.Flags().StringVar(&ctl.IsUpstream, "is-upstream", ctl.IsUpstream, "If true, Upstream images and names will be used [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", ctl.PerceptorExpose, "Type of service for OpsSight's core model [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().IntVar(&ctl.PerceptorCheckForStalledScansPauseHours, "opssight-core-check-scan-hours", ctl.PerceptorCheckForStalledScansPauseHours, "Hours OpsSight's Core waits between checking for scans")
 	cmd.Flags().IntVar(&ctl.PerceptorStalledScanClientTimeoutHours, "opssight-core-scan-client-timeout-hours", ctl.PerceptorStalledScanClientTimeoutHours, "Hours until OpsSight's Core stops checking for scans")
 	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "opssight-core-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "Core metrics pause in seconds")
 	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "opssight-core-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "OpsSight Core's unknown image pause in milliseconds")
 	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "opssight-core-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "Seconds for OpsSight Core's timeout for Black Duck Scan Client")
-	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scanner-image", ctl.ScannerPodScannerImage, "Image URL of Scanner")
 	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Seconds before Scanner times out for Black Duck's Scan Client")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "image-getter-image", ctl.ScannerPodImageFacadeImage, "Image Getter Container's image")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "image-getter-secure-registries-file-path", ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "Absolute path to a file for secure docker registries credentials to pull the images for scan")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "image-getter-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of Image Getter's Image Puller [docker|skopeo]")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "image-getter-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account of Image Getter")
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Containers for scanning")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in Scanner's pod where images are stored for scanning")
 	cmd.Flags().StringVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "If true, Image Processor discovers images for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning [true|false]")
-	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverImage, "image-processor-image", ctl.PerceiverImagePerceiverImage, "Image of Image Processor")
-	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverImage, "pod-processor-image", ctl.PerceiverPodPerceiverImage, "Image of Pod Processor")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
 	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processor-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
 	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processor-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes Image Processor and Pod Processor wait between creating dumps of data/metrics")
@@ -168,8 +164,6 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.ScannerMem, "scanner-memory", ctl.ScannerMem, "Memory size of OpsSight's Scanner")
 	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "Log level of OpsSight")
 	cmd.Flags().StringVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "If true, OpsSight records Prometheus Metrics [true|false]")
-	cmd.Flags().StringVar(&ctl.PrometheusImage, "metrics-image", ctl.PrometheusImage, "Image of OpsSight's Prometheus Metrics")
-	cmd.Flags().IntVar(&ctl.PrometheusPort, "metrics-port", ctl.PrometheusPort, "Port of OpsSight's Prometheus Metrics")
 	cmd.Flags().StringVar(&ctl.PrometheusExpose, "expose-metrics", ctl.PrometheusExpose, "Type of service of OpsSight's Prometheus Metrics [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().StringVar(&ctl.BlackduckExternalHostsFilePath, "blackduck-external-hosts-file-path", ctl.BlackduckExternalHostsFilePath, "Absolute path to a file containing a list of Black Duck External Hosts")
 	cmd.Flags().StringVar(&ctl.BlackduckTLSVerification, "blackduck-TLS-verification", ctl.BlackduckTLSVerification, "If true, OpsSight performs TLS Verification for Black Duck [true|false]")
@@ -180,6 +174,7 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
 	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
+	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 
 	assert.Equal(cmd.Flags(), actualCmd.Flags())
 
@@ -208,16 +203,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 		changedCtl  *CRSpecBuilderFromCobraFlags
 		changedSpec *opssightapi.OpsSightSpec
 	}{
-		// case
-		{
-			flagName:   "opssight-core-image",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:   &opssightapi.OpsSightSpec{},
-				PerceptorImage: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Perceptor: &opssightapi.Perceptor{Image: "changed"}},
-		},
 		// case
 		{
 			flagName:   "opssight-core-expose",
@@ -280,16 +265,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "scanner-image",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:           &opssightapi.OpsSightSpec{},
-				ScannerPodScannerImage: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{Scanner: &opssightapi.Scanner{Image: "changed"}}},
-		},
-		// case
-		{
 			flagName:   "scanner-client-timeout-seconds",
 			initialCtl: NewCRSpecBuilderFromCobraFlags(),
 			changedCtl: &CRSpecBuilderFromCobraFlags{
@@ -297,16 +272,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				ScannerPodScannerClientTimeoutSeconds: 10,
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{Scanner: &opssightapi.Scanner{ClientTimeoutSeconds: 10}}},
-		},
-		// case
-		{
-			flagName:   "image-getter-image",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:               &opssightapi.OpsSightSpec{},
-				ScannerPodImageFacadeImage: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{Image: "changed"}}},
 		},
 		// case
 		{
@@ -333,16 +298,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				ScannerPodImageFacadeImagePullerType: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{ImagePullerType: "changed"}}},
-		},
-		// case
-		{
-			flagName:   "image-getter-service-account",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:                        &opssightapi.OpsSightSpec{},
-				ScannerPodImageFacadeServiceAccount: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{ScannerPod: &opssightapi.ScannerPod{ImageFacade: &opssightapi.ImageFacade{ServiceAccount: "changed"}}},
 		},
 		// case
 		{
@@ -383,26 +338,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				PerceiverEnablePodPerceiver: "true",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{EnablePodPerceiver: true}},
-		},
-		// case
-		{
-			flagName:   "image-processor-image",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:                 &opssightapi.OpsSightSpec{},
-				PerceiverImagePerceiverImage: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{ImagePerceiver: &opssightapi.ImagePerceiver{Image: "changed"}}},
-		},
-		// case
-		{
-			flagName:   "pod-processor-image",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:               &opssightapi.OpsSightSpec{},
-				PerceiverPodPerceiverImage: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Perceiver: &opssightapi.Perceiver{PodPerceiver: &opssightapi.PodPerceiver{Image: "changed"}}},
 		},
 		// case
 		{
@@ -506,26 +441,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 		},
 		// case
 		{
-			flagName:   "metrics-image",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:    &opssightapi.OpsSightSpec{},
-				PrometheusImage: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Image: "changed"}},
-		},
-		// case
-		{
-			flagName:   "metrics-port",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:   &opssightapi.OpsSightSpec{},
-				PrometheusPort: 10,
-			},
-			changedSpec: &opssightapi.OpsSightSpec{Prometheus: &opssightapi.Prometheus{Port: 10}},
-		},
-		// case
-		{
 			flagName:   "expose-metrics",
 			initialCtl: NewCRSpecBuilderFromCobraFlags(),
 			changedCtl: &CRSpecBuilderFromCobraFlags{
@@ -602,6 +517,46 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				BlackduckType: "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{Blackduck: &opssightapi.Blackduck{BlackduckSpec: &blackduckapi.BlackduckSpec{Type: "changed"}}},
+		},
+		// case
+		{
+			flagName:   "registry",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec: &opssightapi.OpsSightSpec{},
+				Registry:     "changed",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{RegistryConfiguration: &api.RegistryConfiguration{Registry: "changed"}},
+		},
+		// case
+		{
+			flagName:   "registry-namespace",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:      &opssightapi.OpsSightSpec{},
+				RegistryNamespace: "changed",
+			},
+			changedSpec: &opssightapi.OpsSightSpec{RegistryConfiguration: &api.RegistryConfiguration{Namespace: "changed"}},
+		},
+		// case
+		{
+			flagName:   "pull-secret-name",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec: &opssightapi.OpsSightSpec{},
+				PullSecrets:  []string{"changed"},
+			},
+			changedSpec: &opssightapi.OpsSightSpec{RegistryConfiguration: &api.RegistryConfiguration{PullSecrets: []string{"changed"}}},
+		},
+		// case
+		{
+			flagName:   "image-registries",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				opsSightSpec:    &opssightapi.OpsSightSpec{},
+				ImageRegistries: []string{"changed"},
+			},
+			changedSpec: &opssightapi.OpsSightSpec{ImageRegistries: []string{"changed"}},
 		},
 	}
 

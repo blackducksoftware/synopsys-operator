@@ -85,9 +85,9 @@ func validateClusterRoleBindings(t *testing.T, clusterRoleBindings []*components
 	if len(clusterRoleBindings) != 3 {
 		t.Errorf("cluster role binding length not equal to 3, actual: %d", len(clusterRoleBindings))
 	}
-	scanner := opssightSpec.ScannerPod.Scanner.Name
-	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
-	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
+	scanner := "scanner"
+	podPerceiver := "pod-processor"
+	imagePerceiver := "image-processor"
 
 	scannerClusterRoleBinding, _ := opssightSpecConfig.ScannerClusterRoleBinding()
 	expectedClusterRoleBindings := map[string]*components.ClusterRoleBinding{
@@ -108,8 +108,8 @@ func validateClusterRoles(t *testing.T, clusterRoles []*components.ClusterRole, 
 		t.Errorf("cluster role length not equal to 2, actual: %d", len(clusterRoles))
 	}
 
-	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
-	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
+	podPerceiver := "pod-processor"
+	imagePerceiver := "image-processor"
 	expectedClusterRoles := map[string]*components.ClusterRole{
 		podPerceiver:   opssightSpecConfig.PodPerceiverClusterRole(),
 		imagePerceiver: opssightSpecConfig.ImagePerceiverClusterRole(),
@@ -127,10 +127,10 @@ func validateConfigMaps(t *testing.T, configMaps []*components.ConfigMap, opssig
 		t.Errorf("config maps length not equal to 6, actual: %d", len(configMaps))
 	}
 
-	perceptor := opssightSpec.Perceptor.Name
-	perceptorScanner := opssightSpec.ScannerPod.Scanner.Name
-	perceptorImageFacade := opssightSpec.ScannerPod.ImageFacade.Name
-	perceiver := opssightSpec.Perceiver.ServiceAccount
+	perceptor := "core"
+	perceptorScanner := "scanner"
+	perceptorImageFacade := "image-getter"
+	perceiver := "processor"
 	prometheus := "prometheus"
 
 	type configMap struct {
@@ -183,10 +183,10 @@ func validateReplicationControllers(t *testing.T, replicationControllers []*comp
 		t.Errorf("replication controllers length not equal to 5, actual: %d", len(replicationControllers))
 	}
 
-	perceptor := opssightSpec.Perceptor.Name
-	scanner := opssightSpec.ScannerPod.Scanner.Name
-	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
-	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
+	perceptor := "core"
+	scanner := "scanner"
+	podPerceiver := "pod-processor"
+	imagePerceiver := "image-processor"
 
 	perceptorRc, _ := opssightSpecConfig.PerceptorReplicationController()
 	scannerRc, _ := opssightSpecConfig.ScannerReplicationController()
@@ -214,7 +214,7 @@ func validateSecrets(t *testing.T, secrets []*components.Secret, opssightSpec *o
 	perceptorSecret, err := opssightSpecConfig.PerceptorSecret()
 	t.Errorf("invalid secret: %s", err)
 	expectedSecrets := map[string]*components.Secret{
-		opssightSpec.SecretName: perceptorSecret,
+		"opssight": perceptorSecret,
 	}
 
 	for _, secret := range secrets {
@@ -229,9 +229,9 @@ func validateServiceAccounts(t *testing.T, serviceAccounts []*components.Service
 		t.Errorf("service account length not equal to 3, actual: %d", len(serviceAccounts))
 	}
 
-	scanner := opssightSpec.ScannerPod.Scanner.Name
-	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
-	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
+	scanner := "scanner"
+	podPerceiver := "pod-processor"
+	imagePerceiver := "image-processor"
 	expectedServiceAccounts := map[string]*components.ServiceAccount{
 		scanner:        opssightSpecConfig.ScannerServiceAccount(),
 		imagePerceiver: opssightSpecConfig.ImagePerceiverServiceAccount(),
@@ -251,12 +251,12 @@ func validateServices(t *testing.T, services []*components.Service, opssightSpec
 	}
 
 	// perceptor
-	perceptor := opssightSpec.Perceptor.Name
+	perceptor := "core"
 	perceptorService, _ := opssightSpecConfig.PerceptorService()
-	scanner := opssightSpec.ScannerPod.Scanner.Name
-	imageFacade := opssightSpec.ScannerPod.ImageFacade.Name
-	podPerceiver := opssightSpec.Perceiver.PodPerceiver.Name
-	imagePerceiver := opssightSpec.Perceiver.ImagePerceiver.Name
+	scanner := "scanner"
+	imageFacade := "image-getter"
+	podPerceiver := "pod-processor"
+	imagePerceiver := "image-processor"
 
 	// prometheus
 	prometheusService, _ := opssightSpecConfig.PerceptorMetricsService()
@@ -316,9 +316,6 @@ func getOpsSightDefaultValue() *opssightapi.OpsSight {
 	return &opssightapi.OpsSight{
 		Spec: opssightapi.OpsSightSpec{
 			Perceptor: &opssightapi.Perceptor{
-				Name:                           "perceptor",
-				Port:                           3001,
-				Image:                          "gcr.io/saas-hub-stg/blackducksoftware/perceptor:master",
 				CheckForStalledScansPauseHours: 999999,
 				StalledScanClientTimeoutHours:  999999,
 				ModelMetricsPauseSeconds:       15,
@@ -326,48 +323,23 @@ func getOpsSightDefaultValue() *opssightapi.OpsSight {
 				ClientTimeoutMilliseconds:      100000,
 			},
 			Perceiver: &opssightapi.Perceiver{
-				EnableImagePerceiver: false,
-				EnablePodPerceiver:   true,
-				Port:                 3002,
-				ImagePerceiver: &opssightapi.ImagePerceiver{
-					Name:  "image-perceiver",
-					Image: "gcr.io/saas-hub-stg/blackducksoftware/image-perceiver:master",
-				},
-				PodPerceiver: &opssightapi.PodPerceiver{
-					Name:  "pod-perceiver",
-					Image: "gcr.io/saas-hub-stg/blackducksoftware/pod-perceiver:master",
-				},
-				ServiceAccount:            "perceiver",
+				EnableImagePerceiver:      false,
+				EnablePodPerceiver:        true,
+				PodPerceiver:              &opssightapi.PodPerceiver{},
 				AnnotationIntervalSeconds: 30,
 				DumpIntervalMinutes:       30,
 			},
 			ScannerPod: &opssightapi.ScannerPod{
 				ImageFacade: &opssightapi.ImageFacade{
-					Port:               3004,
 					InternalRegistries: []*opssightapi.RegistryAuth{},
-					Image:              "gcr.io/saas-hub-stg/blackducksoftware/perceptor-imagefacade:master",
-					ServiceAccount:     "perceptor-scanner",
-					Name:               "perceptor-imagefacade",
 				},
 				Scanner: &opssightapi.Scanner{
-					Name:                 "perceptor-scanner",
-					Port:                 3003,
-					Image:                "gcr.io/saas-hub-stg/blackducksoftware/perceptor-scanner:master",
 					ClientTimeoutSeconds: 600,
 				},
 				ReplicaCount: 1,
 			},
-			Prometheus: &opssightapi.Prometheus{
-				Name:  "prometheus",
-				Image: "docker.io/prom/prometheus:v2.1.0",
-				Port:  9090,
-			},
-			Skyfire: &opssightapi.Skyfire{
-				Image:          "gcr.io/saas-hub-stg/blackducksoftware/skyfire:master",
-				Name:           "skyfire",
-				Port:           3005,
-				ServiceAccount: "skyfire",
-			},
+			Prometheus: &opssightapi.Prometheus{},
+			Skyfire:    &opssightapi.Skyfire{},
 			Blackduck: &opssightapi.Blackduck{
 				InitialCount:                       1,
 				MaxCount:                           1,
@@ -379,7 +351,6 @@ func getOpsSightDefaultValue() *opssightapi.OpsSight {
 			DefaultCPU:    "300m",
 			DefaultMem:    "1300Mi",
 			LogLevel:      "debug",
-			SecretName:    "perceptor",
 		},
 	}
 }

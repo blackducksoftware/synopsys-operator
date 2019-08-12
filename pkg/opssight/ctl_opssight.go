@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightapi "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -45,57 +46,31 @@ import (
 // generate the spec by telling CRSpecBuilderFromCobraFlags what flags were changed.
 type CRSpecBuilderFromCobraFlags struct {
 	opsSightSpec                                    *opssightapi.OpsSightSpec
-	PerceptorName                                   string
-	PerceptorImage                                  string
-	PerceptorPort                                   int
+	IsUpstream                                      string
 	PerceptorExpose                                 string
 	PerceptorCheckForStalledScansPauseHours         int
 	PerceptorStalledScanClientTimeoutHours          int
 	PerceptorModelMetricsPauseSeconds               int
 	PerceptorUnknownImagePauseMilliseconds          int
 	PerceptorClientTimeoutMilliseconds              int
-	ScannerPodName                                  string
-	ScannerPodScannerName                           string
-	ScannerPodScannerImage                          string
-	ScannerPodScannerPort                           int
 	ScannerPodScannerClientTimeoutSeconds           int
-	ScannerPodImageFacadeName                       string
-	ScannerPodImageFacadeImage                      string
-	ScannerPodImageFacadePort                       int
 	ScannerPodImageFacadeInternalRegistriesFilePath string
 	ScannerPodImageFacadeImagePullerType            string
-	ScannerPodImageFacadeServiceAccount             string
 	ScannerPodReplicaCount                          int
 	ScannerPodImageDirectory                        string
 	PerceiverEnableImagePerceiver                   string
 	PerceiverEnablePodPerceiver                     string
-	PerceiverImagePerceiverName                     string
-	PerceiverImagePerceiverImage                    string
-	PerceiverPodPerceiverName                       string
-	PerceiverPodPerceiverImage                      string
 	PerceiverPodPerceiverNamespaceFilter            string
 	PerceiverAnnotationIntervalSeconds              int
 	PerceiverDumpIntervalMinutes                    int
-	PerceiverServiceAccount                         string
-	PerceiverPort                                   int
-	ConfigMapName                                   string
-	SecretName                                      string
 	DefaultCPU                                      string
 	DefaultMem                                      string
 	ScannerCPU                                      string
 	ScannerMem                                      string
 	LogLevel                                        string
 	EnableMetrics                                   string
-	PrometheusName                                  string
-	PrometheusImage                                 string
-	PrometheusPort                                  int
 	PrometheusExpose                                string
-	SkyfireName                                     string
-	SkyfireImage                                    string
 	EnableSkyfire                                   string
-	SkyfirePort                                     int
-	SkyfirePrometheusPort                           int
-	SkyfireServiceAccount                           string
 	SkyfireHubClientTimeoutSeconds                  int
 	SkyfireHubDumpPauseSeconds                      int
 	SkyfireKubeDumpIntervalSeconds                  int
@@ -110,6 +85,7 @@ type CRSpecBuilderFromCobraFlags struct {
 	Registry                                        string
 	RegistryNamespace                               string
 	PullSecrets                                     []string
+	ImageRegistries                                 []string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -151,6 +127,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) err
 		ctl.opsSightSpec = crddefaults.GetOpsSightUpstream()
 		ctl.opsSightSpec.Perceiver.EnablePodPerceiver = true
 		ctl.opsSightSpec.EnableMetrics = true
+		ctl.opsSightSpec.IsUpstream = true
 	case DefaultSpec:
 		ctl.opsSightSpec = crddefaults.GetOpsSightDefault()
 		ctl.opsSightSpec.Perceiver.EnablePodPerceiver = true
@@ -169,7 +146,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) err
 // The flags map to fields in the CRSpecBuilderFromCobraFlags struct.
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
-	cmd.Flags().StringVar(&ctl.PerceptorImage, "opssight-core-image", ctl.PerceptorImage, "Image of OpsSight's Core")
+	cmd.Flags().StringVar(&ctl.IsUpstream, "is-upstream", ctl.IsUpstream, "If true, Upstream images and names will be used [true|false]")
 	if master {
 		cmd.Flags().StringVar(&ctl.PerceptorExpose, "opssight-core-expose", util.NONE, "Type of service for OpsSight's core model [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	} else {
@@ -180,18 +157,13 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().IntVar(&ctl.PerceptorModelMetricsPauseSeconds, "opssight-core-metrics-pause-seconds", ctl.PerceptorModelMetricsPauseSeconds, "Core metrics pause in seconds")
 	cmd.Flags().IntVar(&ctl.PerceptorUnknownImagePauseMilliseconds, "opssight-core-unknown-image-pause-milliseconds", ctl.PerceptorUnknownImagePauseMilliseconds, "OpsSight Core's unknown image pause in milliseconds")
 	cmd.Flags().IntVar(&ctl.PerceptorClientTimeoutMilliseconds, "opssight-core-client-timeout-milliseconds", ctl.PerceptorClientTimeoutMilliseconds, "Seconds for OpsSight Core's timeout for Black Duck Scan Client")
-	cmd.Flags().StringVar(&ctl.ScannerPodScannerImage, "scanner-image", ctl.ScannerPodScannerImage, "Image URL of Scanner")
 	cmd.Flags().IntVar(&ctl.ScannerPodScannerClientTimeoutSeconds, "scanner-client-timeout-seconds", ctl.ScannerPodScannerClientTimeoutSeconds, "Seconds before Scanner times out for Black Duck's Scan Client")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImage, "image-getter-image", ctl.ScannerPodImageFacadeImage, "Image Getter Container's image")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "image-getter-secure-registries-file-path", ctl.ScannerPodImageFacadeInternalRegistriesFilePath, "Absolute path to a file for secure docker registries credentials to pull the images for scan")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeImagePullerType, "image-getter-image-puller-type", ctl.ScannerPodImageFacadeImagePullerType, "Type of Image Getter's Image Puller [docker|skopeo]")
-	cmd.Flags().StringVar(&ctl.ScannerPodImageFacadeServiceAccount, "image-getter-service-account", ctl.ScannerPodImageFacadeServiceAccount, "Service Account of Image Getter")
 	cmd.Flags().IntVar(&ctl.ScannerPodReplicaCount, "scannerpod-replica-count", ctl.ScannerPodReplicaCount, "Number of Containers for scanning")
 	cmd.Flags().StringVar(&ctl.ScannerPodImageDirectory, "scannerpod-image-directory", ctl.ScannerPodImageDirectory, "Directory in Scanner's pod where images are stored for scanning")
 	cmd.Flags().StringVar(&ctl.PerceiverEnableImagePerceiver, "enable-image-processor", ctl.PerceiverEnableImagePerceiver, "If true, Image Processor discovers images for scanning [true|false]")
 	cmd.Flags().StringVar(&ctl.PerceiverEnablePodPerceiver, "enable-pod-processor", ctl.PerceiverEnablePodPerceiver, "If true, Pod Processor discovers pods for scanning [true|false]")
-	cmd.Flags().StringVar(&ctl.PerceiverImagePerceiverImage, "image-processor-image", ctl.PerceiverImagePerceiverImage, "Image of Image Processor")
-	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverImage, "pod-processor-image", ctl.PerceiverPodPerceiverImage, "Image of Pod Processor")
 	cmd.Flags().StringVar(&ctl.PerceiverPodPerceiverNamespaceFilter, "pod-processor-namespace-filter", ctl.PerceiverPodPerceiverNamespaceFilter, "Pod Processor's filter to scan pods by their namespace")
 	cmd.Flags().IntVar(&ctl.PerceiverAnnotationIntervalSeconds, "processor-annotation-interval-seconds", ctl.PerceiverAnnotationIntervalSeconds, "Refresh interval to get latest scan results and apply to Pods and Images")
 	cmd.Flags().IntVar(&ctl.PerceiverDumpIntervalMinutes, "processor-dump-interval-minutes", ctl.PerceiverDumpIntervalMinutes, "Minutes Image Processor and Pod Processor wait between creating dumps of data/metrics")
@@ -201,8 +173,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.ScannerMem, "scanner-memory", ctl.ScannerMem, "Memory size of OpsSight's Scanner")
 	cmd.Flags().StringVar(&ctl.LogLevel, "log-level", ctl.LogLevel, "Log level of OpsSight")
 	cmd.Flags().StringVar(&ctl.EnableMetrics, "enable-metrics", ctl.EnableMetrics, "If true, OpsSight records Prometheus Metrics [true|false]")
-	cmd.Flags().StringVar(&ctl.PrometheusImage, "metrics-image", ctl.PrometheusImage, "Image of OpsSight's Prometheus Metrics")
-	cmd.Flags().IntVar(&ctl.PrometheusPort, "metrics-port", ctl.PrometheusPort, "Port of OpsSight's Prometheus Metrics")
 	if master {
 		cmd.Flags().StringVar(&ctl.PrometheusExpose, "expose-metrics", util.NONE, "Type of service of OpsSight's Prometheus Metrics [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	} else {
@@ -217,6 +187,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
 	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
+	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 }
 
 // CheckValuesFromFlags returns an error if a value stored in the struct will not be able to be
@@ -272,11 +243,8 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 	if f.Changed {
 		log.Debugf("flag '%s': CHANGED", f.Name)
 		switch f.Name {
-		case "opssight-core-image":
-			if ctl.opsSightSpec.Perceptor == nil {
-				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
-			}
-			ctl.opsSightSpec.Perceptor.Image = ctl.PerceptorImage
+		case "is-upstream":
+			ctl.opsSightSpec.IsUpstream = strings.ToUpper(ctl.IsUpstream) == "TRUE"
 		case "opssight-core-expose":
 			if ctl.opsSightSpec.Perceptor == nil {
 				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
@@ -307,14 +275,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.opsSightSpec.Perceptor = &opssightapi.Perceptor{}
 			}
 			ctl.opsSightSpec.Perceptor.ClientTimeoutMilliseconds = ctl.PerceptorClientTimeoutMilliseconds
-		case "scanner-image":
-			if ctl.opsSightSpec.ScannerPod == nil {
-				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
-			}
-			if ctl.opsSightSpec.ScannerPod.Scanner == nil {
-				ctl.opsSightSpec.ScannerPod.Scanner = &opssightapi.Scanner{}
-			}
-			ctl.opsSightSpec.ScannerPod.Scanner.Image = ctl.ScannerPodScannerImage
 		case "scanner-client-timeout-seconds":
 			if ctl.opsSightSpec.ScannerPod == nil {
 				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
@@ -323,14 +283,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.opsSightSpec.ScannerPod.Scanner = &opssightapi.Scanner{}
 			}
 			ctl.opsSightSpec.ScannerPod.Scanner.ClientTimeoutSeconds = ctl.ScannerPodScannerClientTimeoutSeconds
-		case "image-getter-image":
-			if ctl.opsSightSpec.ScannerPod == nil {
-				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
-			}
-			if ctl.opsSightSpec.ScannerPod.ImageFacade == nil {
-				ctl.opsSightSpec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
-			}
-			ctl.opsSightSpec.ScannerPod.ImageFacade.Image = ctl.ScannerPodImageFacadeImage
 		case "image-getter-secure-registries-file-path":
 			if ctl.opsSightSpec.ScannerPod == nil {
 				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
@@ -358,14 +310,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.opsSightSpec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
 			}
 			ctl.opsSightSpec.ScannerPod.ImageFacade.ImagePullerType = ctl.ScannerPodImageFacadeImagePullerType
-		case "image-getter-service-account":
-			if ctl.opsSightSpec.ScannerPod == nil {
-				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
-			}
-			if ctl.opsSightSpec.ScannerPod.ImageFacade == nil {
-				ctl.opsSightSpec.ScannerPod.ImageFacade = &opssightapi.ImageFacade{}
-			}
-			ctl.opsSightSpec.ScannerPod.ImageFacade.ServiceAccount = ctl.ScannerPodImageFacadeServiceAccount
 		case "scannerpod-replica-count":
 			if ctl.opsSightSpec.ScannerPod == nil {
 				ctl.opsSightSpec.ScannerPod = &opssightapi.ScannerPod{}
@@ -386,22 +330,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
 			}
 			ctl.opsSightSpec.Perceiver.EnablePodPerceiver = strings.ToUpper(ctl.PerceiverEnablePodPerceiver) == "TRUE"
-		case "image-processor-image":
-			if ctl.opsSightSpec.Perceiver == nil {
-				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
-			}
-			if ctl.opsSightSpec.Perceiver.ImagePerceiver == nil {
-				ctl.opsSightSpec.Perceiver.ImagePerceiver = &opssightapi.ImagePerceiver{}
-			}
-			ctl.opsSightSpec.Perceiver.ImagePerceiver.Image = ctl.PerceiverImagePerceiverImage
-		case "pod-processor-image":
-			if ctl.opsSightSpec.Perceiver == nil {
-				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
-			}
-			if ctl.opsSightSpec.Perceiver.PodPerceiver == nil {
-				ctl.opsSightSpec.Perceiver.PodPerceiver = &opssightapi.PodPerceiver{}
-			}
-			ctl.opsSightSpec.Perceiver.PodPerceiver.Image = ctl.PerceiverPodPerceiverImage
 		case "pod-processor-namespace-filter":
 			if ctl.opsSightSpec.Perceiver == nil {
 				ctl.opsSightSpec.Perceiver = &opssightapi.Perceiver{}
@@ -432,16 +360,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			ctl.opsSightSpec.LogLevel = ctl.LogLevel
 		case "enable-metrics":
 			ctl.opsSightSpec.EnableMetrics = strings.ToUpper(ctl.EnableMetrics) == "TRUE"
-		case "metrics-image":
-			if ctl.opsSightSpec.Prometheus == nil {
-				ctl.opsSightSpec.Prometheus = &opssightapi.Prometheus{}
-			}
-			ctl.opsSightSpec.Prometheus.Image = ctl.PrometheusImage
-		case "metrics-port":
-			if ctl.opsSightSpec.Prometheus == nil {
-				ctl.opsSightSpec.Prometheus = &opssightapi.Prometheus{}
-			}
-			ctl.opsSightSpec.Prometheus.Port = ctl.PrometheusPort
 		case "expose-metrics":
 			if ctl.opsSightSpec.Prometheus == nil {
 				ctl.opsSightSpec.Prometheus = &opssightapi.Prometheus{}
@@ -495,11 +413,22 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 			}
 			ctl.opsSightSpec.Blackduck.BlackduckPassword = crddefaults.Base64Encode([]byte(ctl.BlackduckPassword))
 		case "registry":
+			if ctl.opsSightSpec.RegistryConfiguration == nil {
+				ctl.opsSightSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.opsSightSpec.RegistryConfiguration.Registry = ctl.Registry
 		case "registry-namespace":
+			if ctl.opsSightSpec.RegistryConfiguration == nil {
+				ctl.opsSightSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.opsSightSpec.RegistryConfiguration.Namespace = ctl.RegistryNamespace
 		case "pull-secret-name":
+			if ctl.opsSightSpec.RegistryConfiguration == nil {
+				ctl.opsSightSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.opsSightSpec.RegistryConfiguration.PullSecrets = ctl.PullSecrets
+		case "image-registries":
+			ctl.opsSightSpec.ImageRegistries = ctl.ImageRegistries
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}
