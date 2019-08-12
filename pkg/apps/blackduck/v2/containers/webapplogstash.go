@@ -159,7 +159,7 @@ func (c *Creater) getWebappVolumeMounts() []*horizonapi.VolumeMountConfig {
 // GetWebAppService will return the webapp service
 func (c *Creater) GetWebAppService() *components.Service {
 	// TODO: changed the auth service name to webapp until the HUB-20462 is fixed. once it if fixed, changed the name to use GetResource method
-	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "webapp"), c.GetLabel("webapp-logstash"), c.blackDuck.Spec.Namespace, webappPort, webappPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
+	return util.CreateService("webapp", c.GetLabel("webapp-logstash"), c.blackDuck.Spec.Namespace, webappPort, webappPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("webapp-logstash"))
 }
 
 // GetLogStashService will return the logstash service
