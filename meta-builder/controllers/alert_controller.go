@@ -17,13 +17,12 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 
+	alertsv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
+	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"github.com/go-logr/logr"
-	alertsv1 "github.com/yashbhutwala/kb-synopsys-operator/api/v1"
-	"github.com/yashbhutwala/kb-synopsys-operator/controllers/controllers_utils"
-	flying_dutchman "github.com/yashbhutwala/kb-synopsys-operator/flying-dutchman"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,13 +62,11 @@ func (r *AlertReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, er
 			return nil, nil
 		}
 	}
-	fmt.Printf("Get Alert: %+v\n", alert)
 	return &alert, nil
 }
 
 func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
 	alert := cr.(*alertsv1.Alert)
-	// 1. Get List of Runtime Objects (Base Yamls)
 	// TODO: either read contents of yaml from locally mounted file
 	// read content of full desired yaml from externally hosted file
 	// FinalYamlUrl := "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
@@ -93,15 +90,12 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 			return mapOfUniqueIdToDesiredRuntimeObject, nil
 		}
 	}
-	fmt.Printf("Before - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(mapOfUniqueIdToDesiredRuntimeObject))
 	objs := patchAlert(alert, mapOfUniqueIdToDesiredRuntimeObject)
-	fmt.Printf("After - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(objs))
 
 	return objs, nil
 }
 
 func (r *AlertReconciler) GetInstructionManual() (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
-	// 2. Create Instruction Manual From Runtime Objects
 	instructionManualFile := "https://raw.githubusercontent.com/yashbhutwala/kb-synopsys-operator/master/config/samples/dependency_sample_alert.yaml"
 	instructionManual, err := controllers_utils.CreateInstructionManual(instructionManualFile)
 	if err != nil {

@@ -1,6 +1,6 @@
 version: "2"
 domain: com
-repo: github.com/yashbhutwala/kb-synopsys-operator
+repo: github.com/blackducksoftware/synopsys-operator/meta-builder
 resources:
 - group: synopsys
   version: v1

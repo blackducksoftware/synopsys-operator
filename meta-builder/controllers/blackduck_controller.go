@@ -22,7 +22,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	synopsysv1 "github.com/yashbhutwala/kb-synopsys-operator/api/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 )
 
 // BlackduckReconciler reconciles a Blackduck object

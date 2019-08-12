@@ -1,7 +1,7 @@
 package controllers_utils
 
 import (
-	"github.com/yashbhutwala/kb-synopsys-operator/flying-dutchman"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"gopkg.in/yaml.v2"
 )
 
