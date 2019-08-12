@@ -43,8 +43,6 @@ type Alert struct {
 type AlertSpec struct {
 	Namespace            string   `json:"namespace,omitempty"`
 	Version              string   `json:"version,omitempty"`
-	AlertImage           string   `json:"alertImage,omitempty"`
-	CfsslImage           string   `json:"cfsslImage,omitempty"`
 	ExposeService        string   `json:"exposeService"`
 	StandAlone           *bool    `json:"standAlone"`
 	Port                 *int32   `json:"port"`

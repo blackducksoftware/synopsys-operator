@@ -26,6 +26,7 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	appsutil "github.com/blackducksoftware/synopsys-operator/pkg/apps/util"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 )
@@ -74,10 +75,7 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 
 // getCfsslContainer returns a new Container for a Cffsl
 func (a *SpecConfig) getCfsslContainer() (*components.Container, error) {
-	image := a.alert.Spec.CfsslImage
-	if image == "" {
-		image = GetImageTag(a.alert.Spec.Version, "blackduck-cfssl")
-	}
+	image := appsutil.GenerateImageTag(GetImageTag(a.alert.Spec.Version, "blackduck-cfssl"), a.alert.Spec.ImageRegistries, a.alert.Spec.RegistryConfiguration)
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:   "blackduck-cfssl",
 		Image:  image,
