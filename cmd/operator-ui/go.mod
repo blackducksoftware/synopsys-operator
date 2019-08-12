@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.44.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/blackducksoftware/synopsys-operator v0.0.0-20190812184733-93b76a905b62
+	github.com/blackducksoftware/synopsys-operator v0.0.0-20190812202208-6ce86e2e4871
 	github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd v3.3.13+incompatible // indirect
@@ -65,7 +65,7 @@ replace (
 	cloud.google.com/go => cloud.google.com/go v0.44.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent => contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	github.com/NYTimes/gziphandler => github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190812184733-93b76a905b62
+	github.com/blackducksoftware/synopsys-operator => github.com/blackducksoftware/synopsys-operator v0.0.0-20190812202208-6ce86e2e4871
 	github.com/cockroachdb/cockroach-go => github.com/cockroachdb/cockroach-go v0.0.0-20181001143604-e0a95dfd547c // indirect
 	github.com/coreos/bbolt => github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.13+incompatible // indirect
