@@ -79,6 +79,8 @@ github.com/blackducksoftware/synopsys-operator v0.0.0-20190812184733-93b76a905b6
 github.com/blackducksoftware/synopsys-operator v0.0.0-20190812184733-93b76a905b62/go.mod h1:j41MAYJAh38lW5+DcQgAg6qsgwVc4QLy/m8LE/N25GQ=
 github.com/blackducksoftware/synopsys-operator v0.0.0-20190812184733-a07225a612b7 h1:UB0MyAc2G9lgZYyWAxlCJtHrkTT7wt1mtLLLEpN0CW0=
 github.com/blackducksoftware/synopsys-operator v0.0.0-20190812184733-a07225a612b7/go.mod h1:pqvRi2tSv5/Es2/wm6dNaC+ITcpv+h2PvIyQWIEP/Y8=
+github.com/blackducksoftware/synopsys-operator v0.0.0-20190812202208-6ce86e2e4871 h1:5RQfFloW1H9eKPXQv39OHRL48FSzzRYT8brtMrXa4mE=
+github.com/blackducksoftware/synopsys-operator v0.0.0-20190812202208-6ce86e2e4871/go.mod h1:j41MAYJAh38lW5+DcQgAg6qsgwVc4QLy/m8LE/N25GQ=
 github.com/blang/semver v3.5.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
