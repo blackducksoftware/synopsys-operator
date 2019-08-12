@@ -100,7 +100,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	return objs, nil
 }
 
-func (r *AlertReconciler) CreateInstructionManual() (*flying_dutchman.RuntimeObjectDepencyYaml, error) {
+func (r *AlertReconciler) GetInstructionManual() (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	// 2. Create Instruction Manual From Runtime Objects
 	instructionManualFile := "https://raw.githubusercontent.com/yashbhutwala/kb-synopsys-operator/master/config/samples/dependency_sample_alert.yaml"
 	instructionManual, err := controllers_utils.CreateInstructionManual(instructionManualFile)
@@ -116,7 +116,7 @@ func (r *AlertReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// TODO: By adding sha, we no longer need to requeue after (awesome!!), but it's here just in case you need to re-enable it
 	//return ctrl.Result{RequeueAfter: 10 * time.Minute}, nil
-	return flying_dutchman.MetaReconciler(req, r)
+	return flying_dutchman.MetaReconcile(req, r)
 }
 
 // +kubebuilder:rbac:groups=alerts.synopsys.com,resources=alerts,verbs=get;list;watch;create;update;patch;delete

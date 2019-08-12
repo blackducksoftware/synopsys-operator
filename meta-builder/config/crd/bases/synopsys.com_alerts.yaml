@@ -28,8 +28,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: 'AlertSpec defines the desired state of Alert Important: Run
-            "make" to regenerate code after modifying this file'
+          description: AlertSpec defines the desired state of Alert
           properties:
             alertImage:
               type: string
@@ -100,9 +99,7 @@ spec:
           - standAlone
           type: object
         status:
-          description: 'AlertStatus defines the observed state of Alert INSERT ADDITIONAL
-            STATUS FIELD - define observed state of cluster Important: Run "make"
-            to regenerate code after modifying this file'
+          description: AlertStatus defines the observed state of Alert
           properties:
             errorMessage:
               type: string

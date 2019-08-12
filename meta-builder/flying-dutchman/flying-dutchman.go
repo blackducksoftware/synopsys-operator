@@ -3,10 +3,10 @@ package flying_dutchman
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	scheduler "github.com/yashbhutwala/go-scheduler"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,54 +20,84 @@ var (
 	JobOwnerKey = ".metadata.controller"
 )
 
+// MetaReconcilerInterface is a generic interface for running a Reconcile process
 type MetaReconcilerInterface interface {
+	// GetClient expects that the implementer returns a "controller-runtime" client
 	GetClient() client.Client
+	// GetCustomResource expects that the implementer returns the custom resource to watch against
 	GetCustomResource(ctrl.Request) (metav1.Object, error)
+	// GetRuntimeObjects expects that the implementer returns a map of uniqueId to runtime.Object to schedule to the api-server
 	GetRuntimeObjects(interface{}) (map[string]runtime.Object, error)
-	CreateInstructionManual() (*RuntimeObjectDepencyYaml, error)
+	// GetInstructionManual expects that the implementer returns a pointer to the instruction manual
+	GetInstructionManual() (*RuntimeObjectDependencyYaml, error)
 }
 
-func MetaReconciler(req ctrl.Request, mri MetaReconcilerInterface) (ctrl.Result, error) {
-	myClient := mri.GetClient()
+// MetaReconcile takes as input a request and an implementer of MetaReconcilerInterface
+// It's to be used inside of a Reconcile loop
+func MetaReconcile(req ctrl.Request, mri MetaReconcilerInterface) (ctrl.Result, error) {
+
+	// get the client
+	givenClient := mri.GetClient()
+
+	// get the specific custom resource
 	cr, err := mri.GetCustomResource(req)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	// if cr is not found, currently we will not reconcile
 	if cr == nil {
-		return ctrl.Result{}, nil // TODO - rethink what to do when a CR isn't found (requeue after ??)
+		// TODO: rethink what to do when copyOfCr CR isn't found (requeue after ??)
+		return ctrl.Result{}, nil
 	}
+
+	// get copyOfCr map of unique id to runtime.Object
 	mapOfUniqueIdToDesiredRuntimeObject, err := mri.GetRuntimeObjects(cr)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	instructionManual, err := mri.CreateInstructionManual()
+
+	// get the instruction manual
+	instructionManual, err := mri.GetInstructionManual()
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	a := cr.(runtime.Object).DeepCopyObject()
-	err = ScheduleResources(myClient, a.(metav1.Object), mapOfUniqueIdToDesiredRuntimeObject, instructionManual)
+
+	// make a copy of the cr
+	copyOfCr := cr.(runtime.Object).DeepCopyObject()
+	metaOfCopyOfCr := copyOfCr.(metav1.Object)
+
+	// hand-off to the scheduler
+	err = ScheduleResources(givenClient, metaOfCopyOfCr, mapOfUniqueIdToDesiredRuntimeObject, instructionManual)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
 }
 
-func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object, instructionManual *RuntimeObjectDepencyYaml) error {
+// ScheduleResources takes as input a controller-runtime client, a custom resource, a map of runtime.Object, and a instruction manual
+// It creates a task graph and schedules the runtime objects to the Kubernetes api-server
+func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object, instructionManual *RuntimeObjectDependencyYaml) error {
+
+	// create a context for ScheduleResources
 	ctx := context.Background()
+
+	// create a log
 	log := ctrl.Log.WithName("ScheduleResources")
-	// Get current runtime objects "owned" by Alert CR
-	fmt.Printf("Creating Tasks for RuntimeObjects...\n")
+
+	// get current runtime objects "owned" by Alert CR
+	log.V(1).Info("Getting a list of existing runtime objects owned by", "Custom Resource: ", cr)
 	var listOfCurrentRuntimeObjectsOwnedByAlertCr metav1.List
 	if err := myClient.List(ctx, &listOfCurrentRuntimeObjectsOwnedByAlertCr, client.InNamespace(cr.GetNamespace()), client.MatchingField(JobOwnerKey, cr.GetName())); err != nil {
 		log.Error(err, "unable to list currentRuntimeObjectsOwnedByAlertCr")
-		//TODO: redo
+		// TODO: rethink what to do when we cannot list currentRuntimeObjectsOwnedByAlertCr
 		//return ctrl.Result{}, nil
 	}
 
-	// If any of the current objects are not in the desired objects, delete them
-	fmt.Printf("Creating Task Dependencies...\n")
+	// if any of the existing objects are not in the desired objects, delete them
 	accessor := meta.NewAccessor()
 	for _, currentRuntimeRawExtensionOwnedByAlertCr := range listOfCurrentRuntimeObjectsOwnedByAlertCr.Items {
+		// TODO: change all of this once we use labels
 		currentRuntimeObjectOwnedByAlertCr := currentRuntimeRawExtensionOwnedByAlertCr.Object.(runtime.Object)
 		currentRuntimeObjectKind, _ := accessor.Kind(currentRuntimeObjectOwnedByAlertCr)
 		currentRuntimeObjectName, _ := accessor.Name(currentRuntimeObjectOwnedByAlertCr)
@@ -75,56 +105,74 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 		uniqueId := fmt.Sprintf("%s.%s.%s", currentRuntimeObjectKind, currentRuntimeObjectNamespace, currentRuntimeObjectName)
 		_, ok := mapOfUniqueIdToDesiredRuntimeObject[uniqueId]
 		if !ok {
+			log.V(1).Info("Deleting runtime objects owned by cr, but no longer desired", "Custom Resource: ", cr, "Object being deleted", currentRuntimeObjectOwnedByAlertCr)
+			// TODO: third parameter in Delete: DeleteOptionFunc should be made explicit, currently we default
 			err := myClient.Delete(ctx, currentRuntimeObjectOwnedByAlertCr)
 			if err != nil {
+				// TODO: rethink what to do when we cannot delete a non-desired item
 				// if any error in deleting, just continue
 				continue
 			}
 		}
 	}
 
+	// create a scheduler
 	alertScheduler := scheduler.New(scheduler.ConcurrentTasks(5))
+	// create a task map to use later to draw all the dependencies
 	taskMap := make(map[string]*scheduler.Task)
 	for uniqueId, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
-		rto := desiredRuntimeObject.DeepCopyObject()
+		// pass a copy of the runtime object to scheduler to avoid concurrency issues
+		copyOfDesiredRuntimeObject := desiredRuntimeObject.DeepCopyObject()
+		// create a task function
 		taskFunc := func(ctx context.Context) error {
-			_, err := EnsureRuntimeObjects(myClient, ctx, log, rto)
+			// TODO: rethink, currently we only use the error, maybe EnsureRuntimeObject should just return an error
+			_, err := EnsureRuntimeObject(myClient, ctx, log, copyOfDesiredRuntimeObject)
 			return err
 		}
+		log.V(1).Info("Adding a task for the runtime object", "Runtime Object", copyOfDesiredRuntimeObject)
+		// add the task function to the scheduler
 		task := alertScheduler.AddTask(taskFunc)
+		// add the task to the task map
 		taskMap[uniqueId] = task
 	}
 
+	// iterate through the given dependencies in the instruction manual and add the dependency edge for the tasks
 	for _, dependency := range instructionManual.Dependencies {
-		depTail := dependency.Obj
-		depHead := dependency.IsDependentOn // depTail --> depHead
-		fmt.Printf("Creating Task Dependency: %s -> %s\n", depTail, depHead)
-		// Get all RuntimeObjects for the Tail
-		tailRuntimeObjectIDs, ok := instructionManual.Groups[depTail]
-		if !ok { // no group due to single object name
-			tailRuntimeObjectIDs = []string{depTail}
+		child := dependency.Obj
+		parent := dependency.IsDependentOn
+		// get all RuntimeObjects for the Tail
+		listOfChildRuntimeObjects, ok := instructionManual.Groups[child]
+		if !ok {
+			// no group due to single object name
+			listOfChildRuntimeObjects = []string{child}
 		}
-		// Get all RuntimeObjects for the Head
-		headRuntimeObjectIDs, ok := instructionManual.Groups[depHead]
-		if !ok { // no group due to single object name
-			headRuntimeObjectIDs = []string{depHead}
+		// get all RuntimeObjects for the Head
+		listOfParentRuntimeObjects, ok := instructionManual.Groups[parent]
+		if !ok {
+			// no group due to single object name
+			listOfParentRuntimeObjects = []string{parent}
 		}
 		// Create dependencies from each tail to each head
-		for _, tailRuntimeObjectName := range tailRuntimeObjectIDs {
-			for _, headRuntimeObjectName := range headRuntimeObjectIDs {
-				taskMap[tailRuntimeObjectName].DependsOn(taskMap[headRuntimeObjectName])
-				fmt.Printf("   -  %s -> %s\n", tailRuntimeObjectName, headRuntimeObjectName)
+		for _, childRuntimeObjectUniqueId := range listOfChildRuntimeObjects {
+			for _, parentRuntimeObjectUniqueId := range listOfParentRuntimeObjects {
+				taskMap[childRuntimeObjectUniqueId].DependsOn(taskMap[parentRuntimeObjectUniqueId])
+				log.V(1).Info("Creating Task Dependency", "Child", childRuntimeObjectUniqueId, "depends on Parent", parentRuntimeObjectUniqueId)
 			}
 		}
 	}
 
-	if err := alertScheduler.Run(context.Background()); err != nil {
+	// finally run the scheduler with a new context
+	schedulerCtx := context.Background()
+	log.V(1).Info("Running Scheduler", "Context ", schedulerCtx)
+	if err := alertScheduler.Run(schedulerCtx); err != nil {
 		return err
 	}
+
+	// if everything runs successfully, return nil to caller
 	return nil
 }
 
-func EnsureRuntimeObjects(myClient client.Client, ctx context.Context, log logr.Logger, desiredRuntimeObject runtime.Object) (ctrl.Result, error) {
+func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.Logger, desiredRuntimeObject runtime.Object) (ctrl.Result, error) {
 	// TODO: either get this working or wait for server side apply
 	// TODO: https://github.com/kubernetes-sigs/controller-runtime/issues/347
 	// TODO: https://github.com/kubernetes-sigs/controller-runtime/issues/464
@@ -144,40 +192,107 @@ func EnsureRuntimeObjects(myClient client.Client, ctx context.Context, log logr.
 	//	return nil
 	//})
 
-	var opResult controllerutil.OperationResult
-	key, err := client.ObjectKeyFromObject(desiredRuntimeObject)
+	// BEGIN BORROWED CODE FROM controllerutil.CreateOrUpdate
+	opResult, err := CreateOrUpdate(ctx, myClient, desiredRuntimeObject)
+	// END BORROWED CODE FROM controllerutil.CreateOrUpdate
 	if err != nil {
-		opResult = controllerutil.OperationResultNone
+		// TODO: Case 1: we needed to update the configMap and now we should delete and redeploy objects in STAGE 3, 4 ...
+		// TODO: Case 2: we failed to update the configMap...TODO
+		// TODO: delete everything in stages 3, 4 ... and requeue
+		log.Error(err, "Unable to create or update", "desiredRuntimeObject", desiredRuntimeObject)
+		return ctrl.Result{}, err
+	}
+	log.V(1).Info("Result of create or update for", "desiredRuntimeObject", desiredRuntimeObject, "opResult", opResult)
+
+	err = CheckForReadiness(desiredRuntimeObject)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
-	currentRuntimeObject := desiredRuntimeObject.DeepCopyObject()
-	if err := myClient.Get(ctx, key, currentRuntimeObject); err != nil {
+	// finally return nil if ensured successfully
+	return ctrl.Result{}, nil
+}
+
+func CheckForReadiness(desiredRuntimeObject runtime.Object) error {
+	// TODO: Check for readiness/completeness
+	accessor := meta.NewAccessor()
+	kindOfDesiredRuntimeObject, _ := accessor.Kind(desiredRuntimeObject)
+	switch kindOfDesiredRuntimeObject {
+	case "Pod":
+		return nil
+	default:
+		return nil
+	}
+}
+
+// TODO: Borrowed and modified slightly from https://godoc.org/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil#CreateOrUpdate
+// Changes include removing the mutateFn, using semantic.DeepEqual, doing a deepcopy before create cause create will muck with it
+func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object) (controllerutil.OperationResult, error) {
+	key, err := client.ObjectKeyFromObject(obj)
+	if err != nil {
+		return controllerutil.OperationResultNone, err
+	}
+
+	// CHANGE #1
+	currentRuntimeObject := obj.DeepCopyObject()
+	if err := c.Get(ctx, key, currentRuntimeObject); err != nil {
 		if !apierrs.IsNotFound(err) {
-			opResult = controllerutil.OperationResultNone
+			return controllerutil.OperationResultNone, err
 		}
-		if err := myClient.Create(ctx, desiredRuntimeObject); err != nil {
-			opResult = controllerutil.OperationResultNone
+		if err := c.Create(ctx, obj); err != nil {
+			return controllerutil.OperationResultNone, err
 		}
-		opResult = controllerutil.OperationResultCreated
+		return controllerutil.OperationResultCreated, nil
 	}
 
 	existing := currentRuntimeObject
-	if reflect.DeepEqual(existing, desiredRuntimeObject) {
-		opResult = controllerutil.OperationResultNone
+	// CHANGE #2
+	// TODO: need more than this cause server puts some default
+	// TODO: good info in issue here: https://github.com/kubernetes-sigs/controller-runtime/issues/464
+	if equality.Semantic.DeepEqual(existing, obj) {
+		return controllerutil.OperationResultNone, nil
 	}
 
-	if err := myClient.Update(ctx, desiredRuntimeObject); err != nil {
-		opResult = controllerutil.OperationResultNone
+	if err := c.Update(ctx, obj); err != nil {
+		// CHANGE #3
+		// TODO:
+		return controllerutil.OperationResultNone, nil
+		//return controllerutil.OperationResultNone, err
 	}
-
-	log.V(1).Info("Result of CreateOrUpdate on CFSSL desiredRuntimeObject", "desiredRuntimeObject", desiredRuntimeObject, "opResult", opResult)
-
-	// TODO: Case 1: we needed to update the configMap and now we should delete and redploy objects in STAGE 3, 4 ...
-	// TODO: Case 2: we failed to update the configMap...TODO
-	if err != nil {
-		// TODO: delete everything in stages 3, 4 ... and requeue
-		log.Error(err, "unable to create or update STAGE 2 objects, deleting all child Objects", "desiredRuntimeObject", desiredRuntimeObject)
-		return ctrl.Result{}, err
-	}
-	return ctrl.Result{}, nil
+	return controllerutil.OperationResultUpdated, nil
 }
+
+// TODO: original that the above code was modified from on 2019-08-12
+//func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object, f MutateFn) (OperationResult, error) {
+//	key, err := client.ObjectKeyFromObject(obj)
+//	if err != nil {
+//		return OperationResultNone, err
+//	}
+//
+//	if err := c.Get(ctx, key, obj); err != nil {
+//		if !errors.IsNotFound(err) {
+//			return OperationResultNone, err
+//		}
+//		if err := mutate(f, key, obj); err != nil {
+//			return OperationResultNone, err
+//		}
+//		if err := c.Create(ctx, obj); err != nil {
+//			return OperationResultNone, err
+//		}
+//		return OperationResultCreated, nil
+//	}
+//
+//	existing := obj.DeepCopyObject()
+//	if err := mutate(f, key, obj); err != nil {
+//		return OperationResultNone, err
+//	}
+//
+//	if reflect.DeepEqual(existing, obj) {
+//		return OperationResultNone, nil
+//	}
+//
+//	if err := c.Update(ctx, obj); err != nil {
+//		return OperationResultNone, err
+//	}
+//	return OperationResultUpdated, nil
+//}

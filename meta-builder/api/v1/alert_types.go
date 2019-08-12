@@ -23,7 +23,6 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // AlertSpec defines the desired state of Alert
-// Important: Run "make" to regenerate code after modifying this file
 type AlertSpec struct {
 	Namespace         string   `json:"namespace,omitempty"`
 	Size              string   `json:"size"`
@@ -55,8 +54,6 @@ type RegistryConfiguration struct {
 }
 
 // AlertStatus defines the observed state of Alert
-// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-// Important: Run "make" to regenerate code after modifying this file
 type AlertStatus struct {
 	State        string `json:"state"`
 	ErrorMessage string `json:"errorMessage"`
