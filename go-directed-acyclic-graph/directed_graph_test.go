@@ -136,10 +136,10 @@ func TestDirectedGraphAdjacencyMatrix(t *testing.T) {
 	graph.AddEdge("D", "D")
 
 	expected := map[interface{}]map[interface{}]bool{
-		"A": map[interface{}]bool{"A": false, "B": true, "C": true, "D": false},
-		"B": map[interface{}]bool{"A": false, "B": false, "C": false, "D": true},
-		"C": map[interface{}]bool{"A": true, "B": false, "C": false, "D": false},
-		"D": map[interface{}]bool{"D": true, "A": false, "B": false, "C": false},
+		"A": {"A": false, "B": true, "C": true, "D": false},
+		"B": {"A": false, "B": false, "C": false, "D": true},
+		"C": {"A": true, "B": false, "C": false, "D": false},
+		"D": {"D": true, "A": false, "B": false, "C": false},
 	}
 
 	assert.Equal(t, expected, graph.AdjacencyMatrix(), "graph.AdjacencyMatrix() should equal [B, D]")
