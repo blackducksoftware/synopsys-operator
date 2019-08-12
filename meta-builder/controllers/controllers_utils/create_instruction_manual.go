@@ -5,14 +5,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func CreateInstructionManual(instructionManualLocation string) (*flying_dutchman.RuntimeObjectDepencyYaml, error) {
+func CreateInstructionManual(instructionManualLocation string) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	// Read Dependency YAML File into Struct
 	dependencyYamlBytes, err := HttpGet(instructionManualLocation)
 	if err != nil {
 		return nil, err
 	}
 
-	dependencyYamlStruct := &flying_dutchman.RuntimeObjectDepencyYaml{}
+	dependencyYamlStruct := &flying_dutchman.RuntimeObjectDependencyYaml{}
 	err = yaml.Unmarshal(dependencyYamlBytes, dependencyYamlStruct)
 	if err != nil {
 		return nil, err

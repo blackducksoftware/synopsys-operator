@@ -5,7 +5,7 @@ type RuntimeObjectDependency struct {
 	Obj           string `yaml:"obj"`
 	IsDependentOn string `yaml:"isdependenton"`
 }
-type RuntimeObjectDepencyYaml struct {
+type RuntimeObjectDependencyYaml struct {
 	Groups       map[string][]string       `yaml:"runtimeobjectsgroupings"`
 	Dependencies []RuntimeObjectDependency `yaml:"runtimeobjectdependencies"`
 }
