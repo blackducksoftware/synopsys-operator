@@ -45,15 +45,16 @@ func (a *SpecConfig) getAlertConfigMap() *components.ConfigMap {
 
 	// Add Environs
 	for _, environ := range a.alert.Spec.Environs {
-		vals := strings.Split(environ, ":")
+		vals := strings.SplitN(environ, ":", 2)
 		if len(vals) != 2 {
 			log.Errorf("Could not split environ '%s' on ':'", environ)
 			continue
 		}
 		environKey := strings.TrimSpace(vals[0])
 		environVal := strings.TrimSpace(vals[1])
-		log.Debugf("Adding Environ %s", environKey)
-		configMapData[environKey] = environVal
+		if len(environKey) > 0 && len(environVal) > 0 {
+			configMapData[environKey] = environVal
+		}
 	}
 
 	// Add data to the ConfigMap
