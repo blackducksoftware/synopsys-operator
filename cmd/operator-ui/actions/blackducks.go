@@ -36,7 +36,6 @@ import (
 	"github.com/gobuffalo/buffalo"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -80,7 +79,7 @@ func NewBlackduckResource(config *protoform.Config, kubeConfig *rest.Config) (*B
 // GET /blackducks
 func (v BlackducksResource) List(c buffalo.Context) error {
 	SetVersion(c)
-	blackducks, err := util.ListHubs(v.blackduckClient, v.config.Namespace)
+	blackducks, err := util.ListBlackduck(v.blackduckClient, v.config.CrdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return c.Error(500, err)
 	}
@@ -99,8 +98,8 @@ func parseParams(name string) (string, string) {
 // the path GET /blackducks/{blackduck_id}
 func (v BlackducksResource) Show(c buffalo.Context) error {
 	SetVersion(c)
-	namespace, name := parseParams(c.Param("blackduck_id"))
-	blackduck, err := util.GetHub(v.blackduckClient, namespace, name)
+	_, name := parseParams(c.Param("blackduck_id"))
+	blackduck, err := util.GetBlackduck(v.blackduckClient, v.config.CrdNamespace, name, metav1.GetOptions{})
 	if err != nil {
 		return c.Error(500, err)
 	}
@@ -175,7 +174,7 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 		}
 	}
 
-	blackducks, _ := util.ListHubs(v.blackduckClient, v.config.Namespace)
+	blackducks, _ := util.ListBlackduck(v.blackduckClient, v.config.CrdNamespace, metav1.ListOptions{})
 	// Clone Black Ducks
 	if bd.View.Clones == nil {
 		keys := make(map[string]string)
@@ -265,7 +264,7 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 
 	log.Infof("create Black Duck: %+v", blackduck)
 
-	blackducks, err := util.ListHubs(v.blackduckClient, blackduck.Spec.Namespace)
+	blackducks, err := util.ListBlackduck(v.blackduckClient, v.config.CrdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackduck.Spec.Namespace, err)
 	}
@@ -277,23 +276,12 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 		}
 	}
 
-	_, err = util.GetHub(v.blackduckClient, blackduck.Spec.Namespace, blackduck.Name)
+	_, err = util.GetBlackduck(v.blackduckClient, v.config.CrdNamespace, blackduck.Name, metav1.GetOptions{})
 	if err == nil {
 		return v.redirect(c, blackduck, fmt.Errorf("already '%s' Black Duck instance exist in '%s' namespace", blackduck.Name, blackduck.Spec.Namespace))
 	}
 
-	// Get the Synopsys Operator namespace by CRD scope
-	scope := apiextensions.NamespaceScoped
-	if v.config.IsClusterScoped {
-		scope = apiextensions.ClusterScoped
-	}
-
-	operatorNamespace, err := util.GetOperatorNamespaceByCRDScope(v.kubeClient, util.BlackDuckCRDName, scope, blackduck.Spec.Namespace)
-	if err != nil {
-		return v.redirect(c, blackduck, err)
-	}
-
-	_, err = util.CreateHub(v.blackduckClient, operatorNamespace, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackduck.Name}, Spec: blackduck.Spec})
+	_, err = util.CreateBlackduck(v.blackduckClient, v.config.CrdNamespace, &blackduckapi.Blackduck{ObjectMeta: metav1.ObjectMeta{Name: blackduck.Name}, Spec: blackduck.Spec})
 	if err != nil {
 		return v.redirect(c, blackduck, err)
 	}
@@ -309,8 +297,8 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 // mapped to the path GET /blackducks/{blackduck_id}/edit
 func (v BlackducksResource) Edit(c buffalo.Context) error {
 	SetVersion(c)
-	namespace, name := parseParams(c.Param("blackduck_id"))
-	blackduck, err := util.GetHub(v.blackduckClient, namespace, name)
+	_, name := parseParams(c.Param("blackduck_id"))
+	blackduck, err := util.GetBlackduck(v.blackduckClient, v.config.CrdNamespace, name, metav1.GetOptions{})
 	if err != nil {
 		return c.Error(404, err)
 	}
@@ -383,14 +371,14 @@ func (v BlackducksResource) Update(c buffalo.Context) error {
 		return v.redirect(c, blackduck, err)
 	}
 
-	latestBlackduck, err := util.GetHub(v.blackduckClient, blackduck.Spec.Namespace, blackduck.Name)
+	latestBlackduck, err := util.GetBlackduck(v.blackduckClient, v.config.CrdNamespace, blackduck.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", blackduck.Name, blackduck.Spec.Namespace, err)
 		return v.redirect(c, blackduck, err)
 	}
 
 	latestBlackduck.Spec = blackduck.Spec
-	_, err = util.UpdateBlackduck(v.blackduckClient, blackduck.Spec.Namespace, latestBlackduck)
+	_, err = util.UpdateBlackduck(v.blackduckClient, latestBlackduck)
 
 	if err != nil {
 		log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackduck.Name, blackduck.Spec.Namespace, err)
@@ -399,7 +387,7 @@ func (v BlackducksResource) Update(c buffalo.Context) error {
 	// If there are no errors set a success message
 	c.Flash().Add("success", "Black Duck was updated successfully")
 
-	blackducks, _ := util.ListHubs(v.blackduckClient, v.config.Namespace)
+	blackducks, _ := util.ListBlackduck(v.blackduckClient, v.config.CrdNamespace, metav1.ListOptions{})
 	c.Set("blackducks", blackducks.Items)
 	// and redirect to the blackducks index page
 	return c.Redirect(302, "/blackducks/%s", fmt.Sprintf("%s:%s", blackduck.Spec.Namespace, blackduck.Name))
@@ -411,14 +399,14 @@ func (v BlackducksResource) Destroy(c buffalo.Context) error {
 	SetVersion(c)
 	log.Infof("delete Black Duck request %v", c.Param("blackduck"))
 	namespace, name := parseParams(c.Param("blackduck_id"))
-	_, err := util.GetHub(v.blackduckClient, namespace, name)
+	_, err := util.GetBlackduck(v.blackduckClient, v.config.CrdNamespace, name, metav1.GetOptions{})
 	// To find the Blackduck the parameter blackduck_id is used.
 	if err != nil {
 		return c.Error(404, err)
 	}
 
 	// This is on the event loop.
-	err = v.blackduckClient.SynopsysV1().Blackducks(namespace).Delete(name, &metav1.DeleteOptions{})
+	err = util.DeleteBlackduck(v.blackduckClient, name, v.config.CrdNamespace, &metav1.DeleteOptions{})
 	// To find the Blackduck the parameter blackduck_id is used.
 	if err != nil {
 		log.Errorf("error deleting Black Duck '%s' in namespace '%s' due to %+v", name, namespace, err)
@@ -445,7 +433,7 @@ func (v BlackducksResource) ChangeState(c buffalo.Context) error {
 
 	namespace, name := parseParams(c.Param("blackduck_id"))
 
-	blackduck, err := util.GetHub(v.blackduckClient, namespace, name)
+	blackduck, err := util.GetBlackduck(v.blackduckClient, v.config.CrdNamespace, name, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("error getting Black Duck '%s' in namespace '%s' due to %+v", name, namespace, err)
 		return v.redirect(c, blackduck, err)
@@ -453,7 +441,7 @@ func (v BlackducksResource) ChangeState(c buffalo.Context) error {
 
 	blackduck.Spec.DesiredState = c.Param("state")
 
-	_, err = v.blackduckClient.SynopsysV1().Blackducks(blackduck.Spec.Namespace).Update(blackduck)
+	_, err = util.UpdateBlackduck(v.blackduckClient, blackduck)
 	if err != nil {
 		log.Errorf("error updating Black Duck '%s' in namespace '%s' due to %+v", blackduck.Name, blackduck.Spec.Namespace, err)
 		return v.redirect(c, blackduck, err)
