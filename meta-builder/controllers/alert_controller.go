@@ -85,7 +85,7 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 
 func (r *AlertReconciler) CreateInstructionManual() (*flying_dutchman.RuntimeObjectDepencyYaml, error) {
 	// 2. Create Instruction Manual From Runtime Objects
-	instructionManualFile := "https://raw.githubusercontent.com/yashbhutwala/kb-synopsys-operator/master/controllers/alert-dependencies.yaml"
+	instructionManualFile := "https://raw.githubusercontent.com/yashbhutwala/kb-synopsys-operator/master/config/samples/dependency_sample_alert.yaml"
 	instructionManual, err := controllers_utils.CreateInstructionManual(instructionManualFile)
 	if err != nil {
 		return nil, err

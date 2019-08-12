@@ -1,0 +1,23 @@
+---
+myfunc: fmt.Println("Verifying Postgres")
+runtimeobjectsgroupings:
+  ConfigMap:
+    - ConfigMap.default.demo-alert-blackduck-config
+  AlertRC:
+    - ReplicationController.default.demo-alert-alert
+  CfsslRC:
+    - ReplicationController.default.demo-alert-cfssl
+  AlertSecret:
+    - Secret.default.demo-alert-secret
+runtimeobjectdependencies:
+  - obj: AlertRC
+    isdependenton: ConfigMap
+  - obj: AlertRC
+    isdependenton: AlertSecret
+  - obj: CfsslRC
+    isdependenton: ConfigMap
+  #  - obj: ConfigMap
+  #    isdependenton: AlertSecret
+  - obj: AlertSecret
+    isdependenton: ConfigMap
+---
