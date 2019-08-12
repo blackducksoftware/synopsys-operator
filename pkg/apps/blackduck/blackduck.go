@@ -28,9 +28,9 @@ import (
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	v1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	latestblackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest"
 	v1blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v1"
+	v2blackduck "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v2"
 	blackduckclientset "github.com/blackducksoftware/synopsys-operator/pkg/blackduck/client/clientset/versioned"
 	"github.com/blackducksoftware/synopsys-operator/pkg/crdupdater"
 	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
@@ -78,6 +78,7 @@ func NewBlackduck(config *protoform.Config, kubeConfig *rest.Config) *Blackduck 
 
 	creaters := []Creater{
 		v1blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
+		v2blackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
 		latestblackduck.NewCreater(config, kubeConfig, kubeclient, blackduckClient, routeClient),
 	}
 
@@ -102,7 +103,7 @@ func (b *Blackduck) getCreater(version string) (Creater, error) {
 	return nil, fmt.Errorf("version '%s' is not supported.  Supported versions: %s", version, strings.Join(b.Versions(), ", "))
 }
 
-func (b *Blackduck) ensureVersion(bd *v1.Blackduck) error {
+func (b *Blackduck) ensureVersion(bd *blackduckapi.Blackduck) error {
 	versions := b.Versions()
 	// If the version is not provided, then we set it to be the latest
 	if len(bd.Spec.Version) == 0 {
@@ -179,7 +180,7 @@ func (b *Blackduck) Versions() []string {
 }
 
 // Ensure will make sure the instance is correctly deployed or deploy it if needed
-func (b *Blackduck) Ensure(bd *v1.Blackduck) error {
+func (b *Blackduck) Ensure(bd *blackduckapi.Blackduck) error {
 	// If the version is not specified then we set it to be the latest.
 	if err := b.ensureVersion(bd); err != nil {
 		return err

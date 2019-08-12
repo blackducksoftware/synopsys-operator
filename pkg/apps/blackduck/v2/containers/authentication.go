@@ -134,5 +134,7 @@ func (c *Creater) getAuthenticationVolumeMounts() []*horizonapi.VolumeMountConfi
 
 // GetAuthenticationService will return the authentication service
 func (c *Creater) GetAuthenticationService() *components.Service {
-	return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), c.GetLabel("authentication"), c.blackDuck.Spec.Namespace, authenticationPort, authenticationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("authentication"))
+	return util.CreateService("authentication", c.GetLabel("authentication"), c.blackDuck.Spec.Namespace, authenticationPort, authenticationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("authentication"))
+	// TODO: remove GetResourceName method until the HUB-20482 is fixed. once it if fixed, add them back
+	// return util.CreateService(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "authentication"), c.GetLabel("authentication"), c.blackDuck.Spec.Namespace, authenticationPort, authenticationPort, horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("authentication"))
 }

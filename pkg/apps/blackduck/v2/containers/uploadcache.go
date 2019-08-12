@@ -99,6 +99,7 @@ func (c *Creater) getUploadCacheVolumeMounts() []*horizonapi.VolumeMountConfig {
 
 // GetUploadCacheService will return the uploadCache service
 func (c *Creater) GetUploadCacheService() *components.Service {
-	return util.CreateServiceWithMultiplePort(util.GetResourceName(c.blackDuck.Name, util.BlackDuckName, "uploadcache"), c.GetLabel("uploadcache"), c.blackDuck.Spec.Namespace, []int32{uploadCachePort1, uploadCachePort2},
+	// TODO: remove GetResourceName method until the HUB-20412 is fixed. once it if fixed, add them back
+	return util.CreateServiceWithMultiplePort("uploadcache", c.GetLabel("uploadcache"), c.blackDuck.Spec.Namespace, []int32{uploadCachePort1, uploadCachePort2},
 		horizonapi.ServiceTypeServiceIP, c.GetVersionLabel("uploadcache"))
 }
