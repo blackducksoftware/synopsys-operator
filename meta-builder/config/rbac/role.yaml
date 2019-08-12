@@ -68,3 +68,43 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - synopsys.com
+  resources:
+  - blackducks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - synopsys.com
+  resources:
+  - blackducks/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - synopsys.com
+  resources:
+  - opssights
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - synopsys.com
+  resources:
+  - opssights/status
+  verbs:
+  - get
+  - patch
+  - update
