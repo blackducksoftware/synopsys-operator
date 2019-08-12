@@ -28,7 +28,7 @@ import (
 	"github.com/blackducksoftware/horizon/pkg/components"
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
-	containers "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/v2/containers"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
