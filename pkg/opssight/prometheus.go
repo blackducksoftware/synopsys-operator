@@ -78,8 +78,8 @@ func (p *SpecConfig) perceptorMetricsPod() (*components.Pod, error) {
 
 func (p *SpecConfig) perceptorMetricsContainer() (*components.Container, error) {
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
-		Name:  p.opssight.Spec.Prometheus.Name,
-		Image: p.opssight.Spec.Prometheus.Image,
+		Name:  p.names["prometheus"],
+		Image: p.images["prometheus"],
 		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d"},
 	})
 	if err != nil {
@@ -87,7 +87,7 @@ func (p *SpecConfig) perceptorMetricsContainer() (*components.Container, error) 
 	}
 
 	container.AddPort(horizonapi.PortConfig{
-		ContainerPort: int32(p.opssight.Spec.Prometheus.Port),
+		ContainerPort: int32(3006),
 		Protocol:      horizonapi.ProtocolTCP,
 		Name:          "web",
 	})
@@ -139,8 +139,8 @@ func (p *SpecConfig) PerceptorMetricsService() (*components.Service, error) {
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       9090,
-		TargetPort: "9090",
+		Port:       3006,
+		TargetPort: "3006",
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       fmt.Sprintf("port-%s", "prometheus"),
 	})
@@ -161,8 +161,8 @@ func (p *SpecConfig) PerceptorMetricsNodePortService() (*components.Service, err
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       9090,
-		TargetPort: "9090",
+		Port:       3006,
+		TargetPort: "3006",
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       fmt.Sprintf("port-%s", "prometheus-exposed"),
 	})
@@ -183,8 +183,8 @@ func (p *SpecConfig) PerceptorMetricsLoadBalancerService() (*components.Service,
 	})
 
 	err := service.AddPort(horizonapi.ServicePortConfig{
-		Port:       9090,
-		TargetPort: "9090",
+		Port:       3006,
+		TargetPort: "3006",
 		Protocol:   horizonapi.ProtocolTCP,
 		Name:       fmt.Sprintf("port-%s", "prometheus-exposed"),
 	})
@@ -204,18 +204,18 @@ func (p *SpecConfig) PerceptorMetricsConfigMap() (*components.ConfigMap, error) 
 	})
 
 	targets := []string{
-		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceptor.Name), p.opssight.Spec.Perceptor.Port),
-		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ScannerPod.Scanner.Name), p.opssight.Spec.ScannerPod.Scanner.Port),
-		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.ScannerPod.ImageFacade.Name), p.opssight.Spec.ScannerPod.ImageFacade.Port),
+		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["perceptor"]), 3001),
+		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["scanner"]), 3003),
+		fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["perceptor-imagefacade"]), 3004),
 	}
 	if p.opssight.Spec.Perceiver.EnableImagePerceiver {
-		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceiver.ImagePerceiver.Name), p.opssight.Spec.Perceiver.Port))
+		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["image-perceiver"]), 3002))
 	}
 	if p.opssight.Spec.Perceiver.EnablePodPerceiver {
-		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Perceiver.PodPerceiver.Name), p.opssight.Spec.Perceiver.Port))
+		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["pod-perceiver"]), 3002))
 	}
 	if p.opssight.Spec.EnableSkyfire {
-		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Skyfire.Name), p.opssight.Spec.Skyfire.PrometheusPort))
+		targets = append(targets, fmt.Sprintf("%s:%d", util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["skyfire"]), 3005))
 	}
 	data := map[string]interface{}{
 		"global": map[string]interface{}{
@@ -248,11 +248,11 @@ func (p *SpecConfig) GetPrometheusOpenShiftRoute() *api.Route {
 	namespace := p.opssight.Spec.Namespace
 	if strings.ToUpper(p.opssight.Spec.Perceptor.Expose) == util.OPENSHIFT {
 		return &api.Route{
-			Name:               util.GetResourceName(p.opssight.Name, util.OpsSightName, fmt.Sprintf("%s-metrics", p.opssight.Spec.Prometheus.Name)),
+			Name:               util.GetResourceName(p.opssight.Name, util.OpsSightName, fmt.Sprintf("%s-metrics", p.names["prometheus"])),
 			Namespace:          namespace,
 			Kind:               "Service",
-			ServiceName:        util.GetResourceName(p.opssight.Name, util.OpsSightName, p.opssight.Spec.Prometheus.Name),
-			PortName:           fmt.Sprintf("port-%s", p.opssight.Spec.Prometheus.Name),
+			ServiceName:        util.GetResourceName(p.opssight.Name, util.OpsSightName, p.names["prometheus"]),
+			PortName:           fmt.Sprintf("port-%s", p.names["prometheus"]),
 			Labels:             map[string]string{"app": "opssight", "name": p.opssight.Name, "component": "prometheus-metrics"},
 			TLSTerminationType: routev1.TLSTerminationEdge,
 		}

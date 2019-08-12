@@ -10,14 +10,13 @@ require (
 	github.com/gin-gonic/gin v1.4.0
 	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/go-cmp v0.3.0
-	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/gophercloud/gophercloud v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.7
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
 	github.com/lib/pq v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onsi/ginkgo v1.7.0
-	github.com/onsi/gomega v1.4.3
+	github.com/onsi/ginkgo v1.8.0
+	github.com/onsi/gomega v1.5.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/prometheus/client_golang v1.1.0
@@ -38,7 +37,7 @@ require (
 )
 
 replace (
-	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.8.0 // indirect
+	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.8.0
 	github.com/blackducksoftware/horizon => github.com/blackducksoftware/horizon v0.0.0-20190625151958-16cafa9109a3
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/evanphx/json-patch => github.com/evanphx/json-patch v4.5.0+incompatible // indirect

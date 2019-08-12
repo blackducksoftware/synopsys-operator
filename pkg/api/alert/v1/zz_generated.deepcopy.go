@@ -56,7 +56,7 @@ func (in *Alert) DeepCopyObject() runtime.Object {
 func (in *AlertList) DeepCopyInto(out *AlertList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Alert, len(*in))
@@ -102,6 +102,15 @@ func (in *AlertSpec) DeepCopyInto(out *AlertSpec) {
 		in, out := &in.Environs, &out.Environs
 		*out = make([]string, len(*in))
 		copy(*out, *in)
+	}
+	if in.ImageRegistries != nil {
+		in, out := &in.ImageRegistries, &out.ImageRegistries
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.RegistryConfiguration != nil {
+		in, out := &in.RegistryConfiguration, &out.RegistryConfiguration
+		*out = (*in).DeepCopy()
 	}
 	return
 }

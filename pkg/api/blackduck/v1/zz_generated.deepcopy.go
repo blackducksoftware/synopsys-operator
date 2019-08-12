@@ -57,7 +57,7 @@ func (in *Blackduck) DeepCopyObject() runtime.Object {
 func (in *BlackduckList) DeepCopyInto(out *BlackduckList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Blackduck, len(*in))
@@ -126,7 +126,10 @@ func (in *BlackduckSpec) DeepCopyInto(out *BlackduckSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	in.RegistryConfiguration.DeepCopyInto(&out.RegistryConfiguration)
+	if in.RegistryConfiguration != nil {
+		in, out := &in.RegistryConfiguration, &out.RegistryConfiguration
+		*out = (*in).DeepCopy()
+	}
 	return
 }
 

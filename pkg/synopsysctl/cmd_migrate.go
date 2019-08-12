@@ -540,16 +540,6 @@ func migrateOpsSight(namespace string) error {
 		opsSight.Spec.Blackduck.BlackduckSpec.AdminPassword = defaultPassword
 		opsSight.Spec.Blackduck.BlackduckSpec.UserPassword = defaultPassword
 		opsSight.Spec.Blackduck.BlackduckSpec.PostgresPassword = defaultPassword
-		if strings.HasPrefix(opsSight.Spec.Perceptor.Name, "opssight-") {
-			opsSight.Spec.Perceptor.Name = "core"
-			opsSight.Spec.ScannerPod.Name = "scanner"
-			opsSight.Spec.ScannerPod.Scanner.Name = "scanner"
-			opsSight.Spec.ScannerPod.ImageFacade.Name = "image-getter"
-			opsSight.Spec.ScannerPod.ImageFacade.ServiceAccount = "scanner"
-			opsSight.Spec.Perceiver.PodPerceiver.Name = "pod-processor"
-			opsSight.Spec.Perceiver.ImagePerceiver.Name = "image-processor"
-			opsSight.Spec.Perceiver.ServiceAccount = "processor"
-		}
 
 		// update annotations
 		if _, ok := opsSight.Annotations["synopsys.com/created.by"]; !ok {

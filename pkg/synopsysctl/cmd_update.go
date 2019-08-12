@@ -941,104 +941,6 @@ var updateOpsSightNativeCmd = &cobra.Command{
 	},
 }
 
-func updateOpsSightImage(ops *opssightapi.OpsSight, imageName, image string) (*opssightapi.OpsSight, error) {
-	switch strings.ToUpper(imageName) {
-	case "OPSSIGHTCORE":
-		ops.Spec.Perceptor.Image = image
-	case "SCANNER":
-		ops.Spec.ScannerPod.Scanner.Image = image
-	case "IMAGEGETTER":
-		ops.Spec.ScannerPod.ImageFacade.Image = image
-	case "IMAGEPROCESSOR":
-		ops.Spec.Perceiver.ImagePerceiver.Image = image
-	case "PODPROCESSOR":
-		ops.Spec.Perceiver.PodPerceiver.Image = image
-	case "METRICS":
-		ops.Spec.Prometheus.Image = image
-	default:
-		return nil, fmt.Errorf("'%s' is not a valid component", imageName)
-	}
-	return ops, nil
-}
-
-// updateOpsSightImageCmd updates an image of an OpsSight instance's component
-var updateOpsSightImageCmd = &cobra.Command{
-	Use:           "image NAME OPSSIGHTCORE|SCANNER|IMAGEGETTER|IMAGEPROCESSOR|PODPROCESSOR|METRICS IMAGE",
-	Example:       "synopsysctl update opssight image <name> SCANNER docker.io/new_scanner_image_url\nsynopsysctl update opssight image <name> SCANNER docker.io/new_scanner_image_url -n <namespace>",
-	Short:         "Update an image of an OpsSight instance's component",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 3 {
-			cmd.Help()
-			return fmt.Errorf("this command takes 3 arguments")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		mockMode := cmd.Flags().Lookup("mock").Changed
-		opsSightName, opsSightNamespace, crdnamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
-		if err != nil {
-			return err
-		}
-		currOpsSight, err := util.GetOpsSight(opsSightClient, crdnamespace, opsSightName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-		}
-		newOpsSight, err := updateOpsSightImage(currOpsSight, args[1], args[2])
-		if err != nil {
-			return err
-		}
-
-		// If mock mode, return and don't create resources
-		if mockMode {
-			log.Debugf("generating updates to the CRD for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-			return PrintResource(*newOpsSight, mockFormat, false)
-		}
-
-		log.Infof("updating OpsSight '%s's image in namespace '%s'...", opsSightName, opsSightNamespace)
-		_, err = util.UpdateOpsSight(opsSightClient, crdnamespace, newOpsSight)
-		if err != nil {
-			return fmt.Errorf("error updating OpsSight '%s' due to %+v", newOpsSight.Name, err)
-		}
-		log.Infof("successfully submitted updates to OpsSight '%s' in namespace '%s'", opsSightName, opsSightNamespace)
-		return nil
-	},
-}
-
-// updateOpsSightImageNativeCmd prints the Kuberntes resources with updates to an image of an OpsSight instance's component
-var updateOpsSightImageNativeCmd = &cobra.Command{
-	Use:           "native NAME OPSSIGHTCORE|SCANNER|IMAGEGETTER|IMAGEPROCESSOR|PODPROCESSOR|METRICS IMAGE",
-	Example:       "synopsysctl update opssight image native <name> SCANNER docker.io/new_scanner_image_url\nsynopsysctl update opssight image native <name> SCANNER docker.io/new_scanner_image_url -n <namespace>",
-	Short:         "Print the Kuberntes resources with updates to an image of an OpsSight instance's component",
-	SilenceUsage:  true,
-	SilenceErrors: true,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 3 {
-			cmd.Help()
-			return fmt.Errorf("this command takes 3 arguments")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		opsSightName, opsSightNamespace, crdnamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, args[0])
-		if err != nil {
-			return err
-		}
-		currOpsSight, err := util.GetOpsSight(opsSightClient, crdnamespace, opsSightName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
-		}
-		newOpsSight, err := updateOpsSightImage(currOpsSight, args[1], args[2])
-		if err != nil {
-			return err
-		}
-
-		log.Debugf("generating updates to the Kubernetes resources for OpsSight '%s' in namespace '%s'...", opsSightName, opsSightNamespace)
-		return PrintResource(*newOpsSight, nativeFormat, true)
-	},
-}
-
 func updateOpsSightExternalHost(ops *opssightapi.OpsSight, scheme, domain, port, user, pass, scanLimit string) (*opssightapi.OpsSight, error) {
 	hostPort, err := strconv.ParseInt(port, 0, 64)
 	if err != nil {
@@ -1334,13 +1236,6 @@ func init() {
 	updateOpsSightCobraHelper.AddCRSpecFlagsToCommand(updateOpsSightNativeCmd, false)
 	addNativeFormatFlag(updateOpsSightNativeCmd)
 	updateOpsSightCmd.AddCommand(updateOpsSightNativeCmd)
-
-	// updateOpsSightImageCmd
-	addMockFlag(updateOpsSightImageCmd)
-	updateOpsSightCmd.AddCommand(updateOpsSightImageCmd)
-
-	addNativeFormatFlag(updateOpsSightImageNativeCmd)
-	updateOpsSightImageCmd.AddCommand(updateOpsSightImageNativeCmd)
 
 	// updateOpsSightExternalHostCmd
 	addMockFlag(updateOpsSightExternalHostCmd)
