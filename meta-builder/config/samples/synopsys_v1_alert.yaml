@@ -1,8 +1,36 @@
 apiVersion: synopsys.com/v1
 kind: Alert
 metadata:
-  name: alert-sample
+  name: demo
 spec:
   # Add fields here
-  finalYamlUrl: "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
-  shaOfFinalYaml: ""
+  namespace: default
+  size: small
+  version: 4.0.0
+  alertImage: blackduck-alert
+  cfsslImage: blackduck-cfssl
+  exposeService: LOADBALANCER
+  standAlone: true
+  port: 8443
+  environs:
+    - ALERT_SERVER_PORT:8443
+    - PUBLIC_HUB_WEBSERVER_HOST:<<HOST>>
+    - PUBLIC_HUB_WEBSERVER_PORT:443
+    - ENCRYPTION_PASSWORD:<<encryption>>
+    - ENCRYPTION_GLOBAL_SALT:<<encryption>>
+  persistentStorage: true
+  pvcName: alert-pvc
+  pvcStorageClass: ""
+  pvcSize: 5G
+  alertMemory: 2560M
+  cfsslMemory: 640M
+  desiredState: START
+  imageRegistries:
+    - image1
+    - image2
+  registryConfiguration:
+    registry: a
+    namespace: alert
+    pullSecrets:
+      - secret1
+      - secret2

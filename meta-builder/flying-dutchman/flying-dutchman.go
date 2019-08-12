@@ -3,13 +3,14 @@ package flying_dutchman
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	"github.com/go-logr/logr"
 	scheduler "github.com/yashbhutwala/go-scheduler"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -31,6 +32,9 @@ func MetaReconciler(req ctrl.Request, mri MetaReconcilerInterface) (ctrl.Result,
 	cr, err := mri.GetCustomResource(req)
 	if err != nil {
 		return ctrl.Result{}, err
+	}
+	if cr == nil {
+		return ctrl.Result{}, nil // TODO - rethink what to do when a CR isn't found (requeue after ??)
 	}
 	mapOfUniqueIdToDesiredRuntimeObject, err := mri.GetRuntimeObjects(cr)
 	if err != nil {

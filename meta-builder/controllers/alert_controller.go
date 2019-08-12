@@ -17,10 +17,13 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+
 	"github.com/go-logr/logr"
 	alertsv1 "github.com/yashbhutwala/kb-synopsys-operator/api/v1"
 	"github.com/yashbhutwala/kb-synopsys-operator/controllers/controllers_utils"
-	"github.com/yashbhutwala/kb-synopsys-operator/flying-dutchman"
+	flying_dutchman "github.com/yashbhutwala/kb-synopsys-operator/flying-dutchman"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +59,11 @@ func (r *AlertReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, er
 		if !apierrs.IsNotFound(err) {
 			return nil, err
 		}
+		if apierrs.IsNotFound(err) {
+			return nil, nil
+		}
 	}
+	fmt.Printf("Get Alert: %+v\n", alert)
 	return &alert, nil
 }
 
@@ -65,7 +72,13 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	// 1. Get List of Runtime Objects (Base Yamls)
 	// TODO: either read contents of yaml from locally mounted file
 	// read content of full desired yaml from externally hosted file
-	byteArrayContentFromFile, err := controllers_utils.HttpGet(alert.Spec.FinalYamlUrl)
+	// FinalYamlUrl := "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
+	// byteArrayContentFromFile, err := controllers_utils.HttpGet(FinalYamlUrl)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	FinalYamlPath := "config/samples/alert_runtime_objects.yaml"
+	byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +93,11 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 			return mapOfUniqueIdToDesiredRuntimeObject, nil
 		}
 	}
-	return mapOfUniqueIdToDesiredRuntimeObject, nil
+	fmt.Printf("Before - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(mapOfUniqueIdToDesiredRuntimeObject))
+	objs := patchAlert(alert, mapOfUniqueIdToDesiredRuntimeObject)
+	fmt.Printf("After - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(objs))
+
+	return objs, nil
 }
 
 func (r *AlertReconciler) CreateInstructionManual() (*flying_dutchman.RuntimeObjectDepencyYaml, error) {
