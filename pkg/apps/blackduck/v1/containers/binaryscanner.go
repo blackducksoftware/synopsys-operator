@@ -40,9 +40,12 @@ func (c *Creater) GetBinaryScannerDeployment(imageName string) (*components.Repl
 
 	podConfig := &util.PodConfig{
 		Containers:          []*util.Container{binaryScannerContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("binaryscanner"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("binaryscanner"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {

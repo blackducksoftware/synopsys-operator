@@ -100,6 +100,10 @@ func (p *SpecConfig) perceiverPod(name string, image string, account string) (*c
 		}
 	}
 
+	if p.opssight.Spec.RegistryConfiguration != nil && len(p.opssight.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		pod.AddImagePullSecrets(p.opssight.Spec.RegistryConfiguration.PullSecrets)
+	}
+
 	return pod, nil
 }
 

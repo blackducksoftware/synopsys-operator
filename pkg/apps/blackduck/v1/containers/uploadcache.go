@@ -59,9 +59,12 @@ func (c *Creater) GetUploadCacheDeployment(imageName string) (*components.Replic
 	podConfig := &util.PodConfig{
 		Volumes:             c.getUploadCacheVolumes(),
 		Containers:          []*util.Container{uploadCacheContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("uploadcache"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("uploadcache"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {

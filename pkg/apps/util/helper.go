@@ -27,6 +27,7 @@ import (
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // GenerateImageTag return the final image after evaluating the registry configuration and the list of images
@@ -36,7 +37,9 @@ func GenerateImageTag(defaultImage string, imageRegistries []string, registryCon
 		if err != nil {
 			return defaultImage
 		}
-		defaultImage = getFullContainerNameFromImageRegistryConf(imageName, imageRegistries, defaultImage)
+		if image := getFullContainerNameFromImageRegistryConf(imageName, imageRegistries); len(image) > 0 {
+			return image
+		}
 	}
 
 	if registryConfig != nil && len(registryConfig.Registry) > 0 && len(registryConfig.Namespace) > 0 {
@@ -46,13 +49,15 @@ func GenerateImageTag(defaultImage string, imageRegistries []string, registryCon
 }
 
 func getRegistryConfiguration(image string, registryConfig *api.RegistryConfiguration) string {
-	if len(registryConfig.Registry) > 0 && len(registryConfig.Namespace) > 0 {
+	if registryConfig != nil && len(registryConfig.Registry) > 0 && len(registryConfig.Namespace) > 0 {
 		imageName, err := util.GetImageName(image)
 		if err != nil {
+			log.Errorf("unable to get the image name for %s due to %+v", image, err)
 			return image
 		}
 		imageTag, err := util.GetImageTag(image)
 		if err != nil {
+			log.Errorf("unable to get the image tag for %s due to %+v", image, err)
 			return image
 		}
 		return fmt.Sprintf("%s/%s/%s:%s", registryConfig.Registry, registryConfig.Namespace, imageName, imageTag)
@@ -60,7 +65,7 @@ func getRegistryConfiguration(image string, registryConfig *api.RegistryConfigur
 	return image
 }
 
-func getFullContainerNameFromImageRegistryConf(baseContainer string, images []string, defaultImage string) string {
+func getFullContainerNameFromImageRegistryConf(baseContainer string, images []string) string {
 	for _, reg := range images {
 		// normal case: we expect registries
 		if strings.Contains(reg, baseContainer) {
@@ -71,5 +76,5 @@ func getFullContainerNameFromImageRegistryConf(baseContainer string, images []st
 			return reg
 		}
 	}
-	return defaultImage
+	return ""
 }

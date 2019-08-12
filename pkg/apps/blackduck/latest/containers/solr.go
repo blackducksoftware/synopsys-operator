@@ -54,9 +54,12 @@ func (c *Creater) GetSolrDeployment(imageName string) (*components.ReplicationCo
 	podConfig := &util.PodConfig{
 		Volumes:             c.getSolrVolumes(),
 		Containers:          []*util.Container{solrContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("solr"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("solr"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {

@@ -89,10 +89,14 @@ func (c *Creater) GetScanDeployment(imageName string) (*components.ReplicationCo
 	podConfig := &util.PodConfig{
 		Volumes:             hubScanVolumes,
 		Containers:          []*util.Container{hubScanContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("scan"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("scan"),
 	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
+	}
+
 	if !c.config.IsOpenshift {
 		podConfig.FSGID = util.IntToInt64(0)
 	}

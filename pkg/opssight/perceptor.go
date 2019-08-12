@@ -72,6 +72,10 @@ func (p *SpecConfig) perceptorPod() (*components.Pod, error) {
 		return nil, errors.Trace(err)
 	}
 
+	if p.opssight.Spec.RegistryConfiguration != nil && len(p.opssight.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		pod.AddImagePullSecrets(p.opssight.Spec.RegistryConfiguration.PullSecrets)
+	}
+
 	return pod, nil
 }
 
