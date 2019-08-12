@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -43,8 +44,6 @@ import (
 type CRSpecBuilderFromCobraFlags struct {
 	alertSpec            *alertapi.AlertSpec
 	Version              string
-	AlertImage           string
-	CfsslImage           string
 	StandAlone           string
 	ExposeService        string
 	Port                 int32
@@ -61,6 +60,7 @@ type CRSpecBuilderFromCobraFlags struct {
 	Registry             string
 	RegistryNamespace    string
 	PullSecrets          []string
+	ImageRegistries      []string
 }
 
 // NewCRSpecBuilderFromCobraFlags creates a new CRSpecBuilderFromCobraFlags type
@@ -111,8 +111,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetPredefinedCRSpec(specType string) err
 // master - if false, doesn't add flags that all Users shouldn't use
 func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Command, master bool) {
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Alert")
-	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "URL of Alert's Image")
-	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "URL of CFSSL's Image")
 	cmd.Flags().StringVar(&ctl.StandAlone, "standalone", ctl.StandAlone, "If true, Alert runs in standalone mode [true|false]")
 	if master {
 		cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", util.NONE, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
@@ -133,6 +131,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
 	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
+	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("alert-desired-state", "alert-desired-state flag is deprecated and will be removed by the next release")
@@ -189,10 +188,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 		switch f.Name {
 		case "version":
 			ctl.alertSpec.Version = ctl.Version
-		case "alert-image":
-			ctl.alertSpec.AlertImage = ctl.AlertImage
-		case "cfssl-image":
-			ctl.alertSpec.CfsslImage = ctl.CfsslImage
 		case "standalone":
 			standAloneVal := strings.ToUpper(ctl.StandAlone) == "TRUE"
 			ctl.alertSpec.StandAlone = &standAloneVal
@@ -221,11 +216,22 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 		case "alert-desired-state":
 			ctl.alertSpec.DesiredState = ctl.DesiredState
 		case "registry":
+			if ctl.alertSpec.RegistryConfiguration == nil {
+				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.alertSpec.RegistryConfiguration.Registry = ctl.Registry
 		case "registry-namespace":
+			if ctl.alertSpec.RegistryConfiguration == nil {
+				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.alertSpec.RegistryConfiguration.Namespace = ctl.RegistryNamespace
 		case "pull-secret-name":
+			if ctl.alertSpec.RegistryConfiguration == nil {
+				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}
+			}
 			ctl.alertSpec.RegistryConfiguration.PullSecrets = ctl.PullSecrets
+		case "image-registries":
+			ctl.alertSpec.ImageRegistries = ctl.ImageRegistries
 		default:
 			log.Debugf("flag '%s': NOT FOUND", f.Name)
 		}

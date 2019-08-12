@@ -24,6 +24,7 @@ package alert
 import (
 	"testing"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	alertapi "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	"github.com/spf13/cobra"
@@ -128,8 +129,6 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 
 	cmd := &cobra.Command{}
 	cmd.Flags().StringVar(&ctl.Version, "version", ctl.Version, "Version of Alert")
-	cmd.Flags().StringVar(&ctl.AlertImage, "alert-image", ctl.AlertImage, "URL of Alert's Image")
-	cmd.Flags().StringVar(&ctl.CfsslImage, "cfssl-image", ctl.CfsslImage, "URL of CFSSL's Image")
 	cmd.Flags().StringVar(&ctl.StandAlone, "standalone", ctl.StandAlone, "If true, Alert runs in standalone mode [true|false]")
 	cmd.Flags().StringVar(&ctl.ExposeService, "expose-ui", ctl.ExposeService, "Service type to expose Alert's user interface [NODEPORT|LOADBALANCER|OPENSHIFT|NONE]")
 	cmd.Flags().Int32Var(&ctl.Port, "port", ctl.Port, "Port of Alert")
@@ -146,6 +145,7 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
 	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
+	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 
 	// TODO: Remove this flag in next release
 	cmd.Flags().MarkDeprecated("alert-desired-state", "alert-desired-state flag is deprecated and will be removed by the next release")
@@ -183,22 +183,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				Version: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{Version: "changed"},
-		},
-		// case
-		{flagName: "alert-image",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				AlertImage: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{AlertImage: "changed"},
-		},
-		// case
-		{flagName: "cfssl-image",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{alertSpec: &alertapi.AlertSpec{},
-				CfsslImage: "changed",
-			},
-			changedSpec: &alertapi.AlertSpec{CfsslImage: "changed"},
 		},
 		// case
 		{flagName: "standalone",
@@ -319,6 +303,46 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				DesiredState: "changed",
 			},
 			changedSpec: &alertapi.AlertSpec{DesiredState: "changed"},
+		},
+		// case
+		{
+			flagName:   "registry",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				alertSpec: &alertapi.AlertSpec{},
+				Registry:  "changed",
+			},
+			changedSpec: &alertapi.AlertSpec{RegistryConfiguration: &api.RegistryConfiguration{Registry: "changed"}},
+		},
+		// case
+		{
+			flagName:   "registry-namespace",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				alertSpec:         &alertapi.AlertSpec{},
+				RegistryNamespace: "changed",
+			},
+			changedSpec: &alertapi.AlertSpec{RegistryConfiguration: &api.RegistryConfiguration{Namespace: "changed"}},
+		},
+		// case
+		{
+			flagName:   "pull-secret-name",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				alertSpec:   &alertapi.AlertSpec{},
+				PullSecrets: []string{"changed"},
+			},
+			changedSpec: &alertapi.AlertSpec{RegistryConfiguration: &api.RegistryConfiguration{PullSecrets: []string{"changed"}}},
+		},
+		// case
+		{
+			flagName:   "image-registries",
+			initialCtl: NewCRSpecBuilderFromCobraFlags(),
+			changedCtl: &CRSpecBuilderFromCobraFlags{
+				alertSpec:       &alertapi.AlertSpec{},
+				ImageRegistries: []string{"changed"},
+			},
+			changedSpec: &alertapi.AlertSpec{ImageRegistries: []string{"changed"}},
 		},
 	}
 
