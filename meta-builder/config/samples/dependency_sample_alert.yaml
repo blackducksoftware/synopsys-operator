@@ -1,5 +1,4 @@
 ---
-myfunc: fmt.Println("Verifying Postgres")
 runtimeobjectsgroupings:
   ConfigMap:
     - ConfigMap.default.demo-alert-blackduck-config
@@ -21,3 +20,4 @@ runtimeobjectdependencies:
   - obj: AlertSecret
     isdependenton: ConfigMap
 ---
+
