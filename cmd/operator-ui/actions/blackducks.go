@@ -24,6 +24,7 @@ package actions
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"sort"
 	"strings"
 
@@ -138,6 +139,12 @@ func (v BlackducksResource) common(c buffalo.Context, bd *blackduckapi.Blackduck
 	// External postgres
 	if bd.Spec.ExternalPostgres == nil {
 		bd.Spec.ExternalPostgres = &blackduckapi.PostgresExternalDBConfig{}
+	}
+
+	if bd.Spec.RegistryConfiguration == nil {
+		bd.Spec.RegistryConfiguration = &api.RegistryConfiguration{
+			PullSecrets: []string{},
+		}
 	}
 
 	// PVCs
