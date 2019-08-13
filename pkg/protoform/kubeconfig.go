@@ -22,18 +22,15 @@ under the License.
 package protoform
 
 import (
-	"flag"
 	"os"
 	"path/filepath"
 
-	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" //for auths
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/client-go/util/homedir"
 )
 
 // GetKubeConfig  will return the kube config
@@ -45,25 +42,12 @@ func GetKubeConfig(kubeconfigpath string, insecureSkipTLSVerify bool) (*rest.Con
 	kubeConfig, err = rest.InClusterConfig()
 	if err != nil {
 		log.Debugf("using native config due to %+v", err)
-		// Determine Config Paths
-		if home := homeDir(); len(kubeconfigpath) == 0 && home != "" {
-			kubeconfigpath = filepath.Join(home, ".kube", "config")
-		}
-
-		kubeConfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-			&clientcmd.ClientConfigLoadingRules{
-				ExplicitPath: kubeconfigpath,
-			},
-			&clientcmd.ConfigOverrides{
-				ClusterInfo: clientcmdapi.Cluster{
-					Server:                "",
-					InsecureSkipTLSVerify: insecureSkipTLSVerify,
-				},
-			}).ClientConfig()
+		kubeConfig, err = GetKubeClientFromOutsideCluster(kubeconfigpath, insecureSkipTLSVerify)
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	return kubeConfig, nil
 }
 
@@ -80,15 +64,24 @@ func GetKubeClientSet(kubeConfig *rest.Config) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(kubeConfig)
 }
 
-func newKubeClientFromOutsideCluster() (*rest.Config, error) {
-	var kubeConfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeConfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeConfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+func GetKubeClientFromOutsideCluster(kubeconfigpath string, insecureSkipTLSVerify bool) (*rest.Config, error) {
+	// Determine Config Paths
+	if home := homeDir(); len(kubeconfigpath) == 0 && home != "" {
+		kubeconfigpath = filepath.Join(home, ".kube", "config")
 	}
-	flag.Parse()
 
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
-	return config, errors.Annotate(err, "error creating default client config")
+	kubeConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		&clientcmd.ClientConfigLoadingRules{
+			ExplicitPath: kubeconfigpath,
+		},
+		&clientcmd.ConfigOverrides{
+			ClusterInfo: clientcmdapi.Cluster{
+				Server:                "",
+				InsecureSkipTLSVerify: insecureSkipTLSVerify,
+			},
+		}).ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	return kubeConfig, nil
 }
