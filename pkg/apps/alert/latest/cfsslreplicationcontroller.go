@@ -70,6 +70,10 @@ func (a *SpecConfig) getCfsslPod() (*components.Pod, error) {
 	}
 	pod.AddVolume(vol)
 
+	if a.alert.Spec.RegistryConfiguration != nil && len(a.alert.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		pod.AddImagePullSecrets(a.alert.Spec.RegistryConfiguration.PullSecrets)
+	}
+
 	return pod, nil
 }
 

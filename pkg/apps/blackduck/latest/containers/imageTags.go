@@ -49,7 +49,7 @@ func (c *Creater) GetImageTag(name string) string {
 			return confImageTag
 		}
 
-		if len(c.blackDuck.Spec.RegistryConfiguration.Registry) > 0 && len(c.blackDuck.Spec.RegistryConfiguration.Namespace) > 0 {
+		if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.Registry) > 0 && len(c.blackDuck.Spec.RegistryConfiguration.Namespace) > 0 {
 			return fmt.Sprintf("%s/%s/%s:%s", c.blackDuck.Spec.RegistryConfiguration.Registry, c.blackDuck.Spec.RegistryConfiguration.Namespace, name, imageTags[c.blackDuck.Spec.Version][name])
 		}
 		return fmt.Sprintf("docker.io/blackducksoftware/%s:%s", name, imageTags[c.blackDuck.Spec.Version][name])

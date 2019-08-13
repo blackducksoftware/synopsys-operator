@@ -56,9 +56,12 @@ func (c *Creater) GetZookeeperDeployment(imageName string) (*components.Replicat
 	podConfig := &util.PodConfig{
 		Volumes:             c.getZookeeperVolumes(),
 		Containers:          []*util.Container{zookeeperContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("zookeeper"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("zookeeper"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {

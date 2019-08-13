@@ -72,9 +72,12 @@ func (c *Creater) GetJobRunnerDeployment(imageName string) (*components.Replicat
 	podConfig := &util.PodConfig{
 		Volumes:             jobRunnerVolumes,
 		Containers:          []*util.Container{jobRunnerContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("jobrunner"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("jobrunner"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {

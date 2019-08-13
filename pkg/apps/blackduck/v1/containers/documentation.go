@@ -56,9 +56,12 @@ func (c *Creater) GetDocumentationDeployment(imageName string) (*components.Repl
 	podConfig := &util.PodConfig{
 		Volumes:             []*components.Volume{documentationEmptyDir},
 		Containers:          []*util.Container{documentationContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("documentation"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("documentation"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {

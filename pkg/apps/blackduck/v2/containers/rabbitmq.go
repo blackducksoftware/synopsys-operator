@@ -43,9 +43,12 @@ func (c *Creater) GetRabbitmqDeployment(imageName string) (*components.Replicati
 	podConfig := &util.PodConfig{
 		Volumes:             c.getRabbitmqVolumes(),
 		Containers:          []*util.Container{rabbitmqContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("rabbitmq"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("rabbitmq"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	return util.CreateReplicationControllerFromContainer(

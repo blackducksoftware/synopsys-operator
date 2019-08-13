@@ -59,9 +59,12 @@ func (c *Creater) GetRegistrationDeployment(imageName string) (*components.Repli
 	podConfig := &util.PodConfig{
 		Volumes:             c.getRegistrationVolumes(),
 		Containers:          []*util.Container{registrationContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("registration"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("registration"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {

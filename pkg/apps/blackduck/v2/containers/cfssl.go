@@ -54,9 +54,12 @@ func (c *Creater) GetCfsslDeployment(imageName string) (*components.ReplicationC
 	podConfig := &util.PodConfig{
 		Volumes:             c.getCfsslVolumes(),
 		Containers:          []*util.Container{cfsslContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("cfssl"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("cfssl"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {

@@ -87,10 +87,14 @@ func (c *Creater) GetWebappLogstashDeployment(webappImageName string, logstashIm
 	podConfig := &util.PodConfig{
 		Volumes:             c.getWebappLogtashVolumes(),
 		Containers:          []*util.Container{webappContainerConfig, logstashContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("webapp-logstash"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("webapp-logstash"),
 	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
+	}
+
 	if !c.config.IsOpenshift {
 		podConfig.FSGID = util.IntToInt64(0)
 	}

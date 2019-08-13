@@ -63,9 +63,12 @@ func (c *Creater) GetAuthenticationDeployment(imageName string) (*components.Rep
 	podConfig := &util.PodConfig{
 		Volumes:             c.getAuthenticationVolumes(),
 		Containers:          []*util.Container{hubAuthContainerConfig},
-		ImagePullSecrets:    c.blackDuck.Spec.RegistryConfiguration.PullSecrets,
 		Labels:              c.GetVersionLabel("authentication"),
 		NodeAffinityConfigs: c.GetNodeAffinityConfigs("authentication"),
+	}
+
+	if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.PullSecrets) > 0 {
+		podConfig.ImagePullSecrets = c.blackDuck.Spec.RegistryConfiguration.PullSecrets
 	}
 
 	if !c.config.IsOpenshift {
