@@ -59,6 +59,7 @@ type Postgres struct {
 	TerminationGracePeriodSeconds int64
 	IsOpenshift                   bool
 	Labels                        map[string]string
+	ImagePullSecrets              []string
 }
 
 // GetPostgresReplicationController will return the postgres replication controller
@@ -104,6 +105,10 @@ func (p *Postgres) GetPostgresReplicationController() (*components.ReplicationCo
 		Volumes:    postgresVolumes,
 		Containers: []*util.Container{postgresExternalContainerConfig},
 		Labels:     p.Labels,
+	}
+
+	if len(p.ImagePullSecrets) > 0 {
+		podConfig.ImagePullSecrets = p.ImagePullSecrets
 	}
 
 	if !p.IsOpenshift {
