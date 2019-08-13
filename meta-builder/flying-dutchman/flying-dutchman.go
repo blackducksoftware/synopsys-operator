@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	scheduler "github.com/yashbhutwala/go-scheduler"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -244,6 +245,11 @@ func CheckForReadiness(myClient client.Client, desiredRuntimeObject runtime.Obje
 		_ = myClient.Get(context.TODO(), key, liveReplicationController)
 		return IsReplicationControllerReady(liveReplicationController)
 
+	case *batchv1.Job:
+		liveJob := &batchv1.Job{}
+		_ = myClient.Get(context.TODO(), key, liveJob)
+		return IsJobFinished(liveJob)
+
 	default:
 		return nil
 
@@ -255,11 +261,11 @@ func IsPodReady(pod *corev1.Pod) error {
 		for _, condition := range pod.Status.Conditions {
 			if condition.Type == corev1.PodReady &&
 				condition.Status == corev1.ConditionTrue {
-				return fmt.Errorf("pod is not ready: %s/%s", pod.GetNamespace(), pod.GetName())
+				return nil
 			}
 		}
 	}
-	return nil
+	return fmt.Errorf("pod is not ready: %s/%s", pod.GetNamespace(), pod.GetName())
 }
 
 func IsServiceReady(svc *corev1.Service) error {
@@ -279,6 +285,21 @@ func IsReplicationControllerReady(rc *corev1.ReplicationController) error {
 		return fmt.Errorf("replication controller is not ready: %s/%s", rc.GetNamespace(), rc.GetName())
 	}
 	return nil
+}
+
+func IsJobFinished(job *batchv1.Job) error {
+	// TODO: https://github.com/kubernetes/kubernetes/issues/68712
+
+	if &job.Status != nil && len(job.Status.Conditions) > 0 {
+		for _, condition := range job.Status.Conditions {
+			// TODO: currently complete and fail are both considered to be finished
+			if (condition.Type == batchv1.JobComplete || condition.Type == batchv1.JobFailed) &&
+				condition.Status == corev1.ConditionTrue {
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("job is not ready: %s/%s", job.GetNamespace(), job.GetName())
 }
 
 // TODO: Borrowed and modified slightly from https://godoc.org/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil#CreateOrUpdate

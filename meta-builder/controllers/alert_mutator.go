@@ -19,15 +19,15 @@ import (
 	"fmt"
 	"strings"
 
-	alertsv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	k8scorev1 "k8s.io/api/core/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func patchAlert(alert *alertsv1.Alert, objects map[string]runtime.Object) map[string]runtime.Object {
+func patchAlert(alert *synopsysv1.Alert, objects map[string]runtime.Object) map[string]runtime.Object {
 	patcher := AlertPatcher{
 		alert:   alert,
 		objects: objects,
@@ -36,7 +36,7 @@ func patchAlert(alert *alertsv1.Alert, objects map[string]runtime.Object) map[st
 }
 
 type AlertPatcher struct {
-	alert   *alertsv1.Alert
+	alert   *synopsysv1.Alert
 	objects map[string]runtime.Object
 }
 
@@ -74,7 +74,7 @@ func (p *AlertPatcher) patchEnvirons() error {
 	if !ok {
 		return nil
 	}
-	configMap := configMapRuntimeObject.(*k8scorev1.ConfigMap)
+	configMap := configMapRuntimeObject.(*corev1.ConfigMap)
 	for _, e := range p.alert.Spec.Environs {
 		vals := strings.Split(e, ":") // TODO - doesn't handle multiple colons
 		if len(vals) != 2 {
@@ -94,7 +94,7 @@ func (p *AlertPatcher) patchSecrets() error {
 	if !ok {
 		return nil
 	}
-	secret := secretRuntimeObject.(*k8scorev1.Secret)
+	secret := secretRuntimeObject.(*corev1.Secret)
 	for _, s := range p.alert.Spec.Environs {
 		vals := strings.Split(s, ":") // TODO - doesn't handle multiple colons
 		if len(vals) != 2 {
@@ -127,31 +127,31 @@ func (p *AlertPatcher) patchPort() error {
 	if !ok {
 		return nil
 	}
-	replicationController := replicationControllerRuntimeObject.(*k8scorev1.ReplicationController)
+	replicationController := replicationControllerRuntimeObject.(*corev1.ReplicationController)
 	replicationController.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = port
-	replicationController.Spec.Template.Spec.Containers[0].Ports[0].Protocol = k8scorev1.ProtocolTCP
+	replicationController.Spec.Template.Spec.Containers[0].Ports[0].Protocol = corev1.ProtocolTCP
 
 	ServiceUniqueID := "Service.default.demo-alert-alert"
 	serviceRuntimeObject, ok := p.objects[ServiceUniqueID]
 	if !ok {
 		return nil
 	}
-	service := serviceRuntimeObject.(*k8scorev1.Service)
+	service := serviceRuntimeObject.(*corev1.Service)
 	service.Spec.Ports[0].Name = fmt.Sprintf("port-%d", port)
 	service.Spec.Ports[0].Port = port
 	service.Spec.Ports[0].TargetPort = intstr.IntOrString{IntVal: port}
-	service.Spec.Ports[0].Protocol = k8scorev1.ProtocolTCP
+	service.Spec.Ports[0].Protocol = corev1.ProtocolTCP
 
 	ServiceExposedUniqueID := "Service.default.demo-alert-exposed"
 	serviceExposedRuntimeObject, ok := p.objects[ServiceExposedUniqueID]
 	if !ok {
 		return nil
 	}
-	serviceExposed := serviceExposedRuntimeObject.(*k8scorev1.Service)
+	serviceExposed := serviceExposedRuntimeObject.(*corev1.Service)
 	serviceExposed.Spec.Ports[0].Name = fmt.Sprintf("port-%d", port)
 	service.Spec.Ports[0].Port = port
 	service.Spec.Ports[0].TargetPort = intstr.IntOrString{IntVal: port}
-	service.Spec.Ports[0].Protocol = k8scorev1.ProtocolTCP
+	service.Spec.Ports[0].Protocol = corev1.ProtocolTCP
 
 	// TODO: Support Openshift Routes
 	// RouteUniqueID := "Route.default.demo-alert-route"
@@ -166,7 +166,7 @@ func (p *AlertPatcher) patchAlertImage() error {
 	if !ok {
 		return nil
 	}
-	alertReplicationController := alertReplicationControllerRuntimeObject.(*k8scorev1.ReplicationController)
+	alertReplicationController := alertReplicationControllerRuntimeObject.(*corev1.ReplicationController)
 	alertReplicationController.Spec.Template.Spec.Containers[0].Image = p.alert.Spec.AlertImage
 	return nil
 }
@@ -177,15 +177,15 @@ func (p *AlertPatcher) patchAlertMemory() error {
 	if !ok {
 		return nil
 	}
-	alertReplicationController := alertReplicationControllerRuntimeObject.(*k8scorev1.ReplicationController)
+	alertReplicationController := alertReplicationControllerRuntimeObject.(*corev1.ReplicationController)
 	minAndMaxMem, _ := resource.ParseQuantity(p.alert.Spec.AlertMemory)
-	alertReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[k8scorev1.ResourceMemory] = minAndMaxMem
-	alertReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[k8scorev1.ResourceMemory] = minAndMaxMem
+	alertReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
+	alertReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
 	return nil
 }
 
 func (p *AlertPatcher) patchPersistentStorage() error {
-	if (p.alert.Spec.PersistentStorage == alertsv1.PersistentStorage{}) {
+	if (p.alert.Spec.PersistentStorage == synopsysv1.PersistentStorage{}) {
 		PVCUniqueID := "PersistentVolumeClaim.default.demo-alert-pvc"
 		delete(p.objects, PVCUniqueID)
 		return nil
@@ -196,7 +196,7 @@ func (p *AlertPatcher) patchPersistentStorage() error {
 	if !ok {
 		return nil
 	}
-	pvc := PVCRuntimeObject.(*k8scorev1.PersistentVolumeClaim)
+	pvc := PVCRuntimeObject.(*corev1.PersistentVolumeClaim)
 
 	name := fmt.Sprintf("%s-%s-%s", p.alert.Name, "alert", p.alert.Spec.PersistentStorage.PVCName)
 	if p.alert.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
@@ -208,7 +208,7 @@ func (p *AlertPatcher) patchPersistentStorage() error {
 }
 
 func (p *AlertPatcher) patchStandAlone() error {
-	if (p.alert.Spec.StandAlone == alertsv1.StandAlone{}) {
+	if (p.alert.Spec.StandAlone == synopsysv1.StandAlone{}) {
 		// Remove Cfssl Resources
 		uniqueID := "ReplicationController.default.demo-alert-cfssl"
 		delete(p.objects, uniqueID)
@@ -221,7 +221,7 @@ func (p *AlertPatcher) patchStandAlone() error {
 		if !ok {
 			return nil
 		}
-		configMap := configMapRuntimeObject.(*k8scorev1.ConfigMap)
+		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
 		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alert.Name, "alert", "cfssl")
 	} else {
 		uniqueID := "ReplicationController.default.demo-alert-cfssl"
@@ -230,12 +230,12 @@ func (p *AlertPatcher) patchStandAlone() error {
 			return nil
 		}
 		// patch Cfssl Image
-		alertCfsslReplicationController := alertCfsslReplicationControllerRuntimeObject.(*k8scorev1.ReplicationController)
+		alertCfsslReplicationController := alertCfsslReplicationControllerRuntimeObject.(*corev1.ReplicationController)
 		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Image = p.alert.Spec.StandAlone.CfsslImage
 		// patch Cfssl Memory
 		minAndMaxMem, _ := resource.ParseQuantity(p.alert.Spec.StandAlone.CfsslMemory)
-		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[k8scorev1.ResourceMemory] = minAndMaxMem
-		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[k8scorev1.ResourceMemory] = minAndMaxMem
+		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
+		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
 	}
 	return nil
 }

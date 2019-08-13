@@ -19,7 +19,7 @@ import (
 	"context"
 	"io/ioutil"
 
-	alertsv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
 	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"github.com/go-logr/logr"
@@ -39,7 +39,7 @@ type AlertReconciler struct {
 }
 
 var (
-	apiGVStr = alertsv1.GroupVersion.String()
+	apiGVStr = synopsysv1.GroupVersion.String()
 )
 
 func (r *AlertReconciler) GetClient() client.Client {
@@ -47,7 +47,7 @@ func (r *AlertReconciler) GetClient() client.Client {
 }
 
 func (r *AlertReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, error) {
-	var alert alertsv1.Alert
+	var alert synopsysv1.Alert
 	if err := r.Get(context.Background(), req.NamespacedName, &alert); err != nil {
 		//log.Error(err, "unable to fetch Alert")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
@@ -66,7 +66,7 @@ func (r *AlertReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, er
 }
 
 func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
-	alert := cr.(*alertsv1.Alert)
+	alert := cr.(*synopsysv1.Alert)
 	// TODO: either read contents of yaml from locally mounted file
 	// read content of full desired yaml from externally hosted file
 	// FinalYamlUrl := "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
@@ -147,7 +147,7 @@ func (r *AlertReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.SetIndexingForChildrenObjects(mgr, &corev1.ReplicationController{})
 	r.SetIndexingForChildrenObjects(mgr, &corev1.Secret{})
 
-	alertBuilder := ctrl.NewControllerManagedBy(mgr).For(&alertsv1.Alert{})
+	alertBuilder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Alert{})
 	alertBuilder = alertBuilder.Owns(&corev1.ConfigMap{})
 	alertBuilder = alertBuilder.Owns(&corev1.Service{})
 	alertBuilder = alertBuilder.Owns(&corev1.ReplicationController{})
