@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	scheduler "github.com/yashbhutwala/go-scheduler"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -89,6 +90,7 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 	log.V(1).Info("Getting a list of existing runtime objects owned by", "Custom Resource: ", cr)
 	var listOfCurrentRuntimeObjectsOwnedByAlertCr metav1.List
 	if err := myClient.List(ctx, &listOfCurrentRuntimeObjectsOwnedByAlertCr, client.InNamespace(cr.GetNamespace()), client.MatchingField(JobOwnerKey, cr.GetName())); err != nil {
+		// TODO: this is not working
 		log.Error(err, "unable to list currentRuntimeObjectsOwnedByAlertCr")
 		// TODO: rethink what to do when we cannot list currentRuntimeObjectsOwnedByAlertCr
 		//return ctrl.Result{}, nil
@@ -106,8 +108,8 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 		_, ok := mapOfUniqueIdToDesiredRuntimeObject[uniqueId]
 		if !ok {
 			log.V(1).Info("Deleting runtime objects owned by cr, but no longer desired", "Custom Resource: ", cr, "Object being deleted", currentRuntimeObjectOwnedByAlertCr)
-			// TODO: third parameter in Delete: DeleteOptionFunc should be made explicit, currently we default
-			err := myClient.Delete(ctx, currentRuntimeObjectOwnedByAlertCr)
+			// TODO: third parameter in Delete: not sure if we should propagate
+			err := myClient.Delete(ctx, currentRuntimeObjectOwnedByAlertCr, client.PropagationPolicy(metav1.DeletePropagationForeground))
 			if err != nil {
 				// TODO: rethink what to do when we cannot delete a non-desired item
 				// if any error in deleting, just continue
@@ -204,8 +206,7 @@ func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.L
 	}
 	log.V(1).Info("Result of create or update for", "desiredRuntimeObject", desiredRuntimeObject, "opResult", opResult)
 
-	err = CheckForReadiness(desiredRuntimeObject)
-	if err != nil {
+	if err := CheckForReadiness(myClient, desiredRuntimeObject); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -213,16 +214,71 @@ func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.L
 	return ctrl.Result{}, nil
 }
 
-func CheckForReadiness(desiredRuntimeObject runtime.Object) error {
+func CheckForReadiness(myClient client.Client, desiredRuntimeObject runtime.Object) error {
 	// TODO: Check for readiness/completeness
-	accessor := meta.NewAccessor()
-	kindOfDesiredRuntimeObject, _ := accessor.Kind(desiredRuntimeObject)
-	switch kindOfDesiredRuntimeObject {
-	case "Pod":
-		return nil
+	// TODO: This will probably be a complex topic, good place to start is this upstream issue and doc:
+	// TODO: https://github.com/kubernetes/kubernetes/issues/1899
+	// TODO: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+
+	// get the key from desired rto to look up the live object in cluster
+	key, err := client.ObjectKeyFromObject(desiredRuntimeObject)
+	if err != nil {
+		return err
+	}
+
+	// switch on the type
+	switch desiredRuntimeObject.(type) {
+
+	case *corev1.Pod:
+		livePod := &corev1.Pod{}
+		_ = myClient.Get(context.TODO(), key, livePod)
+		return IsPodReady(livePod)
+
+	case *corev1.Service:
+		liveService := &corev1.Service{}
+		_ = myClient.Get(context.TODO(), key, liveService)
+		return IsServiceReady(liveService)
+
+	case *corev1.ReplicationController:
+		liveReplicationController := &corev1.ReplicationController{}
+		_ = myClient.Get(context.TODO(), key, liveReplicationController)
+		return IsReplicationControllerReady(liveReplicationController)
+
 	default:
 		return nil
+
 	}
+}
+
+func IsPodReady(pod *corev1.Pod) error {
+	if &pod.Status != nil && len(pod.Status.Conditions) > 0 {
+		for _, condition := range pod.Status.Conditions {
+			if condition.Type == corev1.PodReady &&
+				condition.Status == corev1.ConditionTrue {
+				return fmt.Errorf("pod is not ready: %s/%s", pod.GetNamespace(), pod.GetName())
+			}
+		}
+	}
+	return nil
+}
+
+func IsServiceReady(svc *corev1.Service) error {
+	// Make sure the service is not explicitly set to "None" before checking the IP
+	if svc.Spec.ClusterIP != corev1.ClusterIPNone && svc.Spec.ClusterIP == "" {
+		return fmt.Errorf("service is not ready: %s/%s", svc.GetNamespace(), svc.GetName())
+	}
+	// This checks if the service has a load-balancer and that lb has an Ingress defined
+	if svc.Spec.Type == corev1.ServiceTypeLoadBalancer && svc.Status.LoadBalancer.Ingress == nil {
+		return fmt.Errorf("service is not ready: %s/%s", svc.GetNamespace(), svc.GetName())
+	}
+	return nil
+}
+
+func IsReplicationControllerReady(rc *corev1.ReplicationController) error {
+	if rc.Status.ReadyReplicas < rc.Status.Replicas {
+		return fmt.Errorf("replication controller is not ready: %s/%s", rc.GetNamespace(), rc.GetName())
+	}
+	return nil
 }
 
 // TODO: Borrowed and modified slightly from https://godoc.org/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil#CreateOrUpdate
