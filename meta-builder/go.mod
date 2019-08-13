@@ -1,9 +1,8 @@
-module github.com/yashbhutwala/kb-synopsys-operator
+module github.com/blackducksoftware/synopsys-operator/meta-builder
 
 go 1.12
 
 require (
-	github.com/containous/yaegi v0.0.4
 	github.com/go-logr/logr v0.1.0
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0

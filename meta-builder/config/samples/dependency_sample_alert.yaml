@@ -9,15 +9,15 @@ runtimeobjectsgroupings:
   AlertSecret:
     - Secret.default.demo-alert-secret
 runtimeobjectdependencies:
-  - obj: AlertRC
-    isdependenton: ConfigMap
+#  - obj: AlertRC
+#    isdependenton: [ConfigMap, AlertSecret]
   - obj: AlertRC
     isdependenton: AlertSecret
   - obj: CfsslRC
     isdependenton: ConfigMap
-  #  - obj: ConfigMap
-  #    isdependenton: AlertSecret
   - obj: AlertSecret
     isdependenton: ConfigMap
+#  - obj: ConfigMap
+#    isdependenton: AlertSecret
 ---
 

@@ -19,8 +19,8 @@ import (
 	"flag"
 	"os"
 
-	synopsysv1 "github.com/yashbhutwala/kb-synopsys-operator/api/v1"
-	"github.com/yashbhutwala/kb-synopsys-operator/controllers"
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
