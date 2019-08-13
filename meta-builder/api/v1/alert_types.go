@@ -29,15 +29,11 @@ type AlertSpec struct {
 	Secrets           []string          `json:"secrets,omitempty"`
 	DesiredState      string            `json:"desiredState,omitempty"`
 	Port              *int32            `json:"port"`
+	AlertImage        string            `json:"alertImage,omitempty"`
+	AlertMemory       string            `json:"alertMemory,omitempty"` // Should be passed like: e.g "1300Mi"
 	PersistentStorage PersistentStorage `json:"persistentStorage,omitempty"`
 	StandAlone        StandAlone        `json:"standAlone,,omitempty"`
 	ExposeService     string            `json:"exposeService"`
-	AlertImage        string            `json:"alertImage,omitempty"`
-	Size              string            `json:"size"`
-	// Should be passed like: e.g "1300Mi"
-	AlertMemory           string                `json:"alertMemory,omitempty"`
-	ImageRegistries       []string              `json:"imageRegistries,omitempty"`
-	RegistryConfiguration RegistryConfiguration `json:"registryConfiguration,omitempty"`
 }
 
 type StandAlone struct {
@@ -48,15 +44,7 @@ type StandAlone struct {
 type PersistentStorage struct {
 	PVCName         string `json:"pvcName"`
 	PVCStorageClass string `json:"pvcStorageClass"`
-	// Should be passed like: e.g "1300Mi"
-	PVCSize string `json:"pvcSize"`
-}
-
-// RegistryConfiguration contains the registry configuration
-type RegistryConfiguration struct {
-	Registry    string   `json:"registry"`
-	Namespace   string   `json:"namespace"`
-	PullSecrets []string `json:"pullSecrets"`
+	PVCSize         string `json:"pvcSize"` // Should be passed like: e.g "1300Mi"
 }
 
 // AlertStatus defines the observed state of Alert
