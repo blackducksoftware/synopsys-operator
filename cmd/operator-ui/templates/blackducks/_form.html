@@ -13,6 +13,17 @@
     <%= f.SelectTag("Spec.Size", {options: ["Small", "Medium", "Large", "X-Large"], value: blackduck.Spec.Size, label: "Size"}) %>
     <%= f.SelectTag("Spec.ExposeService", {options: {"None": "NONE","Load Balancer": "LoadBalancer", "Node Port": "NodePort", "Routes for OpenShift": "OpenShift"}, value: blackduck.Spec.ExposeService, label: "Expose Service"}) %>
     <%= f.InputTag("Spec.Type", {value: blackduck.Spec.Type, label: "Black Duck Type (OpsSight specific)"}) %>
+
+    <%= f.InputTag("Spec.RegistryConfiguration.Registry", {value: blackduck.Spec.RegistryConfiguration.Registry, label: "Container Registry", placeholder: "[Optional] e.g. docker.io"}) %>
+    <%= f.InputTag("Spec.RegistryConfiguration.Namespace", {value: blackduck.Spec.RegistryConfiguration.Namespace, label: "Registry Namespace", placeholder: "[Optional] e.g. blackducksoftware"}) %>
+    <label>Image Pull Secrets</label>
+    <ul id="pullSecrets" name="pullSecrets" contenteditable="true">
+      <li value=""></li>
+      <%= for (pullsecret) in  blackduck.Spec.RegistryConfiguration.PullSecrets { %>
+      <li value="<%= pullsecret %>"><%= pullsecret %></li>
+      <% } %>
+    </ul>
+
     <%= f.CheckboxTag("Spec.Environs-USE_BINARY_UPLOADS", {value: false, label:"Use Binary Uploads", onchange:"updateEnvironFromCB('USE_BINARY_UPLOADS', 'int', false)"}) %>
     <%= f.CheckboxTag("Spec.Environs-ENABLE_SOURCE_UPLOADS", {value: false, label: "Enable Source Uploads", onchange:"updateEnvironFromCB('ENABLE_SOURCE_UPLOADS', 'bool', false)"}) %>
     <%= f.CheckboxTag("Spec.LivenessProbes", {value: blackduck.Spec.LivenessProbes, label: "Liveness Probes"}) %>
@@ -78,6 +89,7 @@
     </div>
     <select id="blackduck-Spec.Environs" name="Spec.Environs" multiple="multiple" hidden></select>
     <select id="blackduck-Spec.ImageRegistries" name="Spec.ImageRegistries" multiple="multiple" hidden></select>
+    <select id="blackduck-Spec.RegistryConfiguration.PullSecrets" name="Spec.RegistryConfiguration.PullSecrets" multiple="multiple" hidden></select>
     <center>
       <a href="<%= blackducksPath() %>" class="btn btn-info">Cancel</a>
       <button class="btn btn-success" role="submit">Submit</button>
@@ -136,7 +148,7 @@
 
     // Ensure containerTags is always a set of <li>s and always at least one
     initialContentTagsContent = {}
-    for (let editableList of ["containerTags", "environs"]) {
+    for (let editableList of ["containerTags", "environs", "pullSecrets"]) {
       initialContentTagsContent[editableList] = document.getElementById(editableList).innerHTML
       document.getElementById(editableList).addEventListener("input", function () {
         var children = document.getElementById(editableList).children;
@@ -337,6 +349,18 @@
     // Reinsert removed checkbox lines
     updateEnvironFromCB("USE_BINARY_UPLOADS", 'int', true);
     updateEnvironFromCB("ENABLE_SOURCE_UPLOADS", 'bool', true);
+
+    var pullSecretList = document.getElementById("pullSecrets");
+    var pullSecretItems = pullSecretList.getElementsByTagName('li');
+    var pullSecret = document.getElementById("blackduck-Spec.RegistryConfiguration.PullSecrets")
+    for (var i = 0; i < pullSecretItems.length; i++) {
+      var data = pullSecretItems[i].firstChild.data;
+      var opt = document.createElement('option');
+      opt.text = data;
+      opt.value = data;
+      opt.setAttribute("selected", "selected");
+      pullSecret.add(opt);
+    };
 
     var environsList = document.getElementById("environs");
     var environsItems = environsList.getElementsByTagName('li');
