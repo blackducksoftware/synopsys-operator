@@ -23,6 +23,7 @@ package synopsysctl
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	alert "github.com/blackducksoftware/synopsys-operator/pkg/alert"
@@ -30,10 +31,12 @@ import (
 	alertv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/alert/v1"
 	blackduckv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	opssightv1 "github.com/blackducksoftware/synopsys-operator/pkg/api/opssight/v1"
+	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	alertapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
 	blackduckapp "github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck"
 	blackduck "github.com/blackducksoftware/synopsys-operator/pkg/blackduck"
 	opssight "github.com/blackducksoftware/synopsys-operator/pkg/opssight"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -315,15 +318,24 @@ var createBlackDuckCmd = &cobra.Command{
 		}
 
 		log.Infof("creating Black Duck '%s' in namespace '%s'...", blackDuckName, blackDuckNamespace)
-
-		// Verifying only one Black Duck instance per namespace
-		blackducks, err := util.ListBlackduck(blackDuckClient, crdNamespace, metav1.ListOptions{})
-		if err != nil {
-			return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackDuckNamespace, err)
+		version := blackDuck.Spec.Version
+		if len(version) == 0 {
+			versions := apps.NewApp(&protoform.Config{}, restconfig).Blackduck().Versions()
+			sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+			version = versions[0]
 		}
-		for _, v := range blackducks.Items {
-			if strings.EqualFold(v.Spec.Namespace, blackDuckNamespace) {
-				return fmt.Errorf("a Black Duck instance already exists in namespace '%s', only one instance per namespace is allowed", blackDuckNamespace)
+
+		if isBlackDuckVersionSupportMultipleInstance, _ := util.IsBlackDuckVersionSupportMultipleInstance(version); !isBlackDuckVersionSupportMultipleInstance {
+			// Verifying only one Black Duck instance per namespace
+			blackducks, err := util.ListBlackduck(blackDuckClient, crdNamespace, metav1.ListOptions{})
+			if err != nil {
+				return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackDuckNamespace, err)
+			}
+
+			for _, v := range blackducks.Items {
+				if strings.EqualFold(v.Spec.Namespace, blackDuckNamespace) {
+					return fmt.Errorf("a Black Duck instance already exists in namespace '%s', only one instance per namespace is allowed", blackDuckNamespace)
+				}
 			}
 		}
 

@@ -24,6 +24,7 @@ package util
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
@@ -153,4 +154,23 @@ func IsExposeServiceValid(serviceType string) bool {
 		return true
 	}
 	return false
+}
+
+// IsBlackDuckVersionSupportMultipleInstance returns whether it supports multiple instance in a single namespace
+func IsBlackDuckVersionSupportMultipleInstance(version string) (bool, error) {
+	return isYearAndMonthGreaterThanOrEqualTo(version, 2019, time.August)
+}
+
+func isYearAndMonthGreaterThanOrEqualTo(version string, year int, month time.Month) (bool, error) {
+	versionArr := strings.Split(version, ".")
+	if len(versionArr) >= 3 {
+		t, err := time.Parse("2006.1", fmt.Sprintf("%s.%s", versionArr[0], versionArr[1]))
+		if err != nil {
+			return false, err
+		}
+		if t.Year() >= year && t.Month() >= month {
+			return true, nil
+		}
+	}
+	return false, nil
 }
