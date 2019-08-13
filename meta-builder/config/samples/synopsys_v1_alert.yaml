@@ -19,7 +19,7 @@ spec:
     pvcName: alert-pvc
     pvcStorageClass: ""
     pvcSize: 5G
-  standalone:
+  standAlone:
     cfsslImage: docker.io/blackducksoftware/blackduck-cfssl:1.0.0
     cfsslMemory: 640M
   exposeService: LOADBALANCER

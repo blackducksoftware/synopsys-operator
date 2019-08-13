@@ -32,7 +32,7 @@ type AlertSpec struct {
 	AlertImage        string            `json:"alertImage,omitempty"`
 	AlertMemory       string            `json:"alertMemory,omitempty"` // Should be passed like: e.g "1300Mi"
 	PersistentStorage PersistentStorage `json:"persistentStorage,omitempty"`
-	StandAlone        StandAlone        `json:"standAlone,,omitempty"`
+	StandAlone        StandAlone        `json:"standAlone,omitempty"`
 	ExposeService     string            `json:"exposeService"`
 }
 

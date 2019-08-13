@@ -197,6 +197,8 @@ metadata:
     app: alert
     component: alert
     name: demo
+  annotations:
+    uniqueID: alert-secret
   name: demo-alert-secret
   namespace: default
 type: Opaque

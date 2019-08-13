@@ -34,10 +34,6 @@ spec:
               type: string
             alertMemory:
               type: string
-            cfsslImage:
-              type: string
-            cfsslMemory:
-              type: string
             desiredState:
               type: string
             environs:
@@ -46,57 +42,38 @@ spec:
               type: array
             exposeService:
               type: string
-            imageRegistries:
-              items:
-                type: string
-              type: array
             namespace:
               type: string
             persistentStorage:
-              type: boolean
+              properties:
+                pvcName:
+                  type: string
+                pvcSize:
+                  type: string
+                pvcStorageClass:
+                  type: string
+              required:
+              - pvcName
+              - pvcSize
+              - pvcStorageClass
+              type: object
             port:
               format: int32
               type: integer
-            pvcName:
-              type: string
-            pvcSize:
-              description: 'Should be passed like: e.g "1300Mi"'
-              type: string
-            pvcStorageClass:
-              type: string
-            registryConfiguration:
-              description: RegistryConfiguration contains the registry configuration
-              properties:
-                namespace:
-                  type: string
-                pullSecrets:
-                  items:
-                    type: string
-                  type: array
-                registry:
-                  type: string
-              required:
-              - namespace
-              - pullSecrets
-              - registry
-              type: object
             secrets:
               items:
                 type: string
               type: array
-            size:
-              type: string
             standAlone:
-              type: boolean
+              properties:
+                cfsslImage:
+                  type: string
+                cfsslMemory:
+                  type: string
+              type: object
           required:
           - exposeService
-          - persistentStorage
           - port
-          - pvcName
-          - pvcSize
-          - pvcStorageClass
-          - size
-          - standAlone
           type: object
         status:
           description: AlertStatus defines the observed state of Alert
