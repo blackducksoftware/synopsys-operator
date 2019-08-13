@@ -75,7 +75,7 @@ func callSetResourceClients() {
 // and the resource clients
 func setResourceClients() error {
 	var err error
-	restconfig, err = protoform.GetKubeConfig(kubeconfig, insecureSkipTLSVerify)
+	restconfig, err = protoform.GetKubeClientFromOutsideCluster(kubeconfig, insecureSkipTLSVerify)
 	log.Debugf("rest config: %+v", restconfig)
 	if err != nil {
 		return err
