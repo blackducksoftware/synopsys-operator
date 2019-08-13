@@ -200,7 +200,7 @@ metadata:
   name: demo-alert-secret
   namespace: default
 type: Opaque
----
+
 # TODO Routes
 # apiVersion: route.openshift.io/v1
 # kind: Route
