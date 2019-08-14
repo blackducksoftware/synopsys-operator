@@ -56,8 +56,8 @@ var dbMigrateBlackDuckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
-		for _, bdArg := range args {
-			blackDuckName, blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, "", namespace, bdArg)
+		for _, blackDuckName := range args {
+			blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, "", namespace, blackDuckName)
 			if err != nil {
 				errors = append(errors, err)
 				continue
