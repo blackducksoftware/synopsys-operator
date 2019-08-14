@@ -42,14 +42,14 @@ func GenerateImageTag(defaultImage string, imageRegistries []string, registryCon
 		}
 	}
 
-	if registryConfig != nil && len(registryConfig.Registry) > 0 && len(registryConfig.Namespace) > 0 {
+	if registryConfig != nil && len(registryConfig.Registry) > 0 {
 		return getRegistryConfiguration(defaultImage, registryConfig)
 	}
 	return defaultImage
 }
 
 func getRegistryConfiguration(image string, registryConfig *api.RegistryConfiguration) string {
-	if registryConfig != nil && len(registryConfig.Registry) > 0 && len(registryConfig.Namespace) > 0 {
+	if registryConfig != nil && len(registryConfig.Registry) > 0 {
 		imageName, err := util.GetImageName(image)
 		if err != nil {
 			log.Errorf("unable to get the image name for %s due to %+v", image, err)
@@ -60,7 +60,7 @@ func getRegistryConfiguration(image string, registryConfig *api.RegistryConfigur
 			log.Errorf("unable to get the image tag for %s due to %+v", image, err)
 			return image
 		}
-		return fmt.Sprintf("%s/%s/%s:%s", registryConfig.Registry, registryConfig.Namespace, imageName, imageTag)
+		return fmt.Sprintf("%s/%s:%s", registryConfig.Registry, imageName, imageTag)
 	}
 	return image
 }

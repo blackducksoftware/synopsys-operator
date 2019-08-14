@@ -128,8 +128,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().StringVar(&ctl.AlertMemory, "alert-memory", ctl.AlertMemory, "Memory allocation of Alert")
 	cmd.Flags().StringVar(&ctl.CfsslMemory, "cfssl-memory", ctl.CfsslMemory, "Memory allocation of CFSSL")
 	cmd.Flags().StringVar(&ctl.DesiredState, "alert-desired-state", ctl.DesiredState, "State of Alert")
-	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
-	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
+	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 
@@ -220,11 +219,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}
 			}
 			ctl.alertSpec.RegistryConfiguration.Registry = ctl.Registry
-		case "registry-namespace":
-			if ctl.alertSpec.RegistryConfiguration == nil {
-				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}
-			}
-			ctl.alertSpec.RegistryConfiguration.Namespace = ctl.RegistryNamespace
 		case "pull-secret-name":
 			if ctl.alertSpec.RegistryConfiguration == nil {
 				ctl.alertSpec.RegistryConfiguration = &api.RegistryConfiguration{}

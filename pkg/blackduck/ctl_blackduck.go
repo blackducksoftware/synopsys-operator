@@ -198,8 +198,7 @@ func (ctl *CRSpecBuilderFromCobraFlags) AddCRSpecFlagsToCommand(cmd *cobra.Comma
 	cmd.Flags().BoolVar(&ctl.EnableBinaryAnalysis, "enable-binary-analysis", ctl.EnableBinaryAnalysis, "If true, enable binary analysis")
 	cmd.Flags().BoolVar(&ctl.EnableSourceCodeUpload, "enable-source-code-upload", ctl.EnableSourceCodeUpload, "If true, enable source code upload")
 	cmd.Flags().StringVar(&ctl.NodeAffinityFilePath, "node-affinity-file-path", ctl.NodeAffinityFilePath, "Absolute path to a file containing a list of node affinities")
-	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
-	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
+	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 
 	// TODO: Remove this flag in next release
@@ -423,11 +422,6 @@ func (ctl *CRSpecBuilderFromCobraFlags) SetCRSpecFieldByFlag(f *pflag.Flag) {
 				ctl.blackDuckSpec.RegistryConfiguration = &api.RegistryConfiguration{}
 			}
 			ctl.blackDuckSpec.RegistryConfiguration.Registry = ctl.Registry
-		case "registry-namespace":
-			if ctl.blackDuckSpec.RegistryConfiguration == nil {
-				ctl.blackDuckSpec.RegistryConfiguration = &api.RegistryConfiguration{}
-			}
-			ctl.blackDuckSpec.RegistryConfiguration.Namespace = ctl.RegistryNamespace
 		case "pull-secret-name":
 			if ctl.blackDuckSpec.RegistryConfiguration == nil {
 				ctl.blackDuckSpec.RegistryConfiguration = &api.RegistryConfiguration{}
