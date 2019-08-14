@@ -191,7 +191,7 @@ func GetOldPrometheusSpec(restConfig *rest.Config, kubeClient *kubernetes.Client
 
 // GetClusterType returns the Cluster type. It defaults to Kubernetes
 func GetClusterType(kubeClient *kubernetes.Clientset) ClusterType {
-	if util.IsOpenshift(kubeClient) {
+	if kubeClient != nil && util.IsOpenshift(kubeClient) {
 		return OpenshiftClusterType
 	}
 	return KubernetesClusterType
