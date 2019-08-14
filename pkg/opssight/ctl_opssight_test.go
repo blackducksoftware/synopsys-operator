@@ -171,8 +171,7 @@ func TestAddCRSpecFlagsToCommand(t *testing.T) {
 	cmd.Flags().IntVar(&ctl.BlackduckMaxCount, "blackduck-max-count", ctl.BlackduckMaxCount, "Maximum number of Black Duck instances that can be created")
 	cmd.Flags().StringVar(&ctl.BlackduckType, "blackduck-type", ctl.BlackduckType, "Type of Black Duck")
 	cmd.Flags().StringVar(&ctl.BlackduckPassword, "blackduck-password", ctl.BlackduckPassword, "Password to use for all internal Blackduck 'sysadmin' account")
-	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images")
-	cmd.Flags().StringVar(&ctl.RegistryNamespace, "registry-namespace", ctl.RegistryNamespace, "Namespace in the registry to use for images")
+	cmd.Flags().StringVar(&ctl.Registry, "registry", ctl.Registry, "Name of the registry to use for images e.g. docker.io/blackducksoftware")
 	cmd.Flags().StringSliceVar(&ctl.PullSecrets, "pull-secret-name", ctl.PullSecrets, "Only if the registry requires authentication")
 	cmd.Flags().StringSliceVar(&ctl.ImageRegistries, "image-registries", ctl.ImageRegistries, "List of image registries")
 
@@ -527,16 +526,6 @@ func TestSetCRSpecFieldByFlag(t *testing.T) {
 				Registry:     "changed",
 			},
 			changedSpec: &opssightapi.OpsSightSpec{RegistryConfiguration: &api.RegistryConfiguration{Registry: "changed"}},
-		},
-		// case
-		{
-			flagName:   "registry-namespace",
-			initialCtl: NewCRSpecBuilderFromCobraFlags(),
-			changedCtl: &CRSpecBuilderFromCobraFlags{
-				opsSightSpec:      &opssightapi.OpsSightSpec{},
-				RegistryNamespace: "changed",
-			},
-			changedSpec: &opssightapi.OpsSightSpec{RegistryConfiguration: &api.RegistryConfiguration{Namespace: "changed"}},
 		},
 		// case
 		{

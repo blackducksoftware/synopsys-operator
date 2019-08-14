@@ -401,7 +401,6 @@ var updateAlertCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -453,7 +452,6 @@ var updateAlertNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -503,7 +501,6 @@ var updateBlackDuckCmd = &cobra.Command{
 		if len(args) == 0 {
 			return fmt.Errorf("this command takes 1 or more arguments")
 		}
-		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -554,7 +551,6 @@ var updateBlackDuckNativeCmd = &cobra.Command{
 		if len(args) == 0 {
 			return fmt.Errorf("this command takes 1 or more arguments")
 		}
-		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -866,7 +862,6 @@ var updateOpsSightCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -919,7 +914,6 @@ var updateOpsSightNativeCmd = &cobra.Command{
 			cmd.Help()
 			return fmt.Errorf("this command takes 1 argument")
 		}
-		checkRegistryConfiguration(cmd.Flags())
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -90,7 +90,6 @@ func (clist *ComponentList) GetKubeInterfaces() []interface{} {
 // RegistryConfiguration contains the registry configuration
 type RegistryConfiguration struct {
 	Registry    string   `json:"registry"`
-	Namespace   string   `json:"namespace"`
 	PullSecrets []string `json:"pullSecrets"`
 }
 

@@ -35,8 +35,8 @@ import (
 func (c *Creater) GetPostgres() *postgres.Postgres {
 	postgresImage := c.GetFullContainerNameFromImageRegistryConf("postgres")
 	if len(postgresImage) == 0 {
-		if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.Registry) > 0 && len(c.blackDuck.Spec.RegistryConfiguration.Namespace) > 0 {
-			postgresImage = fmt.Sprintf("%s/%s/%s:%s", c.blackDuck.Spec.RegistryConfiguration.Registry, c.blackDuck.Spec.RegistryConfiguration.Namespace, "postgresql-96-rhel7", "1")
+		if c.blackDuck.Spec.RegistryConfiguration != nil && len(c.blackDuck.Spec.RegistryConfiguration.Registry) > 0 {
+			postgresImage = fmt.Sprintf("%s/%s:%s", c.blackDuck.Spec.RegistryConfiguration.Registry, "postgresql-96-rhel7", "1")
 		} else {
 			postgresImage = "registry.access.redhat.com/rhscl/postgresql-96-rhel7:1"
 		}
