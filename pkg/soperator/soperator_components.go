@@ -56,14 +56,14 @@ type SpecConfig struct {
 }
 
 // NewSOperator will create a SOperator type
-func NewSOperator(namespace, synopsysOperatorImage, expose string, clusterType ClusterType, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
+func NewSOperator(namespace, synopsysOperatorImage, expose string, dryRun bool, logLevel string, threadiness int, postgresRestartInMins int64,
 	podWaitTimeoutSeconds int64, resyncIntervalInSeconds int64, terminationGracePeriodSeconds int64, sealKey string, restConfig *rest.Config,
 	kubeClient *kubernetes.Clientset, certificate string, certificateKey string, isClusterScoped bool, crds []string, admissionWebhookListener bool) *SpecConfig {
 	return &SpecConfig{
 		Namespace:                     namespace,
 		Image:                         synopsysOperatorImage,
 		Expose:                        expose,
-		ClusterType:                   clusterType,
+		ClusterType:                   GetClusterType(kubeClient),
 		DryRun:                        dryRun,
 		LogLevel:                      logLevel,
 		Threadiness:                   threadiness,
