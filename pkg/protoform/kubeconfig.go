@@ -64,6 +64,7 @@ func GetKubeClientSet(kubeConfig *rest.Config) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(kubeConfig)
 }
 
+// GetKubeClientFromOutsideCluster returns the rest config of outside cluster
 func GetKubeClientFromOutsideCluster(kubeconfigpath string, insecureSkipTLSVerify bool) (*rest.Config, error) {
 	// Determine Config Paths
 	if home := homeDir(); len(kubeconfigpath) == 0 && home != "" {
