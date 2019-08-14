@@ -24,10 +24,10 @@ package actions
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	"sort"
 	"strings"
 
+	"github.com/blackducksoftware/synopsys-operator/pkg/api"
 	blackduckapi "github.com/blackducksoftware/synopsys-operator/pkg/api/blackduck/v1"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps"
 	"github.com/blackducksoftware/synopsys-operator/pkg/apps/blackduck/latest/containers"
@@ -270,16 +270,24 @@ func (v BlackducksResource) Create(c buffalo.Context) error {
 	}
 
 	log.Infof("create Black Duck: %+v", blackduck)
-
+	// Verifying only one Black Duck instance per namespace
 	blackducks, err := util.ListBlackduck(v.blackduckClient, v.config.CrdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to list Black Duck instances in namespace '%s' due to %+v", blackduck.Spec.Namespace, err)
 	}
 
-	// When running in cluster scope mode, custom resources do not have a namespace so the above command returns everything and we need to check Spec.Namespace.
-	for _, bd := range blackducks.Items {
-		if strings.EqualFold(bd.Spec.Namespace, blackduck.Spec.Namespace) {
-			return fmt.Errorf("a Black Duck instance already exists in namespace '%s', only one instance per namespace is allowed", blackduck.Spec.Namespace)
+	version := blackduck.Spec.Version
+	if len(version) == 0 {
+		versions := apps.NewApp(&protoform.Config{}, v.kubeConfig).Blackduck().Versions()
+		sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+		version = versions[0]
+	}
+
+	if isBlackDuckVersionSupportMultipleInstance, _ := util.IsBlackDuckVersionSupportMultipleInstance(version); !isBlackDuckVersionSupportMultipleInstance {
+		for _, bd := range blackducks.Items {
+			if strings.EqualFold(bd.Spec.Namespace, blackduck.Spec.Namespace) {
+				return fmt.Errorf("a Black Duck instance already exists in namespace '%s', only one instance per namespace is allowed", blackduck.Spec.Namespace)
+			}
 		}
 	}
 
