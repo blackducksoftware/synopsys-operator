@@ -132,7 +132,8 @@ var getBlackDuckRootKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		blackDuckName, blackDuckNamespace, crdNamespace, crdScope, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, args[0])
+		blackDuckName := args[0]
+		blackDuckNamespace, crdNamespace, crdScope, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
 		if err != nil {
 			return err
 		}

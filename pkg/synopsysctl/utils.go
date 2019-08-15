@@ -224,20 +224,20 @@ func RunKubeEditorCmd(restConfig *rest.Config, kubeClient *kubernetes.Clientset,
 	return nil
 }
 
-// getInstanceInfo provides the name, namespace and crd scope of the request custom resource instance
-func getInstanceInfo(mock bool, crdName string, appName string, namespace string, name string) (string, string, string, apiextensions.ResourceScope, error) {
+// getInstanceInfo provides the app and crd namespaces as well as the crd scope of the request custom resource instance
+func getInstanceInfo(mock bool, crdName string, appName string, namespace string, name string) (string, string, apiextensions.ResourceScope, error) {
 	crdScope := apiextensions.ClusterScoped
 	if !mock {
 		crd, err := util.GetCustomResourceDefinition(apiExtensionClient, crdName)
 		if err != nil {
-			return "", "", "", "", fmt.Errorf("unable to get Custom Resource Definition '%s' in your cluster due to %+v", crdName, err)
+			return "", "", "", fmt.Errorf("unable to get Custom Resource Definition '%s' in your cluster due to %+v", crdName, err)
 		}
 		crdScope = crd.Spec.Scope
 	}
 
 	// if the CRD scope is namespaced scope, then the user need to provide the namespace
 	if crdScope != apiextensions.ClusterScoped && len(namespace) == 0 {
-		return "", "", "", "", fmt.Errorf("namespace needs to be provided. please use the 'namespace' option to set it")
+		return "", "", crdScope, fmt.Errorf("namespace needs to be provided. please use the 'namespace' option to set it")
 	}
 
 	crdNamespace := namespace
@@ -245,20 +245,20 @@ func getInstanceInfo(mock bool, crdName string, appName string, namespace string
 		crdNamespace = ""
 		if len(namespace) == 0 {
 			namespace = name
-			// update scenrio to find out the namespace in case of cluster scope
+			// update scenario to find out the namespace in case of cluster scope
 			if len(appName) > 0 {
 				ns, err := util.ListNamespaces(kubeClient, fmt.Sprintf("synopsys.com/%s.%s", appName, name))
 				if err != nil {
-					return "", "", "", "", fmt.Errorf("unable to list the '%s' instance '%s' in namespace '%s' due to %+v", appName, name, namespace, err)
+					return "", "", crdScope, fmt.Errorf("unable to list the '%s' instance '%s' in namespace '%s' due to %+v", appName, name, namespace, err)
 				}
 				if len(ns.Items) > 0 {
 					namespace = ns.Items[0].Name
 				} else {
-					return "", "", "", "", fmt.Errorf("unable to find the namespace of the '%s' instance '%s'", appName, name)
+					return "", "", crdScope, fmt.Errorf("unable to find the namespace of the '%s' instance '%s'", appName, name)
 				}
 			}
 		}
 	}
 
-	return name, namespace, crdNamespace, crdScope, nil
+	return namespace, crdNamespace, crdScope, nil
 }

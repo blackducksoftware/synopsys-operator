@@ -55,8 +55,8 @@ var startAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
-		for _, altArg := range args {
-			alertName, alertNamespace, crdNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, altArg)
+		for _, alertName := range args {
+			alertNamespace, crdNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -104,8 +104,8 @@ var startBlackDuckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
-		for _, bdArg := range args {
-			blackDuckName, blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, bdArg)
+		for _, blackDuckName := range args {
+			blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -153,8 +153,8 @@ var startOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
-		for _, opsArg := range args {
-			opsSightName, opsSightNamespace, crdNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsArg)
+		for _, opsSightName := range args {
+			opsSightNamespace, crdNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
 			if err != nil {
 				errors = append(errors, err)
 				continue

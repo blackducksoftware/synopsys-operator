@@ -23,6 +23,8 @@ package synopsysctl
 
 import (
 	"fmt"
+
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
@@ -55,9 +57,12 @@ var stopAlertCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
-		for _, altArg := range args {
-			alertName, alertNamespace, crdNamespace, _, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, altArg)
+		for _, alertName := range args {
+			alertNamespace, crdNamespace, scope, err := getInstanceInfo(false, util.AlertCRDName, util.AlertName, namespace, alertName)
 			if err != nil {
+				if len(alertNamespace) == 0 && scope == apiextensions.ClusterScoped {
+					err = fmt.Errorf("%s %s doesn't appear to be running: %v", util.AlertName, alertName, err)
+				}
 				errors = append(errors, err)
 				continue
 			}
@@ -105,9 +110,12 @@ var stopBlackDuckCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
-		for _, bdArg := range args {
-			blackDuckName, blackDuckNamespace, crdNamespace, _, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, bdArg)
+		for _, blackDuckName := range args {
+			blackDuckNamespace, crdNamespace, scope, err := getInstanceInfo(false, util.BlackDuckCRDName, util.BlackDuckName, namespace, blackDuckName)
 			if err != nil {
+				if len(blackDuckNamespace) == 0 && scope == apiextensions.ClusterScoped {
+					err = fmt.Errorf("%s %s doesn't appear to be running: %v", util.BlackDuckName, blackDuckName, err)
+				}
 				errors = append(errors, err)
 				continue
 			}
@@ -154,9 +162,12 @@ var stopOpsSightCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		errors := []error{}
-		for _, opsArg := range args {
-			opsSightName, opsSightNamespace, crdNamespace, _, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsArg)
+		for _, opsSightName := range args {
+			opsSightNamespace, crdNamespace, scope, err := getInstanceInfo(false, util.OpsSightCRDName, util.OpsSightName, namespace, opsSightName)
 			if err != nil {
+				if len(opsSightNamespace) == 0 && scope == apiextensions.ClusterScoped {
+					err = fmt.Errorf("%s %s doesn't appear to be running: %v", util.OpsSightName, opsSightName, err)
+				}
 				errors = append(errors, err)
 				continue
 			}
