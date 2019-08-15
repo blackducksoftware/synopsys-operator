@@ -1,0 +1,7 @@
+apiVersion: synopsys.com/v1
+kind: PolarisInfra
+metadata:
+  name: polarisinfra-sample
+spec:
+  # Add fields here
+  foo: bar

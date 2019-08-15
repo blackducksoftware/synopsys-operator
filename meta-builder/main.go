@@ -91,6 +91,34 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "OpsSight")
 		os.Exit(1)
 	}
+	if err = (&controllers.PolarisReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Polaris"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Polaris")
+		os.Exit(1)
+	}
+	if err = (&controllers.ReportingReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Reporting"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Reporting")
+		os.Exit(1)
+	}
+	if err = (&controllers.PolarisInfraReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("PolarisInfra"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PolarisInfra")
+		os.Exit(1)
+	}
+	if err = (&controllers.PolarisDBReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("PolarisDB"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PolarisDB")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

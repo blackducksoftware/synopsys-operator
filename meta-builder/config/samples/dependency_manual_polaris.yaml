@@ -1,0 +1,32 @@
+---
+runtimeobjectsgroupings:
+  ServiceAccounts:
+    - ServiceAccount.default.auth-server
+  Roles:
+    - Role.default.leaderElector
+  RoleBindings:
+    - RoleBinding.default.leaderElector
+  Deployments:
+    - Deployment.default.auth-server
+  HorizontalPodAutoscalers:
+    - HorizontalPodAutoscaler.default.auth-server
+  Services:
+    - Services.default.auth-server
+  Ingress:
+    - Ingress.default.release-name-ingress
+runtimeobjectdependencies:
+  - obj: RoleBindings
+    isdependenton: Roles
+  - obj: RoleBindings
+    isdependenton: ServiceAccounts
+  - obj: Deployments
+    isdependenton: RoleBindings
+  - obj: Services
+    isdependenton: Deployments
+  - obj: HorizontalPodAutoscalers
+    isdependenton: Deployments
+  - obj: Ingress
+    isdependenton: Deployments
+  - obj: Ingress
+    isdependenton: Services
+---
