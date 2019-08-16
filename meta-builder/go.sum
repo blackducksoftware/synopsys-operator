@@ -68,10 +68,8 @@ github.com/spf13/pflag v1.0.2/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnIn
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
-github.com/yashbhutwala/go-directed-acyclic-graph v0.0.0-20190730144006-36bf6eb617d3 h1:+yumbiSnY/5UqRMD9hbKjmC/hfwHTku1LtUFMpclZmA=
-github.com/yashbhutwala/go-directed-acyclic-graph v0.0.0-20190730144006-36bf6eb617d3/go.mod h1:K44xITJd6ux6jap+UP3SZQ0wUvaxGb1LmehQe3h8p5g=
-github.com/yashbhutwala/go-scheduler v0.0.0-20190730144232-8fbc92269059 h1:nafdhRVmF+ibCf7XB71KVOclaav72rktDD2EhYpPD0o=
-github.com/yashbhutwala/go-scheduler v0.0.0-20190730144232-8fbc92269059/go.mod h1:u+b0yRcTdf48JlsFisPSQYGgD14epuJ9lAkJvtlDE/w=
+github.com/tmc/dot v0.0.0-20180926222610-6d252d5ff882 h1:JJYquzshG8JY6jr2R+TnXgOH4hfLTbWJth+HEVc8txY=
+github.com/tmc/dot v0.0.0-20180926222610-6d252d5ff882/go.mod h1:S7t2g417AjtCWMwli446SApYIbTSpd+2z1kDFLVP2Vs=
 go.uber.org/atomic v1.3.2 h1:2Oa65PReHzfn29GpvgsYwloV9AVFHPDk8tYxt2c2tr4=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/multierr v1.1.0 h1:HoEmRHQPVSqub6w2z2d2EOVs2fjyFRGyofhKuyDq0QI=

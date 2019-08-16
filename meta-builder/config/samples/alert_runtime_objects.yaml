@@ -3,6 +3,8 @@ kind: ReplicationController
 metadata:
   creationTimestamp: null
   labels:
+    operator.synopsys.com/group-id: "AlertRC"
+    operator.synopsys.com/group-dependencies: "ConfigMap_AlertSecret"
     app: alert
     component: alert
     name: demo
@@ -66,6 +68,8 @@ kind: ReplicationController
 metadata:
   creationTimestamp: null
   labels:
+    operator.synopsys.com/group-id: "CfsslRC"
+    operator.synopsys.com/group-dependencies: "ConfigMap"
     app: alert
     component: cfssl
     name: demo
@@ -125,6 +129,8 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
+    operator.synopsys.com/group-id: "AlertRC"
+    operator.synopsys.com/group-dependencies: "ConfigMap_AlertSecret"
     app: alert
     component: alert
     name: demo
@@ -150,6 +156,8 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
+    operator.synopsys.com/group-id: "CfsslRC"
+    operator.synopsys.com/group-dependencies: "ConfigMap"
     app: alert
     component: cfssl
     name: demo
@@ -179,6 +187,8 @@ kind: ConfigMap
 metadata:
   creationTimestamp: null
   labels:
+    operator.synopsys.com/group-id: "ConfigMap"
+    operator.synopsys.com/group-dependencies: ""
     app: alert
     component: alert
     name: demo
@@ -194,6 +204,8 @@ kind: Secret
 metadata:
   creationTimestamp: null
   labels:
+    operator.synopsys.com/group-id: "AlertSecret"
+    operator.synopsys.com/group-dependencies: "ConfigMap"
     app: alert
     component: alert
     name: demo

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"runtime"
 
-	dag "github.com/yashbhutwala/go-directed-acyclic-graph"
+	dag "github.com/blackducksoftware/synopsys-operator/meta-builder/go-directed-acyclic-graph"
 )
 
 // Scheduler related errors.

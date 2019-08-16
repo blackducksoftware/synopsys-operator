@@ -37,12 +37,7 @@ func ConvertYamlFileToRuntimeObjects(byteArrayContent []byte) map[string]runtime
 			log.V(1).Info("Failed to get runtimeObject's name", "err", err)
 			continue
 		}
-		runtimeObjectNamespace, err := accessor.Namespace(runtimeObject)
-		if err != nil {
-			log.V(1).Info("Failed to get runtimeObject's namespace", "err", err)
-			continue
-		}
-		uniqueId := fmt.Sprintf("%s.%s.%s", runtimeObjectKind, runtimeObjectNamespace, runtimeObjectName)
+		uniqueId := fmt.Sprintf("%s.%s", runtimeObjectKind, runtimeObjectName)
 		fmt.Printf("Creating RuntimeObject Label: %s\n", uniqueId)
 		mapOfUniqueIdToDesiredRuntimeObject[uniqueId] = runtimeObject
 	}

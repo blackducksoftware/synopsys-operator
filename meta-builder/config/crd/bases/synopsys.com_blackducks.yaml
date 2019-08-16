@@ -29,9 +29,146 @@ spec:
           type: object
         spec:
           description: BlackduckSpec defines the desired state of Blackduck
+          properties:
+            adminPassword:
+              type: string
+            authCustomCa:
+              type: string
+            certificate:
+              type: string
+            certificateKey:
+              type: string
+            certificateName:
+              type: string
+            dbPrototype:
+              type: string
+            desiredState:
+              type: string
+            environs:
+              items:
+                type: string
+              type: array
+            exposeService:
+              type: string
+            externalPostgres:
+              description: PostgresExternalDBConfig contain the external database
+                configuration
+              properties:
+                postgresAdmin:
+                  type: string
+                postgresAdminPassword:
+                  type: string
+                postgresHost:
+                  type: string
+                postgresPort:
+                  type: integer
+                postgresSsl:
+                  type: boolean
+                postgresUser:
+                  type: string
+                postgresUserPassword:
+                  type: string
+              required:
+              - postgresAdmin
+              - postgresAdminPassword
+              - postgresHost
+              - postgresPort
+              - postgresSsl
+              - postgresUser
+              - postgresUserPassword
+              type: object
+            imageRegistries:
+              items:
+                type: string
+              type: array
+            licenseKey:
+              type: string
+            livenessProbes:
+              type: boolean
+            namespace:
+              type: string
+            persistentStorage:
+              type: boolean
+            postgresPassword:
+              type: string
+            proxyCertificate:
+              type: string
+            pvc:
+              items:
+                description: PVC will contain the specifications of the different
+                  PVC. This will overwrite the default claim configuration
+                properties:
+                  name:
+                    type: string
+                  size:
+                    type: string
+                  storageClass:
+                    type: string
+                  volumeName:
+                    type: string
+                required:
+                - name
+                type: object
+              type: array
+            pvcStorageClass:
+              type: string
+            registryConfiguration:
+              properties:
+                namespace:
+                  type: string
+                pullSecrets:
+                  items:
+                    type: string
+                  type: array
+                registry:
+                  type: string
+              required:
+              - namespace
+              - pullSecrets
+              - registry
+              type: object
+            scanType:
+              type: string
+            size:
+              type: string
+            type:
+              type: string
+            userPassword:
+              type: string
+            version:
+              type: string
+          required:
+          - adminPassword
+          - authCustomCa
+          - certificateName
+          - desiredState
+          - exposeService
+          - livenessProbes
+          - namespace
+          - persistentStorage
+          - postgresPassword
+          - size
+          - userPassword
+          - version
           type: object
         status:
           description: BlackduckStatus defines the observed state of Blackduck
+          properties:
+            errorMessage:
+              type: string
+            fqdn:
+              type: string
+            ip:
+              type: string
+            pvcVolumeName:
+              additionalProperties:
+                type: string
+              type: object
+            state:
+              type: string
+          required:
+          - ip
+          - state
           type: object
       type: object
   versions:

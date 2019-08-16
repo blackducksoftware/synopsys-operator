@@ -69,7 +69,7 @@ func (p *AlertPatcher) patchNamespace() error {
 }
 
 func (p *AlertPatcher) patchEnvirons() error {
-	ConfigMapUniqueID := "ConfigMap.default.demo-alert-blackduck-config"
+	ConfigMapUniqueID := "ConfigMap.demo-alert-blackduck-config"
 	configMapRuntimeObject, ok := p.objects[ConfigMapUniqueID]
 	if !ok {
 		return nil
@@ -89,7 +89,7 @@ func (p *AlertPatcher) patchEnvirons() error {
 }
 
 func (p *AlertPatcher) patchSecrets() error {
-	SecretUniqueID := "Secret.default.demo-alert-secret"
+	SecretUniqueID := "Secret.demo-alert-secret"
 	secretRuntimeObject, ok := p.objects[SecretUniqueID]
 	if !ok {
 		return nil
@@ -122,7 +122,7 @@ func (p *AlertPatcher) patchDesiredState() error {
 
 func (p *AlertPatcher) patchPort() error {
 	port := *p.alert.Spec.Port
-	ReplicationContollerUniqueID := "ReplicationController.default.demo-alert-alert"
+	ReplicationContollerUniqueID := "ReplicationController.demo-alert-alert"
 	replicationControllerRuntimeObject, ok := p.objects[ReplicationContollerUniqueID]
 	if !ok {
 		return nil
@@ -161,7 +161,7 @@ func (p *AlertPatcher) patchPort() error {
 }
 
 func (p *AlertPatcher) patchAlertImage() error {
-	uniqueID := "ReplicationController.default.demo-alert-alert"
+	uniqueID := "ReplicationController.demo-alert-alert"
 	alertReplicationControllerRuntimeObject, ok := p.objects[uniqueID]
 	if !ok {
 		return nil
@@ -172,7 +172,7 @@ func (p *AlertPatcher) patchAlertImage() error {
 }
 
 func (p *AlertPatcher) patchAlertMemory() error {
-	uniqueID := "ReplicationController.default.demo-alert-alert"
+	uniqueID := "ReplicationController.demo-alert-alert"
 	alertReplicationControllerRuntimeObject, ok := p.objects[uniqueID]
 	if !ok {
 		return nil
@@ -186,12 +186,12 @@ func (p *AlertPatcher) patchAlertMemory() error {
 
 func (p *AlertPatcher) patchPersistentStorage() error {
 	if (p.alert.Spec.PersistentStorage == synopsysv1.PersistentStorage{}) {
-		PVCUniqueID := "PersistentVolumeClaim.default.demo-alert-pvc"
+		PVCUniqueID := "PersistentVolumeClaim.demo-alert-pvc"
 		delete(p.objects, PVCUniqueID)
 		return nil
 	}
 	// Patch PVC Name
-	PVCUniqueID := "PersistentVolumeClaim.default.demo-alert-pvc"
+	PVCUniqueID := "PersistentVolumeClaim.demo-alert-pvc"
 	PVCRuntimeObject, ok := p.objects[PVCUniqueID]
 	if !ok {
 		return nil
@@ -210,13 +210,13 @@ func (p *AlertPatcher) patchPersistentStorage() error {
 func (p *AlertPatcher) patchStandAlone() error {
 	if (p.alert.Spec.StandAlone == synopsysv1.StandAlone{}) {
 		// Remove Cfssl Resources
-		uniqueID := "ReplicationController.default.demo-alert-cfssl"
+		uniqueID := "ReplicationController.demo-alert-cfssl"
 		delete(p.objects, uniqueID)
-		uniqueID = "Service.default.demo-alert-cfssl"
+		uniqueID = "Service.demo-alert-cfssl"
 		delete(p.objects, uniqueID)
 
 		// Add Environ to use BlackDuck Cfssl
-		ConfigMapUniqueID := "ConfigMap.default.demo-alert-blackduck-config"
+		ConfigMapUniqueID := "ConfigMap.demo-alert-blackduck-config"
 		configMapRuntimeObject, ok := p.objects[ConfigMapUniqueID]
 		if !ok {
 			return nil
@@ -224,7 +224,7 @@ func (p *AlertPatcher) patchStandAlone() error {
 		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
 		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alert.Name, "alert", "cfssl")
 	} else {
-		uniqueID := "ReplicationController.default.demo-alert-cfssl"
+		uniqueID := "ReplicationController.demo-alert-cfssl"
 		alertCfsslReplicationControllerRuntimeObject, ok := p.objects[uniqueID]
 		if !ok {
 			return nil
@@ -241,9 +241,9 @@ func (p *AlertPatcher) patchStandAlone() error {
 }
 
 func (p *AlertPatcher) patchExposeUserInterface() error {
-	nodePortUniqueID := "Service.default.demo-alert-exposed"
-	loadbalancerUniqueID := "Service.default.demo-alert-exposed"
-	routeUniqueID := "Service.default.demo-alert-exposed"
+	nodePortUniqueID := "Service.demo-alert-exposed"
+	loadbalancerUniqueID := "Service.demo-alert-exposed"
+	routeUniqueID := "Service.demo-alert-exposed"
 	switch p.alert.Spec.ExposeService {
 	case "NODEPORT":
 		delete(p.objects, loadbalancerUniqueID)

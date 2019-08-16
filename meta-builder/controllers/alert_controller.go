@@ -95,9 +95,9 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 	return objs, nil
 }
 
-func (r *AlertReconciler) GetInstructionManual() (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
-	instructionManualFile := "https://raw.githubusercontent.com/yashbhutwala/kb-synopsys-operator/master/config/samples/dependency_sample_alert.yaml"
-	instructionManual, err := controllers_utils.CreateInstructionManual(instructionManualFile)
+func (r *AlertReconciler) GetInstructionManual(obj map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
+	//instructionManualFile := "https://raw.githubusercontent.com/yashbhutwala/kb-synopsys-operator/master/config/samples/dependency_sample_alert.yaml"
+	instructionManual, err := controllers_utils.CreateInstructionManual(obj)
 	if err != nil {
 		return nil, err
 	}

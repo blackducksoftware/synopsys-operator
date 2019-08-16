@@ -1,0 +1,1682 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: cfssl
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-cfssl
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: cfssl
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: cfssl
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-cfssl
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: blackduck-config
+          image: docker.io/blackducksoftware/blackduck-cfssl:1.0.0
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - http://localhost:8888/api/v1/cfssl/scaninfo
+            failureThreshold: 10
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: cfssl
+          ports:
+            - containerPort: 8888
+              protocol: TCP
+          resources:
+            limits:
+              memory: 640M
+            requests:
+              memory: 640M
+          volumeMounts:
+            - mountPath: /etc/cfssl
+              name: dir-cfssl
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - name: dir-cfssl
+          persistentVolumeClaim:
+            claimName: blackduck-cfssl
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: webserver
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-webserver
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: webserver
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: webserver
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-webserver
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: blackduck-config
+          image: docker.io/blackducksoftware/blackduck-nginx:1.0.7
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - https://localhost:8443/health-checks/liveness
+                - /tmp/secrets/WEBSERVER_CUSTOM_CERT_FILE
+            failureThreshold: 10
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: webserver
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          resources:
+            limits:
+              memory: 512M
+            requests:
+              memory: 512M
+          volumeMounts:
+            - mountPath: /opt/blackduck/hub/webserver/security
+              name: dir-webserver
+            - mountPath: /tmp/secrets/WEBSERVER_CUSTOM_CERT_FILE
+              name: certificate
+              subPath: WEBSERVER_CUSTOM_CERT_FILE
+            - mountPath: /tmp/secrets/WEBSERVER_CUSTOM_KEY_FILE
+              name: certificate
+              subPath: WEBSERVER_CUSTOM_KEY_FILE
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - emptyDir: {}
+          name: dir-webserver
+        - name: certificate
+          secret:
+            defaultMode: 292
+            secretName: blackduck-webserver-certificate
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: documentation
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-documentation
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: documentation
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: documentation
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-documentation
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: blackduck-config
+          image: docker.io/blackducksoftware/blackduck-documentation:2019.6.1
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - https://127.0.0.1:8443/hubdoc/health-checks/liveness
+                - /opt/blackduck/hub/hub-documentation/security/root.crt
+            failureThreshold: 10
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: documentation
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          resources:
+            limits:
+              memory: 512M
+            requests:
+              memory: 512M
+          volumeMounts:
+            - mountPath: /opt/blackduck/hub/hub-documentation/security
+              name: dir-documentation
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - emptyDir: {}
+          name: dir-documentation
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: registration
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-registration
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: registration
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: registration
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-registration
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: blackduck-config
+          image: docker.io/blackducksoftware/blackduck-registration:2019.6.1
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - https://localhost:8443/registration/health-checks/liveness
+                - /opt/blackduck/hub/hub-registration/security/root.crt
+                - /opt/blackduck/hub/hub-registration/security/blackduck_system.crt
+                - /opt/blackduck/hub/hub-registration/security/blackduck_system.key
+            failureThreshold: 10
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: registration
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          resources:
+            limits:
+              memory: 1G
+            requests:
+              cpu: "1"
+              memory: 1G
+          volumeMounts:
+            - mountPath: /opt/blackduck/hub/hub-registration/config
+              name: dir-registration
+            - mountPath: /opt/blackduck/hub/hub-registration/security
+              name: dir-registration-security
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - name: dir-registration
+          persistentVolumeClaim:
+            claimName: blackduck-registration
+        - emptyDir: {}
+          name: dir-registration-security
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: zookeeper
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-zookeeper
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: zookeeper
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: zookeeper
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-zookeeper
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: blackduck-config
+          image: docker.io/blackducksoftware/blackduck-zookeeper:1.0.0
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - zkServer.sh
+                - status
+                - /opt/blackduck/zookeeper/conf/zoo.cfg
+            failureThreshold: 10
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: zookeeper
+          ports:
+            - containerPort: 2181
+              protocol: TCP
+          resources:
+            limits:
+              memory: 640M
+            requests:
+              cpu: "1"
+              memory: 640M
+          volumeMounts:
+            - mountPath: /opt/blackduck/zookeeper/data
+              name: dir-zookeeper
+              subPath: data
+            - mountPath: /opt/blackduck/zookeeper/datalog
+              name: dir-zookeeper
+              subPath: datalog
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - name: dir-zookeeper
+          persistentVolumeClaim:
+            claimName: blackduck-zookeeper
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: jobrunner
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-jobrunner
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: jobrunner
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: jobrunner
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-jobrunner
+    spec:
+      containers:
+        - env:
+            - name: HUB_MAX_MEMORY
+              value: 4096m
+          envFrom:
+            - configMapRef:
+                name: blackduck-config
+            - configMapRef:
+                name: blackduck-db-config
+          image: docker.io/blackducksoftware/blackduck-jobrunner:2019.6.1
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+            failureThreshold: 10
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: jobrunner
+          ports:
+            - containerPort: 3001
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4608M
+            requests:
+              cpu: "1"
+              memory: 4608M
+          volumeMounts:
+            - mountPath: /tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              name: db-passwords
+              subPath: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+            - mountPath: /tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE
+              name: db-passwords
+              subPath: HUB_POSTGRES_USER_PASSWORD_FILE
+            - mountPath: /opt/blackduck/hub/jobrunner/security
+              name: dir-jobrunner
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - name: db-passwords
+          secret:
+            defaultMode: 420
+            items:
+              - key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+                mode: 420
+                path: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              - key: HUB_POSTGRES_USER_PASSWORD_FILE
+                mode: 420
+                path: HUB_POSTGRES_USER_PASSWORD_FILE
+            secretName: blackduck-db-creds
+        - emptyDir: {}
+          name: dir-jobrunner
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: scan
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-scan
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: scan
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: scan
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-scan
+    spec:
+      containers:
+        - env:
+            - name: HUB_MAX_MEMORY
+              value: 2048m
+          envFrom:
+            - configMapRef:
+                name: blackduck-config
+            - configMapRef:
+                name: blackduck-db-config
+          image: docker.io/blackducksoftware/blackduck-scan:2019.6.1
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - https://127.0.0.1:8443/api/health-checks/liveness
+                - /opt/blackduck/hub/hub-scan/security/root.crt
+                - /opt/blackduck/hub/hub-scan/security/blackduck_system.crt
+                - /opt/blackduck/hub/hub-scan/security/blackduck_system.key
+            failureThreshold: 10
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: scan
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          resources:
+            limits:
+              memory: 2560M
+            requests:
+              memory: 2560M
+          volumeMounts:
+            - mountPath: /tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              name: db-passwords
+              subPath: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+            - mountPath: /tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE
+              name: db-passwords
+              subPath: HUB_POSTGRES_USER_PASSWORD_FILE
+            - mountPath: /opt/blackduck/hub/hub-scan/security
+              name: dir-scan
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - emptyDir: {}
+          name: dir-scan
+        - name: db-passwords
+          secret:
+            defaultMode: 420
+            items:
+              - key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+                mode: 420
+                path: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              - key: HUB_POSTGRES_USER_PASSWORD_FILE
+                mode: 420
+                path: HUB_POSTGRES_USER_PASSWORD_FILE
+            secretName: blackduck-db-creds
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: authentication
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-authentication
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: authentication
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: authentication
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-authentication
+    spec:
+      containers:
+        - env:
+            - name: HUB_MAX_MEMORY
+              value: 512m
+          envFrom:
+            - configMapRef:
+                name: blackduck-db-config
+            - configMapRef:
+                name: blackduck-config
+          image: docker.io/blackducksoftware/blackduck-authentication:2019.6.1
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - https://127.0.0.1:8443/api/health-checks/liveness
+                - /opt/blackduck/hub/hub-authentication/security/root.crt
+                - /opt/blackduck/hub/hub-authentication/security/blackduck_system.crt
+                - /opt/blackduck/hub/hub-authentication/security/blackduck_system.key
+            failureThreshold: 10
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: authentication
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          resources:
+            limits:
+              memory: 1024M
+            requests:
+              memory: 1024M
+          volumeMounts:
+            - mountPath: /tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              name: db-passwords
+              subPath: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+            - mountPath: /tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE
+              name: db-passwords
+              subPath: HUB_POSTGRES_USER_PASSWORD_FILE
+            - mountPath: /opt/blackduck/hub/hub-authentication/ldap
+              name: dir-authentication
+            - mountPath: /opt/blackduck/hub/hub-authentication/security
+              name: dir-authentication-security
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - name: dir-authentication
+          persistentVolumeClaim:
+            claimName: blackduck-authentication
+        - name: db-passwords
+          secret:
+            defaultMode: 420
+            items:
+              - key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+                mode: 420
+                path: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              - key: HUB_POSTGRES_USER_PASSWORD_FILE
+                mode: 420
+                path: HUB_POSTGRES_USER_PASSWORD_FILE
+            secretName: blackduck-db-creds
+        - emptyDir: {}
+          name: dir-authentication-security
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: webapp-logstash
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-webapp-logstash
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: webapp-logstash
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: webapp-logstash
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-webapp-logstash
+    spec:
+      containers:
+        - env:
+            - name: HUB_MAX_MEMORY
+              value: 2048m
+          envFrom:
+            - configMapRef:
+                name: blackduck-config
+            - configMapRef:
+                name: blackduck-db-config
+          image: docker.io/blackducksoftware/blackduck-webapp:2019.6.1
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - https://127.0.0.1:8443/api/health-checks/liveness
+                - /opt/blackduck/hub/hub-webapp/security/root.crt
+                - /opt/blackduck/hub/hub-webapp/security/blackduck_system.crt
+                - /opt/blackduck/hub/hub-webapp/security/blackduck_system.key
+            failureThreshold: 1000
+            initialDelaySeconds: 360
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: webapp
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          resources:
+            limits:
+              memory: 2560M
+            requests:
+              cpu: "1"
+              memory: 2560M
+          volumeMounts:
+            - mountPath: /tmp/secrets/HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              name: db-passwords
+              subPath: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+            - mountPath: /tmp/secrets/HUB_POSTGRES_USER_PASSWORD_FILE
+              name: db-passwords
+              subPath: HUB_POSTGRES_USER_PASSWORD_FILE
+            - mountPath: /opt/blackduck/hub/hub-webapp/ldap
+              name: dir-webapp
+            - mountPath: /opt/blackduck/hub/hub-webapp/security
+              name: dir-webapp-security
+            - mountPath: /opt/blackduck/hub/logs
+              name: dir-logstash
+        - envFrom:
+            - configMapRef:
+                name: blackduck-config
+          image: docker.io/blackducksoftware/blackduck-logstash:1.0.4
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/docker-healthcheck.sh
+                - http://localhost:9600/
+            failureThreshold: 1000
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: logstash
+          ports:
+            - containerPort: 5044
+              protocol: TCP
+          resources:
+            limits:
+              memory: 1G
+            requests:
+              memory: 1G
+          volumeMounts:
+            - mountPath: /var/lib/logstash/data
+              name: dir-logstash
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - emptyDir: {}
+          name: dir-webapp-security
+        - name: dir-webapp
+          persistentVolumeClaim:
+            claimName: blackduck-webapp
+        - name: dir-logstash
+          persistentVolumeClaim:
+            claimName: blackduck-logstash
+        - name: db-passwords
+          secret:
+            defaultMode: 420
+            items:
+              - key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+                mode: 420
+                path: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              - key: HUB_POSTGRES_USER_PASSWORD_FILE
+                mode: 420
+                path: HUB_POSTGRES_USER_PASSWORD_FILE
+            secretName: blackduck-db-creds
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    app: blackduck
+    component: uploadcache
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-uploadcache
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: uploadcache
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: uploadcache
+        name: blackduck
+        version: 2019.6.1
+      name: blackduck-uploadcache
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: blackduck-config
+          image: docker.io/blackducksoftware/blackduck-upload-cache:1.0.8
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - --insecure
+                - -X
+                - GET
+                - --verbose
+                - http://localhost:8086/live?full=1
+            failureThreshold: 5
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            timeoutSeconds: 10
+          name: uploadcache
+          ports:
+            - containerPort: 9443
+              protocol: TCP
+            - containerPort: 9444
+              protocol: TCP
+          resources:
+            limits:
+              memory: 512M
+            requests:
+              memory: 512M
+          volumeMounts:
+            - mountPath: /opt/blackduck/hub/blackduck-upload-cache/security
+              name: dir-uploadcache-security
+            - mountPath: /opt/blackduck/hub/blackduck-upload-cache/uploads
+              name: dir-uploadcache-data
+              subPath: uploads
+            - mountPath: /opt/blackduck/hub/blackduck-upload-cache/keys
+              name: dir-uploadcache-data
+              subPath: keys
+            - mountPath: /tmp/secrets
+              name: dir-seal-key
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      volumes:
+        - emptyDir: {}
+          name: dir-uploadcache-security
+        - name: dir-uploadcache-data
+          persistentVolumeClaim:
+            claimName: blackduck-uploadcache-data
+        - name: dir-seal-key
+          secret:
+            defaultMode: 292
+            secretName: blackduck-upload-cache
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: cfssl
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-cfssl
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-8888
+      port: 8888
+      protocol: TCP
+      targetPort: 8888
+  selector:
+    app: blackduck
+    component: cfssl
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: nul
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: webserver
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-webserver
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-443
+      port: 443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    app: blackduck
+    component: webserver
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: documentation
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-documentation
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-8443
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    app: blackduck
+    component: documentation
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  annotations:
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: registration
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-registration
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-8443
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    app: blackduck
+    component: registration
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: zookeeper
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-zookeeper
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-2181
+      port: 2181
+      protocol: TCP
+      targetPort: 2181
+  selector:
+    app: blackduck
+    component: zookeeper
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: scan
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-scan
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-8443
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    app: blackduck
+    component: scan
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: authentication
+    name: blackduck
+    version: 2019.6.1
+  name: authentication
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-8443
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    app: blackduck
+    component: authentication
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: webapp-logstash
+    name: blackduck
+    version: 2019.6.1
+  name: webapp
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-8443
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    app: blackduck
+    component: webapp-logstash
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: webapp-logstash
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-logstash
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-5044
+      port: 5044
+      protocol: TCP
+      targetPort: 5044
+  selector:
+    app: blackduck
+    component: webapp-logstash
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
+    app: blackduck
+    component: uploadcache
+    name: blackduck
+    version: 2019.6.1
+  name: uploadcache
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-9443
+      port: 9443
+      protocol: TCP
+      targetPort: 9443
+    - name: port-9444
+      port: 9444
+      protocol: TCP
+      targetPort: 9444
+  selector:
+    app: blackduck
+    component: uploadcache
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+data:
+  BLACKDUCK_CFSSL_HOST: blackduck-cfssl
+  BLACKDUCK_CFSSL_PORT: "8888"
+  BROKER_URL: amqps://blackduck-rabbitmq/protecodesc
+  BROKER_USE_SSL: "yes"
+  CFSSL: blackduck-cfssl:8888
+  CLIENT_CERT_CN: blackduck-binaryscanner
+  DATA_RETENTION_IN_DAYS: "180"
+  ENABLE_SOURCE_UPLOADS: "false"
+  HTTPS_VERIFY_CERTS: "yes"
+  HUB_CFSSL_HOST: blackduck-cfssl
+  HUB_DOC_HOST: blackduck-documentation
+  HUB_JOBRUNNER_HOST: blackduck-jobrunner
+  HUB_LOGSTASH_HOST: blackduck-logstash
+  HUB_REGISTRATION_HOST: blackduck-registration
+  HUB_SCAN_HOST: blackduck-scan
+  HUB_SOLR_HOST: blackduck-solr
+  HUB_VERSION: ${HUB_VERSION}
+  HUB_WEBSERVER_HOST: blackduck-webserver
+  HUB_ZOOKEEPER_HOST: blackduck-zookeeper
+  IPV4_ONLY: "0"
+  MAX_TOTAL_SOURCE_SIZE_MB: "4000"
+  RABBIT_MQ_HOST: blackduck-rabbitmq
+  RABBIT_MQ_PORT: "5671"
+  RABBITMQ_DEFAULT_VHOST: protecodesc
+  RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT: "false"
+  RUN_SECRETS_DIR: /tmp/secrets
+  SCANNER_CONCURRENCY: "1"
+  USE_ALERT: "0"
+  USE_BINARY_UPLOADS: "0"
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "ConfigMap"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: configmap
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-config
+  namespace: blackduck
+
+---
+apiVersion: v1
+data:
+  WEBSERVER_CUSTOM_CERT_FILE: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVGakNDQXY2Z0F3SUJBZ0lSQS8vLy8vLy8vLy8vLy8vLy8vLy8vLzh3RFFZSktvWklodmNOQVFFTEJRQXcKZ2FVeEN6QUpCZ05WQkFZVEFsVlRNUll3RkFZRFZRUUlFdzFOWVhOellXTm9kWE5sZEhSek1STXdFUVlEVlFRSApFd3BDZFhKc2FXNW5kRzl1TVJ3d0dnWURWUVFKRXhNNE1EQWdSR2x6ZEhKcFkzUWdRWFpsYm5WbE1SOHdIUVlEClZRUUtFeFpDYkdGamF5QkVkV05ySUVKNUlGTjVibTl3YzNsek1SVXdFd1lEVlFRTEV3eERiRzkxWkNCT1lYUnAKZG1VeEV6QVJCZ05WQkFNVENrSnNZV05ySUVSMVkyc3dIaGNOTVRrd09ERXpNRGt4TmpJNFdoY05Nakl3T0RFeQpNRGt4TmpJNFdqQ0JwVEVMTUFrR0ExVUVCaE1DVlZNeEZqQVVCZ05WQkFnVERVMWhjM05oWTJoMWMyVjBkSE14CkV6QVJCZ05WQkFjVENrSjFjbXhwYm1kMGIyNHhIREFhQmdOVkJBa1RFemd3TUNCRWFYTjBjbWxqZENCQmRtVnUKZFdVeEh6QWRCZ05WQkFvVEZrSnNZV05ySUVSMVkyc2dRbmtnVTNsdWIzQnplWE14RlRBVEJnTlZCQXNUREVOcwpiM1ZrSUU1aGRHbDJaVEVUTUJFR0ExVUVBeE1LUW14aFkyc2dSSFZqYXpDQ0FTSXdEUVlKS29aSWh2Y05BUUVCCkJRQURnZ0VQQURDQ0FRb0NnZ0VCQUxLdHVoRTh1bGlWRCswRFp6M0ljb29NaHlvU1ZOZmxETU5BL2kzdi9DY1YKUitLL2ZDMmZ6SktKK2V6OHkzWi9IZ3FFQi9jWkpvZy9FOWROZ1dabnM3V0FsOStqWmE3dnpHbFYxV215eDk0cQpRRjBqcExPVlljNGJubzcwMURIdWVoazNneHZyc0lhcVNMcWVuWkFRUjNIdjN3Yll5REg4K3FZb2dpeU1pQXNZCkpTKy82SmdnSUl0TWprcVNBNFdLb0laWVdVaDNITUwwVnc0NnEyZHJzTFVtRW8wUEpnMzJJVVNzS05OMlNoUS8KbE44L2xJeE5SZEMyNTFuYlZ3dENNRXFTbG95bkJOMmRTVGtLbkVZR1krM0RCMTdYMWs3NFo4djRDc0RDaEtUZApadGVOZEJCQ2tneEZNd1lJam1TdTZWMGErdnVzK3RMN0pMU0NEQVdIOVE4Q0F3RUFBYU0vTUQwd0RnWURWUjBQCkFRSC9CQVFEQWdXZ01CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUNCZ2dyQmdFRkJRY0RBVEFNQmdOVkhSTUIKQWY4RUFqQUFNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUF1N1kxbWRjYWpsakZTNmlCK29zS0poRWhQUlZmNApKWlVaTUJVNjFqbGtHWTA0V2ZiSkx3QXNQYlNpekthUGRTTm0ySE9nUUNOL3JCQ0hMbU1TNkV0VEI2UFJkbll0ClU5aXBLd1FWNW9ZUmlocE9LQlAyQ09sS3NpNHMyV0hQL2VYVFZiY0REbUc4Z2M2NDlSQUc1UitXUXA4UkVCNW4KRlg3ckhOMEFpT2RFNndqbThaUjFtcjlwdUxyWWRmc25qczA0dUliRktVU0lqUUpoSVk0VW5OaW1xN1VzVUg2dgpERDlGcnRYK2Z2dmpkYnFkbEEvYTduRXRUM2FQUG53VkVwT0JsQjRlUHlYNFVKT2RqZjBvVzdGUW1aZ2hFQXprClI3TFBXenFwenFOTWxHWlBBclJBMHpYa1hnT0doTExpalFpRHN2YkdPZFJja3ZYSnhjeDJYcGhxCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  WEBSERVER_CUSTOM_KEY_FILE: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBc3EyNkVUeTZXSlVQN1FOblBjaHlpZ3lIS2hKVTErVU13MEQrTGUvOEp4Vkg0cjk4CkxaL01rb241N1B6TGRuOGVDb1FIOXhrbWlEOFQxMDJCWm1lenRZQ1gzNk5scnUvTWFWWFZhYkxIM2lwQVhTT2sKczVWaHpodWVqdlRVTWU1NkdUZURHK3V3aHFwSXVwNmRrQkJIY2UvZkJ0aklNZno2cGlpQ0xJeUlDeGdsTDcvbwptQ0FnaTB5T1NwSURoWXFnaGxoWlNIY2N3dlJYRGpxcloydXd0U1lTalE4bURmWWhSS3dvMDNaS0ZEK1UzeitVCmpFMUYwTGJuV2R0WEMwSXdTcEtXaktjRTNaMUpPUXFjUmdaajdjTUhYdGZXVHZobnkvZ0t3TUtFcE4xbTE0MTAKRUVLU0RFVXpCZ2lPWks3cFhScjYrNno2MHZza3RJSU1CWWYxRHdJREFRQUJBb0lCQUZaeXJ6OS92amoxaGNzSwpobnpoNm1qWVB0MGdHV1NMTVcyV21HUHBaSG9VVmI5akhkV0ZKeGtQSUppRWhueENiR3B5RHRpQ2xwMzh4c0M0Cmd3N2t4WkhmTVp2R0ZvQlpEUEU1MGhOZHFFM1k2Mk1reDU4TGUxS1pFbEhnS25vdUEyMEg2cXNya1REV1duSFEKSkRON2JOVzNWSlNmZGR5WnBUdVhCY1JBQ2VJemNWUXdYSFQ1ME9uVlpXb2lqRENVaGppNHZxc0Z4K3dFS0YvTwpUQ2V1SHFwV2JnY3Q1a3dIV1A5RFpjNFRVcDdKcFBuR2VtV3JuVTN5dGR4N0ZXcG14U1BRSmcxWlJlZUdneXhnCkE4SHNzbmd0czIrV2J0OVQ1V3FSdDVGcHk5NEFaQXNKbVdjYUJIYjAweVY1dVlPbjE1ODlZeE82anF4QUZpOWUKSVRPSzBNRUNnWUVBM2FqUm51RjBXUng4STBhQTc5Z1d6NWFBOFZxZ25wQnB2d0hFU2hlZFNwUEh5Q1M5ZWpibApDb0cxQjUzMExyTE1JamdzNWtuamR5SS9jK3BoKzBDK04rRUJsNnM5WTgrNWlyMnFlYjRGa3h4aFQ5bGlsbVg4Cm9uR25iOGIzNzZXYTN1QVZITWdQdiszUUVDalpUQlcrVHZWOUZjRVhiaUlHWXM2WEh3eWFXamtDZ1lFQXpseEIKZ1pLVVdhSTlyVklYU24wWisyVHpSLzNSOHF0Ny9sdko5WWRGS08yZmxtcU1SakZ5UVY2WEcrYWFhMU5GZnBMMQpNYnJiTThpWHg0bVBmMVhsMi9qaE81MWZodU9jelpyV1ROSlhoaFMyK2x4bGVGQ1AvMTNQUjdvZ294UklHZ0lFClprTFhuOE9CVytDNjRJcUxmb3EyaEg5TFNPSExzUEtqcFk0cGFZY0NnWUJzcUJySnBYOGhSNk5hcjI3NUk1WmIKQUU0SkFnSUdlSWc5eDZIdktCQkV4SmlFZGU0a0FORGFDNmN3S3EvT1RIdGdzdVRmcG96SWs1TkRRVHZ5ckZRUwpsRXZ4aTFHMm9kYzBPYkZkcUZhWFBLdy9Oakxyd3ViS3dxZnZWVHVvMENkUTVjdXpwaWFDVVJOVE9KTDhoeFFaCkpLSENqanJzRStYSmZiZjYwblMva1FLQmdFTWZSUHRsZHpXVWpTVkVMMmsrT2VaSWxzMVM1U2hlMlEwS1JDM0YKMnh3TjlydlJXbUUya2locklSR2xONU16V2NacS9MQTVURFdTeUxQUnJjaElZMlRpbGpoeTN2Q2NOcE8yQ29DZwpabkdwYVQ4VU1Ma3EwenZJQXJVYytLS3k1U1Q0aFAvU1BCcXVWL1JQcTlsL2x4SUpBb2NrZEpOM1JtNys3WFhiClFPTWZBb0dBZFJtSnFxOTJLY2NGaUw5MjhvbWNLSDVBUU9mdVk0MEVhMVJscjRuV0VKYnpVYzRHcTI2Q3lLbTIKNGtFaWMzejVmamQ5LzRna2xTTHVNY0dxNHU1L29xcmhDaFBQS3V1YzEyaGlRSVk2eW54bTU5bkpXTWpVRi9mbQpKMTE5dEFWQWc0S09mNTAwdlZXUkNYY1ZMUFhrS05yaUZ5OG9yUWc1K2o1cUtwSkVRYzQ9Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "Secret"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: secret
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-webserver-certificate
+  namespace: blackduck
+type: Opaque
+
+---
+apiVersion: v1
+data:
+  SEAL_KEY: ""
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "Secret"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: uploadcache
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-upload-cache
+  namespace: blackduck
+type: Opaque
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "Postgres"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secret_PVC"
+    app: blackduck
+    component: postgres
+    name: blackduck
+  name: blackduck-postgres
+  namespace: blackduck
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: postgres
+    name: blackduck
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blackduck
+        component: postgres
+        name: blackduck
+      name: blackduck-postgres
+    spec:
+      containers:
+        - env:
+            - name: POSTGRESQL_MAX_CONNECTIONS
+              value: "300"
+            - name: POSTGRESQL_SHARED_BUFFERS
+              value: 1024MB
+            - name: POSTGRESQL_DATABASE
+              value: blackduck
+            - name: POSTGRESQL_USER
+              value: blackduck
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+                  name: blackduck-db-creds
+            - name: POSTGRESQL_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: HUB_POSTGRES_POSTGRES_PASSWORD_FILE
+                  name: blackduck-db-creds
+          envFrom:
+            - configMapRef:
+                name: blackduck-db-config
+          image: registry.access.redhat.com/rhscl/postgresql-96-rhel7:1
+          imagePullPolicy: IfNotPresent
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - LD_LIBRARY_PATH=/opt/rh/rh-postgresql96/root/usr/lib64 /opt/rh/rh-postgresql96/root/usr/bin/pg_ctl
+                    -D /var/lib/pgsql/data/userdata -l logfile stop
+          name: blackduck-postgres
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - /opt/rh/rh-postgresql96/root/usr/bin/pg_isready -h localhost
+            failureThreshold: 10
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "1"
+              memory: 3072M
+          volumeMounts:
+            - mountPath: /var/lib/pgsql/data
+              name: postgres-data-volume
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - name: postgres-data-volume
+          persistentVolumeClaim:
+            claimName: blackduck-postgres
+status:
+  replicas: 0
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "Postgres"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secret"
+    app: blackduck
+    component: postgres
+    name: blackduck
+  name: blackduck-postgres
+  namespace: blackduck
+spec:
+  ports:
+    - name: port-5432
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+  selector:
+    app: blackduck
+    component: postgres
+    name: blackduck
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "ConfigMap"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: postgres
+    name: blackduck
+    version: 2019.8.0
+  name: blackduck-db-config
+  namespace: blackduck
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "Secret"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: postgres
+    name: blackduck
+    version: 2019.8.0
+  name: blackduck-db-creds
+  namespace: blackduck
+type: Opaque
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    operator.synopsys.com/group-id: "InitJob"
+    operator.synopsys.com/group-dependencies: "Postgres"
+  name: postgres-init-config
+  namespace: blackduck
+data:
+  init.sh: |-
+    #!/bin/bash
+
+    set -e
+
+    if [[ -z "$HUB_POSTGRES_HOST" ]]; then
+      echo "HUB_POSTGRES_HOST must be set"
+      exit 1
+    fi
+
+    if [[ `psql -h $HUB_POSTGRES_HOST -U postgres -c "SELECT datname FROM pg_catalog.pg_database WHERE datname='bds_hub';" --tuples-only | wc -l` -eq 1 ]]; then
+      echo "bds_hub is missing. Initializing the database..."
+
+      psql -h $HUB_POSTGRES_HOST -U postgres << EOF
+      CREATE USER blackduck_user WITH NOCREATEDB NOSUPERUSER NOREPLICATION NOBYPASSRLS PASSWORD '$HUB_POSTGRES_USER_PASSWORD_FILE';
+      CREATE USER blackduck_reporter;
+      CREATE DATABASE bds_hub owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;
+      CREATE DATABASE bds_hub_report owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;
+      CREATE DATABASE bdio owner blackduck TEMPLATE template0 ENCODING SQL_ASCII;
+      ALTER USER blackduck WITH NOCREATEDB SUPERUSER NOREPLICATION BYPASSRLS PASSWORD '$HUB_POSTGRES_ADMIN_PASSWORD_FILE';
+      \c bds_hub
+      CREATE EXTENSION pgcrypto;
+      CREATE SCHEMA st AUTHORIZATION blackduck;
+      GRANT USAGE ON SCHEMA st TO blackduck_user;
+      GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA st TO blackduck_user;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA st to blackduck_user;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA st GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;
+      ALTER DATABASE bds_hub SET standard_conforming_strings TO OFF;
+      \c bds_hub_report
+      GRANT SELECT ON ALL TABLES IN SCHEMA public TO blackduck_reporter;
+      ALTER DEFAULT PRIVILEGES FOR ROLE blackduck IN SCHEMA public GRANT SELECT ON TABLES TO blackduck_reporter;
+      GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA public TO blackduck_user;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public to blackduck_user;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, TRUNCATE, DELETE, REFERENCES ON TABLES TO blackduck_user;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO blackduck_user;
+      ALTER DATABASE bds_hub_report SET standard_conforming_strings TO OFF;
+      \c bdio
+      GRANT ALL PRIVILEGES ON DATABASE bdio TO blackduck_user;
+      ALTER DATABASE bdio SET standard_conforming_strings TO ON;
+      ALTER SYSTEM SET autovacuum TO 'on';
+      ALTER SYSTEM SET autovacuum_max_workers TO '20';
+      ALTER SYSTEM SET autovacuum_vacuum_cost_limit TO '2000';
+      ALTER SYSTEM SET autovacuum_vacuum_cost_delay TO '10ms';
+      ALTER SYSTEM SET checkpoint_completion_target TO '0.8';
+      ALTER SYSTEM SET max_wal_size TO '8GB';
+      ALTER SYSTEM SET checkpoint_timeout TO '30min';
+      ALTER SYSTEM SET constraint_exclusion TO 'partition';
+      ALTER SYSTEM SET default_statistics_target TO '100';
+      ALTER SYSTEM SET effective_cache_size TO '256MB';
+      ALTER SYSTEM SET escape_string_warning TO 'off';
+      ALTER SYSTEM SET log_destination TO 'stderr';
+      ALTER SYSTEM SET log_directory TO 'pg_log';
+      ALTER SYSTEM SET log_filename TO 'postgresql_%a.log';
+      ALTER SYSTEM SET log_line_prefix TO '%m %p ';
+      ALTER SYSTEM SET log_rotation_age TO '1440';
+      ALTER SYSTEM SET log_truncate_on_rotation TO 'on';
+      ALTER SYSTEM SET logging_collector TO 'on';
+      ALTER SYSTEM SET maintenance_work_mem TO '32MB';
+      ALTER SYSTEM SET max_connections TO '300';
+      ALTER SYSTEM SET max_locks_per_transaction TO '256';
+      ALTER SYSTEM SET random_page_cost TO '4.0';
+      ALTER SYSTEM SET standard_conforming_strings TO 'off';
+      ALTER SYSTEM SET temp_buffers TO '16MB';
+      ALTER SYSTEM SET work_mem TO '32MB';
+      SELECT pg_reload_conf();
+    EOF
+    fi
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    operator.synopsys.com/group-id: "InitJob"
+    operator.synopsys.com/group-dependencies: "Postgres"
+  name: blackduck-init-postgres
+  namespace: blackduck
+spec:
+  template:
+    spec:
+      volumes:
+        - name: postgres-init
+          configMap:
+            defaultMode: 0777
+            name: postgres-init-config
+      containers:
+        - name: postgres-init
+          image: registry.access.redhat.com/rhscl/postgresql-96-rhel7:1
+          command: ["/bin/bash"]
+          args: ["-c", "sleep 30; /tmp/postgres-init/init.sh"]
+          volumeMounts:
+            - mountPath: /tmp/postgres-init
+              name: postgres-init
+          envFrom:
+            - configMapRef:
+                name: blackduck-db-config
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: HUB_POSTGRES_POSTGRES_PASSWORD_FILE
+                  name: blackduck-db-creds
+            - name: HUB_POSTGRES_USER_PASSWORD_FILE
+              valueFrom:
+                secretKeyRef:
+                  key: HUB_POSTGRES_USER_PASSWORD_FILE
+                  name: blackduck-db-creds
+            - name: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+              valueFrom:
+                secretKeyRef:
+                  key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
+                  name: blackduck-db-creds
+      restartPolicy: Never
+  backoffLimit: 4
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-postgres
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 150Gi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-webapp
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-zookeeper
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-uploadcache-data
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-authentication
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-cfssl
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-registration
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-solr
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "PVC"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: pvc
+    name: test
+  name: blackduck-logstash
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+status: {}
+
