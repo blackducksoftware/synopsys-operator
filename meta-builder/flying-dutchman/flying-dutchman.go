@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	//"k8s.io/apimachinery/pkg/util/strategicpatch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -142,18 +143,22 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 	// iterate through the given dependencies in the instruction manual and add the dependency edge for the tasks
 	for _, dependency := range instructionManual.Dependencies {
 		child := dependency.Obj
-		parent := dependency.IsDependentOn
+		parents := dependency.IsDependentOn
 		// get all RuntimeObjects for the Tail
 		listOfChildRuntimeObjects, ok := instructionManual.Groups[child]
 		if !ok {
 			// no group due to single object name
 			listOfChildRuntimeObjects = []string{child}
 		}
+
+		var listOfParentRuntimeObjects []string
 		// get all RuntimeObjects for the Head
-		listOfParentRuntimeObjects, ok := instructionManual.Groups[parent]
-		if !ok {
-			// no group due to single object name
-			listOfParentRuntimeObjects = []string{parent}
+		for _, parent := range parents {
+			listOfParentRuntimeObjects, ok = instructionManual.Groups[parent]
+			if !ok {
+				// no group due to single object name
+				listOfParentRuntimeObjects = []string{parent}
+			}
 		}
 		// Create dependencies from each tail to each head
 		for _, childRuntimeObjectUniqueId := range listOfChildRuntimeObjects {
@@ -178,6 +183,9 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.Logger, desiredRuntimeObject runtime.Object) (ctrl.Result, error) {
 	// TODO: either get this working or wait for server side apply
 	// TODO: https://github.com/kubernetes-sigs/controller-runtime/issues/347
+	// TODO: https://github.com/kubernetes/kubernetes/issues/73723
+	// TODO: https://github.com/kubernetes-sigs/structured-merge-diff
+	// TODO: https://github.com/kubernetes/apimachinery/tree/master/pkg/util/strategicpatch
 	// TODO: https://github.com/kubernetes-sigs/controller-runtime/issues/464
 	// TODO: https://godoc.org/sigs.k8s.io/controller-runtime/pkg/controller/controllerutil#CreateOrUpdate
 
@@ -329,6 +337,7 @@ func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object) (c
 	if equality.Semantic.DeepEqual(existing, obj) {
 		return controllerutil.OperationResultNone, nil
 	}
+	//strategicpatch.CreateTwoWayMergePatch(existing, obj, )
 
 	if err := c.Update(ctx, obj); err != nil {
 		// CHANGE #3

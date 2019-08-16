@@ -8,49 +8,54 @@ import (
 	"strings"
 )
 
-func CreateInstructionManual(objects map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
+func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 
 	dependencyYamlStruct := &flying_dutchman.RuntimeObjectDependencyYaml{}
 
 	accessor := meta.NewAccessor()
 
-	for k, v := range objects {
-		labels, err := accessor.Labels(v)
+	for uniqueId, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
+		labels, err := accessor.Labels(desiredRuntimeObject)
 		if err != nil {
 			return nil, err
 		}
 
 		group, ok := labels["operator.synopsys.com/group-id"]
 		if !ok {
-			return nil, fmt.Errorf("couldn't retrieve group label of %s", k)
+			return nil, fmt.Errorf("couldn't retrieve group label of %s", uniqueId)
 		}
+
 		if dependencyYamlStruct.Groups == nil {
 			dependencyYamlStruct.Groups = make(map[string][]string)
 		}
-		dependencyYamlStruct.Groups[group] = append(dependencyYamlStruct.Groups[group], k)
+		dependencyYamlStruct.Groups[group] = append(dependencyYamlStruct.Groups[group], uniqueId)
 
 		dependencies, ok := labels["operator.synopsys.com/group-dependencies"]
 		if !ok {
-			return nil, fmt.Errorf("couldn't retrieve group dependencies of %s", k)
+			return nil, fmt.Errorf("couldn't retrieve group dependencies of %s", uniqueId)
 		}
-		// TODO have RuntimeObjectDependency take an array of dependencies
+
 		if len(dependencies) > 0 {
-			for _, dep := range strings.Split(dependencies, "_") {
+			for _, dependency := range strings.Split(dependencies, "_") {
+
 				isDepAlreadyPresent := false
 				for _, value := range dependencyYamlStruct.Dependencies {
-					if strings.Compare(value.Obj, group) == 0 && strings.Compare(value.IsDependentOn, strings.TrimSpace(dep)) == 0 {
+					if strings.Compare(value.Obj, group) == 0 {
+						value.IsDependentOn = append(value.IsDependentOn, strings.TrimSpace(dependency))
 						isDepAlreadyPresent = true
 						break
 					}
 				}
+
 				if !isDepAlreadyPresent {
 					dependencyYamlStruct.Dependencies = append(dependencyYamlStruct.Dependencies, flying_dutchman.RuntimeObjectDependency{
 						Obj:           group,
-						IsDependentOn: strings.TrimSpace(dep),
+						IsDependentOn: []string{strings.TrimSpace(dependency)},
 					})
 				}
 			}
 		}
+
 	}
 
 	return dependencyYamlStruct, nil

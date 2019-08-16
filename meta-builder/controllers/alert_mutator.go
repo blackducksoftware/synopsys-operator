@@ -27,21 +27,23 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func patchAlert(alert *synopsysv1.Alert, objects map[string]runtime.Object) map[string]runtime.Object {
+func patchAlert(alertCr *synopsysv1.Alert, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, accessor meta.MetadataAccessor) map[string]runtime.Object {
 	patcher := AlertPatcher{
-		alert:   alert,
-		objects: objects,
+		alertCr:                          alertCr,
+		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
+		accessor:                         accessor,
 	}
 	return patcher.patch()
 }
 
 type AlertPatcher struct {
-	alert   *synopsysv1.Alert
-	objects map[string]runtime.Object
+	alertCr                          *synopsysv1.Alert
+	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
+	accessor                         meta.MetadataAccessor
 }
 
 func (p *AlertPatcher) patch() map[string]runtime.Object {
-	patches := [](func() error){
+	patches := []func() error{
 		p.patchNamespace,
 		p.patchEnvirons,
 		p.patchSecrets,
@@ -57,25 +59,24 @@ func (p *AlertPatcher) patch() map[string]runtime.Object {
 		}
 	}
 
-	return p.objects
+	return p.mapOfUniqueIdToBaseRuntimeObject
 }
 
 func (p *AlertPatcher) patchNamespace() error {
-	accessor := meta.NewAccessor()
-	for _, runtimeObject := range p.objects {
-		accessor.SetNamespace(runtimeObject, p.alert.Spec.Namespace)
+	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+		p.accessor.SetNamespace(runtimeObject, p.alertCr.Spec.Namespace)
 	}
 	return nil
 }
 
 func (p *AlertPatcher) patchEnvirons() error {
 	ConfigMapUniqueID := "ConfigMap.demo-alert-blackduck-config"
-	configMapRuntimeObject, ok := p.objects[ConfigMapUniqueID]
+	configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
 	if !ok {
 		return nil
 	}
 	configMap := configMapRuntimeObject.(*corev1.ConfigMap)
-	for _, e := range p.alert.Spec.Environs {
+	for _, e := range p.alertCr.Spec.Environs {
 		vals := strings.Split(e, ":") // TODO - doesn't handle multiple colons
 		if len(vals) != 2 {
 			fmt.Printf("Could not split environ '%s' on ':'\n", e) // TODO change to log
@@ -90,12 +91,12 @@ func (p *AlertPatcher) patchEnvirons() error {
 
 func (p *AlertPatcher) patchSecrets() error {
 	SecretUniqueID := "Secret.demo-alert-secret"
-	secretRuntimeObject, ok := p.objects[SecretUniqueID]
+	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
 	if !ok {
 		return nil
 	}
 	secret := secretRuntimeObject.(*corev1.Secret)
-	for _, s := range p.alert.Spec.Environs {
+	for _, s := range p.alertCr.Spec.Environs {
 		vals := strings.Split(s, ":") // TODO - doesn't handle multiple colons
 		if len(vals) != 2 {
 			fmt.Printf("Could not split environ '%s' on ':'\n", s) // TODO change to log
@@ -109,11 +110,10 @@ func (p *AlertPatcher) patchSecrets() error {
 }
 
 func (p *AlertPatcher) patchDesiredState() error {
-	accessor := meta.NewAccessor()
-	if strings.EqualFold(p.alert.Spec.DesiredState, "STOP") {
-		for uniqueID, runtimeObject := range p.objects {
-			if k, _ := accessor.Kind(runtimeObject); k != "PersistentVolumeClaim" {
-				delete(p.objects, uniqueID)
+	if strings.EqualFold(p.alertCr.Spec.DesiredState, "STOP") {
+		for uniqueID, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+			if k, _ := p.accessor.Kind(runtimeObject); k != "PersistentVolumeClaim" {
+				delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
 			}
 		}
 	}
@@ -121,18 +121,18 @@ func (p *AlertPatcher) patchDesiredState() error {
 }
 
 func (p *AlertPatcher) patchPort() error {
-	port := *p.alert.Spec.Port
-	ReplicationContollerUniqueID := "ReplicationController.demo-alert-alert"
-	replicationControllerRuntimeObject, ok := p.objects[ReplicationContollerUniqueID]
+	ReplicationControllerUniqueID := "ReplicationController.demo-alert-alert"
+	replicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ReplicationControllerUniqueID]
 	if !ok {
 		return nil
 	}
 	replicationController := replicationControllerRuntimeObject.(*corev1.ReplicationController)
+	port := *p.alertCr.Spec.Port
 	replicationController.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = port
 	replicationController.Spec.Template.Spec.Containers[0].Ports[0].Protocol = corev1.ProtocolTCP
 
-	ServiceUniqueID := "Service.default.demo-alert-alert"
-	serviceRuntimeObject, ok := p.objects[ServiceUniqueID]
+	ServiceUniqueID := "Service.default.demo-alertCr-alertCr"
+	serviceRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ServiceUniqueID]
 	if !ok {
 		return nil
 	}
@@ -142,8 +142,8 @@ func (p *AlertPatcher) patchPort() error {
 	service.Spec.Ports[0].TargetPort = intstr.IntOrString{IntVal: port}
 	service.Spec.Ports[0].Protocol = corev1.ProtocolTCP
 
-	ServiceExposedUniqueID := "Service.default.demo-alert-exposed"
-	serviceExposedRuntimeObject, ok := p.objects[ServiceExposedUniqueID]
+	ServiceExposedUniqueID := "Service.default.demo-alertCr-exposed"
+	serviceExposedRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ServiceExposedUniqueID]
 	if !ok {
 		return nil
 	}
@@ -153,54 +153,54 @@ func (p *AlertPatcher) patchPort() error {
 	service.Spec.Ports[0].TargetPort = intstr.IntOrString{IntVal: port}
 	service.Spec.Ports[0].Protocol = corev1.ProtocolTCP
 
-	// TODO: Support Openshift Routes
-	// RouteUniqueID := "Route.default.demo-alert-route"
-	// routeRuntimeObject := p.objects[RouteUniqueID]
+	// TODO: Support OpenShift Routes
+	// RouteUniqueID := "Route.default.demo-alertCr-route"
+	// routeRuntimeObject := p.mapOfUniqueIdToBaseRuntimeObject[RouteUniqueID]
 
 	return nil
 }
 
 func (p *AlertPatcher) patchAlertImage() error {
 	uniqueID := "ReplicationController.demo-alert-alert"
-	alertReplicationControllerRuntimeObject, ok := p.objects[uniqueID]
+	alertReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
 	if !ok {
 		return nil
 	}
 	alertReplicationController := alertReplicationControllerRuntimeObject.(*corev1.ReplicationController)
-	alertReplicationController.Spec.Template.Spec.Containers[0].Image = p.alert.Spec.AlertImage
+	alertReplicationController.Spec.Template.Spec.Containers[0].Image = p.alertCr.Spec.AlertImage
 	return nil
 }
 
 func (p *AlertPatcher) patchAlertMemory() error {
 	uniqueID := "ReplicationController.demo-alert-alert"
-	alertReplicationControllerRuntimeObject, ok := p.objects[uniqueID]
+	alertReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
 	if !ok {
 		return nil
 	}
 	alertReplicationController := alertReplicationControllerRuntimeObject.(*corev1.ReplicationController)
-	minAndMaxMem, _ := resource.ParseQuantity(p.alert.Spec.AlertMemory)
+	minAndMaxMem, _ := resource.ParseQuantity(p.alertCr.Spec.AlertMemory)
 	alertReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
 	alertReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
 	return nil
 }
 
 func (p *AlertPatcher) patchPersistentStorage() error {
-	if (p.alert.Spec.PersistentStorage == synopsysv1.PersistentStorage{}) {
+	if (p.alertCr.Spec.PersistentStorage == synopsysv1.PersistentStorage{}) {
 		PVCUniqueID := "PersistentVolumeClaim.demo-alert-pvc"
-		delete(p.objects, PVCUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, PVCUniqueID)
 		return nil
 	}
 	// Patch PVC Name
 	PVCUniqueID := "PersistentVolumeClaim.demo-alert-pvc"
-	PVCRuntimeObject, ok := p.objects[PVCUniqueID]
+	PVCRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[PVCUniqueID]
 	if !ok {
 		return nil
 	}
 	pvc := PVCRuntimeObject.(*corev1.PersistentVolumeClaim)
 
-	name := fmt.Sprintf("%s-%s-%s", p.alert.Name, "alert", p.alert.Spec.PersistentStorage.PVCName)
-	if p.alert.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
-		name = p.alert.Spec.PersistentStorage.PVCName
+	name := fmt.Sprintf("%s-%s-%s", p.alertCr.Name, "alertCr", p.alertCr.Spec.PersistentStorage.PVCName)
+	if p.alertCr.Annotations["synopsys.com/created.by"] == "pre-2019.6.0" {
+		name = p.alertCr.Spec.PersistentStorage.PVCName
 	}
 	pvc.Name = name
 
@@ -208,32 +208,32 @@ func (p *AlertPatcher) patchPersistentStorage() error {
 }
 
 func (p *AlertPatcher) patchStandAlone() error {
-	if (p.alert.Spec.StandAlone == synopsysv1.StandAlone{}) {
+	if (p.alertCr.Spec.StandAlone == synopsysv1.StandAlone{}) {
 		// Remove Cfssl Resources
 		uniqueID := "ReplicationController.demo-alert-cfssl"
-		delete(p.objects, uniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
 		uniqueID = "Service.demo-alert-cfssl"
-		delete(p.objects, uniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
 
 		// Add Environ to use BlackDuck Cfssl
 		ConfigMapUniqueID := "ConfigMap.demo-alert-blackduck-config"
-		configMapRuntimeObject, ok := p.objects[ConfigMapUniqueID]
+		configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
 		if !ok {
 			return nil
 		}
 		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
-		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alert.Name, "alert", "cfssl")
+		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alertCr.Name, "alertCr", "cfssl")
 	} else {
 		uniqueID := "ReplicationController.demo-alert-cfssl"
-		alertCfsslReplicationControllerRuntimeObject, ok := p.objects[uniqueID]
+		alertCfsslReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
 		if !ok {
 			return nil
 		}
 		// patch Cfssl Image
 		alertCfsslReplicationController := alertCfsslReplicationControllerRuntimeObject.(*corev1.ReplicationController)
-		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Image = p.alert.Spec.StandAlone.CfsslImage
+		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Image = p.alertCr.Spec.StandAlone.CfsslImage
 		// patch Cfssl Memory
-		minAndMaxMem, _ := resource.ParseQuantity(p.alert.Spec.StandAlone.CfsslMemory)
+		minAndMaxMem, _ := resource.ParseQuantity(p.alertCr.Spec.StandAlone.CfsslMemory)
 		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
 		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
 	}
@@ -244,20 +244,20 @@ func (p *AlertPatcher) patchExposeUserInterface() error {
 	nodePortUniqueID := "Service.demo-alert-exposed"
 	loadbalancerUniqueID := "Service.demo-alert-exposed"
 	routeUniqueID := "Service.demo-alert-exposed"
-	switch p.alert.Spec.ExposeService {
+	switch p.alertCr.Spec.ExposeService {
 	case "NODEPORT":
-		delete(p.objects, loadbalancerUniqueID)
-		delete(p.objects, routeUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, loadbalancerUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeUniqueID)
 	case "LOADBALANCER":
-		delete(p.objects, nodePortUniqueID)
-		delete(p.objects, routeUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, nodePortUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeUniqueID)
 	case "OPENSHIFT":
-		delete(p.objects, nodePortUniqueID)
-		delete(p.objects, loadbalancerUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, nodePortUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, loadbalancerUniqueID)
 	default:
-		delete(p.objects, nodePortUniqueID)
-		delete(p.objects, loadbalancerUniqueID)
-		delete(p.objects, routeUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, nodePortUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, loadbalancerUniqueID)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, routeUniqueID)
 	}
 	return nil
 }

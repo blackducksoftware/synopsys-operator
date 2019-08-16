@@ -59,8 +59,6 @@ spec:
         - name: dir-alert
           persistentVolumeClaim:
             claimName: demo-alert-alert-pvc
-status:
-  replicas: 0
 
 ---
 apiVersion: v1
@@ -120,8 +118,6 @@ spec:
       volumes:
         - emptyDir: {}
           name: dir-cfssl
-status:
-  replicas: 0
 
 ---
 apiVersion: v1
@@ -147,8 +143,6 @@ spec:
     component: alert
     name: demo
   type: ClusterIP
-status:
-  loadBalancer: {}
 
 ---
 apiVersion: v1
@@ -174,8 +168,6 @@ spec:
     component: cfssl
     name: demo
   type: ClusterIP
-status:
-  loadBalancer: {}
 
 ---
 apiVersion: v1

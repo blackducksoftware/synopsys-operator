@@ -18,6 +18,7 @@ package controllers
 import (
 	"context"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
@@ -66,7 +67,7 @@ func (r *AlertReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, er
 }
 
 func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
-	alert := cr.(*synopsysv1.Alert)
+	alertCr := cr.(*synopsysv1.Alert)
 	// TODO: either read contents of yaml from locally mounted file
 	// read content of full desired yaml from externally hosted file
 	// FinalYamlUrl := "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
@@ -80,24 +81,24 @@ func (r *AlertReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.
 		return nil, err
 	}
 
-	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(byteArrayContentFromFile)
-	for _, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(byteArrayContentFromFile)
+	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
-		if err := ctrl.SetControllerReference(alert, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
+		if err := ctrl.SetControllerReference(alertCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
 			// requeue if we cannot set owner on the object
 			// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
 			//return ctrl.Result{}, err
-			return mapOfUniqueIdToDesiredRuntimeObject, nil
+			return mapOfUniqueIdToBaseRuntimeObject, nil
 		}
 	}
-	objs := patchAlert(alert, mapOfUniqueIdToDesiredRuntimeObject)
+	mapOfUniqueIdToDesiredRuntimeObject := patchAlert(alertCr, mapOfUniqueIdToBaseRuntimeObject, meta.NewAccessor())
 
-	return objs, nil
+	return mapOfUniqueIdToDesiredRuntimeObject, nil
 }
 
-func (r *AlertReconciler) GetInstructionManual(obj map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
+func (r *AlertReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runtime.Object) (*flying_dutchman.RuntimeObjectDependencyYaml, error) {
 	//instructionManualFile := "https://raw.githubusercontent.com/yashbhutwala/kb-synopsys-operator/master/config/samples/dependency_sample_alert.yaml"
-	instructionManual, err := controllers_utils.CreateInstructionManual(obj)
+	instructionManual, err := controllers_utils.CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +107,7 @@ func (r *AlertReconciler) GetInstructionManual(obj map[string]runtime.Object) (*
 
 func (r *AlertReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//ctx := context.Background()
-	//log := r.Log.WithValues("name and namespace of the alert to reconcile", req.NamespacedName)
+	//log := r.Log.WithValues("name and namespace of the alertCr to reconcile", req.NamespacedName)
 
 	// TODO: By adding sha, we no longer need to requeue after (awesome!!), but it's here just in case you need to re-enable it
 	//return ctrl.Result{RequeueAfter: 10 * time.Minute}, nil
@@ -141,7 +142,7 @@ func (r *AlertReconciler) SetIndexingForChildrenObjects(mgr ctrl.Manager, ro run
 }
 
 func (r *AlertReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// Code here allows to kick off a reconciliation when objects our controller manages are changed somehow
+	// Code here allows to kick off a reconciliation when runtime objects our controller manages are changed somehow
 	r.SetIndexingForChildrenObjects(mgr, &corev1.ConfigMap{})
 	r.SetIndexingForChildrenObjects(mgr, &corev1.Service{})
 	r.SetIndexingForChildrenObjects(mgr, &corev1.ReplicationController{})
