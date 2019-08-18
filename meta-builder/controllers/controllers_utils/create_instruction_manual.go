@@ -35,23 +35,33 @@ func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runt
 			return nil, fmt.Errorf("couldn't retrieve group dependencies of %s", uniqueId)
 		}
 
+		var depIndex *int
+		// Verify if the dependency group already exists and create it if it doesn't
+		for valueNb, value := range dependencyYamlStruct.Dependencies {
+			if strings.Compare(value.Obj, group) == 0 {
+				depIndex = &valueNb
+				break
+			}
+		}
+		if depIndex == nil {
+			dependencyYamlStruct.Dependencies = append(dependencyYamlStruct.Dependencies, flying_dutchman.RuntimeObjectDependency{
+				Obj: group,
+			})
+			depIndex = func(i int) *int { return &i }(len(dependencyYamlStruct.Dependencies) - 1)
+		}
+
 		if len(dependencies) > 0 {
 			for _, dependency := range strings.Split(dependencies, "_") {
-
-				isDepAlreadyPresent := false
-				for _, value := range dependencyYamlStruct.Dependencies {
-					if strings.Compare(value.Obj, group) == 0 {
-						value.IsDependentOn = append(value.IsDependentOn, strings.TrimSpace(dependency))
-						isDepAlreadyPresent = true
+				// Add dependencies
+				isDependencyAlreadyPresent := false
+				for _, dep := range dependencyYamlStruct.Dependencies[*depIndex].IsDependentOn {
+					if strings.Compare(dep, dependency) == 0 {
+						isDependencyAlreadyPresent = true
 						break
 					}
 				}
-
-				if !isDepAlreadyPresent {
-					dependencyYamlStruct.Dependencies = append(dependencyYamlStruct.Dependencies, flying_dutchman.RuntimeObjectDependency{
-						Obj:           group,
-						IsDependentOn: []string{strings.TrimSpace(dependency)},
-					})
+				if !isDependencyAlreadyPresent {
+					dependencyYamlStruct.Dependencies[*depIndex].IsDependentOn = append(dependencyYamlStruct.Dependencies[*depIndex].IsDependentOn, dependency)
 				}
 			}
 		}

@@ -154,10 +154,9 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 		var listOfParentRuntimeObjects []string
 		// get all RuntimeObjects for the Head
 		for _, parent := range parents {
-			listOfParentRuntimeObjects, ok = instructionManual.Groups[parent]
-			if !ok {
-				// no group due to single object name
-				listOfParentRuntimeObjects = []string{parent}
+			parentRuntimeObjects, ok := instructionManual.Groups[parent]
+			if ok {
+				listOfParentRuntimeObjects = append(listOfParentRuntimeObjects, parentRuntimeObjects...)
 			}
 		}
 		// Create dependencies from each tail to each head
