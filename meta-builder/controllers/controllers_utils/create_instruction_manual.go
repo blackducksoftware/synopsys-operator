@@ -20,6 +20,11 @@ func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runt
 			return nil, err
 		}
 
+		annotations, err := accessor.Annotations(desiredRuntimeObject)
+		if err != nil {
+			return nil, err
+		}
+
 		group, ok := labels["operator.synopsys.com/group-id"]
 		if !ok {
 			return nil, fmt.Errorf("couldn't retrieve group label of %s", uniqueId)
@@ -30,7 +35,7 @@ func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runt
 		}
 		dependencyYamlStruct.Groups[group] = append(dependencyYamlStruct.Groups[group], uniqueId)
 
-		dependencies, ok := labels["operator.synopsys.com/group-dependencies"]
+		dependencies, ok := annotations["operator.synopsys.com/group-dependencies"]
 		if !ok {
 			return nil, fmt.Errorf("couldn't retrieve group dependencies of %s", uniqueId)
 		}
@@ -51,7 +56,7 @@ func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runt
 		}
 
 		if len(dependencies) > 0 {
-			for _, dependency := range strings.Split(dependencies, "_") {
+			for _, dependency := range strings.Split(dependencies, ",") {
 				// Add dependencies
 				isDependencyAlreadyPresent := false
 				for _, dep := range dependencyYamlStruct.Dependencies[*depIndex].IsDependentOn {

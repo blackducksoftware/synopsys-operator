@@ -2,9 +2,10 @@ apiVersion: v1
 kind: ReplicationController
 metadata:
   creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,AlertSecret"
   labels:
     operator.synopsys.com/group-id: "AlertRC"
-    operator.synopsys.com/group-dependencies: "ConfigMap_AlertSecret"
     app: alert
     component: alert
     name: demo
@@ -65,9 +66,10 @@ apiVersion: v1
 kind: ReplicationController
 metadata:
   creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
     operator.synopsys.com/group-id: "CfsslRC"
-    operator.synopsys.com/group-dependencies: "ConfigMap"
     app: alert
     component: cfssl
     name: demo
@@ -124,9 +126,10 @@ apiVersion: v1
 kind: Service
 metadata:
   creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,AlertSecret"
   labels:
     operator.synopsys.com/group-id: "AlertRC"
-    operator.synopsys.com/group-dependencies: "ConfigMap_AlertSecret"
     app: alert
     component: alert
     name: demo
@@ -149,9 +152,10 @@ apiVersion: v1
 kind: Service
 metadata:
   creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
     operator.synopsys.com/group-id: "CfsslRC"
-    operator.synopsys.com/group-dependencies: "ConfigMap"
     app: alert
     component: cfssl
     name: demo
@@ -178,9 +182,10 @@ data:
 kind: ConfigMap
 metadata:
   creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
   labels:
     operator.synopsys.com/group-id: "ConfigMap"
-    operator.synopsys.com/group-dependencies: ""
     app: alert
     component: alert
     name: demo
@@ -195,9 +200,10 @@ data:
 kind: Secret
 metadata:
   creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
     operator.synopsys.com/group-id: "AlertSecret"
-    operator.synopsys.com/group-dependencies: "ConfigMap"
     app: alert
     component: alert
     name: demo
