@@ -4,7 +4,7 @@ metadata:
   creationTimestamp: null
   labels:
     operator.synopsys.com/group-id: "EverythingElse"
-    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    operator.synopsys.com/group-dependencies: "PVC"
     app: blackduck
     component: cfssl
     name: blackduck
@@ -71,7 +71,7 @@ metadata:
   creationTimestamp: null
   labels:
     operator.synopsys.com/group-id: "EverythingElse"
-    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_PVC"
     app: blackduck
     component: webserver
     name: blackduck
@@ -128,6 +128,9 @@ spec:
             - mountPath: /tmp/secrets/WEBSERVER_CUSTOM_KEY_FILE
               name: certificate
               subPath: WEBSERVER_CUSTOM_KEY_FILE
+            - mountPath: /tmp/secrets/AUTH_CUSTOM_CA
+              name: auth-custom-ca
+              subPath: AUTH_CUSTOM_CA
       dnsPolicy: ClusterFirst
       securityContext:
         fsGroup: 0
@@ -138,6 +141,10 @@ spec:
           secret:
             defaultMode: 292
             secretName: blackduck-webserver-certificate
+        - name: auth-custom-ca
+          secret:
+            defaultMode: 292
+            secretName: blackduck-auth-custom-ca
 status:
   replicas: 0
 
@@ -148,7 +155,7 @@ metadata:
   creationTimestamp: null
   labels:
     operator.synopsys.com/group-id: "EverythingElse"
-    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    operator.synopsys.com/group-dependencies: "ConfigMap"
     app: blackduck
     component: documentation
     name: blackduck
@@ -271,6 +278,9 @@ spec:
               name: dir-registration
             - mountPath: /opt/blackduck/hub/hub-registration/security
               name: dir-registration-security
+            - mountPath: /tmp/secrets/HUB_PROXY_CERT_FILE
+              name: proxy-certificate
+              subPath: HUB_PROXY_CERT_FILE
       dnsPolicy: ClusterFirst
       securityContext:
         fsGroup: 0
@@ -280,6 +290,14 @@ spec:
             claimName: blackduck-registration
         - emptyDir: {}
           name: dir-registration-security
+        - name: proxy-certificate
+          secret:
+            defaultMode: 420
+            items:
+            - key: HUB_PROXY_CERT_FILE
+              mode: 420
+              path: HUB_PROXY_CERT_FILE
+            secretName: blackduck-proxy-certificate
 status:
   replicas: 0
 
@@ -290,7 +308,7 @@ metadata:
   creationTimestamp: null
   labels:
     operator.synopsys.com/group-id: "EverythingElse"
-    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_PVC"
     app: blackduck
     component: zookeeper
     name: blackduck
@@ -363,7 +381,7 @@ metadata:
   creationTimestamp: null
   labels:
     operator.synopsys.com/group-id: "EverythingElse"
-    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob_PVC"
+    operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
     app: blackduck
     component: jobrunner
     name: blackduck
@@ -425,10 +443,21 @@ spec:
               subPath: HUB_POSTGRES_USER_PASSWORD_FILE
             - mountPath: /opt/blackduck/hub/jobrunner/security
               name: dir-jobrunner
+            - mountPath: /tmp/secrets/HUB_PROXY_CERT_FILE
+              name: proxy-certificate
+              subPath: HUB_PROXY_CERT_FILE
       dnsPolicy: ClusterFirst
       securityContext:
         fsGroup: 0
       volumes:
+        - name: proxy-certificate
+          secret:
+            defaultMode: 420
+            items:
+            - key: HUB_PROXY_CERT_FILE
+              mode: 420
+              path: HUB_PROXY_CERT_FILE
+            secretName: blackduck-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -516,12 +545,23 @@ spec:
               subPath: HUB_POSTGRES_USER_PASSWORD_FILE
             - mountPath: /opt/blackduck/hub/hub-scan/security
               name: dir-scan
+            - mountPath: /tmp/secrets/HUB_PROXY_CERT_FILE
+              name: proxy-certificate
+              subPath: HUB_PROXY_CERT_FILE
       dnsPolicy: ClusterFirst
       securityContext:
         fsGroup: 0
       volumes:
         - emptyDir: {}
           name: dir-scan
+        - name: proxy-certificate
+          secret:
+            defaultMode: 420
+            items:
+            - key: HUB_PROXY_CERT_FILE
+              mode: 420
+              path: HUB_PROXY_CERT_FILE
+            secretName: blackduck-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -609,10 +649,28 @@ spec:
               name: dir-authentication
             - mountPath: /opt/blackduck/hub/hub-authentication/security
               name: dir-authentication-security
+            - mountPath: /tmp/secrets/HUB_PROXY_CERT_FILE
+              name: proxy-certificate
+              subPath: HUB_PROXY_CERT_FILE
+            - mountPath: /tmp/secrets/AUTH_CUSTOM_CA
+              name: auth-custom-ca
+              subPath: AUTH_CUSTOM_CA
       dnsPolicy: ClusterFirst
       securityContext:
         fsGroup: 0
       volumes:
+        - name: auth-custom-ca
+          secret:
+            defaultMode: 292
+            secretName: blackduck-auth-custom-ca
+        - name: proxy-certificate
+          secret:
+            defaultMode: 420
+            items:
+            - key: HUB_PROXY_CERT_FILE
+              mode: 420
+              path: HUB_PROXY_CERT_FILE
+            secretName: blackduck-proxy-certificate
         - name: dir-authentication
           persistentVolumeClaim:
             claimName: blackduck-authentication
@@ -708,6 +766,9 @@ spec:
               name: dir-webapp-security
             - mountPath: /opt/blackduck/hub/logs
               name: dir-logstash
+            - mountPath: /tmp/secrets/HUB_PROXY_CERT_FILE
+              name: proxy-certificate
+              subPath: HUB_PROXY_CERT_FILE
         - envFrom:
             - configMapRef:
                 name: blackduck-config
@@ -746,6 +807,14 @@ spec:
         - name: dir-logstash
           persistentVolumeClaim:
             claimName: blackduck-logstash
+        - name: proxy-certificate
+          secret:
+            defaultMode: 420
+            items:
+              - key: HUB_PROXY_CERT_FILE
+                mode: 420
+                path: HUB_PROXY_CERT_FILE
+            secretName: blackduck-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -879,7 +948,7 @@ status:
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: nul
+  creationTimestamp: null
   labels:
     operator.synopsys.com/group-id: "EverythingElse"
     operator.synopsys.com/group-dependencies: "ConfigMap_Secrets_Postgres_InitJob"
@@ -1680,3 +1749,34 @@ spec:
       storage: 20Gi
 status: {}
 
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "Secret"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: secret
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-auth-custom-ca
+  namespace: blackduck
+type: Opaque
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    operator.synopsys.com/group-id: "Secret"
+    operator.synopsys.com/group-dependencies: ""
+    app: blackduck
+    component: secret
+    name: blackduck
+    version: 2019.6.1
+  name: blackduck-proxy-certificate
+  namespace: blackduck
+type: Opaque

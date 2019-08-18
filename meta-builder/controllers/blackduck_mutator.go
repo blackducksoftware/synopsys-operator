@@ -61,15 +61,100 @@ type BlackduckPatcher struct {
 }
 
 func (p *BlackduckPatcher) patch() map[string]runtime.Object {
+	// TODO JD: Patching this way is costly. Consider iterating over the objects only once
+	// and apply the necessary changes
 	p.patchNamespace()
 	p.patchStorage()
 	p.patchLiveness()
 	p.patchEnvirons()
 	p.patchWebserverCertificates()
 	p.patchPostgresConfig()
-
-	// TODO - Patch ImageRegistries | RegistryConfiguration | ProxyCertificate | AuthCustomCA | DesiredState | ExposeService
+	p.patchImages()
+	p.patchReplicas()
+	p.patchAuthCert()
+	p.patchProxyCert()
+	// TODO - Patch ImageRegistries | RegistryConfiguration
+	// DesiredState | ExposeService
 	return p.objects
+}
+
+func (p *BlackduckPatcher) patchAuthCert() error {
+	if len(p.blackduck.Spec.AuthCustomCA) == 0 {
+		for _, v := range p.objects {
+			switch v.(type) {
+			case *v1.ReplicationController:
+				removeVolumeAndVolumeMountFromRC(v.(*v1.ReplicationController), "blackduck-auth-custom-ca")
+			}
+		}
+	} else {
+		secret, ok := p.objects["Secret.blackduck-auth-custom-ca"]
+		if !ok {
+			return nil
+		}
+
+		if secret.(*v1.Secret).Data == nil {
+			secret.(*v1.Secret).Data = make(map[string][]byte)
+		}
+
+		secret.(*v1.Secret).Data["AUTH_CUSTOM_CA"] = []byte(p.blackduck.Spec.AuthCustomCA)
+	}
+	return nil
+}
+
+func (p *BlackduckPatcher) patchProxyCert() error {
+	if len(p.blackduck.Spec.ProxyCertificate) == 0 {
+		for _, v := range p.objects {
+			switch v.(type) {
+			case *v1.ReplicationController:
+				removeVolumeAndVolumeMountFromRC(v.(*v1.ReplicationController), "blackduck-proxy-certificate")
+			}
+		}
+	} else {
+		secret, ok := p.objects["Secret.blackduck-proxy-certificate"]
+		if !ok {
+			return nil
+		}
+
+		if secret.(*v1.Secret).Data == nil {
+			secret.(*v1.Secret).Data = make(map[string][]byte)
+		}
+
+		secret.(*v1.Secret).Data["HUB_PROXY_CERT_FILE"] = []byte(p.blackduck.Spec.ProxyCertificate)
+	}
+	return nil
+}
+
+func (p *BlackduckPatcher) patchReplicas() error {
+	for _, v := range p.objects {
+		switch v.(type) {
+		case *v1.ReplicationController:
+			switch p.blackduck.Spec.DesiredState {
+			case "STOP":
+				v.(*v1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
+			case "DBMIGRATE":
+			// TODO
+			default:
+				// TODO apply replica from flavor configuration
+			}
+		}
+	}
+	return nil
+}
+
+func (p *BlackduckPatcher) patchImages() error {
+	if len(p.blackduck.Spec.RegistryConfiguration.Registry) > 0 || len(p.blackduck.Spec.ImageRegistries) > 0 {
+		for _, v := range p.objects {
+			switch v.(type) {
+			case *v1.ReplicationController:
+				//for i := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
+				// TODO
+				//}
+
+			}
+
+		}
+	}
+	return nil
 }
 
 func (p *BlackduckPatcher) patchPostgresConfig() error {
@@ -220,4 +305,18 @@ func (p *BlackduckPatcher) patchStorage() error {
 	return nil
 }
 
-// TODO: Create functions to patch the remaining spec fields
+func removeVolumeAndVolumeMountFromRC(rc *v1.ReplicationController, volumeName string) *v1.ReplicationController {
+	for volumeNb, volume := range rc.Spec.Template.Spec.Volumes {
+		if volume.Secret != nil && strings.Compare(volume.Secret.SecretName, volumeName) == 0 {
+			rc.Spec.Template.Spec.Volumes = append(rc.Spec.Template.Spec.Volumes[:volumeNb], rc.Spec.Template.Spec.Volumes[volumeNb+1:]...)
+			for containerNb, container := range rc.Spec.Template.Spec.Containers {
+				for volumeMountNb, volumeMount := range container.VolumeMounts {
+					if strings.Compare(volumeMount.Name, volume.Name) == 0 {
+						rc.Spec.Template.Spec.Containers[containerNb].VolumeMounts = append(rc.Spec.Template.Spec.Containers[containerNb].VolumeMounts[:volumeMountNb], rc.Spec.Template.Spec.Containers[containerNb].VolumeMounts[volumeMountNb+1:]...)
+					}
+				}
+			}
+		}
+	}
+	return rc
+}

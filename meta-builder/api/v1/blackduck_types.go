@@ -54,7 +54,6 @@ type BlackduckSpec struct {
 
 type RegistryConfiguration struct {
 	Registry    string   `json:"registry"`
-	Namespace   string   `json:"namespace"`
 	PullSecrets []string `json:"pullSecrets"`
 }
 
