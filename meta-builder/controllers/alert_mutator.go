@@ -62,6 +62,14 @@ func (p *AlertPatcher) patch() map[string]runtime.Object {
 	return p.mapOfUniqueIdToBaseRuntimeObject
 }
 
+// TODO: patchName based on cr name [CR_NAME-]
+//func (p *AlertPatcher) patchName() error {
+//	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+//		p.accessor.SetName(runtimeObject, p.alertCr.Name)
+//	}
+//	return nil
+//}
+
 func (p *AlertPatcher) patchNamespace() error {
 	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
 		p.accessor.SetNamespace(runtimeObject, p.alertCr.Spec.Namespace)
@@ -70,7 +78,7 @@ func (p *AlertPatcher) patchNamespace() error {
 }
 
 func (p *AlertPatcher) patchEnvirons() error {
-	ConfigMapUniqueID := "ConfigMap.demo-alert-blackduck-config"
+	ConfigMapUniqueID := "ConfigMap.changethisalertname-blackduck-alert-config"
 	configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
 	if !ok {
 		return nil
@@ -90,7 +98,7 @@ func (p *AlertPatcher) patchEnvirons() error {
 }
 
 func (p *AlertPatcher) patchSecrets() error {
-	SecretUniqueID := "Secret.demo-alert-secret"
+	SecretUniqueID := "Secret.changethisalertname-alert-secret"
 	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
 	if !ok {
 		return nil
@@ -121,7 +129,7 @@ func (p *AlertPatcher) patchDesiredState() error {
 }
 
 func (p *AlertPatcher) patchPort() error {
-	ReplicationControllerUniqueID := "ReplicationController.demo-alert-alert"
+	ReplicationControllerUniqueID := "ReplicationController.changethisalertname-alert"
 	replicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ReplicationControllerUniqueID]
 	if !ok {
 		return nil
@@ -131,7 +139,7 @@ func (p *AlertPatcher) patchPort() error {
 	replicationController.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = port
 	replicationController.Spec.Template.Spec.Containers[0].Ports[0].Protocol = corev1.ProtocolTCP
 
-	ServiceUniqueID := "Service.default.demo-alertCr-alertCr"
+	ServiceUniqueID := "Service.changethisalertname-alert"
 	serviceRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ServiceUniqueID]
 	if !ok {
 		return nil
@@ -142,7 +150,7 @@ func (p *AlertPatcher) patchPort() error {
 	service.Spec.Ports[0].TargetPort = intstr.IntOrString{IntVal: port}
 	service.Spec.Ports[0].Protocol = corev1.ProtocolTCP
 
-	ServiceExposedUniqueID := "Service.default.demo-alertCr-exposed"
+	ServiceExposedUniqueID := "Service.changethisalertname-alert-exposed"
 	serviceExposedRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ServiceExposedUniqueID]
 	if !ok {
 		return nil
@@ -161,7 +169,7 @@ func (p *AlertPatcher) patchPort() error {
 }
 
 func (p *AlertPatcher) patchAlertImage() error {
-	uniqueID := "ReplicationController.demo-alert-alert"
+	uniqueID := "ReplicationController.changethisalertname-alert"
 	alertReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
 	if !ok {
 		return nil
@@ -172,7 +180,7 @@ func (p *AlertPatcher) patchAlertImage() error {
 }
 
 func (p *AlertPatcher) patchAlertMemory() error {
-	uniqueID := "ReplicationController.demo-alert-alert"
+	uniqueID := "ReplicationController.changethisalertname-alert"
 	alertReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
 	if !ok {
 		return nil
@@ -186,12 +194,12 @@ func (p *AlertPatcher) patchAlertMemory() error {
 
 func (p *AlertPatcher) patchPersistentStorage() error {
 	if (p.alertCr.Spec.PersistentStorage == synopsysv1.PersistentStorage{}) {
-		PVCUniqueID := "PersistentVolumeClaim.demo-alert-pvc"
+		PVCUniqueID := "PersistentVolumeClaim.changethisalertname-alert-pvc"
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, PVCUniqueID)
 		return nil
 	}
 	// Patch PVC Name
-	PVCUniqueID := "PersistentVolumeClaim.demo-alert-pvc"
+	PVCUniqueID := "PersistentVolumeClaim.changethisalertname-alert-pvc"
 	PVCRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[PVCUniqueID]
 	if !ok {
 		return nil
@@ -210,13 +218,13 @@ func (p *AlertPatcher) patchPersistentStorage() error {
 func (p *AlertPatcher) patchStandAlone() error {
 	if (p.alertCr.Spec.StandAlone == synopsysv1.StandAlone{}) {
 		// Remove Cfssl Resources
-		uniqueID := "ReplicationController.demo-alert-cfssl"
+		uniqueID := "ReplicationController.changethisalertname-cfssl"
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
-		uniqueID = "Service.demo-alert-cfssl"
+		uniqueID = "Service.changethisalertname-cfssl"
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
 
 		// Add Environ to use BlackDuck Cfssl
-		ConfigMapUniqueID := "ConfigMap.demo-alert-blackduck-config"
+		ConfigMapUniqueID := "ConfigMap.changethisalertname-blackduck-alert-config"
 		configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
 		if !ok {
 			return nil
@@ -224,7 +232,7 @@ func (p *AlertPatcher) patchStandAlone() error {
 		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
 		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alertCr.Name, "alertCr", "cfssl")
 	} else {
-		uniqueID := "ReplicationController.demo-alert-cfssl"
+		uniqueID := "ReplicationController.changethisalertname-cfssl"
 		alertCfsslReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
 		if !ok {
 			return nil
@@ -241,9 +249,9 @@ func (p *AlertPatcher) patchStandAlone() error {
 }
 
 func (p *AlertPatcher) patchExposeUserInterface() error {
-	nodePortUniqueID := "Service.demo-alert-exposed"
-	loadbalancerUniqueID := "Service.demo-alert-exposed"
-	routeUniqueID := "Service.demo-alert-exposed"
+	nodePortUniqueID := "Service.changethisalertname-alert-exposed"
+	loadbalancerUniqueID := "Service.changethisalertname-alert-exposed"
+	routeUniqueID := "Service.changethisalertname-alert-exposed"
 	switch p.alertCr.Spec.ExposeService {
 	case "NODEPORT":
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, loadbalancerUniqueID)
