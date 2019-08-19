@@ -10,7 +10,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-cfssl
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -74,7 +73,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-webserver
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -155,7 +153,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-documentation
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -219,7 +216,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-registration
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -302,7 +298,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-zookeeper
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -372,7 +367,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-jobrunner
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -469,7 +463,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-scan
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -568,7 +561,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-authentication
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -679,7 +671,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-webapp-logstash
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -815,7 +806,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-uploadcache
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -899,7 +889,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-cfssl
-  namespace: blackduck
 spec:
   ports:
     - name: port-8888
@@ -925,7 +914,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-webserver
-  namespace: blackduck
 spec:
   ports:
     - name: port-443
@@ -951,7 +939,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-documentation
-  namespace: blackduck
 spec:
   ports:
     - name: port-8443
@@ -977,7 +964,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-registration
-  namespace: blackduck
 spec:
   ports:
     - name: port-8443
@@ -1003,7 +989,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-zookeeper
-  namespace: blackduck
 spec:
   ports:
     - name: port-2181
@@ -1029,7 +1014,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-scan
-  namespace: blackduck
 spec:
   ports:
     - name: port-8443
@@ -1055,7 +1039,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: authentication
-  namespace: blackduck
 spec:
   ports:
     - name: port-8443
@@ -1081,7 +1064,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: webapp
-  namespace: blackduck
 spec:
   ports:
     - name: port-8443
@@ -1107,7 +1089,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-logstash
-  namespace: blackduck
 spec:
   ports:
     - name: port-5044
@@ -1133,7 +1114,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: uploadcache
-  namespace: blackduck
 spec:
   ports:
     - name: port-9443
@@ -1193,7 +1173,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-config
-  namespace: blackduck
 
 ---
 apiVersion: v1
@@ -1211,7 +1190,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-webserver-certificate
-  namespace: blackduck
 type: Opaque
 
 ---
@@ -1229,7 +1207,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-upload-cache
-  namespace: blackduck
 type: Opaque
 
 ---
@@ -1244,7 +1221,6 @@ metadata:
     component: postgres
     name: blackduck
   name: blackduck-postgres
-  namespace: blackduck
 spec:
   replicas: 1
   selector:
@@ -1334,7 +1310,6 @@ metadata:
     component: postgres
     name: blackduck
   name: blackduck-postgres
-  namespace: blackduck
 spec:
   ports:
     - name: port-5432
@@ -1360,7 +1335,6 @@ metadata:
     name: blackduck
     version: 2019.8.0
   name: blackduck-db-config
-  namespace: blackduck
 
 ---
 apiVersion: v1
@@ -1375,7 +1349,6 @@ metadata:
     name: blackduck
     version: 2019.8.0
   name: blackduck-db-creds
-  namespace: blackduck
 type: Opaque
 
 ---
@@ -1387,7 +1360,6 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "InitJob"
   name: postgres-init-config
-  namespace: blackduck
 data:
   init.sh: |-
     #!/bin/bash
@@ -1467,7 +1439,6 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "InitJob"
   name: blackduck-init-postgres
-  namespace: blackduck
 spec:
   template:
     spec:
@@ -1518,7 +1489,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-postgres
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1538,7 +1508,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-webapp
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1558,7 +1527,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-zookeeper
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1578,7 +1546,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-uploadcache-data
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1598,7 +1565,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-authentication
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1618,7 +1584,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-cfssl
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1638,7 +1603,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-registration
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1658,7 +1622,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-solr
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1678,7 +1641,6 @@ metadata:
     component: pvc
     name: test
   name: blackduck-logstash
-  namespace: test
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1699,7 +1661,6 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-auth-custom-ca
-  namespace: blackduck
 type: Opaque
 
 ---
@@ -1715,5 +1676,4 @@ metadata:
     name: blackduck
     version: 2019.6.1
   name: blackduck-proxy-certificate
-  namespace: blackduck
 type: Opaque
