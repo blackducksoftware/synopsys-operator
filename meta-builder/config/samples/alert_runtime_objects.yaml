@@ -181,17 +181,16 @@ data:
 kind: Secret
 metadata:
   annotations:
-#    TODO: show what happens if a resource does not have this annotation
+    # TODO: show what happens if a resource does not have this annotation
     operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
-#    TODO: show what happens if a resource does not have this label
+    # TODO: show what happens if a resource does not have this label
     operator.synopsys.com/group-id: "AlertSecret"
     app: alert
     name: changethisalertname
   name: changethisalertname-alert-secret
   namespace: default
 type: Opaque
-
 # TODO Routes
 # apiVersion: route.openshift.io/v1
 # kind: Route

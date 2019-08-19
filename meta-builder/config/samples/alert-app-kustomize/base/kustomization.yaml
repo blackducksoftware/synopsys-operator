@@ -1,0 +1,19 @@
+resources:
+  - config_map.yaml
+  - secret.yaml
+  - cfssl_replication_controller.yaml
+  - cfssl_service.yaml
+  - alert_replication_controller.yaml
+  - alert_service.yaml
+
+namespace: alt
+
+commonLabels:
+  app: alert
+
+namePrefix: yash-alert-
+
+configurations:
+  - kustomizeconfig.yaml
+
+patchesStrategicMerge:
