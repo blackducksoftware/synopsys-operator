@@ -89,11 +89,11 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 	log := ctrl.Log.WithName("ScheduleResources")
 
 	// get current runtime objects "owned" by Alert CR
-	log.V(1).Info("Getting a list of existing runtime objects owned by", "Custom Resource: ", cr)
+	log.V(1).Info("Getting a list of existing runtime objects owned by", "Custom Resource: ", cr.GetName())
 	var listOfCurrentRuntimeObjectsOwnedByAlertCr metav1.List
 	if err := myClient.List(ctx, &listOfCurrentRuntimeObjectsOwnedByAlertCr, client.InNamespace(cr.GetNamespace()), client.MatchingField(JobOwnerKey, cr.GetName())); err != nil {
 		// TODO: this is not working
-		log.Error(err, "unable to list currentRuntimeObjectsOwnedByAlertCr")
+		//log.Error(err, "unable to list currentRuntimeObjectsOwnedByAlertCr")
 		// TODO: rethink what to do when we cannot list currentRuntimeObjectsOwnedByAlertCr
 		//return ctrl.Result{}, nil
 	}
@@ -170,7 +170,6 @@ func ScheduleResources(myClient client.Client, cr metav1.Object, mapOfUniqueIdTo
 
 	// finally run the scheduler with a new context
 	schedulerCtx := context.Background()
-	log.V(1).Info("Running Scheduler", "Context ", schedulerCtx)
 	if err := alertScheduler.Run(schedulerCtx); err != nil {
 		return err
 	}

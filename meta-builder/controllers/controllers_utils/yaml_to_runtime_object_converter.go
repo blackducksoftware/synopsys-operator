@@ -38,7 +38,7 @@ func ConvertYamlFileToRuntimeObjects(byteArrayContent []byte) map[string]runtime
 			continue
 		}
 		uniqueId := fmt.Sprintf("%s.%s", runtimeObjectKind, runtimeObjectName)
-		fmt.Printf("Creating RuntimeObject Label: %s\n", uniqueId)
+		log.V(1).Info("creating runtime object label", "uniqueId", uniqueId)
 		mapOfUniqueIdToDesiredRuntimeObject[uniqueId] = runtimeObject
 	}
 	return mapOfUniqueIdToDesiredRuntimeObject

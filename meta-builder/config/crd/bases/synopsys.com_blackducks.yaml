@@ -114,8 +114,6 @@ spec:
               type: string
             registryConfiguration:
               properties:
-                namespace:
-                  type: string
                 pullSecrets:
                   items:
                     type: string
@@ -123,7 +121,6 @@ spec:
                 registry:
                   type: string
               required:
-              - namespace
               - pullSecrets
               - registry
               type: object

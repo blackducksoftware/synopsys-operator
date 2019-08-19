@@ -1,37 +1,32 @@
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  creationTimestamp: null
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,AlertSecret"
   labels:
-    operator.synopsys.com/group-id: "AlertRC"
+    operator.synopsys.com/group-id: "Alert"
     app: alert
-    component: alert
-    name: demo
-  name: demo-alert-alert
+    name: changethisalertname
+  name: changethisalertname-alert
   namespace: default
 spec:
   replicas: 1
   selector:
     app: alert
-    component: alert
-    name: demo
+    name: changethisalertname
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: alert
-        component: alert
-        name: demo
-      name: demo-alert-alert
+        name: changethisalertname
+      name: changethisalertname-alert
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: demo-alert-blackduck-config
+                name: changethisalertname-blackduck-alert-config
             - secretRef:
-                name: demo-alert-secret
+                name: changethisalertname-alert-secret
           image: docker.io/blackducksoftware/blackduck-alert:4.0.0
           imagePullPolicy: Always
           livenessProbe:
@@ -57,43 +52,37 @@ spec:
               name: dir-alert
       dnsPolicy: ClusterFirst
       volumes:
-        - name: dir-alert
-          persistentVolumeClaim:
-            claimName: demo-alert-alert-pvc
+        - emptyDir: {}
+          name: dir-alert
 
 ---
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  creationTimestamp: null
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
-    operator.synopsys.com/group-id: "CfsslRC"
+    operator.synopsys.com/group-id: "Cfssl"
     app: alert
-    component: cfssl
-    name: demo
-  name: demo-alert-cfssl
+    name: changethisalertname
+  name: changethisalertname-cfssl
   namespace: default
 spec:
   replicas: 1
   selector:
     app: alert
-    component: cfssl
-    name: demo
+    name: changethisalertname
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: alert
-        component: cfssl
-        name: demo
-      name: demo-alert-cfssl
+        name: changethisalertname
+      name: changethisalertname-cfssl
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: demo-alert-blackduck-config
+                name: changethisalertname-blackduck-alert-config
           image: docker.io/blackducksoftware/blackduck-cfssl:1.0.0
           livenessProbe:
             exec:
@@ -125,15 +114,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: null
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,AlertSecret"
   labels:
-    operator.synopsys.com/group-id: "AlertRC"
+    operator.synopsys.com/group-id: "Alert"
     app: alert
-    component: alert
-    name: demo
-  name: demo-alert-alert
+    name: changethisalertname
+  name: changethisalertname-alert
   namespace: default
 spec:
   ports:
@@ -143,23 +130,20 @@ spec:
       targetPort: 8443
   selector:
     app: alert
-    component: alert
-    name: demo
+    name: changethisalertname
   type: ClusterIP
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: null
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
-    operator.synopsys.com/group-id: "CfsslRC"
+    operator.synopsys.com/group-id: "Cfssl"
     app: alert
-    component: cfssl
-    name: demo
-  name: demo-alert-cfssl
+    name: changethisalertname
+  name: changethisalertname-cfssl
   namespace: default
 spec:
   ports:
@@ -169,8 +153,7 @@ spec:
       targetPort: 8888
   selector:
     app: alert
-    component: cfssl
-    name: demo
+    name: changethisalertname
   type: ClusterIP
 
 ---
@@ -181,15 +164,13 @@ data:
   PUBLIC_HUB_WEBSERVER_PORT: "443"
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   annotations:
     operator.synopsys.com/group-dependencies: ""
   labels:
     operator.synopsys.com/group-id: "ConfigMap"
     app: alert
-    component: alert
-    name: demo
-  name: demo-alert-blackduck-config
+    name: changethisalertname
+  name: changethisalertname-blackduck-alert-config
   namespace: default
 
 ---
@@ -199,15 +180,15 @@ data:
   ALERT_ENCRYPTION_PASSWORD: ""
 kind: Secret
 metadata:
-  creationTimestamp: null
   annotations:
+#    TODO: show what happens if a resource does not have this annotation
     operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
+#    TODO: show what happens if a resource does not have this label
     operator.synopsys.com/group-id: "AlertSecret"
     app: alert
-    component: alert
-    name: demo
-  name: demo-alert-secret
+    name: changethisalertname
+  name: changethisalertname-alert-secret
   namespace: default
 type: Opaque
 
@@ -217,12 +198,11 @@ type: Opaque
 # metadata:
 #   annotations:
 #     openshift.io/host.generated: "true"
-#   creationTimestamp: "2019-08-12T14:50:39Z"
 #   labels:
 #     app: alert
 #     component: route
-#     name: demo
-#   name: demo-alert
+#     name: changethisalertname
+#   name: changethisalertname-alert
 #   namespace: default
 #   resourceVersion: "2414"
 #   selfLink: /apis/route.openshift.io/v1/namespaces/demo/routes/demo-alert
@@ -235,7 +215,7 @@ type: Opaque
 #     termination: passthrough
 #   to:
 #     kind: Service
-#     name: demo-alert-alert
+#     name: changethisalertname-alert-alert
 #     weight: 100
 #   wildcardPolicy: None
 # status:

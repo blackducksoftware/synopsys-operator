@@ -1,7 +1,7 @@
 apiVersion: synopsys.com/v1
 kind: Alert
 metadata:
-  name: demo
+  name: changethisalertname
 spec:
   namespace: default
   environs:
