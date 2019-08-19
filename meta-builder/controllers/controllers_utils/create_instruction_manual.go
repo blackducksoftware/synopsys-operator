@@ -1,7 +1,6 @@
 package controllers_utils
 
 import (
-	"fmt"
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,7 +26,7 @@ func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runt
 
 		group, ok := labels["operator.synopsys.com/group-id"]
 		if !ok {
-			return nil, fmt.Errorf("couldn't retrieve group label of %s", uniqueId)
+			continue
 		}
 
 		if dependencyYamlStruct.Groups == nil {
@@ -37,7 +36,7 @@ func CreateInstructionManual(mapOfUniqueIdToDesiredRuntimeObject map[string]runt
 
 		dependencies, ok := annotations["operator.synopsys.com/group-dependencies"]
 		if !ok {
-			return nil, fmt.Errorf("couldn't retrieve group dependencies of %s", uniqueId)
+			continue
 		}
 
 		var depIndex *int
