@@ -73,9 +73,29 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 	p.patchReplicas()
 	p.patchAuthCert()
 	p.patchProxyCert()
+	p.patchExposeService()
 	// TODO - Patch ImageRegistries | RegistryConfiguration
-	// DesiredState | ExposeService
 	return p.objects
+}
+
+func (p *BlackduckPatcher) patchExposeService() error {
+	// TODO use contansts
+	id := "Service.blackduck-webserver-exposed"
+	runtimeObject, ok := p.objects[id]
+	if !ok {
+		return nil
+	}
+
+	switch strings.ToUpper(p.blackduck.Spec.ExposeService) {
+	case "LOADBALANCER":
+		runtimeObject.(*v1.Service).Spec.Type = v1.ServiceTypeLoadBalancer
+	case "NODEPORT":
+		runtimeObject.(*v1.Service).Spec.Type = v1.ServiceTypeNodePort
+	default:
+		delete(p.objects, id)
+	}
+
+	return nil
 }
 
 func (p *BlackduckPatcher) patchAuthCert() error {

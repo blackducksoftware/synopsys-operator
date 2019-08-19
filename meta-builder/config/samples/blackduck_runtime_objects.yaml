@@ -1677,3 +1677,28 @@ metadata:
     version: 2019.6.1
   name: blackduck-proxy-certificate
 type: Opaque
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: "EverythingElse"
+  labels:
+    operator.synopsys.com/group-id: "ExposeService"
+    app: blackduck
+    component: webserver-exposed
+    name: blackduck
+  name: blackduck-webserver-exposed
+spec:
+  ports:
+    - name: port-443
+      port: 443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    app: blackduck
+    component: webserver
+    name: blackduck
+  type: LoadBalancer
