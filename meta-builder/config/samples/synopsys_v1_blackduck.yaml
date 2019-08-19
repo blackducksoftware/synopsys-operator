@@ -1,15 +1,15 @@
 apiVersion: synopsys.com/v1
 kind: Blackduck
 metadata:
-  name: blackduck
+  name: changethisblackduckname
 spec:
+  namespace: default
   adminPassword: YWRtaW4=
   authCustomCa: ""
   certificateName: default
   desiredState: ""
   exposeService: NONE
   livenessProbes: false
-  namespace: blackduck
   persistentStorage: true
   postgresPassword: cGc=
   pvc:
