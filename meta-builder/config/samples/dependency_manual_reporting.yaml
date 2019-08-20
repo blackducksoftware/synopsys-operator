@@ -1,0 +1,47 @@
+---
+runtimeobjectsgroupings:
+  ServiceAccounts:
+    - ServiceAccount.default.rp-issue-manager
+    - ServiceAccount.default.rp-portfolio-service
+    - ServiceAccount.default.rp-report-service
+    - ServiceAccount.default.rp-swagger-doc
+    - ServiceAccount.default.rp-tools-portfolio-service
+    - ServiceAccount.default.rp-polaris-agent-service
+  Deployments:
+    - Deployment.default.rp-issue-manager
+    - Deployment.default.rp-portfolio-service
+    - Deployment.default.rp-report-service
+    - Deployment.default.rp-swagger-doc
+    - Deployment.default.rp-tools-portfolio-service
+    - Deployment.default.report-storage
+    - Deployment.default.rp-frontend
+    - Deployment.default.rp-polaris-agent-service
+  HorizontalPodAutoscalers:
+    - HorizontalPodAutoscaler.default.rp-issue-manager
+    - HorizontalPodAutoscaler.default.rp-portfolio-service
+    - HorizontalPodAutoscaler.default.rp-report-service
+    - HorizontalPodAutoscaler.default.rp-tools-portfolio-service
+  Services:
+    - Services.default.rp-issue-manager
+    - Services.default.rp-portfolio-service
+    - Services.default.rp-report-service
+    - Services.default.rp-swagger-doc
+    - Services.default.rp-tools-portfolio-service
+    - Services.default.report-storage
+    - Services.default.rp-frontend
+  PersistentVolumeClaims:
+    - PersistentVolumeClaim.default.report-storage-pv-claim
+  Secrets:
+    - Secret.default.cloudsql
+runtimeobjectdependencies:
+  - obj: Deployments
+    isdependenton: ServiceAccounts
+  - obj: Deployments
+    isdependenton: PersistentVolumeClaims
+  - obj: Deployments
+    isdependenton: Secrets
+  - obj: Services
+    isdependenton: Deployments
+  - obj: HorizontalPodAutoscalers
+    isdependenton: Deployments
+---

@@ -1,0 +1,7 @@
+apiVersion: synopsys.com/v1
+kind: Polaris
+metadata:
+  name: polaris-sample
+spec:
+  # Add fields here
+  foo: bar

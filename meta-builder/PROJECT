@@ -11,3 +11,15 @@ resources:
 - group: synopsys
   version: v1
   kind: OpsSight
+- group: synopsys
+  version: v1
+  kind: Polaris
+- group: synopsys
+  version: v1
+  kind: Reporting
+- group: synopsys
+  version: v1
+  kind: PolarisInfra
+- group: synopsys
+  version: v1
+  kind: PolarisDB

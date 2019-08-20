@@ -1,0 +1,7 @@
+apiVersion: synopsys.com/v1
+kind: Reporting
+metadata:
+  name: reporting-sample
+spec:
+  # Add fields here
+  foo: bar
