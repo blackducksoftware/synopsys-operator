@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "AlertPVC"
+    name: $(ALERT_CR_NAME)-alert-pvc
+  name: $(ALERT_CR_NAME)-alert-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5G

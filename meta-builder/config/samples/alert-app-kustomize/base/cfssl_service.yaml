@@ -5,8 +5,8 @@ metadata:
     operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
     operator.synopsys.com/group-id: "Cfssl"
-    name: changethisalertname
-  name: changethisalertname-cfssl
+    name: $(ALERT_CR_NAME)-cfssl
+  name: $(ALERT_CR_NAME)-cfssl
 spec:
   ports:
     - name: port-8888
@@ -14,5 +14,5 @@ spec:
       protocol: TCP
       targetPort: 8888
   selector:
-    name: changethisalertname
+    name: $(ALERT_CR_NAME)-cfssl
   type: ClusterIP

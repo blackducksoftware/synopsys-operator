@@ -5,8 +5,8 @@ metadata:
     operator.synopsys.com/group-dependencies: "ConfigMap,AlertSecret"
   labels:
     operator.synopsys.com/group-id: "Alert"
-    name: changethisalertname
-  name: changethisalertname-alert
+    name: $(ALERT_CR_NAME)-alert
+  name: $(ALERT_CR_NAME)-alert
 spec:
   ports:
     - name: port-8443
@@ -14,5 +14,5 @@ spec:
       protocol: TCP
       targetPort: 8443
   selector:
-    name: changethisalertname
+    name: $(ALERT_CR_NAME)-alert
   type: ClusterIP

@@ -5,24 +5,24 @@ metadata:
     operator.synopsys.com/group-dependencies: "ConfigMap,AlertSecret"
   labels:
     operator.synopsys.com/group-id: "Alert"
-    name: changethisalertname
-  name: changethisalertname-alert
+    name: $(ALERT_CR_NAME)-alert
+  name: $(ALERT_CR_NAME)-alert
 spec:
   replicas: 1
   selector:
-    name: changethisalertname
+    name: $(ALERT_CR_NAME)-alert
   template:
     metadata:
       labels:
-        name: changethisalertname
-      name: changethisalertname-alert
+        name: $(ALERT_CR_NAME)-alert
+      name: $(ALERT_CR_NAME)-alert
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisalertname-blackduck-alert-config
+                name: $(ALERT_CR_NAME)-blackduck-alert-config
             - secretRef:
-                name: changethisalertname-alert-secret
+                name: $(ALERT_CR_NAME)-alert-secret
           image: docker.io/blackducksoftware/blackduck-alert:4.0.0
           imagePullPolicy: Always
           livenessProbe:

@@ -1,0 +1,25 @@
+apiVersion: synopsys.com/v1
+kind: Alert
+metadata:
+  name: changethisalertname
+spec:
+  namespace: default
+  environs:
+    - ALERT_SERVER_PORT:8443
+    - PUBLIC_HUB_WEBSERVER_HOST:<<HOST>>
+    - PUBLIC_HUB_WEBSERVER_PORT:443
+  secrets:
+    - ENCRYPTION_PASSWORD:<<encryption>>
+    - ENCRYPTION_GLOBAL_SALT:<<encryption>>
+  desiredState: START
+  port: 8443
+  alertImage: docker.io/blackducksoftware/blackduck-alert:4.0.0
+  alertMemory: 2560M
+  persistentStorage:
+    pvcName: alert-pvc
+    pvcStorageClass: ""
+    pvcSize: 5G
+  standAlone:
+    cfsslImage: docker.io/blackducksoftware/blackduck-cfssl:1.0.0
+    cfsslMemory: 640M
+  exposeService: LOADBALANCER

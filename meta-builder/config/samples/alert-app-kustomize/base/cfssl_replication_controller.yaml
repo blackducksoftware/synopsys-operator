@@ -5,22 +5,22 @@ metadata:
     operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
     operator.synopsys.com/group-id: "Cfssl"
-    name: changethisalertname
-  name: changethisalertname-cfssl
+    name: $(ALERT_CR_NAME)-cfssl
+  name: $(ALERT_CR_NAME)-cfssl
 spec:
   replicas: 1
   selector:
-    name: changethisalertname
+    name: $(ALERT_CR_NAME)-cfssl
   template:
     metadata:
       labels:
-        name: changethisalertname
-      name: changethisalertname-cfssl
+        name: $(ALERT_CR_NAME)-cfssl
+      name: $(ALERT_CR_NAME)-cfssl
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisalertname-blackduck-alert-config
+                name: $(ALERT_CR_NAME)-blackduck-alert-config
           image: docker.io/blackducksoftware/blackduck-cfssl:1.0.0
           livenessProbe:
             exec:

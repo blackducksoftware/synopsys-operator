@@ -1,0 +1,1 @@
+This folder is an attempt by Yash to use kustomize for Alert. Still a work in progress, not meant for usage yet.

@@ -9,5 +9,5 @@ metadata:
     operator.synopsys.com/group-dependencies: ""
   labels:
     operator.synopsys.com/group-id: "ConfigMap"
-    name: changethisalertname
-  name: changethisalertname-blackduck-alert-config
+    name: $(ALERT_CR_NAME)-blackduck-alert-config
+  name: $(ALERT_CR_NAME)-blackduck-alert-config

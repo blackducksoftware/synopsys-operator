@@ -8,7 +8,6 @@ metadata:
     app: alert
     name: changethisalertname
   name: changethisalertname-alert
-  namespace: default
 spec:
   replicas: 1
   selector:
@@ -66,7 +65,6 @@ metadata:
     app: alert
     name: changethisalertname
   name: changethisalertname-cfssl
-  namespace: default
 spec:
   replicas: 1
   selector:
@@ -121,7 +119,6 @@ metadata:
     app: alert
     name: changethisalertname
   name: changethisalertname-alert
-  namespace: default
 spec:
   ports:
     - name: port-8443
@@ -144,7 +141,6 @@ metadata:
     app: alert
     name: changethisalertname
   name: changethisalertname-cfssl
-  namespace: default
 spec:
   ports:
     - name: port-8888
@@ -171,7 +167,6 @@ metadata:
     app: alert
     name: changethisalertname
   name: changethisalertname-blackduck-alert-config
-  namespace: default
 
 ---
 apiVersion: v1
@@ -189,8 +184,26 @@ metadata:
     app: alert
     name: changethisalertname
   name: changethisalertname-alert-secret
-  namespace: default
 type: Opaque
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "AlertPvc"
+    app: alert
+    name: changethisalertname
+  name: changethisalertname-alert-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5G
+
 # TODO Routes
 # apiVersion: route.openshift.io/v1
 # kind: Route
@@ -202,7 +215,6 @@ type: Opaque
 #     component: route
 #     name: changethisalertname
 #   name: changethisalertname-alert
-#   namespace: default
 #   resourceVersion: "2414"
 #   selfLink: /apis/route.openshift.io/v1/namespaces/demo/routes/demo-alert
 #   uid: 8d100e5e-bd10-11e9-a198-08002782ac65
