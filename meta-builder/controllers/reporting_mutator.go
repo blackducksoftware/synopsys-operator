@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-  appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func patchReporting(reportingCr *synopsysv1.Reporting, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, accessor meta.MetadataAccessor) map[string]runtime.Object {
 	patcher := ReportingPatcher{
-		reportingCr:                          reportingCr,
+		reportingCr:                      reportingCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
 		accessor:                         accessor,
 	}
@@ -20,7 +20,7 @@ func patchReporting(reportingCr *synopsysv1.Reporting, mapOfUniqueIdToBaseRuntim
 }
 
 type ReportingPatcher struct {
-	reportingCr                          *synopsysv1.Reporting
+	reportingCr                      *synopsysv1.Reporting
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
 	accessor                         meta.MetadataAccessor
 }
@@ -60,7 +60,7 @@ func (p *ReportingPatcher) patchEnvironmentDNS() error {
 
 func (p *ReportingPatcher) patchImagePullSecrets() error {
 	// improve logic to get these objects directly from dependency manual
-	deployments := []string {
+	deployments := []string{
 		"rp-issue-manager",
 		"rp-portfolio-service",
 		"rp-report-service",
@@ -69,9 +69,9 @@ func (p *ReportingPatcher) patchImagePullSecrets() error {
 		"report-storage",
 		"rp-frontend",
 		"rp-polaris-agent-service",
-		}
-	for _, deployment := range deployments{
-		DeploymentUniqueID := "Deployment."+deployment
+	}
+	for _, deployment := range deployments {
+		DeploymentUniqueID := "Deployment." + deployment
 		deploymentRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[DeploymentUniqueID]
 		if !ok {
 			return nil

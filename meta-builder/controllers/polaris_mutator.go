@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-  appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func patchPolaris(polarisCr *synopsysv1.Polaris, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object, accessor meta.MetadataAccessor) map[string]runtime.Object {
 	patcher := PolarisPatcher{
-		polarisCr:                          polarisCr,
+		polarisCr:                        polarisCr,
 		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
 		accessor:                         accessor,
 	}
@@ -20,7 +20,7 @@ func patchPolaris(polarisCr *synopsysv1.Polaris, mapOfUniqueIdToBaseRuntimeObjec
 }
 
 type PolarisPatcher struct {
-	polarisCr                          *synopsysv1.Polaris
+	polarisCr                        *synopsysv1.Polaris
 	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
 	accessor                         meta.MetadataAccessor
 }
@@ -61,9 +61,9 @@ func (p *PolarisPatcher) patchEnvironmentDNS() error {
 
 func (p *PolarisPatcher) patchImagePullSecrets() error {
 	// improve logic to get these objects directly from dependency manual
-	deployments := []string {"auth-server"}
-	for _, deployment := range deployments{
-		DeploymentUniqueID := "Deployment."+deployment
+	deployments := []string{"auth-server"}
+	for _, deployment := range deployments {
+		DeploymentUniqueID := "Deployment." + deployment
 		deploymentRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[DeploymentUniqueID]
 		if !ok {
 			return nil

@@ -26,9 +26,9 @@ import (
 type ReportingSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Namespace string `json:"namespace,omitempty"`
-	EnvironmentName string `json:"environment"`
-	EnvironmentDNS string `json:"environment_address"`
+	Namespace        string `json:"namespace,omitempty"`
+	EnvironmentName  string `json:"environment"`
+	EnvironmentDNS   string `json:"environment_address"`
 	ImagePullSecrets string `json:"image_pull_secrets"`
 }
 

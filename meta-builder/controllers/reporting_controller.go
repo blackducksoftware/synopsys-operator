@@ -24,8 +24,8 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
 	flying_dutchman "github.com/blackducksoftware/synopsys-operator/meta-builder/flying-dutchman"
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,7 +37,7 @@ import (
 type ReportingReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
-	Log logr.Logger
+	Log    logr.Logger
 }
 
 func (r *ReportingReconciler) GetClient() client.Client {
