@@ -79,6 +79,7 @@ func main() {
 	if err = (&controllers.BlackduckReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Blackduck"),
+		Scheme: mgr.GetScheme(), // we've added this ourselves
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Blackduck")
 		os.Exit(1)
@@ -94,6 +95,7 @@ func main() {
 	if err = (&controllers.PolarisReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Polaris"),
+		Scheme: mgr.GetScheme(), // we've added this ourselves
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Polaris")
 		os.Exit(1)
@@ -101,6 +103,7 @@ func main() {
 	if err = (&controllers.ReportingReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Reporting"),
+		Scheme: mgr.GetScheme(), // we've added this ourselves
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Reporting")
 		os.Exit(1)

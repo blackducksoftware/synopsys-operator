@@ -111,7 +111,7 @@ func (r *ReportingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.SetIndexingForChildrenObjects(mgr, &corev1.ServiceAccount{})
 	// Add HorizontalPodAutoscaler to the list
 
-	reportingBuilder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Alert{})
+	reportingBuilder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Reporting{})
 	reportingBuilder = reportingBuilder.Owns(&corev1.ConfigMap{})
 	reportingBuilder = reportingBuilder.Owns(&corev1.Service{})
 	reportingBuilder = reportingBuilder.Owns(&corev1.ReplicationController{})

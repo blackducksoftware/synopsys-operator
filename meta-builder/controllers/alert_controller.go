@@ -148,7 +148,7 @@ func (r *AlertReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.SetIndexingForChildrenObjects(mgr, &corev1.ReplicationController{})
 	r.SetIndexingForChildrenObjects(mgr, &corev1.Secret{})
 
-	alertBuilder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Alert{})
+	alertBuilder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Alert{}).Named("alert")
 	alertBuilder = alertBuilder.Owns(&corev1.ConfigMap{})
 	alertBuilder = alertBuilder.Owns(&corev1.Service{})
 	alertBuilder = alertBuilder.Owns(&corev1.ReplicationController{})

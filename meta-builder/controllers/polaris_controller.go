@@ -138,7 +138,7 @@ func (r *PolarisReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.SetIndexingForChildrenObjects(mgr, &corev1.ServiceAccount{})
 	// Add HorizontalPodAutoscaler to the list
 
-	polarisBuilder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Alert{})
+	polarisBuilder := ctrl.NewControllerManagedBy(mgr).For(&synopsysv1.Polaris{})
 	polarisBuilder = polarisBuilder.Owns(&corev1.ConfigMap{})
 	polarisBuilder = polarisBuilder.Owns(&corev1.Service{})
 	polarisBuilder = polarisBuilder.Owns(&corev1.ReplicationController{})
