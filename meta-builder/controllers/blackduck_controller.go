@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -81,7 +82,13 @@ func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 		return nil, err
 	}
 
-	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(byteArrayContentFromFile)
+	content := string(byteArrayContentFromFile)
+	content = strings.ReplaceAll(content, "${NAME}", blackduck.Name)
+	content = strings.ReplaceAll(content, "${ADMIN_DB_PASSWORD}", blackduck.Spec.AdminPassword)
+	content = strings.ReplaceAll(content, "${USER_DB_PASSWORD}", blackduck.Spec.UserPassword)
+	content = strings.ReplaceAll(content, "${POSTGRES_DB_PASSWORD}", blackduck.Spec.PostgresPassword)
+
+	mapOfUniqueIdToDesiredRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects([]byte(content))
 	// TODO: [yash commented this] figure out why this didn't work for black duck, probably just a namespace thing
 	//for _, desiredRuntimeObject := range mapOfUniqueIdToDesiredRuntimeObject {
 	//	// set an owner reference

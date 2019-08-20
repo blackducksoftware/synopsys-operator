@@ -4,28 +4,31 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "PVC"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: cfssl
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-cfssl
+  name: ${NAME}-cfssl
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: cfssl
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: cfssl
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-cfssl
+      name: ${NAME}-cfssl
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
           image: docker.io/blackducksoftware/blackduck-cfssl:1.0.0
           imagePullPolicy: Always
           livenessProbe:
@@ -55,37 +58,40 @@ spec:
       volumes:
         - name: dir-cfssl
           persistentVolumeClaim:
-            claimName: blackduck-cfssl
+            claimName: ${NAME}-cfssl
 
 ---
 apiVersion: v1
 kind: ReplicationController
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,PVC"
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,PVC,Blackduck"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Webserver"
     app: blackduck
-    name: changethisblackduckname
+    component: webserver
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-webserver
+  name: ${NAME}-webserver
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: webserver
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: webserver
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-webserver
+      name: ${NAME}-webserver
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
           image: docker.io/blackducksoftware/blackduck-nginx:1.0.7
           imagePullPolicy: Always
           livenessProbe:
@@ -128,11 +134,11 @@ spec:
         - name: certificate
           secret:
             defaultMode: 292
-            secretName: blackduck-webserver-certificate
+            secretName: ${NAME}-webserver-certificate
         - name: auth-custom-ca
           secret:
             defaultMode: 292
-            secretName: blackduck-auth-custom-ca
+            secretName: ${NAME}-auth-custom-ca
 
 ---
 apiVersion: v1
@@ -141,28 +147,31 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: documentation
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-documentation
+  name: ${NAME}-documentation
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: documentation
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: documentation
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-documentation
+      name: ${NAME}-documentation
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
           image: docker.io/blackducksoftware/blackduck-documentation:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -201,28 +210,31 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob,PVC"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: registration
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-registration
+  name: ${NAME}-registration
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: registration
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: registration
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-registration
+      name: ${NAME}-registration
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
           image: docker.io/blackducksoftware/blackduck-registration:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -261,7 +273,7 @@ spec:
       volumes:
         - name: dir-registration
           persistentVolumeClaim:
-            claimName: blackduck-registration
+            claimName: ${NAME}-registration
         - emptyDir: {}
           name: dir-registration-security
         - name: proxy-certificate
@@ -271,7 +283,7 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: blackduck-proxy-certificate
+            secretName: ${NAME}-proxy-certificate
 
 ---
 apiVersion: v1
@@ -280,28 +292,31 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,PVC"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: zookeeper
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-zookeeper
+  name: ${NAME}-zookeeper
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: zookeeper
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: zookeeper
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-zookeeper
+      name: ${NAME}-zookeeper
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
           image: docker.io/blackducksoftware/blackduck-zookeeper:1.0.0
           imagePullPolicy: Always
           livenessProbe:
@@ -337,7 +352,7 @@ spec:
       volumes:
         - name: dir-zookeeper
           persistentVolumeClaim:
-            claimName: blackduck-zookeeper
+            claimName: ${NAME}-zookeeper
 
 ---
 apiVersion: v1
@@ -346,23 +361,26 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: jobrunner
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-jobrunner
+  name: ${NAME}-jobrunner
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: jobrunner
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: jobrunner
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-jobrunner
+      name: ${NAME}-jobrunner
     spec:
       containers:
         - env:
@@ -370,9 +388,9 @@ spec:
               value: 4096m
           envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
             - configMapRef:
-                name: changethisblackduckname-db-config
+                name: ${NAME}-db-config
           image: docker.io/blackducksoftware/blackduck-jobrunner:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -417,7 +435,7 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: blackduck-proxy-certificate
+            secretName: ${NAME}-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -428,7 +446,7 @@ spec:
               - key: HUB_POSTGRES_USER_PASSWORD_FILE
                 mode: 420
                 path: HUB_POSTGRES_USER_PASSWORD_FILE
-            secretName: blackduck-db-creds
+            secretName: ${NAME}-db-creds
         - emptyDir: {}
           name: dir-jobrunner
 
@@ -439,23 +457,26 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob,PVC"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: scan
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-scan
+  name: ${NAME}-scan
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: scan
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: scan
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-scan
+      name: ${NAME}-scan
     spec:
       containers:
         - env:
@@ -463,9 +484,9 @@ spec:
               value: 2048m
           envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
             - configMapRef:
-                name: changethisblackduckname-db-config
+                name: ${NAME}-db-config
           image: docker.io/blackducksoftware/blackduck-scan:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -514,7 +535,7 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: blackduck-proxy-certificate
+            secretName: ${NAME}-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -525,7 +546,7 @@ spec:
               - key: HUB_POSTGRES_USER_PASSWORD_FILE
                 mode: 420
                 path: HUB_POSTGRES_USER_PASSWORD_FILE
-            secretName: blackduck-db-creds
+            secretName: ${NAME}-db-creds
 
 ---
 apiVersion: v1
@@ -534,23 +555,26 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob,PVC"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: authentication
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-authentication
+  name: ${NAME}-authentication
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: authentication
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: authentication
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-authentication
+      name: ${NAME}-authentication
     spec:
       containers:
         - env:
@@ -558,9 +582,9 @@ spec:
               value: 512m
           envFrom:
             - configMapRef:
-                name: changethisblackduckname-db-config
+                name: ${NAME}-db-config
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
           image: docker.io/blackducksoftware/blackduck-authentication:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -608,7 +632,7 @@ spec:
         - name: auth-custom-ca
           secret:
             defaultMode: 292
-            secretName: blackduck-auth-custom-ca
+            secretName: ${NAME}-auth-custom-ca
         - name: proxy-certificate
           secret:
             defaultMode: 420
@@ -616,10 +640,10 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: blackduck-proxy-certificate
+            secretName: ${NAME}-proxy-certificate
         - name: dir-authentication
           persistentVolumeClaim:
-            claimName: blackduck-authentication
+            claimName: ${NAME}-authentication
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -630,7 +654,7 @@ spec:
               - key: HUB_POSTGRES_USER_PASSWORD_FILE
                 mode: 420
                 path: HUB_POSTGRES_USER_PASSWORD_FILE
-            secretName: blackduck-db-creds
+            secretName: ${NAME}-db-creds
         - emptyDir: {}
           name: dir-authentication-security
 
@@ -641,23 +665,26 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob,PVC"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: webapp-logstash
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-webapp-logstash
+  name: ${NAME}-webapp-logstash
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: webapp-logstash
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: webapp-logstash
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-webapp-logstash
+      name: ${NAME}-webapp-logstash
     spec:
       containers:
         - env:
@@ -665,9 +692,9 @@ spec:
               value: 2048m
           envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
             - configMapRef:
-                name: changethisblackduckname-db-config
+                name: ${NAME}-db-config
           image: docker.io/blackducksoftware/blackduck-webapp:2019.6.1
           imagePullPolicy: Always
           livenessProbe:
@@ -710,7 +737,7 @@ spec:
               subPath: HUB_PROXY_CERT_FILE
         - envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
           image: docker.io/blackducksoftware/blackduck-logstash:1.0.4
           imagePullPolicy: Always
           livenessProbe:
@@ -742,10 +769,10 @@ spec:
           name: dir-webapp-security
         - name: dir-webapp
           persistentVolumeClaim:
-            claimName: blackduck-webapp
+            claimName: ${NAME}-webapp
         - name: dir-logstash
           persistentVolumeClaim:
-            claimName: blackduck-logstash
+            claimName: ${NAME}-logstash
         - name: proxy-certificate
           secret:
             defaultMode: 420
@@ -753,7 +780,7 @@ spec:
               - key: HUB_PROXY_CERT_FILE
                 mode: 420
                 path: HUB_PROXY_CERT_FILE
-            secretName: blackduck-proxy-certificate
+            secretName: ${NAME}-proxy-certificate
         - name: db-passwords
           secret:
             defaultMode: 420
@@ -764,7 +791,7 @@ spec:
               - key: HUB_POSTGRES_USER_PASSWORD_FILE
                 mode: 420
                 path: HUB_POSTGRES_USER_PASSWORD_FILE
-            secretName: blackduck-db-creds
+            secretName: ${NAME}-db-creds
 
 ---
 apiVersion: v1
@@ -773,28 +800,31 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob,PVC"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: uploadcache
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-uploadcache
+  name: ${NAME}-uploadcache
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: uploadcache
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
+        component: uploadcache
+        name: ${NAME}
         version: 2019.6.1
-      name: changethisblackduckname-uploadcache
+      name: ${NAME}-uploadcache
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: changethisblackduckname-config
+                name: ${NAME}-config
           image: docker.io/blackducksoftware/blackduck-upload-cache:1.0.8
           imagePullPolicy: Always
           livenessProbe:
@@ -840,11 +870,11 @@ spec:
           name: dir-uploadcache-security
         - name: dir-uploadcache-data
           persistentVolumeClaim:
-            claimName: blackduck-uploadcache-data
+            claimName: ${NAME}-uploadcache-data
         - name: dir-seal-key
           secret:
             defaultMode: 292
-            secretName: blackduck-upload-cache
+            secretName: ${NAME}-upload-cache
 
 ---
 apiVersion: v1
@@ -853,11 +883,12 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: cfssl
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-cfssl
+  name: ${NAME}-cfssl
 spec:
   ports:
     - name: port-8888
@@ -866,7 +897,8 @@ spec:
       targetPort: 8888
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: cfssl
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -874,13 +906,14 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Blackduck"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Webserver"
     app: blackduck
-    name: changethisblackduckname
+    component: webserver
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-webserver
+  name: ${NAME}-webserver
 spec:
   ports:
     - name: port-443
@@ -889,7 +922,8 @@ spec:
       targetPort: 8443
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: webserver
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -899,11 +933,12 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: documentation
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-documentation
+  name: ${NAME}-documentation
 spec:
   ports:
     - name: port-8443
@@ -912,7 +947,8 @@ spec:
       targetPort: 8443
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: documentation
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -922,11 +958,12 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: registration
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-registration
+  name: ${NAME}-registration
 spec:
   ports:
     - name: port-8443
@@ -935,7 +972,8 @@ spec:
       targetPort: 8443
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: registration
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -945,11 +983,12 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: zookeeper
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-zookeeper
+  name: ${NAME}-zookeeper
 spec:
   ports:
     - name: port-2181
@@ -958,7 +997,8 @@ spec:
       targetPort: 2181
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: zookeeper
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -968,11 +1008,12 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: scan
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-scan
+  name: ${NAME}-scan
 spec:
   ports:
     - name: port-8443
@@ -981,7 +1022,8 @@ spec:
       targetPort: 8443
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: scan
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -991,9 +1033,10 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: authentication
+    name: ${NAME}
     version: 2019.6.1
   name: authentication
 spec:
@@ -1004,7 +1047,8 @@ spec:
       targetPort: 8443
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: authentication
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -1014,9 +1058,10 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: webapp-logstash
+    name: ${NAME}
     version: 2019.6.1
   name: webapp
 spec:
@@ -1027,7 +1072,8 @@ spec:
       targetPort: 8443
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: webapp-logstash
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -1037,11 +1083,12 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    component: webapp-logstash
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-logstash
+  name: ${NAME}-logstash
 spec:
   ports:
     - name: port-5044
@@ -1050,7 +1097,8 @@ spec:
       targetPort: 5044
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: webapp-logstash
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -1060,9 +1108,10 @@ metadata:
   annotations:
     operator.synopsys.com/group-dependencies: "ConfigMap,Secrets,Postgres,InitJob"
   labels:
-    operator.synopsys.com/group-id: "EverythingElse"
+    operator.synopsys.com/group-id: "Blackduck"
     app: blackduck
-    name: changethisblackduckname
+    name: ${NAME}
+    component: uploadcache
     version: 2019.6.1
   name: uploadcache
 spec:
@@ -1077,34 +1126,35 @@ spec:
       targetPort: 9444
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: uploadcache
+    name: ${NAME}
   type: ClusterIP
 
 ---
 apiVersion: v1
 data:
-  BLACKDUCK_CFSSL_HOST: blackduck-cfssl
+  BLACKDUCK_CFSSL_HOST: ${NAME}-cfssl
   BLACKDUCK_CFSSL_PORT: "8888"
-  BROKER_URL: amqps://blackduck-rabbitmq/protecodesc
+  BROKER_URL: amqps://${NAME}-rabbitmq/protecodesc
   BROKER_USE_SSL: "yes"
-  CFSSL: blackduck-cfssl:8888
+  CFSSL: ${NAME}-cfssl:8888
   CLIENT_CERT_CN: blackduck-binaryscanner
   DATA_RETENTION_IN_DAYS: "180"
   ENABLE_SOURCE_UPLOADS: "false"
   HTTPS_VERIFY_CERTS: "yes"
-  HUB_CFSSL_HOST: blackduck-cfssl
-  HUB_DOC_HOST: blackduck-documentation
-  HUB_JOBRUNNER_HOST: blackduck-jobrunner
-  HUB_LOGSTASH_HOST: blackduck-logstash
-  HUB_REGISTRATION_HOST: blackduck-registration
-  HUB_SCAN_HOST: blackduck-scan
-  HUB_SOLR_HOST: blackduck-solr
+  HUB_CFSSL_HOST: ${NAME}-cfssl
+  HUB_DOC_HOST: ${NAME}-documentation
+  HUB_JOBRUNNER_HOST: ${NAME}-jobrunner
+  HUB_LOGSTASH_HOST: ${NAME}-logstash
+  HUB_REGISTRATION_HOST: ${NAME}-registration
+  HUB_SCAN_HOST: ${NAME}-scan
+  HUB_SOLR_HOST: ${NAME}solr
   HUB_VERSION: ${HUB_VERSION}
-  HUB_WEBSERVER_HOST: blackduck-webserver
-  HUB_ZOOKEEPER_HOST: blackduck-zookeeper
+  HUB_WEBSERVER_HOST: ${NAME}-webserver
+  HUB_ZOOKEEPER_HOST: ${NAME}-zookeeper
   IPV4_ONLY: "0"
   MAX_TOTAL_SOURCE_SIZE_MB: "4000"
-  RABBIT_MQ_HOST: blackduck-rabbitmq
+  RABBIT_MQ_HOST: ${NAME}-rabbitmq
   RABBIT_MQ_PORT: "5671"
   RABBITMQ_DEFAULT_VHOST: protecodesc
   RABBITMQ_SSL_FAIL_IF_NO_PEER_CERT: "false"
@@ -1119,9 +1169,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "ConfigMap"
     app: blackduck
-    name: changethisblackduckname
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-config
+  name: ${NAME}-config
 
 ---
 apiVersion: v1
@@ -1135,9 +1185,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
-    name: changethisblackduckname
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-webserver-certificate
+  name: ${NAME}-webserver-certificate
 type: Opaque
 
 ---
@@ -1151,9 +1201,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
-    name: changethisblackduckname
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-upload-cache
+  name: ${NAME}-upload-cache
 type: Opaque
 
 ---
@@ -1165,19 +1215,22 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Postgres"
     app: blackduck
-    name: changethisblackduckname
-  name: changethisblackduckname-postgres
+    component: postgres
+    name: ${NAME}
+  name: ${NAME}-postgres
 spec:
   replicas: 1
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: postgres
+    name: ${NAME}
   template:
     metadata:
       labels:
         app: blackduck
-        name: changethisblackduckname
-      name: changethisblackduckname-postgres
+        component: postgres
+        name: ${NAME}
+      name: ${NAME}-postgres
     spec:
       containers:
         - env:
@@ -1193,15 +1246,15 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
-                  name: changethisblackduckname-db-creds
+                  name: ${NAME}-db-creds
             - name: POSTGRESQL_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_POSTGRES_PASSWORD_FILE
-                  name: changethisblackduckname-db-creds
+                  name: ${NAME}-db-creds
           envFrom:
             - configMapRef:
-                name: changethisblackduckname-db-config
+                name: ${NAME}-db-config
           image: registry.access.redhat.com/rhscl/postgresql-96-rhel7:1
           imagePullPolicy: IfNotPresent
           lifecycle:
@@ -1212,7 +1265,7 @@ spec:
                   - -c
                   - LD_LIBRARY_PATH=/opt/rh/rh-postgresql96/root/usr/lib64 /opt/rh/rh-postgresql96/root/usr/bin/pg_ctl
                     -D /var/lib/pgsql/data/userdata -l logfile stop
-          name: changethisblackduckname-postgres
+          name: ${NAME}-postgres
           ports:
             - containerPort: 5432
               protocol: TCP
@@ -1240,7 +1293,7 @@ spec:
       volumes:
         - name: postgres-data-volume
           persistentVolumeClaim:
-            claimName: blackduck-postgres
+            claimName: ${NAME}-postgres
 
 ---
 apiVersion: v1
@@ -1251,8 +1304,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Postgres"
     app: blackduck
-    name: changethisblackduckname
-  name: changethisblackduckname-postgres
+    component: postgres
+    name: ${NAME}
+  name: ${NAME}-postgres
 spec:
   ports:
     - name: port-5432
@@ -1261,7 +1315,8 @@ spec:
       targetPort: 5432
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: postgres
+    name: ${NAME}
   type: ClusterIP
 
 ---
@@ -1273,9 +1328,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "ConfigMap"
     app: blackduck
-    name: changethisblackduckname
+    name: ${NAME}
     version: 2019.8.0
-  name: changethisblackduckname-db-config
+  name: ${NAME}-db-config
 
 ---
 apiVersion: v1
@@ -1286,9 +1341,13 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
-    name: changethisblackduckname
+    name: ${NAME}
     version: 2019.8.0
-  name: changethisblackduckname-db-creds
+  name: ${NAME}-db-creds
+data:
+  HUB_POSTGRES_ADMIN_PASSWORD_FILE: "${ADMIN_DB_PASSWORD}"
+  HUB_POSTGRES_USER_PASSWORD_FILE: "${USER_DB_PASSWORD}"
+  HUB_POSTGRES_POSTGRES_PASSWORD_FILE: "${POSTGRES_DB_PASSWORD}"
 type: Opaque
 
 ---
@@ -1299,7 +1358,7 @@ metadata:
     operator.synopsys.com/group-dependencies: "Postgres"
   labels:
     operator.synopsys.com/group-id: "InitJob"
-  name: postgres-init-config
+  name: ${NAME}-postgres-init-config
 data:
   init.sh: |-
     #!/bin/bash
@@ -1378,7 +1437,7 @@ metadata:
     operator.synopsys.com/group-dependencies: "Postgres"
   labels:
     operator.synopsys.com/group-id: "InitJob"
-  name: changethisblackduckname-init-postgres
+  name: ${NAME}-init-postgres
 spec:
   template:
     spec:
@@ -1386,7 +1445,7 @@ spec:
         - name: postgres-init
           configMap:
             defaultMode: 0777
-            name: postgres-init-config
+            name: ${NAME}-postgres-init-config
       containers:
         - name: postgres-init
           image: registry.access.redhat.com/rhscl/postgresql-96-rhel7:1
@@ -1397,23 +1456,23 @@ spec:
               name: postgres-init
           envFrom:
             - configMapRef:
-                name: changethisblackduckname-db-config
+                name: ${NAME}-db-config
           env:
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_POSTGRES_PASSWORD_FILE
-                  name: changethisblackduckname-db-creds
+                  name: ${NAME}-db-creds
             - name: HUB_POSTGRES_USER_PASSWORD_FILE
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_USER_PASSWORD_FILE
-                  name: changethisblackduckname-db-creds
+                  name: ${NAME}-db-creds
             - name: HUB_POSTGRES_ADMIN_PASSWORD_FILE
               valueFrom:
                 secretKeyRef:
                   key: HUB_POSTGRES_ADMIN_PASSWORD_FILE
-                  name: changethisblackduckname-db-creds
+                  name: ${NAME}-db-creds
       restartPolicy: Never
   backoffLimit: 4
 
@@ -1427,7 +1486,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-postgres
+  name: ${NAME}-postgres
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1445,7 +1504,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-webapp
+  name: ${NAME}-webapp
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1463,7 +1522,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-zookeeper
+  name: ${NAME}-zookeeper
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1481,7 +1540,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-uploadcache-data
+  name: ${NAME}-uploadcache-data
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1499,7 +1558,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-authentication
+  name: ${NAME}-authentication
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1517,7 +1576,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-cfssl
+  name: ${NAME}-cfssl
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1535,7 +1594,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-registration
+  name: ${NAME}-registration
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1553,7 +1612,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-solr
+  name: ${NAME}-solr
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1571,7 +1630,7 @@ metadata:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
     name: test
-  name: changethisblackduckname-logstash
+  name: ${NAME}-logstash
 spec:
   accessModes:
     - ReadWriteOnce
@@ -1588,9 +1647,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
-    name: changethisblackduckname
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-auth-custom-ca
+  name: ${NAME}-auth-custom-ca
 type: Opaque
 
 ---
@@ -1602,9 +1661,9 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "Secret"
     app: blackduck
-    name: changethisblackduckname
+    name: ${NAME}
     version: 2019.6.1
-  name: changethisblackduckname-proxy-certificate
+  name: ${NAME}-proxy-certificate
 type: Opaque
 
 ---
@@ -1613,12 +1672,13 @@ kind: Service
 metadata:
   creationTimestamp: null
   annotations:
-    operator.synopsys.com/group-dependencies: "EverythingElse"
+    operator.synopsys.com/group-dependencies: "Blackduck"
   labels:
     operator.synopsys.com/group-id: "ExposeService"
     app: blackduck
-    name: changethisblackduckname
-  name: changethisblackduckname-webserver-exposed
+    name: ${NAME}
+    component: webserver-exposed
+  name: ${NAME}-webserver-exposed
 spec:
   ports:
     - name: port-443
@@ -1627,5 +1687,6 @@ spec:
       targetPort: 8443
   selector:
     app: blackduck
-    name: changethisblackduckname
+    component: webserver
+    name: ${NAME}
   type: LoadBalancer

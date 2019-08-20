@@ -39,6 +39,7 @@ package controllers
 import (
 	"fmt"
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -74,13 +75,13 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 	p.patchAuthCert()
 	p.patchProxyCert()
 	p.patchExposeService()
-	// TODO - Patch ImageRegistries | RegistryConfiguration
+	// TODO - Patch SEAL_KEY + BDBA
 	return p.objects
 }
 
 func (p *BlackduckPatcher) patchExposeService() error {
 	// TODO use contansts
-	id := "Service.blackduck-webserver-exposed"
+	id := fmt.Sprintf("Service.%s-webserver-exposed", p.blackduck.Name)
 	runtimeObject, ok := p.objects[id]
 	if !ok {
 		return nil
@@ -103,11 +104,11 @@ func (p *BlackduckPatcher) patchAuthCert() error {
 		for _, v := range p.objects {
 			switch v.(type) {
 			case *v1.ReplicationController:
-				removeVolumeAndVolumeMountFromRC(v.(*v1.ReplicationController), "blackduck-auth-custom-ca")
+				removeVolumeAndVolumeMountFromRC(v.(*v1.ReplicationController), fmt.Sprintf("%sauth-custom-ca", p.blackduck.Name))
 			}
 		}
 	} else {
-		secret, ok := p.objects["Secret.blackduck-auth-custom-ca"]
+		secret, ok := p.objects[fmt.Sprintf("Secret.%s-auth-custom-ca", p.blackduck.Name)]
 		if !ok {
 			return nil
 		}
@@ -126,11 +127,11 @@ func (p *BlackduckPatcher) patchProxyCert() error {
 		for _, v := range p.objects {
 			switch v.(type) {
 			case *v1.ReplicationController:
-				removeVolumeAndVolumeMountFromRC(v.(*v1.ReplicationController), "blackduck-proxy-certificate")
+				removeVolumeAndVolumeMountFromRC(v.(*v1.ReplicationController), fmt.Sprintf("%s-proxy-certificate", p.blackduck.Name))
 			}
 		}
 	} else {
-		secret, ok := p.objects["Secret.blackduck-proxy-certificate"]
+		secret, ok := p.objects[fmt.Sprintf("Secret.%s-proxy-certificate", p.blackduck.Name)]
 		if !ok {
 			return nil
 		}
@@ -166,24 +167,22 @@ func (p *BlackduckPatcher) patchImages() error {
 		for _, v := range p.objects {
 			switch v.(type) {
 			case *v1.ReplicationController:
-				//for i := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
-				// TODO
-				//}
-
+				for i := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
+					v.(*v1.ReplicationController).Spec.Template.Spec.Containers[i].Image = controllers_utils.GenerateImageTag(v.(*v1.ReplicationController).Spec.Template.Spec.Containers[i].Image, p.blackduck.Spec.ImageRegistries, p.blackduck.Spec.RegistryConfiguration)
+				}
 			}
-
 		}
 	}
 	return nil
 }
 
 func (p *BlackduckPatcher) patchPostgresConfig() error {
-	cmConf, ok := p.objects["ConfigMap.blackduck-db-config"]
+	cmConf, ok := p.objects[fmt.Sprintf("ConfigMap.%s-db-config", p.blackduck.Name)]
 	if !ok {
 		return nil
 	}
 
-	secretConf, ok := p.objects["Secret.blackduck-db-creds"]
+	secretConf, ok := p.objects[fmt.Sprintf("Secret.%s-db-creds", p.blackduck.Name)]
 	if !ok {
 		return nil
 	}
@@ -207,15 +206,15 @@ func (p *BlackduckPatcher) patchPostgresConfig() error {
 		secretConf.(*v1.Secret).Data["HUB_POSTGRES_USER_PASSWORD_FILE"] = []byte(p.blackduck.Spec.ExternalPostgres.PostgresUserPassword)
 
 		// Delete the component required when deploying internal postgres
-		delete(p.objects, "PersistentVolumeClaim.blackduck-postgres")
-		delete(p.objects, "Job.blackduck-init-postgres")
-		delete(p.objects, "ConfigMap.postgres-init-config")
-		delete(p.objects, "Service.blackduck-postgres")
-		delete(p.objects, "ReplicationController.blackduck-postgres")
+		delete(p.objects, fmt.Sprintf("PersistentVolumeClaim.%s-postgres", p.blackduck.Name))
+		delete(p.objects, fmt.Sprintf("Job.%s-init-postgres", p.blackduck.Name))
+		delete(p.objects, fmt.Sprintf("ConfigMap.%s-postgres-init-config", p.blackduck.Name))
+		delete(p.objects, fmt.Sprintf("Service.%s-postgres", p.blackduck.Name))
+		delete(p.objects, fmt.Sprintf("ReplicationController.%s-postgres", p.blackduck.Name))
 	} else {
 		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_ADMIN"] = "blackduck"
 		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_ENABLE_SSL"] = "false"
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_HOST"] = "blackduck-postgres"
+		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_HOST"] = fmt.Sprintf("%s-postgres", p.blackduck.Name)
 		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_PORT"] = "5432"
 		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_USER"] = "blackduck_user"
 
@@ -230,8 +229,7 @@ func (p *BlackduckPatcher) patchPostgresConfig() error {
 func (p *BlackduckPatcher) patchWebserverCertificates() error {
 
 	if len(p.blackduck.Spec.Certificate) > 0 && len(p.blackduck.Spec.CertificateKey) > 0 {
-		id := "Secret.blackduck-webserver-certificate"
-		runtimeObject, ok := p.objects[id]
+		runtimeObject, ok := p.objects[fmt.Sprintf("Secret.%s-webserver-certificate", p.blackduck.Name)]
 		if !ok {
 			return nil
 		}
@@ -244,8 +242,7 @@ func (p *BlackduckPatcher) patchWebserverCertificates() error {
 }
 
 func (p *BlackduckPatcher) patchEnvirons() error {
-	ConfigMapUniqueID := "ConfigMap.blackduck-config"
-	configMapRuntimeObject, ok := p.objects[ConfigMapUniqueID]
+	configMapRuntimeObject, ok := p.objects[fmt.Sprintf("ConfigMap.%s-config", p.blackduck.Name)]
 	if !ok {
 		return nil
 	}
