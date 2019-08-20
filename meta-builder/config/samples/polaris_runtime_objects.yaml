@@ -1,0 +1,545 @@
+---
+# Source: swip/templates/auth-server.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "auth-server"
+  labels:    
+    environment: "onprem"
+    service: "auth-server"
+    component: "swip"
+    componentVersion: "0.0.4189"
+    chart: "swip"
+    chartVersion: "0.0.4189"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "auth-server"
+  labels:    
+    environment: "onprem"
+    service: "auth-server"
+    component: "swip"
+    componentVersion: "0.0.4189"
+    chart: "swip"
+    chartVersion: "0.0.4189"
+spec:
+  selector:    
+    service: "auth-server"
+  ports:
+  - name: "http"
+    port: 80
+    protocol: "TCP"
+    targetPort: 8080
+  - name: "admin"
+    port: 8081
+    targetPort: 8081
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "auth-server"
+  labels:    
+    environment: "onprem"
+    service: "auth-server"
+    component: "swip"
+    componentVersion: "0.0.4189"
+    chart: "swip"
+    chartVersion: "0.0.4189"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:      
+      service: "auth-server"
+  strategy:
+    type: "RollingUpdate"
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      name: "auth-server"
+      labels:        
+        environment: "onprem"
+        service: "auth-server"
+        component: "swip"
+        componentVersion: "0.0.4189"
+        chart: "swip"
+        chartVersion: "0.0.4189"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5000
+      serviceAccount: "auth-server"
+      containers:
+      - name: "auth-server"
+        image: "gcr.io/snps-swip-staging/swip_auth-server:1.6.1779"
+        imagePullPolicy: "IfNotPresent"
+        env:        
+        - name: LOGGING_LEVEL
+          value: "INFO"
+        - name: ESJC_LOGGING_LEVEL
+          value: "INFO"
+        - name: SWIP_ENVIRONMENT_NAME
+          value: "onprem"
+        - name: SWIP_ROOT_DOMAIN
+          value: "onprem.dev.polaris.synopsys.com"
+        - name: SWIP_SERVICE_NAME
+          value: "auth-server"
+        - name: NAMESPACE
+          value: "default"
+        - name: POLARIS_ENVIRONMENT_NAME
+          value: onprem
+        - name: POLARIS_ROOT_DOMAIN
+          value: onprem.dev.polaris.synopsys.com
+        - name: POLARIS_SERVICE_NAME
+          value: auth-server
+        - name: KUBERNETES_NAMESPACE
+          value: default        
+        - name: "JAEGER_SERVICE_NAME"
+          value: "default-auth-server"
+        - name: "JAEGER_AGENT_HOST"
+          valueFrom:
+            fieldRef:
+              fieldPath: "status.hostIP"
+        - name: "JAEGER_AGENT_PORT"
+          value: "6831"
+        - name: "JAEGER_REPORTER_LOG_SPANS"
+          value: "false"
+        - name: "JAEGER_SAMPLER_TYPE"
+          value: "const"
+        - name: "JAEGER_SAMPLER_PARAM"
+          value: "1"        
+        - name: "MONGODB_HOST"
+          value: "mongodb"
+        - name: "MONGODB_PORT"
+          value: "27017"        
+        - name: "EVENT_STORE_ADDR"
+          value: "eventstore"
+        - name: "EVENT_STORE_USERNAME"
+          value: "admin"
+        - name: "EVENT_STORE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: "swip-eventstore-creds"
+              key: "password"        
+        - name: "EVENT_STORE_ADDR"
+          value: "eventstore.default.svc.cluster.local"
+        - name: "EVENT_STORE_ADMIN_USERNAME"
+          value: "admin"
+        - name: "EVENT_STORE_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: swip-eventstore-admin-creds
+              key: "password"        
+        - name: "EVENT_STORE_ADDR"
+          value: "eventstore.default.svc.cluster.local"
+        - name: "EVENT_STORE_WRITER_USERNAME"
+          value: "writer"
+        - name: "EVENT_STORE_WRITER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: swip-eventstore-writer-creds
+              key: "password"        
+        - name: "EVENT_STORE_ADDR"
+          value: "eventstore.default.svc.cluster.local"
+        - name: "EVENT_STORE_READER_USERNAME"
+          value: "reader"
+        - name: "EVENT_STORE_READER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: swip-eventstore-reader-creds
+              key: "password"        
+        - name: "SWIP_VAULT_ADDRESS"
+          value: "https://swip-db-vault:8200"
+        - name: "VAULT_CACERT"
+          value: "/mnt/vault/ca/vault_cacrt"
+        - name: "VAULT_CLIENT_KEY"
+          value: "/mnt/vault/key/vault_server_key"
+        - name: "VAULT_CLIENT_CERT"
+          value: "/mnt/vault/cert/vault_server_cert"        
+        - name: "SMTP_HOST"
+          valueFrom:
+            secretKeyRef:
+              name: "smtp"
+              key: "host"
+        - name: "SMTP_PORT"
+          valueFrom:
+            secretKeyRef:
+              name: "smtp"
+              key: "port"
+        - name: "SMTP_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: "smtp"
+              key: "passwd"
+        - name: "SMTP_USERNAME"
+          valueFrom:
+            secretKeyRef:
+              name: "smtp"
+              key: "username"
+        volumeMounts:        
+        - name: "vault-cacert"
+          mountPath: "/mnt/vault/ca"
+          readOnly: true
+        - name: "vault-server-key"
+          mountPath: "/mnt/vault/key"
+          readOnly: true
+        - name: "vault-server-cert"
+          mountPath: "/mnt/vault/cert"
+          readOnly: true        
+        ports:
+        - name: "http"
+          protocol: "TCP"
+          containerPort: 8080
+        resources:          
+          limits:
+            cpu: 750m
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            memory: 1Gi
+        readinessProbe:
+          httpGet:
+            path: "/healthcheck"
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          failureThreshold: 4
+        livenessProbe:
+          httpGet:
+            path: "/version"
+            port: 8080
+          initialDelaySeconds: 300
+          periodSeconds: 30
+          failureThreshold: 4
+        terminationMessagePath: "/dev/termination-log"
+        terminationMessagePolicy: "File"      
+      - name: "leader-election"
+        image: "k8s.gcr.io/leader-elector:0.5"
+        imagePullPolicy: "Always"
+        args:
+        - "--election=auth-server"
+        - "--election-namespace=default"
+        - "--http=0.0.0.0:4040"
+        ports:
+        - name: "http"
+          protocol: "TCP"
+          containerPort: 4040
+        resources: 
+          requests:
+            cpu: "50m"
+            memory: "50Mi"
+          limits:
+            cpu: "100m"
+            memory: "256Mi"
+      dnsPolicy: "ClusterFirst"
+      restartPolicy: "Always"
+      schedulerName: "default-scheduler"
+      terminationGracePeriodSeconds: 30
+      volumes:      
+      - name: "vault-cacert"
+        secret:
+          secretName: "vault-ca-certificate"
+          items:
+          - key: "tls.crt"
+            path: "vault_cacrt"
+      - name: "vault-server-key"
+        secret:
+          secretName: "auth-server-tls-certificate"
+          items:
+          - key: "tls.key"
+            path: "vault_server_key"
+      - name: "vault-server-cert"
+        secret:
+          secretName: "auth-server-tls-certificate"
+          items:
+          - key: "tls.crt"
+            path: "vault_server_cert"            
+      imagePullSecrets:
+      - name: gcr-json-key
+---
+apiVersion: "autoscaling/v2beta1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "auth-server"
+  labels:    
+    environment: "onprem"
+    service: "auth-server"
+    component: "swip"
+    componentVersion: "0.0.4189"
+    chart: "swip"
+    chartVersion: "0.0.4189"
+spec:
+  maxReplicas: 3
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: "extensions/v1beta1"
+    kind: "Deployment"
+    name: "auth-server"
+  metrics:
+  - type: "Resource"
+    resource:
+      name: "memory"
+      targetAverageUtilization: 75 
+  - type: Resource
+    resource:
+      name: "cpu"
+      targetAverageUtilization: 75
+
+---
+# Source: swip/templates/ingress.yaml
+
+apiVersion: "extensions/v1beta1"
+kind: "Ingress"
+metadata:
+  name: "release-name-ingress"
+  namespace: "default"
+  labels:    
+    environment: "onprem"
+    service: "swip-ingress"
+    component: "swip"
+    componentVersion: "0.0.4189"
+    chart: "swip"
+    chartVersion: "0.0.4189"
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    ingress.kubernetes.io/hsts: "true"
+    ingress.kubernetes.io/ssl-redirect: "true"
+    ingress.kubernetes.io/rewrite-target: "/"
+    nginx.ingress.kubernetes.io/rewrite-target: "/"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1000m"
+    nginx.ingress.kubernetes.io/whitelist-source-range: "0.0.0.0/0"
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
+spec:
+  tls:
+  - hosts:
+    - "onprem.dev.polaris.synopsys.com"
+    secretName: "swip-ingress-tls"
+  rules:
+  - host: "onprem.dev.polaris.synopsys.com"
+    http:
+      paths:
+      - path: "/api/auth/v0"
+        backend:
+          serviceName: "auth-server"
+          servicePort: 8080
+      - path: "/api/jobs/v0"
+        backend:
+          serviceName: "jobs-service"
+          servicePort: 8080
+      - path: "/api/logs/v0"
+        backend:
+          serviceName: "logs-service"
+          servicePort: 8080
+      - path: "/api/tools/v0"
+        backend:
+          serviceName: "tools-service"
+          servicePort: 8080
+      - path: "/api/checks/v0"
+        backend:
+          serviceName: "configs-service"
+          servicePort: 8080
+      - path: "/api/configs/v0"
+        backend:
+          serviceName: "configs-service"
+          servicePort: 8080
+      - path: "/api-docs/"
+        backend:
+          serviceName: "pericles-swagger-ui"
+          servicePort: 8080
+      - path: "/api/common"
+        backend:
+          serviceName: "cos-server"
+          servicePort: 8080
+      - path: "/api/code-analysis"
+        backend:
+          serviceName: "tds-code-analysis"
+          servicePort: 8080
+      - path: "/api/query"
+        backend:
+          serviceName: "issue-server"
+          servicePort: 8080
+      - path: "/api/issues"
+        backend:
+          serviceName: "issue-server"
+          servicePort: 8080
+      - path: "/api/taxonomy"
+        backend:
+          serviceName: "taxonomy-server"
+          servicePort: 8080
+      - path: "/api/triage-command"
+        backend:
+          serviceName: "triage-command-handler"
+          servicePort: 8080
+      - path: "/api/triage-query"
+        backend:
+          serviceName: "triage-query"
+          servicePort: 8080
+      - path: "/api/auth"
+        backend:
+          serviceName: "auth-server"
+          servicePort: 8080
+      - path: "/api/jobs"
+        backend:
+          serviceName: "jobs-service"
+          servicePort: 8080
+      - path: "/api/logs"
+        backend:
+          serviceName: "logs-service"
+          servicePort: 8080
+      - path: "/api/tools"
+        backend:
+          serviceName: "tools-service"
+          servicePort: 8080
+      - path: "/api/checks"
+        backend:
+          serviceName: "configs-service"
+          servicePort: 8080
+      - path: "/api/configs"
+        backend:
+          serviceName: "configs-service"
+          servicePort: 8080
+      - path: "/api/dms"
+        backend:
+          serviceName: "desktop-metrics-service"
+          servicePort: 8080
+      - path: "/api/dms/v0"
+        backend:
+          serviceName: "desktop-metrics-service"
+          servicePort: 8080
+      - path: "/upload"
+        backend:
+          serviceName: "upload-server"
+          servicePort: 9000
+      - path: "/download"
+        backend:
+          serviceName: "download-server"
+          servicePort: 9000
+      - path: "/api/vinyl"
+        backend:
+          serviceName: "vinyl-server"
+          servicePort: 8080
+      - path: "/"
+        backend:
+          serviceName: "web-core"
+          servicePort: 8080
+      - path: "/reporting"
+        backend:
+          serviceName: "rp-frontend"
+          servicePort: 80
+      - path: "/reporting/tps"
+        backend:
+          serviceName: "rp-tools-portfolio-service"
+          servicePort: 60281
+      - path: "/reporting/im"
+        backend:
+          serviceName: "rp-issue-manager"
+          servicePort: 6888
+      - path: "/reporting/rpps"
+        backend:
+          serviceName: "rp-portfolio-service"
+          servicePort: 60289
+      - path: "/reporting/rs"
+        backend:
+          serviceName: "rp-report-service"
+          servicePort: 7979
+      - path: "/reporting/swagger"
+        backend:
+          serviceName: "rp-swagger-doc"
+          servicePort: 8765
+      - path: "/help"
+        backend:
+          serviceName: "web-help"
+          servicePort: 8080
+
+---
+# Source: swip/templates/leader-election-rbac.yaml
+
+apiVersion: "rbac.authorization.k8s.io/v1beta1"
+kind: "Role"
+metadata:
+  namespace: "default"
+  name: "leaderElector"
+  labels:    
+    environment: "onprem"
+    service: "leaderElector"
+    component: "swip"
+    componentVersion: "0.0.4189"
+    chart: "swip"
+    chartVersion: "0.0.4189"
+rules:
+- apiGroups: ["", "extensions"]
+  resources: ["endpoints"]
+  verbs: ["create", "delete", "get", "patch", "update"]
+- apiGroups: ["", "extensions"]
+  resources: ["namespaces"]
+  verbs: ["get"]
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  namespace: "default"
+  name: "leaderElector"
+  labels:    
+    environment: "onprem"
+    service: "leaderElector"
+    component: "swip"
+    componentVersion: "0.0.4189"
+    chart: "swip"
+    chartVersion: "0.0.4189"
+roleRef:
+  apiGroups: "rbac.authorization.k8s.io"
+  kind: "Role"
+  name: "leaderElector"
+subjects:
+- kind: "ServiceAccount"
+  namespace: "default"
+  name: "triage-query"
+- kind: "ServiceAccount"
+  namespace: "default"
+  name: "triage-command-handler"
+- kind: "ServiceAccount"
+  namespace: "default"
+  name: "tds-code-analysis"
+- kind: ServiceAccount
+  namespace: "default"
+  name: "tds-fuzz"
+- kind: "ServiceAccount"
+  namespace: "default"
+  name: "tds-csv"
+- kind: "ServiceAccount"
+  namespace: "default"
+  name: "tds-seeker"
+- kind: "ServiceAccount"
+  namespace: "default"
+  name: "issue-server"
+- kind: "ServiceAccount"
+  namespace: "default"
+  name: "cos-server"
+- kind: "ServiceAccount"
+  namespace: "default"
+  name: "auth-server"
+
+---
+# Source: swip/charts/polaris-helmcharts-common/templates/tests/environment_vars.yaml
+
+---
+# Source: swip/charts/polaris-helmcharts-common/templates/tests/image_name.yaml
+
+---
+# Source: swip/charts/polaris-helmcharts-common/templates/tests/image_pull_secrets.yaml
+
+---
+# Source: swip/charts/polaris-helmcharts-common/templates/tests/labels.yaml
+
+---
+# Source: swip/charts/polaris-helmcharts-common/templates/tests/resources.yaml
+
+---
+# Source: swip/charts/polaris-helmcharts-common/templates/tests/selector.yaml
+
+---
+# Source: swip/charts/polaris-helmcharts-common/templates/tests/service-account.yaml
+
