@@ -23,8 +23,9 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
 	"strings"
+
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -140,10 +141,10 @@ func (p *AlertPatcher) patchSecrets() error {
 	}
 	secret := secretRuntimeObject.(*corev1.Secret)
 	for _, s := range p.alertCr.Spec.Secrets {
-		vals := strings.Split(s, ":") // TODO - doesn't handle multiple colons
+		vals := strings.Split(*s, ":") // TODO - doesn't handle multiple colons
 		// TODO: Base 64 decode
 		if len(vals) != 2 {
-			fmt.Printf("Could not split environ '%s' on ':'\n", s) // TODO change to log
+			fmt.Printf("Could not split environ '%s' on ':'\n", *s) // TODO change to log
 			continue
 		}
 		secretKey := strings.TrimSpace(vals[0])

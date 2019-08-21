@@ -1,0 +1,742 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "ServiceAccount"
+    app: opssight
+    component: image-getter
+    name: ${NAME}
+  name: ${NAME}-opssight-image-getter
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "ServiceAccount"
+    app: opssight
+    component: processor
+    name: ${NAME}
+  name: ${NAME}-opssight-processor
+
+---
+apiVersion: authorization.openshift.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "ClusterRole"
+    app: opssight
+    component: pod-processor
+    name: ${NAME}
+  name: ${NAME}-opssight-pod-processor
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+
+---
+apiVersion: authorization.openshift.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "ClusterRole"
+    app: opssight
+    component: image-processor
+    name: ${NAME}
+  name: ${NAME}-opssight-image-processor
+rules:
+- apiGroups:
+  - image.openshift.io
+  resources:
+  - images
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+
+---
+apiVersion: authorization.openshift.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ServiceAccount,ClusterRole"
+  labels:
+    operator.synopsys.com/group-id: "ClusterRoleBinding"
+    app: opssight
+    component: pod-processor
+    name: ${NAME}
+  name: ${NAME}-opssight-pod-processor
+roleRef:
+  name: ${NAME}-opssight-pod-processor
+subjects:
+- kind: ServiceAccount
+  name: ${NAME}-opssight-processor
+  namespace: ${NAMESPACE}
+
+---
+apiVersion: authorization.openshift.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ServiceAccount,ClusterRole"
+  labels:
+    operator.synopsys.com/group-id: "ClusterRoleBinding"
+    app: opssight
+    component: image-processor
+    name: ${NAME}
+  name: ${NAME}-opssight-image-processor
+roleRef:
+  name: ${NAME}-opssight-image-processor
+subjects:
+- kind: ServiceAccount
+  name: ${NAME}-opssight-processor
+  namespace: ${NAMESPACE}
+
+---
+apiVersion: authorization.openshift.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ServiceAccount"
+  labels:
+    operator.synopsys.com/group-id: "ClusterRoleBinding"
+    app: opssight
+    component: scanner
+    name: ${NAME}
+  name: ${NAME}-opssight-scanner
+roleRef:
+  name: synopsys-operator-admin
+subjects:
+- kind: ServiceAccount
+  name: ${NAME}-opssight-image-getter
+  namespace: ${NAMESPACE}
+
+---
+apiVersion: v1
+data:
+  opssight.json: |-
+    {
+      "Perceiver": {
+        "AnnotationIntervalSeconds": 30,
+        "DumpIntervalMinutes": 30,
+        "Port": 3002,
+        "Pod": {
+          "NamespaceFilter": ""
+        },
+        "Image": {}
+      },
+      "BlackDuck": {
+        "ConnectionsEnvironmentVariableName": "blackduck.json",
+        "TLSVerification": false
+      },
+      "Perceptor": {
+        "Timings": {
+          "CheckForStalledScansPauseHours": 999999,
+          "StalledScanClientTimeoutHours": 999999,
+          "ModelMetricsPauseSeconds": 15,
+          "UnknownImagePauseMilliseconds": 15000,
+          "ClientTimeoutMilliseconds": 100000
+        },
+        "UseMockMode": false,
+        "Host": "${NAME}-opssight-core",
+        "Port": 3001
+      },
+      "Scanner": {
+        "Port": 3003,
+        "ImageDirectory": "",
+        "BlackDuckClientTimeoutSeconds": 600
+      },
+      "ImageFacade": {
+        "Host": "localhost",
+        "Port": 3004,
+        "ImagePullerType": "skopeo",
+        "CreateImagesOnly": false
+      },
+      "Skyfire": {
+        "UseInClusterConfig": true,
+        "Port": 3005,
+        "PrometheusPort": 3006,
+        "BlackDuckClientTimeoutSeconds": 120,
+        "KubeDumpIntervalSeconds": 60,
+        "PerceptorDumpIntervalSeconds": 60,
+        "BlackDuckDumpPauseSeconds": 240
+      },
+      "LogLevel": "debug"
+    }
+kind: ConfigMap
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "ConfigMap"
+    app: opssight
+    component: ${NAME}-opssight
+    name: ${NAME}
+  name: ${NAME}-opssight
+
+---
+apiVersion: v1
+data:
+  prometheus.yml: '{"global":{"scrape_interval":"5s"},"scrape_configs":[{"job_name":"perceptor-scrape","scrape_interval":"5s","static_configs":[{"targets":["${NAME}-opssight-core:3001","${NAME}-opssight-scanner:3003","${NAME}-opssight-image-getter:3004","${NAME}-opssight-image-processor:3002","${NAME}-opssight-pod-processor:3002"]}]}]}'
+kind: ConfigMap
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "ConfigMap"
+    app: opssight
+    component: prometheus
+    name: ${NAME}
+  name: ${NAME}-opssight-prometheus
+
+---
+apiVersion: v1
+data:
+  blackduck.json: e30=
+  securedRegistries.json: e30=
+kind: Secret
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: ""
+  labels:
+    operator.synopsys.com/group-id: "Secret"
+    app: opssight
+    component: blackduck
+    name: ${NAME}
+  name: ${NAME}-opssight-blackduck
+type: Opaque
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightCore"
+  labels:
+    operator.synopsys.com/group-id: "OpsSight"
+    app: opssight
+    component: core
+    name: ${NAME}
+  name: ${NAME}-opssight-core
+spec:
+  ports:
+  - name: port-core
+    port: 3001
+    protocol: TCP
+    targetPort: 3001
+  selector:
+    app: opssight
+    component: core
+    name: ${NAME}
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: "OpsSight"
+  labels:
+    operator.synopsys.com/group-id: "ExposeService"
+    app: opssight
+    name: ${NAME}
+    component: core-exposed
+  name: ${NAME}-opssight-core-exposed
+spec:
+  ports:
+  - name: port-core
+    port: 3001
+    protocol: TCP
+    targetPort: 3001
+  selector:
+    app: opssight
+    component: core
+    name: ${NAME}
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightScanner"
+  labels:
+    operator.synopsys.com/group-id: "OpsSight"
+    app: opssight
+    component: scanner
+    name: ${NAME}
+  name: ${NAME}-opssight-scanner
+spec:
+  ports:
+  - name: port-scanner
+    port: 3003
+    protocol: TCP
+    targetPort: 3003
+  selector:
+    app: opssight
+    component: scanner
+    name: ${NAME}
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightScanner"
+  labels:
+    operator.synopsys.com/group-id: "OpsSight"
+    app: opssight
+    component: scanner
+    name: ${NAME}
+  name: ${NAME}-opssight-image-getter
+spec:
+  ports:
+  - name: port-image-getter
+    port: 3004
+    protocol: TCP
+    targetPort: 3004
+  selector:
+    app: opssight
+    component: scanner
+    name: ${NAME}
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightPodProcessor"
+  labels:
+    operator.synopsys.com/group-id: "OpsSight"
+    app: opssight
+    component: pod-processor
+    name: ${NAME}
+  name: ${NAME}-opssight-pod-processor
+spec:
+  ports:
+  - name: port-pod-processor
+    port: 3002
+    protocol: TCP
+    targetPort: 3002
+  selector:
+    app: opssight
+    component: pod-processor
+    name: ${NAME}
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightImageProcessor"
+  labels:
+    operator.synopsys.com/group-id: "OpsSight"
+    app: opssight
+    component: image-processor
+    name: ${NAME}
+  name: ${NAME}-opssight-image-processor
+spec:
+  ports:
+  - name: port-image-processor
+    port: 3002
+    protocol: TCP
+    targetPort: 3002
+  selector:
+    app: opssight
+    component: image-processor
+    name: ${NAME}
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/scrape: "true"
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secret,OpsSightPrometheus"
+  labels:
+    operator.synopsys.com/group-id: "OpsSight"
+    app: opssight
+    component: prometheus
+    name: ${NAME}
+  name: ${NAME}-opssight-prometheus
+spec:
+  ports:
+  - name: port-prometheus
+    port: 3006
+    protocol: TCP
+    targetPort: 3006
+  selector:
+    app: opssight
+    component: prometheus
+    name: ${NAME}
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  annotations:
+    operator.synopsys.com/group-dependencies: "OpsSight"
+  labels:
+    operator.synopsys.com/group-id: "ExposeService"
+    app: opssight
+    name: ${NAME}
+    component: prometheus-exposed
+  name: ${NAME}-opssight-prometheus-exposed
+spec:
+  ports:
+  - name: port-prometheus
+    port: 3006
+    protocol: TCP
+    targetPort: 3006
+  selector:
+    app: opssight
+    component: prometheus
+    name: ${NAME}
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Secret"
+  labels:
+    operator.synopsys.com/group-id: "OpsSightCore"
+    app: opssight
+    component: core
+    name: ${NAME}
+  name: ${NAME}-opssight-core
+spec:
+  replicas: 1
+  selector:
+    app: opssight
+    component: core
+    name: ${NAME}
+  template:
+    metadata:
+      labels:
+        app: opssight
+        component: core
+        name: ${NAME}
+      name: ${NAME}-opssight-core
+    spec:
+      containers:
+      - args:
+        - /etc/core/opssight.json
+        command:
+        - ./opssight-core
+        envFrom:
+        - secretRef:
+            name: ${NAME}-opssight-blackduck
+        image: docker.io/blackducksoftware/opssight-core:2.2.4
+        imagePullPolicy: IfNotPresent
+        name: core
+        ports:
+        - containerPort: 3001
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 300m
+            memory: 1300Mi
+        volumeMounts:
+        - mountPath: /etc/core
+          name: core
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: ${NAME}-opssight
+        name: core
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,Secret"
+  labels:
+    operator.synopsys.com/group-id: "OpsSightScanner"
+    app: opssight
+    component: scanner
+    name: ${NAME}
+  name: ${NAME}-opssight-scanner
+spec:
+  replicas: 1
+  selector:
+    app: opssight
+    component: scanner
+    name: ${NAME}
+  template:
+    metadata:
+      labels:
+        app: opssight
+        component: scanner
+        name: ${NAME}
+      name: ${NAME}-opssight-scanner
+    spec:
+      containers:
+      - args:
+        - /etc/scanner/opssight.json
+        command:
+        - ./opssight-scanner
+        envFrom:
+        - secretRef:
+            name: ${NAME}-opssight-blackduck
+        image: docker.io/blackducksoftware/opssight-scanner:2.2.4
+        imagePullPolicy: IfNotPresent
+        name: scanner
+        ports:
+        - containerPort: 3003
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 300m
+            memory: 1300Mi
+        securityContext:
+          privileged: false
+        volumeMounts:
+        - mountPath: /etc/scanner
+          name: scanner
+        - mountPath: /var/images
+          name: var-images
+      - args:
+        - /etc/image-getter/opssight.json
+        command:
+        - ./opssight-image-getter
+        envFrom:
+        - secretRef:
+            name: ${NAME}-opssight-blackduck
+        image: docker.io/blackducksoftware/opssight-image-getter:2.2.4
+        imagePullPolicy: IfNotPresent
+        name: image-getter
+        ports:
+        - containerPort: 3004
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 300m
+            memory: 1300Mi
+        securityContext:
+          privileged: false
+        volumeMounts:
+        - mountPath: /etc/image-getter
+          name: image-getter
+        - mountPath: /var/images
+          name: var-images
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      serviceAccount: ${NAME}-opssight-image-getter
+      serviceAccountName: ${NAME}-opssight-image-getter
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: ${NAME}-opssight
+        name: scanner
+      - emptyDir: {}
+        name: var-images
+      - configMap:
+          defaultMode: 420
+          name: ${NAME}-opssight
+        name: image-getter
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,Secret"
+  labels:
+    operator.synopsys.com/group-id: "OpsSightPodProcessor"
+    app: opssight
+    component: pod-processor
+    name: ${NAME}
+  name: ${NAME}-opssight-pod-processor
+spec:
+  replicas: 1
+  selector:
+    app: opssight
+    component: pod-processor
+    name: ${NAME}
+  template:
+    metadata:
+      labels:
+        app: opssight
+        component: pod-processor
+        name: ${NAME}
+      name: ${NAME}-opssight-pod-processor
+    spec:
+      containers:
+      - args:
+        - /etc/pod-processor/opssight.json
+        command:
+        - ./opssight-pod-processor
+        image: docker.io/blackducksoftware/opssight-pod-processor:2.2.4
+        imagePullPolicy: IfNotPresent
+        name: pod-processor
+        ports:
+        - containerPort: 3002
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 300m
+            memory: 1300Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/pod-processor
+          name: pod-processor
+        - mountPath: /tmp
+          name: logs
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      serviceAccount: ${NAME}-opssight-processor
+      serviceAccountName: ${NAME}-opssight-processor
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: ${NAME}-opssight
+        name: pod-processor
+      - emptyDir: {}
+        name: logs
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ServiceAccount,ConfigMap,Secret"
+  labels:
+    operator.synopsys.com/group-id: "OpsSightImageProcessor"
+    app: opssight
+    component: image-processor
+    name: ${NAME}
+  name: ${NAME}-opssight-image-processor
+spec:
+  replicas: 1
+  selector:
+    app: opssight
+    component: image-processor
+    name: ${NAME}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: opssight
+        component: image-processor
+        name: ${NAME}
+      name: ${NAME}-opssight-image-processor
+    spec:
+      containers:
+      - args:
+        - /etc/image-processor/opssight.json
+        command:
+        - ./opssight-image-processor
+        image: docker.io/blackducksoftware/opssight-image-processor:2.2.4
+        imagePullPolicy: IfNotPresent
+        name: image-processor
+        ports:
+        - containerPort: 3002
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 300m
+            memory: 1300Mi
+        volumeMounts:
+        - mountPath: /etc/image-processor
+          name: image-processor
+        - mountPath: /tmp
+          name: logs
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      serviceAccount: ${NAME}-opssight-processor
+      serviceAccountName: ${NAME}-opssight-processor
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: ${NAME}-opssight
+        name: image-processor
+      - emptyDir: {}
+        name: logs
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap"
+  labels:
+    operator.synopsys.com/group-id: "OpsSightPrometheus"
+    app: opssight
+    component: prometheus
+    name: ${NAME}
+  name: ${NAME}-opssight-prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opssight
+      component: prometheus
+      name: ${NAME}
+  template:
+    metadata:
+      labels:
+        app: opssight
+        component: prometheus
+        name: ${NAME}
+      name: ${NAME}-opssight-prometheus
+    spec:
+      containers:
+      - args:
+        - --log.level=debug
+        - --config.file=/etc/prometheus/prometheus.yml
+        - --storage.tsdb.path=/tmp/data/
+        - --storage.tsdb.retention=120d
+        - --web.listen-address=:3006
+        image: docker.io/prom/prometheus:v2.1.0
+        imagePullPolicy: IfNotPresent
+        name: prometheus
+        ports:
+        - containerPort: 3006
+          name: web
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /data
+          name: data
+        - mountPath: /etc/prometheus
+          name: prometheus
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: ${NAME}-opssight-prometheus
+        name: prometheus
+      - emptyDir: {}
+        name: data
