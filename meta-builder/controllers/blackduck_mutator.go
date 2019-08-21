@@ -193,8 +193,14 @@ func (p *BlackduckPatcher) patchWithSize() error {
 					if err != nil {
 						return err
 					}
-					fmt.Println(resourceRequirements.Limits.Memory().String())
 					v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+
+					for envIndex, env := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Env {
+						if strings.Compare(env.Name, "HUB_MAX_MEMORY") == 0 {
+							v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Env[envIndex].Value = fmt.Sprintf("%dm", *containerConf.MaxMem-512)
+							break
+						}
+					}
 				}
 
 			}
