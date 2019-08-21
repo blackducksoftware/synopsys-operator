@@ -18,6 +18,7 @@ package controllers
 import (
 	"context"
 	"io/ioutil"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
@@ -47,12 +48,6 @@ func (r *ReportingReconciler) GetClient() client.Client {
 func (r *ReportingReconciler) GetCustomResource(req ctrl.Request) (metav1.Object, error) {
 	var reporting synopsysv1.Reporting
 	if err := r.Get(context.Background(), req.NamespacedName, &reporting); err != nil {
-		//log.Error(err, "unable to fetch Alert")
-		// we'll ignore not-found errors, since they can't be fixed by an immediate
-		// requeue (we'll need to wait for a new notification), and we can get them
-		// on deleted requests.
-		// TODO:
-		// We generally want to ignore (not requeue) NotFound errors, since we’ll get a reconciliation request once the object exists, and requeuing in the meantime won’t help.
 		if !apierrs.IsNotFound(err) {
 			return nil, err
 		}
@@ -65,13 +60,6 @@ func (r *ReportingReconciler) GetCustomResource(req ctrl.Request) (metav1.Object
 
 func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runtime.Object, error) {
 	reportingCr := cr.(*synopsysv1.Reporting)
-	// TODO: either read contents of yaml from locally mounted file
-	// read content of full desired yaml from externally hosted file
-	// FinalYamlUrl := "https://raw.githubusercontent.com/mphammer/customer-on-prem-alert-final-yaml/master/base-on-prem-alert-final.yaml"
-	// byteArrayContentFromFile, err := controllers_utils.HttpGet(FinalYamlUrl)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	FinalYamlPath := "config/samples/reporting_runtime_objects.yaml"
 	byteArrayContentFromFile, err := ioutil.ReadFile(FinalYamlPath)
 	if err != nil {
@@ -80,11 +68,7 @@ func (r *ReportingReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 
 	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(byteArrayContentFromFile)
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
-		// set an owner reference
 		if err := ctrl.SetControllerReference(reportingCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
-			// requeue if we cannot set owner on the object
-			// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR
-			//return ctrl.Result{}, err
 			return mapOfUniqueIdToBaseRuntimeObject, nil
 		}
 	}
@@ -101,30 +85,19 @@ func (r *ReportingReconciler) GetInstructionManual(mapOfUniqueIdToDesiredRuntime
 	return instructionManual, nil
 }
 
-// +kubebuilder:rbac:groups=synopsys.com,resources=reporting,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=synopsys.com,resources=reporting/status,verbs=get;update;patch
-
 func (r *ReportingReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	// _ = context.Background()
-	// _ = r.Log.WithValues("reporting", req.NamespacedName)
-	// your logic here
-
 	return flying_dutchman.MetaReconcile(req, r)
 }
 
 func (r *ReportingReconciler) SetIndexingForChildrenObjects(mgr ctrl.Manager, ro runtime.Object) error {
 	if err := mgr.GetFieldIndexer().IndexField(ro, flying_dutchman.JobOwnerKey, func(rawObj runtime.Object) []string {
-		// grab the job object, extract the owner...
 		owner := metav1.GetControllerOf(ro.(metav1.Object))
 		if owner == nil {
 			return nil
 		}
-		// ...make sure it's a Alert...
 		if owner.APIVersion != synopsysv1.GroupVersion.String() || owner.Kind != "Reporting" {
 			return nil
 		}
-
-		// ...and if so, return it
 		return []string{owner.Name}
 	}); err != nil {
 		return err
