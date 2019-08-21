@@ -82,11 +82,35 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 	p.patchAuthCert()
 	p.patchProxyCert()
 	p.patchExposeService()
+	p.patchSealKey()
 
 	p.patchWithSize()
 	p.patchReplicas()
-	// TODO - Patch SEAL_KEY + BDBA
+	// TODO - Patch BDBA
 	return p.objects
+}
+
+func (p *BlackduckPatcher) patchSealKey() error {
+	var secret v1.Secret
+	if err := p.Client.Get(context.TODO(), types.NamespacedName{
+		Namespace: "synopsys-operator", // <<< TODO Get this from protoform
+		Name:      "blackduck-secret",
+	}, &secret); err != nil {
+		return err
+	}
+
+	sealKey, ok := secret.Data["SEAL_KEY"]
+	if !ok {
+		return fmt.Errorf("SEAL_KEY key couldn't be found inside blackduck-secret")
+	}
+
+	runtimeObject, ok := p.objects[fmt.Sprintf("Secret.%s-upload-cache", p.blackduck.Name)]
+	if !ok {
+		return nil
+	}
+
+	runtimeObject.(*v1.Secret).Data["SEAL_KEY"] = sealKey
+	return nil
 }
 
 func (p *BlackduckPatcher) patchExposeService() error {
