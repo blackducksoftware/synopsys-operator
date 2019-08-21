@@ -1485,7 +1485,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-postgres
 spec:
   accessModes:
@@ -1503,7 +1503,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-webapp
 spec:
   accessModes:
@@ -1521,7 +1521,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-zookeeper
 spec:
   accessModes:
@@ -1539,7 +1539,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-uploadcache-data
 spec:
   accessModes:
@@ -1557,7 +1557,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-authentication
 spec:
   accessModes:
@@ -1575,7 +1575,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-cfssl
 spec:
   accessModes:
@@ -1593,7 +1593,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-registration
 spec:
   accessModes:
@@ -1611,7 +1611,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-solr
 spec:
   accessModes:
@@ -1629,7 +1629,7 @@ metadata:
   labels:
     operator.synopsys.com/group-id: "PVC"
     app: blackduck
-    name: test
+    name: ${NAME}
   name: ${NAME}-logstash
 spec:
   accessModes:
@@ -1690,3 +1690,132 @@ spec:
     component: webserver
     name: ${NAME}
   type: LoadBalancer
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Postgres,InitJob,cfssl"
+  labels:
+    operator.synopsys.com/group-id: "Blackduck"
+    app: blackduck
+    component: rabbitmq
+    name: ${NAME}
+    version: 2019.8.0
+  name: ${NAME}-blackduck-rabbitmq
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: rabbitmq
+    name: ${NAME}
+  template:
+    metadata:
+      labels:
+        app: blackduck
+        component: rabbitmq
+        name: ${NAME}
+        version: 2019.8.0
+      name: ${NAME}-blackduck-rabbitmq
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: ${NAME}-config
+          image: docker.io/blackducksoftware/rabbitmq:1.0.0
+          imagePullPolicy: Always
+          name: rabbitmq
+          ports:
+            - containerPort: 5671
+              protocol: TCP
+          resources:
+            limits:
+              memory: 1024M
+            requests:
+              memory: 1024M
+          volumeMounts:
+            - mountPath: /opt/blackduck/rabbitmq/security
+              name: dir-rabbitmq-security
+      dnsPolicy: ClusterFirst
+      volumes:
+        - emptyDir: {}
+          name: dir-rabbitmq-security
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Postgres,InitJob,cfssl"
+  labels:
+    operator.synopsys.com/group-id: "Blackduck"
+    app: blackduck
+    component: rabbitmq
+    name: ${NAME}
+    version: 2019.8.0
+  name: ${NAME}-blackduck-rabbitmq
+spec:
+  ports:
+    - name: port-5671
+      port: 5671
+      protocol: TCP
+      targetPort: 5671
+  selector:
+    app: blackduck
+    component: rabbitmq
+    name: ${NAME}
+    version: 2019.8.0
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  annotations:
+    operator.synopsys.com/group-dependencies: "ConfigMap,Postgres,InitJob,cfssl"
+  labels:
+    operator.synopsys.com/group-id: "Blackduck"
+    app: blackduck
+    component: binaryscanner
+    name: ${NAME}
+    version: 2019.8.0
+  name: ${NAME}-blackduck-binaryscanner
+  namespace: ${NAME}
+spec:
+  replicas: 1
+  selector:
+    app: blackduck
+    component: binaryscanner
+    name: ${NAME}
+  template:
+    metadata:
+      labels:
+        app: blackduck
+        component: binaryscanner
+        name: ${NAME}
+        version: 2019.8.0
+      name: ${NAME}-blackduck-binaryscanner
+    spec:
+      containers:
+        - command:
+            - /docker-entrypoint.sh
+          envFrom:
+            - configMapRef:
+                name: ${NAME}-config
+          image: docker.io/blackducksoftware/appcheck-worker:2019.06
+          imagePullPolicy: Always
+          name: binaryscanner
+          ports:
+            - containerPort: 3001
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2048M
+            requests:
+              cpu: "1"
+              memory: 2048M
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 0

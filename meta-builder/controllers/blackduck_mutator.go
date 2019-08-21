@@ -84,6 +84,7 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 		p.patchAuthCert,
 		p.patchProxyCert,
 		p.patchExposeService,
+		p.patchBDBA,
 		p.patchSealKey,
 		p.patchWithSize,
 		p.patchReplicas,
@@ -95,8 +96,25 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 		}
 	}
 
-	// TODO - Patch BDBA
 	return p.objects
+}
+
+func (p *BlackduckPatcher) patchBDBA() error {
+	for _, e := range p.blackduck.Spec.Environs {
+		vals := strings.Split(e, ":")
+		if len(vals) != 2 {
+			continue
+		}
+		if strings.Compare(vals[0], "USE_BINARY_UPLOADS") == 0 {
+			if strings.Compare(vals[1], "1") != 0 {
+				delete(p.objects, fmt.Sprintf("ReplicationController.%s-blackduck-rabbitmq", p.blackduck.Name))
+				delete(p.objects, fmt.Sprintf("Service.%s--blackduck-rabbitmq", p.blackduck.Name))
+				delete(p.objects, fmt.Sprintf("ReplicationController.%s-blackduck-binaryscanner", p.blackduck.Name))
+			}
+			break
+		}
+	}
+	return nil
 }
 
 func (p *BlackduckPatcher) patchSealKey() error {
