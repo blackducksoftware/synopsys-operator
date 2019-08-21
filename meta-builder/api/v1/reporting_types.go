@@ -31,13 +31,13 @@ type ReportingSpec struct {
 	EnvironmentDNS        string                   `json:"environment_address"`
 	ImagePullSecrets      string                   `json:"image_pull_secrets"`
 	PostgresDetails       ReportingPostgresDetails `json:"postgres"`
-	ReportServiceSpec     ReportStorageSpec        `json:"report-storage",omitempty`
+	ReportServiceSpec     ReportStorageSpec        `json:"report-storage,omitempty"`
 	IsReportingStandalone bool                     `json:"isReportingStandalone"`
 }
 
 type ReportingPostgresDetails struct {
 	Hostname string `json:"hostname"`
-	Port     *int32 `json"port"`
+	Port     *int32 `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }

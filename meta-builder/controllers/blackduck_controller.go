@@ -100,7 +100,7 @@ func (r *BlackduckReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 	//	}
 	//}
 	fmt.Printf("Before - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(mapOfUniqueIdToDesiredRuntimeObject))
-	objs := patchBlackduck(blackduck, mapOfUniqueIdToDesiredRuntimeObject)
+	objs := patchBlackduck(r.Client, blackduck, mapOfUniqueIdToDesiredRuntimeObject)
 	fmt.Printf("After - Num mapOfUniqueIdToDesiredRuntimeObject: %+v\n", len(objs))
 
 	return objs, nil

@@ -32,7 +32,7 @@ type PolarisDBSpec struct {
 	ImagePullSecrets       string          `json:"image_pull_secrets"`
 	SMTPDetails            SMTPDetails     `json:"smtp_details"`
 	PostgresInstanceType   string          `json:"postgres_instance_type"`
-	PostgresStorageDetails string          `json:"postgres_storage_details",omitempty`
+	PostgresStorageDetails string          `json:"postgres_storage_details,omitempty"`
 	PostgresDetails        PostgresDetails `json:"postgres"`
 }
 

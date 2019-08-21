@@ -108,3 +108,43 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - synopsys.com
+  resources:
+  - polaris
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - synopsys.com
+  resources:
+  - polaris/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - synopsys.com
+  resources:
+  - polarisdbs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - synopsys.com
+  resources:
+  - polarisdbs/status
+  verbs:
+  - get
+  - patch
+  - update
