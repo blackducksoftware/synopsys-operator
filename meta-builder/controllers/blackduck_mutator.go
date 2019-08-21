@@ -72,20 +72,29 @@ type BlackduckPatcher struct {
 func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 	// TODO JD: Patching this way is costly. Consider iterating over the objects only once
 	// and apply the necessary changes
-	p.patchNamespace()
-	p.patchStorage()
-	p.patchLiveness()
-	p.patchEnvirons()
-	p.patchWebserverCertificates()
-	p.patchPostgresConfig()
-	p.patchImages()
-	p.patchAuthCert()
-	p.patchProxyCert()
-	p.patchExposeService()
-	p.patchSealKey()
 
-	p.patchWithSize()
-	p.patchReplicas()
+	patches := []func() error{
+		p.patchNamespace,
+		p.patchStorage,
+		p.patchLiveness,
+		p.patchEnvirons,
+		p.patchWebserverCertificates,
+		p.patchPostgresConfig,
+		p.patchImages,
+		p.patchAuthCert,
+		p.patchProxyCert,
+		p.patchExposeService,
+		p.patchSealKey,
+		p.patchWithSize,
+		p.patchReplicas,
+	}
+	for _, f := range patches {
+		err := f()
+		if err != nil {
+			fmt.Printf("%s\n", err)
+		}
+	}
+
 	// TODO - Patch BDBA
 	return p.objects
 }
@@ -237,13 +246,13 @@ func (p *BlackduckPatcher) patchReplicas() error {
 	for _, v := range p.objects {
 		switch v.(type) {
 		case *v1.ReplicationController:
-			switch p.blackduck.Spec.DesiredState {
+			switch strings.ToUpper(p.blackduck.Spec.DesiredState) {
 			case "STOP":
 				v.(*v1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
 			case "DBMIGRATE":
-			// TODO
-			default:
-				// TODO apply replica from flavor configuration
+				if value, ok := v.(*v1.ReplicationController).GetLabels()["component"]; !ok || strings.Compare(value, "postgres") != 0 {
+					v.(*v1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
+				}
 			}
 		}
 	}
