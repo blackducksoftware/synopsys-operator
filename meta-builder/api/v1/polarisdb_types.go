@@ -26,10 +26,33 @@ import (
 type PolarisDBSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Namespace        string `json:"namespace,omitempty"`
-	EnvironmentName  string `json:"environment"`
-	EnvironmentDNS   string `json:"environment_address"`
-	ImagePullSecrets string `json:"image_pull_secrets"`
+	Namespace              string          `json:"namespace,omitempty"`
+	EnvironmentName        string          `json:"environment"`
+	EnvironmentDNS         string          `json:"environment_address"`
+	ImagePullSecrets       string          `json:"image_pull_secrets"`
+	SMTPDetails            SMTPDetails     `json:"smtp_details"`
+	PostgresInstanceType   string          `json:"postgres_instance_type"`
+	PostgresStorageDetails string          `json:"postgres_storage_details",omitempty`
+	PostgresDetails        PostgresDetails `json:"postgres"`
+}
+
+type SMTPDetails struct {
+	Host     string `json:"host"`
+	Port     *int32 `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type PostgresDetails struct {
+	Host     string `json:"host"`
+	Port     *int32 `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type PostgresStorageDetails struct {
+	StorageSize  string `json:"size"`
+	StorageClass string `json:"storage_class"`
 }
 
 // PolarisDBStatus defines the observed state of PolarisDB

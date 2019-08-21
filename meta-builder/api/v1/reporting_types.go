@@ -26,16 +26,16 @@ import (
 type ReportingSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Namespace             string            `json:"namespace,omitempty"`
-	EnvironmentName       string            `json:"environment"`
-	EnvironmentDNS        string            `json:"environment_address"`
-	ImagePullSecrets      string            `json:"image_pull_secrets"`
-	PostgresDetails       PostgresDetails   `json:"postgres"`
-	ReportServiceSpec     ReportStorageSpec `json:"report-storage"`
-	IsReportingStandalone bool              `json:"isReportingStandalone"`
+	Namespace             string                   `json:"namespace,omitempty"`
+	EnvironmentName       string                   `json:"environment"`
+	EnvironmentDNS        string                   `json:"environment_address"`
+	ImagePullSecrets      string                   `json:"image_pull_secrets"`
+	PostgresDetails       ReportingPostgresDetails `json:"postgres"`
+	ReportServiceSpec     ReportStorageSpec        `json:"report-storage",omitempty`
+	IsReportingStandalone bool                     `json:"isReportingStandalone"`
 }
 
-type PostgresDetails struct {
+type ReportingPostgresDetails struct {
 	Hostname string `json:"hostname"`
 	Port     *int32 `json"port"`
 	Username string `json:"username"`

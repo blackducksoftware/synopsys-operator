@@ -105,13 +105,6 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Reporting")
 		os.Exit(1)
 	}
-	if err = (&controllers.PolarisInfraReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("PolarisInfra"),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PolarisInfra")
-		os.Exit(1)
-	}
 	if err = (&controllers.PolarisDBReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("PolarisDB"),

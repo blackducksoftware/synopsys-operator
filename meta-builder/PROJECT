@@ -19,7 +19,4 @@ resources:
   kind: Reporting
 - group: synopsys
   version: v1
-  kind: PolarisInfra
-- group: synopsys
-  version: v1
   kind: PolarisDB
