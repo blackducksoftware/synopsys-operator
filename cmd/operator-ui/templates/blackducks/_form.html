@@ -349,40 +349,49 @@
     updateEnvironFromCB("USE_BINARY_UPLOADS", 'int', true);
     updateEnvironFromCB("ENABLE_SOURCE_UPLOADS", 'bool', true);
 
-    var pullSecretList = document.getElementById("pullSecrets");
-    var pullSecretItems = pullSecretList.getElementsByTagName('li');
-    var pullSecret = document.getElementById("blackduck-Spec.RegistryConfiguration.PullSecrets")
-    for (var i = 0; i < pullSecretItems.length; i++) {
-      var data = pullSecretItems[i].firstChild.data;
-      var opt = document.createElement('option');
-      opt.text = data;
-      opt.value = data;
-      opt.setAttribute("selected", "selected");
-      pullSecret.add(opt);
+    let pullSecretList = document.getElementById("pullSecrets");
+    let pullSecretItems = pullSecretList.getElementsByTagName('li');
+    let pullSecret = document.getElementById("blackduck-Spec.RegistryConfiguration.PullSecrets");
+    for (let i = 0; i < pullSecretItems.length; i++) {
+      let child = pullSecretItems[i].firstChild;
+      if (child) {
+        let data = child.data;
+        let opt = document.createElement('option');
+        opt.text = data;
+        opt.value = data;
+        opt.setAttribute("selected", "selected");
+        pullSecret.add(opt);
+      }
     };
 
-    var environsList = document.getElementById("environs");
-    var environsItems = environsList.getElementsByTagName('li');
-    var environs = document.getElementById("blackduck-Spec.Environs")
-    for (var i = 0; i < environsItems.length; i++) {
-      var data = environsItems[i].firstChild.data;
-      var opt = document.createElement('option');
-      opt.text = data;
-      opt.value = data;
-      opt.setAttribute("selected", "selected");
-      environs.add(opt);
+    let environsList = document.getElementById("environs");
+    let environsItems = environsList.getElementsByTagName('li');
+    let environs = document.getElementById("blackduck-Spec.Environs");
+    for (let i = 0; i < environsItems.length; i++) {
+      let child = environsItems[i].firstChild;
+      if (child) {
+        let data = child.data;
+        let opt = document.createElement('option');
+        opt.text = data;
+        opt.value = data;
+        opt.setAttribute("selected", "selected");
+        environs.add(opt);
+      }
     };
 
-    var containersList = document.getElementById("containerTags");
-    var containerItems = containersList.getElementsByTagName('li');
-    var containerTags = document.getElementById("blackduck-Spec.ImageRegistries")
-    for (var i = 0; i < containerItems.length; i++) {
-      var data = containerItems[i].firstChild.data;
-      var opt = document.createElement('option');
-      opt.text = data;
-      opt.value = data;
-      opt.setAttribute("selected", "selected");
-      containerTags.add(opt);
+    let containersList = document.getElementById("containerTags");
+    let containerItems = containersList.getElementsByTagName('li');
+    let containerTags = document.getElementById("blackduck-Spec.ImageRegistries");
+    for (let i = 0; i < containerItems.length; i++) {
+      let child = containerItems[i].firstChild;
+      if (child) {
+        let data = child.data;
+        let opt = document.createElement('option');
+        opt.text = data;
+        opt.value = data;
+        opt.setAttribute("selected", "selected");
+        containerTags.add(opt);
+      }
     };
 
 
