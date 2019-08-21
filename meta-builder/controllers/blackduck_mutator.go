@@ -170,34 +170,34 @@ func (p *BlackduckPatcher) patchWithSize() error {
 				return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s] that doesn't exist", p.blackduck.Namespace, p.blackduck.Spec.Size)
 			}
 		}
-	}
 
-	for _, v := range p.objects {
-		switch v.(type) {
-		case *v1.ReplicationController:
-			componentName, ok := v.(*v1.ReplicationController).GetLabels()["component"]
-			if !ok {
-				return fmt.Errorf("component name is missing in %s", v.(*v1.ReplicationController).Name)
-			}
-
-			sizeConf, ok := size.Spec.PodResources[componentName]
-			if !ok {
-				return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s] but the size doesn't contain an entry for [%s]", p.blackduck.Namespace, p.blackduck.Spec.Size, v.(*v1.ReplicationController).Name)
-			}
-			v.(*v1.ReplicationController).Spec.Replicas = func(i int) *int32 { j := int32(i); return &j }(sizeConf.Replica)
-			for containerIndex, container := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
-				containerConf, ok := sizeConf.ContainerLimit[container.Name]
+		for _, v := range p.objects {
+			switch v.(type) {
+			case *v1.ReplicationController:
+				componentName, ok := v.(*v1.ReplicationController).GetLabels()["component"]
 				if !ok {
-					return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s]. The size oesn't contain an entry for pod [%s] container [%s]", p.blackduck.Namespace, p.blackduck.Spec.Size, v.(*v1.ReplicationController).Name, container.Name)
+					return fmt.Errorf("component name is missing in %s", v.(*v1.ReplicationController).Name)
 				}
-				resourceRequirements, err := controllers_utils.GenResourceRequirementsFromContainerSize(containerConf)
-				if err != nil {
-					return err
-				}
-				fmt.Println(resourceRequirements.Limits.Memory().String())
-				v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
-			}
 
+				sizeConf, ok := size.Spec.PodResources[componentName]
+				if !ok {
+					return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s] but the size doesn't contain an entry for [%s]", p.blackduck.Namespace, p.blackduck.Spec.Size, v.(*v1.ReplicationController).Name)
+				}
+				v.(*v1.ReplicationController).Spec.Replicas = func(i int) *int32 { j := int32(i); return &j }(sizeConf.Replica)
+				for containerIndex, container := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
+					containerConf, ok := sizeConf.ContainerLimit[container.Name]
+					if !ok {
+						return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s]. The size oesn't contain an entry for pod [%s] container [%s]", p.blackduck.Namespace, p.blackduck.Spec.Size, v.(*v1.ReplicationController).Name, container.Name)
+					}
+					resourceRequirements, err := controllers_utils.GenResourceRequirementsFromContainerSize(containerConf)
+					if err != nil {
+						return err
+					}
+					fmt.Println(resourceRequirements.Limits.Memory().String())
+					v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+				}
+
+			}
 		}
 	}
 	return nil
