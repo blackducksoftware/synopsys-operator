@@ -30,9 +30,15 @@ spec:
         spec:
           description: AlertSpec defines the desired state of Alert
           properties:
-            alertImage:
+            EncryptionGlobalSalt:
+              type: string
+            EncryptionPassword:
               type: string
             alertMemory:
+              description: 'TODO: make this consistent with Black Duck, how "sizes"
+                are handled'
+              type: string
+            cfsslMemory:
               type: string
             desiredState:
               type: string
@@ -42,28 +48,55 @@ spec:
               type: array
             exposeService:
               type: string
+            imageRegistries:
+              items:
+                type: string
+              type: array
             namespace:
               type: string
             persistentStorage:
-              properties:
-                pvcName:
-                  type: string
-                pvcSize:
-                  type: string
-                pvcStorageClass:
-                  type: string
-              required:
-              - pvcName
-              - pvcSize
-              - pvcStorageClass
-              type: object
+              type: boolean
             port:
               format: int32
               type: integer
+            pvc:
+              items:
+                description: PVC will contain the specifications of the different
+                  PVC. This will overwrite the default claim configuration
+                properties:
+                  name:
+                    type: string
+                  size:
+                    type: string
+                  storageClass:
+                    type: string
+                  volumeName:
+                    type: string
+                required:
+                - name
+                type: object
+              type: array
+            pvcStorageClass:
+              type: string
+            registryConfiguration:
+              description: RegistryConfiguration contains the registry configuration
+              properties:
+                pullSecrets:
+                  items:
+                    type: string
+                  type: array
+                registry:
+                  type: string
+              required:
+              - pullSecrets
+              - registry
+              type: object
             secrets:
               items:
                 type: string
               type: array
+            size:
+              type: string
             standAlone:
               properties:
                 cfsslImage:
@@ -71,9 +104,15 @@ spec:
                 cfsslMemory:
                   type: string
               type: object
+            version:
+              type: string
           required:
+          - EncryptionGlobalSalt
+          - EncryptionPassword
           - exposeService
+          - persistentStorage
           - port
+          - size
           type: object
         status:
           description: AlertStatus defines the observed state of Alert

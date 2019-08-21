@@ -1,16 +1,22 @@
 /*
+Copyright (C) 2019 Synopsys, Inc.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
 */
 
 package main
@@ -63,7 +69,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: wrapper for --enable-alert condition
 	// setting up Alert Controller
 	if err = (&controllers.AlertReconciler{
 		Client: mgr.GetClient(),
@@ -74,17 +79,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO: wrapper for --enable-blackduck condition
 	// setting up Black Duck Controller
 	if err = (&controllers.BlackduckReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Blackduck"),
+		Log:    ctrl.Log.WithName("controllers").WithName("Black Duck"),
 		Scheme: mgr.GetScheme(), // we've added this ourselves
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Blackduck")
+		setupLog.Error(err, "unable to create controller", "controller", "Black Duck")
 		os.Exit(1)
 	}
 
+	// setting up OpsSight Controller
 	if err = (&controllers.OpsSightReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("OpsSight"),
@@ -92,6 +97,8 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "OpsSight")
 		os.Exit(1)
 	}
+
+	// setting up Polaris Controller
 	if err = (&controllers.PolarisReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Polaris"),
@@ -100,6 +107,8 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Polaris")
 		os.Exit(1)
 	}
+
+	// setting up Reporting Controller
 	if err = (&controllers.ReportingReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Reporting"),
@@ -108,6 +117,8 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Reporting")
 		os.Exit(1)
 	}
+
+	// setting up PolarisDB Controller
 	if err = (&controllers.PolarisDBReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("PolarisDB"),

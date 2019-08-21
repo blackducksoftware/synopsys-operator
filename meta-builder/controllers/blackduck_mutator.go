@@ -1,37 +1,22 @@
 /*
- * Copyright (C) $year Synopsys, Inc.
- *
- *  Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- *  with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- *  under the License.
- */
+Copyright (C) 2019 Synopsys, Inc.
 
-/*
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
 */
 
 package controllers
@@ -42,7 +27,7 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -54,23 +39,23 @@ import (
 	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
 )
 
-func patchBlackduck(client client.Client, blackduck *synopsysv1.Blackduck, objects map[string]runtime.Object) map[string]runtime.Object {
+func patchBlackduck(client client.Client, blackDuckCr *synopsysv1.Blackduck, mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object) map[string]runtime.Object {
 	patcher := BlackduckPatcher{
-		Client:    client,
-		blackduck: blackduck,
-		objects:   objects,
+		Client:                           client,
+		blackDuckCr:                      blackDuckCr,
+		mapOfUniqueIdToBaseRuntimeObject: mapOfUniqueIdToBaseRuntimeObject,
 	}
 	return patcher.patch()
 }
 
 type BlackduckPatcher struct {
 	client.Client
-	blackduck *synopsysv1.Blackduck
-	objects   map[string]runtime.Object
+	blackDuckCr                      *synopsysv1.Blackduck
+	mapOfUniqueIdToBaseRuntimeObject map[string]runtime.Object
 }
 
 func (p *BlackduckPatcher) patch() map[string]runtime.Object {
-	// TODO JD: Patching this way is costly. Consider iterating over the objects only once
+	// TODO JD: Patching this way is costly. Consider iterating over the mapOfUniqueIdToBaseRuntimeObject only once
 	// and apply the necessary changes
 
 	patches := []func() error{
@@ -96,20 +81,20 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 		}
 	}
 
-	return p.objects
+	return p.mapOfUniqueIdToBaseRuntimeObject
 }
 
 func (p *BlackduckPatcher) patchBDBA() error {
-	for _, e := range p.blackduck.Spec.Environs {
+	for _, e := range p.blackDuckCr.Spec.Environs {
 		vals := strings.Split(e, ":")
 		if len(vals) != 2 {
 			continue
 		}
 		if strings.Compare(vals[0], "USE_BINARY_UPLOADS") == 0 {
 			if strings.Compare(vals[1], "1") != 0 {
-				delete(p.objects, fmt.Sprintf("ReplicationController.%s-blackduck-rabbitmq", p.blackduck.Name))
-				delete(p.objects, fmt.Sprintf("Service.%s--blackduck-rabbitmq", p.blackduck.Name))
-				delete(p.objects, fmt.Sprintf("ReplicationController.%s-blackduck-binaryscanner", p.blackduck.Name))
+				delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("ReplicationController.%s-blackduck-rabbitmq", p.blackDuckCr.Name))
+				delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("Service.%s-blackduck-rabbitmq", p.blackDuckCr.Name))
+				delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("ReplicationController.%s-blackduck-binaryscanner", p.blackDuckCr.Name))
 			}
 			break
 		}
@@ -118,7 +103,7 @@ func (p *BlackduckPatcher) patchBDBA() error {
 }
 
 func (p *BlackduckPatcher) patchSealKey() error {
-	var secret v1.Secret
+	var secret corev1.Secret
 	if err := p.Client.Get(context.TODO(), types.NamespacedName{
 		Namespace: "synopsys-operator", // <<< TODO Get this from protoform
 		Name:      "blackduck-secret",
@@ -131,124 +116,126 @@ func (p *BlackduckPatcher) patchSealKey() error {
 		return fmt.Errorf("SEAL_KEY key couldn't be found inside blackduck-secret")
 	}
 
-	runtimeObject, ok := p.objects[fmt.Sprintf("Secret.%s-upload-cache", p.blackduck.Name)]
+	runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-upload-cache", p.blackDuckCr.Name)]
 	if !ok {
 		return nil
 	}
 
-	runtimeObject.(*v1.Secret).Data["SEAL_KEY"] = sealKey
+	runtimeObject.(*corev1.Secret).Data["SEAL_KEY"] = sealKey
 	return nil
 }
 
+// TODO: common with Alert
 func (p *BlackduckPatcher) patchExposeService() error {
 	// TODO use contansts
-	id := fmt.Sprintf("Service.%s-webserver-exposed", p.blackduck.Name)
-	runtimeObject, ok := p.objects[id]
+	id := fmt.Sprintf("Service.%s-webserver-exposed", p.blackDuckCr.Name)
+	runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[id]
 	if !ok {
 		return nil
 	}
 
-	switch strings.ToUpper(p.blackduck.Spec.ExposeService) {
+	switch strings.ToUpper(p.blackDuckCr.Spec.ExposeService) {
 	case "LOADBALANCER":
-		runtimeObject.(*v1.Service).Spec.Type = v1.ServiceTypeLoadBalancer
+		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
 	case "NODEPORT":
-		runtimeObject.(*v1.Service).Spec.Type = v1.ServiceTypeNodePort
+		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
 	default:
-		delete(p.objects, id)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, id)
 	}
 
 	return nil
 }
 
 func (p *BlackduckPatcher) patchAuthCert() error {
-	if len(p.blackduck.Spec.AuthCustomCA) == 0 {
-		for _, v := range p.objects {
+	if len(p.blackDuckCr.Spec.AuthCustomCA) == 0 {
+		for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 			switch v.(type) {
-			case *v1.ReplicationController:
-				removeVolumeAndVolumeMountFromRC(v.(*v1.ReplicationController), fmt.Sprintf("%sauth-custom-ca", p.blackduck.Name))
+			case *corev1.ReplicationController:
+				removeVolumeAndVolumeMountFromRC(v.(*corev1.ReplicationController), fmt.Sprintf("%sauth-custom-ca", p.blackDuckCr.Name))
 			}
 		}
 	} else {
-		secret, ok := p.objects[fmt.Sprintf("Secret.%s-auth-custom-ca", p.blackduck.Name)]
+		secret, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-auth-custom-ca", p.blackDuckCr.Name)]
 		if !ok {
 			return nil
 		}
 
-		if secret.(*v1.Secret).Data == nil {
-			secret.(*v1.Secret).Data = make(map[string][]byte)
+		if secret.(*corev1.Secret).Data == nil {
+			secret.(*corev1.Secret).Data = make(map[string][]byte)
 		}
 
-		secret.(*v1.Secret).Data["AUTH_CUSTOM_CA"] = []byte(p.blackduck.Spec.AuthCustomCA)
+		secret.(*corev1.Secret).Data["AUTH_CUSTOM_CA"] = []byte(p.blackDuckCr.Spec.AuthCustomCA)
 	}
 	return nil
 }
 
 func (p *BlackduckPatcher) patchProxyCert() error {
-	if len(p.blackduck.Spec.ProxyCertificate) == 0 {
-		for _, v := range p.objects {
+	if len(p.blackDuckCr.Spec.ProxyCertificate) == 0 {
+		for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 			switch v.(type) {
-			case *v1.ReplicationController:
-				removeVolumeAndVolumeMountFromRC(v.(*v1.ReplicationController), fmt.Sprintf("%s-proxy-certificate", p.blackduck.Name))
+			case *corev1.ReplicationController:
+				removeVolumeAndVolumeMountFromRC(v.(*corev1.ReplicationController), fmt.Sprintf("%s-proxy-certificate", p.blackDuckCr.Name))
 			}
 		}
 	} else {
-		secret, ok := p.objects[fmt.Sprintf("Secret.%s-proxy-certificate", p.blackduck.Name)]
+		secret, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-proxy-certificate", p.blackDuckCr.Name)]
 		if !ok {
 			return nil
 		}
 
-		if secret.(*v1.Secret).Data == nil {
-			secret.(*v1.Secret).Data = make(map[string][]byte)
+		if secret.(*corev1.Secret).Data == nil {
+			secret.(*corev1.Secret).Data = make(map[string][]byte)
 		}
 
-		secret.(*v1.Secret).Data["HUB_PROXY_CERT_FILE"] = []byte(p.blackduck.Spec.ProxyCertificate)
+		secret.(*corev1.Secret).Data["HUB_PROXY_CERT_FILE"] = []byte(p.blackDuckCr.Spec.ProxyCertificate)
 	}
 	return nil
 }
 
+// TODO: common with Alert
 func (p *BlackduckPatcher) patchWithSize() error {
 	var size synopsysv1.Size
-	if len(p.blackduck.Spec.Size) > 0 {
+	if len(p.blackDuckCr.Spec.Size) > 0 {
 		if err := p.Client.Get(context.TODO(), types.NamespacedName{
-			Namespace: p.blackduck.Namespace,
-			Name:      strings.ToLower(p.blackduck.Spec.Size),
+			Namespace: p.blackDuckCr.Namespace,
+			Name:      strings.ToLower(p.blackDuckCr.Spec.Size),
 		}, &size); err != nil {
 
 			if !apierrs.IsNotFound(err) {
 				return err
 			}
 			if apierrs.IsNotFound(err) {
-				return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s] that doesn't exist", p.blackduck.Namespace, p.blackduck.Spec.Size)
+				return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s] that doesn't exist", p.blackDuckCr.Namespace, p.blackDuckCr.Spec.Size)
 			}
 		}
 
-		for _, v := range p.objects {
+		for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 			switch v.(type) {
-			case *v1.ReplicationController:
-				componentName, ok := v.(*v1.ReplicationController).GetLabels()["component"]
+			case *corev1.ReplicationController:
+				componentName, ok := v.(*corev1.ReplicationController).GetLabels()["component"]
 				if !ok {
-					return fmt.Errorf("component name is missing in %s", v.(*v1.ReplicationController).Name)
+					return fmt.Errorf("component name is missing in %s", v.(*corev1.ReplicationController).Name)
 				}
 
 				sizeConf, ok := size.Spec.PodResources[componentName]
 				if !ok {
-					return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s] but the size doesn't contain an entry for [%s]", p.blackduck.Namespace, p.blackduck.Spec.Size, v.(*v1.ReplicationController).Name)
+					return fmt.Errorf("blackDuckCr instance [%s] is configured to use a Size [%s] but the size doesn't contain an entry for [%s]", p.blackDuckCr.Namespace, p.blackDuckCr.Spec.Size, v.(*corev1.ReplicationController).Name)
 				}
-				v.(*v1.ReplicationController).Spec.Replicas = func(i int) *int32 { j := int32(i); return &j }(sizeConf.Replica)
-				for containerIndex, container := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
+				v.(*corev1.ReplicationController).Spec.Replicas = func(i int) *int32 { j := int32(i); return &j }(sizeConf.Replica)
+				for containerIndex, container := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers {
 					containerConf, ok := sizeConf.ContainerLimit[container.Name]
 					if !ok {
-						return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s]. The size oesn't contain an entry for pod [%s] container [%s]", p.blackduck.Namespace, p.blackduck.Spec.Size, v.(*v1.ReplicationController).Name, container.Name)
+						return fmt.Errorf("blackDuckCr instance [%s] is configured to use a Size [%s]. The size oesn't contain an entry for pod [%s] container [%s]", p.blackDuckCr.Namespace, p.blackDuckCr.Spec.Size, v.(*corev1.ReplicationController).Name, container.Name)
 					}
 					resourceRequirements, err := controllers_utils.GenResourceRequirementsFromContainerSize(containerConf)
 					if err != nil {
 						return err
 					}
-					v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+					v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
 
-					for envIndex, env := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Env {
+					for envIndex, env := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Env {
 						if strings.Compare(env.Name, "HUB_MAX_MEMORY") == 0 {
-							v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Env[envIndex].Value = fmt.Sprintf("%dm", *containerConf.MaxMem-512)
+							v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Env[envIndex].Value = fmt.Sprintf("%dm", *containerConf.MaxMem-512)
 							break
 						}
 					}
@@ -260,16 +247,17 @@ func (p *BlackduckPatcher) patchWithSize() error {
 	return nil
 }
 
+// TODO: common with Alert
 func (p *BlackduckPatcher) patchReplicas() error {
-	for _, v := range p.objects {
+	for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 		switch v.(type) {
-		case *v1.ReplicationController:
-			switch strings.ToUpper(p.blackduck.Spec.DesiredState) {
+		case *corev1.ReplicationController:
+			switch strings.ToUpper(p.blackDuckCr.Spec.DesiredState) {
 			case "STOP":
-				v.(*v1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
+				v.(*corev1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
 			case "DBMIGRATE":
-				if value, ok := v.(*v1.ReplicationController).GetLabels()["component"]; !ok || strings.Compare(value, "postgres") != 0 {
-					v.(*v1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
+				if value, ok := v.(*corev1.ReplicationController).GetLabels()["component"]; !ok || strings.Compare(value, "postgres") != 0 {
+					v.(*corev1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
 				}
 			}
 		}
@@ -277,13 +265,14 @@ func (p *BlackduckPatcher) patchReplicas() error {
 	return nil
 }
 
+// TODO: common with Alert
 func (p *BlackduckPatcher) patchImages() error {
-	if len(p.blackduck.Spec.RegistryConfiguration.Registry) > 0 || len(p.blackduck.Spec.ImageRegistries) > 0 {
-		for _, v := range p.objects {
+	if len(p.blackDuckCr.Spec.RegistryConfiguration.Registry) > 0 || len(p.blackDuckCr.Spec.ImageRegistries) > 0 {
+		for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 			switch v.(type) {
-			case *v1.ReplicationController:
-				for i := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
-					v.(*v1.ReplicationController).Spec.Template.Spec.Containers[i].Image = controllers_utils.GenerateImageTag(v.(*v1.ReplicationController).Spec.Template.Spec.Containers[i].Image, p.blackduck.Spec.ImageRegistries, p.blackduck.Spec.RegistryConfiguration)
+			case *corev1.ReplicationController:
+				for i := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers {
+					v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].Image = controllers_utils.GenerateImageTag(v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].Image, p.blackDuckCr.Spec.ImageRegistries, p.blackDuckCr.Spec.RegistryConfiguration)
 				}
 			}
 		}
@@ -292,50 +281,50 @@ func (p *BlackduckPatcher) patchImages() error {
 }
 
 func (p *BlackduckPatcher) patchPostgresConfig() error {
-	cmConf, ok := p.objects[fmt.Sprintf("ConfigMap.%s-db-config", p.blackduck.Name)]
+	cmConf, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-db-config", p.blackDuckCr.Name)]
 	if !ok {
 		return nil
 	}
 
-	secretConf, ok := p.objects[fmt.Sprintf("Secret.%s-db-creds", p.blackduck.Name)]
+	secretConf, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-db-creds", p.blackDuckCr.Name)]
 	if !ok {
 		return nil
 	}
 
-	if cmConf.(*v1.ConfigMap).Data == nil {
-		cmConf.(*v1.ConfigMap).Data = make(map[string]string)
+	if cmConf.(*corev1.ConfigMap).Data == nil {
+		cmConf.(*corev1.ConfigMap).Data = make(map[string]string)
 	}
 
-	if secretConf.(*v1.Secret).Data == nil {
-		secretConf.(*v1.Secret).Data = make(map[string][]byte)
+	if secretConf.(*corev1.Secret).Data == nil {
+		secretConf.(*corev1.Secret).Data = make(map[string][]byte)
 	}
 
-	if p.blackduck.Spec.ExternalPostgres != nil {
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_ADMIN"] = p.blackduck.Spec.ExternalPostgres.PostgresAdmin
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_ENABLE_SSL"] = strconv.FormatBool(p.blackduck.Spec.ExternalPostgres.PostgresSsl)
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_HOST"] = p.blackduck.Spec.ExternalPostgres.PostgresHost
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_PORT"] = strconv.Itoa(p.blackduck.Spec.ExternalPostgres.PostgresPort)
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_USER"] = p.blackduck.Spec.ExternalPostgres.PostgresUser
+	if p.blackDuckCr.Spec.ExternalPostgres != nil {
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_ADMIN"] = p.blackDuckCr.Spec.ExternalPostgres.PostgresAdmin
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_ENABLE_SSL"] = strconv.FormatBool(p.blackDuckCr.Spec.ExternalPostgres.PostgresSsl)
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_HOST"] = p.blackDuckCr.Spec.ExternalPostgres.PostgresHost
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_PORT"] = strconv.Itoa(p.blackDuckCr.Spec.ExternalPostgres.PostgresPort)
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_USER"] = p.blackDuckCr.Spec.ExternalPostgres.PostgresUser
 
-		secretConf.(*v1.Secret).Data["HUB_POSTGRES_ADMIN_PASSWORD_FILE"] = []byte(p.blackduck.Spec.ExternalPostgres.PostgresAdminPassword)
-		secretConf.(*v1.Secret).Data["HUB_POSTGRES_USER_PASSWORD_FILE"] = []byte(p.blackduck.Spec.ExternalPostgres.PostgresUserPassword)
+		secretConf.(*corev1.Secret).Data["HUB_POSTGRES_ADMIN_PASSWORD_FILE"] = []byte(p.blackDuckCr.Spec.ExternalPostgres.PostgresAdminPassword)
+		secretConf.(*corev1.Secret).Data["HUB_POSTGRES_USER_PASSWORD_FILE"] = []byte(p.blackDuckCr.Spec.ExternalPostgres.PostgresUserPassword)
 
 		// Delete the component required when deploying internal postgres
-		delete(p.objects, fmt.Sprintf("PersistentVolumeClaim.%s-postgres", p.blackduck.Name))
-		delete(p.objects, fmt.Sprintf("Job.%s-init-postgres", p.blackduck.Name))
-		delete(p.objects, fmt.Sprintf("ConfigMap.%s-postgres-init-config", p.blackduck.Name))
-		delete(p.objects, fmt.Sprintf("Service.%s-postgres", p.blackduck.Name))
-		delete(p.objects, fmt.Sprintf("ReplicationController.%s-postgres", p.blackduck.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("PersistentVolumeClaim.%s-postgres", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("Job.%s-init-postgres", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("ConfigMap.%s-postgres-init-config", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("Service.%s-postgres", p.blackDuckCr.Name))
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, fmt.Sprintf("ReplicationController.%s-postgres", p.blackDuckCr.Name))
 	} else {
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_ADMIN"] = "blackduck"
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_ENABLE_SSL"] = "false"
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_HOST"] = fmt.Sprintf("%s-postgres", p.blackduck.Name)
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_PORT"] = "5432"
-		cmConf.(*v1.ConfigMap).Data["HUB_POSTGRES_USER"] = "blackduck_user"
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_ADMIN"] = "blackduck"
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_ENABLE_SSL"] = "false"
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_HOST"] = fmt.Sprintf("%s-postgres", p.blackDuckCr.Name)
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_PORT"] = "5432"
+		cmConf.(*corev1.ConfigMap).Data["HUB_POSTGRES_USER"] = "blackduck_user"
 
-		secretConf.(*v1.Secret).Data["HUB_POSTGRES_ADMIN_PASSWORD_FILE"] = []byte(p.blackduck.Spec.AdminPassword)
-		secretConf.(*v1.Secret).Data["HUB_POSTGRES_USER_PASSWORD_FILE"] = []byte(p.blackduck.Spec.UserPassword)
-		secretConf.(*v1.Secret).Data["HUB_POSTGRES_POSTGRES_PASSWORD_FILE"] = []byte(p.blackduck.Spec.PostgresPassword)
+		secretConf.(*corev1.Secret).Data["HUB_POSTGRES_ADMIN_PASSWORD_FILE"] = []byte(p.blackDuckCr.Spec.AdminPassword)
+		secretConf.(*corev1.Secret).Data["HUB_POSTGRES_USER_PASSWORD_FILE"] = []byte(p.blackDuckCr.Spec.UserPassword)
+		secretConf.(*corev1.Secret).Data["HUB_POSTGRES_POSTGRES_PASSWORD_FILE"] = []byte(p.blackDuckCr.Spec.PostgresPassword)
 	}
 
 	return nil
@@ -343,26 +332,27 @@ func (p *BlackduckPatcher) patchPostgresConfig() error {
 
 func (p *BlackduckPatcher) patchWebserverCertificates() error {
 
-	if len(p.blackduck.Spec.Certificate) > 0 && len(p.blackduck.Spec.CertificateKey) > 0 {
-		runtimeObject, ok := p.objects[fmt.Sprintf("Secret.%s-webserver-certificate", p.blackduck.Name)]
+	if len(p.blackDuckCr.Spec.Certificate) > 0 && len(p.blackDuckCr.Spec.CertificateKey) > 0 {
+		runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-webserver-certificate", p.blackDuckCr.Name)]
 		if !ok {
 			return nil
 		}
-		runtimeObject.(*v1.Secret).Data["WEBSERVER_CUSTOM_CERT_FILE"] = []byte(p.blackduck.Spec.Certificate)
-		runtimeObject.(*v1.Secret).Data["WEBSERVER_CUSTOM_KEY_FILE"] = []byte(p.blackduck.Spec.CertificateKey)
+		runtimeObject.(*corev1.Secret).Data["WEBSERVER_CUSTOM_CERT_FILE"] = []byte(p.blackDuckCr.Spec.Certificate)
+		runtimeObject.(*corev1.Secret).Data["WEBSERVER_CUSTOM_KEY_FILE"] = []byte(p.blackDuckCr.Spec.CertificateKey)
 
 	}
 
 	return nil
 }
 
+// TODO: common with Alert
 func (p *BlackduckPatcher) patchEnvirons() error {
-	configMapRuntimeObject, ok := p.objects[fmt.Sprintf("ConfigMap.%s-config", p.blackduck.Name)]
+	configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-config", p.blackDuckCr.Name)]
 	if !ok {
 		return nil
 	}
-	configMap := configMapRuntimeObject.(*v1.ConfigMap)
-	for _, e := range p.blackduck.Spec.Environs {
+	configMap := configMapRuntimeObject.(*corev1.ConfigMap)
+	for _, e := range p.blackDuckCr.Spec.Environs {
 		vals := strings.Split(e, ":") // TODO - doesn't handle multiple colons
 		if len(vals) != 2 {
 			fmt.Printf("Could not split environ '%s' on ':'\n", e) // TODO change to log
@@ -374,22 +364,24 @@ func (p *BlackduckPatcher) patchEnvirons() error {
 	}
 	return nil
 }
+
+// TODO: common with Alert
 func (p *BlackduckPatcher) patchNamespace() error {
 	accessor := meta.NewAccessor()
-	for _, runtimeObject := range p.objects {
-		accessor.SetNamespace(runtimeObject, p.blackduck.Spec.Namespace)
+	for _, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+		accessor.SetNamespace(runtimeObject, p.blackDuckCr.Spec.Namespace)
 	}
 	return nil
 }
 
 func (p *BlackduckPatcher) patchLiveness() error {
 	// Removes liveness probes if Spec.LivenessProbes is set to false
-	for _, v := range p.objects {
+	for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 		switch v.(type) {
-		case *v1.ReplicationController:
-			if !p.blackduck.Spec.LivenessProbes {
-				for i := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
-					v.(*v1.ReplicationController).Spec.Template.Spec.Containers[i].LivenessProbe = nil
+		case *corev1.ReplicationController:
+			if !p.blackDuckCr.Spec.LivenessProbes {
+				for i := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers {
+					v.(*corev1.ReplicationController).Spec.Template.Spec.Containers[i].LivenessProbe = nil
 				}
 			}
 		}
@@ -397,34 +389,35 @@ func (p *BlackduckPatcher) patchLiveness() error {
 	return nil
 }
 
+// TODO: common with Alert
 func (p *BlackduckPatcher) patchStorage() error {
-	for k, v := range p.objects {
+	for k, v := range p.mapOfUniqueIdToBaseRuntimeObject {
 		switch v.(type) {
-		case *v1.PersistentVolumeClaim:
-			if !p.blackduck.Spec.PersistentStorage {
-				delete(p.objects, k)
+		case *corev1.PersistentVolumeClaim:
+			if !p.blackDuckCr.Spec.PersistentStorage {
+				delete(p.mapOfUniqueIdToBaseRuntimeObject, k)
 			} else {
-				if len(p.blackduck.Spec.PVCStorageClass) > 0 {
-					v.(*v1.PersistentVolumeClaim).Spec.StorageClassName = &p.blackduck.Spec.PVCStorageClass
+				if len(p.blackDuckCr.Spec.PVCStorageClass) > 0 {
+					v.(*corev1.PersistentVolumeClaim).Spec.StorageClassName = &p.blackDuckCr.Spec.PVCStorageClass
 				}
-				for _, pvc := range p.blackduck.Spec.PVC {
-					if strings.EqualFold(pvc.Name, v.(*v1.PersistentVolumeClaim).Name) {
-						v.(*v1.PersistentVolumeClaim).Spec.VolumeName = pvc.VolumeName
-						v.(*v1.PersistentVolumeClaim).Spec.StorageClassName = &pvc.StorageClass
+				for _, pvc := range p.blackDuckCr.Spec.PVC {
+					if strings.EqualFold(pvc.Name, v.(*corev1.PersistentVolumeClaim).Name) {
+						v.(*corev1.PersistentVolumeClaim).Spec.VolumeName = pvc.VolumeName
+						v.(*corev1.PersistentVolumeClaim).Spec.StorageClassName = &pvc.StorageClass
 						if quantity, err := resource.ParseQuantity(pvc.Size); err == nil {
-							v.(*v1.PersistentVolumeClaim).Spec.Resources.Requests[v1.ResourceStorage] = quantity
+							v.(*corev1.PersistentVolumeClaim).Spec.Resources.Requests[corev1.ResourceStorage] = quantity
 						}
 					}
 				}
 			}
-		case *v1.ReplicationController:
-			if !p.blackduck.Spec.PersistentStorage {
-				for i := range v.(*v1.ReplicationController).Spec.Template.Spec.Volumes {
+		case *corev1.ReplicationController:
+			if !p.blackDuckCr.Spec.PersistentStorage {
+				for i := range v.(*corev1.ReplicationController).Spec.Template.Spec.Volumes {
 					// If PersistentVolumeClaim then we change it to emptyDir
-					if v.(*v1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource.PersistentVolumeClaim != nil {
-						v.(*v1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource = v1.VolumeSource{
-							EmptyDir: &v1.EmptyDirVolumeSource{
-								Medium:    v1.StorageMediumDefault,
+					if v.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource.PersistentVolumeClaim != nil {
+						v.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource = corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{
+								Medium:    corev1.StorageMediumDefault,
 								SizeLimit: nil,
 							},
 						}
@@ -437,7 +430,7 @@ func (p *BlackduckPatcher) patchStorage() error {
 	return nil
 }
 
-func removeVolumeAndVolumeMountFromRC(rc *v1.ReplicationController, volumeName string) *v1.ReplicationController {
+func removeVolumeAndVolumeMountFromRC(rc *corev1.ReplicationController, volumeName string) *corev1.ReplicationController {
 	for volumeNb, volume := range rc.Spec.Template.Spec.Volumes {
 		if volume.Secret != nil && strings.Compare(volume.Secret.SecretName, volumeName) == 0 {
 			rc.Spec.Template.Spec.Volumes = append(rc.Spec.Template.Spec.Volumes[:volumeNb], rc.Spec.Template.Spec.Volumes[volumeNb+1:]...)
