@@ -37,19 +37,26 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"fmt"
-	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
-	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
-	v1 "k8s.io/api/core/v1"
+	"strconv"
+	"strings"
+
+	"k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
-	"strconv"
-	"strings"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
+	"github.com/blackducksoftware/synopsys-operator/meta-builder/controllers/controllers_utils"
 )
 
-func patchBlackduck(blackduck *synopsysv1.Blackduck, objects map[string]runtime.Object) map[string]runtime.Object {
+func patchBlackduck(client client.Client, blackduck *synopsysv1.Blackduck, objects map[string]runtime.Object) map[string]runtime.Object {
 	patcher := BlackduckPatcher{
+		Client:    client,
 		blackduck: blackduck,
 		objects:   objects,
 	}
@@ -57,6 +64,7 @@ func patchBlackduck(blackduck *synopsysv1.Blackduck, objects map[string]runtime.
 }
 
 type BlackduckPatcher struct {
+	client.Client
 	blackduck *synopsysv1.Blackduck
 	objects   map[string]runtime.Object
 }
@@ -71,10 +79,12 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 	p.patchWebserverCertificates()
 	p.patchPostgresConfig()
 	p.patchImages()
-	p.patchReplicas()
 	p.patchAuthCert()
 	p.patchProxyCert()
 	p.patchExposeService()
+
+	p.patchWithSize()
+	p.patchReplicas()
 	// TODO - Patch SEAL_KEY + BDBA
 	return p.objects
 }
@@ -141,6 +151,54 @@ func (p *BlackduckPatcher) patchProxyCert() error {
 		}
 
 		secret.(*v1.Secret).Data["HUB_PROXY_CERT_FILE"] = []byte(p.blackduck.Spec.ProxyCertificate)
+	}
+	return nil
+}
+
+func (p *BlackduckPatcher) patchWithSize() error {
+	var size synopsysv1.Size
+	if len(p.blackduck.Spec.Size) > 0 {
+		if err := p.Client.Get(context.TODO(), types.NamespacedName{
+			Namespace: p.blackduck.Namespace,
+			Name:      strings.ToLower(p.blackduck.Spec.Size),
+		}, &size); err != nil {
+
+			if !apierrs.IsNotFound(err) {
+				return err
+			}
+			if apierrs.IsNotFound(err) {
+				return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s] that doesn't exist", p.blackduck.Namespace, p.blackduck.Spec.Size)
+			}
+		}
+	}
+
+	for _, v := range p.objects {
+		switch v.(type) {
+		case *v1.ReplicationController:
+			componentName, ok := v.(*v1.ReplicationController).GetLabels()["component"]
+			if !ok {
+				return fmt.Errorf("component name is missing in %s", v.(*v1.ReplicationController).Name)
+			}
+
+			sizeConf, ok := size.Spec.PodResources[componentName]
+			if !ok {
+				return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s] but the size doesn't contain an entry for [%s]", p.blackduck.Namespace, p.blackduck.Spec.Size, v.(*v1.ReplicationController).Name)
+			}
+			v.(*v1.ReplicationController).Spec.Replicas = func(i int) *int32 { j := int32(i); return &j }(sizeConf.Replica)
+			for containerIndex, container := range v.(*v1.ReplicationController).Spec.Template.Spec.Containers {
+				containerConf, ok := sizeConf.ContainerLimit[container.Name]
+				if !ok {
+					return fmt.Errorf("blackduck instance [%s] is configured to use a Size [%s]. The size oesn't contain an entry for pod [%s] container [%s]", p.blackduck.Namespace, p.blackduck.Spec.Size, v.(*v1.ReplicationController).Name, container.Name)
+				}
+				resourceRequirements, err := controllers_utils.GenResourceRequirementsFromContainerSize(containerConf)
+				if err != nil {
+					return err
+				}
+				fmt.Println(resourceRequirements.Limits.Memory().String())
+				v.(*v1.ReplicationController).Spec.Template.Spec.Containers[containerIndex].Resources = *resourceRequirements
+			}
+
+		}
 	}
 	return nil
 }

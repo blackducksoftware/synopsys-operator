@@ -52,35 +52,6 @@ type BlackduckSpec struct {
 	//NodeAffinities        map[string][]NodeAffinity `json:"nodeAffinities,omitempty"`
 }
 
-type RegistryConfiguration struct {
-	Registry    string   `json:"registry"`
-	PullSecrets []string `json:"pullSecrets"`
-}
-
-// Environs will hold the list of Environment variables
-type Environs struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-// PVC will contain the specifications of the different PVC.
-// This will overwrite the default claim configuration
-type PVC struct {
-	Name         string `json:"name"`
-	Size         string `json:"size,omitempty"`
-	StorageClass string `json:"storageClass,omitempty"`
-	VolumeName   string `json:"volumeName,omitempty"`
-}
-
-// NodeAffinity will contain the specifications of a node affinity
-// TODO: currently, keeping it simple, but can be modified in the future to take in complex scenarios
-type NodeAffinity struct {
-	AffinityType string   `json:"affinityType"`
-	Key          string   `json:"key"`
-	Op           string   `json:"op"`
-	Values       []string `json:"values"`
-}
-
 // PostgresExternalDBConfig contain the external database configuration
 type PostgresExternalDBConfig struct {
 	PostgresHost          string `json:"postgresHost"`

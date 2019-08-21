@@ -23,3 +23,6 @@ resources:
 - group: synopsys
   version: v1
   kind: PolarisDB
+- group: synopsys
+  version: v1
+  kind: Size
