@@ -34,13 +34,13 @@ type PolarisDBSpec struct {
 	PostgresInstanceType   string                 `json:"postgres_instance_type"`
 	PostgresStorageDetails PostgresStorageDetails `json:"postgres_storage_details,omitempty"`
 	PostgresDetails        PostgresDetails        `json:"postgres"`
-	EventstoreDetails      EventstoreDetails      `json:"eventstore_details",omitempty`
+	EventstoreDetails      EventstoreDetails      `json:"eventstore_details,omitempty"`
 	UploadServerDetails    UploadServerDetails    `json:"upload_server_details,omitempty"`
 }
 
 type EventstoreDetails struct {
 	Replicas    *int32 `json:"replicas,omitempty"`
-	StorageSize string `json:"storage_size",omitempty`
+	StorageSize string `json:"storage_size,omitempty"`
 }
 
 type UploadServerDetails struct {
