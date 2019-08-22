@@ -38,21 +38,6 @@ type AuthServerSpec struct {
 	ResourcesSpec ResourcesSpec `json:"resources,omitempty"`
 }
 
-type ResourcesSpec struct {
-	RequestsSpec RequestsSpec `json:"requests,omitempty"`
-	LimitsSpec   LimitsSpec   `json:"limits,omitempty"`
-}
-
-type RequestsSpec struct {
-	CPU    string `json:"cpu,omitempty"`
-	Memory string `json:"memory,omitempty"`
-}
-
-type LimitsSpec struct {
-	CPU    string `json:"cpu,omitempty"`
-	Memory string `json:"memory,omitempty"`
-}
-
 // PolarisStatus defines the observed state of Polaris
 type PolarisStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster

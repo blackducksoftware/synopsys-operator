@@ -26,14 +26,33 @@ import (
 type PolarisDBSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Namespace              string          `json:"namespace,omitempty"`
-	EnvironmentName        string          `json:"environment"`
-	EnvironmentDNS         string          `json:"environment_address"`
-	ImagePullSecrets       string          `json:"image_pull_secrets"`
-	SMTPDetails            SMTPDetails     `json:"smtp_details"`
-	PostgresInstanceType   string          `json:"postgres_instance_type"`
-	PostgresStorageDetails string          `json:"postgres_storage_details,omitempty"`
-	PostgresDetails        PostgresDetails `json:"postgres"`
+	Namespace              string                 `json:"namespace,omitempty"`
+	EnvironmentName        string                 `json:"environment"`
+	EnvironmentDNS         string                 `json:"environment_address"`
+	ImagePullSecrets       string                 `json:"image_pull_secrets"`
+	SMTPDetails            SMTPDetails            `json:"smtp_details"`
+	PostgresInstanceType   string                 `json:"postgres_instance_type"`
+	PostgresStorageDetails PostgresStorageDetails `json:"postgres_storage_details,omitempty"`
+	PostgresDetails        PostgresDetails        `json:"postgres"`
+	EventstoreDetails      EventstoreDetails      `json:"eventstore_details",omitempty`
+	UploadServerDetails    UploadServerDetails    `json:"upload_server_details,omitempty"`
+}
+
+type EventstoreDetails struct {
+	Replicas    *int32 `json:"replicas,omitempty"`
+	StorageSize string `json:"storage_size",omitempty`
+}
+
+type UploadServerDetails struct {
+	Replicas      *int32        `json:"replicas,omitempty"`
+	ResourcesSpec ResourcesSpec `json:"resources,omitempty"`
+	Storage       Storage       `json:"storage,omitempty"`
+}
+
+type Storage struct {
+	Type         string  `json:"type,omitempty"`
+	StorageSize  string  `json:"size,omitempty"`
+	StorageClass *string `json:"storage_class,omitempty"`
 }
 
 type SMTPDetails struct {
@@ -51,8 +70,8 @@ type PostgresDetails struct {
 }
 
 type PostgresStorageDetails struct {
-	StorageSize  string `json:"size"`
-	StorageClass string `json:"storage_class"`
+	StorageSize  string  `json:"size"`
+	StorageClass *string `json:"storage_class"`
 }
 
 // PolarisDBStatus defines the observed state of PolarisDB
