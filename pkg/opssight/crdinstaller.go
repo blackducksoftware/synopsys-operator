@@ -158,17 +158,6 @@ func (c *CRDInstaller) AddInformerEventHandler() {
 
 // CreateHandler will create a CRD handler
 func (c *CRDInstaller) CreateHandler() {
-	osClient, err := securityclient.NewForConfig(c.kubeConfig)
-	if err != nil {
-		osClient = nil
-	} else {
-		_, err := util.GetOpenShiftSecurityConstraint(osClient, "privileged")
-		if err != nil && strings.Contains(err.Error(), "could not find the requested resource") && strings.Contains(err.Error(), "openshift.io") {
-			log.Debugf("ignoring scc privileged for Kubernetes cluster")
-			osClient = nil
-		}
-	}
-
 	hubClient, err := hubclient.NewForConfig(c.kubeConfig)
 	if err != nil {
 		log.Errorf("unable to create the hub client for opssight: %+v", err)
@@ -176,18 +165,21 @@ func (c *CRDInstaller) CreateHandler() {
 	}
 
 	c.handler = &Handler{
-		Config:           c.config,
-		KubeConfig:       c.kubeConfig,
-		KubeClient:       c.kubeClient,
-		OpsSightClient:   c.opssightclient,
-		Namespace:        c.config.Namespace,
-		OSSecurityClient: osClient,
-		Defaults:         c.defaults.(*opssightapi.OpsSightSpec),
-		HubClient:        hubClient,
+		Config:         c.config,
+		KubeConfig:     c.kubeConfig,
+		KubeClient:     c.kubeClient,
+		OpsSightClient: c.opssightclient,
+		Namespace:      c.config.Namespace,
+		Defaults:       c.defaults.(*opssightapi.OpsSightSpec),
+		HubClient:      hubClient,
 	}
 
 	if util.IsOpenshift(c.kubeClient) {
 		c.handler.RouteClient = util.GetRouteClient(c.kubeConfig, c.kubeClient, c.config.Namespace)
+		if c.handler.OSSecurityClient, err = securityclient.NewForConfig(c.kubeConfig); err != nil {
+			log.Errorf("error in creating the OpenShift security client due to %+v", err)
+			return
+		}
 	}
 }
 
