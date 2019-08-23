@@ -29,6 +29,9 @@ import (
 
 	horizonapi "github.com/blackducksoftware/horizon/pkg/api"
 	"github.com/blackducksoftware/horizon/pkg/components"
+	alertApps "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert"
+	alertLatest "github.com/blackducksoftware/synopsys-operator/pkg/apps/alert/latest"
+	"github.com/blackducksoftware/synopsys-operator/pkg/protoform"
 	soperator "github.com/blackducksoftware/synopsys-operator/pkg/soperator"
 	"github.com/blackducksoftware/synopsys-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -37,6 +40,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 )
 
 var busyBoxImage = defaultBusyBoxImage
@@ -287,16 +292,83 @@ func migrateCR(namespace string, crdName string) error {
 	return nil
 }
 
+// getDefaultAlertImages get the default alert images less then 5.0.0 alert version
+func getDefaultAlertImages() map[string][]string {
+	defaultAlertImages := make(map[string][]string, 0)
+	alert := alertApps.NewAlert(&protoform.Config{}, restconfig)
+	versions := alert.Versions()
+	for _, version := range versions {
+		defaultAlertImages["blackduck-alert"] = append(defaultAlertImages["blackduck-alert"], alertLatest.GetImageTag(version, "blackduck-alert"))
+		defaultAlertImages["blackduck-cfssl"] = append(defaultAlertImages["blackduck-cfssl"], alertLatest.GetImageTag(version, "blackduck-cfssl"))
+	}
+	defaultAlertImages["blackduck-cfssl"] = util.UniqueStringSlice(defaultAlertImages["blackduck-cfssl"])
+	return defaultAlertImages
+}
+
 // migrateAlert migrates the existing Alert instances
 func migrateAlert(namespace string) error {
 	alerts, err := util.ListAlerts(alertClient, namespace, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list Alert instances in namespace '%s' due to %+v", namespace, err)
 	}
+
+	// if there is no alert CR's, return
+	if len(alerts.Items) == 0 {
+		return nil
+	}
+
+	// default images
+	defaultAlertImages := getDefaultAlertImages()
+
+	alertGVR := schema.GroupVersionResource{
+		Group:    "synopsys.com",
+		Version:  "v1",
+		Resource: "alerts",
+	}
+	client, err := dynamic.NewForConfig(restconfig)
+
 	for _, alert := range alerts.Items {
 		alertName := alert.Name
 		alertNamespace := alert.Spec.Namespace
+		isUpdate := false
 		log.Infof("migrating Alert '%s' in namespace '%s'...", alertName, alertNamespace)
+
+		// get the current value of the images using dynamic client
+		crdNamespace := metav1.NamespaceDefault
+		if len(alert.Namespace) > 0 {
+			crdNamespace = alertNamespace
+		}
+		req := client.Resource(alertGVR).Namespace(crdNamespace)
+		alertOldObj, err := req.Get(alertName, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get %s Alert instance in namespace '%s' due to %+v", alertName, alertNamespace, err)
+		}
+
+		spec := alertOldObj.Object["spec"].(map[string]interface{})
+		if len(spec) > 0 {
+			alertImage := ""
+			cfsslImage := ""
+
+			if val, ok := spec["alertImage"]; ok {
+				alertImage = val.(string)
+			}
+
+			if val, ok := spec["cfsslImage"]; ok {
+				cfsslImage = val.(string)
+			}
+
+			// check whether the cfssl image is not equal to default image, if so, update the image registry
+			if len(cfsslImage) > 0 && !util.IsExistInStringSlice(defaultAlertImages["blackduck-cfssl"], cfsslImage) && !util.IsExistInStringSlice(alert.Spec.ImageRegistries, cfsslImage) {
+				alert.Spec.ImageRegistries = append(alert.Spec.ImageRegistries, cfsslImage)
+				isUpdate = true
+			}
+
+			// check whether the alert image is not equal to default image, if so, update the image registry
+			if len(alertImage) > 0 && !util.IsExistInStringSlice(defaultAlertImages["blackduck-alert"], alertImage) && !util.IsExistInStringSlice(alert.Spec.ImageRegistries, alertImage) {
+				alert.Spec.ImageRegistries = append(alert.Spec.ImageRegistries, alertImage)
+				isUpdate = true
+			}
+		}
 
 		// update annotations
 		if _, ok := alert.Annotations["synopsys.com/created.by"]; !ok {
@@ -305,6 +377,10 @@ func migrateAlert(namespace string) error {
 			if len(alert.Spec.ExposeService) == 0 {
 				alert.Spec.ExposeService = util.NONE
 			}
+			isUpdate = true
+		}
+
+		if isUpdate {
 			_, err := util.UpdateAlert(alertClient, alert.Namespace, &alert)
 			if err != nil {
 				return fmt.Errorf("error migrating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)

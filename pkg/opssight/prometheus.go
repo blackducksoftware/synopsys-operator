@@ -84,7 +84,7 @@ func (p *SpecConfig) perceptorMetricsContainer() (*components.Container, error) 
 	container, err := components.NewContainer(horizonapi.ContainerConfig{
 		Name:  p.names["prometheus"],
 		Image: p.images["prometheus"],
-		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d"},
+		Args:  []string{"--log.level=debug", "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/tmp/data/", "--storage.tsdb.retention=120d", "--web.listen-address=:3006"},
 	})
 	if err != nil {
 		return nil, errors.Trace(err)

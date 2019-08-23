@@ -8,8 +8,10 @@ require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/gin-gonic/gin v1.4.0
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/go-cmp v0.3.0
+	github.com/google/gofuzz v1.0.0
 	github.com/gophercloud/gophercloud v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.7
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
@@ -25,6 +27,7 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
+	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/api v0.0.0-20190808180749-077ce48e77da
 	k8s.io/apiextensions-apiserver v0.0.0-20190809061809-636e76ffcf57
