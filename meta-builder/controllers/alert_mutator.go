@@ -135,13 +135,14 @@ func (p *AlertPatcher) patchEnvirons() error {
 }
 
 func (p *AlertPatcher) patchSecrets() error {
-	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-alert-secret", p.alertCr.Name)]
+	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("Secret.%s-alert-secret", p.alertCr.Name)]
 	if !ok {
 		return nil
 	}
 	secret := secretRuntimeObject.(*corev1.Secret)
-	for _, s := range p.alertCr.Spec.Environs {
+	for _, s := range p.alertCr.Spec.Secrets {
 		vals := strings.Split(s, ":") // TODO - doesn't handle multiple colons
+		// TODO: Base 64 decode
 		if len(vals) != 2 {
 			fmt.Printf("Could not split environ '%s' on ':'\n", s) // TODO change to log
 			continue
