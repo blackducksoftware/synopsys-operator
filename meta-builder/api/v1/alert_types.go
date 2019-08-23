@@ -40,14 +40,16 @@ type AlertSpec struct {
 	StandAlone *bool `json:"standAlone"` // TODO: check with mphammer
 	// Set Port for alert rc and service. [dev-note]: this does not need to be a pointer
 	Port *int32 `json:"port"`
-	// Base64Encoded string for ALERT_ENCRYPTION_PASSWORD. [dev-note]: this should be a pointer
+	// Base64Encoded string for ALERT_ENCRYPTION_PASSWORD. [dev-note]: this should be a pointer, also json should not be capitalized.
+	// Also previously this was plain text, so TODO: migrate, either take this out from the api, or convert from plain to encoded
 	EncryptionPassword string `json:"EncryptionPassword"`
-	// Base64Encoded string for ALERT_ENCRYPTION_GLOBAL_SALT. [dev-note]: this should be a pointer
+	// Base64Encoded string for ALERT_ENCRYPTION_GLOBAL_SALT. [dev-note]: this should be a pointer, also json should not be capitalized.
+	// Also previously this was plain text, so TODO: migrate, either take this out from the api, or convert from plain to encoded
 	EncryptionGlobalSalt string `json:"EncryptionGlobalSalt"`
+	// add data to secret as a slice of "key:base64encodedvalue". [dev-note]: another implementation to consider is a map or a field per variable
+	Secrets *[]string `json:"secrets,omitempty"` // TODO: not in previous API, make an api-change note
 	// add data to environment variables config map as a slice of "key:value". [dev-note]: another implementation to consider is a map or a field per variable
 	Environs []string `json:"environs,omitempty"`
-	// add data to secret as a slice of "key:base64encodedvalue". [dev-note]: another implementation to consider is a map or a field per variable; also this should be a pointer
-	Secrets []string `json:"secrets,omitempty"` // TODO: not in previous API
 	// enable or disable persistent storage. [dev-note]: this is a different implementation than Black Duck, for example missing volumeName
 	PersistentStorage bool   `json:"persistentStorage"`
 	PVCName           string `json:"pvcName"`

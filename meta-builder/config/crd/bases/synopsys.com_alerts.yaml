@@ -32,11 +32,15 @@ spec:
           properties:
             EncryptionGlobalSalt:
               description: 'Base64Encoded string for ALERT_ENCRYPTION_GLOBAL_SALT.
-                [dev-note]: this should be a pointer'
+                [dev-note]: this should be a pointer, also json should not be capitalized.
+                Also previously this was plain text, so TODO: migrate, either take
+                this out from the api, or convert from plain to encoded'
               type: string
             EncryptionPassword:
               description: 'Base64Encoded string for ALERT_ENCRYPTION_PASSWORD. [dev-note]:
-                this should be a pointer'
+                this should be a pointer, also json should not be capitalized. Also
+                previously this was plain text, so TODO: migrate, either take this
+                out from the api, or convert from plain to encoded'
               type: string
             alertMemory:
               description: 'set min and max memory for alert rc. [dev-note]: again,
@@ -105,7 +109,7 @@ spec:
             secrets:
               description: 'add data to secret as a slice of "key:base64encodedvalue".
                 [dev-note]: another implementation to consider is a map or a field
-                per variable; also this should be a pointer'
+                per variable'
               items:
                 type: string
               type: array
