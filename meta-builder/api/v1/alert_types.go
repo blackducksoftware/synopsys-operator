@@ -30,31 +30,24 @@ import (
 
 // AlertSpec defines the desired state of Alert
 type AlertSpec struct {
-	Namespace             string                `json:"namespace,omitempty"`
-	Size                  string                `json:"size"`              // TODO:
-	Version               string                `json:"version,omitempty"` // TODO:
-	ExposeService         string                `json:"exposeService"`
-	StandAlone            StandAlone            `json:"standAlone,omitempty"`
-	Port                  *int32                `json:"port"`
-	EncryptionPassword    string                `json:"EncryptionPassword"`   // TODO:
-	EncryptionGlobalSalt  string                `json:"EncryptionGlobalSalt"` // TODO:
-	Environs              []string              `json:"environs,omitempty"`
-	Secrets               []string              `json:"secrets,omitempty"` // TODO: not in previous API
-	PersistentStorage     bool                  `json:"persistentStorage"`
-	PVC                   []PVC                 `json:"pvc,omitempty"`
-	PVCStorageClass       string                `json:"pvcStorageClass,omitempty"`
-	DesiredState          string                `json:"desiredState,omitempty"`
-	ImageRegistries       []string              `json:"imageRegistries,omitempty"`
-	RegistryConfiguration RegistryConfiguration `json:"registryConfiguration,omitempty"`
-
-	// TODO: make this consistent with Black Duck, how "sizes" are handled
-	AlertMemory string `json:"alertMemory,omitempty"` // TODO:
-	CfsslMemory string `json:"cfsslMemory,omitempty"` // TODO:
-}
-
-type StandAlone struct {
-	CfsslImage  string `json:"cfsslImage,omitempty"`
-	CfsslMemory string `json:"cfsslMemory,omitempty"`
+	Namespace             string                 `json:"namespace,omitempty"`
+	Version               string                 `json:"version,omitempty"` // TODO:
+	ExposeService         string                 `json:"exposeService"`
+	StandAlone            *bool                  `json:"standAlone"` // TODO:
+	Port                  *int32                 `json:"port"`
+	EncryptionPassword    string                 `json:"EncryptionPassword"`   // TODO:
+	EncryptionGlobalSalt  string                 `json:"EncryptionGlobalSalt"` // TODO:
+	Environs              []string               `json:"environs,omitempty"`
+	PersistentStorage     bool                   `json:"persistentStorage"`
+	PVCName               string                 `json:"pvcName"`
+	PVCStorageClass       string                 `json:"pvcStorageClass"`
+	Secrets               []string               `json:"secrets,omitempty"` // TODO: not in previous API
+	PVCSize               string                 `json:"pvcSize"`
+	AlertMemory           string                 `json:"alertMemory,omitempty"` // TODO: make this consistent with Black Duck, how "sizes" are handled
+	CfsslMemory           string                 `json:"cfsslMemory,omitempty"`
+	DesiredState          string                 `json:"desiredState,omitempty"`
+	ImageRegistries       []string               `json:"imageRegistries,omitempty"`
+	RegistryConfiguration *RegistryConfiguration `json:"registryConfiguration,omitempty"`
 }
 
 // AlertStatus defines the observed state of Alert

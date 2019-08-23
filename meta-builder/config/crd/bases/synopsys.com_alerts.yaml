@@ -35,8 +35,6 @@ spec:
             EncryptionPassword:
               type: string
             alertMemory:
-              description: 'TODO: make this consistent with Black Duck, how "sizes"
-                are handled'
               type: string
             cfsslMemory:
               type: string
@@ -59,23 +57,10 @@ spec:
             port:
               format: int32
               type: integer
-            pvc:
-              items:
-                description: PVC will contain the specifications of the different
-                  PVC. This will overwrite the default claim configuration
-                properties:
-                  name:
-                    type: string
-                  size:
-                    type: string
-                  storageClass:
-                    type: string
-                  volumeName:
-                    type: string
-                required:
-                - name
-                type: object
-              type: array
+            pvcName:
+              type: string
+            pvcSize:
+              type: string
             pvcStorageClass:
               type: string
             registryConfiguration:
@@ -95,15 +80,8 @@ spec:
               items:
                 type: string
               type: array
-            size:
-              type: string
             standAlone:
-              properties:
-                cfsslImage:
-                  type: string
-                cfsslMemory:
-                  type: string
-              type: object
+              type: boolean
             version:
               type: string
           required:
@@ -112,7 +90,10 @@ spec:
           - exposeService
           - persistentStorage
           - port
-          - size
+          - pvcName
+          - pvcSize
+          - pvcStorageClass
+          - standAlone
           type: object
         status:
           description: AlertStatus defines the observed state of Alert
