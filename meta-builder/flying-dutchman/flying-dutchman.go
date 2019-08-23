@@ -3,12 +3,12 @@ package flying_dutchman
 import (
 	"context"
 	"fmt"
+	"time"
 
 	scheduler "github.com/blackducksoftware/synopsys-operator/meta-builder/go-scheduler"
 	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	//"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -214,7 +214,9 @@ func EnsureRuntimeObject(myClient client.Client, ctx context.Context, log logr.L
 	log.V(1).Info("Result of create or update for", "desiredRuntimeObject", desiredRuntimeObject, "opResult", opResult)
 
 	if err := CheckForReadiness(myClient, desiredRuntimeObject); err != nil {
-		return ctrl.Result{}, err
+		// TODO: requeue after here, think about logic here [jeremy / aditya]
+		log.V(1).Info("CheckForReadiness failed", "err", err)
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	// finally return nil if ensured successfully
@@ -328,13 +330,13 @@ func CreateOrUpdate(ctx context.Context, c client.Client, obj runtime.Object) (c
 		return controllerutil.OperationResultCreated, nil
 	}
 
-	existing := currentRuntimeObject
 	// CHANGE #2
 	// TODO: need more than this cause server puts some default
 	// TODO: good info in issue here: https://github.com/kubernetes-sigs/controller-runtime/issues/464
-	if equality.Semantic.DeepEqual(existing, obj) {
-		return controllerutil.OperationResultNone, nil
-	}
+	//existing := currentRuntimeObject
+	//if equality.Semantic.DeepEqual(existing, obj) {
+	//	return controllerutil.OperationResultNone, nil
+	//}
 	//strategicpatch.CreateTwoWayMergePatch(existing, obj, )
 
 	if err := c.Update(ctx, obj); err != nil {
