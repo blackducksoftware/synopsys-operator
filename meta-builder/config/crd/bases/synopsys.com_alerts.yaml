@@ -31,30 +31,56 @@ spec:
           description: AlertSpec defines the desired state of Alert
           properties:
             EncryptionGlobalSalt:
+              description: 'Base64Encoded string for ALERT_ENCRYPTION_GLOBAL_SALT.
+                [dev-note]: this should be a pointer'
               type: string
             EncryptionPassword:
+              description: 'Base64Encoded string for ALERT_ENCRYPTION_PASSWORD. [dev-note]:
+                this should be a pointer'
               type: string
             alertMemory:
+              description: 'set min and max memory for alert rc. [dev-note]: again,
+                different implementation than Black Duck, also why min and max set
+                to be the same?'
               type: string
             cfsslMemory:
+              description: 'set min and max memory for cfssl rc. [dev-note]: again,
+                different implementation than Black Duck, also why min and max set
+                to be the same?'
               type: string
             desiredState:
+              description: 'set the desired state of the alert. [dev-note]: currently,
+                only "STOP"'
               type: string
             environs:
+              description: 'add data to environment variables config map as a slice
+                of "key:value". [dev-note]: another implementation to consider is
+                a map or a field per variable'
               items:
                 type: string
               type: array
             exposeService:
+              description: 'Set the type for the service. [dev-note]: LOADBALANCER,
+                NODEPORT allowed so far'
               type: string
             imageRegistries:
+              description: 'slice of "key:value" for images, takes precedence over
+                registryConfiguration [dev-note]: make explicit precedence over registryConfiguration'
               items:
                 type: string
               type: array
             namespace:
+              description: 'Set the namespace where you want to deploy alert. [dev-note]:
+                this is strictly needed to handle cluster scope'
               type: string
             persistentStorage:
+              description: 'enable or disable persistent storage. [dev-note]: this
+                is a different implementation than Black Duck, for example missing
+                volumeName'
               type: boolean
             port:
+              description: 'Set Port for alert rc and service. [dev-note]: this does
+                not need to be a pointer'
               format: int32
               type: integer
             pvcName:
@@ -64,7 +90,7 @@ spec:
             pvcStorageClass:
               type: string
             registryConfiguration:
-              description: RegistryConfiguration contains the registry configuration
+              description: '[dev-note]: this does not need to be a pointer'
               properties:
                 pullSecrets:
                   items:
@@ -77,12 +103,18 @@ spec:
               - registry
               type: object
             secrets:
+              description: 'add data to secret as a slice of "key:base64encodedvalue".
+                [dev-note]: another implementation to consider is a map or a field
+                per variable; also this should be a pointer'
               items:
                 type: string
               type: array
             standAlone:
+              description: 'Deploy alert in standalone mode. [dev-note]: this does
+                not need to be a pointer'
               type: boolean
             version:
+              description: Set the version of the alert
               type: string
           required:
           - EncryptionGlobalSalt

@@ -54,10 +54,14 @@ func (p *AlertPatcher) patch() map[string]runtime.Object {
 		p.patchNamespace,
 		p.patchEnvirons,
 		p.patchSecrets,
-		//p.patchStandAlone,
-		//p.patchStorage,
 		p.patchExposeService,
-		//p.patchAlertImage,
+		p.patchDesiredState,
+		p.patchAlertMemory,
+		p.patchCfsslMemory,
+		p.patchImages,
+		p.patchPort,
+		p.patchStorage,
+		p.patchStandAlone,
 	}
 	for _, f := range patches {
 		err := f()
@@ -77,7 +81,9 @@ func (p *AlertPatcher) patch() map[string]runtime.Object {
 //	return nil
 //}
 
+// TODO: common with Black Duck
 func (p *AlertPatcher) patchExposeService() error {
+	// TODO use constants
 	uniqueId := fmt.Sprintf("Service.%s-alert-exposed", p.alertCr.Name)
 	runtimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueId]
 	if !ok {
@@ -85,26 +91,19 @@ func (p *AlertPatcher) patchExposeService() error {
 	}
 
 	switch strings.ToUpper(p.alertCr.Spec.ExposeService) {
-	case "NODEPORT":
-		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
 	case "LOADBALANCER":
 		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeLoadBalancer
+	case "NODEPORT":
+		runtimeObject.(*corev1.Service).Spec.Type = corev1.ServiceTypeNodePort
 	default:
+		// TODO: [mphammer, jeremy] should we remove it?
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueId)
 	}
+
+	// TODO add openshift route
+
 	return nil
 }
-
-// TODO: remove alert image and cfssl image and instead use image registries to make it consistent with black duck
-//func (p *AlertPatcher) patchAlertImage() error {
-//	alertReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ReplicationController.%s-alert", p.alertCr.Name)]
-//	if !ok {
-//		return nil
-//	}
-//	alertReplicationController := alertReplicationControllerRuntimeObject.(*corev1.ReplicationController)
-//	alertReplicationController.Spec.Template.Spec.Containers[0].Image = p.alertCr.Spec.AlertImage
-//	return nil
-//}
 
 // TODO: common with Black Duck
 func (p *AlertPatcher) patchNamespace() error {
@@ -116,7 +115,7 @@ func (p *AlertPatcher) patchNamespace() error {
 
 // TODO: common with Black Duck
 func (p *AlertPatcher) patchEnvirons() error {
-	configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-blackDuckCr-alert-config", p.alertCr.Name)]
+	configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ConfigMap.%s-blackduck-alert-config", p.alertCr.Name)]
 	if !ok {
 		return nil
 	}
@@ -151,6 +150,18 @@ func (p *AlertPatcher) patchSecrets() error {
 		secretVal := strings.TrimSpace(vals[1])
 		secret.Data[secretKey] = []byte(secretVal)
 	}
+
+	specEncryptionGlobalSalt := p.alertCr.Spec.EncryptionGlobalSalt
+	specEncryptionPassword := p.alertCr.Spec.EncryptionPassword
+
+	if len(specEncryptionGlobalSalt) > 0 {
+		secret.Data["ALERT_ENCRYPTION_GLOBAL_SALT"] = []byte(specEncryptionGlobalSalt)
+	}
+
+	if len(specEncryptionPassword) > 0 {
+		secret.Data["ALERT_ENCRYPTION_PASSWORD"] = []byte(specEncryptionPassword)
+	}
+
 	return nil
 }
 
@@ -171,10 +182,12 @@ func (p *AlertPatcher) patchImages() error {
 
 // TODO: common with Black Duck
 func (p *AlertPatcher) patchDesiredState() error {
-	if strings.EqualFold(p.alertCr.Spec.DesiredState, "STOP") {
-		for uniqueID, runtimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
-			if k, _ := p.accessor.Kind(runtimeObject); k != "PersistentVolumeClaim" {
-				delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
+	for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
+		switch v.(type) {
+		case *corev1.ReplicationController:
+			switch strings.ToUpper(p.alertCr.Spec.DesiredState) {
+			case "STOP":
+				v.(*corev1.ReplicationController).Spec.Replicas = func(i int32) *int32 { return &i }(0)
 			}
 		}
 	}
@@ -212,7 +225,7 @@ func (p *AlertPatcher) patchPort() error {
 	service.Spec.Ports[0].Protocol = corev1.ProtocolTCP
 
 	// TODO: Support OpenShift Routes
-	// RouteUniqueID := "Route.default.demo-alertCr-route"
+	// RouteUniqueID := "Route.default.demo-alert-route"
 	// routeRuntimeObject := p.mapOfUniqueIdToBaseRuntimeObject[RouteUniqueID]
 
 	return nil
@@ -232,75 +245,89 @@ func (p *AlertPatcher) patchAlertMemory() error {
 }
 
 // TODO: common with Black Duck
-//func (p *AlertPatcher) patchStorage() error {
-//	for k, v := range p.mapOfUniqueIdToBaseRuntimeObject {
-//		switch v.(type) {
-//		case *corev1.PersistentVolumeClaim:
-//			if !p.alertCr.Spec.PersistentStorage {
-//				delete(p.mapOfUniqueIdToBaseRuntimeObject, k)
-//			} else {
-//				if len(p.alertCr.Spec.PVCStorageClass) > 0 {
-//					v.(*corev1.PersistentVolumeClaim).Spec.StorageClassName = &p.alertCr.Spec.PVCStorageClass
-//				}
-//				for _, pvc := range p.alertCr.Spec.PVC {
-//					if strings.EqualFold(pvc.Name, v.(*corev1.PersistentVolumeClaim).Name) {
-//						v.(*corev1.PersistentVolumeClaim).Spec.VolumeName = pvc.VolumeName
-//						v.(*corev1.PersistentVolumeClaim).Spec.StorageClassName = &pvc.StorageClass
-//						if quantity, err := resource.ParseQuantity(pvc.Size); err == nil {
-//							v.(*corev1.PersistentVolumeClaim).Spec.Resources.Requests[corev1.ResourceStorage] = quantity
-//						}
-//					}
-//				}
-//			}
-//		case *corev1.ReplicationController:
-//			if !p.alertCr.Spec.PersistentStorage {
-//				for i := range v.(*corev1.ReplicationController).Spec.Template.Spec.Volumes {
-//					// If PersistentVolumeClaim then we change it to emptyDir
-//					if v.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource.PersistentVolumeClaim != nil {
-//						v.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource = corev1.VolumeSource{
-//							EmptyDir: &corev1.EmptyDirVolumeSource{
-//								Medium:    corev1.StorageMediumDefault,
-//								SizeLimit: nil,
-//							},
-//						}
-//					}
-//				}
-//			}
-//		}
-//
-//	}
-//	return nil
-//}
+func (p *AlertPatcher) patchCfsslMemory() error {
+	cfsslReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)]
+	if !ok {
+		return nil
+	}
+	cfsslReplicationController := cfsslReplicationControllerRuntimeObject.(*corev1.ReplicationController)
+	minAndMaxMem, _ := resource.ParseQuantity(p.alertCr.Spec.AlertMemory)
+	cfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
+	cfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
+	return nil
+}
 
-//func (p *AlertPatcher) patchStandAlone() error {
-//	if (p.alertCr.Spec.StandAlone == synopsysv1.StandAlone{}) {
-//		// Remove Cfssl Resources
-//		uniqueID := fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)
-//		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
-//		uniqueID = fmt.Sprintf("Service.%s-cfssl", p.alertCr.Name)
-//		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
-//
-//		// Add Environ to use BlackDuck Cfssl
-//		ConfigMapUniqueID := fmt.Sprintf("ConfigMap.%s-blackDuckCr-alert-config", p.alertCr.Name)
-//		configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
-//		if !ok {
-//			return nil
-//		}
-//		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
-//		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alertCr.Name, "alert", "cfssl")
-//	} else {
-//		uniqueID := fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)
-//		alertCfsslReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
-//		if !ok {
-//			return nil
-//		}
-//		// patch Cfssl Image
-//		alertCfsslReplicationController := alertCfsslReplicationControllerRuntimeObject.(*corev1.ReplicationController)
-//		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Image = p.alertCr.Spec.StandAlone.CfsslImage
-//		// patch Cfssl Memory
-//		minAndMaxMem, _ := resource.ParseQuantity(p.alertCr.Spec.StandAlone.CfsslMemory)
-//		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
-//		alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
-//	}
-//	return nil
-//}
+// TODO: make common with Black Duck
+func (p *AlertPatcher) patchStorage() error {
+	for uniqueId, baseRuntimeObject := range p.mapOfUniqueIdToBaseRuntimeObject {
+		switch baseRuntimeObject.(type) {
+		case *corev1.PersistentVolumeClaim:
+			if !p.alertCr.Spec.PersistentStorage {
+				delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueId)
+			} else {
+				if len(p.alertCr.Spec.PVCStorageClass) > 0 {
+					baseRuntimeObject.(*corev1.PersistentVolumeClaim).Spec.StorageClassName = &p.alertCr.Spec.PVCStorageClass
+				}
+
+				if strings.EqualFold(p.alertCr.Spec.PVCName, baseRuntimeObject.(*corev1.PersistentVolumeClaim).Name) {
+					baseRuntimeObject.(*corev1.PersistentVolumeClaim).Spec.VolumeName = p.alertCr.Spec.PVCName // TODO
+					baseRuntimeObject.(*corev1.PersistentVolumeClaim).Spec.StorageClassName = &p.alertCr.Spec.PVCStorageClass
+					if quantity, err := resource.ParseQuantity(p.alertCr.Spec.PVCSize); err == nil {
+						baseRuntimeObject.(*corev1.PersistentVolumeClaim).Spec.Resources.Requests[corev1.ResourceStorage] = quantity
+					}
+				}
+			}
+		case *corev1.ReplicationController:
+			if !p.alertCr.Spec.PersistentStorage {
+				for i := range baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes {
+					// If no PersistentVolumeClaim then we change it to emptyDir in the replication controller
+					if baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource.PersistentVolumeClaim != nil {
+						baseRuntimeObject.(*corev1.ReplicationController).Spec.Template.Spec.Volumes[i].VolumeSource = corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{
+								Medium:    corev1.StorageMediumDefault,
+								SizeLimit: nil,
+							},
+						}
+					}
+				}
+			}
+		}
+
+	}
+	return nil
+}
+
+func (p *AlertPatcher) patchStandAlone() error {
+	if *p.alertCr.Spec.StandAlone == true {
+		// Remove Cfssl Resources
+		uniqueID := fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
+		uniqueID = fmt.Sprintf("Service.%s-cfssl", p.alertCr.Name)
+		delete(p.mapOfUniqueIdToBaseRuntimeObject, uniqueID)
+
+		// Add Environ to use BlackDuck Cfssl
+		ConfigMapUniqueID := fmt.Sprintf("ConfigMap.%s-blackduck-alert-config", p.alertCr.Name)
+		configMapRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[ConfigMapUniqueID]
+		if !ok {
+			return nil
+		}
+		configMap := configMapRuntimeObject.(*corev1.ConfigMap)
+		configMap.Data["HUB_CFSSL_HOST"] = fmt.Sprintf("%s-%s-%s", p.alertCr.Name, "alert", "cfssl")
+	} else {
+		// TODO: [mphammer]
+		//uniqueID := fmt.Sprintf("ReplicationController.%s-cfssl", p.alertCr.Name)
+		//alertCfsslReplicationControllerRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[uniqueID]
+		//if !ok {
+		//	return nil
+		//}
+		//
+		//// patch Cfssl Image
+		//alertCfsslReplicationController := alertCfsslReplicationControllerRuntimeObject.(*corev1.ReplicationController)
+		//alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Image = p.alertCr.Spec.StandAlone.CfsslImage
+		//// patch Cfssl Memory
+		//minAndMaxMem, _ := resource.ParseQuantity(p.alertCr.Spec.StandAlone.CfsslMemory)
+		//alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Requests[corev1.ResourceMemory] = minAndMaxMem
+		//alertCfsslReplicationController.Spec.Template.Spec.Containers[0].Resources.Limits[corev1.ResourceMemory] = minAndMaxMem
+	}
+	return nil
+}
