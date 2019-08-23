@@ -34,6 +34,14 @@ spec:
               type: string
             environment_address:
               type: string
+            eventstore_details:
+              properties:
+                replicas:
+                  format: int32
+                  type: integer
+                storage_size:
+                  type: string
+              type: object
             image_pull_secrets:
               type: string
             namespace:
@@ -60,7 +68,15 @@ spec:
             postgres_instance_type:
               type: string
             postgres_storage_details:
-              type: string
+              properties:
+                size:
+                  type: string
+                storage_class:
+                  type: string
+              required:
+              - size
+              - storage_class
+              type: object
             smtp_details:
               properties:
                 host:
@@ -74,9 +90,39 @@ spec:
                   type: string
               required:
               - host
-              - password
               - port
-              - username
+              type: object
+            upload_server_details:
+              properties:
+                replicas:
+                  format: int32
+                  type: integer
+                resources:
+                  properties:
+                    limits:
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                      type: object
+                    requests:
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                      type: object
+                  type: object
+                storage:
+                  properties:
+                    size:
+                      type: string
+                    storage_class:
+                      type: string
+                    type:
+                      type: string
+                  type: object
               type: object
           required:
           - environment
