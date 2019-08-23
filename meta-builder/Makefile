@@ -29,6 +29,10 @@ run: generate fmt vet manifests
 install: manifests
 	kustomize build config/crd | kubectl apply -f -
 
+# Delete CRDs from a cluster
+delete-crd:
+	kustomize build config/crd | kubectl delete -f -
+
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
