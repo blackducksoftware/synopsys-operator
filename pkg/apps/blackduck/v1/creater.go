@@ -169,7 +169,7 @@ func (hc *Creater) Ensure(blackduck *blackduckapi.Blackduck) error {
 			return err
 		}
 		bd.Status = newBlackuck.Status
-		if _, err := hc.blackduckClient.SynopsysV1().Blackducks(blackduck.Spec.Namespace).Update(bd); err != nil {
+		if _, err := util.UpdateBlackduck(hc.blackduckClient, bd); err != nil {
 			return err
 		}
 	}
