@@ -285,7 +285,8 @@ func GetOpsSightDefault() *opssightv1.OpsSightSpec {
 				InternalRegistries: []*opssightv1.RegistryAuth{},
 				ImagePullerType:    "skopeo",
 			},
-			ReplicaCount: 1,
+			ReplicaCount:   1,
+			ImageDirectory: "/var/images",
 		},
 		Perceiver: &opssightv1.Perceiver{
 			EnableImagePerceiver:      false,
@@ -342,7 +343,8 @@ func GetOpsSightDefaultWithIPV6DisabledBlackDuck() *opssightv1.OpsSightSpec {
 				InternalRegistries: []*opssightv1.RegistryAuth{},
 				ImagePullerType:    "skopeo",
 			},
-			ReplicaCount: 1,
+			ReplicaCount:   1,
+			ImageDirectory: "/var/images",
 		},
 		Perceiver: &opssightv1.Perceiver{
 			EnableImagePerceiver:      false,
