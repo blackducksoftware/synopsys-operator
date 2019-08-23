@@ -192,5 +192,5 @@ func (h *Handler) updateState(statusState State, errorMessage string, alert *ale
 }
 
 func (h *Handler) updateAlertObject(obj *alertapi.Alert) (*alertapi.Alert, error) {
-	return h.alertClient.SynopsysV1().Alerts(h.config.Namespace).Update(obj)
+	return util.UpdateAlert(h.alertClient, h.config.CrdNamespace, obj)
 }

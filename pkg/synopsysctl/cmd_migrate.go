@@ -305,7 +305,7 @@ func migrateAlert(namespace string) error {
 			if len(alert.Spec.ExposeService) == 0 {
 				alert.Spec.ExposeService = util.NONE
 			}
-			_, err := alertClient.SynopsysV1().Alerts(alertNamespace).Update(&alert)
+			_, err := util.UpdateAlert(alertClient, alert.Namespace, &alert)
 			if err != nil {
 				return fmt.Errorf("error migrating Alert '%s' in namespace '%s' due to %+v", alertName, alertNamespace, err)
 			}
@@ -551,7 +551,7 @@ func migrateOpsSight(namespace string) error {
 			if len(opsSight.Spec.Prometheus.Expose) == 0 {
 				opsSight.Spec.Prometheus.Expose = util.NONE
 			}
-			_, err := opsSightClient.SynopsysV1().OpsSights(opsSightNamespace).Update(&opsSight)
+			_, err := util.UpdateOpsSight(opsSightClient, opsSight.Namespace, &opsSight)
 			if err != nil {
 				return fmt.Errorf("error migrating OpsSight '%s' in namespace '%s' due to %+v", opsSightName, opsSightNamespace, err)
 			}
