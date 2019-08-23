@@ -3,6 +3,8 @@ package controllers
 import (
 	"fmt"
 
+	b64 "encoding/base64"
+
 	synopsysv1 "github.com/blackducksoftware/synopsys-operator/meta-builder/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,9 +32,6 @@ type PolarisDBPatcher struct {
 func (p *PolarisDBPatcher) patch() map[string]runtime.Object {
 	patches := []func() error{
 		p.patchNamespace,
-		p.patchEnvironmentName,
-		p.patchEnvironmentDNS,
-		p.patchImagePullSecrets,
 		p.patchSMTPDetails,
 		p.patchPostgresDetails,
 		p.patchEventstoreDetails,
@@ -54,29 +53,6 @@ func (p *PolarisDBPatcher) patchNamespace() error {
 	return nil
 }
 
-func (p *PolarisDBPatcher) patchEnvironmentName() error {
-	// Patch instances of environment name
-	return nil
-}
-
-func (p *PolarisDBPatcher) patchEnvironmentDNS() error {
-	// Patch instances of environment dns
-	return nil
-}
-
-func (p *PolarisDBPatcher) patchImagePullSecrets() error {
-	// improve logic to get these objects directly from dependency manual
-	// patch deployments
-	deployments := []string{"mongodb", "postgresql", "upload-server", "vault-init"}
-	UpdateImagePullSecretsForDeployment(p.mapOfUniqueIdToBaseRuntimeObject, deployments, p.polarisDbCr.Spec.ImagePullSecrets)
-	// patch statefulsets
-	statefulsets := []string{"eventstore"}
-	UpdateImagePullSecretsForStatefulSets(p.mapOfUniqueIdToBaseRuntimeObject, statefulsets, p.polarisDbCr.Spec.ImagePullSecrets)
-	jobs := []string{"eventstore"}
-	UpdateImagePullSecretsForJobs(p.mapOfUniqueIdToBaseRuntimeObject, jobs, p.polarisDbCr.Spec.ImagePullSecrets)
-	return nil
-}
-
 func (p *PolarisDBPatcher) patchSMTPDetails() error {
 	SecretUniqueID := "Secret." + "smtp"
 	secretRuntimeObject, ok := p.mapOfUniqueIdToBaseRuntimeObject[SecretUniqueID]
@@ -85,10 +61,10 @@ func (p *PolarisDBPatcher) patchSMTPDetails() error {
 	}
 	secretInstance := secretRuntimeObject.(*corev1.Secret)
 	secretInstance.Data = map[string][]byte{
-		"username": []byte(p.polarisDbCr.Spec.SMTPDetails.Username),
-		"passwd":   []byte(p.polarisDbCr.Spec.SMTPDetails.Password),
-		"host":     []byte(p.polarisDbCr.Spec.SMTPDetails.Host),
-		"port":     []byte(string(*p.polarisDbCr.Spec.SMTPDetails.Port)),
+		"username": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.SMTPDetails.Username))),
+		"passwd":   []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.SMTPDetails.Password))),
+		"host":     []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.SMTPDetails.Host))),
+		"port":     []byte(b64.StdEncoding.EncodeToString([]byte(string(*p.polarisDbCr.Spec.SMTPDetails.Port)))),
 	}
 	return nil
 }
@@ -102,12 +78,12 @@ func (p *PolarisDBPatcher) patchPostgresDetails() error {
 	}
 	secretInstance := secretRuntimeObject.(*corev1.Secret)
 	secretInstance.Data = map[string][]byte{
-		"username":              []byte(p.polarisDbCr.Spec.PostgresDetails.Username),
-		"password":              []byte(p.polarisDbCr.Spec.PostgresDetails.Password),
-		"reporting_db_username": []byte(p.polarisDbCr.Spec.PostgresDetails.Username),
-		"reporting_db_password": []byte(p.polarisDbCr.Spec.PostgresDetails.Password),
-		"host":                  []byte(p.polarisDbCr.Spec.PostgresDetails.Host),
-		"port":                  []byte(string(*p.polarisDbCr.Spec.PostgresDetails.Port)),
+		"username":              []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Username))),
+		"password":              []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Password))),
+		"reporting_db_username": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Username))),
+		"reporting_db_password": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Password))),
+		"host":                  []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Host))),
+		"port":                  []byte(b64.StdEncoding.EncodeToString([]byte(string(*p.polarisDbCr.Spec.PostgresDetails.Port)))),
 	}
 	if p.polarisDbCr.Spec.PostgresInstanceType == "internal" {
 		// patch postgresql-config secret
@@ -118,8 +94,8 @@ func (p *PolarisDBPatcher) patchPostgresDetails() error {
 		}
 		secretInstance = secretRuntimeObject.(*corev1.Secret)
 		secretInstance.Data = map[string][]byte{
-			"POSTGRES_USER":     []byte(p.polarisDbCr.Spec.PostgresDetails.Username),
-			"POSTGRES_PASSWORD": []byte(p.polarisDbCr.Spec.PostgresDetails.Password),
+			"POSTGRES_USER":     []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Username))),
+			"POSTGRES_PASSWORD": []byte(b64.StdEncoding.EncodeToString([]byte(p.polarisDbCr.Spec.PostgresDetails.Password))),
 		}
 		// patch storage
 		PostgresPVCUniqueID := "PersistentVolumeClaim." + "postgresql-pv-claim"

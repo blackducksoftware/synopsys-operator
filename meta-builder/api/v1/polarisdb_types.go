@@ -58,8 +58,8 @@ type Storage struct {
 type SMTPDetails struct {
 	Host     string `json:"host"`
 	Port     *int32 `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 type PostgresDetails struct {

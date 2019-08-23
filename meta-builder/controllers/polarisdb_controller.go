@@ -17,7 +17,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -79,9 +81,15 @@ func (r *PolarisDBReconciler) GetRuntimeObjects(cr interface{}) (map[string]runt
 		return nil, err
 	}
 
-	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects(byteArrayContentFromFile)
+	// regex patching
+	content := string(byteArrayContentFromFile)
+	content = strings.ReplaceAll(content, "${ENVIRONMENT_NAME}", polarisDbCr.Spec.EnvironmentName)
+	content = strings.ReplaceAll(content, "${IMAGE_PULL_SECRETS}", polarisDbCr.Spec.ImagePullSecrets)
+
+	mapOfUniqueIdToBaseRuntimeObject := controllers_utils.ConvertYamlFileToRuntimeObjects([]byte(content))
 	for _, desiredRuntimeObject := range mapOfUniqueIdToBaseRuntimeObject {
 		// set an owner reference
+		fmt.Println(desiredRuntimeObject)
 		if err := ctrl.SetControllerReference(polarisDbCr, desiredRuntimeObject.(metav1.Object), r.Scheme); err != nil {
 			// requeue if we cannot set owner on the object
 			// TODO: change this to requeue, and only not requeue when we get "newAlreadyOwnedError", i.e: if it's already owned by our CR

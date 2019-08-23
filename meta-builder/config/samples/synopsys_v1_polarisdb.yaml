@@ -4,4 +4,18 @@ metadata:
   name: polarisdb-sample
 spec:
   # Add fields here
-  foo: bar
+  namespace: default
+  environment: onprem
+  environment_address: onprem.dev.polaris.synopsys.com
+  image_pull_secrets: gcr-json-key
+  smtp_details:
+    host: mailhost.internal.synopsys.com
+    port: 25
+  postgres_instance_type: internal
+  postgres:
+    host: postgresql
+    port: 5432
+    username: postgres
+    password: root
+
+  
