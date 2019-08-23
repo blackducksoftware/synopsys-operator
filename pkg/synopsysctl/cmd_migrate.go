@@ -352,7 +352,7 @@ func migrateBlackDuck(namespace string) error {
 			if len(blackDuck.Spec.ExposeService) == 0 {
 				blackDuck.Spec.ExposeService = util.NONE
 			}
-			_, err := blackDuckClient.SynopsysV1().Blackducks(blackDuckNamespace).Update(&blackDuck)
+			_, err := util.UpdateBlackduck(blackDuckClient, &blackDuck)
 			if err != nil {
 				return fmt.Errorf("error migrating Black Duck '%s' in namespace '%s' due to %+v", blackDuckName, blackDuckNamespace, err)
 			}
