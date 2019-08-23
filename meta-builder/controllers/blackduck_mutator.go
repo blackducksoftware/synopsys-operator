@@ -73,6 +73,7 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 		p.patchSealKey,
 		p.patchWithSize,
 		p.patchReplicas,
+		p.patchOpenshift,
 	}
 	for _, f := range patches {
 		err := f()
@@ -82,6 +83,21 @@ func (p *BlackduckPatcher) patch() map[string]runtime.Object {
 	}
 
 	return p.mapOfUniqueIdToBaseRuntimeObject
+}
+
+func (p *BlackduckPatcher) patchOpenshift() error {
+	// TODO uncomment once we pass protoform config
+	//if p.config.IsOpenshift {
+	//	for _, v := range p.mapOfUniqueIdToBaseRuntimeObject {
+	//		switch v.(type) {
+	//		case *corev1.ReplicationController:
+	//			for i := range v.(*corev1.ReplicationController).Spec.Template.Spec.Containers {
+	//				v.(*corev1.ReplicationController).Spec.Template.Spec.SecurityContext.FSGroup = nil
+	//			}
+	//		}
+	//	}
+	//}
+	return nil
 }
 
 func (p *BlackduckPatcher) patchBDBA() error {
@@ -142,6 +158,8 @@ func (p *BlackduckPatcher) patchExposeService() error {
 	default:
 		delete(p.mapOfUniqueIdToBaseRuntimeObject, id)
 	}
+
+	// TODO add openhift route
 
 	return nil
 }
