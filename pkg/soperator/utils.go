@@ -58,9 +58,9 @@ func GetBlackduckVersionsToRemove(blackduckClient *blackduckclientset.Clientset,
 }
 
 // GetOpsSightVersionsToRemove finds all OpsSights with a different version, returns their specs with the new version
-func GetOpsSightVersionsToRemove(opssightClient *opssightclientset.Clientset, newVersion string) ([]opssightv1.OpsSight, error) {
+func GetOpsSightVersionsToRemove(opssightClient *opssightclientset.Clientset, newVersion string, crdNamespace string) ([]opssightv1.OpsSight, error) {
 	log.Debugf("Collecting all OpsSights that are not version: %s", newVersion)
-	currOpsSights, err := util.GetOpsSights(opssightClient)
+	currOpsSights, err := util.ListOpsSights(opssightClient, crdNamespace, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get OpsSights: %s", err)
 	}
