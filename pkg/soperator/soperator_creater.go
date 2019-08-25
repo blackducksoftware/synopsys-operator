@@ -23,6 +23,7 @@ package soperator
 
 import (
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"time"
 
 	alertclientset "github.com/blackducksoftware/synopsys-operator/pkg/alert/client/clientset/versioned"
@@ -112,7 +113,7 @@ func (sc *Creater) EnsureSynopsysOperator(namespace string, blackduckClient *bla
 	if newCrdData.OpsSight.APIVersion != oldCrdData.OpsSight.APIVersion {
 		_, err := operatorutil.GetCustomResourceDefinition(apiExtensionClient, operatorutil.OpsSightCRDName)
 		if err == nil {
-			oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion)
+			oldOpsSights, err = GetOpsSightVersionsToRemove(opssightClient, newCrdData.OpsSight.APIVersion, corev1.NamespaceAll)
 			if err != nil {
 				return fmt.Errorf("failed to get OpsSights to update: %s", err)
 			}
