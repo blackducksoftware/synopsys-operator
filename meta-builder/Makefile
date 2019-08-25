@@ -19,11 +19,11 @@ test: generate fmt vet manifests
 
 # Build manager binary
 manager: generate fmt vet
-	go build -o bin/manager main.go
+	GO111MODULE=on go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
-	go run ./main.go
+	GO111MODULE=on go run ./main.go
 
 # Install CRDs into a cluster
 install: manifests
@@ -42,13 +42,14 @@ deploy: manifests
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
+
 # Run go fmt against code
 fmt:
-	go fmt ./...
+	GO111MODULE=on go fmt ./...
 
 # Run go vet against code
 vet:
-	go vet ./...
+	GO111MODULE=on go vet ./...
 
 # Generate code
 generate: controller-gen
@@ -66,7 +67,7 @@ docker-push:
 # download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0
+	GO111MODULE=on go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)

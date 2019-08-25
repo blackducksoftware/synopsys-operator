@@ -47,7 +47,7 @@ type AlertSpec struct {
 	// Also previously this was plain text, so TODO: migrate, either take this out from the api, or convert from plain to encoded
 	EncryptionGlobalSalt string `json:"EncryptionGlobalSalt"`
 	// add data to secret as a slice of "key:base64encodedvalue". [dev-note]: another implementation to consider is a map or a field per variable
-	Secrets *[]string `json:"secrets,omitempty"` // TODO: not in previous API, make an api-change note
+	Secrets []*string `json:"secrets,omitempty"` // TODO: not in previous API, make an api-change note
 	// add data to environment variables config map as a slice of "key:value". [dev-note]: another implementation to consider is a map or a field per variable
 	Environs []string `json:"environs,omitempty"`
 	// enable or disable persistent storage. [dev-note]: this is a different implementation than Black Duck, for example missing volumeName
