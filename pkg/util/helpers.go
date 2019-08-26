@@ -147,6 +147,16 @@ func RemoveFromStringSlice(slice []string, str string) []string {
 	return slice
 }
 
+// IsExistInStringSlice will check for the input string in the given slice
+func IsExistInStringSlice(slice []string, str string) bool {
+	for _, value := range slice {
+		if value == str {
+			return true
+		}
+	}
+	return false
+}
+
 // IsExposeServiceValid validates the expose service type
 func IsExposeServiceValid(serviceType string) bool {
 	switch strings.ToUpper(serviceType) {
