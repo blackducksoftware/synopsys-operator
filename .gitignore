@@ -1,13 +1,22 @@
+build
+.idea/
+.vscode/*
+_output/*
 cmd/operator-build
+cmd/operator/operator
 install/secured-registry/dockercfg.json
-cmd/synopsysctl/synopsysctl
+
+# .DS_Store
+.DS_Store
 pkg/.DS_Store
 pkg/api/.DS_Store
-.DS_Store
-cmd/operator/operator
-.idea/
-build
-.vscode/*
+
+# synopsysctl
+cmd/synopsysctl/synopsysctl
 cmd/synopsysctl/*.key
-_output/*
+
+# meta-builder
 meta-builder/meta-builder
+
+# ember node modules
+**node_modules/

@@ -1,0 +1,54 @@
+<h2 class="mt-4" id="heading">Deploy Polaris on Azure Kubernetes Engine</h2><br><br>
+
+<p>Navigate to <b>Deploy Polaris</b> tab.</p>
+
+<h5>1. Choose the <code>Azure</code> option under Deployment Platform</h5>
+
+<img src="/assets/images/aks/nav.png" class="aks-nav" alt=""><br><br>
+
+<h5>2. Fill the common environment details</h5>
+
+<p><code>ENVIRONMENT NAME</code> can be any friendly name for the environment. Should contain only lowercase alphabets.</p>
+
+<p><code>ENVIRONMENT ADDRESS (DNS)</code> is a desired URL to access the application.</p>
+
+<p><code>NAMESPACE</code>, namespace on which you want to deploy the application. Supports only default namespace for now.</p><br><br>
+
+<h5>3. Whitelist IPs to restrict public access</h5>
+
+<p><code>List of allowed IPs to access environment (Whitelist IPs)</code>, Provide the IPs and their range in CIDR notation.</p><br><br>
+
+<h5>4. Choose the ssl certificate type for enabling https for Polaris</h5>
+
+<p>You can have either Self-Signed or Custom certificate. If you choose to have custom certificate, provide the certificate information in <code>CRT FILE CONTENT(.crt)</code> and <code>KEY FILE CONTENT(.key)</code> fields.</p><br><br>
+
+<h5>5. Choose the Postgresql Instance type</h5>
+
+<p>You can have either integreated Postgresql instance or azure managed Postgresql instance.</p>
+
+<p>Provide the following information in the respective fields</p>
+
+<p><code>POSTGRES HOST</code>, postgresql instance address</p>
+
+<p><code>POSTGRES PORT</code>, postgresql instance port</p>
+
+<p><code>POSTGRES USERNAME</code>, username for postgresql instance</p>
+
+<p><code>POSTGRES PASSWORD</code>, password for postgresql instance</p><br><br>
+
+
+<h5>6. SMTP server details for enabling emails</h5>
+
+<p>Provide the following information in the respective fields</p>
+
+<p><code>SMTP HOST</code>, smtp server address</p>
+
+<p><code>SMTP PORT</code>, smtp server port</p>
+
+<p><code>SMTP USERNAME</code>, smtp server username</p>
+
+<p><code>SMTP PASSWORD</code>, smtp server password</p>
+
+<img src="/assets/images/aks/aks.png" class="aks-deploy" alt=""><br><br>
+
+<h7>Click on Submit. Thats it !</h7>

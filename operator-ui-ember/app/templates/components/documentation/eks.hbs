@@ -1,0 +1,51 @@
+<h1 class="mt-4" id="heading">Deploy Polaris on Elastic Kubernetes Service(EKS)</h1><br><br>
+
+<p>Navigate to <b>Deploy Polaris</b> tab.</p>
+
+<h5>1. Choose the <code>AWS</code> option under Deployment Platform</h5>
+
+<img src="/assets/images/eks/main-aws.png" class="eks-nav" alt=""><br><br>
+
+<h5>2. Fill the common environment details</h5>
+
+<p><code>ENVIRONMENT NAME</code> can be any friendly name for the environment. Should contain only lowercase alphabets.</p>
+
+<p><code>ENVIRONMENT ADDRESS (DNS)</code> is a desired URL to access the application.</p>
+
+<p><code>NAMESPACE</code>, namespace on which you want to deploy the application. Supports only default namespace for now.</p><br><br>
+
+<h5>3. SSL certificate</h5>
+
+<p>Import certificate into Cert Manager through AWS console and provide its ARN in <code>SSL CERTIFICATE FOR POLARIS(HTTPS)</code> field.</p><br><br>
+
+<h5>4. Whitelist IPs to restrict public access</h5>
+
+<p><code>List of allowed IPs to access environment (Whitelist IPs)</code>, Provide the IPs and their range in CIDR notation.</p><br><br>
+
+<h5>5. RDS INFORMATION</h5>
+
+<p>Provide the following information in the respective fields</p>
+
+<p><code>RDS Instance Endpoint</code>, RDS instance address</p>
+
+<p><code>RDS Port</code>, RDS instance port</p>
+
+<p><code>RDS Username</code>, username for RDS instance</p>
+
+<p><code>RDS Password</code>, password for RDS instance</p><br><br>
+
+<h5>5. SMTP server details for enabling emails</h5>
+
+<p>Provide the following information in the respective fields</p>
+
+<p><code>SMTP HOST</code>, smtp server address</p>
+
+<p><code>SMTP PORT</code>, smtp server port</p>
+
+<p><code>SMTP USERNAME</code>, smtp server username</p>
+
+<p><code>SMTP PASSWORD</code>, smtp server password</p>
+
+<img src="/assets/images/eks/aws.png" class="eks-deploy" alt=""><br><br>
+
+<h7>Click on Submit. Thats it !</h7>
