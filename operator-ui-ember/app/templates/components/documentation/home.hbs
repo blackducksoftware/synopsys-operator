@@ -1,0 +1,6 @@
+<h2 class="mt-4" id="heading-1">Index</h2><br>
+<ul class="index-ul">
+  {{#each this.menu_entries as |entry|}}
+    <li><a href={{entry.link}}>{{entry.name}}</a></li><br>
+  {{/each}}
+</ul>

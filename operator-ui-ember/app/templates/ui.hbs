@@ -1,0 +1,49 @@
+<UiHead />
+<body class="k-page--loading-enabled k-page--loading k-page--fixed k-header--fixed k-header--minimize-menu k-header-mobile--fixed">
+  <UiMobileHeader />
+  <div class="k-grid k-grid--hor k-grid--root">
+    <div class="k-grid__item k-grid__item--fluid k-grid k-grid--ver k-page">
+      <div class="k-grid__item k-grid__item--fluid k-grid k-grid--hor k-wrapper " id="k_wrapper">
+        <div id="k_header" class="k-header k-grid__item  k-header--fixed " data-kheader-minimize="on">
+          <div class="k-header__top">
+            <div class="k-container">
+              <UiBrandLogo />
+            </div>
+          </div>
+          <UiNavBar />
+        </div>
+        <div class="k-grid__item k-grid__item--fluid k-grid k-grid--ver k-grid--stretch">
+          <div class="k-container k-content-wrapper  k-grid k-grid--ver" id="k_content_wrapper">
+            <div class="k-content	k-grid__item k-grid__item--fluid k-grid k-grid--hor" id="k_content">
+              <div class="k-content__body	k-grid__item k-grid__item--fluid">
+                {{outlet}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    var KAppOptions = {
+      "colors": {
+        "state": {
+          "brand": "#5d78ff",
+          "metal": "#c4c5d6",
+          "light": "#ffffff",
+          "accent": "#00c5dc",
+          "primary": "#5867dd",
+          "success": "#34bfa3",
+          "info": "#36a3f7",
+          "warning": "#ffb822",
+          "danger": "#fd3995",
+          "focus": "#9816f4"
+        },
+        "base": {
+          "label": ["#c5cbe3", "#a1a8c3", "#3d4465", "#3e4466"],
+          "shape": ["#f0f3ff", "#d9dffa", "#afb4d4", "#646c9a"]
+        }
+      }
+    };
+  </script>
+</body>
