@@ -4,4 +4,7 @@ metadata:
   name: polaris-sample
 spec:
   # Add fields here
-  foo: bar
+  namespace: default
+  environment: onprem
+  environment_address: onprem.dev.polaris.synopsys.com
+  image_pull_secrets: gcr-json-key
